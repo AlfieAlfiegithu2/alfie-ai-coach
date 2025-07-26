@@ -1,34 +1,42 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Mic, Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { Mic, Clock, ArrowLeft, Loader2, Volume2, RotateCcw, Play, Pause } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useSpeakingTest } from "@/hooks/useSpeakingTest";
 
 const Speaking = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [currentPart, setCurrentPart] = useState(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [transcription, setTranscription] = useState<string | null>(null);
 
-  const speakingPrompts = {
-    1: "Let's talk about your hometown. Where are you from? What do you like about your hometown? Is there anything you would like to change about your hometown?",
-    2: "Describe a book you have read recently. You should say: what the book was about, why you chose to read it, what you learned from it, and explain whether you would recommend it to others. You have one minute to prepare and up to two minutes to speak.",
-    3: "Let's discuss reading habits in general. Do you think people read less than they used to? How do you think reading habits will change in the future? What are the benefits of reading books compared to watching videos?"
-  };
+  const {
+    currentPrompt,
+    currentPart,
+    timeRemaining,
+    isTimerActive,
+    isLoading,
+    isPlayingPrompt,
+    playPromptAudio,
+    startTimer,
+    stopTimer,
+    resetTimer,
+    changePart,
+    formatTime,
+    loadRandomPrompt,
+  } = useSpeakingTest();
 
   const convertBlobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        // Remove the data URL prefix to get just the base64 string
         const base64 = result.split(',')[1];
         resolve(base64);
       };
@@ -45,7 +53,7 @@ const Speaking = () => {
       const { data, error } = await supabase.functions.invoke('speech-analysis', {
         body: {
           audio: base64Audio,
-          prompt: speakingPrompts[currentPart as keyof typeof speakingPrompts],
+          prompt: currentPrompt?.prompt_text || '',
           speakingPart: `Part ${currentPart}`
         }
       });
@@ -56,7 +64,7 @@ const Speaking = () => {
         setTranscription(data.transcription);
         setAnalysis(data.analysis);
         toast({
-          title: "Analysis Complete",
+          title: "Analysis Complete ✨",
           description: "Your speech has been analyzed successfully!",
         });
       } else {
@@ -74,6 +82,36 @@ const Speaking = () => {
     }
   };
 
+  const handleStartRecording = () => {
+    if (!isTimerActive) {
+      startTimer();
+    }
+  };
+
+  const getPartDescription = (part: number) => {
+    switch (part) {
+      case 1:
+        return "Introduction & Interview (4-5 minutes)";
+      case 2:
+        return "Long Turn (3-4 minutes, including 1 minute preparation)";
+      case 3:
+        return "Discussion (4-5 minutes)";
+      default:
+        return "";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading speaking test questions...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -86,19 +124,32 @@ const Speaking = () => {
                 Back to Dashboard
               </Button>
               <div className="flex items-center gap-2">
-                <Mic className="w-5 h-5 text-blue-deep" />
-                <span className="font-semibold">Speaking Test</span>
+                <Mic className="w-5 h-5 text-gentle-blue" />
+                <span className="font-semibold">IELTS Speaking Test</span>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm">
                 <Clock className="w-4 h-4" />
-                <span>14:00</span>
+                <span className={`font-mono ${timeRemaining < 60 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {formatTime(timeRemaining)}
+                </span>
               </div>
-              <Button variant="hero" size="sm">
-                Submit Test
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={isTimerActive ? stopTimer : startTimer}
+                >
+                  {isTimerActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  {isTimerActive ? 'Pause' : 'Start'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={resetTimer}>
+                  <RotateCcw className="w-4 h-4" />
+                  Reset
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -109,20 +160,19 @@ const Speaking = () => {
           {/* Part Selection */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-center text-2xl">IELTS Academic Speaking Test</CardTitle>
-              <div className="flex justify-center gap-2 mt-4">
+              <CardTitle className="text-center text-2xl font-georgia">🎤 IELTS Academic Speaking Test</CardTitle>
+              <p className="text-center text-muted-foreground">Experience an authentic IELTS speaking test with AI analysis</p>
+              <div className="flex justify-center gap-2 mt-6">
                 {[1, 2, 3].map((part) => (
                   <Button
                     key={part}
                     variant={currentPart === part ? "default" : "outline"}
-                    onClick={() => {
-                      setCurrentPart(part);
-                      setAnalysis(null);
-                      setTranscription(null);
-                    }}
-                    disabled={isAnalyzing}
+                    onClick={() => changePart(part)}
+                    disabled={isAnalyzing || isPlayingPrompt}
+                    className="flex flex-col h-auto p-4"
                   >
-                    Part {part}
+                    <span className="font-semibold">Part {part}</span>
+                    <span className="text-xs opacity-75">{getPartDescription(part).split('(')[0]}</span>
                   </Button>
                 ))}
               </div>
@@ -130,39 +180,85 @@ const Speaking = () => {
           </Card>
 
           {/* Current Task */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Speaking Part {currentPart}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-blue-light/30 p-6 rounded-lg mb-6">
-                <h3 className="font-semibold mb-3">Task Instructions:</h3>
-                <p className="text-sm leading-relaxed">
-                  {speakingPrompts[currentPart as keyof typeof speakingPrompts]}
-                </p>
-              </div>
+          {currentPrompt && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="font-georgia">
+                    📝 {currentPrompt.title} - Part {currentPart}
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => playPromptAudio(currentPrompt.prompt_text)}
+                      disabled={isPlayingPrompt}
+                    >
+                      <Volume2 className="w-4 h-4 mr-2" />
+                      {isPlayingPrompt ? 'Playing...' : 'Hear Question'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadRandomPrompt(currentPart)}
+                      disabled={isAnalyzing || isPlayingPrompt}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      New Question
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">{getPartDescription(currentPart)}</p>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gentle-blue/10 border border-gentle-blue/20 p-6 rounded-lg mb-6">
+                  <h3 className="font-semibold mb-3 text-gentle-blue">🎯 Task Instructions:</h3>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {currentPrompt.prompt_text}
+                  </p>
+                  {currentPrompt.follow_up_questions && currentPrompt.follow_up_questions.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gentle-blue/20">
+                      <h4 className="font-medium mb-2 text-gentle-blue">Follow-up questions:</h4>
+                      <ul className="text-sm space-y-1">
+                        {currentPrompt.follow_up_questions.map((question, index) => (
+                          <li key={index} className="text-muted-foreground">• {question}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
 
-              <AudioRecorder 
-                onRecordingComplete={handleRecordingComplete}
-                disabled={isAnalyzing}
-              />
-
-              {isAnalyzing && (
-                <div className="text-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Analyzing your speech for pronunciation, fluency, intonation, and accent patterns...
+                <div className="text-center mb-6">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {currentPart === 2 ? "You have 1 minute to prepare, then speak for up to 2 minutes" : 
+                     currentPart === 1 ? "Speak naturally for 4-5 minutes" : 
+                     "Engage in discussion for 4-5 minutes"}
                   </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                <AudioRecorder 
+                  onRecordingComplete={handleRecordingComplete}
+                  onStartRecording={handleStartRecording}
+                  disabled={isAnalyzing}
+                />
+
+                {isAnalyzing && (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gentle-blue" />
+                    <p className="text-muted-foreground">
+                      🔍 Analyzing your speech for pronunciation, fluency, intonation, and accent patterns...
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Transcription */}
           {transcription && (
             <Card>
               <CardHeader>
-                <CardTitle>Transcription</CardTitle>
+                <CardTitle className="font-georgia">📝 What You Said</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="bg-muted p-4 rounded-lg">
@@ -176,7 +272,7 @@ const Speaking = () => {
           {analysis && (
             <Card>
               <CardHeader>
-                <CardTitle>Detailed Speech Analysis</CardTitle>
+                <CardTitle className="font-georgia">🎯 Detailed Speech Analysis</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="prose max-w-none">

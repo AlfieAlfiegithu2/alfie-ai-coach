@@ -1,10 +1,78 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mic, Clock, ArrowLeft } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Mic, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { AudioRecorder } from "@/components/AudioRecorder";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Speaking = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [currentPart, setCurrentPart] = useState(1);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [transcription, setTranscription] = useState<string | null>(null);
+
+  const speakingPrompts = {
+    1: "Let's talk about your hometown. Where are you from? What do you like about your hometown? Is there anything you would like to change about your hometown?",
+    2: "Describe a book you have read recently. You should say: what the book was about, why you chose to read it, what you learned from it, and explain whether you would recommend it to others. You have one minute to prepare and up to two minutes to speak.",
+    3: "Let's discuss reading habits in general. Do you think people read less than they used to? How do you think reading habits will change in the future? What are the benefits of reading books compared to watching videos?"
+  };
+
+  const convertBlobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix to get just the base64 string
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const handleRecordingComplete = async (audioBlob: Blob) => {
+    setIsAnalyzing(true);
+    try {
+      const base64Audio = await convertBlobToBase64(audioBlob);
+      
+      const { data, error } = await supabase.functions.invoke('speech-analysis', {
+        body: {
+          audio: base64Audio,
+          prompt: speakingPrompts[currentPart as keyof typeof speakingPrompts],
+          speakingPart: `Part ${currentPart}`
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setTranscription(data.transcription);
+        setAnalysis(data.analysis);
+        toast({
+          title: "Analysis Complete",
+          description: "Your speech has been analyzed successfully!",
+        });
+      } else {
+        throw new Error(data.error || 'Analysis failed');
+      }
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      toast({
+        title: "Analysis Failed", 
+        description: error.message || "Could not analyze your speech. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,38 +105,89 @@ const Speaking = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl">IELTS Academic Speaking Test</CardTitle>
-            <p className="text-center text-muted-foreground">
-              Time: 11-14 minutes | 3 parts | Record your responses
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-blue-light/30 p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">Instructions</h3>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Part 1: Introduction and general questions (4-5 minutes)</li>
-                <li>• Part 2: Long turn with preparation time (3-4 minutes)</li>
-                <li>• Part 3: Discussion of abstract topics (4-5 minutes)</li>
-                <li>• Record your responses using your microphone</li>
-              </ul>
-            </div>
-            
-            <div className="text-center py-12">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-blue-light flex items-center justify-center">
-                <Mic className="w-12 h-12 text-blue-deep" />
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Part Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center text-2xl">IELTS Academic Speaking Test</CardTitle>
+              <div className="flex justify-center gap-2 mt-4">
+                {[1, 2, 3].map((part) => (
+                  <Button
+                    key={part}
+                    variant={currentPart === part ? "default" : "outline"}
+                    onClick={() => {
+                      setCurrentPart(part);
+                      setAnalysis(null);
+                      setTranscription(null);
+                    }}
+                    disabled={isAnalyzing}
+                  >
+                    Part {part}
+                  </Button>
+                ))}
               </div>
-              <h2 className="text-xl font-semibold mb-4">Speaking Test Coming Soon</h2>
-              <p className="text-muted-foreground mb-6">
-                We're building advanced speech recognition and AI assessment for pronunciation, fluency, and coherence
-              </p>
-              <Button variant="hero">
-                Get Notified When Ready
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+          </Card>
+
+          {/* Current Task */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Speaking Part {currentPart}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-blue-light/30 p-6 rounded-lg mb-6">
+                <h3 className="font-semibold mb-3">Task Instructions:</h3>
+                <p className="text-sm leading-relaxed">
+                  {speakingPrompts[currentPart as keyof typeof speakingPrompts]}
+                </p>
+              </div>
+
+              <AudioRecorder 
+                onRecordingComplete={handleRecordingComplete}
+                disabled={isAnalyzing}
+              />
+
+              {isAnalyzing && (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Analyzing your speech for pronunciation, fluency, intonation, and accent patterns...
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Transcription */}
+          {transcription && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Transcription</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-muted p-4 rounded-lg">
+                  <p className="italic">"{transcription}"</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Analysis Results */}
+          {analysis && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Detailed Speech Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose max-w-none">
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {analysis}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Headphones, PenTool, Mic, Star, Heart, Lightbulb } from "lucide-react";
+import { BookOpen, Headphones, PenTool, Mic, Star, Heart, Lightbulb, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const Dashboard = () => {
@@ -164,14 +164,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Admin Access - Subtle */}
+        {/* Admin Access - Direct & Prominent */}
         <div className="text-center py-8 mt-12">
-          <button
+          <Button
             onClick={() => navigate('/admin/login')}
-            className="text-xs text-warm-gray/60 hover:text-gentle-blue underline transition-colors duration-200"
+            variant="outline"
+            className="rounded-xl border-gentle-blue/30 hover:bg-gentle-blue/10 hover:border-gentle-blue transition-all duration-200"
           >
-            Admin Portal
-          </button>
+            <Settings className="w-4 h-4 mr-2" />
+            Admin Dashboard
+          </Button>
         </div>
       </div>
     </div>

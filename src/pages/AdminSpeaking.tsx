@@ -96,8 +96,8 @@ const AdminSpeaking = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
+      <div className="container mx-auto px-6 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate("/admin")}>

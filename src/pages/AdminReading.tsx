@@ -50,12 +50,15 @@ const AdminReading = () => {
   const handleCreate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
-    console.log('Save button clicked, formData:', formData);
-    console.log('Questions:', questions);
+    console.log('=== SAVE BUTTON CLICKED ===');
+    console.log('Form data:', formData);
+    console.log('Questions count:', questions.length);
+    console.log('Admin token:', localStorage.getItem('admin_token'));
     
     if (!formData.title || !formData.content) {
+      console.error('Validation failed: Missing title or content');
       toast({
-        title: "Error",
+        title: "Validation Error",
         description: "Please fill in title and passage content",
         variant: "destructive"
       });
@@ -63,29 +66,40 @@ const AdminReading = () => {
     }
     
     try {
-      console.log('Creating passage...');
+      console.log('Starting passage creation...');
+      
       // Create the passage first
       const passageResult = await createContent('reading_passages', formData);
-      console.log('Passage created:', passageResult);
+      console.log('Passage creation result:', passageResult);
+      
+      if (!passageResult?.data?.id) {
+        throw new Error('Failed to create passage - no ID returned');
+      }
+      
       const passageId = passageResult.data.id;
+      console.log('Passage created with ID:', passageId);
       
       // Create questions if any
       if (questions.length > 0) {
-        console.log('Creating questions...');
-        for (const question of questions) {
+        console.log(`Creating ${questions.length} questions...`);
+        for (let i = 0; i < questions.length; i++) {
+          const question = questions[i];
           const questionData = {
             ...question,
             passage_id: passageId
           };
-          console.log('Creating question:', questionData);
-          await createContent('reading_questions', questionData);
+          console.log(`Creating question ${i + 1}:`, questionData);
+          const questionResult = await createContent('reading_questions', questionData);
+          console.log(`Question ${i + 1} created:`, questionResult);
         }
       }
       
       toast({
-        title: "Success",
-        description: `Reading passage created with ${questions.length} questions`
+        title: "Success!",
+        description: `Reading passage created successfully with ${questions.length} questions`,
       });
+      
+      console.log('=== SAVE COMPLETED SUCCESSFULLY ===');
       
       // Reset form
       setFormData({ 
@@ -100,11 +114,15 @@ const AdminReading = () => {
       setShowCreateForm(false);
       setActiveTab("info");
       loadPassages();
-    } catch (error) {
-      console.error('Error creating passage:', error);
+    } catch (error: any) {
+      console.error('=== SAVE FAILED ===');
+      console.error('Error details:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
       toast({
         title: "Error",
-        description: `Failed to create passage: ${error.message || error}`,
+        description: error.message || "Failed to create passage. Please check the console for details.",
         variant: "destructive"
       });
     }

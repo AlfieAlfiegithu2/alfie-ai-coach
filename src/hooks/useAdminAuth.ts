@@ -20,9 +20,21 @@ export function useAdminAuth(): UseAdminAuthReturn {
   const [admin, setAdmin] = useState<Admin | null>({ id: 'temp', email: 'admin@temp.com', name: 'Admin' });
   const [loading, setLoading] = useState(false);
 
+  // Set a temporary admin token for content operations
+  useEffect(() => {
+    if (admin && !localStorage.getItem('admin_token')) {
+      localStorage.setItem('admin_token', 'temp-admin-token-' + Date.now());
+      console.log('Admin token set for content operations');
+    }
+  }, [admin]);
+
   const login = async (email: string, password: string) => {
     // Temporarily bypassing authentication
-    setAdmin({ id: 'temp', email: email, name: 'Admin' });
+    const tempAdmin = { id: 'temp', email: email, name: 'Admin' };
+    setAdmin(tempAdmin);
+    localStorage.setItem('admin_token', 'temp-admin-token-' + Date.now());
+    localStorage.setItem('admin_user', JSON.stringify(tempAdmin));
+    console.log('Admin logged in with temporary token');
     return { success: true };
   };
 

@@ -8,6 +8,8 @@ import Reading from "./pages/Reading";
 import Listening from "./pages/Listening";
 import Writing from "./pages/Writing";
 import Speaking from "./pages/Speaking";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +26,8 @@ const App = () => (
           <Route path="/listening" element={<Listening />} />
           <Route path="/writing" element={<Writing />} />
           <Route path="/speaking" element={<Speaking />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

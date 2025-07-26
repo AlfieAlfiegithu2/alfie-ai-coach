@@ -1,19 +1,53 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Headphones, PenTool, Mic } from "lucide-react";
+import { BookOpen, Headphones, PenTool, Mic, ArrowLeft, Clock, Target, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const TestSelection = () => {
   const navigate = useNavigate();
-  const [selectedMode, setSelectedMode] = useState("simulation"); // "easy" or "simulation"
-  const [selectedSections, setSelectedSections] = useState(new Set(["listening", "reading", "writing", "speaking"]));
   const [selectedTest, setSelectedTest] = useState(null);
+  const [testMode, setTestMode] = useState("practice"); // "practice" or "simulation"
+  const [selectedSections, setSelectedSections] = useState(new Set(["listening", "reading", "writing", "speaking"]));
 
-  const handleStartTest = (testType: string) => {
-    navigate(`/${testType}`);
-  };
+  // Generate Cambridge tests from C20 to C1
+  const cambridgeTests = Array.from({ length: 20 }, (_, i) => ({
+    version: `C${20 - i}`,
+    number: 20 - i,
+    tests: [1, 2, 3, 4]
+  }));
+
+  const sections = [
+    { 
+      id: "listening", 
+      name: "Listening", 
+      icon: Headphones, 
+      description: "30 minutes", 
+      color: "from-blue-400 to-blue-600" 
+    },
+    { 
+      id: "reading", 
+      name: "Reading", 
+      icon: BookOpen, 
+      description: "60 minutes", 
+      color: "from-green-400 to-green-600" 
+    },
+    { 
+      id: "writing", 
+      name: "Writing", 
+      icon: PenTool, 
+      description: "60 minutes", 
+      color: "from-purple-400 to-purple-600" 
+    },
+    { 
+      id: "speaking", 
+      name: "Speaking", 
+      icon: Mic, 
+      description: "11-14 minutes", 
+      color: "from-orange-400 to-orange-600" 
+    }
+  ];
 
   const toggleSection = (section: string) => {
     const newSections = new Set(selectedSections);
@@ -25,7 +59,7 @@ const TestSelection = () => {
     setSelectedSections(newSections);
   };
 
-  const handleConfirmTest = () => {
+  const handleStartTest = () => {
     if (selectedSections.size === 0) return;
     
     if (selectedSections.size === 1) {
@@ -33,212 +67,256 @@ const TestSelection = () => {
       navigate(`/${section}`);
     } else {
       // Start full test with selected sections
-      navigate("/reading", { state: { sections: Array.from(selectedSections) } });
+      navigate("/reading", { state: { sections: Array.from(selectedSections), mode: testMode } });
     }
   };
 
-  const cambridgeTests = [
-    { version: "C20", tests: [1, 2, 3, 4] },
-    { version: "C19", tests: [1, 2, 3, 4] },
-    { version: "C18", tests: [1, 2, 3, 4] },
-    { version: "C17", tests: [1, 2, 3, 4] }
-  ];
+  const handleIndividualTest = (sectionId: string) => {
+    navigate(`/${sectionId}`);
+  };
 
-  const sections = [
-    { id: "listening", name: "Listening", icon: Headphones, color: "bg-blue-500" },
-    { id: "reading", name: "Reading", icon: BookOpen, color: "bg-green-500" },
-    { id: "writing", name: "Writing", icon: PenTool, color: "bg-purple-500" },
-    { id: "speaking", name: "Speaking", icon: Mic, color: "bg-orange-500" }
-  ];
-
+  // Test Configuration View
   if (selectedTest) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-md mx-auto">
-            <Card className="mb-6">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl text-blue-600">New Computer Test</CardTitle>
-                <CardDescription className="text-gray-600">
-                  IELTS officially announced the upgrade to the new computer test system by the end of March 2024<br/>
-                  (Recommended)
-                </CardDescription>
-                <div className="bg-gray-100 rounded-lg p-4 mt-4">
-                  <div className="text-sm text-gray-600 mb-1">IELTS</div>
-                  <div className="text-lg font-bold">{selectedTest.version}</div>
-                  <div className="text-sm text-gray-600">Test {selectedTest.testNumber} · Listening Reading Writing Speaking</div>
-                </div>
-                <div className="mt-4">
-                  <span className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1">Multiple selection available</span>
-                </div>
-              </CardHeader>
-            </Card>
+      <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
+        <div className="container mx-auto px-6 py-8">
+          <div className="max-w-2xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <Button 
+                variant="ghost" 
+                onClick={() => setSelectedTest(null)}
+                className="mb-4 hover:bg-gentle-blue/10 rounded-xl"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Test Selection
+              </Button>
+              <h1 className="text-3xl font-georgia font-bold text-foreground mb-2">
+                Cambridge IELTS {selectedTest.version}
+              </h1>
+              <p className="text-warm-gray">Test {selectedTest.testNumber} Configuration</p>
+            </div>
 
-            {/* Mode Toggle */}
-            <Card className="mb-6">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    variant={selectedMode === "easy" ? "default" : "outline"}
-                    onClick={() => setSelectedMode("easy")}
-                    className="flex-1 rounded-full"
-                    style={{
-                      backgroundColor: selectedMode === "easy" ? "#3b82f6" : "transparent",
-                      color: selectedMode === "easy" ? "white" : "#374151"
-                    }}
+            {/* Test Mode Selection */}
+            <Card 
+              className="mb-8 rounded-2xl border-light-border shadow-soft"
+              style={{ background: 'var(--gradient-card)' }}
+            >
+              <CardHeader>
+                <CardTitle className="text-xl font-georgia text-center">Choose Your Mode</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card 
+                    className={`cursor-pointer transition-all duration-200 rounded-xl border-2 ${testMode === 'practice' ? 'border-gentle-blue shadow-md' : 'border-light-border hover:border-gentle-blue/50'}`}
+                    onClick={() => setTestMode('practice')}
+                    style={{ background: testMode === 'practice' ? 'var(--gradient-button)' : 'var(--gradient-card)' }}
                   >
-                    Easy Mode
-                  </Button>
-                  <Button
-                    variant={selectedMode === "simulation" ? "default" : "outline"}
-                    onClick={() => setSelectedMode("simulation")}
-                    className="flex-1 rounded-full"
-                    style={{
-                      backgroundColor: selectedMode === "simulation" ? "#000000" : "transparent",
-                      color: selectedMode === "simulation" ? "white" : "#374151"
-                    }}
+                    <CardContent className="p-6 text-center">
+                      <Target className={`w-8 h-8 mx-auto mb-3 ${testMode === 'practice' ? 'text-white' : 'text-gentle-blue'}`} />
+                      <h3 className={`font-semibold mb-2 ${testMode === 'practice' ? 'text-white' : 'text-foreground'}`}>Practice Mode</h3>
+                      <p className={`text-sm ${testMode === 'practice' ? 'text-white/90' : 'text-warm-gray'}`}>
+                        Take your time, get instant feedback, and learn at your own pace
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card 
+                    className={`cursor-pointer transition-all duration-200 rounded-xl border-2 ${testMode === 'simulation' ? 'border-gentle-blue shadow-md' : 'border-light-border hover:border-gentle-blue/50'}`}
+                    onClick={() => setTestMode('simulation')}
+                    style={{ background: testMode === 'simulation' ? 'var(--gradient-button)' : 'var(--gradient-card)' }}
                   >
-                    Simulation Mode
-                  </Button>
+                    <CardContent className="p-6 text-center">
+                      <Zap className={`w-8 h-8 mx-auto mb-3 ${testMode === 'simulation' ? 'text-white' : 'text-gentle-blue'}`} />
+                      <h3 className={`font-semibold mb-2 ${testMode === 'simulation' ? 'text-white' : 'text-foreground'}`}>Simulation Mode</h3>
+                      <p className={`text-sm ${testMode === 'simulation' ? 'text-white/90' : 'text-warm-gray'}`}>
+                        Real test conditions with strict timing and authentic experience
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
 
             {/* Section Selection */}
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="text-center mb-4">
-                  <Badge variant="secondary" className="mb-2 bg-purple-100 text-purple-700">AI Feedback</Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+            <Card 
+              className="mb-8 rounded-2xl border-light-border shadow-soft"
+              style={{ background: 'var(--gradient-card)' }}
+            >
+              <CardHeader>
+                <CardTitle className="text-xl font-georgia text-center">Select Test Sections</CardTitle>
+                <p className="text-warm-gray text-center">Choose which sections to include in your test</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {sections.map((section) => {
                     const Icon = section.icon;
                     const isSelected = selectedSections.has(section.id);
                     return (
-                      <Button
+                      <Card
                         key={section.id}
-                        variant={isSelected ? "default" : "outline"}
+                        className={`cursor-pointer transition-all duration-200 rounded-xl border-2 ${isSelected ? 'border-gentle-blue shadow-md' : 'border-light-border hover:border-gentle-blue/50'}`}
                         onClick={() => toggleSection(section.id)}
-                        className="h-20 flex flex-col gap-2"
-                        style={{
-                          backgroundColor: isSelected ? "#f59e0b" : "transparent",
-                          color: isSelected ? "white" : "#374151",
-                          borderColor: isSelected ? "#f59e0b" : "#d1d5db"
-                        }}
                       >
-                        <Icon className="w-6 h-6" />
-                        <span>{section.name}</span>
-                      </Button>
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-3">
+                            <div 
+                              className={`w-12 h-12 rounded-xl flex items-center justify-center ${isSelected ? 'text-white' : 'text-gentle-blue'}`}
+                              style={{ 
+                                background: isSelected 
+                                  ? 'var(--gradient-button)' 
+                                  : 'var(--gentle-blue-light)' 
+                              }}
+                            >
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-foreground">{section.name}</h4>
+                              <p className="text-sm text-warm-gray flex items-center">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {section.description}
+                              </p>
+                            </div>
+                            {isSelected && (
+                              <div className="w-6 h-6 rounded-full bg-soft-green flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-white"></div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Confirm Button */}
+            {/* Start Test Button */}
             <Button 
-              onClick={handleConfirmTest}
+              onClick={handleStartTest}
               disabled={selectedSections.size === 0}
-              className="w-full h-12 text-lg rounded-full"
-              style={{ backgroundColor: "#3b82f6", color: "white" }}
+              className="w-full h-14 text-lg rounded-xl"
+              style={{ background: 'var(--gradient-button)', border: 'none' }}
             >
-              Confirm
+              Start {selectedSections.size === 1 ? Array.from(selectedSections)[0] : 'Full'} Test
             </Button>
 
-            <p className="text-center text-sm text-red-500 mt-4">
-              * You need to complete all selected test sections to view results
-            </p>
-
-            <Button
-              variant="ghost"
-              onClick={() => setSelectedTest(null)}
-              className="w-full mt-4"
-            >
-              Back to Test Selection
-            </Button>
+            {selectedSections.size === 0 && (
+              <p className="text-center text-warm-gray text-sm mt-3">
+                Please select at least one section to continue
+              </p>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
+  // Main Test Selection View
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">IELTS Cambridge Tests</h1>
-          <p className="text-xl text-gray-600">
-            Choose from official Cambridge IELTS practice tests
+    <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
+      <div className="container mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="mb-6 hover:bg-gentle-blue/10 rounded-xl"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
+          <h1 className="text-4xl font-georgia font-bold text-foreground mb-4">
+            Cambridge IELTS Tests
+          </h1>
+          <p className="text-xl text-warm-gray max-w-2xl mx-auto leading-relaxed">
+            Practice with authentic Cambridge materials from the latest editions to the classics
           </p>
         </div>
 
-        {/* Cambridge Test Grid */}
-        <div className="max-w-6xl mx-auto space-y-6">
-          {cambridgeTests.map((cambridge) => (
-            <div key={cambridge.version} className="space-y-4">
-              <h2 className="text-2xl font-bold text-center text-gray-700">{cambridge.version}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {cambridge.tests.map((testNumber) => (
-                  <Card 
-                    key={`${cambridge.version}-${testNumber}`}
-                    className="cursor-pointer hover:shadow-lg transition-shadow duration-300 border-2 hover:border-blue-300"
-                    onClick={() => setSelectedTest({ version: cambridge.version, testNumber })}
-                  >
-                    <CardContent className="p-6">
-                      <div 
-                        className="text-white rounded-lg p-4 mb-4"
-                        style={{
-                          background: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)"
-                        }}
-                      >
-                        <div className="text-white text-2xl font-bold mb-1">IELTS</div>
+        {/* Cambridge Tests Grid */}
+        <div className="max-w-6xl mx-auto mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {cambridgeTests.map((cambridge) => (
+              <div key={cambridge.version} className="space-y-3">
+                <h3 className="text-lg font-georgia font-bold text-center text-foreground">
+                  Cambridge {cambridge.number}
+                </h3>
+                <div className="space-y-3">
+                  {cambridge.tests.map((testNumber) => (
+                    <Card 
+                      key={`${cambridge.version}-${testNumber}`}
+                      className="cursor-pointer gentle-hover rounded-2xl border-light-border shadow-soft hover:shadow-medium transition-all duration-300"
+                      onClick={() => setSelectedTest({ version: cambridge.version, testNumber, number: cambridge.number })}
+                      style={{ background: 'var(--gradient-card)' }}
+                    >
+                      <CardContent className="p-4">
                         <div 
-                          className="text-lg font-semibold"
-                          style={{ color: "#fbbf24" }}
+                          className="rounded-xl p-4 mb-3 text-center"
+                          style={{ background: 'var(--gradient-button)' }}
                         >
-                          {cambridge.version.substring(1)}
+                          <div className="text-white text-lg font-bold mb-1">IELTS</div>
+                          <div className="text-white/90 text-sm font-medium">
+                            {cambridge.version}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-semibold text-gray-800">Test {testNumber}</div>
-                        <div className="text-sm text-gray-600">Listening Reading Writing Speaking</div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="text-center">
+                          <div className="font-semibold text-foreground mb-1">Test {testNumber}</div>
+                          <div className="text-xs text-warm-gray">4 Sections Available</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Quick Access to Individual Tests */}
-        <div className="mt-12 text-center">
-          <h3 className="text-xl font-semibold mb-6 text-gray-700">Or choose individual practice</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <Button
-                  key={section.id}
-                  variant="outline"
-                  onClick={() => handleStartTest(section.id)}
-                  className="h-20 flex flex-col gap-2 border-2 hover:border-blue-300 hover:bg-blue-50"
-                >
-                  <Icon className="w-6 h-6" />
-                  <span>{section.name}</span>
-                </Button>
-              );
-            })}
+            ))}
           </div>
         </div>
 
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/')}
-          className="w-full mt-8"
-        >
-          Back to Home
-        </Button>
+        {/* Quick Practice Section */}
+        <div className="max-w-4xl mx-auto">
+          <Card 
+            className="rounded-2xl border-light-border shadow-soft"
+            style={{ background: 'var(--gradient-card)' }}
+          >
+            <CardHeader>
+              <CardTitle className="text-2xl font-georgia text-center text-foreground">
+                Quick Practice
+              </CardTitle>
+              <p className="text-warm-gray text-center">
+                Jump into individual sections for focused practice
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {sections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <Card
+                      key={section.id}
+                      className="cursor-pointer gentle-hover rounded-2xl border-light-border hover:border-gentle-blue/30 transition-all duration-300"
+                      onClick={() => handleIndividualTest(section.id)}
+                    >
+                      <CardContent className="p-6 text-center">
+                        <div 
+                          className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4"
+                          style={{ background: 'var(--gradient-button)' }}
+                        >
+                          <Icon className="w-8 h-8 text-white" />
+                        </div>
+                        <h4 className="font-semibold text-foreground mb-2">{section.name}</h4>
+                        <p className="text-sm text-warm-gray flex items-center justify-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {section.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

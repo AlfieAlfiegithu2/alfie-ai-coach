@@ -6,19 +6,34 @@ export function useAdminContent() {
 
   const getAuthHeader = () => {
     const token = localStorage.getItem('admin_token');
-    return token ? `Bearer ${token}` : '';
+    if (!token) {
+      console.warn('No admin token found');
+      return '';
+    }
+    return `Bearer ${token}`;
   };
 
   const createContent = async (type: string, data: any) => {
     setLoading(true);
     try {
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        throw new Error('Authentication required. Please login again.');
+      }
+
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
         body: { action: 'create', type, data },
-        headers: { authorization: getAuthHeader() }
+        headers: { authorization: authHeader }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Admin content creation error:', error);
+        throw error;
+      }
       return result;
+    } catch (error: any) {
+      console.error('Create content error:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -27,13 +42,24 @@ export function useAdminContent() {
   const updateContent = async (type: string, data: any) => {
     setLoading(true);
     try {
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        throw new Error('Authentication required. Please login again.');
+      }
+
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
         body: { action: 'update', type, data },
-        headers: { authorization: getAuthHeader() }
+        headers: { authorization: authHeader }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Admin content update error:', error);
+        throw error;
+      }
       return result;
+    } catch (error: any) {
+      console.error('Update content error:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -57,13 +83,24 @@ export function useAdminContent() {
   const listContent = async (type: string) => {
     setLoading(true);
     try {
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        throw new Error('Authentication required. Please login again.');
+      }
+
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
         body: { action: 'list', type },
-        headers: { authorization: getAuthHeader() }
+        headers: { authorization: authHeader }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Admin content list error:', error);
+        throw error;
+      }
       return result;
+    } catch (error: any) {
+      console.error('List content error:', error);
+      throw error;
     } finally {
       setLoading(false);
     }

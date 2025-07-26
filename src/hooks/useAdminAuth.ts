@@ -16,39 +16,14 @@ interface UseAdminAuthReturn {
 }
 
 export function useAdminAuth(): UseAdminAuthReturn {
-  const [admin, setAdmin] = useState<Admin | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check for existing session
-    const storedAdmin = localStorage.getItem('admin_user');
-    const storedToken = localStorage.getItem('admin_token');
-    
-    if (storedAdmin && storedToken) {
-      setAdmin(JSON.parse(storedAdmin));
-    }
-    setLoading(false);
-  }, []);
+  // Temporarily bypassing authentication - admin access is open
+  const [admin, setAdmin] = useState<Admin | null>({ id: 'temp', email: 'admin@temp.com', name: 'Admin' });
+  const [loading, setLoading] = useState(false);
 
   const login = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { action: 'login', email, password }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setAdmin(data.admin);
-        localStorage.setItem('admin_user', JSON.stringify(data.admin));
-        localStorage.setItem('admin_token', data.token);
-        return { success: true };
-      } else {
-        return { error: data.error || 'Login failed' };
-      }
-    } catch (error: any) {
-      return { error: error.message || 'Login failed' };
-    }
+    // Temporarily bypassing authentication
+    setAdmin({ id: 'temp', email: email, name: 'Admin' });
+    return { success: true };
   };
 
   const register = async (email: string, password: string, name: string) => {

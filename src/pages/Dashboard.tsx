@@ -167,7 +167,7 @@ const Dashboard = () => {
         {/* Admin Access - Direct & Prominent */}
         <div className="text-center py-8 mt-12">
           <Button
-            onClick={() => navigate('/admin/login')}
+            onClick={() => navigate('/admin')}
             variant="outline"
             className="rounded-xl border-gentle-blue/30 hover:bg-gentle-blue/10 hover:border-gentle-blue transition-all duration-200"
           >

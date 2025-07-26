@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// IELTS App Custom Colors
+				blue: {
+					light: 'hsl(var(--blue-light))',
+					medium: 'hsl(var(--blue-medium))',
+					deep: 'hsl(var(--blue-deep))',
+					darker: 'hsl(var(--blue-darker))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

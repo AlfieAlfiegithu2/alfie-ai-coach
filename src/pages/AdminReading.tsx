@@ -47,20 +47,38 @@ const AdminReading = () => {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    console.log('Save button clicked, formData:', formData);
+    console.log('Questions:', questions);
+    
+    if (!formData.title || !formData.content) {
+      toast({
+        title: "Error",
+        description: "Please fill in title and passage content",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
+      console.log('Creating passage...');
       // Create the passage first
       const passageResult = await createContent('reading_passages', formData);
+      console.log('Passage created:', passageResult);
       const passageId = passageResult.data.id;
       
       // Create questions if any
       if (questions.length > 0) {
+        console.log('Creating questions...');
         for (const question of questions) {
-          await createContent('reading_questions', {
+          const questionData = {
             ...question,
             passage_id: passageId
-          });
+          };
+          console.log('Creating question:', questionData);
+          await createContent('reading_questions', questionData);
         }
       }
       
@@ -83,9 +101,10 @@ const AdminReading = () => {
       setActiveTab("info");
       loadPassages();
     } catch (error) {
+      console.error('Error creating passage:', error);
       toast({
         title: "Error",
-        description: "Failed to create passage",
+        description: `Failed to create passage: ${error.message || error}`,
         variant: "destructive"
       });
     }
@@ -327,7 +346,7 @@ const AdminReading = () => {
                       
                       <div className="flex gap-3 pt-6 border-t border-light-border">
                         <Button 
-                          onClick={handleCreate} 
+                          onClick={() => handleCreate()}
                           disabled={loading || !formData.title || !formData.content}
                           className="rounded-xl"
                           style={{ background: 'var(--gradient-button)', border: 'none' }}

@@ -20,11 +20,7 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
     { name: "Speaking", path: "/admin/speaking", icon: Mic, color: "from-orange-400 to-orange-600" },
   ];
 
-  const managementItems = [
-    { name: "Users", path: "/admin/users", icon: Users },
-    { name: "Analytics", path: "/admin/analytics", icon: BarChart3 },
-    { name: "Settings", path: "/admin/settings", icon: Settings },
-  ];
+  // Remove management items as requested
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
@@ -61,12 +57,10 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
         </div>
       </header>
 
-      {/* Navigation Bar */}
+      {/* Navigation Bar - Simplified to show only main sections */}
       <nav className="bg-white/50 backdrop-blur-sm border-b border-light-border">
         <div className="container mx-auto px-6 py-3">
-          <div className="flex flex-wrap gap-2">
-            {/* Content Management Sections */}
-            <span className="text-sm font-medium text-warm-gray px-3 py-2">Content Management:</span>
+          <div className="flex flex-wrap gap-2 justify-center">
             {contentSections.map((item) => {
               const Icon = item.icon;
               return (
@@ -74,28 +68,9 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
                   key={item.name}
                   variant="ghost"
                   onClick={() => navigate(item.path)}
-                  className="flex items-center gap-2 hover:bg-gentle-blue/10 rounded-xl transition-all duration-200"
+                  className="flex items-center gap-2 hover:bg-gentle-blue/10 rounded-xl transition-all duration-200 px-6 py-3"
                 >
-                  <Icon className="w-4 h-4" />
-                  {item.name}
-                </Button>
-              );
-            })}
-            
-            <div className="h-6 w-px bg-light-border mx-2" />
-            
-            <span className="text-sm font-medium text-warm-gray px-3 py-2">System:</span>
-            {/* Management Items */}
-            {managementItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.name}
-                  variant="ghost"
-                  onClick={() => navigate(item.path)}
-                  className="flex items-center gap-2 hover:bg-gentle-blue/10 rounded-xl transition-all duration-200"
-                >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-5 h-5" />
                   {item.name}
                 </Button>
               );

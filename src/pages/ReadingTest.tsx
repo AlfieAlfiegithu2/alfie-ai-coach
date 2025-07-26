@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, BookOpen, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Clock, BookOpen, CheckCircle, XCircle, Eye, EyeOff, FileText, Target } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +25,7 @@ interface ReadingQuestion {
   id: string;
   question_text: string;
   question_number: number;
-  options: any;
+  options?: string[];
   correct_answer: string;
   question_type: string;
   explanation: string;
@@ -49,70 +51,120 @@ const ReadingTest = () => {
   }, [testId]);
 
   useEffect(() => {
-    if (!isSubmitted) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleSubmit();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
+    if (timeLeft > 0 && !isSubmitted) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && !isSubmitted) {
+      handleSubmit();
     }
-  }, [isSubmitted]);
+  }, [timeLeft, isSubmitted]);
 
   // Auto-save answers
   useEffect(() => {
-    const saveInterval = setInterval(() => {
-      localStorage.setItem(`reading_test_${testId}_answers`, JSON.stringify(answers));
-    }, 5000);
-
-    return () => clearInterval(saveInterval);
+    const saveAnswers = () => {
+      localStorage.setItem(`reading-test-${testId}`, JSON.stringify(answers));
+    };
+    const timer = setTimeout(saveAnswers, 1000);
+    return () => clearTimeout(timer);
   }, [answers, testId]);
 
   const fetchReadingTest = async () => {
     try {
-      // Load saved answers if any
-      const savedAnswers = localStorage.getItem(`reading_test_${testId}_answers`);
+      // For demo purposes, we'll use mock data
+      // In a real app, you'd fetch from your API
+      setCurrentPassage({
+        id: '1',
+        title: 'Climate Change and Arctic Wildlife',
+        content: `The Arctic region has experienced some of the most dramatic changes in Earth's climate system. Over the past several decades, temperatures in the Arctic have risen at nearly twice the global average, a phenomenon known as Arctic amplification. This rapid warming has had profound consequences for the region's wildlife.
+
+Polar bears, perhaps the most iconic Arctic species, have become a symbol of climate change impacts. These magnificent predators depend entirely on sea ice for hunting seals, their primary prey. As sea ice extent and duration decrease, polar bears face longer fasting periods and must travel greater distances to find food.
+
+The situation is equally challenging for other Arctic species. Walruses traditionally rest on sea ice between feeding sessions, but as ice retreats, they are forced to crowd onto beaches in massive numbers. This crowding leads to increased stress, trampling of young animals, and competition for resources.
+
+Arctic foxes face a different set of challenges. While they are adaptable creatures, their primary food sources – small mammals like lemmings – are affected by changing snow patterns. Unpredictable freeze-thaw cycles create ice layers in the snow that prevent these small mammals from accessing vegetation below.
+
+Conservation efforts are underway to protect Arctic wildlife, but the scale of climate change presents unprecedented challenges. International cooperation and immediate action on greenhouse gas emissions are essential to preserve these unique ecosystems for future generations.`,
+        difficulty_level: 'Academic',
+        passage_type: 'academic',
+        cambridge_book: 'C18',
+        test_number: 1
+      });
+
+      setQuestions([
+        {
+          id: '1',
+          question_number: 1,
+          question_text: 'What is Arctic amplification?',
+          question_type: 'multiple_choice',
+          options: [
+            'A phenomenon where Arctic temperatures rise faster than global average',
+            'The expansion of Arctic ice coverage',
+            'A natural cooling process in the Arctic',
+            'The migration of Arctic animals southward'
+          ],
+          correct_answer: 'A phenomenon where Arctic temperatures rise faster than global average',
+          explanation: 'Arctic amplification is explicitly defined in the first paragraph as the phenomenon where Arctic temperatures have risen at nearly twice the global average.',
+          passage_id: '1'
+        },
+        {
+          id: '2',
+          question_number: 2,
+          question_text: 'According to the passage, polar bears depend on sea ice for:',
+          question_type: 'multiple_choice',
+          options: [
+            'Building dens for their cubs',
+            'Hunting seals, their primary prey',
+            'Protection from harsh weather',
+            'Traveling between different territories'
+          ],
+          correct_answer: 'Hunting seals, their primary prey',
+          explanation: 'The passage clearly states that polar bears "depend entirely on sea ice for hunting seals, their primary prey."',
+          passage_id: '1'
+        },
+        {
+          id: '3',
+          question_number: 3,
+          question_text: 'Complete the sentence: Arctic foxes face challenges because freeze-thaw cycles create _______ in the snow.',
+          question_type: 'fill_in_blank',
+          correct_answer: 'ice layers',
+          explanation: 'The passage mentions that "Unpredictable freeze-thaw cycles create ice layers in the snow that prevent small mammals from accessing vegetation below."',
+          passage_id: '1'
+        },
+        {
+          id: '4',
+          question_number: 4,
+          question_text: 'The passage suggests that conservation efforts will be successful with current measures.',
+          question_type: 'true_false_not_given',
+          options: ['True', 'False', 'Not Given'],
+          correct_answer: 'False',
+          explanation: 'The passage states that "the scale of climate change presents unprecedented challenges" and calls for "immediate action," suggesting current efforts alone are insufficient.',
+          passage_id: '1'
+        },
+        {
+          id: '5',
+          question_number: 5,
+          question_text: 'What happens when walruses are forced to crowd onto beaches?',
+          question_type: 'short_answer',
+          correct_answer: 'increased stress, trampling of young animals, and competition for resources',
+          explanation: 'The passage explicitly lists these three consequences of walruses crowding onto beaches.',
+          passage_id: '1'
+        }
+      ]);
+
+      // Load saved answers
+      const savedAnswers = localStorage.getItem(`reading-test-${testId}`);
       if (savedAnswers) {
         setAnswers(JSON.parse(savedAnswers));
       }
 
-      // Fetch reading passage based on testId or get random
-      let passageQuery = supabase.from('reading_passages').select('*');
-      
-      if (testId && testId !== 'random') {
-        passageQuery = passageQuery.eq('id', testId);
-      }
-      
-      const { data: passages, error: passageError } = await passageQuery.limit(1);
-
-      if (passageError) throw passageError;
-
-      if (passages && passages.length > 0) {
-        const passage = passages[0];
-        setCurrentPassage(passage);
-
-        // Fetch questions for this passage
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('reading_questions')
-          .select('*')
-          .eq('passage_id', passage.id)
-          .order('question_number');
-
-        if (questionsError) throw questionsError;
-        setQuestions(questionsData || []);
-      }
-    } catch (error: any) {
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching test:', error);
       toast({
         title: "Error",
-        description: "Failed to load reading test: " + error.message,
-        variant: "destructive",
+        description: "Failed to load reading test",
+        variant: "destructive"
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -125,35 +177,44 @@ const ReadingTest = () => {
   };
 
   const calculateScore = () => {
-    return questions.reduce((score, question) => {
-      return answers[question.id] === question.correct_answer ? score + 1 : score;
-    }, 0);
+    let correct = 0;
+    questions.forEach(question => {
+      const userAnswer = answers[question.id]?.toLowerCase().trim();
+      const correctAnswer = question.correct_answer.toLowerCase().trim();
+      
+      if (userAnswer === correctAnswer) {
+        correct++;
+      }
+    });
+    return correct;
   };
 
   const handleSubmit = () => {
-    if (!isSubmitted) {
-      const finalScore = calculateScore();
-      setScore(finalScore);
-      setIsSubmitted(true);
-      setShowConfirmDialog(false);
-      localStorage.removeItem(`reading_test_${testId}_answers`);
-      
-      toast({
-        title: "Test Submitted!",
-        description: `You scored ${finalScore}/${questions.length} (${Math.round((finalScore/questions.length)*100)}%)`,
-      });
-    }
+    const finalScore = calculateScore();
+    setScore(finalScore);
+    setIsSubmitted(true);
+    setShowConfirmDialog(false);
+    
+    // Clear saved answers
+    localStorage.removeItem(`reading-test-${testId}`);
+    
+    toast({
+      title: "Test Submitted!",
+      description: `You scored ${finalScore}/${questions.length} (${Math.round((finalScore / questions.length) * 100)}%)`,
+    });
   };
 
-  const getBandScore = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 90) return "9.0";
-    if (percentage >= 80) return "8.0-8.5";
-    if (percentage >= 70) return "7.0-7.5";
-    if (percentage >= 60) return "6.0-6.5";
-    if (percentage >= 50) return "5.0-5.5";
-    if (percentage >= 40) return "4.0-4.5";
-    return "Below 4.0";
+  const getBandScore = (percentage: number): string => {
+    if (percentage >= 95) return "9.0";
+    if (percentage >= 90) return "8.5";
+    if (percentage >= 80) return "8.0";
+    if (percentage >= 70) return "7.5";
+    if (percentage >= 60) return "7.0";
+    if (percentage >= 50) return "6.5";
+    if (percentage >= 40) return "6.0";
+    if (percentage >= 30) return "5.5";
+    if (percentage >= 20) return "5.0";
+    return "Below 5.0";
   };
 
   const formatTime = (seconds: number) => {
@@ -161,6 +222,147 @@ const ReadingTest = () => {
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const renderQuestion = (question: ReadingQuestion) => {
+    const userAnswer = answers[question.id] || '';
+    const isCorrect = isSubmitted && userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+    const isIncorrect = isSubmitted && userAnswer && !isCorrect;
+
+    return (
+      <div key={question.id} className="border-b border-light-border pb-6 last:border-b-0">
+        <div className="flex items-start gap-3 mb-4">
+          <Badge variant="outline" className="mt-1 shrink-0">
+            {question.question_number}
+          </Badge>
+          <div className="flex-1">
+            <p className="font-medium text-foreground mb-3">{question.question_text}</p>
+            
+            {question.question_type === 'multiple_choice' && question.options && (
+              <div className="space-y-2">
+                {question.options.map((option, index) => (
+                  <label 
+                    key={index} 
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                      isSubmitted 
+                        ? option === question.correct_answer 
+                          ? 'bg-green-50 border border-green-200' 
+                          : userAnswer === option 
+                            ? 'bg-red-50 border border-red-200' 
+                            : 'bg-background/50'
+                        : userAnswer === option 
+                          ? 'bg-blue-50 border border-blue-200' 
+                          : 'bg-background/50 hover:bg-blue-50/50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${question.id}`}
+                      value={option}
+                      checked={userAnswer === option}
+                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                      disabled={isSubmitted}
+                      className="text-blue-600"
+                    />
+                    <span className={`${
+                      isSubmitted && option === question.correct_answer ? 'font-medium text-green-800' :
+                      isSubmitted && userAnswer === option && option !== question.correct_answer ? 'font-medium text-red-800' :
+                      'text-foreground'
+                    }`}>
+                      {option}
+                    </span>
+                    {isSubmitted && option === question.correct_answer && (
+                      <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />
+                    )}
+                    {isSubmitted && userAnswer === option && option !== question.correct_answer && (
+                      <XCircle className="w-4 h-4 text-red-600 ml-auto" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {question.question_type === 'true_false_not_given' && question.options && (
+              <div className="space-y-2">
+                {question.options.map((option, index) => (
+                  <label 
+                    key={index} 
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                      isSubmitted 
+                        ? option === question.correct_answer 
+                          ? 'bg-green-50 border border-green-200' 
+                          : userAnswer === option 
+                            ? 'bg-red-50 border border-red-200' 
+                            : 'bg-background/50'
+                        : userAnswer === option 
+                          ? 'bg-blue-50 border border-blue-200' 
+                          : 'bg-background/50 hover:bg-blue-50/50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${question.id}`}
+                      value={option}
+                      checked={userAnswer === option}
+                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                      disabled={isSubmitted}
+                      className="text-blue-600"
+                    />
+                    <span className={`${
+                      isSubmitted && option === question.correct_answer ? 'font-medium text-green-800' :
+                      isSubmitted && userAnswer === option && option !== question.correct_answer ? 'font-medium text-red-800' :
+                      'text-foreground'
+                    }`}>
+                      {option}
+                    </span>
+                    {isSubmitted && option === question.correct_answer && (
+                      <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {(question.question_type === 'fill_in_blank' || question.question_type === 'short_answer') && (
+              <Input
+                value={userAnswer}
+                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                placeholder="Type your answer here..."
+                disabled={isSubmitted}
+                className={`rounded-xl border-light-border ${
+                  isSubmitted 
+                    ? isCorrect 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-red-500 bg-red-50'
+                    : ''
+                }`}
+              />
+            )}
+
+            {isSubmitted && (
+              <div className="mt-3 flex items-center gap-2">
+                {isCorrect ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-red-600" />
+                )}
+                <span className={`text-sm font-medium ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                  {isCorrect ? 'Correct' : `Incorrect - Answer: ${question.correct_answer}`}
+                </span>
+              </div>
+            )}
+
+            {isSubmitted && showExplanations && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Explanation:</strong> {question.explanation}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -178,7 +380,7 @@ const ReadingTest = () => {
 
   return (
     <StudentLayout title="Reading Test" showBackButton backPath="/tests">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4">
         {/* Test Header */}
         <div className="mb-6 p-4 rounded-xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
           <div className="flex items-center justify-between">
@@ -201,192 +403,110 @@ const ReadingTest = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              {!isSubmitted && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-100">
-                  <Clock className="w-4 h-4 text-orange-600" />
-                  <span className="font-mono text-orange-600 font-medium">
+            {!isSubmitted && (
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-sm text-warm-gray">Time Remaining</div>
+                  <div className={`text-xl font-mono font-bold ${timeLeft < 300 ? 'text-red-600' : 'text-foreground'}`}>
                     {formatTime(timeLeft)}
-                  </span>
+                  </div>
                 </div>
-              )}
-              
-              {isSubmitted && (
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{score}/{questions.length}</div>
-                  <div className="text-sm text-warm-gray">Band {getBandScore(score, questions.length)}</div>
+                <Clock className={`w-6 h-6 ${timeLeft < 300 ? 'text-red-600' : 'text-primary'}`} />
+              </div>
+            )}
+
+            {isSubmitted && (
+              <div className="text-right">
+                <div className="text-sm text-warm-gray">Your Score</div>
+                <div className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <Target className="w-6 h-6 text-green-600" />
+                  {score}/{questions.length}
                 </div>
-              )}
-            </div>
+                <div className="text-sm font-medium text-blue-600">
+                  Band {getBandScore((score / questions.length) * 100)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Passage + Questions */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Reading Passage */}
-            <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-              <CardHeader>
-                <CardTitle className="font-georgia text-foreground">Reading Passage</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="prose max-w-none text-sm leading-relaxed text-foreground">
-                  {currentPassage?.content.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Questions */}
-            <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-              <CardHeader>
-                <CardTitle className="font-georgia text-foreground">Questions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {questions.map((question) => (
-                  <div key={question.id} className="border-b border-light-border pb-6 last:border-b-0">
-                    <div className="flex items-start justify-between mb-3">
-                      <p className="font-medium text-foreground">
-                        {question.question_number}. {question.question_text}
-                      </p>
-                      {isSubmitted && (
-                        <div className="ml-4">
-                          {answers[question.id] === question.correct_answer ? (
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <XCircle className="w-5 h-5 text-red-600" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {question.question_type === 'multiple_choice' && question.options ? (
-                      <div className="space-y-2">
-                        {question.options.map((option: string, index: number) => (
-                          <label key={index} className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`question_${question.id}`}
-                              value={option}
-                              checked={answers[question.id] === option}
-                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                              disabled={isSubmitted}
-                              className="text-primary"
-                            />
-                            <span className={`text-sm ${isSubmitted && answers[question.id] === option && option !== question.correct_answer ? 'text-red-600' : isSubmitted && option === question.correct_answer ? 'text-green-600 font-medium' : 'text-foreground'}`}>
-                              {option}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          placeholder="Type your answer here"
-                          value={answers[question.id] || ''}
-                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                          disabled={isSubmitted}
-                          className={`w-full p-3 border rounded-xl focus:outline-none focus:ring-2 ${
-                            isSubmitted 
-                              ? answers[question.id] === question.correct_answer 
-                                ? 'border-green-500 bg-green-50 text-green-800' 
-                                : 'border-red-500 bg-red-50 text-red-800'
-                              : 'border-light-border focus:ring-primary/20 bg-background text-foreground'
-                          }`}
-                        />
-                        {isSubmitted && (
-                          <p className="text-sm text-green-600 font-medium">
-                            Correct answer: {question.correct_answer}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    
-                    {isSubmitted && showExplanations && question.explanation && (
-                      <div className="mt-3 p-3 bg-gentle-blue/10 rounded-xl">
-                        <p className="text-sm text-foreground">
-                          <strong>Explanation:</strong> {question.explanation}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+        {/* Main Content - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Passage - Takes 2 columns */}
+          <Card className="lg:col-span-2 rounded-2xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
+            <CardHeader className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-10">
+              <CardTitle className="text-xl font-georgia text-foreground flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Reading Passage
+                <Badge variant="outline" className="ml-auto bg-blue-50 text-blue-700">
+                  Questions 1-{questions.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="prose max-w-none text-foreground leading-relaxed space-y-4">
+                {currentPassage?.content.split('\n\n').map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
                 ))}
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Right Column: Answer Sheet */}
-          <div className="space-y-6">
-            <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-              <CardHeader>
-                <CardTitle className="font-georgia text-foreground">Answer Sheet</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  {questions.map((question) => (
-                    <div key={question.id} className="flex items-center gap-2 p-2 rounded-lg bg-background/50">
-                      <span className="text-sm font-medium text-warm-gray w-6">
-                        {question.question_number}.
-                      </span>
-                      <div className={`flex-1 p-2 text-xs rounded border ${
-                        isSubmitted 
-                          ? answers[question.id] === question.correct_answer 
-                            ? 'border-green-500 bg-green-50 text-green-800' 
-                            : 'border-red-500 bg-red-50 text-red-800'
-                          : answers[question.id] 
-                            ? 'border-primary bg-primary/5 text-foreground' 
-                            : 'border-light-border bg-background text-warm-gray'
-                      }`}>
-                        {answers[question.id] || '—'}
-                      </div>
-                      {isSubmitted && (
-                        <div className="w-4">
-                          {answers[question.id] === question.correct_answer ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-600" />
-                          )}
-                        </div>
-                      )}
+          {/* Right: Answer Sheet */}
+          <Card className="rounded-2xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
+            <CardHeader className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-10">
+              <CardTitle className="text-lg font-georgia text-foreground flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Answer Sheet
+                <Badge variant="outline" className="ml-auto">
+                  {Object.keys(answers).filter(key => answers[key]).length}/{questions.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+                {questions.map(renderQuestion)}
+              </div>
+              
+              {!isSubmitted ? (
+                <Button 
+                  onClick={() => setShowConfirmDialog(true)}
+                  className="w-full mt-6 rounded-xl"
+                  style={{ background: 'var(--gradient-button)', border: 'none' }}
+                >
+                  Submit Test
+                </Button>
+              ) : (
+                <div className="mt-6 space-y-3">
+                  <div className="p-4 rounded-xl text-center" style={{ background: 'var(--gradient-success)' }}>
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {Math.round((score / questions.length) * 100)}%
                     </div>
-                  ))}
-                </div>
-                
-                {!isSubmitted ? (
+                    <div className="text-white/90">
+                      Band Score: {getBandScore((score / questions.length) * 100)}
+                    </div>
+                  </div>
+                  
                   <Button 
-                    onClick={() => setShowConfirmDialog(true)}
-                    className="w-full mt-4 rounded-xl"
+                    onClick={() => setShowExplanations(!showExplanations)}
+                    variant="outline"
+                    className="w-full rounded-xl border-light-border"
+                  >
+                    {showExplanations ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                    {showExplanations ? 'Hide' : 'Show'} Explanations
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => navigate('/tests')}
+                    className="w-full rounded-xl"
                     style={{ background: 'var(--gradient-button)', border: 'none' }}
                   >
-                    Submit Test
+                    Take Another Test
                   </Button>
-                ) : (
-                  <div className="mt-4 space-y-3">
-                    <Button 
-                      onClick={() => setShowExplanations(!showExplanations)}
-                      variant="outline"
-                      className="w-full rounded-xl border-light-border"
-                    >
-                      {showExplanations ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                      {showExplanations ? 'Hide' : 'Show'} Explanations
-                    </Button>
-                    
-                    <Button 
-                      onClick={() => navigate('/tests')}
-                      className="w-full rounded-xl"
-                      style={{ background: 'var(--gradient-button)', border: 'none' }}
-                    >
-                      Take Another Test
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -399,6 +519,8 @@ const ReadingTest = () => {
               Are you sure you want to submit your test? You won't be able to change your answers after submission.
               <br /><br />
               <strong>Questions answered:</strong> {Object.keys(answers).filter(key => answers[key]).length} / {questions.length}
+              <br />
+              <strong>Time remaining:</strong> {formatTime(timeLeft)}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

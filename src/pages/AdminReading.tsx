@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Eye, FileText, HelpCircle } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import QuestionForm from "@/components/QuestionForm";
+import CSVImport from "@/components/CSVImport";
 
 const AdminReading = () => {
   const { listContent, createContent, deleteContent, loading } = useAdminContent();
@@ -20,7 +21,7 @@ const AdminReading = () => {
   const [formData, setFormData] = useState({
     title: "",
     content: "",
-    difficulty_level: "intermediate",
+    difficulty_level: "academic",
     passage_type: "academic",
     cambridge_book: "",
     test_number: 1
@@ -72,7 +73,7 @@ const AdminReading = () => {
       setFormData({ 
         title: "", 
         content: "", 
-        difficulty_level: "intermediate", 
+        difficulty_level: "academic", 
         passage_type: "academic", 
         cambridge_book: "", 
         test_number: 1 
@@ -288,9 +289,8 @@ const AdminReading = () => {
                           <SelectValue placeholder="Select difficulty" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-light-border bg-card">
-                          <SelectItem value="beginner">Beginner</SelectItem>
-                          <SelectItem value="intermediate">Intermediate</SelectItem>
-                          <SelectItem value="advanced">Advanced</SelectItem>
+                          <SelectItem value="academic">Academic</SelectItem>
+                          <SelectItem value="general">General Training</SelectItem>
                         </SelectContent>
                       </Select>
                       
@@ -318,11 +318,25 @@ const AdminReading = () => {
                   </TabsContent>
                   
                   <TabsContent value="questions" className="mt-6">
-                    <QuestionForm 
-                      questions={questions}
-                      onQuestionsChange={setQuestions}
-                      type="reading"
-                    />
+                    <div className="space-y-6">
+                      <CSVImport 
+                        onImport={(importedQuestions) => {
+                          // Merge with existing questions and renumber
+                          const allQuestions = [...questions, ...importedQuestions];
+                          allQuestions.forEach((q, i) => {
+                            q.question_number = i + 1;
+                          });
+                          setQuestions(allQuestions);
+                        }}
+                        type="reading"
+                      />
+                      
+                      <QuestionForm 
+                        questions={questions}
+                        onQuestionsChange={setQuestions}
+                        type="reading"
+                      />
+                    </div>
                   </TabsContent>
                 </Tabs>
               )}

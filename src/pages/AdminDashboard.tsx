@@ -47,26 +47,6 @@ const AdminDashboard = () => {
     }
   ];
 
-  const systemSections = [
-    {
-      name: "User Analytics",
-      description: "View student progress and engagement statistics",
-      icon: BarChart3,
-      path: "/admin/analytics"
-    },
-    {
-      name: "Answer Sheets", 
-      description: "Manage answer keys and explanations for all tests",
-      icon: FileText,
-      path: "/admin/answer-sheets"
-    },
-    {
-      name: "System Settings",
-      description: "Configure platform settings and preferences", 
-      icon: Users,
-      path: "/admin/settings"
-    }
-  ];
 
   return (
     <AdminLayout title="Dashboard" showBackButton={false}>
@@ -127,40 +107,34 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* System Management */}
+        {/* Quick Stats Section */}
         <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
           <CardHeader>
             <CardTitle className="text-3xl font-georgia text-center text-foreground">
-              System Management
+              Quick Overview
             </CardTitle>
             <p className="text-warm-gray text-center text-lg">
-              Additional tools for platform administration and analytics
+              Manage all your IELTS content efficiently
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {systemSections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <Card
-                    key={section.name}
-                    className="cursor-pointer transition-all duration-300 rounded-2xl border-light-border hover:border-gentle-blue/30 hover:scale-105"
-                    onClick={() => navigate(section.path)}
-                    style={{ background: 'white' }}
-                  >
-                    <CardContent className="p-6 text-center">
-                      <div 
-                        className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4"
-                        style={{ background: 'var(--gradient-success)' }}
-                      >
-                        <Icon className="w-7 h-7 text-white" />
-                      </div>
-                      <h4 className="font-semibold text-foreground text-lg mb-2">{section.name}</h4>
-                      <p className="text-sm text-warm-gray leading-relaxed">{section.description}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Reading Tests</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Listening Tests</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Writing Prompts</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Speaking Prompts</div>
+              </div>
             </div>
           </CardContent>
         </Card>

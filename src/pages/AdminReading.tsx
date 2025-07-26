@@ -55,29 +55,36 @@ const AdminReading = () => {
     console.log('Questions count:', questions.length);
     console.log('Admin token:', localStorage.getItem('admin_token'));
     
-    if (!formData.title || !formData.content) {
-      console.error('Validation failed: Missing title or content');
+    // Check if we have either passage content OR questions to save
+    const hasPassageContent = formData.title && formData.content;
+    const hasQuestions = questions.length > 0;
+    
+    if (!hasPassageContent && !hasQuestions) {
+      console.error('Validation failed: No content to save');
       toast({
-        title: "Validation Error",
-        description: "Please fill in title and passage content",
+        title: "Validation Error", 
+        description: "Please fill in passage content or add questions to save",
         variant: "destructive"
       });
       return;
     }
     
     try {
-      console.log('Starting passage creation...');
+      let passageId = null;
       
-      // Create the passage first
-      const passageResult = await createContent('reading_passages', formData);
-      console.log('Passage creation result:', passageResult);
-      
-      if (!passageResult?.data?.id) {
-        throw new Error('Failed to create passage - no ID returned');
+      // Create passage only if we have passage content
+      if (hasPassageContent) {
+        console.log('Starting passage creation...');
+        const passageResult = await createContent('reading_passages', formData);
+        console.log('Passage creation result:', passageResult);
+        
+        if (!passageResult?.data?.id) {
+          throw new Error('Failed to create passage - no ID returned');
+        }
+        
+        passageId = passageResult.data.id;
+        console.log('Passage created with ID:', passageId);
       }
-      
-      const passageId = passageResult.data.id;
-      console.log('Passage created with ID:', passageId);
       
       // Create questions if any
       if (questions.length > 0) {
@@ -86,7 +93,7 @@ const AdminReading = () => {
           const question = questions[i];
           const questionData = {
             ...question,
-            passage_id: passageId
+            passage_id: passageId // This can be null for standalone questions
           };
           console.log(`Creating question ${i + 1}:`, questionData);
           const questionResult = await createContent('reading_questions', questionData);
@@ -94,9 +101,13 @@ const AdminReading = () => {
         }
       }
       
+      const successMessage = hasPassageContent 
+        ? `Reading passage created successfully with ${questions.length} questions`
+        : `${questions.length} questions saved successfully`;
+        
       toast({
         title: "Success!",
-        description: `Reading passage created successfully with ${questions.length} questions`,
+        description: successMessage,
       });
       
       console.log('=== SAVE COMPLETED SUCCESSFULLY ===');
@@ -365,11 +376,11 @@ const AdminReading = () => {
                       <div className="flex gap-3 pt-6 border-t border-light-border">
                         <Button 
                           onClick={() => handleCreate()}
-                          disabled={loading || !formData.title || !formData.content}
+                          disabled={loading || (!formData.title && !formData.content && questions.length === 0)}
                           className="rounded-xl"
                           style={{ background: 'var(--gradient-button)', border: 'none' }}
                         >
-                          Save Test
+                          {questions.length > 0 && (!formData.title || !formData.content) ? 'Save Questions' : 'Save Test'}
                         </Button>
                         <Button 
                           type="button" 

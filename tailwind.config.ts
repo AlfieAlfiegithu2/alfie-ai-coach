@@ -20,8 +20,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				inter: ['Inter', 'sans-serif'],
-				orbitron: ['Orbitron', 'monospace'],
+				'georgia': ['Georgia', 'serif'],
+				'open-sans': ['Open Sans', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -57,13 +57,11 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// Futuristic tech colors
-				'electric-blue': 'hsl(var(--electric-blue))',
-				'neon-cyan': 'hsl(var(--neon-cyan))',
-				'neon-green': 'hsl(var(--neon-green))',
-				'tech-purple': 'hsl(var(--tech-purple))',
-				'deep-navy': 'hsl(var(--deep-navy))',
-				'charcoal': 'hsl(var(--charcoal))',
+				// Warm, minimalistic colors
+				'gentle-blue': 'hsl(var(--gentle-blue))',
+				'soft-green': 'hsl(var(--soft-green))',
+				'warm-gray': 'hsl(var(--warm-gray))',
+				'light-border': 'hsl(var(--light-border))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -76,10 +74,10 @@ export default {
 				}
 			},
 			boxShadow: {
-				'neon': '0 0 20px hsl(195 100% 50% / 0.3)',
-				'neon-strong': '0 0 40px hsl(195 100% 50% / 0.5)',
-				'success': '0 0 20px hsl(120 100% 55% / 0.3)',
-				'purple': '0 0 20px hsl(258 90% 66% / 0.3)',
+				'soft': 'var(--shadow-soft)',
+				'medium': 'var(--shadow-medium)',
+				'strong': 'var(--shadow-strong)',
+				'glow': 'var(--shadow-glow)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

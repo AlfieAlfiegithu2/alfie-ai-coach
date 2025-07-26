@@ -10,15 +10,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-neon hover:shadow-neon-strong hover:scale-105",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-electric-blue/30 bg-background text-electric-blue hover:bg-electric-blue hover:text-white glow-border hover:scale-105",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 tech-hover",
-        ghost: "hover:bg-accent hover:text-accent-foreground tech-hover",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft hover:shadow-medium gentle-hover",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-soft hover:shadow-medium",
+        outline: "border border-gentle-blue/50 bg-background text-gentle-blue hover:bg-gentle-blue hover:text-white soft-border gentle-hover",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 gentle-hover shadow-soft",
+        ghost: "hover:bg-accent hover:text-accent-foreground gentle-hover",
         link: "text-primary underline-offset-4 hover:underline",
-        neon: "bg-gradient-to-r from-electric-blue to-neon-cyan text-white hover:from-neon-cyan hover:to-tech-purple shadow-neon hover:shadow-neon-strong hover:scale-105 font-semibold pulse-neon",
-        tech: "bg-gradient-to-r from-charcoal to-muted text-electric-blue border border-electric-blue/20 hover:bg-gradient-to-r hover:from-electric-blue hover:to-neon-cyan hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-neon",
-        success: "bg-gradient-to-r from-neon-green to-neon-cyan text-black hover:shadow-success hover:scale-105 font-semibold",
+        hero: "bg-gentle-blue text-white hover:bg-gentle-blue/90 shadow-medium hover:shadow-strong gentle-hover font-medium",
+        success: "bg-soft-green text-foreground hover:bg-soft-green/90 shadow-soft hover:shadow-medium gentle-hover",
+        neon: "bg-gentle-blue text-white hover:bg-gentle-blue/90 shadow-medium hover:shadow-strong gentle-hover font-medium",
+        tech: "bg-secondary text-secondary-foreground hover:bg-secondary/80 gentle-hover shadow-soft border border-gentle-blue/20",
       },
       size: {
         default: "h-10 px-4 py-2",

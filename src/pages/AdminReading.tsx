@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import AdminLayout from "@/components/AdminLayout";
 
 const AdminReading = () => {
-  const navigate = useNavigate();
-  const { admin } = useAdminAuth();
   const { listContent, createContent, deleteContent, loading } = useAdminContent();
   const { toast } = useToast();
   const [passages, setPassages] = useState([]);
@@ -27,12 +24,8 @@ const AdminReading = () => {
   });
 
   useEffect(() => {
-    if (!admin) {
-      navigate("/admin/login");
-      return;
-    }
     loadPassages();
-  }, [admin, navigate]);
+  }, []);
 
   const loadPassages = async () => {
     try {
@@ -47,7 +40,7 @@ const AdminReading = () => {
     }
   };
 
-  const handleCreate = async (e) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await createContent('reading_passages', formData);
@@ -55,7 +48,14 @@ const AdminReading = () => {
         title: "Success",
         description: "Reading passage created successfully"
       });
-      setFormData({ title: "", content: "", difficulty_level: "intermediate", passage_type: "academic", cambridge_book: "", test_number: 1 });
+      setFormData({ 
+        title: "", 
+        content: "", 
+        difficulty_level: "intermediate", 
+        passage_type: "academic", 
+        cambridge_book: "", 
+        test_number: 1 
+      });
       setShowCreateForm(false);
       loadPassages();
     } catch (error) {
@@ -67,7 +67,7 @@ const AdminReading = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this passage?")) {
       try {
         await deleteContent('reading_passages', id);
@@ -87,37 +87,32 @@ const AdminReading = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
-      <div className="container mx-auto px-6 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/admin")}
-              className="rounded-xl border-light-border hover:bg-gentle-blue/10"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <h1 className="text-3xl font-georgia font-bold text-foreground">Reading Passages</h1>
+    <AdminLayout title="Reading Passages">
+      <div className="max-w-6xl mx-auto">
+        {/* Header with Create Button */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-georgia font-bold text-foreground mb-2">Reading Passages</h1>
+            <p className="text-warm-gray">Manage reading passages from Cambridge books C20 to C1</p>
           </div>
-          <Button 
+          <Button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="rounded-xl"
             style={{ background: 'var(--gradient-button)', border: 'none' }}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Passage
+            {showCreateForm ? 'Cancel' : 'Create New Passage'}
           </Button>
         </div>
 
+        {/* Create Form */}
         {showCreateForm && (
           <Card 
             className="mb-8 rounded-2xl border-light-border shadow-soft"
             style={{ background: 'var(--gradient-card)' }}
           >
             <CardHeader>
-              <CardTitle className="text-xl font-georgia text-foreground">Create New Reading Passage</CardTitle>
+              <CardTitle className="text-2xl font-georgia text-foreground">Create New Reading Passage</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreate} className="space-y-6">
@@ -128,28 +123,35 @@ const AdminReading = () => {
                   required
                   className="rounded-xl border-light-border"
                 />
+                
                 <div className="grid grid-cols-2 gap-4">
-                  <Select value={formData.cambridge_book} onValueChange={(value) => setFormData({...formData, cambridge_book: value})}>
-                    <SelectTrigger className="rounded-xl border-light-border">
-                      <SelectValue placeholder="Select Cambridge Book" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-light-border bg-card">
-                      {Array.from({length: 20}, (_, i) => 20 - i).map(num => (
-                        <SelectItem key={num} value={`C${num}`}>Cambridge {num}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={formData.test_number.toString()} onValueChange={(value) => setFormData({...formData, test_number: parseInt(value)})}>
-                    <SelectTrigger className="rounded-xl border-light-border">
-                      <SelectValue placeholder="Select Test Number" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-light-border bg-card">
-                      {Array.from({length: 4}, (_, i) => i + 1).map(num => (
-                        <SelectItem key={num} value={num.toString()}>Test {num}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div>
+                    <Select value={formData.cambridge_book} onValueChange={(value) => setFormData({...formData, cambridge_book: value})}>
+                      <SelectTrigger className="rounded-xl border-light-border">
+                        <SelectValue placeholder="Select Cambridge Book" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-light-border bg-card">
+                        {Array.from({length: 20}, (_, i) => 20 - i).map(num => (
+                          <SelectItem key={num} value={`C${num}`}>Cambridge {num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Select value={formData.test_number.toString()} onValueChange={(value) => setFormData({...formData, test_number: parseInt(value)})}>
+                      <SelectTrigger className="rounded-xl border-light-border">
+                        <SelectValue placeholder="Select Test Number" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-light-border bg-card">
+                        {Array.from({length: 4}, (_, i) => i + 1).map(num => (
+                          <SelectItem key={num} value={num.toString()}>Test {num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                   <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({...formData, difficulty_level: value})}>
                     <SelectTrigger className="rounded-xl border-light-border">
@@ -161,6 +163,7 @@ const AdminReading = () => {
                       <SelectItem value="advanced">Advanced</SelectItem>
                     </SelectContent>
                   </Select>
+                  
                   <Select value={formData.passage_type} onValueChange={(value) => setFormData({...formData, passage_type: value})}>
                     <SelectTrigger className="rounded-xl border-light-border">
                       <SelectValue placeholder="Select type" />
@@ -171,6 +174,7 @@ const AdminReading = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <Textarea
                   placeholder="Passage Content"
                   value={formData.content}
@@ -179,6 +183,7 @@ const AdminReading = () => {
                   required
                   className="rounded-xl border-light-border"
                 />
+                
                 <div className="flex gap-3">
                   <Button 
                     type="submit" 
@@ -202,8 +207,9 @@ const AdminReading = () => {
           </Card>
         )}
 
+        {/* Passages List */}
         <div className="grid gap-6">
-          {passages.map((passage) => (
+          {passages.map((passage: any) => (
             <Card 
               key={passage.id}
               className="rounded-2xl border-light-border shadow-soft hover:shadow-medium transition-all duration-300"
@@ -244,7 +250,7 @@ const AdminReading = () => {
           ))}
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

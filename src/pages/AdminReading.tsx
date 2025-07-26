@@ -24,9 +24,11 @@ const AdminReading = () => {
   const [openBooks, setOpenBooks] = useState<Set<number>>(new Set());
   const [selectedSection, setSelectedSection] = useState<any>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [uploadBookNumber, setUploadBookNumber] = useState<number>(1);
+  const [uploadBookNumber, setUploadBookNumber] = useState<number>(20);
   const [uploadSectionNumber, setUploadSectionNumber] = useState<number>(1);
   const [editingSection, setEditingSection] = useState<any>(null);
+  const [passageTitle, setPassageTitle] = useState("");
+  const [passageContent, setPassageContent] = useState("");
 
   useEffect(() => {
     loadCambridgeStructure();
@@ -121,13 +123,22 @@ const AdminReading = () => {
 
   const handleCSVUpload = async (questions: any[]) => {
     try {
+      if (!passageTitle || !passageContent) {
+        toast({
+          title: "Error",
+          description: "Please provide both passage title and content",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const passageData = {
-        title: `Cambridge ${uploadBookNumber} - Section ${uploadSectionNumber}`,
-        content: "Passage content to be added...",
+        title: passageTitle,
+        content: passageContent,
         book_number: uploadBookNumber,
         section_number: uploadSectionNumber,
         cambridge_book: `C${uploadBookNumber}`,
-        difficulty_level: "academic",
+        difficulty_level: "intermediate",
         passage_type: "academic"
       };
 
@@ -158,6 +169,9 @@ const AdminReading = () => {
         description: `Questions uploaded to Cambridge ${uploadBookNumber}, Section ${uploadSectionNumber}`,
       });
 
+      // Reset form and close dialog
+      setPassageTitle("");
+      setPassageContent("");
       setShowUploadDialog(false);
       loadCambridgeStructure();
     } catch (error: any) {
@@ -243,14 +257,16 @@ const AdminReading = () => {
     }
   };
 
-  const filteredBooks = Object.values(cambridgeBooks).filter((book: any) => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return `cambridge ${book.number}`.includes(searchLower) ||
-           Object.values(book.sections).some((section: any) => 
-             section.passage?.title?.toLowerCase().includes(searchLower)
-           );
-  });
+  const filteredBooks = Object.values(cambridgeBooks)
+    .filter((book: any) => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return `cambridge ${book.number}`.includes(searchLower) ||
+             Object.values(book.sections).some((section: any) => 
+               section.passage?.title?.toLowerCase().includes(searchLower)
+             );
+    })
+    .sort((a: any, b: any) => b.number - a.number); // Sort descending (20 to 1)
 
   return (
     <AdminLayout title="Cambridge IELTS Reading">
@@ -458,20 +474,21 @@ const AdminReading = () => {
 
         {/* Upload Dialog */}
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Upload Questions to Cambridge Book</DialogTitle>
+              <DialogTitle>Upload Content to Cambridge {uploadBookNumber}, Section {uploadSectionNumber}</DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
+              {/* Book and Section Selection */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Cambridge Book</label>
                   <Select value={uploadBookNumber.toString()} onValueChange={(value) => setUploadBookNumber(parseInt(value))}>
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger className="rounded-xl border-light-border">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({length: 20}, (_, i) => i + 1).map(num => (
+                    <SelectContent className="rounded-xl border-light-border bg-card">
+                      {Array.from({length: 20}, (_, i) => 20 - i).map(num => (
                         <SelectItem key={num} value={num.toString()}>Cambridge {num}</SelectItem>
                       ))}
                     </SelectContent>
@@ -480,10 +497,10 @@ const AdminReading = () => {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Section</label>
                   <Select value={uploadSectionNumber.toString()} onValueChange={(value) => setUploadSectionNumber(parseInt(value))}>
-                    <SelectTrigger className="rounded-xl">
+                    <SelectTrigger className="rounded-xl border-light-border">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl border-light-border bg-card">
                       {Array.from({length: 4}, (_, i) => i + 1).map(num => (
                         <SelectItem key={num} value={num.toString()}>Section {num}</SelectItem>
                       ))}
@@ -492,10 +509,33 @@ const AdminReading = () => {
                 </div>
               </div>
 
-              <CSVImport
-                onImport={handleCSVUpload}
-                type="reading"
-              />
+              {/* Reading Passage Input */}
+              <Card className="rounded-2xl border-light-border" style={{ background: 'white' }}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-foreground">
+                    <FileText className="w-5 h-5" />
+                    Reading Passage
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="Passage Title (e.g., 'Tennis Equipment Research')"
+                    value={passageTitle}
+                    onChange={(e) => setPassageTitle(e.target.value)}
+                    className="rounded-xl border-light-border"
+                  />
+                  <Textarea
+                    placeholder="Paste the complete reading passage text here..."
+                    value={passageContent}
+                    onChange={(e) => setPassageContent(e.target.value)}
+                    rows={12}
+                    className="rounded-xl border-light-border font-mono text-sm"
+                  />
+                </CardContent>
+              </Card>
+              
+              {/* CSV Upload for Questions */}
+              <CSVImport onImport={handleCSVUpload} type="reading" />
             </div>
           </DialogContent>
         </Dialog>

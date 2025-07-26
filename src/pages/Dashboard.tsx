@@ -1,8 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import TestCard from "@/components/TestCard";
 import StatsCard from "@/components/StatsCard";
-import { BookOpen, Headphones, PenTool, Mic, Target, TrendingUp, Clock, Award } from "lucide-react";
+import { BookOpen, Headphones, PenTool, Mic, Target, TrendingUp, Clock, Award, Zap, Brain, Rocket, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-image.jpg";
 
@@ -24,7 +25,6 @@ const Dashboard = () => {
         navigate("/speaking");
         break;
       case "full":
-        // For now, start with reading - in future this would be a full test flow
         navigate("/reading");
         break;
       default:
@@ -33,71 +33,79 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background particles-bg">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-background via-peachy-pink/20 to-soft-mint/15">
-        <div className="container mx-auto px-4 py-16 lg:py-24">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8 animate-fade-in-up">
-              <div className="space-y-6">
+      <section className="relative overflow-hidden bg-gradient-to-br from-background via-deep-navy to-charcoal">
+        <div className="absolute inset-0 bg-gradient-to-r from-electric-blue/5 via-transparent to-neon-cyan/5"></div>
+        <div className="container mx-auto px-4 py-20 lg:py-32 relative">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8 animate-float-up">
+              <div className="space-y-8">
                 <div className="inline-block">
-                  <span className="font-handwriting text-xl text-warm-coral animate-wiggle inline-block">
-                    Hey there, future IELTS champion! 👋
-                  </span>
+                  <div className="px-4 py-2 rounded-full bg-gradient-to-r from-electric-blue/20 to-neon-cyan/20 border border-electric-blue/30 text-electric-blue text-sm font-medium">
+                    <Zap className="inline w-4 h-4 mr-2" />
+                    AI-Powered Learning System
+                  </div>
                 </div>
                 
-                <h2 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                  Let's achieve your
-                  <span className="bg-gradient-to-r from-warm-coral to-sunny-yellow bg-clip-text text-transparent"> IELTS dreams </span>
-                  together! ✨
-                </h2>
+                <h1 className="text-5xl lg:text-7xl font-bold font-orbitron leading-tight">
+                  <span className="text-foreground">MASTER</span>
+                  <br />
+                  <span className="bg-gradient-to-r from-electric-blue via-neon-cyan to-tech-purple bg-clip-text text-transparent animate-glow-pulse">
+                    IELTS
+                  </span>
+                  <br />
+                  <span className="text-foreground text-4xl lg:text-5xl">with AI Power</span>
+                </h1>
                 
-                <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
-                  Your friendly AI study buddy is here to support you every step of the way. 
-                  Get encouraging feedback, celebrate your progress, and turn your goals into achievements! 🎯
+                <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
+                  Experience the future of test preparation. Advanced AI analytics, 
+                  immersive learning environment, and real-time feedback to maximize your potential.
                 </p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
-                  variant="hero" 
+                  variant="neon" 
                   size="lg"
                   onClick={() => handleStartTest("full")}
-                  className="warm-hover shadow-strong font-semibold"
+                  className="text-lg font-bold"
                 >
-                  🚀 Start Your Journey
+                  <Rocket className="w-5 h-5 mr-2" />
+                  Launch Test
                 </Button>
                 <Button 
-                  variant="outline" 
+                  variant="tech" 
                   size="lg"
-                  className="warm-hover border-warm-coral text-warm-coral hover:bg-warm-coral hover:text-white"
+                  className="text-lg"
                 >
-                  💡 Explore Practice Mode
+                  <Brain className="w-5 h-5 mr-2" />
+                  AI Training Mode
                 </Button>
               </div>
 
-              <div className="flex items-center gap-8 pt-4">
+              <div className="flex items-center gap-12 pt-8">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">50K+</div>
-                  <div className="text-sm text-muted-foreground">Happy Learners 😊</div>
+                  <div className="text-3xl font-bold text-electric-blue font-orbitron">50K+</div>
+                  <div className="text-sm text-muted-foreground">Elite Users</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">8.5</div>
-                  <div className="text-sm text-muted-foreground">Average Band Score 🎉</div>
+                  <div className="text-3xl font-bold text-neon-green font-orbitron">8.5</div>
+                  <div className="text-sm text-muted-foreground">Avg Band Score</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">95%</div>
-                  <div className="text-sm text-muted-foreground">Success Stories 🌟</div>
+                  <div className="text-3xl font-bold text-tech-purple font-orbitron">95%</div>
+                  <div className="text-sm text-muted-foreground">Success Rate</div>
                 </div>
               </div>
             </div>
             
-            <div className="relative animate-bounce-gentle">
-              <div className="absolute -inset-4 bg-gradient-to-r from-warm-coral/20 to-sunny-yellow/20 rounded-3xl blur-2xl"></div>
+            <div className="relative">
+              <div className="absolute -inset-8 bg-gradient-to-r from-electric-blue/20 via-neon-cyan/10 to-tech-purple/20 rounded-3xl blur-3xl animate-pulse-neon"></div>
               <img 
                 src={heroImage} 
-                alt="Happy student learning IELTS" 
-                className="relative w-full h-auto rounded-3xl shadow-strong"
+                alt="Futuristic IELTS Training Interface" 
+                className="relative w-full h-auto rounded-2xl shadow-neon-strong glow-border"
               />
             </div>
           </div>
@@ -105,118 +113,137 @@ const Dashboard = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-foreground mb-2 font-handwriting">
-            Your progress makes us proud! 🌈
-          </h3>
-          <p className="text-muted-foreground">Here's how you're growing</p>
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold font-orbitron text-electric-blue mb-4">
+            Your Neural Progress
+          </h2>
+          <p className="text-muted-foreground text-lg">Advanced analytics tracking your evolution</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
-            title="Your Current Band"
+            title="Current Band Level"
             value="7.5"
-            change="+0.5 this week! 🎊"
+            change="+0.5 Neural Boost"
             trend="up"
-            icon={<Target className="w-4 h-4 text-warm-coral" />}
+            icon={<Target className="w-5 h-5 text-electric-blue" />}
           />
           <StatsCard
-            title="Tests Completed"
+            title="Tests Processed"
             value="12"
-            change="Amazing effort! 💪"
+            change="Data Analyzed"
             trend="up"
-            icon={<Award className="w-4 h-4 text-warm-coral" />}
+            icon={<Award className="w-5 h-5 text-neon-green" />}
           />
           <StatsCard
             title="Learning Streak"
             value="7 days"
-            change="You're on fire! 🔥"
+            change="System Active"
             trend="up"
-            icon={<TrendingUp className="w-4 h-4 text-warm-coral" />}
+            icon={<TrendingUp className="w-5 h-5 text-tech-purple" />}
           />
           <StatsCard
-            title="Study Time Saved"
+            title="Time Optimized"
             value="24h"
-            change="Smart learning! 🧠"
+            change="AI Efficiency"
             trend="neutral"
-            icon={<Clock className="w-4 h-4 text-warm-coral" />}
+            icon={<Clock className="w-5 h-5 text-neon-cyan" />}
           />
         </div>
       </section>
 
-      {/* Test Sections */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h3 className="text-3xl font-bold text-foreground mb-4">
-            Pick your adventure! 🎯
-          </h3>
+      {/* Test Modules */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold font-orbitron mb-6">
+            <span className="text-foreground">Select Your</span>
+            <br />
+            <span className="bg-gradient-to-r from-electric-blue to-neon-cyan bg-clip-text text-transparent">
+              Training Module
+            </span>
+          </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Choose a skill to practice, or take the full test when you're feeling confident. 
-            Remember, every step forward is a win! 🏆
+            Choose your specialized training protocol. Each module features advanced AI analysis 
+            and real-time performance optimization.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <TestCard
-            title="Reading 📚"
-            description="Dive into fascinating passages! Practice comprehension, skimming, and scanning with real IELTS materials."
-            duration="60 minutes"
+            title="Reading Protocol"
+            description="Advanced comprehension analysis with neural pattern recognition. Real IELTS materials processed through AI algorithms."
+            duration="60 min"
             participants={1247}
-            icon={<BookOpen className="w-6 h-6 text-warm-coral" />}
+            icon={<BookOpen className="w-6 h-6 text-electric-blue" />}
             onStart={() => handleStartTest("reading")}
           />
           
           <TestCard
-            title="Listening 🎧"
-            description="Tune in and level up! Improve your listening skills with varied accents and engaging scenarios."
-            duration="30 minutes"
+            title="Audio Processing"
+            description="Multi-accent audio analysis with frequency mapping. Advanced listening protocols for optimal comprehension."
+            duration="30 min"
             participants={2156}
-            icon={<Headphones className="w-6 h-6 text-warm-coral" />}
+            icon={<Headphones className="w-6 h-6 text-neon-cyan" />}
             onStart={() => handleStartTest("listening")}
           />
           
           <TestCard
-            title="Writing ✍️"
-            description="Express yourself brilliantly! Get instant AI feedback to polish your writing style and clarity."
-            duration="60 minutes"
+            title="Text Generation"
+            description="AI-powered writing analysis with linguistic pattern recognition. Real-time grammar and coherence optimization."
+            duration="60 min"
             participants={891}
-            icon={<PenTool className="w-6 h-6 text-warm-coral" />}
+            icon={<PenTool className="w-6 h-6 text-neon-green" />}
             onStart={() => handleStartTest("writing")}
           />
           
           <TestCard
-            title="Speaking 🎤"
-            description="Find your voice with confidence! Practice real conversations and get pronunciation tips."
-            duration="14 minutes"
+            title="Voice Interface"
+            description="Neural speech analysis with pronunciation mapping. Advanced conversation protocols with AI feedback."
+            duration="14 min"
             participants={634}
-            icon={<Mic className="w-6 h-6 text-warm-coral" />}
+            icon={<Mic className="w-6 h-6 text-tech-purple" />}
             onStart={() => handleStartTest("speaking")}
           />
         </div>
 
         <div className="text-center">
-          <Card className="max-w-2xl mx-auto bg-gradient-to-r from-peachy-pink/30 to-soft-mint/30 warm-hover">
-            <CardHeader>
-              <CardTitle className="text-2xl font-handwriting">Ready for the full experience? 🌟</CardTitle>
-              <CardDescription className="text-base">
-                Take all four sections in order for the most realistic exam experience. 
-                You've got this! 💪
+          <Card className="max-w-3xl mx-auto bg-gradient-to-br from-charcoal/80 to-deep-navy/60 border-electric-blue/20">
+            <CardHeader className="text-center pb-8">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-electric-blue/20 to-neon-cyan/20 flex items-center justify-center shadow-neon">
+                <Star className="w-10 h-10 text-electric-blue animate-glow-pulse" />
+              </div>
+              <CardTitle className="text-3xl font-orbitron mb-4">
+                Full System Integration
+              </CardTitle>
+              <CardDescription className="text-lg text-muted-foreground max-w-md mx-auto">
+                Complete neural pathway training. All four modules integrated for maximum 
+                performance optimization and advanced band prediction.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center gap-6 mb-6 text-sm text-muted-foreground">
-                <span>⏰ 3 hours total</span>
-                <span>🤖 AI feedback</span>
-                <span>📊 Band prediction</span>
+            <CardContent className="text-center">
+              <div className="flex items-center justify-center gap-8 mb-8 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-electric-blue" />
+                  <span>3 Hours Total</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-neon-cyan" />
+                  <span>AI Analysis</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-neon-green" />
+                  <span>Band Prediction</span>
+                </div>
               </div>
               <Button 
-                variant="hero" 
+                variant="neon" 
                 size="lg" 
                 onClick={() => handleStartTest("full")}
-                className="w-full shadow-medium warm-hover font-semibold"
+                className="w-full text-lg font-bold"
               >
-                🚀 Let's Do This Together!
+                <Zap className="w-5 h-5 mr-2" />
+                Initialize Full System
               </Button>
             </CardContent>
           </Card>
@@ -224,54 +251,57 @@ const Dashboard = () => {
       </section>
 
       {/* Features Section */}
-      <section className="bg-gradient-to-br from-muted/20 to-peachy-pink/10 py-16">
+      <section className="bg-gradient-to-br from-deep-navy/50 to-charcoal/30 py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-foreground mb-4 font-handwriting">
-              Why learners love Alfie! 💖
-            </h3>
-            <p className="text-lg text-muted-foreground">Your success is our happiness!</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold font-orbitron text-electric-blue mb-6">
+              Advanced AI Capabilities
+            </h2>
+            <p className="text-lg text-muted-foreground">Next-generation learning technology</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="text-center warm-hover">
+            <Card className="text-center tech-hover border-electric-blue/20">
               <CardHeader>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-warm-coral/20 to-sunny-yellow/20 flex items-center justify-center encouraging-glow">
-                  <Target className="w-8 h-8 text-warm-coral" />
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-electric-blue/20 to-neon-cyan/20 flex items-center justify-center shadow-neon">
+                  <Zap className="w-10 h-10 text-electric-blue" />
                 </div>
-                <CardTitle className="font-handwriting">Instant Encouragement 🎉</CardTitle>
+                <CardTitle className="font-orbitron text-xl">Instant Neural Feedback</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  Get warm, personalized feedback that celebrates your progress and guides your next steps!
+                <CardDescription className="text-base leading-relaxed">
+                  Real-time AI analysis with advanced pattern recognition. 
+                  Immediate performance optimization and targeted improvement protocols.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center warm-hover">
+            <Card className="text-center tech-hover border-neon-green/20">
               <CardHeader>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-soft-mint/30 to-sky-blue/20 flex items-center justify-center encouraging-glow">
-                  <TrendingUp className="w-8 h-8 text-soft-mint" />
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-neon-green/20 to-neon-cyan/20 flex items-center justify-center shadow-success">
+                  <TrendingUp className="w-10 h-10 text-neon-green" />
                 </div>
-                <CardTitle className="font-handwriting">Watch Yourself Grow 🌱</CardTitle>
+                <CardTitle className="font-orbitron text-xl">Progress Analytics</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  See your improvement journey with beautiful charts and celebrate every milestone achieved!
+                <CardDescription className="text-base leading-relaxed">
+                  Advanced data visualization with predictive modeling. 
+                  Track your neural learning patterns and optimize performance metrics.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center warm-hover">
+            <Card className="text-center tech-hover border-tech-purple/20">
               <CardHeader>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gentle-lavender/30 to-peachy-pink/20 flex items-center justify-center encouraging-glow">
-                  <Award className="w-8 h-8 text-gentle-lavender" />
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-tech-purple/20 to-electric-blue/20 flex items-center justify-center shadow-purple">
+                  <Brain className="w-10 h-10 text-tech-purple" />
                 </div>
-                <CardTitle className="font-handwriting">Real Test Experience 📝</CardTitle>
+                <CardTitle className="font-orbitron text-xl">Adaptive Intelligence</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  Practice with authentic materials in a supportive environment that builds confidence!
+                <CardDescription className="text-base leading-relaxed">
+                  Machine learning algorithms that adapt to your learning style. 
+                  Personalized training protocols for maximum efficiency.
                 </CardDescription>
               </CardContent>
             </Card>

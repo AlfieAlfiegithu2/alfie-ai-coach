@@ -283,27 +283,15 @@ const AdminReading = () => {
                       </Select>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({...formData, difficulty_level: value})}>
-                        <SelectTrigger className="rounded-xl border-light-border">
-                          <SelectValue placeholder="Select difficulty" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-light-border bg-card">
-                          <SelectItem value="academic">Academic</SelectItem>
-                          <SelectItem value="general">General Training</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      <Select value={formData.passage_type} onValueChange={(value) => setFormData({...formData, passage_type: value})}>
-                        <SelectTrigger className="rounded-xl border-light-border">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-light-border bg-card">
-                          <SelectItem value="academic">Academic</SelectItem>
-                          <SelectItem value="general">General Training</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({...formData, difficulty_level: value, passage_type: value})}>
+                      <SelectTrigger className="rounded-xl border-light-border">
+                        <SelectValue placeholder="Select test type" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-light-border bg-card">
+                        <SelectItem value="academic">Academic</SelectItem>
+                        <SelectItem value="general">General Training</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TabsContent>
                   
                   <TabsContent value="passage" className="space-y-6 mt-6">
@@ -336,6 +324,25 @@ const AdminReading = () => {
                         onQuestionsChange={setQuestions}
                         type="reading"
                       />
+                      
+                      <div className="flex gap-3 pt-6 border-t border-light-border">
+                        <Button 
+                          onClick={handleCreate} 
+                          disabled={loading || !formData.title || !formData.content}
+                          className="rounded-xl"
+                          style={{ background: 'var(--gradient-button)', border: 'none' }}
+                        >
+                          Save Test
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setShowCreateForm(false)}
+                          className="rounded-xl border-light-border hover:bg-gentle-blue/10"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
                   </TabsContent>
                 </Tabs>

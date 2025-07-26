@@ -6,18 +6,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Eye, FileText, HelpCircle } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, FileText, HelpCircle, List, Calendar, BookOpen } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import QuestionForm from "@/components/QuestionForm";
 import CSVImport from "@/components/CSVImport";
 
 const AdminReading = () => {
-  const { listContent, createContent, deleteContent, loading } = useAdminContent();
+  const { listContent, createContent, deleteContent, updateContent, loading } = useAdminContent();
   const { toast } = useToast();
   const [passages, setPassages] = useState([]);
+  const [questionSets, setQuestionSets] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [viewMode, setViewMode] = useState<'overview' | 'passages' | 'questions'>('overview');
+  const [selectedQuestionSet, setSelectedQuestionSet] = useState(null);
+  const [editingQuestionSet, setEditingQuestionSet] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -32,6 +38,7 @@ const AdminReading = () => {
 
   useEffect(() => {
     loadPassages();
+    loadQuestionSets();
   }, []);
 
   const loadPassages = async () => {
@@ -42,6 +49,43 @@ const AdminReading = () => {
       toast({
         title: "Error",
         description: "Failed to load reading passages",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadQuestionSets = async () => {
+    try {
+      const result = await listContent('reading_questions');
+      
+      // Group questions by passage_id or create standalone sets
+      const grouped = result.data?.reduce((acc: any, question: any) => {
+        const key = question.passage_id || 'standalone';
+        if (!acc[key]) {
+          acc[key] = {
+            id: key,
+            passage_id: question.passage_id,
+            questions: [],
+            created_at: question.created_at,
+            question_types: new Set()
+          };
+        }
+        acc[key].questions.push(question);
+        acc[key].question_types.add(question.question_type);
+        return acc;
+      }, {});
+
+      const sets = Object.values(grouped || {}).map((set: any) => ({
+        ...set,
+        title: set.passage_id ? `Passage Questions (${set.questions.length})` : `Standalone Questions (${set.questions.length})`,
+        question_types: Array.from(set.question_types).join(', ')
+      }));
+
+      setQuestionSets(sets);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load question sets",
         variant: "destructive"
       });
     }
@@ -97,7 +141,7 @@ const AdminReading = () => {
           
           const questionData = {
             question_number: question.question_number || (i + 1),
-            question_type: question.question_type || 'Multiple Choice', // Default type if empty
+            question_type: question.question_type || 'multiple_choice', // Database expects snake_case
             question_text: question.question_text || '',
             correct_answer: question.correct_answer || '',
             explanation: question.explanation || '',
@@ -141,6 +185,8 @@ const AdminReading = () => {
       setShowCreateForm(false);
       setActiveTab("info");
       loadPassages();
+      loadQuestionSets(); // Reload question sets after successful save
+      setViewMode('questions'); // Switch to questions view to show new set
     } catch (error: any) {
       console.error('=== SAVE FAILED ===');
       console.error('Error details:', error);
@@ -174,23 +220,92 @@ const AdminReading = () => {
     }
   };
 
+  const handleDeleteQuestionSet = async (setId: string) => {
+    if (confirm("Are you sure you want to delete this question set? This will delete all questions in this set.")) {
+      try {
+        const set = questionSets.find((s: any) => s.id === setId);
+        if (set) {
+          // Delete all questions in the set
+          for (const question of set.questions) {
+            await deleteContent('reading_questions', question.id);
+          }
+          toast({
+            title: "Success",
+            description: "Question set deleted successfully"
+          });
+          loadQuestionSets();
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete question set",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleEditQuestion = async (questionId: string, updatedData: any) => {
+    try {
+      await updateContent('reading_questions', { id: questionId, ...updatedData });
+      toast({
+        title: "Success",
+        description: "Question updated successfully"
+      });
+      loadQuestionSets();
+      setEditingQuestionSet(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update question",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
-    <AdminLayout title="Reading Passages">
+    <AdminLayout title="Reading Management">
       <div className="max-w-6xl mx-auto">
-        {/* Header with Create Button */}
+        {/* Header with Navigation */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-georgia font-bold text-foreground mb-2">Reading Passages</h1>
-            <p className="text-warm-gray">Manage reading passages from Cambridge books C20 to C1</p>
+            <h1 className="text-4xl font-georgia font-bold text-foreground mb-2">Reading Management</h1>
+            <p className="text-warm-gray">Manage reading content, passages, and question sets</p>
           </div>
-          <Button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="rounded-xl"
-            style={{ background: 'var(--gradient-button)', border: 'none' }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {showCreateForm ? 'Cancel' : 'Create New Passage'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setViewMode('overview')}
+              variant={viewMode === 'overview' ? 'default' : 'outline'}
+              className="rounded-xl"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Overview
+            </Button>
+            <Button
+              onClick={() => setViewMode('questions')}
+              variant={viewMode === 'questions' ? 'default' : 'outline'}
+              className="rounded-xl"
+            >
+              <List className="w-4 h-4 mr-2" />
+              Question Sets
+            </Button>
+            <Button
+              onClick={() => setViewMode('passages')}
+              variant={viewMode === 'passages' ? 'default' : 'outline'}
+              className="rounded-xl"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Passages
+            </Button>
+            <Button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="rounded-xl"
+              style={{ background: 'var(--gradient-button)', border: 'none' }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {showCreateForm ? 'Cancel' : 'Create New'}
+            </Button>
+          </div>
         </div>
 
         {/* Create Form */}
@@ -415,48 +530,328 @@ const AdminReading = () => {
           </Card>
         )}
 
-        {/* Passages List */}
-        <div className="grid gap-6">
-          {passages.map((passage: any) => (
-            <Card 
-              key={passage.id}
-              className="rounded-2xl border-light-border shadow-soft hover:shadow-medium transition-all duration-300"
-              style={{ background: 'var(--gradient-card)' }}
-            >
+        {/* Main Content Area */}
+        {viewMode === 'overview' && (
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Quick Stats */}
+            <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-georgia text-foreground">{passage.title}</CardTitle>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="rounded-xl border-light-border hover:bg-gentle-blue/10"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="destructive" 
-                      onClick={() => handleDelete(passage.id)}
-                      className="rounded-xl"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5" />
+                  Content Overview
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex gap-4 text-sm text-warm-gray mb-4">
-                  {passage.cambridge_book && <span className="font-medium">Book: {passage.cambridge_book}</span>}
-                  {passage.test_number && <span className="font-medium">Test: {passage.test_number}</span>}
-                  <span>Level: {passage.difficulty_level}</span>
-                  <span>Type: {passage.passage_type}</span>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                  <span className="font-medium">Reading Passages</span>
+                  <Badge variant="outline">{passages.length}</Badge>
                 </div>
-                <p className="text-foreground line-clamp-3 leading-relaxed">{passage.content}</p>
+                <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                  <span className="font-medium">Question Sets</span>
+                  <Badge variant="outline">{questionSets.length}</Badge>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-white rounded-xl">
+                  <span className="font-medium">Total Questions</span>
+                  <Badge variant="outline">{questionSets.reduce((sum: number, set: any) => sum + set.questions.length, 0)}</Badge>
+                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+
+            {/* Recent Activity */}
+            <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {questionSets.length > 0 ? (
+                  <div className="space-y-3">
+                    {questionSets.slice(0, 3).map((set: any) => (
+                      <div key={set.id} className="flex justify-between items-center p-3 bg-white rounded-xl">
+                        <div>
+                          <p className="font-medium text-sm">{set.title}</p>
+                          <p className="text-xs text-warm-gray">{set.question_types}</p>
+                        </div>
+                        <Badge variant="outline">{set.questions.length} Q</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-warm-gray italic">No content yet. Create your first question set!</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {viewMode === 'questions' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-georgia font-bold">Question Sets</h2>
+              <Button 
+                onClick={() => setShowCreateForm(true)}
+                className="rounded-xl"
+                style={{ background: 'var(--gradient-button)', border: 'none' }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Questions
+              </Button>
+            </div>
+
+            {questionSets.length > 0 ? (
+              <div className="grid gap-4">
+                {questionSets.map((set: any) => (
+                  <Card key={set.id} className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{set.title}</CardTitle>
+                          <div className="flex gap-2 mt-2">
+                            <Badge variant="outline">{set.questions.length} Questions</Badge>
+                            <Badge variant="outline">{set.question_types}</Badge>
+                            <Badge variant="outline">
+                              {new Date(set.created_at).toLocaleDateString()}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="outline" className="rounded-xl">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>{set.title}</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                {set.questions.map((question: any, index: number) => (
+                                  <Card key={question.id} className="p-4">
+                                    <div className="space-y-2">
+                                      <div className="flex items-start gap-2">
+                                        <Badge variant="outline" className="mt-1">{question.question_number}</Badge>
+                                        <div className="flex-1">
+                                          <p className="font-medium">{question.question_text}</p>
+                                          <p className="text-sm text-warm-gray mt-1">Type: {question.question_type?.replace(/_/g, ' ')}</p>
+                                        </div>
+                                      </div>
+                                      {question.options && (
+                                        <div className="pl-8">
+                                          <p className="text-sm font-medium">Options:</p>
+                                          <div className="text-sm text-warm-gray">
+                                            {Array.isArray(question.options) ? question.options.join(' | ') : JSON.stringify(question.options)}
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div className="pl-8 space-y-1">
+                                        <p className="text-sm"><span className="font-medium text-green-700">Answer:</span> {question.correct_answer}</p>
+                                        <p className="text-sm"><span className="font-medium">Explanation:</span> {question.explanation}</p>
+                                      </div>
+                                    </div>
+                                  </Card>
+                                ))}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => setEditingQuestionSet(set)}
+                            className="rounded-xl"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            onClick={() => handleDeleteQuestionSet(set.id)}
+                            className="rounded-xl"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="rounded-2xl border-light-border text-center p-8" style={{ background: 'var(--gradient-card)' }}>
+                <HelpCircle className="w-12 h-12 mx-auto text-warm-gray mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Question Sets Yet</h3>
+                <p className="text-warm-gray mb-4">Upload a CSV file or create questions manually to get started.</p>
+                <Button 
+                  onClick={() => setShowCreateForm(true)}
+                  className="rounded-xl"
+                  style={{ background: 'var(--gradient-button)', border: 'none' }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Question Set
+                </Button>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {viewMode === 'passages' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-georgia font-bold">Reading Passages</h2>
+              <Button 
+                onClick={() => setShowCreateForm(true)}
+                className="rounded-xl"
+                style={{ background: 'var(--gradient-button)', border: 'none' }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Passage
+              </Button>
+            </div>
+
+            {passages.length > 0 ? (
+              <div className="grid gap-6">
+                {passages.map((passage: any) => (
+                  <Card 
+                    key={passage.id}
+                    className="rounded-2xl border-light-border shadow-soft hover:shadow-medium transition-all duration-300"
+                    style={{ background: 'var(--gradient-card)' }}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl font-georgia text-foreground">{passage.title}</CardTitle>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="rounded-xl border-light-border hover:bg-gentle-blue/10"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            onClick={() => handleDelete(passage.id)}
+                            className="rounded-xl"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-4 text-sm text-warm-gray mb-4">
+                        {passage.cambridge_book && <span className="font-medium">Book: {passage.cambridge_book}</span>}
+                        {passage.test_number && <span className="font-medium">Test: {passage.test_number}</span>}
+                        <span>Level: {passage.difficulty_level}</span>
+                        <span>Type: {passage.passage_type}</span>
+                      </div>
+                      <p className="text-foreground line-clamp-3 leading-relaxed">{passage.content}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="rounded-2xl border-light-border text-center p-8" style={{ background: 'var(--gradient-card)' }}>
+                <FileText className="w-12 h-12 mx-auto text-warm-gray mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Passages Yet</h3>
+                <p className="text-warm-gray mb-4">Create reading passages with questions for your tests.</p>
+                <Button 
+                  onClick={() => setShowCreateForm(true)}
+                  className="rounded-xl"
+                  style={{ background: 'var(--gradient-button)', border: 'none' }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Passage
+                </Button>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Question Set Editor Dialog */}
+        {editingQuestionSet && (
+          <Dialog open={!!editingQuestionSet} onOpenChange={() => setEditingQuestionSet(null)}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Question Set: {editingQuestionSet.title}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {editingQuestionSet.questions.map((question: any, index: number) => (
+                  <Card key={question.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Question Text</label>
+                          <Textarea 
+                            value={question.question_text}
+                            onChange={(e) => {
+                              const updated = { ...editingQuestionSet };
+                              updated.questions[index].question_text = e.target.value;
+                              setEditingQuestionSet(updated);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Correct Answer</label>
+                          <Input 
+                            value={question.correct_answer}
+                            onChange={(e) => {
+                              const updated = { ...editingQuestionSet };
+                              updated.questions[index].correct_answer = e.target.value;
+                              setEditingQuestionSet(updated);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Explanation</label>
+                        <Textarea 
+                          value={question.explanation}
+                          onChange={(e) => {
+                            const updated = { ...editingQuestionSet };
+                            updated.questions[index].explanation = e.target.value;
+                            setEditingQuestionSet(updated);
+                          }}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={() => {
+                      editingQuestionSet.questions.forEach((question: any) => {
+                        handleEditQuestion(question.id, {
+                          question_text: question.question_text,
+                          correct_answer: question.correct_answer,
+                          explanation: question.explanation
+                        });
+                      });
+                    }}
+                    className="rounded-xl"
+                    style={{ background: 'var(--gradient-button)', border: 'none' }}
+                  >
+                    Save Changes
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditingQuestionSet(null)}
+                    className="rounded-xl"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </AdminLayout>
   );

@@ -94,33 +94,39 @@ export type Database = {
       listening_sections: {
         Row: {
           audio_url: string | null
+          cambridge_book: string | null
           created_at: string
           difficulty_level: string | null
           id: string
           instructions: string | null
           section_number: number | null
+          test_number: number | null
           title: string
           transcript: string | null
           updated_at: string
         }
         Insert: {
           audio_url?: string | null
+          cambridge_book?: string | null
           created_at?: string
           difficulty_level?: string | null
           id?: string
           instructions?: string | null
           section_number?: number | null
+          test_number?: number | null
           title: string
           transcript?: string | null
           updated_at?: string
         }
         Update: {
           audio_url?: string | null
+          cambridge_book?: string | null
           created_at?: string
           difficulty_level?: string | null
           id?: string
           instructions?: string | null
           section_number?: number | null
+          test_number?: number | null
           title?: string
           transcript?: string | null
           updated_at?: string
@@ -129,29 +135,35 @@ export type Database = {
       }
       reading_passages: {
         Row: {
+          cambridge_book: string | null
           content: string
           created_at: string
           difficulty_level: string | null
           id: string
           passage_type: string | null
+          test_number: number | null
           title: string
           updated_at: string
         }
         Insert: {
+          cambridge_book?: string | null
           content: string
           created_at?: string
           difficulty_level?: string | null
           id?: string
           passage_type?: string | null
+          test_number?: number | null
           title: string
           updated_at?: string
         }
         Update: {
+          cambridge_book?: string | null
           content?: string
           created_at?: string
           difficulty_level?: string | null
           id?: string
           passage_type?: string | null
+          test_number?: number | null
           title?: string
           updated_at?: string
         }
@@ -207,36 +219,42 @@ export type Database = {
       speaking_prompts: {
         Row: {
           band_criteria: Json | null
+          cambridge_book: string | null
           created_at: string
           follow_up_questions: Json | null
           id: string
           part_number: number | null
           prompt_text: string
           sample_answer: string | null
+          test_number: number | null
           time_limit: number | null
           title: string
           updated_at: string
         }
         Insert: {
           band_criteria?: Json | null
+          cambridge_book?: string | null
           created_at?: string
           follow_up_questions?: Json | null
           id?: string
           part_number?: number | null
           prompt_text: string
           sample_answer?: string | null
+          test_number?: number | null
           time_limit?: number | null
           title: string
           updated_at?: string
         }
         Update: {
           band_criteria?: Json | null
+          cambridge_book?: string | null
           created_at?: string
           follow_up_questions?: Json | null
           id?: string
           part_number?: number | null
           prompt_text?: string
           sample_answer?: string | null
+          test_number?: number | null
           time_limit?: number | null
           title?: string
           updated_at?: string
@@ -246,6 +264,7 @@ export type Database = {
       writing_prompts: {
         Row: {
           band_criteria: Json | null
+          cambridge_book: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -253,6 +272,7 @@ export type Database = {
           sample_answer: string | null
           task_number: number | null
           task_type: string | null
+          test_number: number | null
           time_limit: number | null
           title: string
           updated_at: string
@@ -260,6 +280,7 @@ export type Database = {
         }
         Insert: {
           band_criteria?: Json | null
+          cambridge_book?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -267,6 +288,7 @@ export type Database = {
           sample_answer?: string | null
           task_number?: number | null
           task_type?: string | null
+          test_number?: number | null
           time_limit?: number | null
           title: string
           updated_at?: string
@@ -274,6 +296,7 @@ export type Database = {
         }
         Update: {
           band_criteria?: Json | null
+          cambridge_book?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -281,6 +304,7 @@ export type Database = {
           sample_answer?: string | null
           task_number?: number | null
           task_type?: string | null
+          test_number?: number | null
           time_limit?: number | null
           title?: string
           updated_at?: string

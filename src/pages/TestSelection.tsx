@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Headphones, PenTool, Mic } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const Dashboard = () => {
+const TestSelection = () => {
   const navigate = useNavigate();
   const [selectedMode, setSelectedMode] = useState("simulation"); // "easy" or "simulation"
   const [selectedSections, setSelectedSections] = useState(new Set(["listening", "reading", "writing", "speaking"]));
@@ -58,18 +58,18 @@ const Dashboard = () => {
           <div className="max-w-md mx-auto">
             <Card className="mb-6">
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl text-blue-600">新版机考</CardTitle>
+                <CardTitle className="text-2xl text-blue-600">New Computer Test</CardTitle>
                 <CardDescription className="text-gray-600">
-                  雅思官方已宣布2024年3月底前完成新版机考系统的升级<br/>
-                  (推荐)
+                  IELTS officially announced the upgrade to the new computer test system by the end of March 2024<br/>
+                  (Recommended)
                 </CardDescription>
                 <div className="bg-gray-100 rounded-lg p-4 mt-4">
                   <div className="text-sm text-gray-600 mb-1">IELTS</div>
                   <div className="text-lg font-bold">{selectedTest.version}</div>
-                  <div className="text-sm text-gray-600">Test {selectedTest.testNumber} · 听 说 读 写</div>
+                  <div className="text-sm text-gray-600">Test {selectedTest.testNumber} · Listening Reading Writing Speaking</div>
                 </div>
                 <div className="mt-4">
-                  <span className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1">可多选</span>
+                  <span className="text-sm text-gray-500 border border-gray-300 rounded px-2 py-1">Multiple selection available</span>
                 </div>
               </CardHeader>
             </Card>
@@ -87,7 +87,7 @@ const Dashboard = () => {
                       color: selectedMode === "easy" ? "white" : "#374151"
                     }}
                   >
-                    轻松模式
+                    Easy Mode
                   </Button>
                   <Button
                     variant={selectedMode === "simulation" ? "default" : "outline"}
@@ -98,7 +98,7 @@ const Dashboard = () => {
                       color: selectedMode === "simulation" ? "white" : "#374151"
                     }}
                   >
-                    仿真模式
+                    Simulation Mode
                   </Button>
                 </div>
               </CardContent>
@@ -108,7 +108,7 @@ const Dashboard = () => {
             <Card className="mb-6">
               <CardContent className="p-6">
                 <div className="text-center mb-4">
-                  <Badge variant="secondary" className="mb-2 bg-purple-100 text-purple-700">智能点评</Badge>
+                  <Badge variant="secondary" className="mb-2 bg-purple-100 text-purple-700">AI Feedback</Badge>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {sections.map((section) => {
@@ -142,11 +142,11 @@ const Dashboard = () => {
               className="w-full h-12 text-lg rounded-full"
               style={{ backgroundColor: "#3b82f6", color: "white" }}
             >
-              确定
+              Confirm
             </Button>
 
             <p className="text-center text-sm text-red-500 mt-4">
-              * 要想所选择的考试项目都完成才能省看结果
+              * You need to complete all selected test sections to view results
             </p>
 
             <Button
@@ -154,7 +154,7 @@ const Dashboard = () => {
               onClick={() => setSelectedTest(null)}
               className="w-full mt-4"
             >
-              返回测试选择
+              Back to Test Selection
             </Button>
           </div>
         </div>
@@ -165,96 +165,83 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">IELTS Practice Platform</h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Master your IELTS skills with our comprehensive practice platform
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">IELTS Cambridge Tests</h1>
+          <p className="text-xl text-gray-600">
+            Choose from official Cambridge IELTS practice tests
           </p>
         </div>
 
-        {/* Main Action Cards */}
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-400">
-            <CardContent className="p-8 text-center" onClick={() => navigate('/tests')}>
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <BookOpen className="w-10 h-10" />
+        {/* Cambridge Test Grid */}
+        <div className="max-w-6xl mx-auto space-y-6">
+          {cambridgeTests.map((cambridge) => (
+            <div key={cambridge.version} className="space-y-4">
+              <h2 className="text-2xl font-bold text-center text-gray-700">{cambridge.version}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {cambridge.tests.map((testNumber) => (
+                  <Card 
+                    key={`${cambridge.version}-${testNumber}`}
+                    className="cursor-pointer hover:shadow-lg transition-shadow duration-300 border-2 hover:border-blue-300"
+                    onClick={() => setSelectedTest({ version: cambridge.version, testNumber })}
+                  >
+                    <CardContent className="p-6">
+                      <div 
+                        className="text-white rounded-lg p-4 mb-4"
+                        style={{
+                          background: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)"
+                        }}
+                      >
+                        <div className="text-white text-2xl font-bold mb-1">IELTS</div>
+                        <div 
+                          className="text-lg font-semibold"
+                          style={{ color: "#fbbf24" }}
+                        >
+                          {cambridge.version.substring(1)}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold text-gray-800">Test {testNumber}</div>
+                        <div className="text-sm text-gray-600">Listening Reading Writing Speaking</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Cambridge Tests</h3>
-              <p className="text-gray-600 mb-6">
-                Practice with official Cambridge IELTS tests from books C17-C20
-              </p>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                Start Cambridge Tests
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-xl transition-all duration-300 border-2 hover:border-green-400">
-            <CardContent className="p-8 text-center">
-              <div className="bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <Mic className="w-10 h-10" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Individual Skills</h3>
-              <p className="text-gray-600 mb-6">
-                Focus on specific skills with targeted practice exercises
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {sections.map((section) => {
-                  const Icon = section.icon;
-                  return (
-                    <Button
-                      key={section.id}
-                      variant="outline"
-                      onClick={() => handleStartTest(section.id)}
-                      className="flex flex-col gap-1 h-16 text-xs"
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span>{section.name}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          ))}
         </div>
 
-        {/* Features Section */}
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <div className="text-center">
-            <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-blue-600" />
-            </div>
-            <h4 className="text-lg font-semibold mb-2">Official Content</h4>
-            <p className="text-gray-600">Practice with authentic Cambridge IELTS materials</p>
-          </div>
-          <div className="text-center">
-            <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <Mic className="w-8 h-8 text-green-600" />
-            </div>
-            <h4 className="text-lg font-semibold mb-2">AI Feedback</h4>
-            <p className="text-gray-600">Get instant feedback on your speaking and writing</p>
-          </div>
-          <div className="text-center">
-            <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <Headphones className="w-8 h-8 text-purple-600" />
-            </div>
-            <h4 className="text-lg font-semibold mb-2">Real Test Experience</h4>
-            <p className="text-gray-600">Simulate actual IELTS test conditions</p>
+        {/* Quick Access to Individual Tests */}
+        <div className="mt-12 text-center">
+          <h3 className="text-xl font-semibold mb-6 text-gray-700">Or choose individual practice</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <Button
+                  key={section.id}
+                  variant="outline"
+                  onClick={() => handleStartTest(section.id)}
+                  className="h-20 flex flex-col gap-2 border-2 hover:border-blue-300 hover:bg-blue-50"
+                >
+                  <Icon className="w-6 h-6" />
+                  <span>{section.name}</span>
+                </Button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Admin Access */}
-        <div className="text-center py-8">
-          <button
-            onClick={() => navigate('/admin/login')}
-            className="text-sm text-gray-500 hover:text-blue-600 underline transition-colors"
-          >
-            Admin Portal Access
-          </button>
-        </div>
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="w-full mt-8"
+        >
+          Back to Home
+        </Button>
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default TestSelection;

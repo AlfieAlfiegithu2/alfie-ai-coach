@@ -10,20 +10,21 @@ import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
 
-const AdminReading = () => {
+const AdminSpeaking = () => {
   const navigate = useNavigate();
   const { admin } = useAdminAuth();
   const { listContent, createContent, deleteContent, loading } = useAdminContent();
   const { toast } = useToast();
-  const [passages, setPassages] = useState([]);
+  const [prompts, setPrompts] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
-    content: "",
-    difficulty_level: "intermediate",
-    passage_type: "academic",
     cambridge_book: "",
-    test_number: 1
+    test_number: 1,
+    part_number: 1,
+    prompt_text: "",
+    time_limit: 2,
+    sample_answer: ""
   });
 
   useEffect(() => {
@@ -31,17 +32,17 @@ const AdminReading = () => {
       navigate("/admin/login");
       return;
     }
-    loadPassages();
+    loadPrompts();
   }, [admin, navigate]);
 
-  const loadPassages = async () => {
+  const loadPrompts = async () => {
     try {
-      const result = await listContent('reading_passages');
-      setPassages(result.data || []);
+      const result = await listContent('speaking_prompts');
+      setPrompts(result.data || []);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to load reading passages",
+        description: "Failed to load speaking prompts",
         variant: "destructive"
       });
     }
@@ -50,36 +51,44 @@ const AdminReading = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await createContent('reading_passages', formData);
+      await createContent('speaking_prompts', formData);
       toast({
         title: "Success",
-        description: "Reading passage created successfully"
+        description: "Speaking prompt created successfully"
       });
-      setFormData({ title: "", content: "", difficulty_level: "intermediate", passage_type: "academic", cambridge_book: "", test_number: 1 });
+      setFormData({
+        title: "",
+        cambridge_book: "",
+        test_number: 1,
+        part_number: 1,
+        prompt_text: "",
+        time_limit: 2,
+        sample_answer: ""
+      });
       setShowCreateForm(false);
-      loadPassages();
+      loadPrompts();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create passage",
+        description: "Failed to create prompt",
         variant: "destructive"
       });
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this passage?")) {
+    if (confirm("Are you sure you want to delete this prompt?")) {
       try {
-        await deleteContent('reading_passages', id);
+        await deleteContent('speaking_prompts', id);
         toast({
           title: "Success",
-          description: "Passage deleted successfully"
+          description: "Prompt deleted successfully"
         });
-        loadPassages();
+        loadPrompts();
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to delete passage",
+          description: "Failed to delete prompt",
           variant: "destructive"
         });
       }
@@ -95,23 +104,23 @@ const AdminReading = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
-            <h1 className="text-2xl font-bold">Reading Passages</h1>
+            <h1 className="text-2xl font-bold">Speaking Prompts</h1>
           </div>
           <Button onClick={() => setShowCreateForm(!showCreateForm)}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Passage
+            Add Prompt
           </Button>
         </div>
 
         {showCreateForm && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Create New Reading Passage</CardTitle>
+              <CardTitle>Create New Speaking Prompt</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreate} className="space-y-4">
                 <Input
-                  placeholder="Passage Title"
+                  placeholder="Title"
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
@@ -129,34 +138,39 @@ const AdminReading = () => {
                     onChange={(e) => setFormData({...formData, test_number: parseInt(e.target.value)})}
                   />
                 </div>
-                <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({...formData, difficulty_level: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select difficulty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={formData.passage_type} onValueChange={(value) => setFormData({...formData, passage_type: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="academic">Academic</SelectItem>
-                    <SelectItem value="general">General Training</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <Select value={formData.part_number.toString()} onValueChange={(value) => setFormData({...formData, part_number: parseInt(value)})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Part Number" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Part 1</SelectItem>
+                      <SelectItem value="2">Part 2</SelectItem>
+                      <SelectItem value="3">Part 3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    placeholder="Time Limit (minutes)"
+                    value={formData.time_limit}
+                    onChange={(e) => setFormData({...formData, time_limit: parseInt(e.target.value)})}
+                  />
+                </div>
                 <Textarea
-                  placeholder="Passage Content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({...formData, content: e.target.value})}
-                  rows={10}
+                  placeholder="Prompt Text"
+                  value={formData.prompt_text}
+                  onChange={(e) => setFormData({...formData, prompt_text: e.target.value})}
+                  rows={5}
                   required
                 />
+                <Textarea
+                  placeholder="Sample Answer (optional)"
+                  value={formData.sample_answer}
+                  onChange={(e) => setFormData({...formData, sample_answer: e.target.value})}
+                  rows={8}
+                />
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={loading}>Create Passage</Button>
+                  <Button type="submit" disabled={loading}>Create Prompt</Button>
                   <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
                 </div>
               </form>
@@ -165,16 +179,16 @@ const AdminReading = () => {
         )}
 
         <div className="grid gap-4">
-          {passages.map((passage) => (
-            <Card key={passage.id}>
+          {prompts.map((prompt) => (
+            <Card key={prompt.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{passage.title}</CardTitle>
+                  <CardTitle className="text-lg">{prompt.title}</CardTitle>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline">
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleDelete(passage.id)}>
+                    <Button size="sm" variant="destructive" onClick={() => handleDelete(prompt.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -182,12 +196,12 @@ const AdminReading = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-4 text-sm text-muted-foreground mb-2">
-                  {passage.cambridge_book && <span>Book: {passage.cambridge_book}</span>}
-                  {passage.test_number && <span>Test: {passage.test_number}</span>}
-                  <span>Level: {passage.difficulty_level}</span>
-                  <span>Type: {passage.passage_type}</span>
+                  {prompt.cambridge_book && <span>Book: {prompt.cambridge_book}</span>}
+                  {prompt.test_number && <span>Test: {prompt.test_number}</span>}
+                  <span>Part: {prompt.part_number}</span>
+                  <span>Time: {prompt.time_limit}min</span>
                 </div>
-                <p className="text-sm line-clamp-3">{passage.content}</p>
+                <p className="text-sm line-clamp-3">{prompt.prompt_text}</p>
               </CardContent>
             </Card>
           ))}
@@ -197,4 +211,4 @@ const AdminReading = () => {
   );
 };
 
-export default AdminReading;
+export default AdminSpeaking;

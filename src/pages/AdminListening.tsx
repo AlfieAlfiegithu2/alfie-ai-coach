@@ -25,7 +25,9 @@ const AdminListening = () => {
     difficulty_level: "intermediate",
     instructions: "",
     transcript: "",
-    audio_url: ""
+    audio_url: "",
+    cambridge_book: "",
+    test_number: 1
   });
 
   useEffect(() => {
@@ -86,7 +88,9 @@ const AdminListening = () => {
         difficulty_level: "intermediate",
         instructions: "",
         transcript: "",
-        audio_url: ""
+        audio_url: "",
+        cambridge_book: "",
+        test_number: 1
       });
       setShowCreateForm(false);
       loadSections();
@@ -148,6 +152,19 @@ const AdminListening = () => {
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
                 />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    placeholder="Cambridge Book (e.g. C20)"
+                    value={formData.cambridge_book}
+                    onChange={(e) => setFormData({...formData, cambridge_book: e.target.value})}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Test Number"
+                    value={formData.test_number}
+                    onChange={(e) => setFormData({...formData, test_number: parseInt(e.target.value)})}
+                  />
+                </div>
                 <Input
                   type="number"
                   placeholder="Section Number"
@@ -228,6 +245,8 @@ const AdminListening = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-4 text-sm text-muted-foreground mb-2">
+                  {section.cambridge_book && <span>Book: {section.cambridge_book}</span>}
+                  {section.test_number && <span>Test: {section.test_number}</span>}
                   <span>Section: {section.section_number}</span>
                   <span>Level: {section.difficulty_level}</span>
                   {section.audio_url && <span className="text-green-600">Has Audio</span>}

@@ -91,13 +91,29 @@ const AdminReading = () => {
         console.log(`Creating ${questions.length} questions...`);
         for (let i = 0; i < questions.length; i++) {
           const question = questions[i];
+          
+          // Validate question data before sending
+          console.log(`Raw question ${i + 1} data:`, question);
+          
           const questionData = {
-            ...question,
+            question_number: question.question_number || (i + 1),
+            question_type: question.question_type || 'Multiple Choice', // Default type if empty
+            question_text: question.question_text || '',
+            correct_answer: question.correct_answer || '',
+            explanation: question.explanation || '',
+            options: question.options || null,
             passage_id: passageId // This can be null for standalone questions
           };
-          console.log(`Creating question ${i + 1}:`, questionData);
-          const questionResult = await createContent('reading_questions', questionData);
-          console.log(`Question ${i + 1} created:`, questionResult);
+          
+          console.log(`Formatted question ${i + 1} data being sent:`, questionData);
+          
+          try {
+            const questionResult = await createContent('reading_questions', questionData);
+            console.log(`Question ${i + 1} created successfully:`, questionResult);
+          } catch (questionError) {
+            console.error(`Failed to create question ${i + 1}:`, questionError);
+            throw new Error(`Failed to save question ${i + 1}: ${questionError.message}`);
+          }
         }
       }
       

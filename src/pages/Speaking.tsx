@@ -216,11 +216,11 @@ const Speaking = () => {
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">
                     {currentPrompt.prompt_text}
                   </p>
-                  {currentPrompt.follow_up_questions && currentPrompt.follow_up_questions.length > 0 && (
+                  {currentPrompt.follow_up_questions && Array.isArray(currentPrompt.follow_up_questions) && currentPrompt.follow_up_questions.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gentle-blue/20">
                       <h4 className="font-medium mb-2 text-gentle-blue">Follow-up questions:</h4>
                       <ul className="text-sm space-y-1">
-                        {currentPrompt.follow_up_questions.map((question, index) => (
+                        {currentPrompt.follow_up_questions.map((question: string, index: number) => (
                           <li key={index} className="text-muted-foreground">• {question}</li>
                         ))}
                       </ul>
@@ -238,7 +238,6 @@ const Speaking = () => {
 
                 <AudioRecorder 
                   onRecordingComplete={handleRecordingComplete}
-                  onStartRecording={handleStartRecording}
                   disabled={isAnalyzing}
                 />
 

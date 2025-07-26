@@ -8,9 +8,9 @@ export interface SpeakingPrompt {
   prompt_text: string;
   part_number: number;
   time_limit: number;
-  follow_up_questions?: string[];
+  follow_up_questions?: any; // Json type from Supabase
   sample_answer?: string;
-  band_criteria?: any;
+  band_criteria?: any; // Json type from Supabase
 }
 
 export const useSpeakingTest = () => {

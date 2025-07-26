@@ -135,34 +135,40 @@ export type Database = {
       }
       reading_passages: {
         Row: {
+          book_number: number | null
           cambridge_book: string | null
           content: string
           created_at: string
           difficulty_level: string | null
           id: string
           passage_type: string | null
+          section_number: number | null
           test_number: number | null
           title: string
           updated_at: string
         }
         Insert: {
+          book_number?: number | null
           cambridge_book?: string | null
           content: string
           created_at?: string
           difficulty_level?: string | null
           id?: string
           passage_type?: string | null
+          section_number?: number | null
           test_number?: number | null
           title: string
           updated_at?: string
         }
         Update: {
+          book_number?: number | null
           cambridge_book?: string | null
           content?: string
           created_at?: string
           difficulty_level?: string | null
           id?: string
           passage_type?: string | null
+          section_number?: number | null
           test_number?: number | null
           title?: string
           updated_at?: string
@@ -172,6 +178,7 @@ export type Database = {
       reading_questions: {
         Row: {
           band_impact: number | null
+          cambridge_book: string | null
           correct_answer: string
           created_at: string
           explanation: string
@@ -181,9 +188,11 @@ export type Database = {
           question_number: number
           question_text: string
           question_type: string | null
+          section_number: number | null
         }
         Insert: {
           band_impact?: number | null
+          cambridge_book?: string | null
           correct_answer: string
           created_at?: string
           explanation: string
@@ -193,9 +202,11 @@ export type Database = {
           question_number: number
           question_text: string
           question_type?: string | null
+          section_number?: number | null
         }
         Update: {
           band_impact?: number | null
+          cambridge_book?: string | null
           correct_answer?: string
           created_at?: string
           explanation?: string
@@ -205,6 +216,7 @@ export type Database = {
           question_number?: number
           question_text?: string
           question_type?: string | null
+          section_number?: number | null
         }
         Relationships: [
           {

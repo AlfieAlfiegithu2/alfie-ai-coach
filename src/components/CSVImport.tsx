@@ -164,7 +164,6 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
 
       questions.push({
         question_number: questionNumber,
-        section: section,
         question_type: questionType,
         question_text: questionText,
         options: options.length > 0 ? options : undefined,

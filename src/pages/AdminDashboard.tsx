@@ -179,8 +179,9 @@ const AdminDashboard = () => {
                         <Button onClick={() => navigate(section.route)} variant="outline" className="flex-1">
                           View All ({section.count})
                         </Button>
-                        <Button onClick={() => navigate(`${section.route}/create`)} size="sm">
-                          <Plus className="w-4 h-4" />
+                        <Button onClick={() => navigate(section.route)} size="sm">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add New
                         </Button>
                       </div>
                     </CardContent>

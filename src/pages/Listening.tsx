@@ -1,74 +1,303 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Headphones, Clock, ArrowLeft } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Clock, Headphones, Play, Pause } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
+
+interface ListeningSection {
+  id: string;
+  title: string;
+  section_number: number;
+  instructions: string;
+  audio_url: string;
+  transcript: string;
+  difficulty_level: string;
+}
+
+interface ListeningQuestion {
+  id: string;
+  question_text: string;
+  question_number: number;
+  options: any;
+  correct_answer: string;
+  question_type: string;
+  section_id: string;
+}
 
 const Listening = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes
+  const [currentSection, setCurrentSection] = useState<ListeningSection | null>(null);
+  const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    fetchListeningTest();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const fetchListeningTest = async () => {
+    try {
+      // Fetch a random listening section
+      const { data: sections, error: sectionError } = await supabase
+        .from('listening_sections')
+        .select('*')
+        .limit(1);
+
+      if (sectionError) throw sectionError;
+
+      if (sections && sections.length > 0) {
+        const section = sections[0];
+        setCurrentSection(section);
+
+        // Fetch questions for this section
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('listening_questions')
+          .select('*')
+          .eq('section_id', section.id)
+          .order('question_number');
+
+        if (questionsError) throw questionsError;
+        setQuestions(questionsData || []);
+
+        // Initialize audio if URL exists
+        if (section.audio_url) {
+          const audioElement = new Audio(section.audio_url);
+          setAudio(audioElement);
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to load listening test: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleAudio = () => {
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleAnswerChange = (questionId: string, answer: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (audio) {
+      audio.pause();
+    }
+    const score = calculateScore();
+    toast({
+      title: "Test Submitted!",
+      description: `You answered ${score}/${questions.length} questions correctly.`,
+    });
+    navigate('/');
+  };
+
+  const calculateScore = () => {
+    return questions.reduce((score, question) => {
+      return answers[question.id] === question.correct_answer ? score + 1 : score;
+    }, 0);
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading listening test...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-background shadow-soft">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-                <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
-              </Button>
-              <div className="flex items-center gap-2">
-                <Headphones className="w-5 h-5 text-blue-deep" />
-                <span className="font-semibold">Listening Test</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>30:00</span>
-              </div>
-              <Button variant="hero" size="sm">
-                Submit Test
-              </Button>
+      <div className="bg-white border-b-2 border-gray-200 p-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <div className="flex items-center gap-2">
+              <Headphones className="h-5 w-5 text-green-600" />
+              <span className="font-semibold text-lg">IELTS Listening Test</span>
             </div>
           </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-lg">
+              <Clock className="h-4 w-4 text-orange-600" />
+              <span className="font-mono text-orange-600 font-medium">
+                {formatTime(timeLeft)}
+              </span>
+            </div>
+            <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+              Submit Test
+            </Button>
+          </div>
         </div>
-      </header>
+      </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl">IELTS Academic Listening Test</CardTitle>
-            <p className="text-center text-muted-foreground">
-              Time: 30 minutes | 4 sections | 40 questions
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-blue-light/30 p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">Instructions</h3>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Listen to four recorded sections</li>
-                <li>• Each section is played only once</li>
-                <li>• Answer questions as you listen</li>
-                <li>• You have 10 minutes to transfer answers</li>
-              </ul>
-            </div>
-            
-            <div className="text-center py-12">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-blue-light flex items-center justify-center">
-                <Headphones className="w-12 h-12 text-blue-deep" />
-              </div>
-              <h2 className="text-xl font-semibold mb-4">Listening Test Coming Soon</h2>
-              <p className="text-muted-foreground mb-6">
-                We're preparing high-quality audio materials with various accents and AI feedback
-              </p>
-              <Button variant="hero">
-                Get Notified When Ready
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Audio Player & Instructions */}
+          <div>
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Headphones className="h-5 w-5" />
+                  {currentSection?.title}
+                </CardTitle>
+                <CardDescription>
+                  Section {currentSection?.section_number} | Difficulty: {currentSection?.difficulty_level}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm">{currentSection?.instructions}</p>
+                  
+                  {currentSection?.audio_url ? (
+                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleAudio}
+                        className="flex items-center gap-2"
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                        {isPlaying ? 'Pause' : 'Play'} Audio
+                      </Button>
+                      <span className="text-sm text-gray-600">
+                        Click play to start the listening section
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        Audio file not available. Please check the transcript below for content.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Transcript (for reference) */}
+            {currentSection?.transcript && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transcript (for reference)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm leading-relaxed text-gray-600">
+                    {currentSection.transcript.split('\n\n').map((paragraph, index) => (
+                      <p key={index} className="mb-3">
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Questions */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Questions ({questions.length})</CardTitle>
+                <CardDescription>
+                  Listen to the audio and answer all questions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {questions.map((question) => (
+                  <div key={question.id} className="border-b pb-4 last:border-b-0">
+                    <p className="font-medium mb-3">
+                      {question.question_number}. {question.question_text}
+                    </p>
+                    
+                    {question.question_type === 'multiple_choice' && question.options ? (
+                      <div className="space-y-2">
+                        {question.options.map((option, index) => (
+                          <label key={index} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`question_${question.id}`}
+                              value={option}
+                              checked={answers[question.id] === option}
+                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                              className="text-green-600"
+                            />
+                            <span className="text-sm">{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Type your answer here"
+                        value={answers[question.id] || ''}
+                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

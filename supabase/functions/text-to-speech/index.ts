@@ -47,9 +47,15 @@ serve(async (req) => {
 
     // Convert audio buffer to base64
     const arrayBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    );
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Convert to base64 in chunks to avoid stack overflow
+    let base64Audio = '';
+    const chunkSize = 1024;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      base64Audio += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+    }
 
     console.log('TTS generation successful');
 

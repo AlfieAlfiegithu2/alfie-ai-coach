@@ -308,6 +308,16 @@ const Dashboard = () => {
           </div>
         </div>
       </section>
+
+      {/* Admin Access */}
+      <div className="text-center py-8">
+        <button
+          onClick={() => navigate('/admin/login')}
+          className="text-sm text-muted-foreground hover:text-electric-blue underline transition-colors"
+        >
+          Admin Portal Access
+        </button>
+      </div>
     </div>
   );
 };

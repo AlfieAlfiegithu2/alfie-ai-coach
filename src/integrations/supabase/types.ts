@@ -14,7 +14,280 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          password_hash: string
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          password_hash: string
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          password_hash?: string
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      listening_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          options: Json | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+          section_id: string | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          options?: Json | null
+          question_number: number
+          question_text: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          options?: Json | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listening_questions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "listening_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listening_sections: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          difficulty_level: string | null
+          id: string
+          instructions: string | null
+          section_number: number | null
+          title: string
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          difficulty_level?: string | null
+          id?: string
+          instructions?: string | null
+          section_number?: number | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          difficulty_level?: string | null
+          id?: string
+          instructions?: string | null
+          section_number?: number | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reading_passages: {
+        Row: {
+          content: string
+          created_at: string
+          difficulty_level: string | null
+          id: string
+          passage_type: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          difficulty_level?: string | null
+          id?: string
+          passage_type?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          difficulty_level?: string | null
+          id?: string
+          passage_type?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reading_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          options: Json | null
+          passage_id: string | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          options?: Json | null
+          passage_id?: string | null
+          question_number: number
+          question_text: string
+          question_type?: string | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          options?: Json | null
+          passage_id?: string | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_questions_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "reading_passages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speaking_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          follow_up_questions: Json | null
+          id: string
+          part_number: number | null
+          prompt_text: string
+          sample_answer: string | null
+          time_limit: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          part_number?: number | null
+          prompt_text: string
+          sample_answer?: string | null
+          time_limit?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          part_number?: number | null
+          prompt_text?: string
+          sample_answer?: string | null
+          time_limit?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      writing_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          id: string
+          image_url: string | null
+          prompt_text: string
+          sample_answer: string | null
+          task_number: number | null
+          task_type: string | null
+          time_limit: number | null
+          title: string
+          updated_at: string
+          word_limit: number | null
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          prompt_text: string
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          time_limit?: number | null
+          title: string
+          updated_at?: string
+          word_limit?: number | null
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          prompt_text?: string
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          time_limit?: number | null
+          title?: string
+          updated_at?: string
+          word_limit?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

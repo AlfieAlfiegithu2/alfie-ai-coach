@@ -39,7 +39,7 @@ const QuestionForm = ({ questions, onQuestionsChange, type }: QuestionFormProps)
       question_number: questions.length + 1,
       question_text: '',
       question_type: 'multiple_choice',
-      options: ['', '', '', ''],
+      options: ['Option A', 'Option B', 'Option C', 'Option D'],
       correct_answer: '',
       explanation: ''
     };
@@ -261,11 +261,14 @@ const QuestionForm = ({ questions, onQuestionsChange, type }: QuestionFormProps)
                             <SelectValue placeholder="Select correct option" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl border-light-border bg-card">
-                            {(question.options || []).map((option, optionIndex) => (
-                              <SelectItem key={optionIndex} value={option}>
-                                {String.fromCharCode(65 + optionIndex)}. {option}
-                              </SelectItem>
-                            ))}
+                            {(question.options || []).filter(option => option.trim()).map((option, optionIndex) => {
+                              const originalIndex = (question.options || []).indexOf(option);
+                              return (
+                                <SelectItem key={originalIndex} value={option}>
+                                  {String.fromCharCode(65 + originalIndex)}. {option}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       ) : (

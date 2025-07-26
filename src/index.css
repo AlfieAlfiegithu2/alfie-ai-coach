@@ -141,7 +141,8 @@ All colors MUST be HSL.
   
   .encouraging-glow::before {
     content: '';
-    @apply absolute inset-0 rounded-full bg-gradient-to-r from-warm-coral to-sunny-yellow opacity-20 blur-lg;
+    @apply absolute inset-0 rounded-full opacity-20 blur-lg;
+    background: linear-gradient(45deg, hsl(16 85% 60%), hsl(48 100% 75%));
     z-index: -1;
   }
   

@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, FileText, HelpCircle } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
+import QuestionForm from "@/components/QuestionForm";
 
 const AdminReading = () => {
   const { listContent, createContent, deleteContent, loading } = useAdminContent();
@@ -22,6 +25,9 @@ const AdminReading = () => {
     cambridge_book: "",
     test_number: 1
   });
+  const [questions, setQuestions] = useState([]);
+  const [activeTab, setActiveTab] = useState("info");
+  const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
     loadPassages();
@@ -43,11 +49,26 @@ const AdminReading = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createContent('reading_passages', formData);
+      // Create the passage first
+      const passageResult = await createContent('reading_passages', formData);
+      const passageId = passageResult.data.id;
+      
+      // Create questions if any
+      if (questions.length > 0) {
+        for (const question of questions) {
+          await createContent('reading_questions', {
+            ...question,
+            passage_id: passageId
+          });
+        }
+      }
+      
       toast({
         title: "Success",
-        description: "Reading passage created successfully"
+        description: `Reading passage created with ${questions.length} questions`
       });
+      
+      // Reset form
       setFormData({ 
         title: "", 
         content: "", 
@@ -56,7 +77,9 @@ const AdminReading = () => {
         cambridge_book: "", 
         test_number: 1 
       });
+      setQuestions([]);
       setShowCreateForm(false);
+      setActiveTab("info");
       loadPassages();
     } catch (error) {
       toast({
@@ -112,97 +135,197 @@ const AdminReading = () => {
             style={{ background: 'var(--gradient-card)' }}
           >
             <CardHeader>
-              <CardTitle className="text-2xl font-georgia text-foreground">Create New Reading Passage</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl font-georgia text-foreground">Create New Reading Test</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setPreviewMode(!previewMode)}
+                    className="rounded-xl border-light-border"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    {previewMode ? 'Edit' : 'Preview'}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreate} className="space-y-6">
-                <Input
-                  placeholder="Passage Title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  required
-                  className="rounded-xl border-light-border"
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Select value={formData.cambridge_book} onValueChange={(value) => setFormData({...formData, cambridge_book: value})}>
-                      <SelectTrigger className="rounded-xl border-light-border">
-                        <SelectValue placeholder="Select Cambridge Book" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-light-border bg-card">
-                        {Array.from({length: 20}, (_, i) => 20 - i).map(num => (
-                          <SelectItem key={num} value={`C${num}`}>Cambridge {num}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              {previewMode ? (
+                // Preview Mode
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Passage Preview */}
+                    <Card className="rounded-2xl border-light-border" style={{ background: 'white' }}>
+                      <CardHeader>
+                        <CardTitle className="font-georgia text-foreground flex items-center gap-2">
+                          <FileText className="w-5 h-5" />
+                          {formData.title || 'Untitled Passage'}
+                        </CardTitle>
+                        <div className="flex gap-2">
+                          {formData.cambridge_book && <Badge variant="outline">{formData.cambridge_book}</Badge>}
+                          {formData.test_number && <Badge variant="outline">Test {formData.test_number}</Badge>}
+                          <Badge variant="outline">{formData.difficulty_level}</Badge>
+                          <Badge variant="outline">{formData.passage_type}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="prose max-w-none text-sm leading-relaxed text-foreground">
+                          {formData.content ? (
+                            formData.content.split('\n\n').map((paragraph, index) => (
+                              <p key={index} className="mb-4">{paragraph}</p>
+                            ))
+                          ) : (
+                            <p className="text-warm-gray italic">No passage content yet...</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Questions Preview */}
+                    <Card className="rounded-2xl border-light-border" style={{ background: 'white' }}>
+                      <CardHeader>
+                        <CardTitle className="font-georgia text-foreground flex items-center gap-2">
+                          <HelpCircle className="w-5 h-5" />
+                          Questions ({questions.length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {questions.length > 0 ? (
+                          <div className="space-y-4">
+                            {questions.map((question: any, index) => (
+                              <div key={index} className="border-b border-light-border pb-4 last:border-b-0">
+                                <p className="font-medium text-foreground mb-2">
+                                  {question.question_number}. {question.question_text}
+                                </p>
+                                {question.question_type === 'multiple_choice' && question.options ? (
+                                  <div className="space-y-1">
+                                    {question.options.map((option: string, optionIndex: number) => (
+                                      <div key={optionIndex} className={`text-sm p-2 rounded ${option === question.correct_answer ? 'bg-green-50 text-green-800 font-medium' : 'text-foreground'}`}>
+                                        {String.fromCharCode(65 + optionIndex)}. {option}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm p-2 bg-green-50 text-green-800 font-medium rounded">
+                                    Answer: {question.correct_answer}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-warm-gray italic">No questions added yet...</p>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
                   
-                  <div>
-                    <Select value={formData.test_number.toString()} onValueChange={(value) => setFormData({...formData, test_number: parseInt(value)})}>
-                      <SelectTrigger className="rounded-xl border-light-border">
-                        <SelectValue placeholder="Select Test Number" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-light-border bg-card">
-                        {Array.from({length: 4}, (_, i) => i + 1).map(num => (
-                          <SelectItem key={num} value={num.toString()}>Test {num}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={handleCreate} 
+                      disabled={loading || !formData.title || !formData.content}
+                      className="rounded-xl"
+                      style={{ background: 'var(--gradient-button)', border: 'none' }}
+                    >
+                      Publish Test
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowCreateForm(false)}
+                      className="rounded-xl border-light-border hover:bg-gentle-blue/10"
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({...formData, difficulty_level: value})}>
-                    <SelectTrigger className="rounded-xl border-light-border">
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-light-border bg-card">
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
+              ) : (
+                // Edit Mode
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 rounded-xl">
+                    <TabsTrigger value="info" className="rounded-xl">Test Info</TabsTrigger>
+                    <TabsTrigger value="passage" className="rounded-xl">Passage</TabsTrigger>
+                    <TabsTrigger value="questions" className="rounded-xl">Questions</TabsTrigger>
+                  </TabsList>
                   
-                  <Select value={formData.passage_type} onValueChange={(value) => setFormData({...formData, passage_type: value})}>
-                    <SelectTrigger className="rounded-xl border-light-border">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-light-border bg-card">
-                      <SelectItem value="academic">Academic</SelectItem>
-                      <SelectItem value="general">General Training</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Textarea
-                  placeholder="Passage Content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({...formData, content: e.target.value})}
-                  rows={12}
-                  required
-                  className="rounded-xl border-light-border"
-                />
-                
-                <div className="flex gap-3">
-                  <Button 
-                    type="submit" 
-                    disabled={loading}
-                    className="rounded-xl"
-                    style={{ background: 'var(--gradient-button)', border: 'none' }}
-                  >
-                    Create Passage
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowCreateForm(false)}
-                    className="rounded-xl border-light-border hover:bg-gentle-blue/10"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+                  <TabsContent value="info" className="space-y-6 mt-6">
+                    <Input
+                      placeholder="Test Title (e.g., 'Academic Reading - Climate Change')"
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      required
+                      className="rounded-xl border-light-border"
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <Select value={formData.cambridge_book} onValueChange={(value) => setFormData({...formData, cambridge_book: value})}>
+                        <SelectTrigger className="rounded-xl border-light-border">
+                          <SelectValue placeholder="Select Cambridge Book" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-light-border bg-card">
+                          {Array.from({length: 20}, (_, i) => 20 - i).map(num => (
+                            <SelectItem key={num} value={`C${num}`}>Cambridge {num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Select value={formData.test_number.toString()} onValueChange={(value) => setFormData({...formData, test_number: parseInt(value)})}>
+                        <SelectTrigger className="rounded-xl border-light-border">
+                          <SelectValue placeholder="Select Test Number" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-light-border bg-card">
+                          {Array.from({length: 4}, (_, i) => i + 1).map(num => (
+                            <SelectItem key={num} value={num.toString()}>Test {num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <Select value={formData.difficulty_level} onValueChange={(value) => setFormData({...formData, difficulty_level: value})}>
+                        <SelectTrigger className="rounded-xl border-light-border">
+                          <SelectValue placeholder="Select difficulty" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-light-border bg-card">
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <Select value={formData.passage_type} onValueChange={(value) => setFormData({...formData, passage_type: value})}>
+                        <SelectTrigger className="rounded-xl border-light-border">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-light-border bg-card">
+                          <SelectItem value="academic">Academic</SelectItem>
+                          <SelectItem value="general">General Training</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="passage" className="space-y-6 mt-6">
+                    <Textarea
+                      placeholder="Paste the reading passage content here..."
+                      value={formData.content}
+                      onChange={(e) => setFormData({...formData, content: e.target.value})}
+                      rows={15}
+                      required
+                      className="rounded-xl border-light-border"
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="questions" className="mt-6">
+                    <QuestionForm 
+                      questions={questions}
+                      onQuestionsChange={setQuestions}
+                      type="reading"
+                    />
+                  </TabsContent>
+                </Tabs>
+              )}
             </CardContent>
           </Card>
         )}

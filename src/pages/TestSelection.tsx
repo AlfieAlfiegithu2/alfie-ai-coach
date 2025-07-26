@@ -65,15 +65,15 @@ const TestSelection = () => {
     
     if (selectedSections.size === 1) {
       const section = Array.from(selectedSections)[0];
-      navigate(`/${section}`);
+      navigate(`/${section}/random`);
     } else {
       // Start full test with selected sections
-      navigate("/reading", { state: { sections: Array.from(selectedSections), mode: testMode } });
+      navigate("/reading/random", { state: { sections: Array.from(selectedSections), mode: testMode } });
     }
   };
 
   const handleIndividualTest = (sectionId: string) => {
-    navigate(`/${sectionId}`);
+    navigate(`/${sectionId}/random`);
   };
 
   // Test Configuration View

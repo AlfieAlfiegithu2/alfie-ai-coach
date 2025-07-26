@@ -35,18 +35,26 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-background via-blue-light/20 to-blue-medium/10">
+      <section className="relative overflow-hidden bg-gradient-to-br from-background via-peachy-pink/20 to-soft-mint/15">
         <div className="container mx-auto px-4 py-16 lg:py-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
+            <div className="space-y-8 animate-fade-in-up">
+              <div className="space-y-6">
+                <div className="inline-block">
+                  <span className="font-handwriting text-xl text-warm-coral animate-wiggle inline-block">
+                    Hey there, future IELTS champion! 👋
+                  </span>
+                </div>
+                
                 <h2 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                  Master IELTS with
-                  <span className="bg-gradient-to-r from-blue-deep to-blue-medium bg-clip-text text-transparent"> AI-Powered </span>
-                  Mock Tests
+                  Let's achieve your
+                  <span className="bg-gradient-to-r from-warm-coral to-sunny-yellow bg-clip-text text-transparent"> IELTS dreams </span>
+                  together! ✨
                 </h2>
+                
                 <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
-                  Get instant feedback, detailed analysis, and personalized recommendations to achieve your target IELTS band score.
+                  Your friendly AI study buddy is here to support you every step of the way. 
+                  Get encouraging feedback, celebrate your progress, and turn your goals into achievements! 🎯
                 </p>
               </div>
               
@@ -55,39 +63,41 @@ const Dashboard = () => {
                   variant="hero" 
                   size="lg"
                   onClick={() => handleStartTest("full")}
-                  className="shadow-strong"
+                  className="warm-hover shadow-strong font-semibold"
                 >
-                  Start Full Mock Test
+                  🚀 Start Your Journey
                 </Button>
                 <Button 
-                  variant="light" 
+                  variant="outline" 
                   size="lg"
+                  className="warm-hover border-warm-coral text-warm-coral hover:bg-warm-coral hover:text-white"
                 >
-                  Try Practice Mode
+                  💡 Explore Practice Mode
                 </Button>
               </div>
 
               <div className="flex items-center gap-8 pt-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-foreground">50K+</div>
-                  <div className="text-sm text-muted-foreground">Tests Taken</div>
+                  <div className="text-sm text-muted-foreground">Happy Learners 😊</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-foreground">8.5</div>
-                  <div className="text-sm text-muted-foreground">Avg Band Score</div>
+                  <div className="text-sm text-muted-foreground">Average Band Score 🎉</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-foreground">95%</div>
-                  <div className="text-sm text-muted-foreground">Success Rate</div>
+                  <div className="text-sm text-muted-foreground">Success Stories 🌟</div>
                 </div>
               </div>
             </div>
             
-            <div className="relative">
+            <div className="relative animate-bounce-gentle">
+              <div className="absolute -inset-4 bg-gradient-to-r from-warm-coral/20 to-sunny-yellow/20 rounded-3xl blur-2xl"></div>
               <img 
                 src={heroImage} 
-                alt="IELTS Study Illustration" 
-                className="w-full h-auto rounded-2xl shadow-strong"
+                alt="Happy student learning IELTS" 
+                className="relative w-full h-auto rounded-3xl shadow-strong"
               />
             </div>
           </div>
@@ -96,34 +106,41 @@ const Dashboard = () => {
 
       {/* Stats Section */}
       <section className="container mx-auto px-4 py-12">
+        <div className="text-center mb-8">
+          <h3 className="text-2xl font-bold text-foreground mb-2 font-handwriting">
+            Your progress makes us proud! 🌈
+          </h3>
+          <p className="text-muted-foreground">Here's how you're growing</p>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
-            title="Current Band Score"
+            title="Your Current Band"
             value="7.5"
-            change="+0.5 from last test"
+            change="+0.5 this week! 🎊"
             trend="up"
-            icon={<Target className="w-4 h-4 text-blue-deep" />}
+            icon={<Target className="w-4 h-4 text-warm-coral" />}
           />
           <StatsCard
             title="Tests Completed"
             value="12"
-            change="3 this week"
+            change="Amazing effort! 💪"
             trend="up"
-            icon={<Award className="w-4 h-4 text-blue-deep" />}
+            icon={<Award className="w-4 h-4 text-warm-coral" />}
           />
           <StatsCard
-            title="Study Streak"
+            title="Learning Streak"
             value="7 days"
-            change="Keep it up!"
+            change="You're on fire! 🔥"
             trend="up"
-            icon={<TrendingUp className="w-4 h-4 text-blue-deep" />}
+            icon={<TrendingUp className="w-4 h-4 text-warm-coral" />}
           />
           <StatsCard
-            title="Time Saved"
+            title="Study Time Saved"
             value="24h"
-            change="vs traditional prep"
+            change="Smart learning! 🧠"
             trend="neutral"
-            icon={<Clock className="w-4 h-4 text-blue-deep" />}
+            icon={<Clock className="w-4 h-4 text-warm-coral" />}
           />
         </div>
       </section>
@@ -131,71 +148,75 @@ const Dashboard = () => {
       {/* Test Sections */}
       <section className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
-          <h3 className="text-3xl font-bold text-foreground mb-4">Choose Your Test Section</h3>
+          <h3 className="text-3xl font-bold text-foreground mb-4">
+            Pick your adventure! 🎯
+          </h3>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Practice individual skills or take the complete IELTS Academic mock test with AI-powered feedback
+            Choose a skill to practice, or take the full test when you're feeling confident. 
+            Remember, every step forward is a win! 🏆
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <TestCard
-            title="Reading"
-            description="3 passages with 40 questions. Practice comprehension, skimming, and scanning techniques with authentic IELTS materials."
+            title="Reading 📚"
+            description="Dive into fascinating passages! Practice comprehension, skimming, and scanning with real IELTS materials."
             duration="60 minutes"
             participants={1247}
-            icon={<BookOpen className="w-6 h-6 text-blue-deep" />}
+            icon={<BookOpen className="w-6 h-6 text-warm-coral" />}
             onStart={() => handleStartTest("reading")}
           />
           
           <TestCard
-            title="Listening"
-            description="4 audio sections with 40 questions. Improve your listening skills with varied accents and realistic scenarios."
+            title="Listening 🎧"
+            description="Tune in and level up! Improve your listening skills with varied accents and engaging scenarios."
             duration="30 minutes"
             participants={2156}
-            icon={<Headphones className="w-6 h-6 text-blue-deep" />}
+            icon={<Headphones className="w-6 h-6 text-warm-coral" />}
             onStart={() => handleStartTest("listening")}
           />
           
           <TestCard
-            title="Writing"
-            description="Task 1 & 2 with instant AI feedback. Get detailed analysis of your writing skills and improvement suggestions."
+            title="Writing ✍️"
+            description="Express yourself brilliantly! Get instant AI feedback to polish your writing style and clarity."
             duration="60 minutes"
             participants={891}
-            icon={<PenTool className="w-6 h-6 text-blue-deep" />}
+            icon={<PenTool className="w-6 h-6 text-warm-coral" />}
             onStart={() => handleStartTest("writing")}
           />
           
           <TestCard
-            title="Speaking"
-            description="3-part speaking test with AI assessment. Practice with realistic interview scenarios and get pronunciation feedback."
+            title="Speaking 🎤"
+            description="Find your voice with confidence! Practice real conversations and get pronunciation tips."
             duration="14 minutes"
             participants={634}
-            icon={<Mic className="w-6 h-6 text-blue-deep" />}
+            icon={<Mic className="w-6 h-6 text-warm-coral" />}
             onStart={() => handleStartTest("speaking")}
           />
         </div>
 
         <div className="text-center">
-          <Card className="max-w-2xl mx-auto bg-gradient-to-r from-blue-light to-blue-medium/20">
+          <Card className="max-w-2xl mx-auto bg-gradient-to-r from-peachy-pink/30 to-soft-mint/30 warm-hover">
             <CardHeader>
-              <CardTitle className="text-2xl">Complete IELTS Mock Test</CardTitle>
+              <CardTitle className="text-2xl font-handwriting">Ready for the full experience? 🌟</CardTitle>
               <CardDescription className="text-base">
-                Take all four sections in order for the most realistic exam experience
+                Take all four sections in order for the most realistic exam experience. 
+                You've got this! 💪
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-center gap-6 mb-6 text-sm text-muted-foreground">
-                <span>3 hours total</span>
-                <span>Detailed AI feedback</span>
-                <span>Band score prediction</span>
+                <span>⏰ 3 hours total</span>
+                <span>🤖 AI feedback</span>
+                <span>📊 Band prediction</span>
               </div>
               <Button 
                 variant="hero" 
                 size="lg" 
                 onClick={() => handleStartTest("full")}
-                className="w-full shadow-medium"
+                className="w-full shadow-medium warm-hover font-semibold"
               >
-                Start Complete Mock Test
+                🚀 Let's Do This Together!
               </Button>
             </CardContent>
           </Card>
@@ -203,52 +224,54 @@ const Dashboard = () => {
       </section>
 
       {/* Features Section */}
-      <section className="bg-muted/30 py-16">
+      <section className="bg-gradient-to-br from-muted/20 to-peachy-pink/10 py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-foreground mb-4">Why Choose Alfie IELTS?</h3>
-            <p className="text-lg text-muted-foreground">Advanced AI technology meets proven IELTS preparation methods</p>
+            <h3 className="text-3xl font-bold text-foreground mb-4 font-handwriting">
+              Why learners love Alfie! 💖
+            </h3>
+            <p className="text-lg text-muted-foreground">Your success is our happiness!</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="text-center">
+            <Card className="text-center warm-hover">
               <CardHeader>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-light flex items-center justify-center">
-                  <Target className="w-8 h-8 text-blue-deep" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-warm-coral/20 to-sunny-yellow/20 flex items-center justify-center encouraging-glow">
+                  <Target className="w-8 h-8 text-warm-coral" />
                 </div>
-                <CardTitle>Instant AI Feedback</CardTitle>
+                <CardTitle className="font-handwriting">Instant Encouragement 🎉</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Get detailed, personalized feedback within seconds of completing any test section
+                  Get warm, personalized feedback that celebrates your progress and guides your next steps!
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center">
+            <Card className="text-center warm-hover">
               <CardHeader>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-light flex items-center justify-center">
-                  <TrendingUp className="w-8 h-8 text-blue-deep" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-soft-mint/30 to-sky-blue/20 flex items-center justify-center encouraging-glow">
+                  <TrendingUp className="w-8 h-8 text-soft-mint" />
                 </div>
-                <CardTitle>Track Progress</CardTitle>
+                <CardTitle className="font-handwriting">Watch Yourself Grow 🌱</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Monitor your improvement with detailed analytics and band score predictions
+                  See your improvement journey with beautiful charts and celebrate every milestone achieved!
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center">
+            <Card className="text-center warm-hover">
               <CardHeader>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-light flex items-center justify-center">
-                  <Award className="w-8 h-8 text-blue-deep" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gentle-lavender/30 to-peachy-pink/20 flex items-center justify-center encouraging-glow">
+                  <Award className="w-8 h-8 text-gentle-lavender" />
                 </div>
-                <CardTitle>Authentic Tests</CardTitle>
+                <CardTitle className="font-handwriting">Real Test Experience 📝</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Practice with test materials that mirror the actual IELTS Academic format
+                  Practice with authentic materials in a supportive environment that builds confidence!
                 </CardDescription>
               </CardContent>
             </Card>

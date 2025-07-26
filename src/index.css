@@ -8,71 +8,69 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* IELTS App Color Scheme - Clean White & Blue Theme */
-    --background: 0 0% 100%;
-    --foreground: 215 20% 25%;
+    /* Warm & Friendly Color Scheme - Encouraging Learning Environment */
+    --background: 42 100% 99%;  /* Warm cream white */
+    --foreground: 25 25% 20%;   /* Warm dark brown */
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 20% 25%;
+    --card: 42 100% 98%;        /* Slightly warmer card background */
+    --card-foreground: 25 25% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 20% 25%;
+    --popover: 42 100% 98%;
+    --popover-foreground: 25 25% 20%;
 
-    /* Primary Blue - Deep blue for CTAs and important elements */
-    --primary: 214 84% 56%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Warm encouraging orange-coral */
+    --primary: 16 85% 60%;      /* Warm coral */
+    --primary-foreground: 42 100% 99%;
 
-    /* Secondary - Light blue for subtle elements */
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 214 84% 56%;
+    /* Secondary - Soft mint green for encouragement */
+    --secondary: 150 40% 88%;   /* Soft mint */
+    --secondary-foreground: 150 60% 25%;
 
-    /* Muted - Very light backgrounds */
-    --muted: 214 20% 97%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted - Very light warm backgrounds */
+    --muted: 42 50% 96%;
+    --muted-foreground: 25 15% 50%;
 
-    /* Accent - Medium blue for highlights */
-    --accent: 214 50% 88%;
-    --accent-foreground: 214 84% 56%;
+    /* Accent - Gentle lavender for highlights */
+    --accent: 280 30% 88%;      /* Soft lavender */
+    --accent-foreground: 280 60% 30%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 42 100% 99%;
 
-    --border: 214 20% 92%;
-    --input: 214 20% 92%;
-    --ring: 214 84% 56%;
+    --border: 42 30% 90%;       /* Warm light border */
+    --input: 42 30% 92%;
+    --ring: 16 85% 60%;         /* Warm coral focus ring */
 
-    /* Custom IELTS theme colors */
-    --blue-light: 214 32% 91%;
-    --blue-medium: 214 50% 70%;
-    --blue-deep: 214 84% 56%;
-    --blue-darker: 214 84% 46%;
+    /* Custom friendly theme colors */
+    --warm-coral: 16 85% 60%;    /* Main encouraging color */
+    --soft-mint: 150 40% 75%;    /* Success/progress */
+    --gentle-lavender: 280 30% 80%; /* Calm highlights */
+    --sunny-yellow: 48 100% 85%; /* Celebration/achievements */
+    --sky-blue: 200 70% 75%;     /* Learning/knowledge */
+    --peachy-pink: 15 75% 85%;   /* Warmth/comfort */
     
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(214 84% 56%), hsl(214 50% 70%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(214 32% 98%));
+    /* Warm gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(16 85% 60%), hsl(48 100% 75%));
+    --gradient-card: linear-gradient(180deg, hsl(42 100% 99%), hsl(42 50% 96%));
+    --gradient-warm: linear-gradient(135deg, hsl(15 75% 85%), hsl(150 40% 85%));
+    --gradient-success: linear-gradient(135deg, hsl(150 60% 70%), hsl(200 70% 75%));
     
-    /* Shadows */
-    --shadow-soft: 0 2px 8px hsl(214 84% 56% / 0.08);
-    --shadow-medium: 0 4px 16px hsl(214 84% 56% / 0.12);
-    --shadow-strong: 0 8px 32px hsl(214 84% 56% / 0.16);
+    /* Soft, friendly shadows */
+    --shadow-soft: 0 2px 12px hsl(16 85% 60% / 0.08);
+    --shadow-medium: 0 4px 20px hsl(16 85% 60% / 0.12);
+    --shadow-strong: 0 8px 32px hsl(16 85% 60% / 0.15);
+    --shadow-glow: 0 0 24px hsl(48 100% 75% / 0.3);
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;          /* More rounded for friendliness */
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 42 100% 97%;
+    --sidebar-foreground: 25 25% 25%;
+    --sidebar-primary: 16 85% 60%;
+    --sidebar-primary-foreground: 42 100% 99%;
+    --sidebar-accent: 42 50% 94%;
+    --sidebar-accent-foreground: 25 25% 25%;
+    --sidebar-border: 42 30% 88%;
+    --sidebar-ring: 16 85% 60%;
   }
 
   .dark {
@@ -120,6 +118,41 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
+  }
+  
+  /* Friendly typography */
+  .font-handwriting {
+    font-family: 'Caveat', cursive;
+  }
+  
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  /* Warm interaction states */
+  .warm-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-medium;
+  }
+  
+  .encouraging-glow {
+    @apply relative;
+  }
+  
+  .encouraging-glow::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-gradient-to-r from-warm-coral to-sunny-yellow opacity-20 blur-lg;
+    z-index: -1;
+  }
+  
+  /* Success celebration styles */
+  .celebrate {
+    animation: celebrate 0.6s ease-out;
+  }
+  
+  @keyframes celebrate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 20px hsl(48 100% 75% / 0.6)); }
+    100% { transform: scale(1); }
   }
 }

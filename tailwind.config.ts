@@ -18,6 +18,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				inter: ['Inter', 'sans-serif'],
+				handwriting: ['Caveat', 'cursive'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -52,12 +56,19 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// IELTS App Custom Colors
+				// Friendly warm colors
+				'warm-coral': 'hsl(var(--warm-coral))',
+				'soft-mint': 'hsl(var(--soft-mint))',
+				'gentle-lavender': 'hsl(var(--gentle-lavender))',
+				'sunny-yellow': 'hsl(var(--sunny-yellow))',
+				'sky-blue': 'hsl(var(--sky-blue))',
+				'peachy-pink': 'hsl(var(--peachy-pink))',
+				// Legacy IELTS App Custom Colors (keeping for compatibility)
 				blue: {
-					light: 'hsl(var(--blue-light))',
-					medium: 'hsl(var(--blue-medium))',
-					deep: 'hsl(var(--blue-deep))',
-					darker: 'hsl(var(--blue-darker))'
+					light: 'hsl(var(--soft-mint))',
+					medium: 'hsl(var(--sky-blue))',
+					deep: 'hsl(var(--warm-coral))',
+					darker: 'hsl(var(--primary))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
@@ -91,11 +102,36 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'bounce-gentle': {
+					'0%, 100%': {
+						transform: 'translateY(0)',
+					},
+					'50%': {
+						transform: 'translateY(-10px)',
+					}
+				},
+				'fade-in-up': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(20px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'wiggle': {
+					'0%, 100%': { transform: 'rotate(-3deg)' },
+					'50%': { transform: 'rotate(3deg)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'bounce-gentle': 'bounce-gentle 2s infinite',
+				'fade-in-up': 'fade-in-up 0.6s ease-out',
+				'wiggle': 'wiggle 1s ease-in-out infinite'
 			}
 		}
 	},

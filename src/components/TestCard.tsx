@@ -7,50 +7,37 @@ interface TestCardProps {
   description: string;
   duration: string;
   icon: React.ReactNode;
-  difficulty: "Beginner" | "Intermediate" | "Advanced";
   participants?: number;
   onStart: () => void;
 }
 
-const TestCard = ({ title, description, duration, icon, difficulty, participants, onStart }: TestCardProps) => {
-  const getDifficultyColor = (diff: string) => {
-    switch (diff) {
-      case "Beginner": return "text-green-600 bg-green-50";
-      case "Intermediate": return "text-yellow-600 bg-yellow-50";
-      case "Advanced": return "text-red-600 bg-red-50";
-      default: return "text-muted-foreground bg-muted";
-    }
-  };
-
+const TestCard = ({ title, description, duration, icon, participants, onStart }: TestCardProps) => {
   return (
-    <Card className="group hover:shadow-strong transition-all duration-300 hover:-translate-y-1">
+    <Card className="group hover:shadow-strong transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-blue-light flex items-center justify-center group-hover:bg-blue-medium transition-colors duration-300">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-light to-blue-medium/50 flex items-center justify-center group-hover:from-blue-medium group-hover:to-blue-deep transition-all duration-300">
               {icon}
             </div>
             <div>
-              <CardTitle className="text-lg">{title}</CardTitle>
+              <CardTitle className="text-lg font-semibold">{title}</CardTitle>
               <div className="flex items-center gap-2 mt-1">
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">{duration}</span>
               </div>
             </div>
           </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(difficulty)}`}>
-            {difficulty}
-          </span>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <CardDescription className="mb-4 leading-relaxed">
+      <CardContent className="pt-0 flex-1 flex flex-col">
+        <CardDescription className="mb-6 leading-relaxed flex-1">
           {description}
         </CardDescription>
         
         {participants && (
-          <div className="flex items-center gap-1 mb-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1 mb-6 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />
             <span>{participants.toLocaleString()} participants this week</span>
           </div>
@@ -59,7 +46,7 @@ const TestCard = ({ title, description, duration, icon, difficulty, participants
         <Button 
           onClick={onStart}
           variant="hero" 
-          className="w-full group-hover:shadow-medium transition-all duration-300"
+          className="w-full group-hover:shadow-medium transition-all duration-300 mt-auto"
         >
           Start Test
         </Button>

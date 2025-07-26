@@ -140,9 +140,8 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <TestCard
             title="Reading"
-            description="3 passages with 40 questions. Practice comprehension, skimming, and scanning techniques."
+            description="3 passages with 40 questions. Practice comprehension, skimming, and scanning techniques with authentic IELTS materials."
             duration="60 minutes"
-            difficulty="Intermediate"
             participants={1247}
             icon={<BookOpen className="w-6 h-6 text-blue-deep" />}
             onStart={() => handleStartTest("reading")}
@@ -150,9 +149,8 @@ const Dashboard = () => {
           
           <TestCard
             title="Listening"
-            description="4 audio sections with 40 questions. Improve your listening skills with varied accents."
+            description="4 audio sections with 40 questions. Improve your listening skills with varied accents and realistic scenarios."
             duration="30 minutes"
-            difficulty="Beginner"
             participants={2156}
             icon={<Headphones className="w-6 h-6 text-blue-deep" />}
             onStart={() => handleStartTest("listening")}
@@ -160,9 +158,8 @@ const Dashboard = () => {
           
           <TestCard
             title="Writing"
-            description="Task 1 & 2 with instant AI feedback. Get detailed analysis of your writing skills."
+            description="Task 1 & 2 with instant AI feedback. Get detailed analysis of your writing skills and improvement suggestions."
             duration="60 minutes"
-            difficulty="Advanced"
             participants={891}
             icon={<PenTool className="w-6 h-6 text-blue-deep" />}
             onStart={() => handleStartTest("writing")}
@@ -170,9 +167,8 @@ const Dashboard = () => {
           
           <TestCard
             title="Speaking"
-            description="3-part speaking test with AI assessment. Practice with realistic interview scenarios."
+            description="3-part speaking test with AI assessment. Practice with realistic interview scenarios and get pronunciation feedback."
             duration="14 minutes"
-            difficulty="Advanced"
             participants={634}
             icon={<Mic className="w-6 h-6 text-blue-deep" />}
             onStart={() => handleStartTest("speaking")}
@@ -189,9 +185,9 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-center gap-6 mb-6 text-sm text-muted-foreground">
-                <span>⏱️ 3 hours total</span>
-                <span>📊 Detailed AI feedback</span>
-                <span>🎯 Band score prediction</span>
+                <span>3 hours total</span>
+                <span>Detailed AI feedback</span>
+                <span>Band score prediction</span>
               </div>
               <Button 
                 variant="hero" 

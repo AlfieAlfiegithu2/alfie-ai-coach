@@ -126,17 +126,26 @@ const AdminSpeaking = () => {
                   required
                 />
                 <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    placeholder="Cambridge Book (e.g. C20)"
-                    value={formData.cambridge_book}
-                    onChange={(e) => setFormData({...formData, cambridge_book: e.target.value})}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Test Number"
-                    value={formData.test_number}
-                    onChange={(e) => setFormData({...formData, test_number: parseInt(e.target.value)})}
-                  />
+                  <Select value={formData.cambridge_book} onValueChange={(value) => setFormData({...formData, cambridge_book: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Cambridge Book" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 20}, (_, i) => 20 - i).map(num => (
+                        <SelectItem key={num} value={`C${num}`}>Cambridge {num}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={formData.test_number.toString()} onValueChange={(value) => setFormData({...formData, test_number: parseInt(value)})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Test Number" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 4}, (_, i) => i + 1).map(num => (
+                        <SelectItem key={num} value={num.toString()}>Test {num}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Select value={formData.part_number.toString()} onValueChange={(value) => setFormData({...formData, part_number: parseInt(value)})}>

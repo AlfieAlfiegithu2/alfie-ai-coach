@@ -508,7 +508,7 @@ const AdminWriting = () => {
                     
                     <Input
                       type="number"
-                      placeholder="Word Limit"
+                      placeholder={taskType === 'task1' ? 'Minimum 150 words' : 'Minimum 250 words'}
                       value={wordLimit}
                       onChange={(e) => setWordLimit(parseInt(e.target.value))}
                       className="rounded-xl border-light-border"
@@ -650,7 +650,7 @@ const AdminWriting = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Word Limit</label>
+                            <label className="text-sm font-medium">Minimum Word Count</label>
                             <Input
                               type="number"
                               value={prompt.word_limit}
@@ -659,6 +659,7 @@ const AdminWriting = () => {
                                 updated.prompts[index].word_limit = parseInt(e.target.value);
                                 setEditingSection(updated);
                               }}
+                              placeholder={prompt.task_type === 'task1' ? '150' : '250'}
                               className="mt-1"
                             />
                           </div>

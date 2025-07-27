@@ -353,12 +353,12 @@ const ReadingTest = () => {
       
       if (!currentPassage) return;
       
-      // Fixed part fetching - use test_number instead of section_number for consistency
+      // Fixed part fetching - handle null values properly
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
         .eq('cambridge_book', currentPassage.cambridge_book)
-        .eq('test_number', currentPassage.test_number)
+        .eq('test_number', currentPassage.test_number || 1)
         .eq('part_number', partNumber);
       
       if (passageError) throw passageError;
@@ -392,7 +392,7 @@ const ReadingTest = () => {
         // Strategy 2: Enhanced book/section/part matching (generalized C19 approach)
         console.log(`🔄 Sequential Flow: No questions by passage_id, trying enhanced lookup for Part ${partNumber}...`);
         
-        if (passage.cambridge_book && passage.test_number !== undefined && partNumber !== undefined) {
+        if (passage.cambridge_book && partNumber !== undefined) {
           const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
           const bookFormats = [
             passage.cambridge_book,
@@ -403,12 +403,12 @@ const ReadingTest = () => {
           ];
           
           for (const bookFormat of bookFormats) {
-            console.log(`🔄 Sequential Flow: Trying book format "${bookFormat}" for test ${passage.test_number}, part ${partNumber}`);
+            console.log(`🔄 Sequential Flow: Trying book format "${bookFormat}" for test ${passage.test_number || 1}, part ${partNumber}`);
             const { data: formatQuestions, error: formatError } = await supabase
               .from('reading_questions')
               .select('*')
               .eq('cambridge_book', bookFormat)
-              .eq('section_number', passage.test_number)
+              .eq('section_number', passage.test_number || 1)
               .eq('part_number', partNumber)
               .order('question_number');
             

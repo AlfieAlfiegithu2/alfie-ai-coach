@@ -94,24 +94,28 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
         return;
       }
 
-      // Generate and save audio
-      console.log('🎵 Efficient Voice: Generating and saving audio for question', questionId);
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { text, voice: 'alloy' }
+      // Use efficient audio cache function
+      console.log('🎵 Efficient Voice: Using audio cache for question', questionId);
+      const { data, error } = await supabase.functions.invoke('audio-cache', {
+        body: { 
+          text, 
+          voice: 'alloy',
+          questionId: questionId
+        }
       });
 
       if (error) throw error;
 
       if (data.success) {
-        const audioUrl = `data:audio/mp3;base64,${data.audioContent}`;
+        const audioUrl = data.cached ? data.audioContent : `data:audio/mp3;base64,${data.audioContent}`;
         
-        // Save for reuse
+        // Save for reuse in this session
         setSavedAudioUrls(prev => ({
           ...prev,
           [questionId]: audioUrl
         }));
         
-        console.log('💾 Efficient Voice: Audio saved for reuse, reducing API costs');
+        console.log(`💾 Efficient Voice: Audio ${data.cached ? 'reused from cache' : 'generated and cached'} - cost efficient!`);
         
         // Create audio element and play
         const audio = new Audio(audioUrl);

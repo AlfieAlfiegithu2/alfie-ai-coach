@@ -353,12 +353,12 @@ const ReadingTest = () => {
       
       if (!currentPassage) return;
       
-      // Enhanced part fetching using generalized sync method (same as successful C19 fix)
+      // Fixed part fetching - use test_number instead of section_number for consistency
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
         .eq('cambridge_book', currentPassage.cambridge_book)
-        .eq('section_number', currentPassage.test_number)
+        .eq('test_number', currentPassage.test_number)
         .eq('part_number', partNumber);
       
       if (passageError) throw passageError;
@@ -392,7 +392,7 @@ const ReadingTest = () => {
         // Strategy 2: Enhanced book/section/part matching (generalized C19 approach)
         console.log(`🔄 Sequential Flow: No questions by passage_id, trying enhanced lookup for Part ${partNumber}...`);
         
-        if (passage.cambridge_book && passage.section_number !== undefined && partNumber !== undefined) {
+        if (passage.cambridge_book && passage.test_number !== undefined && partNumber !== undefined) {
           const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
           const bookFormats = [
             passage.cambridge_book,
@@ -403,12 +403,12 @@ const ReadingTest = () => {
           ];
           
           for (const bookFormat of bookFormats) {
-            console.log(`🔄 Sequential Flow: Trying book format "${bookFormat}" for section ${passage.section_number}, part ${partNumber}`);
+            console.log(`🔄 Sequential Flow: Trying book format "${bookFormat}" for test ${passage.test_number}, part ${partNumber}`);
             const { data: formatQuestions, error: formatError } = await supabase
               .from('reading_questions')
               .select('*')
               .eq('cambridge_book', bookFormat)
-              .eq('section_number', passage.section_number)
+              .eq('section_number', passage.test_number)
               .eq('part_number', partNumber)
               .order('question_number');
             
@@ -499,163 +499,16 @@ const ReadingTest = () => {
     if (percentage >= 40) return "6.0";
     if (percentage >= 30) return "5.5";
     if (percentage >= 20) return "5.0";
-    return "Below 5.0";
-  };
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const renderQuestion = (question: ReadingQuestion) => {
-    const userAnswer = answers[question.id] || '';
-    const isCorrect = isSubmitted && userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-    const isIncorrect = isSubmitted && userAnswer && !isCorrect;
-
-    return (
-      <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
-        <div className="flex items-start gap-3 mb-3">
-          <Badge variant="outline" className="mt-1 shrink-0">
-            {question.question_number}
-          </Badge>
-          <div className="flex-1">
-            <p className="font-medium text-foreground mb-3">{question.question_text}</p>
-            
-            {question.question_type === 'multiple_choice' && question.options && (
-              <div className="space-y-2">
-                {question.options.map((option, index) => (
-                  <label 
-                    key={index} 
-                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                      isSubmitted 
-                        ? option === question.correct_answer 
-                          ? 'bg-green-50 border border-green-200' 
-                          : userAnswer === option 
-                            ? 'bg-red-50 border border-red-200' 
-                            : 'bg-background/50'
-                        : userAnswer === option 
-                          ? 'bg-blue-50 border border-blue-200' 
-                          : 'bg-background/50 hover:bg-blue-50/50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={`question-${question.id}`}
-                      value={option}
-                      checked={userAnswer === option}
-                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                      disabled={isSubmitted}
-                      className="text-blue-600"
-                    />
-                    <span className={`${
-                      isSubmitted && option === question.correct_answer ? 'font-medium text-green-800' :
-                      isSubmitted && userAnswer === option && option !== question.correct_answer ? 'font-medium text-red-800' :
-                      'text-foreground'
-                    }`}>
-                      {option}
-                    </span>
-                    {isSubmitted && option === question.correct_answer && (
-                      <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />
-                    )}
-                    {isSubmitted && userAnswer === option && option !== question.correct_answer && (
-                      <XCircle className="w-4 h-4 text-red-600 ml-auto" />
-                    )}
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {(question.question_type === 'True/False/Not Given' || question.question_type === 'true_false_not_given') && (
-              <div className="space-y-2">
-                {(question.options || ['TRUE', 'FALSE', 'NOT GIVEN']).map((option, index) => (
-                  <label 
-                    key={index} 
-                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                      isSubmitted 
-                        ? option === question.correct_answer 
-                          ? 'bg-green-50 border border-green-200' 
-                          : userAnswer === option 
-                            ? 'bg-red-50 border border-red-200' 
-                            : 'bg-background/50'
-                        : userAnswer === option 
-                          ? 'bg-blue-50 border border-blue-200' 
-                          : 'bg-background/50 hover:bg-blue-50/50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={`question-${question.id}`}
-                      value={option}
-                      checked={userAnswer === option}
-                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                      disabled={isSubmitted}
-                      className="text-blue-600"
-                    />
-                    <span className={`${
-                      isSubmitted && option === question.correct_answer ? 'font-medium text-green-800' :
-                      isSubmitted && userAnswer === option && option !== question.correct_answer ? 'font-medium text-red-800' :
-                      'text-foreground'
-                    }`}>
-                      {option}
-                    </span>
-                    {isSubmitted && option === question.correct_answer && (
-                      <CheckCircle className="w-4 h-4 text-green-600 ml-auto" />
-                    )}
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {(question.question_type === 'fill_in_blank' || question.question_type === 'short_answer' || question.question_type === 'Summary Completion' || question.question_type === 'Sentence Completion') && (
-              <Input
-                value={userAnswer}
-                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                placeholder="Type your answer here..."
-                disabled={isSubmitted}
-                className={`rounded-xl border-light-border ${
-                  isSubmitted 
-                    ? isCorrect 
-                      ? 'border-green-500 bg-green-50' 
-                      : 'border-red-500 bg-red-50'
-                    : ''
-                }`}
-              />
-            )}
-
-            {isSubmitted && (
-              <div className="mt-2 flex items-center gap-2">
-                {isCorrect ? (
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-red-600" />
-                )}
-                <span className={`text-sm font-medium ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
-                  {isCorrect ? 'Correct' : `Incorrect - Answer: ${question.correct_answer}`}
-                </span>
-              </div>
-            )}
-
-            {isSubmitted && showExplanations && (
-              <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Explanation:</strong> {question.explanation}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    if (percentage >= 10) return "4.5";
+    return "4.0";
   };
 
   if (loading) {
     return (
-      <StudentLayout title="Loading Test...">
+      <StudentLayout title="Reading Test">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gentle-blue mx-auto mb-4"></div>
             <p className="text-warm-gray">Loading reading test...</p>
           </div>
         </div>
@@ -663,180 +516,237 @@ const ReadingTest = () => {
     );
   }
 
-  // Show post-practice feedback when test is completed
-  if (showResults) {
-    return (
-      <StudentLayout title="Test Results" showBackButton backPath="/content-selection/reading">
-        <TestResults
+  return (
+    <StudentLayout title="Reading Test">
+      {showResults ? (
+        <TestResults 
           score={score}
           totalQuestions={questions.length}
           answers={answers}
           questions={questions}
           onRetake={handleRetake}
           onContinue={handleContinuePractice}
-          testTitle={`${currentPassage?.cambridge_book} - ${currentPassage?.title}`}
         />
-      </StudentLayout>
-    );
-  }
-
-  return (
-    <StudentLayout title="Reading Test" showBackButton backPath="/content-selection/reading">
-      <div className="max-w-7xl mx-auto p-4">
-        {/* Test Header */}
-        <div className="mb-4 p-4 rounded-xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <BookOpen className="w-6 h-6 text-primary" />
-              <div>
-                <h1 className="text-2xl font-georgia font-bold text-foreground">
-                  {currentPassage?.title}
-                </h1>
-                <div className="flex gap-3 mt-1">
-                  {currentPassage?.cambridge_book && (
-                    <Badge variant="outline">{currentPassage.cambridge_book}</Badge>
+      ) : (
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-6">
+                <Button variant="ghost" onClick={() => navigate("/content-selection/reading")}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Reading
+                </Button>
+                <div className="flex items-center gap-3">
+                  <BookOpen className="w-6 h-6 text-gentle-blue" />
+                  <h1 className="text-3xl font-georgia font-bold">Reading Test</h1>
+                  {currentPassage && (
+                    <Badge variant="outline" className="ml-2">
+                      {currentPassage.cambridge_book} - Section {currentPassage.test_number}
+                    </Badge>
                   )}
-                  {currentPassage?.test_number && (
-                    <Badge variant="outline">Test {currentPassage.test_number}</Badge>
-                  )}
-                  <Badge variant="outline">Part {currentPart}</Badge>
-                  <Badge variant="outline">Reading</Badge>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              {!isSubmitted && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-100">
-                  <Clock className="w-4 h-4 text-orange-600" />
-                  <span className="font-mono text-orange-600 font-medium">
-                    {formatTime(timeLeft)}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4" />
+                  <span className={`font-mono ${timeLeft < 600 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                   </span>
                 </div>
-              )}
-              
-              {isSubmitted && (
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{score}/{questions.length}</div>
-                  <div className="text-sm text-warm-gray">Band {getBandScore((score/questions.length)*100)}</div>
-                </div>
-              )}
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowConfirmDialog(true)}
+                  disabled={loading}
+                >
+                  Submit Test
+                </Button>
+              </div>
             </div>
+
+            {/* Part Navigation Tabs - Jumpable Parts */}
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center justify-center gap-4">
+                  {[1, 2, 3].map((partNum) => (
+                    <Button
+                      key={partNum}
+                      variant={currentPart === partNum ? "default" : "outline"}
+                      onClick={() => {
+                        if (allPartsData[partNum]) {
+                          setCurrentPart(partNum);
+                          setCurrentPassage(allPartsData[partNum].passage);
+                          setQuestions(allPartsData[partNum].questions);
+                          console.log(`🎯 Jumpable Parts: Jumped to Part ${partNum}`);
+                        } else {
+                          fetchPartData(partNum);
+                          setCurrentPart(partNum);
+                        }
+                      }}
+                      disabled={loading}
+                      className="flex flex-col h-auto p-4 min-w-[120px]"
+                    >
+                      <span className="font-semibold">Part {partNum}</span>
+                      <span className="text-xs opacity-75">
+                        {allPartsData[partNum] ? '✅ Loaded' : '⏳ Available'}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* Reading Passage and Questions UI */}
+            
+            {currentPassage && questions.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Reading Passage */}
+                <Card className="h-fit">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-georgia">
+                      <FileText className="w-5 h-5 text-gentle-blue" />
+                      {currentPassage.title}
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Badge variant="outline">Part {currentPassage.part_number}</Badge>
+                      <Badge variant="outline">{currentPassage.passage_type}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none">
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {currentPassage.content}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Questions */}
+                <Card className="h-fit">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between font-georgia">
+                      <span className="flex items-center gap-2">
+                        <Target className="w-5 h-5 text-warm-coral" />
+                        Questions {questions[0]?.question_number} - {questions[questions.length - 1]?.question_number}
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setShowExplanations(!showExplanations)}
+                      >
+                        {showExplanations ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showExplanations ? 'Hide' : 'Show'} Help
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {questions.map((question, index) => (
+                      <div key={question.id} className="border-b border-light-border pb-6 last:border-b-0">
+                        <div className="mb-3">
+                          <div className="flex items-start gap-3 mb-2">
+                            <Badge variant="outline" className="mt-1">
+                              {question.question_number}
+                            </Badge>
+                            <p className="text-sm font-medium leading-relaxed flex-1">
+                              {question.question_text}
+                            </p>
+                          </div>
+                          <div className="ml-12">
+                            <Badge variant="outline" className="text-xs">
+                              {question.question_type}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="ml-12">
+                          {question.options && question.options.length > 0 ? (
+                            <div className="space-y-2">
+                              {question.options.map((option, optIndex) => (
+                                <label key={optIndex} className="flex items-center gap-3 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`question-${question.id}`}
+                                    value={option}
+                                    checked={answers[question.id] === option}
+                                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                    className="w-4 h-4 text-gentle-blue"
+                                  />
+                                  <span className="text-sm">{option}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <Input
+                              placeholder="Type your answer..."
+                              value={answers[question.id] || ''}
+                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                              className="rounded-xl border-light-border"
+                            />
+                          )}
+
+                          {showExplanations && (
+                            <div className="mt-3 p-3 bg-warm-coral/10 border border-warm-coral/20 rounded-lg">
+                              <p className="text-sm">
+                                <span className="font-medium text-warm-coral">Hint:</span> {question.explanation}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex justify-between pt-6">
+                      <div className="text-sm text-warm-gray">
+                        Answered: {Object.keys(answers).length} / {questions.length}
+                      </div>
+                      
+                      {currentPart < 3 ? (
+                        <Button 
+                          onClick={handleGoToNextPart}
+                          disabled={Object.keys(answers).length < questions.length}
+                          className="rounded-xl"
+                          style={{ background: 'var(--gradient-button)', border: 'none' }}
+                        >
+                          Complete Part {currentPart} & Continue
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={() => setShowConfirmDialog(true)}
+                          disabled={Object.keys(answers).length < questions.length}
+                          variant="destructive"
+                          className="rounded-xl"
+                        >
+                          Submit Final Test
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Submit Confirmation Dialog */}
+            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Submit Reading Test</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to submit your test? You have answered {Object.keys(answers).length} out of {questions.length} questions.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+                    Continue Test
+                  </Button>
+                  <Button variant="destructive" onClick={handleSubmit}>
+                    Submit Test
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-220px)]">
-          {/* Reading Passage - Fixed Height with Scroll */}
-          <Card className="rounded-2xl border-light-border shadow-soft flex flex-col h-full" style={{ background: 'var(--gradient-card)' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="font-georgia text-foreground">Reading Passage</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-hidden">
-              <div className="h-full overflow-y-auto pr-2">
-                <div className="prose prose-slate max-w-none text-foreground leading-relaxed">
-                  <div 
-                    className="text-sm whitespace-pre-wrap" 
-                    dangerouslySetInnerHTML={{ __html: currentPassage?.content || '' }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Questions - Fixed Height with Scroll */}
-          <Card className="rounded-2xl border-light-border shadow-soft flex flex-col h-full" style={{ background: 'var(--gradient-card)' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="font-georgia text-foreground">Questions</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-hidden flex flex-col">
-              <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-                {questions.map((question) => renderQuestion(question))}
-              </div>
-              
-              {/* Progress and Submit Button */}
-              {!isSubmitted && (
-                <div className="pt-4 border-t border-light-border mt-4">
-                  {/* Progress Indicator */}
-                  <div className="flex justify-center mb-4">
-                    <div className="flex gap-2">
-                      {[1, 2, 3].map(partNum => (
-                        <div 
-                          key={partNum}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                            completedParts.includes(partNum) 
-                              ? 'bg-green-100 text-green-700 border border-green-200' 
-                              : partNum === currentPart 
-                                ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                                : 'bg-gray-100 text-gray-500 border border-gray-200'
-                          }`}
-                        >
-                          {completedParts.includes(partNum) ? '✓' : partNum}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-center">
-                    {currentPart < 3 ? (
-                      <Button 
-                        onClick={handleGoToNextPart}
-                        className="rounded-xl px-8 py-3 font-medium"
-                        style={{ background: 'var(--gradient-button)' }}
-                        disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
-                      >
-                        Go to Part {currentPart + 1}
-                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => setShowConfirmDialog(true)}
-                        className="rounded-xl px-8 py-3 font-medium"
-                        style={{ background: 'var(--gradient-button)' }}
-                        disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
-                      >
-                        <Target className="w-4 h-4 mr-2" />
-                        Submit Test
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Confirmation Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="rounded-2xl border-light-border">
-          <DialogHeader>
-            <DialogTitle className="font-georgia">Submit Test?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to submit your test? You won't be able to change your answers after submission.
-              <br /><br />
-              <strong>Questions answered:</strong> {Object.keys(answers).filter(key => answers[key]).length} / {questions.length}
-              <br />
-              <strong>Time remaining:</strong> {formatTime(timeLeft)}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowConfirmDialog(false)}
-              className="rounded-xl border-light-border"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              className="rounded-xl"
-              style={{ background: 'var(--gradient-button)', border: 'none' }}
-            >
-              Submit Test
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      )}
     </StudentLayout>
   );
 };

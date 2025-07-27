@@ -169,6 +169,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          subscription_expires_at: string | null
+          subscription_status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       reading_passages: {
         Row: {
           book_number: number | null
@@ -312,6 +345,48 @@ export type Database = {
         }
         Relationships: []
       }
+      test_results: {
+        Row: {
+          cambridge_book: string | null
+          completed_at: string | null
+          correct_answers: number | null
+          id: string
+          score_percentage: number | null
+          section_number: number | null
+          test_data: Json | null
+          test_type: string
+          time_taken: number | null
+          total_questions: number | null
+          user_id: string | null
+        }
+        Insert: {
+          cambridge_book?: string | null
+          completed_at?: string | null
+          correct_answers?: number | null
+          id?: string
+          score_percentage?: number | null
+          section_number?: number | null
+          test_data?: Json | null
+          test_type: string
+          time_taken?: number | null
+          total_questions?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          cambridge_book?: string | null
+          completed_at?: string | null
+          correct_answers?: number | null
+          id?: string
+          score_percentage?: number | null
+          section_number?: number | null
+          test_data?: Json | null
+          test_type?: string
+          time_taken?: number | null
+          total_questions?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       writing_prompts: {
         Row: {
           band_criteria: Json | null
@@ -368,7 +443,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_question_numbering: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

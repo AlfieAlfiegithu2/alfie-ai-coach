@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Eye, FileText, ChevronDown, ChevronRight, Search, BookOpen, Upload } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import CSVImport from "@/components/CSVImport";
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminReading = () => {
   const { listContent, createContent, deleteContent, updateContent, loading } = useAdminContent();
@@ -147,6 +148,39 @@ const AdminReading = () => {
     setOpenBooks(newOpen);
   };
 
+  // Calculate starting question number for continuous numbering across parts
+  const calculateStartingQuestionNumber = async (bookNumber: number, sectionNumber: number, partNumber: number) => {
+    try {
+      const { data: existingQuestions, error } = await supabase
+        .from('reading_questions')
+        .select('question_number, part_number')
+        .eq('cambridge_book', `C${bookNumber}`)
+        .eq('section_number', sectionNumber)
+        .order('part_number')
+        .order('question_number');
+
+      if (error) throw error;
+
+      let startingNumber = 1;
+
+      // Find the highest question number from previous parts
+      if (existingQuestions && existingQuestions.length > 0) {
+        // Find questions from previous parts only
+        const previousPartsQuestions = existingQuestions.filter(q => q.part_number < partNumber);
+        if (previousPartsQuestions.length > 0) {
+          const maxNumber = Math.max(...previousPartsQuestions.map(q => q.question_number));
+          startingNumber = maxNumber + 1;
+        }
+      }
+
+      console.log(`📊 Continuous Numbering: Part ${partNumber} will start at question ${startingNumber}`);
+      return startingNumber;
+    } catch (error) {
+      console.error('Error calculating starting question number:', error);
+      return 1; // Fallback to 1 if error
+    }
+  };
+
   // Step 1: Preview and validate questions (called by CSVImport component)
   const handleCSVPreview = (questions: any[]) => {
     // Basic validation - CSVImport component already handles type validation
@@ -177,19 +211,15 @@ const AdminReading = () => {
       const finalTitle = passageTitle || `Passage for Cambridge ${uploadBookNumber} Section ${uploadSectionNumber} Part ${uploadPartNumber}`;
       const finalContent = passageContent || "Passage content will be added later.";
       
-      console.log('Import validation passed - proceeding with:', {
-        title: finalTitle,
-        contentLength: finalContent.length,
+      console.log('🔧 Admin Numbering Fix: Starting continuous numbering import for', {
+        book: uploadBookNumber,
+        section: uploadSectionNumber,
+        part: uploadPartNumber,
         questionsCount: pendingQuestions.length
       });
 
-      console.log('Starting import process...', {
-        bookNumber: uploadBookNumber,
-        sectionNumber: uploadSectionNumber,
-        partNumber: uploadPartNumber,
-        questionsCount: pendingQuestions.length,
-        passageTitle
-      });
+      // Calculate the starting question number for continuous numbering
+      const startingQuestionNumber = await calculateStartingQuestionNumber(uploadBookNumber, uploadSectionNumber, uploadPartNumber);
 
       const passageData = {
         title: finalTitle,
@@ -213,11 +243,12 @@ const AdminReading = () => {
       const passageId = passageResult.data.id;
       console.log('Passage created with ID:', passageId);
 
-      // Create questions linked to the passage with sequential numbering from 1
+      // Create questions with continuous numbering across parts
       for (let i = 0; i < pendingQuestions.length; i++) {
         const question = pendingQuestions[i];
+        const questionNumber = startingQuestionNumber + i; // Continuous numbering
         const questionData = {
-          question_number: i + 1, // Force sequential numbering from 1
+          question_number: questionNumber,
           question_type: question.question_type || 'Multiple Choice',
           question_text: question.question_text || '',
           correct_answer: question.correct_answer || '',
@@ -229,13 +260,13 @@ const AdminReading = () => {
           part_number: uploadPartNumber
         };
         
-        console.log(`Creating question ${i + 1}:`, questionData);
+        console.log(`📊 Continuous Numbering: Creating question ${questionNumber} for Part ${uploadPartNumber}:`, questionData);
         await createContent('reading_questions', questionData);
       }
 
       toast({
         title: "Success",
-        description: `${pendingQuestions.length} questions uploaded to Cambridge ${uploadBookNumber}, Section ${uploadSectionNumber}, Part ${uploadPartNumber}`,
+        description: `${pendingQuestions.length} questions uploaded to Cambridge ${uploadBookNumber}, Section ${uploadSectionNumber}, Part ${uploadPartNumber} with continuous numbering`,
       });
 
       // Reset form and close dialogs
@@ -444,158 +475,47 @@ const AdminReading = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => {
-                                    setUploadBookNumber(book.number);
-                                    setUploadSectionNumber(section.number);
-                                    setUploadPartNumber(1);
-                                    setShowUploadDialog(true);
-                                  }}
-                                  className="rounded-xl"
+                                  onClick={() => setSelectedSection({ ...section, bookNumber: book.number })}
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  View
                                 </Button>
-                                {section.hasContent && (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => deleteSection(book.number, section.number)}
-                                      className="rounded-xl"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </>
-                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingSection({ ...section, bookNumber: book.number })}
+                                >
+                                  <Edit className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => deleteSection(book.number, section.number)}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Delete
+                                </Button>
                               </div>
                             </div>
                           </CardHeader>
                           
-                          {/* Parts within Section */}
+                          {/* Show parts breakdown */}
                           <CardContent className="pt-0">
-                            <div className="grid gap-3">
-                              {(Object.values(section.parts) as any[]).map((part: any) => (
-                                <Card key={part.number} className="border-light-border bg-gray-50">
-                                  <CardHeader className="pb-2">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs flex items-center justify-center font-medium">
-                                          {part.number}
-                                        </div>
-                                        <h5 className="font-medium text-sm">Part {part.number}</h5>
-                                        {part.hasContent && (
-                                          <Badge variant="secondary" className="text-xs">
-                                            {part.questions.length} questions
-                                          </Badge>
-                                        )}
-                                      </div>
-                                      <div className="flex gap-2">
-                                        {!part.hasContent ? (
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => {
-                                              setUploadBookNumber(book.number);
-                                              setUploadSectionNumber(section.number);
-                                              setUploadPartNumber(part.number);
-                                              setShowUploadDialog(true);
-                                            }}
-                                            className="rounded-xl text-xs"
-                                          >
-                                            <Plus className="w-3 h-3 mr-1" />
-                                            Add
-                                          </Button>
-                                        ) : (
-                                          <>
-                                            <Dialog>
-                                              <DialogTrigger asChild>
-                                                <Button size="sm" variant="outline" className="rounded-xl">
-                                                  <Eye className="w-3 h-3" />
-                                                </Button>
-                                              </DialogTrigger>
-                                              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                                                <DialogHeader>
-                                                  <DialogTitle>
-                                                    Cambridge {book.number} - Section {section.number} - Part {part.number}
-                                                  </DialogTitle>
-                                                </DialogHeader>
-                                                <div className="space-y-6">
-                                                  {part.passage && (
-                                                    <Card className="p-4">
-                                                      <h5 className="font-medium mb-3">Reading Passage</h5>
-                                                      <div className="prose max-w-none text-sm">
-                                                        {part.passage.content.split('\n\n').map((paragraph: string, idx: number) => (
-                                                          <p key={idx} className="mb-3">{paragraph}</p>
-                                                        ))}
-                                                      </div>
-                                                    </Card>
-                                                  )}
-                                                  
-                                                  <Card className="p-4">
-                                                    <h5 className="font-medium mb-3">Questions ({part.questions.length})</h5>
-                                                    <div className="space-y-4">
-                                             {part.questions
-                                               .sort((a: any, b: any) => parseInt(a.question_number) - parseInt(b.question_number))
-                                               .map((question: any) => (
-                                                        <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
-                                                          <div className="flex items-start gap-3">
-                                                            <Badge variant="outline">{question.question_number}</Badge>
-                                                            <div className="flex-1">
-                                                              <p className="font-medium mb-2">{question.question_text}</p>
-                                                              {question.options && (
-                                                                <div className="text-sm space-y-1 mb-2">
-                                                                  {Array.isArray(question.options) 
-                                                                    ? question.options.map((option: string, idx: number) => (
-                                                                        <div key={idx} className={`p-2 rounded ${option === question.correct_answer ? 'bg-green-50 text-green-800 font-medium' : 'bg-gray-50'}`}>
-                                                                          {String.fromCharCode(65 + idx)}. {option}
-                                                                        </div>
-                                                                      ))
-                                                                    : <div className="bg-green-50 text-green-800 font-medium p-2 rounded">
-                                                                        Answer: {question.correct_answer}
-                                                                      </div>
-                                                                  }
-                                                                </div>
-                                                              )}
-                                                              <p className="text-sm text-warm-gray">
-                                                                <span className="font-medium">Explanation:</span> {question.explanation}
-                                                              </p>
-                                                            </div>
-                                                          </div>
-                                                        </div>
-                                                      ))}
-                                                    </div>
-                                                  </Card>
-                                                </div>
-                                              </DialogContent>
-                                            </Dialog>
-
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={() => setEditingSection({ 
-                                                ...part, 
-                                                bookNumber: book.number, 
-                                                sectionNumber: section.number,
-                                                partNumber: part.number 
-                                              })}
-                                              className="rounded-xl"
-                                            >
-                                              <Edit className="w-3 h-3" />
-                                            </Button>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </CardHeader>
-                                  
+                            <div className="grid grid-cols-3 gap-2">
+                              {Object.values(section.parts).map((part: any) => (
+                                <div key={part.number} className="text-center p-2 border rounded">
+                                  <div className="text-sm font-medium">Part {part.number}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {part.questions.length} questions
+                                  </div>
                                   {part.hasContent && (
-                                    <CardContent className="pt-0 pb-3">
-                                      <div className="text-xs text-warm-gray">
-                                        {part.passage?.title || 'No title'}
-                                        {part.questions.length > 0 && ` • ${part.questions.length} questions`}
-                                      </div>
-                                    </CardContent>
+                                    <Badge variant="outline" className="text-xs mt-1">
+                                      Q{part.questions.length > 0 ? Math.min(...part.questions.map((q: any) => q.question_number)) : 0}-
+                                      {part.questions.length > 0 ? Math.max(...part.questions.map((q: any) => q.question_number)) : 0}
+                                    </Badge>
                                   )}
-                                </Card>
+                                </div>
                               ))}
                             </div>
                           </CardContent>
@@ -611,283 +531,378 @@ const AdminReading = () => {
 
         {/* Upload Dialog */}
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
-              <DialogTitle>Upload Content to Cambridge {uploadBookNumber}, Section {uploadSectionNumber}, Part {uploadPartNumber}</DialogTitle>
+              <DialogTitle>Upload Content to Cambridge IELTS</DialogTitle>
             </DialogHeader>
+            
             <div className="space-y-6">
-              {/* Book, Section, and Part Selection */}
+              {/* Target Selection */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Cambridge Book</label>
+                  <label className="block text-sm font-medium mb-2">Book Number</label>
                   <Select value={uploadBookNumber.toString()} onValueChange={(value) => setUploadBookNumber(parseInt(value))}>
-                    <SelectTrigger className="rounded-xl border-light-border">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-light-border bg-card">
-                      {Array.from({length: 20}, (_, i) => 20 - i).map(num => (
-                        <SelectItem key={num} value={num.toString()}>Cambridge {num}</SelectItem>
+                    <SelectContent>
+                      {Array.from({ length: 20 }, (_, i) => 20 - i).map(book => (
+                        <SelectItem key={book} value={book.toString()}>
+                          Cambridge {book}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Section</label>
+                  <label className="block text-sm font-medium mb-2">Section Number</label>
                   <Select value={uploadSectionNumber.toString()} onValueChange={(value) => setUploadSectionNumber(parseInt(value))}>
-                    <SelectTrigger className="rounded-xl border-light-border">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-light-border bg-card">
-                      {Array.from({length: 4}, (_, i) => i + 1).map(num => (
-                        <SelectItem key={num} value={num.toString()}>Section {num}</SelectItem>
+                    <SelectContent>
+                      {[1, 2, 3, 4].map(section => (
+                        <SelectItem key={section} value={section.toString()}>
+                          Section {section}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Part</label>
+                  <label className="block text-sm font-medium mb-2">Part Number</label>
                   <Select value={uploadPartNumber.toString()} onValueChange={(value) => setUploadPartNumber(parseInt(value))}>
-                    <SelectTrigger className="rounded-xl border-light-border">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-light-border bg-card">
-                      {Array.from({length: 3}, (_, i) => i + 1).map(num => (
-                        <SelectItem key={num} value={num.toString()}>Part {num}</SelectItem>
+                    <SelectContent>
+                      {[1, 2, 3].map(part => (
+                        <SelectItem key={part} value={part.toString()}>
+                          Part {part}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              {/* Reading Passage Input */}
-              <Card className="rounded-2xl border-light-border" style={{ background: 'white' }}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <FileText className="w-5 h-5" />
-                    Reading Passage
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              {/* Passage Information */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Passage Title</label>
                   <Input
-                    placeholder="Passage Title (e.g., 'Tennis Equipment Research')"
                     value={passageTitle}
                     onChange={(e) => setPassageTitle(e.target.value)}
-                    className="rounded-xl border-light-border"
+                    placeholder="Enter passage title (optional for CSV)"
                   />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Passage Content</label>
                   <Textarea
-                    placeholder="Paste the complete reading passage text here..."
                     value={passageContent}
                     onChange={(e) => setPassageContent(e.target.value)}
-                    rows={12}
-                    className="rounded-xl border-light-border font-mono text-sm"
+                    placeholder="Enter passage content (optional for CSV)"
+                    rows={4}
                   />
-                </CardContent>
-              </Card>
-              
-              {/* CSV Upload for Questions */}
-              <CSVImport 
-                onImport={handleCSVPreview} 
-                type="reading" 
-                cambridgeBook={`C${uploadBookNumber}`}
-                testNumber={null}
-                sectionNumber={uploadSectionNumber}
-                partNumber={uploadPartNumber}
-              />
+                </div>
+              </div>
+
+              {/* CSV Import Component */}
+              <div>
+                <h3 className="font-medium mb-2">Upload Questions (CSV)</h3>
+                <CSVImport onQuestionsPreview={handleCSVPreview} />
+              </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Edit Section Dialog */}
-        {editingSection && (
-          <Dialog open={!!editingSection} onOpenChange={() => setEditingSection(null)}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  Edit Cambridge {editingSection.bookNumber} - Section {editingSection.number}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                {editingSection.passage && (
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Passage Title</label>
-                    <Input
-                      value={editingSection.passage.title}
-                      onChange={(e) => setEditingSection({
-                        ...editingSection,
-                        passage: { ...editingSection.passage, title: e.target.value }
-                      })}
-                      className="mb-4"
-                    />
-                    <label className="text-sm font-medium mb-2 block">Passage Content</label>
-                    <Textarea
-                      value={editingSection.passage.content}
-                      onChange={(e) => setEditingSection({
-                        ...editingSection,
-                        passage: { ...editingSection.passage, content: e.target.value }
-                      })}
-                      rows={10}
-                      className="mb-4"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <h5 className="font-medium mb-4">Questions</h5>
-                  {editingSection.questions.map((question: any, index: number) => (
-                    <Card key={question.id} className="p-4 mb-4">
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-medium">Question Text</label>
-                          <Textarea
-                            value={question.question_text}
-                            onChange={(e) => {
-                              const updated = { ...editingSection };
-                              updated.questions[index].question_text = e.target.value;
-                              setEditingSection(updated);
-                            }}
-                            className="mt-1"
-                          />
-                        </div>
-                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium">Question Type</label>
-                            <select
-                              value={question.question_type}
-                              onChange={(e) => {
-                                const updated = { ...editingSection };
-                                updated.questions[index].question_type = e.target.value;
-                                setEditingSection(updated);
-                              }}
-                              className="w-full p-2 border border-gray-300 rounded-md mt-1"
-                            >
-                              <option value="True/False/Not Given">True/False/Not Given</option>
-                              <option value="Yes/No/Not Given">Yes/No/Not Given</option>
-                              <option value="Multiple Choice">Multiple Choice</option>
-                              <option value="Summary Completion">Summary Completion</option>
-                              <option value="Sentence Completion">Sentence Completion</option>
-                              <option value="Table Completion">Table Completion</option>
-                              <option value="Matching Headings">Matching Headings</option>
-                              <option value="Matching Features">Matching Features</option>
-                              <option value="Short-answer Questions">Short-answer Questions</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Correct Answer</label>
-                            <Input
-                              value={question.correct_answer}
-                              onChange={(e) => {
-                                const updated = { ...editingSection };
-                                updated.questions[index].correct_answer = e.target.value;
-                                setEditingSection(updated);
-                              }}
-                              className="mt-1"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Explanation</label>
-                          <Textarea
-                            value={question.explanation}
-                            onChange={(e) => {
-                              const updated = { ...editingSection };
-                              updated.questions[index].explanation = e.target.value;
-                              setEditingSection(updated);
-                            }}
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={saveEditingSection}
-                    disabled={loading}
-                    className="rounded-xl"
-                    style={{ background: 'var(--gradient-button)', border: 'none' }}
-                  >
-                    Save Changes
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditingSection(null)}
-                    className="rounded-xl"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Import Confirmation Dialog (Step 2) */}
+        {/* Import Confirmation Dialog */}
         <Dialog open={showImportConfirm} onOpenChange={setShowImportConfirm}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                Confirm Import - {pendingQuestions.length} Questions
-              </DialogTitle>
+              <DialogTitle>Confirm Question Import</DialogTitle>
             </DialogHeader>
-            <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h4 className="font-medium text-blue-800 mb-2">Import Summary</h4>
-                <div className="text-sm text-blue-700 space-y-1">
-                  <p>• Book: Cambridge {uploadBookNumber}</p>
-                  <p>• Section: {uploadSectionNumber}</p>
-                  <p>• Part: {uploadPartNumber}</p>
-                  <p>• Passage: {passageTitle || "Untitled"}</p>
-                  <p>• Questions: {pendingQuestions.length}</p>
-                </div>
+            
+            <div className="space-y-4">
+              <p>
+                You are about to import <strong>{pendingQuestions.length} questions</strong> to:
+              </p>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p><strong>Book:</strong> Cambridge {uploadBookNumber}</p>
+                <p><strong>Section:</strong> {uploadSectionNumber}</p>
+                <p><strong>Part:</strong> {uploadPartNumber}</p>
+                <p><strong>Passage Title:</strong> {passageTitle || `Default title for C${uploadBookNumber} S${uploadSectionNumber} P${uploadPartNumber}`}</p>
               </div>
-
-              {/* Preview Questions */}
-              <Card className="p-4">
-                <h5 className="font-medium mb-4">Questions Preview</h5>
-                <div className="max-h-64 overflow-y-auto space-y-3">
-                  {pendingQuestions.map((question, index) => (
-                    <div key={index} className="border border-light-border rounded-lg p-3 bg-white">
-                      <div className="flex items-start gap-3">
-                        <Badge variant="outline" className="mt-1">{index + 1}</Badge>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="secondary" className="text-xs">{question.question_type}</Badge>
-                            <span className="text-xs text-warm-gray">Answer: {question.correct_answer}</span>
-                          </div>
-                          <p className="text-sm font-medium mb-1">{question.question_text}</p>
-                          {question.options && question.options.length > 0 && (
-                            <div className="text-xs text-warm-gray">
-                              Options: {question.options.join(' | ')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleConfirmImport}
-                  disabled={isImporting}
-                  className="rounded-xl flex-1"
-                  style={{ background: 'var(--gradient-button)', border: 'none' }}
-                >
-                  {isImporting ? 'Importing...' : 'Confirm Import'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleCancelImport}
-                  disabled={isImporting}
-                  className="rounded-xl flex-1"
-                >
+              
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={handleCancelImport}>
                   Cancel
+                </Button>
+                <Button onClick={handleConfirmImport} disabled={isImporting}>
+                  {isImporting ? "Importing..." : "Confirm Import"}
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Section View Dialog */}
+        <Dialog open={!!selectedSection} onOpenChange={(open) => !open && setSelectedSection(null)}>
+          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Cambridge {selectedSection?.bookNumber} - Section {selectedSection?.number}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedSection && (
+              <div className="space-y-6">
+                {Object.values(selectedSection.parts).map((part: any) => (
+                  <div key={part.number}>
+                    <h3 className="text-lg font-semibold mb-3">Part {part.number}</h3>
+                    
+                    {part.passage && (
+                      <Card className="mb-4">
+                        <CardHeader>
+                          <CardTitle className="text-base">{part.passage.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                            {part.passage.content}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                    
+                    {part.questions.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Questions ({part.questions.length})</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-16">Q#</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Question</TableHead>
+                              <TableHead>Answer</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {part.questions
+                              .sort((a: any, b: any) => a.question_number - b.question_number)
+                              .map((question: any) => (
+                              <TableRow key={question.id}>
+                                <TableCell className="font-medium">
+                                  {question.question_number}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-xs">
+                                    {question.question_type}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="max-w-md">
+                                  <p className="text-sm truncate" title={question.question_text}>
+                                    {question.question_text}
+                                  </p>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm font-medium text-green-600">
+                                    {question.correct_answer}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Section Edit Dialog */}
+        <Dialog open={!!editingSection} onOpenChange={(open) => !open && setEditingSection(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Edit Cambridge {editingSection?.bookNumber} - Section {editingSection?.number}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {editingSection && (
+              <div className="space-y-6">
+                {Object.values(editingSection.parts).map((part: any) => (
+                  <div key={part.number}>
+                    <h3 className="text-lg font-semibold mb-3">Part {part.number}</h3>
+                    
+                    {part.passage && (
+                      <div className="space-y-4 mb-6">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Passage Title</label>
+                          <Input
+                            value={part.passage.title}
+                            onChange={(e) => {
+                              setEditingSection((prev: any) => ({
+                                ...prev,
+                                parts: {
+                                  ...prev.parts,
+                                  [part.number]: {
+                                    ...part,
+                                    passage: { ...part.passage, title: e.target.value }
+                                  }
+                                }
+                              }));
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Passage Content</label>
+                          <Textarea
+                            value={part.passage.content}
+                            onChange={(e) => {
+                              setEditingSection((prev: any) => ({
+                                ...prev,
+                                parts: {
+                                  ...prev.parts,
+                                  [part.number]: {
+                                    ...part,
+                                    passage: { ...part.passage, content: e.target.value }
+                                  }
+                                }
+                              }));
+                            }}
+                            rows={6}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {part.questions.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Questions</h4>
+                        {part.questions
+                          .sort((a: any, b: any) => a.question_number - b.question_number)
+                          .map((question: any, index: number) => (
+                          <Card key={question.id} className="p-4">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-4">
+                                <span className="font-medium">Q{question.question_number}</span>
+                                <Select
+                                  value={question.question_type}
+                                  onValueChange={(value) => {
+                                    setEditingSection((prev: any) => ({
+                                      ...prev,
+                                      parts: {
+                                        ...prev.parts,
+                                        [part.number]: {
+                                          ...part,
+                                          questions: part.questions.map((q: any, i: number) =>
+                                            i === index ? { ...q, question_type: value } : q
+                                          )
+                                        }
+                                      }
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger className="w-48">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
+                                    <SelectItem value="True/False/Not Given">True/False/Not Given</SelectItem>
+                                    <SelectItem value="Fill in the Gap">Fill in the Gap</SelectItem>
+                                    <SelectItem value="Matching">Matching</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Question Text</label>
+                                <Textarea
+                                  value={question.question_text}
+                                  onChange={(e) => {
+                                    setEditingSection((prev: any) => ({
+                                      ...prev,
+                                      parts: {
+                                        ...prev.parts,
+                                        [part.number]: {
+                                          ...part,
+                                          questions: part.questions.map((q: any, i: number) =>
+                                            i === index ? { ...q, question_text: e.target.value } : q
+                                          )
+                                        }
+                                      }
+                                    }));
+                                  }}
+                                  rows={2}
+                                />
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Correct Answer</label>
+                                  <Input
+                                    value={question.correct_answer}
+                                    onChange={(e) => {
+                                      setEditingSection((prev: any) => ({
+                                        ...prev,
+                                        parts: {
+                                          ...prev.parts,
+                                          [part.number]: {
+                                            ...part,
+                                            questions: part.questions.map((q: any, i: number) =>
+                                              i === index ? { ...q, correct_answer: e.target.value } : q
+                                            )
+                                          }
+                                        }
+                                      }));
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Explanation</label>
+                                  <Input
+                                    value={question.explanation}
+                                    onChange={(e) => {
+                                      setEditingSection((prev: any) => ({
+                                        ...prev,
+                                        parts: {
+                                          ...prev.parts,
+                                          [part.number]: {
+                                            ...part,
+                                            questions: part.questions.map((q: any, i: number) =>
+                                              i === index ? { ...q, explanation: e.target.value } : q
+                                            )
+                                          }
+                                        }
+                                      }));
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setEditingSection(null)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={saveEditingSection}>
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

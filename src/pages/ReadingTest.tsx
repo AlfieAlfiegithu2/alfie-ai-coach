@@ -20,6 +20,7 @@ interface ReadingPassage {
   cambridge_book?: string;
   test_number?: number;
   part_number?: number;
+  section_number?: number;
 }
 
 interface ReadingQuestion {
@@ -31,6 +32,7 @@ interface ReadingQuestion {
   question_type: string;
   explanation: string;
   passage_id: string;
+  part_number?: number;
 }
 
 const ReadingTest = () => {
@@ -40,6 +42,7 @@ const ReadingTest = () => {
   const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes
   const [currentPassage, setCurrentPassage] = useState<ReadingPassage | null>(null);
   const [questions, setQuestions] = useState<ReadingQuestion[]>([]);
+  const [allSectionQuestions, setAllSectionQuestions] = useState<ReadingQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -116,8 +119,35 @@ const ReadingTest = () => {
           passage_type: passage.passage_type || 'academic',
           cambridge_book: passage.cambridge_book,
           test_number: passage.test_number,
-          part_number: passage.part_number || 1
+          part_number: passage.part_number || 1,
+          section_number: passage.section_number
         });
+
+        // Fetch ALL questions for the entire section to enable full 40-question counting
+        console.log('📊 Full Section Sync: Fetching ALL questions for section to count 40 total...');
+        const { data: allSectionQuestionsData, error: allQuestionsError } = await supabase
+          .from('reading_questions')
+          .select('*')
+          .eq('cambridge_book', passage.cambridge_book)
+          .eq('section_number', passage.section_number)
+          .order('part_number')
+          .order('question_number');
+
+        if (!allQuestionsError && allSectionQuestionsData && allSectionQuestionsData.length > 0) {
+          const formattedAllQuestions: ReadingQuestion[] = allSectionQuestionsData.map(q => ({
+            id: q.id,
+            question_number: q.question_number,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
+            correct_answer: q.correct_answer,
+            explanation: q.explanation,
+            passage_id: q.passage_id,
+            part_number: q.part_number
+          }));
+          setAllSectionQuestions(formattedAllQuestions);
+          console.log(`✅ Full Section Sync: Loaded ${formattedAllQuestions.length} questions across all parts for complete counting`);
+        }
 
         // Store in allPartsData for sequential flow
         setAllPartsData(prev => ({
@@ -130,7 +160,8 @@ const ReadingTest = () => {
               passage_type: passage.passage_type || 'academic',
               cambridge_book: passage.cambridge_book,
               test_number: passage.test_number,
-              part_number: passage.part_number || 1
+              part_number: passage.part_number || 1,
+              section_number: passage.section_number
             },
             questions: []
           }
@@ -216,7 +247,8 @@ const ReadingTest = () => {
               options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
               correct_answer: q.correct_answer,
               explanation: q.explanation,
-              passage_id: q.passage_id
+              passage_id: q.passage_id,
+              part_number: q.part_number
             };
           });
           console.log('🎉 GENERALIZED SYNC: Successfully formatted', formattedQuestions.length, 'questions for', passage.cambridge_book);
@@ -281,6 +313,54 @@ const ReadingTest = () => {
     return correct;
   };
 
+  const calculateFullSectionScore = () => {
+    // Calculate score across all 40 questions in the section
+    let totalCorrect = 0;
+    let totalQuestions = 0;
+    
+    if (allSectionQuestions.length > 0) {
+      totalQuestions = allSectionQuestions.length;
+      allSectionQuestions.forEach(question => {
+        const userAnswer = answers[question.id]?.toLowerCase().trim();
+        const correctAnswer = question.correct_answer?.toLowerCase().trim();
+        
+        if (userAnswer === correctAnswer) {
+          totalCorrect++;
+        }
+      });
+    } else {
+      // Fallback to all parts data if section questions not loaded
+      Object.values(allPartsData).forEach(partData => {
+        totalQuestions += partData.questions.length;
+        partData.questions.forEach(q => {
+          const userAnswer = answers[q.id]?.toLowerCase().trim();
+          const correctAnswer = q.correct_answer?.toLowerCase().trim();
+          
+          if (userAnswer === correctAnswer) {
+            totalCorrect++;
+          }
+        });
+      });
+    }
+
+    console.log(`📊 Full Section Score: ${totalCorrect}/${totalQuestions} questions correct`);
+    return { totalCorrect, totalQuestions };
+  };
+
+  const jumpToPart = (partNumber: number) => {
+    setCurrentPart(partNumber);
+    
+    // Load part data or fetch if needed
+    if (allPartsData[partNumber]) {
+      setCurrentPassage(allPartsData[partNumber].passage);
+      setQuestions(allPartsData[partNumber].questions);
+      console.log(`🔄 Part Jump: Jumped to Part ${partNumber}`);
+    } else {
+      // Fetch part data
+      fetchPartData(partNumber);
+    }
+  };
+
   const handleGoToNextPart = () => {
     // Mark current part as completed
     setCompletedParts(prev => [...prev, currentPart]);
@@ -293,58 +373,58 @@ const ReadingTest = () => {
 
     // Go to next part
     const nextPart = currentPart + 1;
-    setCurrentPart(nextPart);
-    
-    // Load next part data or fetch if needed
-    if (allPartsData[nextPart]) {
-      setCurrentPassage(allPartsData[nextPart].passage);
-      setQuestions(allPartsData[nextPart].questions);
-    } else {
-      // Fetch next part
-      fetchPartData(nextPart);
-    }
+    jumpToPart(nextPart);
     
     console.log(`📝 Sequential Flow: Moving from Part ${currentPart} to Part ${nextPart}`);
   };
 
-  const handleSubmit = () => {
-    // Calculate score from all completed parts
-    let totalScore = 0;
-    let totalQuestions = 0;
+  const handleSubmit = async () => {
+    // Calculate full section score (all 40 questions)
+    const { totalCorrect, totalQuestions } = calculateFullSectionScore();
     
-    // Add current part to completed parts for final calculation
-    const allParts = [...completedParts, currentPart];
-    allParts.forEach(partNum => {
-      if (allPartsData[partNum]) {
-        const partQuestions = allPartsData[partNum].questions;
-        totalQuestions += partQuestions.length;
-        partQuestions.forEach(q => {
-          if (answers[q.id]?.toLowerCase().trim() === q.correct_answer?.toLowerCase().trim()) {
-            totalScore++;
-          }
-        });
-      }
-    });
-    
-    // Include current questions if not in allPartsData
-    if (!allPartsData[currentPart]) {
-      totalQuestions += questions.length;
-      questions.forEach(q => {
-        if (answers[q.id]?.toLowerCase().trim() === q.correct_answer?.toLowerCase().trim()) {
-          totalScore++;
-        }
-      });
-    }
-
-    setScore(totalScore);
+    setScore(totalCorrect);
     setIsSubmitted(true);
     setShowConfirmDialog(false);
     setShowResults(true);
     
+    // Save test result to database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && currentPassage) {
+        const testResult = {
+          user_id: user.id,
+          test_type: 'reading',
+          cambridge_book: currentPassage.cambridge_book,
+          section_number: currentPassage.section_number,
+          total_questions: totalQuestions,
+          correct_answers: totalCorrect,
+          score_percentage: (totalCorrect / totalQuestions) * 100,
+          time_taken: (60 * 60) - timeLeft, // Time taken in seconds
+          test_data: {
+            answers: answers,
+            all_questions: allSectionQuestions.length > 0 ? allSectionQuestions : Object.values(allPartsData).flatMap(p => p.questions),
+            completed_parts: [...completedParts, currentPart]
+          }
+        };
+
+        const { error } = await supabase
+          .from('test_results')
+          .insert(testResult);
+
+        if (error) {
+          console.error('Error saving test result:', error);
+        } else {
+          console.log('✅ Test result saved successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving test result:', error);
+    }
+    
     // Clear saved answers
     localStorage.removeItem(`reading-test-${testId}`);
     
-    console.log('🎯 Sequential Flow: Test completed with all parts. Final score:', totalScore, 'out of', totalQuestions, 'questions');
+    console.log('🎯 Full Section: Test completed across all parts. Final score:', totalCorrect, 'out of', totalQuestions, 'questions (40 total expected)');
   };
 
   const fetchPartData = async (partNumber: number) => {
@@ -353,12 +433,12 @@ const ReadingTest = () => {
       
       if (!currentPassage) return;
       
-      // Fixed part fetching - handle null test_number properly by removing the constraint
-      console.log(`🔍 C19 Debug: Fetching Part ${partNumber} for book ${currentPassage.cambridge_book}`);
+      console.log(`🔍 Part Fetch: Looking for Part ${partNumber} in book ${currentPassage.cambridge_book}, section ${currentPassage.section_number}`);
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
         .eq('cambridge_book', currentPassage.cambridge_book)
+        .eq('section_number', currentPassage.section_number)
         .eq('part_number', partNumber);
       
       if (passageError) throw passageError;
@@ -392,7 +472,7 @@ const ReadingTest = () => {
         // Strategy 2: Enhanced book/section/part matching (generalized C19 approach)
         console.log(`🔄 Sequential Flow: No questions by passage_id, trying enhanced lookup for Part ${partNumber}...`);
         
-        if (passage.cambridge_book && partNumber !== undefined) {
+        if (passage.cambridge_book && passage.section_number !== undefined && partNumber !== undefined) {
           const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
           const bookFormats = [
             passage.cambridge_book,
@@ -403,12 +483,12 @@ const ReadingTest = () => {
           ];
           
           for (const bookFormat of bookFormats) {
-            console.log(`🔄 Sequential Flow: Trying book format "${bookFormat}" for test ${passage.test_number || 1}, part ${partNumber}`);
+            console.log(`🔄 Sequential Flow: Trying book format "${bookFormat}" for section ${passage.section_number}, part ${partNumber}`);
             const { data: formatQuestions, error: formatError } = await supabase
               .from('reading_questions')
               .select('*')
               .eq('cambridge_book', bookFormat)
-              .eq('section_number', passage.test_number || 1)
+              .eq('section_number', passage.section_number)
               .eq('part_number', partNumber)
               .order('question_number');
             
@@ -429,7 +509,8 @@ const ReadingTest = () => {
           passage_type: passage.passage_type || 'academic',
           cambridge_book: passage.cambridge_book,
           test_number: passage.test_number,
-          part_number: passage.part_number || partNumber
+          part_number: passage.part_number || partNumber,
+          section_number: passage.section_number
         };
         
         const formattedQuestions = finalQuestionsData.map(q => ({
@@ -440,7 +521,8 @@ const ReadingTest = () => {
           options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
           correct_answer: q.correct_answer,
           explanation: q.explanation,
-          passage_id: q.passage_id
+          passage_id: q.passage_id,
+          part_number: q.part_number
         }));
         
         // Store in allPartsData
@@ -465,7 +547,7 @@ const ReadingTest = () => {
         });
       }
     } catch (error) {
-      console.error(`❌ Sequential Flow: Error fetching Part ${partNumber}:`, error);
+      console.error(`Error fetching Part ${partNumber}:`, error);
       toast({
         title: "Error",
         description: `Failed to load Part ${partNumber}`,
@@ -474,279 +556,305 @@ const ReadingTest = () => {
     }
   };
 
-  const handleRetake = () => {
-    setAnswers({});
-    setScore(0);
-    setIsSubmitted(false);
-    setShowResults(false);
-    setTimeLeft(60 * 60);
-    setCurrentPart(1);
-    setCompletedParts([]);
-    localStorage.removeItem(`reading-test-${testId}`);
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleContinuePractice = () => {
-    navigate('/content-selection/reading');
+  const renderQuestionInput = (question: ReadingQuestion) => {
+    const value = answers[question.id] || '';
+    
+    if (question.question_type === 'Multiple Choice' && question.options) {
+      return (
+        <div className="space-y-2">
+          {question.options.map((option, index) => (
+            <label key={index} className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name={`question-${question.id}`}
+                value={option}
+                checked={value === option}
+                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                className="w-4 h-4 text-blue-600"
+              />
+              <span>{option}</span>
+            </label>
+          ))}
+        </div>
+      );
+    }
+    
+    return (
+      <Input
+        value={value}
+        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+        placeholder="Type your answer..."
+        disabled={isSubmitted}
+        className="w-full"
+      />
+    );
   };
 
-  const getBandScore = (percentage: number): string => {
-    if (percentage >= 95) return "9.0";
-    if (percentage >= 90) return "8.5";
-    if (percentage >= 80) return "8.0";
-    if (percentage >= 70) return "7.5";
-    if (percentage >= 60) return "7.0";
-    if (percentage >= 50) return "6.5";
-    if (percentage >= 40) return "6.0";
-    if (percentage >= 30) return "5.5";
-    if (percentage >= 20) return "5.0";
-    if (percentage >= 10) return "4.5";
-    return "4.0";
+  const getAnsweredQuestionsCount = () => {
+    if (allSectionQuestions.length > 0) {
+      // Count answered questions across all section questions (40 total)
+      return allSectionQuestions.filter(q => answers[q.id] && answers[q.id].trim() !== '').length;
+    } else {
+      // Fallback to counting across all parts data
+      let totalAnswered = 0;
+      Object.values(allPartsData).forEach(partData => {
+        totalAnswered += partData.questions.filter(q => answers[q.id] && answers[q.id].trim() !== '').length;
+      });
+      return totalAnswered;
+    }
+  };
+
+  const getTotalQuestionsCount = () => {
+    if (allSectionQuestions.length > 0) {
+      return allSectionQuestions.length; // Should be 40 for complete section
+    } else {
+      // Fallback to counting across all parts data
+      let total = 0;
+      Object.values(allPartsData).forEach(partData => {
+        total += partData.questions.length;
+      });
+      return total;
+    }
   };
 
   if (loading) {
     return (
       <StudentLayout title="Reading Test">
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gentle-blue mx-auto mb-4"></div>
-            <p className="text-warm-gray">Loading reading test...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p>Loading reading test...</p>
           </div>
         </div>
       </StudentLayout>
     );
   }
 
+  if (showResults) {
+    const totalQuestions = getTotalQuestionsCount();
+    return (
+      <StudentLayout title="Reading Test Results">
+        <TestResults
+          score={score}
+          totalQuestions={totalQuestions}
+          timeTaken={60 * 60 - timeLeft}
+          onRetry={() => window.location.reload()}
+          onBackToMenu={() => navigate('/tests')}
+          testType="reading"
+          answers={answers}
+          questions={allSectionQuestions.length > 0 ? allSectionQuestions : Object.values(allPartsData).flatMap(p => p.questions)}
+        />
+      </StudentLayout>
+    );
+  }
+
+  const answeredCount = getAnsweredQuestionsCount();
+  const totalQuestionsCount = getTotalQuestionsCount();
+
   return (
     <StudentLayout title="Reading Test">
-      {showResults ? (
-        <TestResults 
-          score={score}
-          totalQuestions={questions.length}
-          answers={answers}
-          questions={questions}
-          onRetake={handleRetake}
-          onContinue={handleContinuePractice}
-        />
-      ) : (
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-6">
-                <Button variant="ghost" onClick={() => navigate("/content-selection/reading")}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Reading
-                </Button>
-                <div className="flex items-center gap-3">
-                  <BookOpen className="w-6 h-6 text-gentle-blue" />
-                  <h1 className="text-3xl font-georgia font-bold">Reading Test</h1>
-                  {currentPassage && (
-                    <Badge variant="outline" className="ml-2">
-                      {currentPassage.cambridge_book} - Section {currentPassage.test_number}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4" />
-                  <span className={`font-mono ${timeLeft < 600 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => setShowConfirmDialog(true)}
-                  disabled={loading}
-                >
-                  Submit Test
-                </Button>
-              </div>
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header with Timer and Progress */}
+        <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/tests')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <span className="font-medium">Reading Test</span>
+              {currentPassage?.cambridge_book && (
+                <Badge variant="outline">
+                  {currentPassage.cambridge_book} - Section {currentPassage.section_number}
+                </Badge>
+              )}
             </div>
-
-            {/* Part Navigation Tabs - Jumpable Parts */}
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-center justify-center gap-4">
-                  {[1, 2, 3].map((partNum) => (
-                    <Button
-                      key={partNum}
-                      variant={currentPart === partNum ? "default" : "outline"}
-                      onClick={() => {
-                        if (allPartsData[partNum]) {
-                          setCurrentPart(partNum);
-                          setCurrentPassage(allPartsData[partNum].passage);
-                          setQuestions(allPartsData[partNum].questions);
-                          console.log(`🎯 Jumpable Parts: Jumped to Part ${partNum}`);
-                        } else {
-                          fetchPartData(partNum);
-                          setCurrentPart(partNum);
-                        }
-                      }}
-                      disabled={loading}
-                      className="flex flex-col h-auto p-4 min-w-[120px]"
-                    >
-                      <span className="font-semibold">Part {partNum}</span>
-                      <span className="text-xs opacity-75">
-                        {allPartsData[partNum] ? '✅ Loaded' : '⏳ Available'}
-                      </span>
-                    </Button>
-                  ))}
-                </div>
-              </CardHeader>
-            </Card>
-
-            {/* Reading Passage and Questions UI */}
-            
-            {currentPassage && questions.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Reading Passage */}
-                <Card className="h-fit">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-georgia">
-                      <FileText className="w-5 h-5 text-gentle-blue" />
-                      {currentPassage.title}
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Badge variant="outline">Part {currentPassage.part_number}</Badge>
-                      <Badge variant="outline">{currentPassage.passage_type}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="prose prose-sm max-w-none">
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {currentPassage.content}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Questions */}
-                <Card className="h-fit">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between font-georgia">
-                      <span className="flex items-center gap-2">
-                        <Target className="w-5 h-5 text-warm-coral" />
-                        Questions {questions[0]?.question_number} - {questions[questions.length - 1]?.question_number}
-                      </span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setShowExplanations(!showExplanations)}
-                      >
-                        {showExplanations ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        {showExplanations ? 'Hide' : 'Show'} Help
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {questions.map((question, index) => (
-                      <div key={question.id} className="border-b border-light-border pb-6 last:border-b-0">
-                        <div className="mb-3">
-                          <div className="flex items-start gap-3 mb-2">
-                            <Badge variant="outline" className="mt-1">
-                              {question.question_number}
-                            </Badge>
-                            <p className="text-sm font-medium leading-relaxed flex-1">
-                              {question.question_text}
-                            </p>
-                          </div>
-                          <div className="ml-12">
-                            <Badge variant="outline" className="text-xs">
-                              {question.question_type}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div className="ml-12">
-                          {question.options && question.options.length > 0 ? (
-                            <div className="space-y-2">
-                              {question.options.map((option, optIndex) => (
-                                <label key={optIndex} className="flex items-center gap-3 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name={`question-${question.id}`}
-                                    value={option}
-                                    checked={answers[question.id] === option}
-                                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                    className="w-4 h-4 text-gentle-blue"
-                                  />
-                                  <span className="text-sm">{option}</span>
-                                </label>
-                              ))}
-                            </div>
-                          ) : (
-                            <Input
-                              placeholder="Type your answer..."
-                              value={answers[question.id] || ''}
-                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                              className="rounded-xl border-light-border"
-                            />
-                          )}
-
-                          {showExplanations && (
-                            <div className="mt-3 p-3 bg-warm-coral/10 border border-warm-coral/20 rounded-lg">
-                              <p className="text-sm">
-                                <span className="font-medium text-warm-coral">Hint:</span> {question.explanation}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    <div className="flex justify-between pt-6">
-                      <div className="text-sm text-warm-gray">
-                        Answered: {Object.keys(answers).length} / {questions.length}
-                      </div>
-                      
-                      {currentPart < 3 ? (
-                        <Button 
-                          onClick={handleGoToNextPart}
-                          disabled={Object.keys(answers).length < questions.length}
-                          className="rounded-xl"
-                          style={{ background: 'var(--gradient-button)', border: 'none' }}
-                        >
-                          Complete Part {currentPart} & Continue
-                        </Button>
-                      ) : (
-                        <Button 
-                          onClick={() => setShowConfirmDialog(true)}
-                          disabled={Object.keys(answers).length < questions.length}
-                          variant="destructive"
-                          className="rounded-xl"
-                        >
-                          Submit Final Test
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Submit Confirmation Dialog */}
-            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Submit Reading Test</DialogTitle>
-                  <DialogDescription>
-                    Are you sure you want to submit your test? You have answered {Object.keys(answers).length} out of {questions.length} questions.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
-                    Continue Test
-                  </Button>
-                  <Button variant="destructive" onClick={handleSubmit}>
-                    Submit Test
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium">
+                {answeredCount}/{totalQuestionsCount} answered
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-orange-500" />
+              <span className="font-mono text-lg font-bold">
+                {formatTime(timeLeft)}
+              </span>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Part Navigation Tabs */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+              <span className="font-medium">Parts:</span>
+              <div className="flex gap-2">
+                {[1, 2, 3].map(partNum => (
+                  <Button
+                    key={partNum}
+                    variant={currentPart === partNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => jumpToPart(partNum)}
+                    className="min-w-[80px]"
+                  >
+                    Part {partNum}
+                    {completedParts.includes(partNum) && (
+                      <CheckCircle className="w-3 h-3 ml-1 text-green-500" />
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowExplanations(!showExplanations)}
+              >
+                {showExplanations ? (
+                  <>
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    Hide Explanations
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Show Explanations
+                  </>
+                )}
+              </Button>
+              
+              {currentPart < 3 ? (
+                <Button onClick={handleGoToNextPart}>
+                  Next Part
+                </Button>
+              ) : (
+                <Button onClick={() => setShowConfirmDialog(true)}>
+                  Submit Test
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Passage Section */}
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Part {currentPart}: {currentPassage?.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed bg-gray-50 p-4 rounded-lg max-h-[70vh] overflow-y-auto">
+                  {currentPassage?.content}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Questions Section */}
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle>Questions ({questions.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+                {questions
+                  .sort((a, b) => a.question_number - b.question_number)
+                  .map((question) => (
+                  <div key={question.id} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1">
+                        {question.question_number}
+                      </Badge>
+                      <div className="flex-1">
+                        <p className="font-medium mb-3">{question.question_text}</p>
+                        {renderQuestionInput(question)}
+                        
+                        {showExplanations && (
+                          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                            <p className="text-sm font-medium text-blue-800 mb-1">
+                              Correct Answer: {question.correct_answer}
+                            </p>
+                            <p className="text-sm text-blue-700">
+                              {question.explanation}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {isSubmitted && (
+                          <div className="mt-2 flex items-center gap-2">
+                            {answers[question.id]?.toLowerCase().trim() === question.correct_answer.toLowerCase().trim() ? (
+                              <div className="flex items-center gap-1 text-green-600">
+                                <CheckCircle className="w-4 h-4" />
+                                <span className="text-sm font-medium">Correct</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 text-red-600">
+                                <XCircle className="w-4 h-4" />
+                                <span className="text-sm font-medium">
+                                  Incorrect (Correct: {question.correct_answer})
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Submit Confirmation Dialog */}
+        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Submit Reading Test</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to submit your test? You have answered {answeredCount} out of {totalQuestionsCount} questions.
+                {answeredCount < totalQuestionsCount && (
+                  <span className="text-orange-600 font-medium block mt-2">
+                    Warning: You have {totalQuestionsCount - answeredCount} unanswered questions.
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+                Continue Test
+              </Button>
+              <Button onClick={handleSubmit}>
+                Submit Test
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </StudentLayout>
   );
 };

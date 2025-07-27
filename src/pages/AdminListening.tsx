@@ -32,6 +32,7 @@ const AdminListening = () => {
   const [audioUrl, setAudioUrl] = useState("");
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAddPartDialog, setShowAddPartDialog] = useState(false);
 
   useEffect(() => {
     loadCambridgeStructure();
@@ -401,19 +402,19 @@ const AdminListening = () => {
                                 )}
                               </div>
                               <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setUploadBookNumber(book.number);
-                                    setUploadSectionNumber(section.number);
-                                    setUploadPartNumber(1);
-                                    setShowUploadDialog(true);
-                                  }}
-                                  className="rounded-xl"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </Button>
+                                 <Button
+                                   size="sm"
+                                   variant="outline"
+                                   onClick={() => {
+                                     setUploadBookNumber(book.number);
+                                     setUploadSectionNumber(section.number);
+                                     setShowAddPartDialog(true);
+                                   }}
+                                   className="rounded-xl h-7 px-2 text-xs"
+                                 >
+                                   <Plus className="w-3 h-3 mr-1" />
+                                   Add Part
+                                 </Button>
                               </div>
                             </div>
                           </CardHeader>
@@ -787,6 +788,51 @@ const AdminListening = () => {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Add Part Dialog */}
+        <Dialog open={showAddPartDialog} onOpenChange={setShowAddPartDialog}>
+          <DialogContent className="rounded-2xl bg-card max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-georgia font-bold text-foreground">
+                Add Part to Cambridge {uploadBookNumber} - Section {uploadSectionNumber}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Select Part</label>
+                <Select value={uploadPartNumber.toString()} onValueChange={(value) => setUploadPartNumber(parseInt(value))}>
+                  <SelectTrigger className="rounded-xl border-light-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-light-border bg-card">
+                    {[1, 2, 3, 4].map(part => (
+                      <SelectItem key={part} value={part.toString()}>Part {part}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setShowUploadDialog(true);
+                    setShowAddPartDialog(false);
+                  }}
+                  className="flex-1 rounded-xl"
+                  style={{ background: 'var(--gradient-button)', border: 'none' }}
+                >
+                  Upload Content
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddPartDialog(false)}
+                  className="rounded-xl border-light-border"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

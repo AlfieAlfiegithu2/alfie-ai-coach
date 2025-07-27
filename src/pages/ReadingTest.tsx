@@ -371,9 +371,9 @@ const ReadingTest = () => {
               </div>
             )}
 
-            {question.question_type === 'true_false_not_given' && question.options && (
+            {question.question_type === 'true_false_not_given' && (
               <div className="space-y-2">
-                {question.options.map((option, index) => (
+                {['True', 'False', 'Not Given'].map((option, index) => (
                   <label 
                     key={index} 
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${

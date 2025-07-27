@@ -70,23 +70,43 @@ const ReadingTest = () => {
 
   const fetchReadingTest = async () => {
     try {
-      // Fetch reading passage from database
-      let passageQuery = supabase.from('reading_passages').select('*');
+      let passage = null;
       
       if (testId && testId !== 'random') {
-        passageQuery = passageQuery.eq('id', testId);
+        // Load specific passage by ID
+        const { data: passages, error: passageError } = await supabase
+          .from('reading_passages')
+          .select('*')
+          .eq('id', testId);
+        
+        if (passageError) throw passageError;
+        passage = passages?.[0] || null;
       } else {
-        // Get a random passage, prioritizing newer Cambridge books
-        passageQuery = passageQuery.order('cambridge_book', { ascending: false }).order('created_at', { ascending: false });
+        // For random selection, only get passages that have questions
+        console.log('🔍 DEBUG: Fetching passages with questions...');
+        
+        const { data: passagesWithQuestions, error: passageError } = await supabase
+          .from('reading_passages')
+          .select(`
+            *,
+            reading_questions!inner(id)
+          `)
+          .order('cambridge_book', { ascending: false })
+          .order('section_number', { ascending: true })
+          .order('part_number', { ascending: true })
+          .limit(10);
+        
+        if (passageError) throw passageError;
+        
+        if (passagesWithQuestions && passagesWithQuestions.length > 0) {
+          // Select the first passage that has questions
+          passage = passagesWithQuestions[0];
+          console.log('✓ Found passage with questions:', passage.cambridge_book, 'Section', passage.section_number, 'Part', passage.part_number);
+        }
       }
-      
-      const { data: passages, error: passageError } = await passageQuery.limit(1);
 
-      if (passageError) throw passageError;
-
-      if (passages && passages.length > 0) {
-        const passage = passages[0];
-        console.log('Loading passage:', passage.id, passage.title);
+      if (passage) {
+        console.log('✓ Found passage:', passage.id, passage.title, 'Book:', passage.cambridge_book, 'Section:', passage.section_number, 'Part:', passage.part_number);
         setCurrentPassage({
           id: passage.id,
           title: passage.title,
@@ -318,9 +338,9 @@ const ReadingTest = () => {
               </div>
             )}
 
-            {question.question_type === 'true_false_not_given' && (
+            {(question.question_type === 'True/False/Not Given' || question.question_type === 'true_false_not_given') && (
               <div className="space-y-2">
-                {['True', 'False', 'Not Given'].map((option, index) => (
+                {(question.options || ['TRUE', 'FALSE', 'NOT GIVEN']).map((option, index) => (
                   <label 
                     key={index} 
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
@@ -359,7 +379,7 @@ const ReadingTest = () => {
               </div>
             )}
 
-            {(question.question_type === 'fill_in_blank' || question.question_type === 'short_answer') && (
+            {(question.question_type === 'fill_in_blank' || question.question_type === 'short_answer' || question.question_type === 'Summary Completion' || question.question_type === 'Sentence Completion') && (
               <Input
                 value={userAnswer}
                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}

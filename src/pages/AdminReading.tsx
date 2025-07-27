@@ -213,11 +213,11 @@ const AdminReading = () => {
       const passageId = passageResult.data.id;
       console.log('Passage created with ID:', passageId);
 
-      // Create questions linked to the passage
+      // Create questions linked to the passage with sequential numbering from 1
       for (let i = 0; i < pendingQuestions.length; i++) {
         const question = pendingQuestions[i];
         const questionData = {
-          question_number: question.question_number || (i + 1),
+          question_number: i + 1, // Force sequential numbering from 1
           question_type: question.question_type || 'Multiple Choice',
           question_text: question.question_text || '',
           correct_answer: question.correct_answer || '',
@@ -850,7 +850,7 @@ const AdminReading = () => {
                   {pendingQuestions.map((question, index) => (
                     <div key={index} className="border border-light-border rounded-lg p-3 bg-white">
                       <div className="flex items-start gap-3">
-                        <Badge variant="outline" className="mt-1">{question.question_number || index + 1}</Badge>
+                        <Badge variant="outline" className="mt-1">{index + 1}</Badge>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="secondary" className="text-xs">{question.question_type}</Badge>

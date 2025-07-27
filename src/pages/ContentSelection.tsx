@@ -36,11 +36,17 @@ const ContentSelection = () => {
       setLoading(true);
       
       if (module === 'reading') {
-        // Fetch reading passages with question counts
+        // Fetch reading passages with question counts - only show passages that have questions
+        console.log('🔍 DEBUG: Fetching reading content with questions...');
         const { data: passages, error } = await supabase
           .from('reading_passages')
           .select(`
-            *,
+            id,
+            title,
+            cambridge_book,
+            test_number,
+            section_number,
+            part_number,
             reading_questions!inner(id)
           `)
           .order('cambridge_book', { ascending: false })
@@ -49,6 +55,9 @@ const ContentSelection = () => {
           .order('part_number', { ascending: true });
 
         if (error) throw error;
+
+        console.log('✓ DEBUG: Found reading passages with questions:', passages?.length || 0);
+        passages?.forEach(p => console.log(`  - ${p.cambridge_book} Section ${p.section_number} Part ${p.part_number}: ${p.reading_questions?.length || 0} questions`));
 
         const formattedPassages = passages?.map(passage => ({
           id: passage.id,

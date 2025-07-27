@@ -527,7 +527,9 @@ const AdminReading = () => {
                                                   <Card className="p-4">
                                                     <h5 className="font-medium mb-3">Questions ({part.questions.length})</h5>
                                                     <div className="space-y-4">
-                                                      {part.questions.map((question: any) => (
+                                             {part.questions
+                                               .sort((a: any, b: any) => parseInt(a.question_number) - parseInt(b.question_number))
+                                               .map((question: any) => (
                                                         <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
                                                           <div className="flex items-start gap-3">
                                                             <Badge variant="outline">{question.question_number}</Badge>

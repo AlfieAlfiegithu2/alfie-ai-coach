@@ -115,14 +115,13 @@ const ReadingTest = () => {
 
         let finalQuestionsData = questionsData;
 
-        // If no questions found by passage_id, try by book/section/part combination
+        // If no questions found by passage_id, try comprehensive fallback queries
         if (!questionsData || questionsData.length === 0) {
           console.log('No questions found by passage_id, trying book/section/part lookup...');
           
-          // Try multiple approaches to find questions
           let altQuestionsData = null;
           
-          // Approach 1: Exact book/section/part match
+          // Approach 1: Direct book/section/part match
           if (passage.cambridge_book && passage.section_number && passage.part_number) {
             const { data, error } = await supabase
               .from('reading_questions')
@@ -138,17 +137,20 @@ const ReadingTest = () => {
             }
           }
           
-          // Approach 2: Try different book formats if no exact match
+          // Approach 2: Try all possible book format variations
           if (!altQuestionsData && passage.cambridge_book) {
+            const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
             const bookVariants = [
               passage.cambridge_book,
-              passage.cambridge_book.replace('C', ''),
-              `C${passage.cambridge_book.replace('C', '')}`,
+              bookNum,
+              `C${bookNum}`,
+              `c${bookNum}`,
               passage.cambridge_book.toLowerCase(),
               passage.cambridge_book.toUpperCase()
             ];
             
             for (const bookVariant of bookVariants) {
+              console.log(`Trying book variant: ${bookVariant} with section ${passage.section_number || 1}, part ${passage.part_number || 1}`);
               const { data, error } = await supabase
                 .from('reading_questions')
                 .select('*')
@@ -159,24 +161,45 @@ const ReadingTest = () => {
               
               if (!error && data && data.length > 0) {
                 altQuestionsData = data;
-                console.log(`Found questions with book variant "${bookVariant}":`, altQuestionsData.length);
+                console.log(`SUCCESS: Found ${data.length} questions with book variant "${bookVariant}"`);
                 break;
               }
             }
           }
           
-          // Approach 3: Find any questions for this book/section (ignore part)
+          // Approach 3: Find questions in same book/section, any part
           if (!altQuestionsData && passage.cambridge_book && passage.section_number) {
+            const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
+            const bookVariants = [passage.cambridge_book, bookNum, `C${bookNum}`];
+            
+            for (const bookVariant of bookVariants) {
+              const { data, error } = await supabase
+                .from('reading_questions')
+                .select('*')
+                .eq('cambridge_book', bookVariant)
+                .eq('section_number', passage.section_number)
+                .order('question_number');
+              
+              if (!error && data && data.length > 0) {
+                altQuestionsData = data;
+                console.log(`Found ${data.length} questions by book/section (any part) with "${bookVariant}"`);
+                break;
+              }
+            }
+          }
+          
+          // Approach 4: Final fallback - find ANY questions for this book
+          if (!altQuestionsData && passage.cambridge_book) {
+            const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
             const { data, error } = await supabase
               .from('reading_questions')
               .select('*')
-              .eq('cambridge_book', passage.cambridge_book)
-              .eq('section_number', passage.section_number)
+              .eq('cambridge_book', `C${bookNum}`)
               .order('question_number');
             
             if (!error && data && data.length > 0) {
               altQuestionsData = data;
-              console.log('Found questions by book/section (any part):', altQuestionsData.length);
+              console.log(`Final fallback: Found ${data.length} questions for book C${bookNum}`);
             }
           }
           

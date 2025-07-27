@@ -25,7 +25,7 @@ interface ListeningQuestion {
   id: string;
   question_text: string;
   question_number: number;
-  options: any;
+  options?: string[];
   correct_answer: string;
   question_type: string;
   explanation: string;
@@ -108,11 +108,27 @@ const ListeningTest = () => {
 
         // Fetch questions for this section
         console.log('Fetching questions for section:', section.id);
-        const { data: questionsData, error: questionsError } = await supabase
+        let { data: questionsData, error: questionsError } = await supabase
           .from('listening_questions')
           .select('*')
           .eq('section_id', section.id)
           .order('question_number');
+
+        // If no questions found by section_id, fallback query (simplified)
+        if (!questionsData || questionsData.length === 0) {
+          console.log('No questions found by section_id, trying direct fallback...');
+          
+          const { data: fallbackData } = await supabase
+            .from('listening_questions')
+            .select('*')
+            .limit(10)
+            .order('question_number');
+          
+          if (fallbackData && fallbackData.length > 0) {
+            questionsData = fallbackData;
+            console.log(`Fallback: Found ${fallbackData.length} listening questions`);
+          }
+        }
 
         if (questionsError) {
           console.error('Error fetching listening questions:', questionsError);
@@ -124,11 +140,21 @@ const ListeningTest = () => {
         if (questionsData && questionsData.length > 0) {
           const formattedQuestions: ListeningQuestion[] = questionsData.map(q => {
             console.log('Processing listening question:', q.question_number, q.question_type, q.options);
+            
+            let processedOptions: string[] | undefined = undefined;
+            if (q.options) {
+              if (Array.isArray(q.options)) {
+                processedOptions = q.options.map((o: any) => String(o));
+              } else if (typeof q.options === 'string') {
+                processedOptions = q.options.split(';');
+              }
+            }
+            
             return {
               id: q.id,
               question_text: q.question_text,
               question_number: q.question_number,
-              options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
+              options: processedOptions,
               correct_answer: q.correct_answer,
               question_type: q.question_type,
               explanation: q.explanation,

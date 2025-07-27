@@ -24,6 +24,7 @@ const AdminListening = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadBookNumber, setUploadBookNumber] = useState<number>(20);
   const [uploadSectionNumber, setUploadSectionNumber] = useState<number>(1);
+  const [uploadPartNumber, setUploadPartNumber] = useState<number>(1);
   const [editingSection, setEditingSection] = useState<any>(null);
   const [sectionTitle, setSectionTitle] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -50,7 +51,7 @@ const AdminListening = () => {
       // Initialize Cambridge books structure
       const structure: any = {};
       
-      // Initialize all books (1-20) with 4 sections each
+      // Initialize all books (1-20) with 4 sections each, 4 parts per section
       for (let book = 1; book <= 20; book++) {
         structure[book] = {
           number: book,
@@ -60,10 +61,19 @@ const AdminListening = () => {
         for (let section = 1; section <= 4; section++) {
           structure[book].sections[section] = {
             number: section,
-            section: null,
-            questions: [],
+            parts: {},
             hasContent: false
           };
+          
+          // Each section has 4 parts for listening
+          for (let part = 1; part <= 4; part++) {
+            structure[book].sections[section].parts[part] = {
+              number: part,
+              section: null,
+              questions: [],
+              hasContent: false
+            };
+          }
         }
       }
 
@@ -72,9 +82,11 @@ const AdminListening = () => {
         const bookMatch = section.cambridge_book?.match(/\d+/);
         const bookNum = bookMatch ? parseInt(bookMatch[0]) : 1;
         const sectionNum = section.section_number || 1;
+        const partNum = section.part_number || 1;
         
-        if (structure[bookNum] && structure[bookNum].sections[sectionNum]) {
-          structure[bookNum].sections[sectionNum].section = section;
+        if (structure[bookNum] && structure[bookNum].sections[sectionNum] && structure[bookNum].sections[sectionNum].parts[partNum]) {
+          structure[bookNum].sections[sectionNum].parts[partNum].section = section;
+          structure[bookNum].sections[sectionNum].parts[partNum].hasContent = true;
           structure[bookNum].sections[sectionNum].hasContent = true;
         }
       });
@@ -86,10 +98,24 @@ const AdminListening = () => {
             const bookMatch = relatedSection.cambridge_book?.match(/\d+/);
             const bookNum = bookMatch ? parseInt(bookMatch[0]) : 1;
             const sectionNum = relatedSection.section_number || 1;
-            if (structure[bookNum] && structure[bookNum].sections[sectionNum]) {
-              structure[bookNum].sections[sectionNum].questions.push(question);
+            const partNum = relatedSection.part_number || 1;
+            if (structure[bookNum] && structure[bookNum].sections[sectionNum] && structure[bookNum].sections[sectionNum].parts[partNum]) {
+              structure[bookNum].sections[sectionNum].parts[partNum].questions.push(question);
+              structure[bookNum].sections[sectionNum].parts[partNum].hasContent = true;
               structure[bookNum].sections[sectionNum].hasContent = true;
             }
+          }
+        } else if (question.cambridge_book && question.section_number) {
+          // Handle questions with book/section/part info but no section_id
+          const bookMatch = question.cambridge_book.match(/\d+/);
+          const bookNum = bookMatch ? parseInt(bookMatch[0]) : 1;
+          const sectionNum = question.section_number;
+          const partNum = question.part_number || 1;
+          
+          if (structure[bookNum] && structure[bookNum].sections[sectionNum] && structure[bookNum].sections[sectionNum].parts[partNum]) {
+            structure[bookNum].sections[sectionNum].parts[partNum].questions.push(question);
+            structure[bookNum].sections[sectionNum].parts[partNum].hasContent = true;
+            structure[bookNum].sections[sectionNum].hasContent = true;
           }
         }
       });
@@ -370,133 +396,145 @@ const AdminListening = () => {
                                 <h4 className="font-medium">Section {section.number}</h4>
                                 {section.hasContent && (
                                   <Badge variant="outline" className="text-xs">
-                                    {section.questions.length} questions
+                                    {(Object.values(section.parts) as any[]).reduce((total: number, part: any) => total + part.questions.length, 0)} questions
                                   </Badge>
                                 )}
                               </div>
                               <div className="flex gap-2">
-                                {section.hasContent && (
-                                  <>
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button size="sm" variant="outline" className="rounded-xl">
-                                          <Eye className="w-4 h-4" />
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                                        <DialogHeader>
-                                          <DialogTitle>
-                                            Cambridge {book.number} - Section {section.number}
-                                          </DialogTitle>
-                                        </DialogHeader>
-                                        <div className="space-y-6">
-                                          {section.section && (
-                                            <Card className="p-4">
-                                              <h5 className="font-medium mb-3">Listening Section</h5>
-                                              <div className="space-y-4">
-                                                <div>
-                                                  <h6 className="font-medium mb-2">Instructions</h6>
-                                                  <p className="text-sm">{section.section.instructions}</p>
-                                                </div>
-                                                {section.section.audio_url && (
-                                                  <div>
-                                                    <h6 className="font-medium mb-2">Audio</h6>
-                                                    <audio controls className="w-full">
-                                                      <source src={section.section.audio_url} type="audio/mpeg" />
-                                                    </audio>
-                                                  </div>
-                                                )}
-                                                {section.section.transcript && (
-                                                  <div>
-                                                    <h6 className="font-medium mb-2">Transcript</h6>
-                                                    <div className="text-sm bg-gray-50 p-3 rounded-lg max-h-32 overflow-y-auto">
-                                                      {section.section.transcript}
-                                                    </div>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </Card>
-                                          )}
-                                          
-                                          <Card className="p-4">
-                                            <h5 className="font-medium mb-3">Questions ({section.questions.length})</h5>
-                                            <div className="space-y-4">
-                                              {section.questions.map((question: any) => (
-                                                <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
-                                                  <div className="flex items-start gap-3">
-                                                    <Badge variant="outline">{question.question_number}</Badge>
-                                                    <div className="flex-1">
-                                                      <p className="font-medium mb-2">{question.question_text}</p>
-                                                      {question.options && (
-                                                        <div className="text-sm space-y-1 mb-2">
-                                                          {Array.isArray(question.options) 
-                                                            ? question.options.map((option: string, idx: number) => (
-                                                                <div key={idx} className={`p-2 rounded ${option === question.correct_answer ? 'bg-green-50 text-green-800 font-medium' : 'bg-gray-50'}`}>
-                                                                  {String.fromCharCode(65 + idx)}. {option}
-                                                                </div>
-                                                              ))
-                                                            : <div className="bg-green-50 text-green-800 font-medium p-2 rounded">
-                                                                Answer: {question.correct_answer}
-                                                              </div>
-                                                          }
-                                                        </div>
-                                                      )}
-                                                      <p className="text-sm text-warm-gray">
-                                                        <span className="font-medium">Explanation:</span> {question.explanation}
-                                                      </p>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </Card>
-                                        </div>
-                                      </DialogContent>
-                                    </Dialog>
-
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setEditingSection({ ...section, bookNumber: book.number })}
-                                      className="rounded-xl"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => deleteSection(book.number, section.number)}
-                                      className="rounded-xl"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </>
-                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setUploadBookNumber(book.number);
+                                    setUploadSectionNumber(section.number);
+                                    setUploadPartNumber(1);
+                                    setShowUploadDialog(true);
+                                  }}
+                                  className="rounded-xl"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
                           </CardHeader>
-                          
-                          {section.hasContent ? (
-                            <CardContent className="pt-0">
-                              <div className="text-sm text-warm-gray">
-                                {section.section ? (
-                                  <p>Section: {section.section.title}</p>
-                                ) : (
-                                  <p>Questions without section</p>
-                                )}
-                                <p>Last updated: {new Date(section.section?.updated_at || section.questions[0]?.created_at).toLocaleDateString()}</p>
-                              </div>
-                            </CardContent>
-                          ) : (
-                            <CardContent className="pt-0">
-                              <div className="text-center py-6 text-warm-gray">
-                                <Volume2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                <p className="text-sm">No content yet</p>
-                                <p className="text-xs">Upload content to add section</p>
-                              </div>
-                            </CardContent>
-                          )}
+                          <CardContent>
+                            <div className="space-y-4">
+                              {Object.values(section.parts).map((part: any) => (
+                                <Card key={part.number} className="border-light-border bg-gray-50">
+                                  <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <h5 className="text-sm font-medium">Part {part.number}</h5>
+                                        {part.hasContent && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {part.questions.length} questions
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                         {part.hasContent && (
+                                           <Dialog>
+                                             <DialogTrigger asChild>
+                                               <Button size="sm" variant="outline" className="rounded-xl h-6 px-2">
+                                                 <Eye className="w-3 h-3" />
+                                               </Button>
+                                             </DialogTrigger>
+                                             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                                               <DialogHeader>
+                                                 <DialogTitle>
+                                                   Cambridge {book.number} - Section {section.number} - Part {part.number}
+                                                 </DialogTitle>
+                                               </DialogHeader>
+                                               <div className="space-y-6">
+                                                 {part.section && (
+                                                   <Card className="p-4">
+                                                     <h5 className="font-medium mb-3">Listening Section</h5>
+                                                     <div className="space-y-4">
+                                                       <div>
+                                                         <h6 className="font-medium mb-2">Instructions</h6>
+                                                         <p className="text-sm">{part.section.instructions}</p>
+                                                       </div>
+                                                       {part.section.audio_url && (
+                                                         <div>
+                                                           <h6 className="font-medium mb-2">Audio</h6>
+                                                           <audio controls className="w-full">
+                                                             <source src={part.section.audio_url} type="audio/mpeg" />
+                                                           </audio>
+                                                         </div>
+                                                       )}
+                                                       {part.section.transcript && (
+                                                         <div>
+                                                           <h6 className="font-medium mb-2">Transcript</h6>
+                                                           <div className="text-sm bg-gray-50 p-3 rounded-lg max-h-32 overflow-y-auto">
+                                                             {part.section.transcript}
+                                                           </div>
+                                                         </div>
+                                                       )}
+                                                     </div>
+                                                   </Card>
+                                                 )}
+                                                 
+                                                 <Card className="p-4">
+                                                   <h5 className="font-medium mb-3">Questions ({part.questions.length})</h5>
+                                                   <div className="space-y-4">
+                                                     {part.questions
+                                                       .sort((a: any, b: any) => parseInt(a.question_number) - parseInt(b.question_number))
+                                                       .map((question: any) => (
+                                                         <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
+                                                           <div className="flex items-start gap-3">
+                                                             <Badge variant="outline">{question.question_number}</Badge>
+                                                             <div className="flex-1">
+                                                               <p className="font-medium mb-2">{question.question_text}</p>
+                                                               {question.options && (
+                                                                 <div className="text-sm space-y-1 mb-2">
+                                                                   {Array.isArray(question.options) 
+                                                                     ? question.options.map((option: string, idx: number) => (
+                                                                         <div key={idx} className={`p-2 rounded ${option === question.correct_answer ? 'bg-green-50 text-green-800 font-medium' : 'bg-gray-50'}`}>
+                                                                           {String.fromCharCode(65 + idx)}. {option}
+                                                                         </div>
+                                                                       ))
+                                                                     : <div className="bg-green-50 text-green-800 font-medium p-2 rounded">
+                                                                         Answer: {question.correct_answer}
+                                                                       </div>
+                                                                   }
+                                                                 </div>
+                                                               )}
+                                                               <p className="text-sm text-warm-gray">
+                                                                 <span className="font-medium">Explanation:</span> {question.explanation}
+                                                               </p>
+                                                             </div>
+                                                           </div>
+                                                         </div>
+                                                       ))}
+                                                   </div>
+                                                 </Card>
+                                               </div>
+                                             </DialogContent>
+                                           </Dialog>
+                                         )}
+                                       </div>
+                                     </div>
+                                   </CardHeader>
+                                   <CardContent className="pt-0">
+                                     {part.hasContent ? (
+                                       <div className="text-sm text-warm-gray">
+                                         {part.section ? (
+                                           <p>Section: {part.section.title}</p>
+                                         ) : (
+                                           <p>Questions without section</p>
+                                         )}
+                                       </div>
+                                     ) : (
+                                       <div className="text-center py-4 text-warm-gray">
+                                         <Volume2 className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                                         <p className="text-xs">No content yet</p>
+                                       </div>
+                                     )}
+                                   </CardContent>
+                                 </Card>
+                               ))}
+                             </div>
+                           </CardContent>
                         </Card>
                       ))}
                     </div>

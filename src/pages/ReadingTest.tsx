@@ -70,86 +70,67 @@ const ReadingTest = () => {
 
   const fetchReadingTest = async () => {
     try {
-      // For demo purposes, we'll use mock data
-      // In a real app, you'd fetch from your API
-      setCurrentPassage({
-        id: '1',
-        title: 'Climate Change and Arctic Wildlife',
-        content: `The Arctic region has experienced some of the most dramatic changes in Earth's climate system. Over the past several decades, temperatures in the Arctic have risen at nearly twice the global average, a phenomenon known as Arctic amplification. This rapid warming has had profound consequences for the region's wildlife.
+      // Fetch reading passage from database
+      let passageQuery = supabase.from('reading_passages').select('*');
+      
+      if (testId && testId !== 'random') {
+        passageQuery = passageQuery.eq('id', testId);
+      } else {
+        // Get a random passage, prioritizing newer Cambridge books
+        passageQuery = passageQuery.order('cambridge_book', { ascending: false }).order('created_at', { ascending: false });
+      }
+      
+      const { data: passages, error: passageError } = await passageQuery.limit(1);
 
-Polar bears, perhaps the most iconic Arctic species, have become a symbol of climate change impacts. These magnificent predators depend entirely on sea ice for hunting seals, their primary prey. As sea ice extent and duration decrease, polar bears face longer fasting periods and must travel greater distances to find food.
+      if (passageError) throw passageError;
 
-The situation is equally challenging for other Arctic species. Walruses traditionally rest on sea ice between feeding sessions, but as ice retreats, they are forced to crowd onto beaches in massive numbers. This crowding leads to increased stress, trampling of young animals, and competition for resources.
+      if (passages && passages.length > 0) {
+        const passage = passages[0];
+        setCurrentPassage({
+          id: passage.id,
+          title: passage.title,
+          content: passage.content,
+          difficulty_level: passage.difficulty_level || 'Academic',
+          passage_type: passage.passage_type || 'academic',
+          cambridge_book: passage.cambridge_book,
+          test_number: passage.test_number
+        });
 
-Arctic foxes face a different set of challenges. While they are adaptable creatures, their primary food sources – small mammals like lemmings – are affected by changing snow patterns. Unpredictable freeze-thaw cycles create ice layers in the snow that prevent these small mammals from accessing vegetation below.
+        // Fetch questions for this passage
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('reading_questions')
+          .select('*')
+          .eq('passage_id', passage.id)
+          .order('question_number');
 
-Conservation efforts are underway to protect Arctic wildlife, but the scale of climate change presents unprecedented challenges. International cooperation and immediate action on greenhouse gas emissions are essential to preserve these unique ecosystems for future generations.`,
-        difficulty_level: 'Academic',
-        passage_type: 'academic',
-        cambridge_book: 'C18',
-        test_number: 1
-      });
+        if (questionsError) throw questionsError;
 
-      setQuestions([
-        {
-          id: '1',
-          question_number: 1,
-          question_text: 'What is Arctic amplification?',
-          question_type: 'multiple_choice',
-          options: [
-            'A phenomenon where Arctic temperatures rise faster than global average',
-            'The expansion of Arctic ice coverage',
-            'A natural cooling process in the Arctic',
-            'The migration of Arctic animals southward'
-          ],
-          correct_answer: 'A phenomenon where Arctic temperatures rise faster than global average',
-          explanation: 'Arctic amplification is explicitly defined in the first paragraph as the phenomenon where Arctic temperatures have risen at nearly twice the global average.',
-          passage_id: '1'
-        },
-        {
-          id: '2',
-          question_number: 2,
-          question_text: 'According to the passage, polar bears depend on sea ice for:',
-          question_type: 'multiple_choice',
-          options: [
-            'Building dens for their cubs',
-            'Hunting seals, their primary prey',
-            'Protection from harsh weather',
-            'Traveling between different territories'
-          ],
-          correct_answer: 'Hunting seals, their primary prey',
-          explanation: 'The passage clearly states that polar bears "depend entirely on sea ice for hunting seals, their primary prey."',
-          passage_id: '1'
-        },
-        {
-          id: '3',
-          question_number: 3,
-          question_text: 'Complete the sentence: Arctic foxes face challenges because freeze-thaw cycles create _______ in the snow.',
-          question_type: 'fill_in_blank',
-          correct_answer: 'ice layers',
-          explanation: 'The passage mentions that "Unpredictable freeze-thaw cycles create ice layers in the snow that prevent small mammals from accessing vegetation below."',
-          passage_id: '1'
-        },
-        {
-          id: '4',
-          question_number: 4,
-          question_text: 'The passage suggests that conservation efforts will be successful with current measures.',
-          question_type: 'true_false_not_given',
-          options: ['True', 'False', 'Not Given'],
-          correct_answer: 'False',
-          explanation: 'The passage states that "the scale of climate change presents unprecedented challenges" and calls for "immediate action," suggesting current efforts alone are insufficient.',
-          passage_id: '1'
-        },
-        {
-          id: '5',
-          question_number: 5,
-          question_text: 'What happens when walruses are forced to crowd onto beaches?',
-          question_type: 'short_answer',
-          correct_answer: 'increased stress, trampling of young animals, and competition for resources',
-          explanation: 'The passage explicitly lists these three consequences of walruses crowding onto beaches.',
-          passage_id: '1'
+        if (questionsData && questionsData.length > 0) {
+          const formattedQuestions: ReadingQuestion[] = questionsData.map(q => ({
+            id: q.id,
+            question_number: q.question_number,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
+            correct_answer: q.correct_answer,
+            explanation: q.explanation,
+            passage_id: q.passage_id
+          }));
+          setQuestions(formattedQuestions);
+        } else {
+          toast({
+            title: "No Questions Found",
+            description: "This passage doesn't have any questions yet. Please select another test.",
+            variant: "destructive"
+          });
         }
-      ]);
+      } else {
+        toast({
+          title: "No Content Available",
+          description: "No reading passages are available yet. Please check back soon or contact your instructor.",
+          variant: "destructive"
+        });
+      }
 
       // Load saved answers
       const savedAnswers = localStorage.getItem(`reading-test-${testId}`);

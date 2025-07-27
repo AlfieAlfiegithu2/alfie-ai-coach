@@ -92,6 +92,9 @@ const ListeningTest = () => {
       
       if (testId && testId !== 'random') {
         sectionQuery = sectionQuery.eq('id', testId);
+      } else {
+        // Get a random section, prioritizing newer Cambridge books
+        sectionQuery = sectionQuery.order('cambridge_book', { ascending: false }).order('created_at', { ascending: false });
       }
       
       const { data: sections, error: sectionError } = await sectionQuery.limit(1);
@@ -110,7 +113,26 @@ const ListeningTest = () => {
           .order('question_number');
 
         if (questionsError) throw questionsError;
-        setQuestions(questionsData || []);
+
+        if (questionsData && questionsData.length > 0) {
+          const formattedQuestions: ListeningQuestion[] = questionsData.map(q => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_number: q.question_number,
+            options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
+            correct_answer: q.correct_answer,
+            question_type: q.question_type,
+            explanation: q.explanation,
+            section_id: q.section_id
+          }));
+          setQuestions(formattedQuestions);
+        } else {
+          toast({
+            title: "No Questions Found", 
+            description: "This section doesn't have any questions yet. Please select another test.",
+            variant: "destructive"
+          });
+        }
 
         // Initialize audio if URL exists
         if (section.audio_url) {
@@ -130,6 +152,12 @@ const ListeningTest = () => {
           
           setAudio(audioElement);
         }
+      } else {
+        toast({
+          title: "No Content Available",
+          description: "No listening sections are available yet. Please check back soon or contact your instructor.",
+          variant: "destructive"
+        });
       }
     } catch (error: any) {
       toast({

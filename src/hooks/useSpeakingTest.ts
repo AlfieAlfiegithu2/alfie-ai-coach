@@ -60,7 +60,7 @@ export const useSpeakingTest = () => {
     }
   }, [toast]);
 
-  // Play prompt audio using TTS
+  // Play prompt audio using efficient TTS with caching
   const playPromptAudio = async (text: string) => {
     if (!text) return;
     
@@ -73,6 +73,7 @@ export const useSpeakingTest = () => {
       if (error) throw error;
 
       if (data.success) {
+        console.log(data.cached ? '💾 Efficient Voice: Reused cached audio, saving API costs!' : '🎵 Efficient Voice: Generated and cached new audio');
         // Create audio element and play
         const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
         audio.onended = () => setIsPlayingPrompt(false);

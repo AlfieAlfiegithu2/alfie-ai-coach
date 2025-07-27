@@ -566,13 +566,8 @@ const AdminWriting = () => {
                             console.log('📸 Task 1 image selected:', file.name);
                           }
                         }}
-                        className="rounded-xl border-light-border"
+                        className="hidden"
                       />
-                      {imageFile && (
-                        <p className="text-xs text-warm-gray mt-1">
-                          Selected: {imageFile.name}
-                        </p>
-                      )}
                       <Input
                         placeholder="Or enter image URL"
                         value={imageUrl}

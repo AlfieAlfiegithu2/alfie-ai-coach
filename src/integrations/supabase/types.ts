@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      audio_cache: {
+        Row: {
+          audio_url: string
+          created_at: string
+          id: string
+          question_id: string
+          text_hash: string
+          updated_at: string
+          voice: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          id?: string
+          question_id: string
+          text_hash: string
+          updated_at?: string
+          voice?: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          text_hash?: string
+          updated_at?: string
+          voice?: string
+        }
+        Relationships: []
+      }
       listening_questions: {
         Row: {
           band_impact: number | null

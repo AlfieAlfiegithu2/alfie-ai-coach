@@ -19,30 +19,30 @@ const Header = () => {
         </div>
         
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#tests" className="text-foreground hover:text-electric-blue transition-colors relative group">
+          <button onClick={() => window.location.href = '/tests'} className="text-foreground hover:text-electric-blue transition-colors relative group">
             Tests
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="#practice" className="text-foreground hover:text-electric-blue transition-colors relative group">
+          </button>
+          <button onClick={() => window.location.href = '/practice'} className="text-foreground hover:text-electric-blue transition-colors relative group">
             Practice
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="#progress" className="text-foreground hover:text-electric-blue transition-colors relative group">
+          </button>
+          <button onClick={() => window.location.href = '/personal-page'} className="text-foreground hover:text-electric-blue transition-colors relative group">
             Progress
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="#community" className="text-foreground hover:text-electric-blue transition-colors relative group">
+          </button>
+          <button onClick={() => window.location.href = '/community'} className="text-foreground hover:text-electric-blue transition-colors relative group">
             Community
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </a>
+          </button>
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => window.location.href = '/admin'}>
             <User className="w-4 h-4" />
             Login
           </Button>
-          <Button variant="neon" size="sm">
+          <Button variant="neon" size="sm" onClick={() => window.location.href = '/tests'}>
             <Zap className="w-4 h-4" />
             Start Journey
           </Button>

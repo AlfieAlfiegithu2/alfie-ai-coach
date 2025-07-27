@@ -353,12 +353,12 @@ const ReadingTest = () => {
       
       if (!currentPassage) return;
       
-      // Fixed part fetching - handle null values properly
+      // Fixed part fetching - handle null test_number properly by removing the constraint
+      console.log(`🔍 C19 Debug: Fetching Part ${partNumber} for book ${currentPassage.cambridge_book}`);
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
         .eq('cambridge_book', currentPassage.cambridge_book)
-        .eq('test_number', currentPassage.test_number || 1)
         .eq('part_number', partNumber);
       
       if (passageError) throw passageError;

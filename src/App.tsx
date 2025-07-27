@@ -17,6 +17,7 @@ import AdminReading from "./pages/AdminReading";
 import AdminListening from "./pages/AdminListening";
 import AdminWriting from "./pages/AdminWriting";
 import AdminSpeaking from "./pages/AdminSpeaking";
+import PersonalPage from "./pages/PersonalPage";
 import TestSelection from "./pages/TestSelection";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/admin/listening" element={<AdminListening />} />
           <Route path="/admin/writing" element={<AdminWriting />} />
           <Route path="/admin/speaking" element={<AdminSpeaking />} />
+          <Route path="/personal-page" element={<PersonalPage />} />
           <Route path="/tests" element={<TestSelection />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

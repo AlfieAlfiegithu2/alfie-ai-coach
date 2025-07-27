@@ -129,7 +129,7 @@ const CSVImport = ({ onImport, type, cambridgeBook, testNumber, sectionNumber, p
       if (values.length < headers.length) continue;
 
       // Fix question numbering to always start from 1 and increment sequentially
-      const questionNumber = i; // This is actually correct (i starts from 1 in the loop)
+      const questionNumber = i; // i starts from 1 in the loop (since we skip header at index 0)
       const section = values[1]?.trim() || 'Reading';
       const questionType = values[2]?.trim() || '';
       const questionText = values[3]?.trim() || '';

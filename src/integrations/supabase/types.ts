@@ -99,10 +99,10 @@ export type Database = {
           audio_url: string | null
           cambridge_book: string | null
           created_at: string
-          difficulty_level: string | null
           id: string
           instructions: string | null
           part_number: number | null
+          photo_url: string | null
           section_number: number | null
           test_number: number | null
           title: string
@@ -113,10 +113,10 @@ export type Database = {
           audio_url?: string | null
           cambridge_book?: string | null
           created_at?: string
-          difficulty_level?: string | null
           id?: string
           instructions?: string | null
           part_number?: number | null
+          photo_url?: string | null
           section_number?: number | null
           test_number?: number | null
           title: string
@@ -127,10 +127,10 @@ export type Database = {
           audio_url?: string | null
           cambridge_book?: string | null
           created_at?: string
-          difficulty_level?: string | null
           id?: string
           instructions?: string | null
           part_number?: number | null
+          photo_url?: string | null
           section_number?: number | null
           test_number?: number | null
           title?: string
@@ -145,7 +145,6 @@ export type Database = {
           cambridge_book: string | null
           content: string
           created_at: string
-          difficulty_level: string | null
           id: string
           part_number: number | null
           passage_type: string | null
@@ -159,7 +158,6 @@ export type Database = {
           cambridge_book?: string | null
           content: string
           created_at?: string
-          difficulty_level?: string | null
           id?: string
           part_number?: number | null
           passage_type?: string | null
@@ -173,7 +171,6 @@ export type Database = {
           cambridge_book?: string | null
           content?: string
           created_at?: string
-          difficulty_level?: string | null
           id?: string
           part_number?: number | null
           passage_type?: string | null

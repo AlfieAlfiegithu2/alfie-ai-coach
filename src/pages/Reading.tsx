@@ -10,7 +10,7 @@ interface ReadingPassage {
   id: string;
   title: string;
   content: string;
-  difficulty_level: string;
+  
   passage_type: string;
 }
 
@@ -172,7 +172,7 @@ const Reading = () => {
                   {currentPassage?.title}
                 </CardTitle>
                 <CardDescription>
-                  Difficulty: {currentPassage?.difficulty_level} | Type: {currentPassage?.passage_type}
+                  Type: {currentPassage?.passage_type}
                 </CardDescription>
               </CardHeader>
               <CardContent>

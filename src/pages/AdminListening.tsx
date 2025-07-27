@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAdminContent } from '@/hooks/useAdminContent';
 import CSVImport from "@/components/CSVImport";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit, Trash2, Upload, Eye, FileText, ChevronDown, ChevronRight, Search, BookOpen, Volume2 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 
@@ -31,7 +32,10 @@ const AdminListening = () => {
   const [transcript, setTranscript] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [showAddPartDialog, setShowAddPartDialog] = useState(false);
 
   useEffect(() => {
@@ -164,6 +168,39 @@ const AdminListening = () => {
     }
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    try {
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('audio-files')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: publicData } = supabase.storage
+        .from('audio-files')
+        .getPublicUrl(fileName);
+
+      setPhotoUrl(publicData.publicUrl);
+      toast({
+        title: "Success",
+        description: "Photo uploaded successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload photo",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleCSVUpload = async (questions: any[]) => {
     try {
       if (!sectionTitle || !instructions) {
@@ -180,10 +217,11 @@ const AdminListening = () => {
         instructions: instructions,
         transcript: transcript,
         audio_url: audioUrl,
+        photo_url: photoUrl,
         section_number: uploadSectionNumber,
+        part_number: uploadPartNumber,
         test_number: uploadBookNumber,
-        cambridge_book: `C${uploadBookNumber}`,
-        difficulty_level: "academic"
+        cambridge_book: `C${uploadBookNumber}`
       };
 
       // Create section first
@@ -216,6 +254,7 @@ const AdminListening = () => {
       setInstructions("");
       setTranscript("");
       setAudioUrl("");
+      setPhotoUrl("");
       setShowUploadDialog(false);
       loadCambridgeStructure();
     } catch (error: any) {
@@ -607,36 +646,65 @@ const AdminListening = () => {
                     className="rounded-xl border-light-border"
                   />
 
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Audio File</label>
-                    <div className="flex gap-3 items-center">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="audio/*"
-                        onChange={handleAudioUpload}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingAudio}
-                        className="rounded-xl border-light-border"
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {uploadingAudio ? "Uploading..." : "Upload Audio"}
-                      </Button>
-                      {audioUrl && (
-                        <span className="text-sm text-green-600 font-medium">Audio uploaded ✓</span>
-                      )}
-                    </div>
-                    {audioUrl && (
-                      <audio controls className="w-full mt-2">
-                        <source src={audioUrl} type="audio/mpeg" />
-                      </audio>
-                    )}
-                  </div>
+                   <div>
+                     <label className="block text-sm font-medium text-foreground mb-2">Audio File</label>
+                     <div className="flex gap-3 items-center">
+                       <input
+                         ref={fileInputRef}
+                         type="file"
+                         accept="audio/*"
+                         onChange={handleAudioUpload}
+                         className="hidden"
+                       />
+                       <Button
+                         type="button"
+                         variant="outline"
+                         onClick={() => fileInputRef.current?.click()}
+                         disabled={uploadingAudio}
+                         className="rounded-xl border-light-border"
+                       >
+                         <Upload className="w-4 h-4 mr-2" />
+                         {uploadingAudio ? "Uploading..." : "Upload Audio"}
+                       </Button>
+                       {audioUrl && (
+                         <span className="text-sm text-green-600 font-medium">Audio uploaded ✓</span>
+                       )}
+                     </div>
+                     {audioUrl && (
+                       <audio controls className="w-full mt-2">
+                         <source src={audioUrl} type="audio/mpeg" />
+                       </audio>
+                     )}
+                   </div>
+
+                   <div>
+                     <label className="block text-sm font-medium text-foreground mb-2">Photo (Optional - for visual questions)</label>
+                     <div className="flex gap-3 items-center">
+                       <input
+                         ref={photoInputRef}
+                         type="file"
+                         accept="image/*"
+                         onChange={handlePhotoUpload}
+                         className="hidden"
+                       />
+                       <Button
+                         type="button"
+                         variant="outline"
+                         onClick={() => photoInputRef.current?.click()}
+                         disabled={uploadingPhoto}
+                         className="rounded-xl border-light-border"
+                       >
+                         <Upload className="w-4 h-4 mr-2" />
+                         {uploadingPhoto ? "Uploading..." : "Upload Photo"}
+                       </Button>
+                       {photoUrl && (
+                         <span className="text-sm text-green-600 font-medium">Photo uploaded ✓</span>
+                       )}
+                     </div>
+                     {photoUrl && (
+                       <img src={photoUrl} alt="Listening question visual" className="w-full max-w-md mt-2 rounded-lg border" />
+                     )}
+                   </div>
                   
                   <Textarea
                     placeholder="Audio transcript (optional, for admin reference)"

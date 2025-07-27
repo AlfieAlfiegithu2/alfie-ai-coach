@@ -15,7 +15,6 @@ interface ReadingPassage {
   id: string;
   title: string;
   content: string;
-  difficulty_level: string;
   passage_type: string;
   cambridge_book?: string;
   test_number?: number;
@@ -92,38 +91,33 @@ const ReadingTest = () => {
           id: passage.id,
           title: passage.title,
           content: passage.content,
-          difficulty_level: passage.difficulty_level || 'Academic',
           passage_type: passage.passage_type || 'academic',
           cambridge_book: passage.cambridge_book,
           test_number: passage.test_number,
           part_number: passage.part_number || 1
         });
 
-        // Fetch questions for this passage with improved query
-        console.log('Fetching questions for passage:', passage.id);
-        let questionsQuery = supabase.from('reading_questions').select('*');
+        // Enhanced question fetching with better sync and debugging
+        console.log('Fetching questions for passage:', passage.id, 'Book:', passage.cambridge_book, 'Section:', passage.section_number, 'Part:', passage.part_number);
         
-        // First try to find questions by passage_id
-        const { data: questionsData, error: questionsError } = await questionsQuery
+        let finalQuestionsData = null;
+        
+        // Strategy 1: Try passage_id first
+        const { data: passageQuestions, error: passageError } = await supabase
+          .from('reading_questions')
+          .select('*')
           .eq('passage_id', passage.id)
           .order('question_number');
 
-        if (questionsError) {
-          console.error('Error fetching questions:', questionsError);
-          throw questionsError;
-        }
-
-        let finalQuestionsData = questionsData;
-
-        // If no questions found by passage_id, try comprehensive fallback queries
-        if (!questionsData || questionsData.length === 0) {
+        if (!passageError && passageQuestions && passageQuestions.length > 0) {
+          finalQuestionsData = passageQuestions;
+          console.log(`✓ Found ${passageQuestions.length} questions by passage_id`);
+        } else {
           console.log('No questions found by passage_id, trying book/section/part lookup...');
           
-          let altQuestionsData = null;
-          
-          // Approach 1: Direct book/section/part match
-          if (passage.cambridge_book && passage.section_number && passage.part_number) {
-            const { data, error } = await supabase
+          // Strategy 2: Enhanced book/section/part matching
+          if (passage.cambridge_book && passage.section_number !== undefined && passage.part_number !== undefined) {
+            const { data: bookQuestions, error: bookError } = await supabase
               .from('reading_questions')
               .select('*')
               .eq('cambridge_book', passage.cambridge_book)
@@ -131,79 +125,32 @@ const ReadingTest = () => {
               .eq('part_number', passage.part_number)
               .order('question_number');
             
-            if (!error && data && data.length > 0) {
-              altQuestionsData = data;
-              console.log('Found questions by exact book/section/part match:', altQuestionsData.length);
-            }
-          }
-          
-          // Approach 2: Try all possible book format variations
-          if (!altQuestionsData && passage.cambridge_book) {
-            const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
-            const bookVariants = [
-              passage.cambridge_book,
-              bookNum,
-              `C${bookNum}`,
-              `c${bookNum}`,
-              passage.cambridge_book.toLowerCase(),
-              passage.cambridge_book.toUpperCase()
-            ];
-            
-            for (const bookVariant of bookVariants) {
-              console.log(`Trying book variant: ${bookVariant} with section ${passage.section_number || 1}, part ${passage.part_number || 1}`);
-              const { data, error } = await supabase
-                .from('reading_questions')
-                .select('*')
-                .eq('cambridge_book', bookVariant)
-                .eq('section_number', passage.section_number || 1)
-                .eq('part_number', passage.part_number || 1)
-                .order('question_number');
+            if (!bookError && bookQuestions && bookQuestions.length > 0) {
+              finalQuestionsData = bookQuestions;
+              console.log(`✓ Found ${bookQuestions.length} questions by exact book/section/part match`);
+            } else {
+              // Strategy 3: Try book number extraction and multiple formats
+              const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
+              const bookFormats = [`C${bookNum}`, bookNum, `c${bookNum}`];
               
-              if (!error && data && data.length > 0) {
-                altQuestionsData = data;
-                console.log(`SUCCESS: Found ${data.length} questions with book variant "${bookVariant}"`);
-                break;
+              for (const bookFormat of bookFormats) {
+                console.log(`Trying book format: ${bookFormat} with section ${passage.section_number}, part ${passage.part_number}`);
+                const { data: formatQuestions, error: formatError } = await supabase
+                  .from('reading_questions')
+                  .select('*')
+                  .eq('cambridge_book', bookFormat)
+                  .eq('section_number', passage.section_number)
+                  .eq('part_number', passage.part_number)
+                  .order('question_number');
+                
+                if (!formatError && formatQuestions && formatQuestions.length > 0) {
+                  finalQuestionsData = formatQuestions;
+                  console.log(`✓ Found ${formatQuestions.length} questions with book format "${bookFormat}"`);
+                  break;
+                }
               }
             }
           }
-          
-          // Approach 3: Find questions in same book/section, any part
-          if (!altQuestionsData && passage.cambridge_book && passage.section_number) {
-            const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
-            const bookVariants = [passage.cambridge_book, bookNum, `C${bookNum}`];
-            
-            for (const bookVariant of bookVariants) {
-              const { data, error } = await supabase
-                .from('reading_questions')
-                .select('*')
-                .eq('cambridge_book', bookVariant)
-                .eq('section_number', passage.section_number)
-                .order('question_number');
-              
-              if (!error && data && data.length > 0) {
-                altQuestionsData = data;
-                console.log(`Found ${data.length} questions by book/section (any part) with "${bookVariant}"`);
-                break;
-              }
-            }
-          }
-          
-          // Approach 4: Final fallback - find ANY questions for this book
-          if (!altQuestionsData && passage.cambridge_book) {
-            const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
-            const { data, error } = await supabase
-              .from('reading_questions')
-              .select('*')
-              .eq('cambridge_book', `C${bookNum}`)
-              .order('question_number');
-            
-            if (!error && data && data.length > 0) {
-              altQuestionsData = data;
-              console.log(`Final fallback: Found ${data.length} questions for book C${bookNum}`);
-            }
-          }
-          
-          finalQuestionsData = altQuestionsData;
         }
 
         console.log('Questions fetched:', finalQuestionsData?.length || 0, 'questions');
@@ -486,7 +433,7 @@ const ReadingTest = () => {
                   {currentPassage?.test_number && (
                     <Badge variant="outline">Test {currentPassage.test_number}</Badge>
                   )}
-                  <Badge variant="outline">{currentPassage?.difficulty_level}</Badge>
+                  
                   <Badge variant="outline">{currentPassage?.passage_type}</Badge>
                 </div>
               </div>

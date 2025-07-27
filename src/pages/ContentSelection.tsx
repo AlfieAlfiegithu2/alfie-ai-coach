@@ -15,7 +15,7 @@ interface ContentItem {
   test_number?: number;
   section_number?: number;
   part_number?: number;
-  difficulty_level?: string;
+  
   question_count?: number;
 }
 
@@ -57,7 +57,7 @@ const ContentSelection = () => {
           test_number: passage.test_number,
           section_number: passage.section_number,
           part_number: passage.part_number || 1,
-          difficulty_level: passage.difficulty_level,
+          
           question_count: passage.reading_questions?.length || 0
         })) || [];
 
@@ -86,7 +86,7 @@ const ContentSelection = () => {
           test_number: section.test_number,
           section_number: section.section_number,
           part_number: section.part_number || 1,
-          difficulty_level: section.difficulty_level,
+          
           question_count: section.listening_questions?.length || 0
         })) || [];
 
@@ -267,12 +267,6 @@ const ContentSelection = () => {
                                 <div className="flex justify-between">
                                   <span>Part:</span>
                                   <Badge variant="outline" className="text-xs">{item.part_number}</Badge>
-                                </div>
-                              )}
-                              {item.difficulty_level && (
-                                <div className="flex justify-between">
-                                  <span>Level:</span>
-                                  <Badge variant="outline" className="text-xs">{item.difficulty_level}</Badge>
                                 </div>
                               )}
                               <div className="flex justify-between">

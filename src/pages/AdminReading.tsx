@@ -78,9 +78,16 @@ const AdminReading = () => {
         }
       }
 
-      // Populate with existing data
+      // Populate with existing data - fix book numbering mismatch
       passages.forEach((passage: any) => {
-        const bookNum = passage.book_number || 1;
+        // Extract book number from cambridge_book field (e.g., "C19" -> 19)
+        let bookNum = passage.book_number || 1;
+        if (passage.cambridge_book) {
+          const match = passage.cambridge_book.match(/\d+/);
+          if (match) {
+            bookNum = parseInt(match[0]);
+          }
+        }
         const sectionNum = passage.section_number || 1;
         const partNum = passage.part_number || 1;
         
@@ -191,7 +198,6 @@ const AdminReading = () => {
         section_number: uploadSectionNumber,
         part_number: uploadPartNumber,
         cambridge_book: `C${uploadBookNumber}`,
-        difficulty_level: "intermediate",
         passage_type: "academic"
       };
 

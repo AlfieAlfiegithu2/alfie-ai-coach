@@ -13,7 +13,7 @@ interface ListeningSection {
   instructions: string;
   audio_url: string;
   transcript: string;
-  difficulty_level: string;
+  
 }
 
 interface ListeningQuestion {
@@ -195,7 +195,7 @@ const Listening = () => {
                   {currentSection?.title}
                 </CardTitle>
                 <CardDescription>
-                  Section {currentSection?.section_number} | Difficulty: {currentSection?.difficulty_level}
+                  Section {currentSection?.section_number}
                 </CardDescription>
               </CardHeader>
               <CardContent>

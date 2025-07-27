@@ -16,7 +16,7 @@ interface ListeningSection {
   instructions: string;
   audio_url: string;
   transcript: string;
-  difficulty_level: string;
+  photo_url?: string;
   cambridge_book?: string;
   test_number?: number;
 }
@@ -308,7 +308,7 @@ const ListeningTest = () => {
                   {currentSection?.section_number && (
                     <Badge variant="outline">Section {currentSection.section_number}</Badge>
                   )}
-                  <Badge variant="outline">{currentSection?.difficulty_level}</Badge>
+                  
                 </div>
               </div>
             </div>
@@ -386,10 +386,22 @@ const ListeningTest = () => {
                         Audio file not available. Please check the transcript below for content.
                       </p>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                   )}
+
+                   {/* Photo/Visual (if available) */}
+                   {currentSection?.photo_url && (
+                     <div className="space-y-2">
+                       <h4 className="text-sm font-medium text-foreground">Visual Reference:</h4>
+                       <img 
+                         src={currentSection.photo_url} 
+                         alt="Listening test visual" 
+                         className="w-full max-w-lg mx-auto rounded-lg border border-light-border"
+                       />
+                     </div>
+                   )}
+                 </div>
+               </CardContent>
+             </Card>
 
             {/* Questions */}
             <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>

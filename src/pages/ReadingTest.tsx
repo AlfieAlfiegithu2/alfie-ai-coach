@@ -86,6 +86,7 @@ const ReadingTest = () => {
 
       if (passages && passages.length > 0) {
         const passage = passages[0];
+        console.log('Loading passage:', passage.id, passage.title);
         setCurrentPassage({
           id: passage.id,
           title: passage.title,
@@ -97,27 +98,38 @@ const ReadingTest = () => {
         });
 
         // Fetch questions for this passage
+        console.log('Fetching questions for passage:', passage.id);
         const { data: questionsData, error: questionsError } = await supabase
           .from('reading_questions')
           .select('*')
           .eq('passage_id', passage.id)
           .order('question_number');
 
-        if (questionsError) throw questionsError;
+        if (questionsError) {
+          console.error('Error fetching questions:', questionsError);
+          throw questionsError;
+        }
+
+        console.log('Questions fetched:', questionsData?.length || 0, 'questions');
 
         if (questionsData && questionsData.length > 0) {
-          const formattedQuestions: ReadingQuestion[] = questionsData.map(q => ({
-            id: q.id,
-            question_number: q.question_number,
-            question_text: q.question_text,
-            question_type: q.question_type,
-            options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
-            correct_answer: q.correct_answer,
-            explanation: q.explanation,
-            passage_id: q.passage_id
-          }));
+          const formattedQuestions: ReadingQuestion[] = questionsData.map(q => {
+            console.log('Processing question:', q.question_number, q.question_type, q.options);
+            return {
+              id: q.id,
+              question_number: q.question_number,
+              question_text: q.question_text,
+              question_type: q.question_type,
+              options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
+              correct_answer: q.correct_answer,
+              explanation: q.explanation,
+              passage_id: q.passage_id
+            };
+          });
+          console.log('Formatted questions:', formattedQuestions.length);
           setQuestions(formattedQuestions);
         } else {
+          console.warn('No questions found for passage:', passage.id);
           toast({
             title: "No Questions Found",
             description: "This passage doesn't have any questions yet. Please select another test.",

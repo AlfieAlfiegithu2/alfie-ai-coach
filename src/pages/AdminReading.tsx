@@ -26,6 +26,7 @@ const AdminReading = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploadBookNumber, setUploadBookNumber] = useState<number>(20);
   const [uploadSectionNumber, setUploadSectionNumber] = useState<number>(1);
+  const [uploadPartNumber, setUploadPartNumber] = useState<number>(1);
   const [editingSection, setEditingSection] = useState<any>(null);
   const [passageTitle, setPassageTitle] = useState("");
   const [passageContent, setPassageContent] = useState("");
@@ -151,7 +152,7 @@ const AdminReading = () => {
       setIsImporting(true);
       
       // Set default title and content if not provided for CSV imports
-      const finalTitle = passageTitle || `Passage for Cambridge ${uploadBookNumber} Section ${uploadSectionNumber}`;
+      const finalTitle = passageTitle || `Passage for Cambridge ${uploadBookNumber} Section ${uploadSectionNumber} Part ${uploadPartNumber}`;
       const finalContent = passageContent || "Passage content will be added later.";
       
       console.log('Import validation passed - proceeding with:', {
@@ -163,6 +164,7 @@ const AdminReading = () => {
       console.log('Starting import process...', {
         bookNumber: uploadBookNumber,
         sectionNumber: uploadSectionNumber,
+        partNumber: uploadPartNumber,
         questionsCount: pendingQuestions.length,
         passageTitle
       });
@@ -172,6 +174,7 @@ const AdminReading = () => {
         content: finalContent,
         book_number: uploadBookNumber,
         section_number: uploadSectionNumber,
+        part_number: uploadPartNumber,
         cambridge_book: `C${uploadBookNumber}`,
         difficulty_level: "intermediate",
         passage_type: "academic"
@@ -201,7 +204,8 @@ const AdminReading = () => {
           options: question.options || null,
           passage_id: passageId,
           cambridge_book: `C${uploadBookNumber}`,
-          section_number: uploadSectionNumber
+          section_number: uploadSectionNumber,
+          part_number: uploadPartNumber
         };
         
         console.log(`Creating question ${i + 1}:`, questionData);
@@ -210,7 +214,7 @@ const AdminReading = () => {
 
       toast({
         title: "Success",
-        description: `${pendingQuestions.length} questions uploaded to Cambridge ${uploadBookNumber}, Section ${uploadSectionNumber}`,
+        description: `${pendingQuestions.length} questions uploaded to Cambridge ${uploadBookNumber}, Section ${uploadSectionNumber}, Part ${uploadPartNumber}`,
       });
 
       // Reset form and close dialogs
@@ -532,11 +536,11 @@ const AdminReading = () => {
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
           <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Upload Content to Cambridge {uploadBookNumber}, Section {uploadSectionNumber}</DialogTitle>
+              <DialogTitle>Upload Content to Cambridge {uploadBookNumber}, Section {uploadSectionNumber}, Part {uploadPartNumber}</DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
-              {/* Book and Section Selection */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Book, Section, and Part Selection */}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Cambridge Book</label>
                   <Select value={uploadBookNumber.toString()} onValueChange={(value) => setUploadBookNumber(parseInt(value))}>
@@ -559,6 +563,19 @@ const AdminReading = () => {
                     <SelectContent className="rounded-xl border-light-border bg-card">
                       {Array.from({length: 4}, (_, i) => i + 1).map(num => (
                         <SelectItem key={num} value={num.toString()}>Section {num}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Part</label>
+                  <Select value={uploadPartNumber.toString()} onValueChange={(value) => setUploadPartNumber(parseInt(value))}>
+                    <SelectTrigger className="rounded-xl border-light-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-light-border bg-card">
+                      {Array.from({length: 3}, (_, i) => i + 1).map(num => (
+                        <SelectItem key={num} value={num.toString()}>Part {num}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -591,7 +608,14 @@ const AdminReading = () => {
               </Card>
               
               {/* CSV Upload for Questions */}
-              <CSVImport onImport={handleCSVPreview} type="reading" />
+              <CSVImport 
+                onImport={handleCSVPreview} 
+                type="reading" 
+                cambridgeBook={`C${uploadBookNumber}`}
+                testNumber={null}
+                sectionNumber={uploadSectionNumber}
+                partNumber={uploadPartNumber}
+              />
             </div>
           </DialogContent>
         </Dialog>
@@ -736,6 +760,7 @@ const AdminReading = () => {
                 <div className="text-sm text-blue-700 space-y-1">
                   <p>• Book: Cambridge {uploadBookNumber}</p>
                   <p>• Section: {uploadSectionNumber}</p>
+                  <p>• Part: {uploadPartNumber}</p>
                   <p>• Passage: {passageTitle || "Untitled"}</p>
                   <p>• Questions: {pendingQuestions.length}</p>
                 </div>

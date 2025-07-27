@@ -52,6 +52,7 @@ export type Database = {
           explanation: string
           id: string
           options: Json | null
+          part_number: number | null
           question_number: number
           question_text: string
           question_type: string | null
@@ -64,6 +65,7 @@ export type Database = {
           explanation: string
           id?: string
           options?: Json | null
+          part_number?: number | null
           question_number: number
           question_text: string
           question_type?: string | null
@@ -76,6 +78,7 @@ export type Database = {
           explanation?: string
           id?: string
           options?: Json | null
+          part_number?: number | null
           question_number?: number
           question_text?: string
           question_type?: string | null
@@ -99,6 +102,7 @@ export type Database = {
           difficulty_level: string | null
           id: string
           instructions: string | null
+          part_number: number | null
           section_number: number | null
           test_number: number | null
           title: string
@@ -112,6 +116,7 @@ export type Database = {
           difficulty_level?: string | null
           id?: string
           instructions?: string | null
+          part_number?: number | null
           section_number?: number | null
           test_number?: number | null
           title: string
@@ -125,6 +130,7 @@ export type Database = {
           difficulty_level?: string | null
           id?: string
           instructions?: string | null
+          part_number?: number | null
           section_number?: number | null
           test_number?: number | null
           title?: string
@@ -141,6 +147,7 @@ export type Database = {
           created_at: string
           difficulty_level: string | null
           id: string
+          part_number: number | null
           passage_type: string | null
           section_number: number | null
           test_number: number | null
@@ -154,6 +161,7 @@ export type Database = {
           created_at?: string
           difficulty_level?: string | null
           id?: string
+          part_number?: number | null
           passage_type?: string | null
           section_number?: number | null
           test_number?: number | null
@@ -167,6 +175,7 @@ export type Database = {
           created_at?: string
           difficulty_level?: string | null
           id?: string
+          part_number?: number | null
           passage_type?: string | null
           section_number?: number | null
           test_number?: number | null
@@ -184,6 +193,7 @@ export type Database = {
           explanation: string
           id: string
           options: Json | null
+          part_number: number | null
           passage_id: string | null
           question_number: number
           question_text: string
@@ -198,6 +208,7 @@ export type Database = {
           explanation: string
           id?: string
           options?: Json | null
+          part_number?: number | null
           passage_id?: string | null
           question_number: number
           question_text: string
@@ -212,6 +223,7 @@ export type Database = {
           explanation?: string
           id?: string
           options?: Json | null
+          part_number?: number | null
           passage_id?: string | null
           question_number?: number
           question_text?: string

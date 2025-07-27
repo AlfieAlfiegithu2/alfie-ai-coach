@@ -103,30 +103,42 @@ const ListeningTest = () => {
 
       if (sections && sections.length > 0) {
         const section = sections[0];
+        console.log('Loading listening section:', section.id, section.title);
         setCurrentSection(section);
 
         // Fetch questions for this section
+        console.log('Fetching questions for section:', section.id);
         const { data: questionsData, error: questionsError } = await supabase
           .from('listening_questions')
           .select('*')
           .eq('section_id', section.id)
           .order('question_number');
 
-        if (questionsError) throw questionsError;
+        if (questionsError) {
+          console.error('Error fetching listening questions:', questionsError);
+          throw questionsError;
+        }
+
+        console.log('Listening questions fetched:', questionsData?.length || 0, 'questions');
 
         if (questionsData && questionsData.length > 0) {
-          const formattedQuestions: ListeningQuestion[] = questionsData.map(q => ({
-            id: q.id,
-            question_text: q.question_text,
-            question_number: q.question_number,
-            options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
-            correct_answer: q.correct_answer,
-            question_type: q.question_type,
-            explanation: q.explanation,
-            section_id: q.section_id
-          }));
+          const formattedQuestions: ListeningQuestion[] = questionsData.map(q => {
+            console.log('Processing listening question:', q.question_number, q.question_type, q.options);
+            return {
+              id: q.id,
+              question_text: q.question_text,
+              question_number: q.question_number,
+              options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
+              correct_answer: q.correct_answer,
+              question_type: q.question_type,
+              explanation: q.explanation,
+              section_id: q.section_id
+            };
+          });
+          console.log('Formatted listening questions:', formattedQuestions.length);
           setQuestions(formattedQuestions);
         } else {
+          console.warn('No questions found for section:', section.id);
           toast({
             title: "No Questions Found", 
             description: "This section doesn't have any questions yet. Please select another test.",

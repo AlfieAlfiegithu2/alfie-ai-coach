@@ -14,6 +14,7 @@ interface ContentItem {
   cambridge_book?: string;
   test_number?: number;
   section_number?: number;
+  part_number?: number;
   difficulty_level?: string;
   question_count?: number;
 }
@@ -44,7 +45,8 @@ const ContentSelection = () => {
           `)
           .order('cambridge_book', { ascending: false })
           .order('test_number', { ascending: true })
-          .order('section_number', { ascending: true });
+          .order('section_number', { ascending: true })
+          .order('part_number', { ascending: true });
 
         if (error) throw error;
 
@@ -54,6 +56,7 @@ const ContentSelection = () => {
           cambridge_book: passage.cambridge_book,
           test_number: passage.test_number,
           section_number: passage.section_number,
+          part_number: passage.part_number || 1,
           difficulty_level: passage.difficulty_level,
           question_count: passage.reading_questions?.length || 0
         })) || [];
@@ -71,7 +74,8 @@ const ContentSelection = () => {
           `)
           .order('cambridge_book', { ascending: false })
           .order('test_number', { ascending: true })
-          .order('section_number', { ascending: true });
+          .order('section_number', { ascending: true })
+          .order('part_number', { ascending: true });
 
         if (error) throw error;
 
@@ -81,6 +85,7 @@ const ContentSelection = () => {
           cambridge_book: section.cambridge_book,
           test_number: section.test_number,
           section_number: section.section_number,
+          part_number: section.part_number || 1,
           difficulty_level: section.difficulty_level,
           question_count: section.listening_questions?.length || 0
         })) || [];
@@ -240,6 +245,9 @@ const ContentSelection = () => {
                               <h4 className="font-semibold text-foreground text-sm mb-1 truncate" title={item.title}>
                                 {item.title}
                               </h4>
+                              <p className="text-xs text-warm-gray">
+                                Test {item.test_number} - Section {item.section_number} - Part {item.part_number}
+                              </p>
                             </div>
                             
                             <div className="space-y-2 text-xs text-warm-gray">
@@ -253,6 +261,12 @@ const ContentSelection = () => {
                                 <div className="flex justify-between">
                                   <span>Section:</span>
                                   <Badge variant="outline" className="text-xs">{item.section_number}</Badge>
+                                </div>
+                              )}
+                              {item.part_number && (
+                                <div className="flex justify-between">
+                                  <span>Part:</span>
+                                  <Badge variant="outline" className="text-xs">{item.part_number}</Badge>
                                 </div>
                               )}
                               {item.difficulty_level && (

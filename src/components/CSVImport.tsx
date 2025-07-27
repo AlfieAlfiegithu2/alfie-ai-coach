@@ -10,9 +10,13 @@ import { getQuestionTypesForModule, mapQuestionType, validateQuestionType, Quest
 interface CSVImportProps {
   onImport: (questions: any[]) => void;
   type: 'reading' | 'listening' | 'writing' | 'speaking';
+  cambridgeBook?: string;
+  testNumber?: number;
+  sectionNumber?: number;
+  partNumber?: number;
 }
 
-const CSVImport = ({ onImport, type }: CSVImportProps) => {
+const CSVImport = ({ onImport, type, cambridgeBook, testNumber, sectionNumber, partNumber }: CSVImportProps) => {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
@@ -181,7 +185,10 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
         options: options.length > 0 ? options : undefined,
         choices: parsedChoices || undefined,
         correct_answer: correctAnswer,
-        explanation: explanation
+        explanation: explanation,
+        cambridge_book: cambridgeBook,
+        section_number: sectionNumber,
+        part_number: partNumber || 1
       });
     }
 

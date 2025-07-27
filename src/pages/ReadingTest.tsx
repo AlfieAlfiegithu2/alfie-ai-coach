@@ -64,14 +64,11 @@ const ReadingTest = () => {
     }
   }, [timeLeft, isSubmitted]);
 
-  // Auto-save answers
+  // Reset test data on component mount (start fresh)
   useEffect(() => {
-    const saveAnswers = () => {
-      localStorage.setItem(`reading-test-${testId}`, JSON.stringify(answers));
-    };
-    const timer = setTimeout(saveAnswers, 1000);
-    return () => clearTimeout(timer);
-  }, [answers, testId]);
+    console.log('🔄 Fresh Start: Clearing any saved test data for fresh test experience');
+    localStorage.removeItem(`reading-test-${testId}`);
+  }, [testId]);
 
   const fetchReadingTest = async () => {
     try {
@@ -249,11 +246,8 @@ const ReadingTest = () => {
         });
       }
 
-      // Load saved answers
-      const savedAnswers = localStorage.getItem(`reading-test-${testId}`);
-      if (savedAnswers) {
-        setAnswers(JSON.parse(savedAnswers));
-      }
+      // Start fresh - no saved answers loaded
+      console.log('🔄 Fresh Start: Starting test with no saved answers for clean experience');
 
       setLoading(false);
     } catch (error) {
@@ -354,9 +348,91 @@ const ReadingTest = () => {
   };
 
   const fetchPartData = async (partNumber: number) => {
-    // Implementation for fetching specific part data
-    // This would be similar to existing fetchReadingTest but filtered by part
-    console.log(`🔍 Sequential Flow: Fetching data for Part ${partNumber}`);
+    try {
+      console.log(`🔍 Sequential Flow: Fetching data for Part ${partNumber}`);
+      
+      if (!currentPassage) return;
+      
+      // Fetch passage for the specific part
+      const { data: passages, error: passageError } = await supabase
+        .from('reading_passages')
+        .select('*')
+        .eq('cambridge_book', currentPassage.cambridge_book)
+        .eq('test_number', currentPassage.test_number)
+        .eq('part_number', partNumber);
+      
+      if (passageError) throw passageError;
+      
+      const passage = passages?.[0];
+      if (!passage) {
+        toast({
+          title: "Part Not Available",
+          description: `Part ${partNumber} is not available for this test.`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Fetch questions for this part
+      const { data: questions, error: questionsError } = await supabase
+        .from('reading_questions')
+        .select('*')
+        .eq('passage_id', passage.id)
+        .order('question_number');
+      
+      if (questionsError) throw questionsError;
+      
+      if (questions && questions.length > 0) {
+        const formattedPassage = {
+          id: passage.id,
+          title: passage.title,
+          content: passage.content,
+          passage_type: passage.passage_type || 'academic',
+          cambridge_book: passage.cambridge_book,
+          test_number: passage.test_number,
+          part_number: passage.part_number || partNumber
+        };
+        
+        const formattedQuestions = questions.map(q => ({
+          id: q.id,
+          question_number: q.question_number,
+          question_text: q.question_text,
+          question_type: q.question_type,
+          options: q.options ? (Array.isArray(q.options) ? q.options.map(o => String(o)) : typeof q.options === 'string' ? q.options.split(';') : undefined) : undefined,
+          correct_answer: q.correct_answer,
+          explanation: q.explanation,
+          passage_id: q.passage_id
+        }));
+        
+        // Store in allPartsData
+        setAllPartsData(prev => ({
+          ...prev,
+          [partNumber]: {
+            passage: formattedPassage,
+            questions: formattedQuestions
+          }
+        }));
+        
+        // Set current data
+        setCurrentPassage(formattedPassage);
+        setQuestions(formattedQuestions);
+        
+        console.log(`✅ Sequential Flow: Successfully loaded Part ${partNumber} with ${formattedQuestions.length} questions`);
+      } else {
+        toast({
+          title: "No Questions Found",
+          description: `No questions found for Part ${partNumber}`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error(`❌ Sequential Flow: Error fetching Part ${partNumber}:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to load Part ${partNumber}`,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleRetake = () => {

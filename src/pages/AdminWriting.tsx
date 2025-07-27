@@ -13,7 +13,7 @@ import { Plus, Edit, Trash2, Upload, Eye, FileText, ChevronDown, ChevronRight, S
 import AdminLayout from "@/components/AdminLayout";
 
 const AdminWriting = () => {
-  const { listContent, createContent, deleteContent, updateContent, loading } = useAdminContent();
+  const { listContent, createContent, deleteContent, updateContent, uploadAudio, loading } = useAdminContent();
   const { toast } = useToast();
   
   // Cambridge books structure
@@ -31,6 +31,8 @@ const AdminWriting = () => {
   const [wordLimit, setWordLimit] = useState(250);
   const [timeLimit, setTimeLimit] = useState(20);
   const [sampleAnswer, setSampleAnswer] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     loadCambridgeStructure();
@@ -104,6 +106,33 @@ const AdminWriting = () => {
         return;
       }
 
+      let finalImageUrl = imageUrl;
+
+      // Upload image if provided (for Task 1)
+      if (imageFile && taskType === "task1") {
+        console.log('📸 Uploading Task 1 image...', imageFile.name);
+        try {
+          const uploadResult = await uploadAudio(imageFile); // Reusing upload function for images
+          if (uploadResult.success) {
+            finalImageUrl = uploadResult.url;
+            console.log('✅ Task 1 image uploaded successfully:', finalImageUrl);
+          } else {
+            toast({
+              title: "Image Upload Failed",
+              description: "Failed to upload Task 1 image. Continuing without image.",
+              variant: "destructive"
+            });
+          }
+        } catch (uploadError) {
+          console.error('❌ Image upload error:', uploadError);
+          toast({
+            title: "Image Upload Error",
+            description: "Error uploading image. Continuing without image.",
+            variant: "destructive"
+          });
+        }
+      }
+
       const promptData = {
         title: promptTitle,
         prompt_text: promptText,
@@ -113,14 +142,15 @@ const AdminWriting = () => {
         time_limit: timeLimit,
         sample_answer: sampleAnswer,
         test_number: uploadSectionNumber,
-        cambridge_book: `C${uploadBookNumber}`
+        cambridge_book: `C${uploadBookNumber}`,
+        image_url: finalImageUrl || null
       };
 
       await createContent('writing_prompts', promptData);
 
       toast({
         title: "Success",
-        description: `Writing prompt uploaded to Cambridge ${uploadBookNumber}, Test ${uploadSectionNumber}`,
+        description: `Writing prompt uploaded to Cambridge ${uploadBookNumber}, Test ${uploadSectionNumber}${finalImageUrl ? ' with image' : ''}`,
       });
 
       // Reset form and close dialog
@@ -131,6 +161,8 @@ const AdminWriting = () => {
       setWordLimit(250);
       setTimeLimit(20);
       setSampleAnswer("");
+      setImageFile(null);
+      setImageUrl("");
       setShowUploadDialog(false);
       loadCambridgeStructure();
     } catch (error: any) {
@@ -500,6 +532,38 @@ const AdminWriting = () => {
                     rows={6}
                     className="rounded-xl border-light-border"
                   />
+
+                  {/* Task 1 Image Upload */}
+                  {taskType === "task1" && (
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Task 1 Image (Graph/Chart/Map)
+                      </label>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setImageFile(file);
+                            console.log('📸 Task 1 image selected:', file.name);
+                          }
+                        }}
+                        className="rounded-xl border-light-border"
+                      />
+                      {imageFile && (
+                        <p className="text-xs text-warm-gray mt-1">
+                          Selected: {imageFile.name}
+                        </p>
+                      )}
+                      <Input
+                        placeholder="Or enter image URL"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="rounded-xl border-light-border mt-2"
+                      />
+                    </div>
+                  )}
                   
                   <Textarea
                     placeholder="Sample answer (optional)"

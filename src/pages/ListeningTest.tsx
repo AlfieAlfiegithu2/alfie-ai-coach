@@ -73,22 +73,16 @@ const ListeningTest = () => {
     }
   }, [isSubmitted]);
 
-  // Auto-save answers
+  // Reset test data on component mount (start fresh)
   useEffect(() => {
-    const saveInterval = setInterval(() => {
-      localStorage.setItem(`listening_test_${testId}_answers`, JSON.stringify(answers));
-    }, 5000);
-
-    return () => clearInterval(saveInterval);
-  }, [answers, testId]);
+    console.log('🔄 Fresh Start: Clearing any saved test data for fresh test experience');
+    localStorage.removeItem(`listening_test_${testId}_answers`);
+  }, [testId]);
 
   const fetchListeningTest = async () => {
     try {
-      // Load saved answers if any
-      const savedAnswers = localStorage.getItem(`listening_test_${testId}_answers`);
-      if (savedAnswers) {
-        setAnswers(JSON.parse(savedAnswers));
-      }
+      // Start fresh - no saved answers loaded
+      console.log('🔄 Fresh Start: Starting test with no saved answers for clean experience');
 
       // Fetch listening section based on testId or get random
       let sectionQuery = supabase.from('listening_sections').select('*');

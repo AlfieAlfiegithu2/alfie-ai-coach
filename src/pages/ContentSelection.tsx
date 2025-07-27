@@ -275,53 +275,36 @@ const ContentSelection = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {/* Horizontal layout for book/test selection */}
+                    <div className="flex flex-wrap gap-3 justify-start">
                       {items.map((item) => (
                         <Card 
                           key={item.id}
-                          className="cursor-pointer transition-all duration-300 rounded-xl border-light-border hover:shadow-md hover:scale-105"
+                          className="cursor-pointer transition-all duration-300 rounded-xl border-light-border hover:shadow-md hover:scale-105 w-44 flex-shrink-0"
                           onClick={() => handleStartTest(item.id)}
                           style={{ background: 'white' }}
                         >
-                          <CardContent className="p-6">
-                            <div className="text-center mb-4">
+                          <CardContent className="p-4">
+                            <div className="text-center mb-3">
                               <div 
-                                className="w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3"
+                                className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center mb-2"
                                 style={{ background: 'var(--gradient-button)' }}
                               >
                                 {module === 'reading' ? (
-                                  <BookOpen className="w-6 h-6 text-white" />
+                                  <BookOpen className="w-5 h-5 text-white" />
                                 ) : (
-                                  <Headphones className="w-6 h-6 text-white" />
+                                  <Headphones className="w-5 h-5 text-white" />
                                 )}
                               </div>
-                              <h4 className="font-semibold text-foreground text-sm mb-1 truncate" title={item.title}>
+                              <h4 className="font-semibold text-foreground text-xs mb-1 truncate" title={item.title}>
                                 {item.title}
                               </h4>
                               <p className="text-xs text-warm-gray">
-                                Test {item.test_number} - Section {item.section_number} - Part {item.part_number}
+                                T{item.test_number} - S{item.section_number} - P{item.part_number}
                               </p>
                             </div>
                             
-                            <div className="space-y-2 text-xs text-warm-gray">
-                              {item.test_number && (
-                                <div className="flex justify-between">
-                                  <span>Test:</span>
-                                  <Badge variant="outline" className="text-xs">{item.test_number}</Badge>
-                                </div>
-                              )}
-                              {item.section_number && (
-                                <div className="flex justify-between">
-                                  <span>Section:</span>
-                                  <Badge variant="outline" className="text-xs">{item.section_number}</Badge>
-                                </div>
-                              )}
-                              {item.part_number && (
-                                <div className="flex justify-between">
-                                  <span>Part:</span>
-                                  <Badge variant="outline" className="text-xs">{item.part_number}</Badge>
-                                </div>
-                              )}
+                            <div className="space-y-1 text-xs text-warm-gray">
                               <div className="flex justify-between">
                                 <span>Questions:</span>
                                 <Badge variant="outline" className="text-xs">{item.question_count || 0}</Badge>
@@ -329,11 +312,11 @@ const ContentSelection = () => {
                             </div>
                             
                             <Button 
-                              className="w-full mt-4 rounded-xl text-xs h-8"
+                              className="w-full mt-3 rounded-lg text-xs h-7"
                               style={{ background: 'var(--gradient-button)' }}
                             >
                               <Play className="w-3 h-3 mr-1" />
-                              Start Test
+                              Start
                             </Button>
                           </CardContent>
                         </Card>

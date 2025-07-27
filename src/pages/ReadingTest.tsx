@@ -10,6 +10,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import StudentLayout from '@/components/StudentLayout';
+import TestResults from '@/components/TestResults';
 
 interface ReadingPassage {
   id: string;
@@ -45,6 +46,7 @@ const ReadingTest = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showExplanations, setShowExplanations] = useState(false);
   const [score, setScore] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     fetchReadingTest();
@@ -117,12 +119,12 @@ const ReadingTest = () => {
           part_number: passage.part_number || 1
         });
 
-        // Enhanced question fetching with better sync and debugging
-        console.log('Fetching questions for passage:', passage.id, 'Book:', passage.cambridge_book, 'Section:', passage.section_number, 'Part:', passage.part_number);
+        // Generalized enhanced question fetching (based on successful C19 fix)
+        console.log('🔍 GENERALIZED SYNC: Fetching questions for passage:', passage.id, 'Book:', passage.cambridge_book, 'Section:', passage.section_number, 'Part:', passage.part_number);
         
         let finalQuestionsData = null;
         
-        // Strategy 1: Try passage_id first
+        // Strategy 1: Try passage_id first (primary method)
         const { data: passageQuestions, error: passageError } = await supabase
           .from('reading_questions')
           .select('*')
@@ -131,41 +133,52 @@ const ReadingTest = () => {
 
         if (!passageError && passageQuestions && passageQuestions.length > 0) {
           finalQuestionsData = passageQuestions;
-          console.log(`✓ Found ${passageQuestions.length} questions by passage_id`);
+          console.log(`✓ GENERALIZED SYNC: Found ${passageQuestions.length} questions by passage_id for ${passage.cambridge_book}`);
         } else {
-          console.log('No questions found by passage_id, trying book/section/part lookup...');
+          console.log('🔄 GENERALIZED SYNC: No questions by passage_id, trying enhanced book/section/part lookup...');
           
-          // Strategy 2: Enhanced book/section/part matching
+          // Strategy 2: Enhanced book/section/part matching with multiple format attempts
           if (passage.cambridge_book && passage.section_number !== undefined && passage.part_number !== undefined) {
-            const { data: bookQuestions, error: bookError } = await supabase
-              .from('reading_questions')
-              .select('*')
-              .eq('cambridge_book', passage.cambridge_book)
-              .eq('section_number', passage.section_number)
-              .eq('part_number', passage.part_number)
-              .order('question_number');
+            // Extract book number and try multiple formats (generalized C19 approach)
+            const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
+            const bookFormats = [
+              passage.cambridge_book, // Original format (e.g., "C19")
+              `C${bookNum}`, // Standard format
+              bookNum, // Just number
+              `c${bookNum}`, // Lowercase
+              `Cambridge ${bookNum}` // Full format
+            ];
             
-            if (!bookError && bookQuestions && bookQuestions.length > 0) {
-              finalQuestionsData = bookQuestions;
-              console.log(`✓ Found ${bookQuestions.length} questions by exact book/section/part match`);
-            } else {
-              // Strategy 3: Try book number extraction and multiple formats
-              const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
-              const bookFormats = [`C${bookNum}`, bookNum, `c${bookNum}`];
+            for (const bookFormat of bookFormats) {
+              console.log(`🔄 GENERALIZED SYNC: Trying book format "${bookFormat}" for section ${passage.section_number}, part ${passage.part_number}`);
+              const { data: formatQuestions, error: formatError } = await supabase
+                .from('reading_questions')
+                .select('*')
+                .eq('cambridge_book', bookFormat)
+                .eq('section_number', passage.section_number)
+                .eq('part_number', passage.part_number)
+                .order('question_number');
               
+              if (!formatError && formatQuestions && formatQuestions.length > 0) {
+                finalQuestionsData = formatQuestions;
+                console.log(`✅ GENERALIZED SYNC: Found ${formatQuestions.length} questions with book format "${bookFormat}" - SYNC SUCCESS!`);
+                break;
+              }
+            }
+            
+            // Strategy 3: Fallback - try without section/part constraints
+            if (!finalQuestionsData) {
+              console.log('🔄 GENERALIZED SYNC: Trying fallback without section/part constraints...');
               for (const bookFormat of bookFormats) {
-                console.log(`Trying book format: ${bookFormat} with section ${passage.section_number}, part ${passage.part_number}`);
-                const { data: formatQuestions, error: formatError } = await supabase
+                const { data: fallbackQuestions, error: fallbackError } = await supabase
                   .from('reading_questions')
                   .select('*')
                   .eq('cambridge_book', bookFormat)
-                  .eq('section_number', passage.section_number)
-                  .eq('part_number', passage.part_number)
                   .order('question_number');
                 
-                if (!formatError && formatQuestions && formatQuestions.length > 0) {
-                  finalQuestionsData = formatQuestions;
-                  console.log(`✓ Found ${formatQuestions.length} questions with book format "${bookFormat}"`);
+                if (!fallbackError && fallbackQuestions && fallbackQuestions.length > 0) {
+                  finalQuestionsData = fallbackQuestions;
+                  console.log(`🆘 GENERALIZED SYNC: Found ${fallbackQuestions.length} questions with fallback for "${bookFormat}"`);
                   break;
                 }
               }
@@ -173,11 +186,11 @@ const ReadingTest = () => {
           }
         }
 
-        console.log('Questions fetched:', finalQuestionsData?.length || 0, 'questions');
+        console.log('🔍 GENERALIZED SYNC: Final result -', finalQuestionsData?.length || 0, 'questions found');
 
         if (finalQuestionsData && finalQuestionsData.length > 0) {
           const formattedQuestions: ReadingQuestion[] = finalQuestionsData.map(q => {
-            console.log('Processing question:', q.question_number, q.question_type, q.options);
+            console.log('✓ GENERALIZED SYNC: Processing question', q.question_number, q.question_type, q.options);
             return {
               id: q.id,
               question_number: q.question_number,
@@ -189,10 +202,10 @@ const ReadingTest = () => {
               passage_id: q.passage_id
             };
           });
-          console.log('Formatted questions:', formattedQuestions.length);
+          console.log('🎉 GENERALIZED SYNC: Successfully formatted', formattedQuestions.length, 'questions for', passage.cambridge_book);
           setQuestions(formattedQuestions);
         } else {
-          console.warn('No questions found for passage:', passage.id);
+          console.error('❌ GENERALIZED SYNC: No questions found for passage:', passage.id, 'Book:', passage.cambridge_book);
           toast({
             title: "No Questions Found",
             description: "This passage doesn't have any questions yet. Please select another test.",
@@ -250,14 +263,25 @@ const ReadingTest = () => {
     setScore(finalScore);
     setIsSubmitted(true);
     setShowConfirmDialog(false);
+    setShowResults(true);
     
     // Clear saved answers
     localStorage.removeItem(`reading-test-${testId}`);
     
-    toast({
-      title: "Test Submitted!",
-      description: `You scored ${finalScore}/${questions.length} (${Math.round((finalScore / questions.length) * 100)}%)`,
-    });
+    console.log('🎯 Test completed:', finalScore, 'out of', questions.length, 'questions');
+  };
+
+  const handleRetake = () => {
+    setAnswers({});
+    setScore(0);
+    setIsSubmitted(false);
+    setShowResults(false);
+    setTimeLeft(60 * 60);
+    localStorage.removeItem(`reading-test-${testId}`);
+  };
+
+  const handleContinuePractice = () => {
+    navigate('/content-selection/reading');
   };
 
   const getBandScore = (percentage: number): string => {
@@ -434,8 +458,25 @@ const ReadingTest = () => {
     );
   }
 
+  // Show post-practice feedback when test is completed
+  if (showResults) {
+    return (
+      <StudentLayout title="Test Results" showBackButton backPath="/content-selection/reading">
+        <TestResults
+          score={score}
+          totalQuestions={questions.length}
+          answers={answers}
+          questions={questions}
+          onRetake={handleRetake}
+          onContinue={handleContinuePractice}
+          testTitle={`${currentPassage?.cambridge_book} - ${currentPassage?.title}`}
+        />
+      </StudentLayout>
+    );
+  }
+
   return (
-    <StudentLayout title="Reading Test" showBackButton backPath="/tests">
+    <StudentLayout title="Reading Test" showBackButton backPath="/content-selection/reading">
       <div className="max-w-7xl mx-auto p-4">
         {/* Test Header */}
         <div className="mb-6 p-4 rounded-xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
@@ -453,7 +494,9 @@ const ReadingTest = () => {
                   {currentPassage?.test_number && (
                     <Badge variant="outline">Test {currentPassage.test_number}</Badge>
                   )}
-                  
+                  {currentPassage?.part_number && (
+                    <Badge variant="outline">Part {currentPassage.part_number}</Badge>
+                  )}
                   <Badge variant="outline">{currentPassage?.passage_type}</Badge>
                 </div>
               </div>
@@ -524,7 +567,7 @@ const ReadingTest = () => {
                 {questions.map(renderQuestion)}
               </div>
               
-              {!isSubmitted ? (
+              {!isSubmitted && (
                 <Button 
                   onClick={() => setShowConfirmDialog(true)}
                   className="w-full mt-6 rounded-xl"
@@ -532,34 +575,6 @@ const ReadingTest = () => {
                 >
                   Submit Test
                 </Button>
-              ) : (
-                <div className="mt-6 space-y-3">
-                  <div className="p-4 rounded-xl text-center" style={{ background: 'var(--gradient-success)' }}>
-                    <div className="text-2xl font-bold text-white mb-1">
-                      {Math.round((score / questions.length) * 100)}%
-                    </div>
-                    <div className="text-white/90">
-                      Band Score: {getBandScore((score / questions.length) * 100)}
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    onClick={() => setShowExplanations(!showExplanations)}
-                    variant="outline"
-                    className="w-full rounded-xl border-light-border"
-                  >
-                    {showExplanations ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                    {showExplanations ? 'Hide' : 'Show'} Explanations
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => navigate('/tests')}
-                    className="w-full rounded-xl"
-                    style={{ background: 'var(--gradient-button)', border: 'none' }}
-                  >
-                    Take Another Test
-                  </Button>
-                </div>
               )}
             </CardContent>
           </Card>

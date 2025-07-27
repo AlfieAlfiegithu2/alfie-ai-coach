@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Headphones, ArrowLeft, Clock, Target, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
@@ -26,19 +27,21 @@ const ContentSelection = () => {
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupedContent, setGroupedContent] = useState<Record<string, ContentItem[]>>({});
+  const [selectedPart, setSelectedPart] = useState<number | null>(null);
 
   useEffect(() => {
     fetchContent();
-  }, [module]);
+  }, [module, selectedPart]);
 
   const fetchContent = async () => {
     try {
       setLoading(true);
       
       if (module === 'reading') {
-        // Fetch reading passages with question counts - only show passages that have questions
-        console.log('🔍 DEBUG: Fetching reading content with questions...');
-        const { data: passages, error } = await supabase
+        // Enhanced fetching with generalized C19 fix approach for all books
+        console.log('🔍 DEBUG: Fetching reading content with questions using generalized sync method...');
+        
+        let query = supabase
           .from('reading_passages')
           .select(`
             id,
@@ -54,6 +57,14 @@ const ContentSelection = () => {
           .order('section_number', { ascending: true })
           .order('part_number', { ascending: true });
 
+        // Apply part filter if selected
+        if (selectedPart !== null) {
+          query = query.eq('part_number', selectedPart);
+          console.log(`🔍 DEBUG: Filtering by part ${selectedPart}`);
+        }
+
+        const { data: passages, error } = await query;
+
         if (error) throw error;
 
         console.log('✓ DEBUG: Found reading passages with questions:', passages?.length || 0);
@@ -66,7 +77,6 @@ const ContentSelection = () => {
           test_number: passage.test_number,
           section_number: passage.section_number,
           part_number: passage.part_number || 1,
-          
           question_count: passage.reading_questions?.length || 0
         })) || [];
 
@@ -74,8 +84,10 @@ const ContentSelection = () => {
         groupContentByBook(formattedPassages);
         
       } else if (module === 'listening') {
-        // Fetch listening sections with question counts
-        const { data: sections, error } = await supabase
+        // Enhanced listening fetching with generalized sync and part filtering
+        console.log('🔍 DEBUG: Fetching listening content with questions using generalized sync method...');
+        
+        let query = supabase
           .from('listening_sections')
           .select(`
             *,
@@ -86,7 +98,18 @@ const ContentSelection = () => {
           .order('section_number', { ascending: true })
           .order('part_number', { ascending: true });
 
+        // Apply part filter if selected for listening (1-4 parts)
+        if (selectedPart !== null) {
+          query = query.eq('part_number', selectedPart);
+          console.log(`🔍 DEBUG: Filtering listening by part ${selectedPart}`);
+        }
+
+        const { data: sections, error } = await query;
+
         if (error) throw error;
+
+        console.log('✓ DEBUG: Found listening sections with questions:', sections?.length || 0);
+        sections?.forEach(s => console.log(`  - ${s.cambridge_book} Section ${s.section_number} Part ${s.part_number}: ${s.listening_questions?.length || 0} questions`));
 
         const formattedSections = sections?.map(section => ({
           id: section.id,
@@ -95,7 +118,6 @@ const ContentSelection = () => {
           test_number: section.test_number,
           section_number: section.section_number,
           part_number: section.part_number || 1,
-          
           question_count: section.listening_questions?.length || 0
         })) || [];
 
@@ -173,6 +195,28 @@ const ContentSelection = () => {
           <p className="text-lg text-warm-gray mb-6">
             Practice with uploaded Cambridge IELTS materials
           </p>
+
+          {/* Part Filter */}
+          <div className="mb-6">
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-sm font-medium text-foreground">Filter by Part:</span>
+              <Select 
+                value={selectedPart?.toString() || "all"} 
+                onValueChange={(value) => setSelectedPart(value === "all" ? null : parseInt(value))}
+              >
+                <SelectTrigger className="w-40 rounded-xl">
+                  <SelectValue placeholder="All Parts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Parts</SelectItem>
+                  <SelectItem value="1">Part 1</SelectItem>
+                  <SelectItem value="2">Part 2</SelectItem>
+                  <SelectItem value="3">Part 3</SelectItem>
+                  {module === 'listening' && <SelectItem value="4">Part 4</SelectItem>}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {/* Random Test Button */}
           <Button 

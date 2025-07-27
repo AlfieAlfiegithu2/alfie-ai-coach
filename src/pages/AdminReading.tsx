@@ -29,6 +29,9 @@ const AdminReading = () => {
   const [editingSection, setEditingSection] = useState<any>(null);
   const [passageTitle, setPassageTitle] = useState("");
   const [passageContent, setPassageContent] = useState("");
+  const [pendingQuestions, setPendingQuestions] = useState<any[]>([]);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     loadCambridgeStructure();
@@ -121,8 +124,32 @@ const AdminReading = () => {
     setOpenBooks(newOpen);
   };
 
-  const handleCSVUpload = async (questions: any[]) => {
+  // Step 1: Preview and validate questions (called by CSVImport component)
+  const handleCSVPreview = (questions: any[]) => {
+    // Basic validation - CSVImport component already handles type validation
+    const validQuestions = questions.filter(q => 
+      q.question_text && q.correct_answer && q.question_type
+    );
+    
+    if (validQuestions.length === 0) {
+      toast({
+        title: "Error",
+        description: "No valid questions found in CSV",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Store questions for import
+    setPendingQuestions(validQuestions);
+    setShowImportConfirm(true);
+  };
+
+  // Step 2: Actually import/save the questions (called after user confirmation)
+  const handleConfirmImport = async () => {
     try {
+      setIsImporting(true);
+      
       if (!passageTitle || !passageContent) {
         toast({
           title: "Error",
@@ -131,6 +158,13 @@ const AdminReading = () => {
         });
         return;
       }
+
+      console.log('Starting import process...', {
+        bookNumber: uploadBookNumber,
+        sectionNumber: uploadSectionNumber,
+        questionsCount: pendingQuestions.length,
+        passageTitle
+      });
 
       const passageData = {
         title: passageTitle,
@@ -142,13 +176,21 @@ const AdminReading = () => {
         passage_type: "academic"
       };
 
+      console.log('Creating passage with data:', passageData);
+
       // Create passage first
       const passageResult = await createContent('reading_passages', passageData);
+      
+      if (!passageResult?.data?.id) {
+        throw new Error('Failed to create passage - no ID returned');
+      }
+      
       const passageId = passageResult.data.id;
+      console.log('Passage created with ID:', passageId);
 
       // Create questions linked to the passage
-      for (let i = 0; i < questions.length; i++) {
-        const question = questions[i];
+      for (let i = 0; i < pendingQuestions.length; i++) {
+        const question = pendingQuestions[i];
         const questionData = {
           question_number: question.question_number || (i + 1),
           question_type: question.question_type || 'multiple_choice',
@@ -161,26 +203,38 @@ const AdminReading = () => {
           section_number: uploadSectionNumber
         };
         
+        console.log(`Creating question ${i + 1}:`, questionData);
         await createContent('reading_questions', questionData);
       }
 
       toast({
         title: "Success",
-        description: `Questions uploaded to Cambridge ${uploadBookNumber}, Section ${uploadSectionNumber}`,
+        description: `${pendingQuestions.length} questions uploaded to Cambridge ${uploadBookNumber}, Section ${uploadSectionNumber}`,
       });
 
-      // Reset form and close dialog
+      // Reset form and close dialogs
       setPassageTitle("");
       setPassageContent("");
+      setPendingQuestions([]);
+      setShowImportConfirm(false);
       setShowUploadDialog(false);
       loadCambridgeStructure();
     } catch (error: any) {
+      console.error('Import error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to upload questions",
         variant: "destructive"
       });
+    } finally {
+      setIsImporting(false);
     }
+  };
+
+  // Cancel import flow
+  const handleCancelImport = () => {
+    setPendingQuestions([]);
+    setShowImportConfirm(false);
   };
 
   const deleteSection = async (bookNumber: number, sectionNumber: number) => {
@@ -535,7 +589,7 @@ const AdminReading = () => {
               </Card>
               
               {/* CSV Upload for Questions */}
-              <CSVImport onImport={handleCSVUpload} type="reading" />
+              <CSVImport onImport={handleCSVPreview} type="reading" />
             </div>
           </DialogContent>
         </Dialog>
@@ -664,6 +718,73 @@ const AdminReading = () => {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Import Confirmation Dialog (Step 2) */}
+        <Dialog open={showImportConfirm} onOpenChange={setShowImportConfirm}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Confirm Import - {pendingQuestions.length} Questions
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h4 className="font-medium text-blue-800 mb-2">Import Summary</h4>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>• Book: Cambridge {uploadBookNumber}</p>
+                  <p>• Section: {uploadSectionNumber}</p>
+                  <p>• Passage: {passageTitle || "Untitled"}</p>
+                  <p>• Questions: {pendingQuestions.length}</p>
+                </div>
+              </div>
+
+              {/* Preview Questions */}
+              <Card className="p-4">
+                <h5 className="font-medium mb-4">Questions Preview</h5>
+                <div className="max-h-64 overflow-y-auto space-y-3">
+                  {pendingQuestions.map((question, index) => (
+                    <div key={index} className="border border-light-border rounded-lg p-3 bg-white">
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className="mt-1">{question.question_number || index + 1}</Badge>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="secondary" className="text-xs">{question.question_type}</Badge>
+                            <span className="text-xs text-warm-gray">Answer: {question.correct_answer}</span>
+                          </div>
+                          <p className="text-sm font-medium mb-1">{question.question_text}</p>
+                          {question.options && question.options.length > 0 && (
+                            <div className="text-xs text-warm-gray">
+                              Options: {question.options.join(' | ')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleConfirmImport}
+                  disabled={isImporting}
+                  className="rounded-xl flex-1"
+                  style={{ background: 'var(--gradient-button)', border: 'none' }}
+                >
+                  {isImporting ? 'Importing...' : 'Confirm Import'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCancelImport}
+                  disabled={isImporting}
+                  className="rounded-xl flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

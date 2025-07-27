@@ -2,11 +2,14 @@ import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, Download, FileText, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Upload, Download, FileText, AlertCircle, HelpCircle } from "lucide-react";
+import { getQuestionTypesForModule, mapQuestionType, validateQuestionType, QuestionTypeDefinition } from '@/lib/ielts-question-types';
 
 interface CSVImportProps {
   onImport: (questions: any[]) => void;
-  type: 'reading' | 'listening';
+  type: 'reading' | 'listening' | 'writing' | 'speaking';
 }
 
 const CSVImport = ({ onImport, type }: CSVImportProps) => {
@@ -26,36 +29,38 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
     'Explanation'
   ];
 
-  const validQuestionTypes = [
-    'Multiple Choice',
-    'True/False/Not Given',
-    'Yes/No/Not Given',
-    'Matching Information',
-    'Matching Headings',
-    'Matching Features',
-    'Matching Sentence Endings',
-    'Sentence Completion',
-    'Summary Completion',
-    'Diagram Label Completion',
-    'Short-answer Questions',
-    'Fill In The Blank'
-  ];
+  // Get valid question types for the current module
+  const validQuestionTypes = getQuestionTypesForModule(type);
 
   const downloadTemplate = () => {
+    // Generate sample data based on module type
+    const getSampleData = () => {
+      const samples: Record<string, string[]> = {
+        reading: [
+          '1,Reading,True/False/Not Given,"People had expected Andy Murray to become the world\'s top tennis player for at least five years before 2016.","TRUE;FALSE;NOT GIVEN","FALSE","The passage states Murray was regarded as an outsider before 2016."',
+          '2,Reading,Sentence Completion,"Mike and Bob Bryan made changes to the types of ______ used on their racket frames.","","paint","The passage mentions they experimented with different kinds of paint."',
+          '3,Reading,Multiple Choice,"What is the main benefit of racket modifications according to the passage?","A) Increased speed;B) Better control;C) Reduced weight;D) Enhanced power","B","The passage emphasizes control as a key benefit."'
+        ],
+        listening: [
+          '1,Listening,Multiple Choice,"What is the main topic of the conversation?","A) Travel plans;B) Hotel booking;C) Restaurant reservation;D) Meeting schedule","B","The speakers discuss hotel arrangements."',
+          '2,Listening,Form Completion,"The caller\'s name is ______","","Sarah Johnson","As stated by the caller at the beginning."',
+          '3,Listening,Table Completion,"Complete the table: Day | Activity | Time","Monday;Meeting;9:00 AM","Monday=Meeting;9:00 AM","Based on the schedule discussion."'
+        ],
+        writing: [
+          '1,Writing,Task 1 - Graph Description,"Describe the trends shown in the graph","","The graph shows a steady increase...","Model answer describing key trends."',
+          '2,Writing,Task 2 - Essay,"Discuss both views and give your opinion","","While some argue that...","Model essay with balanced arguments."'
+        ],
+        speaking: [
+          '1,Speaking,Part 1 - Introduction and Interview,"What do you do for work or study?","","I work as a software developer...","Sample response with details."',
+          '2,Speaking,Part 2 - Long Turn (Cue Card),"Describe a memorable journey","","I\'d like to talk about a trip...","Sample 2-minute response."'
+        ]
+      };
+      return samples[type] || samples.reading;
+    };
+
     const csvContent = [
       expectedColumns.join(','),
-      '1,Reading,True/False/Not Given,"People had expected Andy Murray to become the world\'s top tennis player for at least five years before 2016.","TRUE;FALSE;NOT GIVEN","FALSE","The passage states Murray was regarded as an outsider before 2016."',
-      '2,Reading,Fill In The Blank,"Mike and Bob Bryan made changes to the types of ______ used on their racket frames.","","paint","The passage mentions they experimented with different kinds of paint."',
-      '3,Reading,Multiple Choice,"What is the main benefit of racket modifications according to the passage?","A) Increased speed;B) Better control;C) Reduced weight;D) Enhanced power","B","The passage emphasizes control as a key benefit."',
-      '4,Reading,Yes/No/Not Given,"The writer believes racket technology has revolutionized tennis.","YES;NO;NOT GIVEN","YES","The passage supports this view through examples."',
-      '5,Reading,Matching Headings,"Match the following paragraphs to headings: Paragraph A; Paragraph B","i) History of Rackets;ii) Modern Modifications;iii) Banned Innovations","Paragraph A=ii;Paragraph B=iii","Based on content matching."',
-      '6,Reading,Matching Information,"Which paragraph mentions the impact of weather?","A;B;C;D","C","Paragraph C discusses climatic conditions."',
-      '7,Reading,Matching Features,"Match players to their modifications: Andy Murray; Pete Sampras","String changes;Lead weights","Andy Murray=String changes;Pete Sampras=Lead weights","From player-specific details."',
-      '8,Reading,Matching Sentence Endings,"Complete the sentence: The spaghetti-strung racket was banned because...","it created too much topspin;it was too heavy;it broke easily","it created too much topspin","Directly stated in the passage."',
-      '9,Reading,Sentence Completion,"Professional players often adjust their rackets based on ______ conditions.","","climatic","The passage mentions climatic conditions."',
-      '10,Reading,Summary Completion,"Complete the summary: Racket strings were originally made from animal ______.","","intestines","Historical fact from the text."',
-      '11,Reading,Diagram Label Completion,"Label the racket diagram: Part 1 (strings); Part 2 (frame)","Natural gut;Wooden","Part 1=Natural gut;Part 2=Wooden","Based on described components."',
-      '12,Reading,Short-answer Questions,"What material did Pete Sampras add to his rackets? (No more than two words)","","lead weights","Exact phrase from the passage."'
+      ...getSampleData()
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -127,23 +132,29 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
       const correctAnswer = values[5]?.trim() || '';
       const explanation = values[6]?.trim() || '';
 
-      // Validate question type
-      if (!validQuestionTypes.includes(questionType)) {
-        throw new Error(`Invalid question type "${questionType}" in row ${i + 1}. Supported types: ${validQuestionTypes.join(', ')}`);
+      // Map and validate question type
+      const mappedType = mapQuestionType(questionType);
+      const isValid = validateQuestionType(mappedType, type);
+      
+      if (!isValid) {
+        const validTypes = validQuestionTypes.map(t => t.value);
+        throw new Error(`Invalid question type "${questionType}" in row ${i + 1}. Mapped to "${mappedType}". Supported types: ${validTypes.join(', ')}`);
       }
+      
+      const finalQuestionType = mappedType;
 
       // Parse choices based on question type
       let options: string[] = [];
       let parsedChoices: any = null;
 
       if (choices) {
-        if (questionType === 'Multiple Choice') {
+        if (finalQuestionType === 'Multiple Choice') {
           options = choices.split(';').map(choice => choice.trim()).filter(choice => choice);
-        } else if (questionType === 'True/False/Not Given') {
+        } else if (finalQuestionType === 'True/False/Not Given') {
           options = ['TRUE', 'FALSE', 'NOT GIVEN'];
-        } else if (questionType === 'Yes/No/Not Given') {
+        } else if (finalQuestionType === 'Yes/No/Not Given') {
           options = ['YES', 'NO', 'NOT GIVEN'];
-        } else if (questionType.includes('Matching')) {
+        } else if (finalQuestionType.includes('Matching')) {
           // For matching types, parse as key=value pairs
           const pairs = choices.split(';').map(pair => pair.trim()).filter(pair => pair);
           if (pairs.some(pair => pair.includes('='))) {
@@ -183,7 +194,7 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
 
       questions.push({
         question_number: questionNumber,
-        question_type: convertQuestionType(questionType),
+        question_type: convertQuestionType(finalQuestionType),
         question_text: questionText,
         options: options.length > 0 ? options : undefined,
         choices: parsedChoices || undefined,
@@ -239,7 +250,7 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-foreground">
           <FileText className="w-5 h-5" />
-          Bulk CSV Import - All IELTS Reading Types
+          Bulk CSV Import - {type.charAt(0).toUpperCase() + type.slice(1)} Question Types
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -252,7 +263,27 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
           <br /><br />
           <strong>Required Format:</strong> {expectedColumns.join(', ')}
           <br /><br />
-          <strong>Supported Types:</strong> {validQuestionTypes.join(', ')}
+          <strong>Supported Question Types:</strong>
+          <TooltipProvider>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1 mt-2">
+              {validQuestionTypes.map((questionType) => (
+                <Tooltip key={questionType.value}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 text-xs bg-white/50 px-2 py-1 rounded cursor-help">
+                      <Badge variant="secondary" className="text-xs">{questionType.label}</Badge>
+                      <HelpCircle className="w-3 h-3 text-blue-600" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="text-xs">
+                      <div className="font-medium">{questionType.description}</div>
+                      <div className="text-muted-foreground mt-1">{questionType.tips}</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
           <br /><br />
           <strong>Choice Formats:</strong>
           <br />• Multiple Choice: "A) Option1;B) Option2;C) Option3"

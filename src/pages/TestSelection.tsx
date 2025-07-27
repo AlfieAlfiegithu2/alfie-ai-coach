@@ -52,23 +52,49 @@ const TestSelection = () => {
 
   const toggleSection = (section: string) => {
     const newSections = new Set(selectedSections);
-    if (newSections.has(section)) {
-      newSections.delete(section);
+    
+    if (testMode === 'practice') {
+      // Practice mode: only allow one section at a time
+      if (newSections.has(section)) {
+        newSections.delete(section);
+      } else {
+        newSections.clear(); // Clear all other selections
+        newSections.add(section);
+      }
     } else {
-      newSections.add(section);
+      // Simulation mode: allow multiple sections
+      if (newSections.has(section)) {
+        newSections.delete(section);
+      } else {
+        newSections.add(section);
+      }
     }
+    
     setSelectedSections(newSections);
   };
 
   const handleStartTest = () => {
     if (selectedSections.size === 0) return;
     
-    if (selectedSections.size === 1) {
-      const section = Array.from(selectedSections)[0];
-      navigate(`/${section}/random`);
+    if (testMode === 'practice') {
+      // Practice mode: only allow one section at a time
+      if (selectedSections.size === 1) {
+        const section = Array.from(selectedSections)[0];
+        navigate(`/${section}/random`);
+      } else {
+        // Force single selection for practice mode
+        const firstSection = Array.from(selectedSections)[0];
+        navigate(`/${firstSection}/random`);
+      }
     } else {
-      // Start full test with selected sections
-      navigate("/reading/random", { state: { sections: Array.from(selectedSections), mode: testMode } });
+      // Simulation mode: allow multiple sections (full test)
+      if (selectedSections.size === 1) {
+        const section = Array.from(selectedSections)[0];
+        navigate(`/${section}/random`);
+      } else {
+        // Start full test with all selected sections
+        navigate("/reading/random", { state: { sections: Array.from(selectedSections), mode: testMode } });
+      }
     }
   };
 
@@ -153,7 +179,12 @@ const TestSelection = () => {
           <Card className="mb-8 rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
             <CardHeader>
               <CardTitle className="text-2xl font-georgia text-center">Select Test Sections</CardTitle>
-              <p className="text-warm-gray text-center">Choose which sections to include in your test experience</p>
+              <p className="text-warm-gray text-center">
+                {testMode === 'practice' 
+                  ? 'Choose ONE section for focused practice' 
+                  : 'Choose sections for full test simulation'
+                }
+              </p>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -118,20 +118,69 @@ const ReadingTest = () => {
         // If no questions found by passage_id, try by book/section/part combination
         if (!questionsData || questionsData.length === 0) {
           console.log('No questions found by passage_id, trying book/section/part lookup...');
-          const { data: altQuestionsData, error: altError } = await supabase
-            .from('reading_questions')
-            .select('*')
-            .eq('cambridge_book', passage.cambridge_book)
-            .eq('section_number', passage.section_number)
-            .eq('part_number', passage.part_number || 1)
-            .order('question_number');
           
-          if (altError) {
-            console.error('Error fetching questions by book/section/part:', altError);
-          } else {
-            finalQuestionsData = altQuestionsData;
-            console.log('Found questions by book/section/part:', altQuestionsData?.length || 0);
+          // Try multiple approaches to find questions
+          let altQuestionsData = null;
+          
+          // Approach 1: Exact book/section/part match
+          if (passage.cambridge_book && passage.section_number && passage.part_number) {
+            const { data, error } = await supabase
+              .from('reading_questions')
+              .select('*')
+              .eq('cambridge_book', passage.cambridge_book)
+              .eq('section_number', passage.section_number)
+              .eq('part_number', passage.part_number)
+              .order('question_number');
+            
+            if (!error && data && data.length > 0) {
+              altQuestionsData = data;
+              console.log('Found questions by exact book/section/part match:', altQuestionsData.length);
+            }
           }
+          
+          // Approach 2: Try different book formats if no exact match
+          if (!altQuestionsData && passage.cambridge_book) {
+            const bookVariants = [
+              passage.cambridge_book,
+              passage.cambridge_book.replace('C', ''),
+              `C${passage.cambridge_book.replace('C', '')}`,
+              passage.cambridge_book.toLowerCase(),
+              passage.cambridge_book.toUpperCase()
+            ];
+            
+            for (const bookVariant of bookVariants) {
+              const { data, error } = await supabase
+                .from('reading_questions')
+                .select('*')
+                .eq('cambridge_book', bookVariant)
+                .eq('section_number', passage.section_number || 1)
+                .eq('part_number', passage.part_number || 1)
+                .order('question_number');
+              
+              if (!error && data && data.length > 0) {
+                altQuestionsData = data;
+                console.log(`Found questions with book variant "${bookVariant}":`, altQuestionsData.length);
+                break;
+              }
+            }
+          }
+          
+          // Approach 3: Find any questions for this book/section (ignore part)
+          if (!altQuestionsData && passage.cambridge_book && passage.section_number) {
+            const { data, error } = await supabase
+              .from('reading_questions')
+              .select('*')
+              .eq('cambridge_book', passage.cambridge_book)
+              .eq('section_number', passage.section_number)
+              .order('question_number');
+            
+            if (!error && data && data.length > 0) {
+              altQuestionsData = data;
+              console.log('Found questions by book/section (any part):', altQuestionsData.length);
+            }
+          }
+          
+          finalQuestionsData = altQuestionsData;
         }
 
         console.log('Questions fetched:', finalQuestionsData?.length || 0, 'questions');

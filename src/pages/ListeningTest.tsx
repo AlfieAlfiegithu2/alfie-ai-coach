@@ -49,6 +49,9 @@ const ListeningTest = () => {
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
+  const [currentPart, setCurrentPart] = useState(1);
+  const [completedParts, setCompletedParts] = useState<number[]>([]);
+  const [allPartsData, setAllPartsData] = useState<{[key: number]: {section: ListeningSection, questions: ListeningQuestion[]}}>({});
 
   useEffect(() => {
     fetchListeningTest();
@@ -232,22 +235,83 @@ const ListeningTest = () => {
     }, 0);
   };
 
+  const handleGoToNextPart = () => {
+    // Mark current part as completed
+    setCompletedParts(prev => [...prev, currentPart]);
+    
+    // Check if this is the final part (Part 4 for Listening)
+    if (currentPart >= 4) {
+      handleSubmit();
+      return;
+    }
+
+    // Go to next part
+    const nextPart = currentPart + 1;
+    setCurrentPart(nextPart);
+    
+    // Load next part data or fetch if needed
+    if (allPartsData[nextPart]) {
+      setCurrentSection(allPartsData[nextPart].section);
+      setQuestions(allPartsData[nextPart].questions);
+    } else {
+      // Fetch next part
+      fetchPartData(nextPart);
+    }
+    
+    console.log(`📝 Sequential Flow: Moving from Part ${currentPart} to Part ${nextPart}`);
+  };
+
   const handleSubmit = () => {
     if (!isSubmitted) {
       if (audio) {
         audio.pause();
       }
-      const finalScore = calculateScore();
-      setScore(finalScore);
+      
+      // Calculate score from all completed parts
+      let totalScore = 0;
+      let totalQuestions = 0;
+      
+      // Add current part to completed parts for final calculation
+      const allParts = [...completedParts, currentPart];
+      allParts.forEach(partNum => {
+        if (allPartsData[partNum]) {
+          const partQuestions = allPartsData[partNum].questions;
+          totalQuestions += partQuestions.length;
+          partQuestions.forEach(q => {
+            if (answers[q.id] === q.correct_answer) {
+              totalScore++;
+            }
+          });
+        }
+      });
+      
+      // Include current questions if not in allPartsData
+      if (!allPartsData[currentPart]) {
+        totalQuestions += questions.length;
+        questions.forEach(q => {
+          if (answers[q.id] === q.correct_answer) {
+            totalScore++;
+          }
+        });
+      }
+
+      setScore(totalScore);
       setIsSubmitted(true);
       setShowConfirmDialog(false);
       localStorage.removeItem(`listening_test_${testId}_answers`);
       
+      console.log('🎯 Sequential Flow: Listening test completed with all parts. Final score:', totalScore, 'out of', totalQuestions, 'questions');
+      
       toast({
         title: "Test Submitted!",
-        description: `You scored ${finalScore}/${questions.length} (${Math.round((finalScore/questions.length)*100)}%)`,
+        description: `You scored ${totalScore}/${totalQuestions} (${Math.round((totalScore/totalQuestions)*100)}%)`,
       });
     }
+  };
+
+  const fetchPartData = async (partNumber: number) => {
+    // Implementation for fetching specific part data
+    console.log(`🔍 Sequential Flow: Fetching data for Part ${partNumber}`);
   };
 
   const getBandScore = (score: number, total: number) => {
@@ -333,9 +397,9 @@ const ListeningTest = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
           {/* Left Column: Audio Player + Instructions + Questions */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 flex flex-col gap-4 h-full">
             {/* Audio Player & Instructions */}
             <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
               <CardHeader>
@@ -538,13 +602,47 @@ const ListeningTest = () => {
                 </div>
                 
                 {!isSubmitted ? (
-                  <Button 
-                    onClick={() => setShowConfirmDialog(true)}
-                    className="w-full mt-4 rounded-xl"
-                    style={{ background: 'var(--gradient-button)', border: 'none' }}
-                  >
-                    Submit Test
-                  </Button>
+                  <div className="mt-4 space-y-3">
+                    {/* Progress Indicator */}
+                    <div className="flex justify-center">
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4].map(partNum => (
+                          <div 
+                            key={partNum}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                              completedParts.includes(partNum) 
+                                ? 'bg-green-100 text-green-700 border border-green-200' 
+                                : partNum === currentPart 
+                                  ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                                  : 'bg-gray-100 text-gray-500 border border-gray-200'
+                            }`}
+                          >
+                            {completedParts.includes(partNum) ? '✓' : partNum}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {currentPart < 4 ? (
+                      <Button 
+                        onClick={handleGoToNextPart}
+                        className="w-full rounded-xl"
+                        style={{ background: 'var(--gradient-button)', border: 'none' }}
+                        disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
+                      >
+                        Go to Part {currentPart + 1}
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => setShowConfirmDialog(true)}
+                        className="w-full rounded-xl"
+                        style={{ background: 'var(--gradient-button)', border: 'none' }}
+                        disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
+                      >
+                        Submit Test
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="mt-4 space-y-3">
                     <Button 

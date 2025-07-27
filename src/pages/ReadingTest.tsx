@@ -47,6 +47,9 @@ const ReadingTest = () => {
   const [showExplanations, setShowExplanations] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [currentPart, setCurrentPart] = useState(1);
+  const [completedParts, setCompletedParts] = useState<number[]>([]);
+  const [allPartsData, setAllPartsData] = useState<{[key: number]: {passage: ReadingPassage, questions: ReadingQuestion[]}}>({});
 
   useEffect(() => {
     fetchReadingTest();
@@ -118,6 +121,23 @@ const ReadingTest = () => {
           test_number: passage.test_number,
           part_number: passage.part_number || 1
         });
+
+        // Store in allPartsData for sequential flow
+        setAllPartsData(prev => ({
+          ...prev,
+          [passage.part_number || 1]: {
+            passage: {
+              id: passage.id,
+              title: passage.title,
+              content: passage.content,
+              passage_type: passage.passage_type || 'academic',
+              cambridge_book: passage.cambridge_book,
+              test_number: passage.test_number,
+              part_number: passage.part_number || 1
+            },
+            questions: []
+          }
+        }));
 
         // Generalized enhanced question fetching (based on successful C19 fix)
         console.log('🔍 GENERALIZED SYNC: Fetching questions for passage:', passage.id, 'Book:', passage.cambridge_book, 'Section:', passage.section_number, 'Part:', passage.part_number);
@@ -204,6 +224,15 @@ const ReadingTest = () => {
           });
           console.log('🎉 GENERALIZED SYNC: Successfully formatted', formattedQuestions.length, 'questions for', passage.cambridge_book);
           setQuestions(formattedQuestions);
+
+          // Store questions in allPartsData
+          setAllPartsData(prev => ({
+            ...prev,
+            [passage.part_number || 1]: {
+              ...prev[passage.part_number || 1],
+              questions: formattedQuestions
+            }
+          }));
         } else {
           console.error('❌ GENERALIZED SYNC: No questions found for passage:', passage.id, 'Book:', passage.cambridge_book);
           toast({
@@ -258,9 +287,62 @@ const ReadingTest = () => {
     return correct;
   };
 
+  const handleGoToNextPart = () => {
+    // Mark current part as completed
+    setCompletedParts(prev => [...prev, currentPart]);
+    
+    // Check if this is the final part (Part 3 for Reading)
+    if (currentPart >= 3) {
+      handleSubmit();
+      return;
+    }
+
+    // Go to next part
+    const nextPart = currentPart + 1;
+    setCurrentPart(nextPart);
+    
+    // Load next part data or fetch if needed
+    if (allPartsData[nextPart]) {
+      setCurrentPassage(allPartsData[nextPart].passage);
+      setQuestions(allPartsData[nextPart].questions);
+    } else {
+      // Fetch next part
+      fetchPartData(nextPart);
+    }
+    
+    console.log(`📝 Sequential Flow: Moving from Part ${currentPart} to Part ${nextPart}`);
+  };
+
   const handleSubmit = () => {
-    const finalScore = calculateScore();
-    setScore(finalScore);
+    // Calculate score from all completed parts
+    let totalScore = 0;
+    let totalQuestions = 0;
+    
+    // Add current part to completed parts for final calculation
+    const allParts = [...completedParts, currentPart];
+    allParts.forEach(partNum => {
+      if (allPartsData[partNum]) {
+        const partQuestions = allPartsData[partNum].questions;
+        totalQuestions += partQuestions.length;
+        partQuestions.forEach(q => {
+          if (answers[q.id]?.toLowerCase().trim() === q.correct_answer?.toLowerCase().trim()) {
+            totalScore++;
+          }
+        });
+      }
+    });
+    
+    // Include current questions if not in allPartsData
+    if (!allPartsData[currentPart]) {
+      totalQuestions += questions.length;
+      questions.forEach(q => {
+        if (answers[q.id]?.toLowerCase().trim() === q.correct_answer?.toLowerCase().trim()) {
+          totalScore++;
+        }
+      });
+    }
+
+    setScore(totalScore);
     setIsSubmitted(true);
     setShowConfirmDialog(false);
     setShowResults(true);
@@ -268,7 +350,13 @@ const ReadingTest = () => {
     // Clear saved answers
     localStorage.removeItem(`reading-test-${testId}`);
     
-    console.log('🎯 Test completed:', finalScore, 'out of', questions.length, 'questions');
+    console.log('🎯 Sequential Flow: Test completed with all parts. Final score:', totalScore, 'out of', totalQuestions, 'questions');
+  };
+
+  const fetchPartData = async (partNumber: number) => {
+    // Implementation for fetching specific part data
+    // This would be similar to existing fetchReadingTest but filtered by part
+    console.log(`🔍 Sequential Flow: Fetching data for Part ${partNumber}`);
   };
 
   const handleRetake = () => {
@@ -277,6 +365,8 @@ const ReadingTest = () => {
     setIsSubmitted(false);
     setShowResults(false);
     setTimeLeft(60 * 60);
+    setCurrentPart(1);
+    setCompletedParts([]);
     localStorage.removeItem(`reading-test-${testId}`);
   };
 
@@ -310,8 +400,8 @@ const ReadingTest = () => {
     const isIncorrect = isSubmitted && userAnswer && !isCorrect;
 
     return (
-      <div key={question.id} className="border-b border-light-border pb-6 last:border-b-0">
-        <div className="flex items-start gap-3 mb-4">
+      <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
+        <div className="flex items-start gap-3 mb-3">
           <Badge variant="outline" className="mt-1 shrink-0">
             {question.question_number}
           </Badge>
@@ -323,7 +413,7 @@ const ReadingTest = () => {
                 {question.options.map((option, index) => (
                   <label 
                     key={index} 
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                       isSubmitted 
                         ? option === question.correct_answer 
                           ? 'bg-green-50 border border-green-200' 
@@ -367,7 +457,7 @@ const ReadingTest = () => {
                 {(question.options || ['TRUE', 'FALSE', 'NOT GIVEN']).map((option, index) => (
                   <label 
                     key={index} 
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                       isSubmitted 
                         ? option === question.correct_answer 
                           ? 'bg-green-50 border border-green-200' 
@@ -420,7 +510,7 @@ const ReadingTest = () => {
             )}
 
             {isSubmitted && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-2 flex items-center gap-2">
                 {isCorrect ? (
                   <CheckCircle className="w-4 h-4 text-green-600" />
                 ) : (
@@ -433,7 +523,7 @@ const ReadingTest = () => {
             )}
 
             {isSubmitted && showExplanations && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+              <div className="mt-2 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
                   <strong>Explanation:</strong> {question.explanation}
                 </p>
@@ -479,7 +569,7 @@ const ReadingTest = () => {
     <StudentLayout title="Reading Test" showBackButton backPath="/content-selection/reading">
       <div className="max-w-7xl mx-auto p-4">
         {/* Test Header */}
-        <div className="mb-6 p-4 rounded-xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
+        <div className="mb-4 p-4 rounded-xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <BookOpen className="w-6 h-6 text-primary" />
@@ -494,87 +584,107 @@ const ReadingTest = () => {
                   {currentPassage?.test_number && (
                     <Badge variant="outline">Test {currentPassage.test_number}</Badge>
                   )}
-                  {currentPassage?.part_number && (
-                    <Badge variant="outline">Part {currentPassage.part_number}</Badge>
-                  )}
-                  <Badge variant="outline">{currentPassage?.passage_type}</Badge>
+                  <Badge variant="outline">Part {currentPart}</Badge>
+                  <Badge variant="outline">Reading</Badge>
                 </div>
               </div>
             </div>
             
-            {!isSubmitted && (
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="text-sm text-warm-gray">Time Remaining</div>
-                  <div className={`text-xl font-mono font-bold ${timeLeft < 300 ? 'text-red-600' : 'text-foreground'}`}>
+            <div className="flex items-center gap-4">
+              {!isSubmitted && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-100">
+                  <Clock className="w-4 h-4 text-orange-600" />
+                  <span className="font-mono text-orange-600 font-medium">
                     {formatTime(timeLeft)}
-                  </div>
+                  </span>
                 </div>
-                <Clock className={`w-6 h-6 ${timeLeft < 300 ? 'text-red-600' : 'text-primary'}`} />
-              </div>
-            )}
-
-            {isSubmitted && (
-              <div className="text-right">
-                <div className="text-sm text-warm-gray">Your Score</div>
-                <div className="text-2xl font-bold text-foreground flex items-center gap-2">
-                  <Target className="w-6 h-6 text-green-600" />
-                  {score}/{questions.length}
+              )}
+              
+              {isSubmitted && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{score}/{questions.length}</div>
+                  <div className="text-sm text-warm-gray">Band {getBandScore((score/questions.length)*100)}</div>
                 </div>
-                <div className="text-sm font-medium text-blue-600">
-                  Band {getBandScore((score / questions.length) * 100)}
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Main Content - Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Passage - Takes 2 columns */}
-          <Card className="lg:col-span-2 rounded-2xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
-            <CardHeader className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-10">
-              <CardTitle className="text-xl font-georgia text-foreground flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Reading Passage
-                <Badge variant="outline" className="ml-auto bg-blue-50 text-blue-700">
-                  Questions 1-{questions.length}
-                </Badge>
-              </CardTitle>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-220px)]">
+          {/* Reading Passage - Fixed Height with Scroll */}
+          <Card className="rounded-2xl border-light-border shadow-soft flex flex-col h-full" style={{ background: 'var(--gradient-card)' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="font-georgia text-foreground">Reading Passage</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="prose max-w-none text-foreground leading-relaxed space-y-4">
-                {currentPassage?.content.split('\n\n').map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
-                ))}
+            <CardContent className="flex-1 overflow-hidden">
+              <div className="h-full overflow-y-auto pr-2">
+                <div className="prose prose-slate max-w-none text-foreground leading-relaxed">
+                  <div 
+                    className="text-sm whitespace-pre-wrap" 
+                    dangerouslySetInnerHTML={{ __html: currentPassage?.content || '' }}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Right: Answer Sheet */}
-          <Card className="rounded-2xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
-            <CardHeader className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-10">
-              <CardTitle className="text-lg font-georgia text-foreground flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Answer Sheet
-                <Badge variant="outline" className="ml-auto">
-                  {Object.keys(answers).filter(key => answers[key]).length}/{questions.length}
-                </Badge>
-              </CardTitle>
+          {/* Questions - Fixed Height with Scroll */}
+          <Card className="rounded-2xl border-light-border shadow-soft flex flex-col h-full" style={{ background: 'var(--gradient-card)' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="font-georgia text-foreground">Questions</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-                {questions.map(renderQuestion)}
+            <CardContent className="flex-1 overflow-hidden flex flex-col">
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                {questions.map((question) => renderQuestion(question))}
               </div>
               
+              {/* Progress and Submit Button */}
               {!isSubmitted && (
-                <Button 
-                  onClick={() => setShowConfirmDialog(true)}
-                  className="w-full mt-6 rounded-xl"
-                  style={{ background: 'var(--gradient-button)', border: 'none' }}
-                >
-                  Submit Test
-                </Button>
+                <div className="pt-4 border-t border-light-border mt-4">
+                  {/* Progress Indicator */}
+                  <div className="flex justify-center mb-4">
+                    <div className="flex gap-2">
+                      {[1, 2, 3].map(partNum => (
+                        <div 
+                          key={partNum}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                            completedParts.includes(partNum) 
+                              ? 'bg-green-100 text-green-700 border border-green-200' 
+                              : partNum === currentPart 
+                                ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                                : 'bg-gray-100 text-gray-500 border border-gray-200'
+                          }`}
+                        >
+                          {completedParts.includes(partNum) ? '✓' : partNum}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    {currentPart < 3 ? (
+                      <Button 
+                        onClick={handleGoToNextPart}
+                        className="rounded-xl px-8 py-3 font-medium"
+                        style={{ background: 'var(--gradient-button)' }}
+                        disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
+                      >
+                        Go to Part {currentPart + 1}
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => setShowConfirmDialog(true)}
+                        className="rounded-xl px-8 py-3 font-medium"
+                        style={{ background: 'var(--gradient-button)' }}
+                        disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
+                      >
+                        <Target className="w-4 h-4 mr-2" />
+                        Submit Test
+                      </Button>
+                    )}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

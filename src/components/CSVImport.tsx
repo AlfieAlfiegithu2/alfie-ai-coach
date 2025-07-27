@@ -21,7 +21,7 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
 
   const expectedColumns = [
     'Question Number',
-    'Section',
+    'Section', 
     'Type',
     'Question Text',
     'Choices',
@@ -173,28 +173,10 @@ const CSVImport = ({ onImport, type }: CSVImportProps) => {
         }
       }
 
-      // Convert question type to snake_case format expected by database
-      const convertQuestionType = (type: string) => {
-        const typeMap: { [key: string]: string } = {
-          'Multiple Choice': 'multiple_choice',
-          'True/False/Not Given': 'true_false_not_given',
-          'Yes/No/Not Given': 'yes_no_not_given',
-          'Matching Information': 'matching_information',
-          'Matching Headings': 'matching_headings',
-          'Matching Features': 'matching_features',
-          'Matching Sentence Endings': 'matching_sentence_endings',
-          'Sentence Completion': 'sentence_completion',
-          'Summary Completion': 'summary_completion',
-          'Diagram Label Completion': 'diagram_label_completion',
-          'Short-answer Questions': 'short_answer_questions',
-          'Fill In The Blank': 'fill_in_blank'
-        };
-        return typeMap[type] || type.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
-      };
-
+      // Keep question type in official IELTS format for database (no conversion to snake_case)
       questions.push({
         question_number: questionNumber,
-        question_type: convertQuestionType(finalQuestionType),
+        question_type: finalQuestionType, // Use the official format directly
         question_text: questionText,
         options: options.length > 0 ? options : undefined,
         choices: parsedChoices || undefined,

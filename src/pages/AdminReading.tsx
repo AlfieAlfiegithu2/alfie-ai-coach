@@ -150,14 +150,15 @@ const AdminReading = () => {
     try {
       setIsImporting(true);
       
-      if (!passageTitle || !passageContent) {
-        toast({
-          title: "Error",
-          description: "Please provide both passage title and content",
-          variant: "destructive"
-        });
-        return;
-      }
+      // Set default title and content if not provided for CSV imports
+      const finalTitle = passageTitle || `Passage for Cambridge ${uploadBookNumber} Section ${uploadSectionNumber}`;
+      const finalContent = passageContent || "Passage content will be added later.";
+      
+      console.log('Import validation passed - proceeding with:', {
+        title: finalTitle,
+        contentLength: finalContent.length,
+        questionsCount: pendingQuestions.length
+      });
 
       console.log('Starting import process...', {
         bookNumber: uploadBookNumber,
@@ -167,8 +168,8 @@ const AdminReading = () => {
       });
 
       const passageData = {
-        title: passageTitle,
-        content: passageContent,
+        title: finalTitle,
+        content: finalContent,
         book_number: uploadBookNumber,
         section_number: uploadSectionNumber,
         cambridge_book: `C${uploadBookNumber}`,
@@ -193,7 +194,7 @@ const AdminReading = () => {
         const question = pendingQuestions[i];
         const questionData = {
           question_number: question.question_number || (i + 1),
-          question_type: question.question_type || 'multiple_choice',
+          question_type: question.question_type || 'Multiple Choice',
           question_text: question.question_text || '',
           correct_answer: question.correct_answer || '',
           explanation: question.explanation || '',
@@ -289,6 +290,7 @@ const AdminReading = () => {
         await updateContent('reading_questions', {
           id: question.id,
           question_text: question.question_text,
+          question_type: question.question_type,
           correct_answer: question.correct_answer,
           explanation: question.explanation,
           options: question.options
@@ -645,7 +647,29 @@ const AdminReading = () => {
                             className="mt-1"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                         <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Question Type</label>
+                            <select
+                              value={question.question_type}
+                              onChange={(e) => {
+                                const updated = { ...editingSection };
+                                updated.questions[index].question_type = e.target.value;
+                                setEditingSection(updated);
+                              }}
+                              className="w-full p-2 border border-gray-300 rounded-md mt-1"
+                            >
+                              <option value="True/False/Not Given">True/False/Not Given</option>
+                              <option value="Yes/No/Not Given">Yes/No/Not Given</option>
+                              <option value="Multiple Choice">Multiple Choice</option>
+                              <option value="Summary Completion">Summary Completion</option>
+                              <option value="Sentence Completion">Sentence Completion</option>
+                              <option value="Table Completion">Table Completion</option>
+                              <option value="Matching Headings">Matching Headings</option>
+                              <option value="Matching Features">Matching Features</option>
+                              <option value="Short-answer Questions">Short-answer Questions</option>
+                            </select>
+                          </div>
                           <div>
                             <label className="text-sm font-medium">Correct Answer</label>
                             <Input
@@ -657,27 +681,6 @@ const AdminReading = () => {
                               }}
                               className="mt-1"
                             />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Question Type</label>
-                            <Select
-                              value={question.question_type}
-                              onValueChange={(value) => {
-                                const updated = { ...editingSection };
-                                updated.questions[index].question_type = value;
-                                setEditingSection(updated);
-                              }}
-                            >
-                              <SelectTrigger className="mt-1">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                                <SelectItem value="fill_in_blank">Fill in the Blank</SelectItem>
-                                <SelectItem value="true_false">True/False</SelectItem>
-                                <SelectItem value="matching">Matching</SelectItem>
-                              </SelectContent>
-                            </Select>
                           </div>
                         </div>
                         <div>

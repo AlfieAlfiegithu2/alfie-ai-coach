@@ -535,11 +535,28 @@ const AdminWriting = () => {
 
                   {/* Task 1 Image Upload */}
                   {taskType === "task1" && (
-                    <div>
+                    <div className="space-y-3">
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Task 1 Image (Graph/Chart/Map)
                       </label>
-                      <Input
+                      <div className="flex items-center gap-4">
+                        <Button
+                          type="button"
+                          variant="default"
+                          onClick={() => document.getElementById('task1-image-upload')?.click()}
+                          className="rounded-xl h-12 px-6 text-sm bg-gradient-to-r from-gentle-blue to-warm-coral text-white font-medium hover:shadow-lg transition-all"
+                        >
+                          <Upload className="w-5 h-5 mr-2" />
+                          {imageFile ? 'Change Image' : 'Upload Task 1 Image'}
+                        </Button>
+                        {imageFile && (
+                          <span className="text-sm text-green-600 font-medium">
+                            ✅ {imageFile.name}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        id="task1-image-upload"
                         type="file"
                         accept="image/*"
                         onChange={(e) => {

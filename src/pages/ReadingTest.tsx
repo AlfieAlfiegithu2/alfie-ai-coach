@@ -353,12 +353,12 @@ const ReadingTest = () => {
       
       if (!currentPassage) return;
       
-      // Fetch passage for the specific part
+      // Enhanced part fetching using generalized sync method (same as successful C19 fix)
       const { data: passages, error: passageError } = await supabase
         .from('reading_passages')
         .select('*')
         .eq('cambridge_book', currentPassage.cambridge_book)
-        .eq('test_number', currentPassage.test_number)
+        .eq('section_number', currentPassage.test_number)
         .eq('part_number', partNumber);
       
       if (passageError) throw passageError;
@@ -373,16 +373,55 @@ const ReadingTest = () => {
         return;
       }
       
-      // Fetch questions for this part
-      const { data: questions, error: questionsError } = await supabase
+      // Enhanced question fetching using the same generalized method that fixed C19
+      console.log(`🔍 Sequential Flow: Fetching questions for Part ${partNumber} using generalized sync method`);
+      
+      let finalQuestionsData = null;
+      
+      // Strategy 1: Try passage_id first
+      const { data: passageQuestions, error: questionsError } = await supabase
         .from('reading_questions')
         .select('*')
         .eq('passage_id', passage.id)
         .order('question_number');
       
-      if (questionsError) throw questionsError;
+      if (!questionsError && passageQuestions && passageQuestions.length > 0) {
+        finalQuestionsData = passageQuestions;
+        console.log(`✅ Sequential Flow: Found ${passageQuestions.length} questions by passage_id for Part ${partNumber}`);
+      } else {
+        // Strategy 2: Enhanced book/section/part matching (generalized C19 approach)
+        console.log(`🔄 Sequential Flow: No questions by passage_id, trying enhanced lookup for Part ${partNumber}...`);
+        
+        if (passage.cambridge_book && passage.section_number !== undefined && partNumber !== undefined) {
+          const bookNum = passage.cambridge_book.replace(/[^0-9]/g, '');
+          const bookFormats = [
+            passage.cambridge_book,
+            `C${bookNum}`,
+            bookNum,
+            `c${bookNum}`,
+            `Cambridge ${bookNum}`
+          ];
+          
+          for (const bookFormat of bookFormats) {
+            console.log(`🔄 Sequential Flow: Trying book format "${bookFormat}" for section ${passage.section_number}, part ${partNumber}`);
+            const { data: formatQuestions, error: formatError } = await supabase
+              .from('reading_questions')
+              .select('*')
+              .eq('cambridge_book', bookFormat)
+              .eq('section_number', passage.section_number)
+              .eq('part_number', partNumber)
+              .order('question_number');
+            
+            if (!formatError && formatQuestions && formatQuestions.length > 0) {
+              finalQuestionsData = formatQuestions;
+              console.log(`✅ Sequential Flow: Found ${formatQuestions.length} questions with book format "${bookFormat}" for Part ${partNumber}`);
+              break;
+            }
+          }
+        }
+      }
       
-      if (questions && questions.length > 0) {
+      if (finalQuestionsData && finalQuestionsData.length > 0) {
         const formattedPassage = {
           id: passage.id,
           title: passage.title,
@@ -393,7 +432,7 @@ const ReadingTest = () => {
           part_number: passage.part_number || partNumber
         };
         
-        const formattedQuestions = questions.map(q => ({
+        const formattedQuestions = finalQuestionsData.map(q => ({
           id: q.id,
           question_number: q.question_number,
           question_text: q.question_text,

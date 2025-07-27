@@ -7,6 +7,7 @@ import { AudioRecorder } from "@/components/AudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useSpeakingTest } from "@/hooks/useSpeakingTest";
+import SpeakingQuestionByQuestion from "@/components/SpeakingQuestionByQuestion";
 
 const Speaking = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const Speaking = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [transcription, setTranscription] = useState<string | null>(null);
+  const [useQuestionByQuestion, setUseQuestionByQuestion] = useState(false);
 
   const {
     currentPrompt,
@@ -86,6 +88,17 @@ const Speaking = () => {
     if (!isTimerActive) {
       startTimer();
     }
+  };
+
+  const handleQuestionByQuestionComplete = (responses: any[]) => {
+    console.log('📝 Sequential Questions: Completed all questions with responses:', responses.length);
+    toast({
+      title: "Part Complete!",
+      description: `All questions answered for Part ${currentPart}`,
+    });
+    
+    // Switch back to regular mode
+    setUseQuestionByQuestion(false);
   };
 
   const getPartDescription = (part: number) => {
@@ -176,11 +189,32 @@ const Speaking = () => {
                   </Button>
                 ))}
               </div>
+              
+              {/* Question Mode Toggle for Parts 1 and 3 */}
+              {(currentPart === 1 || currentPart === 3) && (
+                <div className="flex justify-center mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setUseQuestionByQuestion(!useQuestionByQuestion)}
+                    className="text-sm"
+                  >
+                    {useQuestionByQuestion ? '📝 Switch to Free Practice' : '🎯 One Question at a Time'}
+                  </Button>
+                </div>
+              )}
             </CardHeader>
           </Card>
 
-          {/* Current Task */}
-          {currentPrompt && (
+          {/* Question by Question Mode for Parts 1 and 3 */}
+          {(currentPart === 1 || currentPart === 3) && useQuestionByQuestion && (
+            <SpeakingQuestionByQuestion 
+              partNumber={currentPart}
+              onComplete={handleQuestionByQuestionComplete}
+            />
+          )}
+
+          {/* Current Task - Regular Mode */}
+          {currentPrompt && !useQuestionByQuestion && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -253,8 +287,8 @@ const Speaking = () => {
             </Card>
           )}
 
-          {/* Transcription */}
-          {transcription && (
+          {/* Transcription - Only in regular mode */}
+          {transcription && !useQuestionByQuestion && (
             <Card>
               <CardHeader>
                 <CardTitle className="font-georgia">📝 What You Said</CardTitle>
@@ -267,8 +301,8 @@ const Speaking = () => {
             </Card>
           )}
 
-          {/* Analysis Results */}
-          {analysis && (
+          {/* Analysis Results - Only in regular mode */}
+          {analysis && !useQuestionByQuestion && (
             <Card>
               <CardHeader>
                 <CardTitle className="font-georgia">🎯 Detailed Speech Analysis</CardTitle>

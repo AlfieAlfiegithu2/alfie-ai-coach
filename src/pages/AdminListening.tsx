@@ -27,8 +27,6 @@ const AdminListening = () => {
   const [uploadSectionNumber, setUploadSectionNumber] = useState<number>(1);
   const [uploadPartNumber, setUploadPartNumber] = useState<number>(1);
   const [editingSection, setEditingSection] = useState<any>(null);
-  const [sectionTitle, setSectionTitle] = useState("");
-  const [instructions, setInstructions] = useState("");
   const [transcript, setTranscript] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [uploadingAudio, setUploadingAudio] = useState(false);
@@ -203,18 +201,8 @@ const AdminListening = () => {
 
   const handleCSVUpload = async (questions: any[]) => {
     try {
-      if (!sectionTitle || !instructions) {
-        toast({
-          title: "Error",
-          description: "Please provide section title and instructions",
-          variant: "destructive"
-        });
-        return;
-      }
 
       const sectionData = {
-        title: sectionTitle,
-        instructions: instructions,
         transcript: transcript,
         audio_url: audioUrl,
         photo_url: photoUrl,
@@ -250,8 +238,6 @@ const AdminListening = () => {
       });
 
       // Reset form and close dialog
-      setSectionTitle("");
-      setInstructions("");
       setTranscript("");
       setAudioUrl("");
       setPhotoUrl("");
@@ -631,20 +617,6 @@ const AdminListening = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Input
-                    placeholder="Section Title (e.g., 'University Lecture - Climate Change')"
-                    value={sectionTitle}
-                    onChange={(e) => setSectionTitle(e.target.value)}
-                    className="rounded-xl border-light-border"
-                  />
-                  
-                  <Textarea
-                    placeholder="Instructions for students (e.g., 'Listen to the lecture and answer questions 1-10')"
-                    value={instructions}
-                    onChange={(e) => setInstructions(e.target.value)}
-                    rows={3}
-                    className="rounded-xl border-light-border"
-                  />
 
                    <div>
                      <label className="block text-sm font-medium text-foreground mb-2">Audio File</label>

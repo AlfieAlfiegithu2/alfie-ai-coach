@@ -19,6 +19,7 @@ interface ReadingPassage {
   passage_type: string;
   cambridge_book?: string;
   test_number?: number;
+  part_number?: number;
 }
 
 interface ReadingQuestion {
@@ -94,14 +95,16 @@ const ReadingTest = () => {
           difficulty_level: passage.difficulty_level || 'Academic',
           passage_type: passage.passage_type || 'academic',
           cambridge_book: passage.cambridge_book,
-          test_number: passage.test_number
+          test_number: passage.test_number,
+          part_number: passage.part_number || 1
         });
 
-        // Fetch questions for this passage
+        // Fetch questions for this passage with improved query
         console.log('Fetching questions for passage:', passage.id);
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('reading_questions')
-          .select('*')
+        let questionsQuery = supabase.from('reading_questions').select('*');
+        
+        // First try to find questions by passage_id
+        const { data: questionsData, error: questionsError } = await questionsQuery
           .eq('passage_id', passage.id)
           .order('question_number');
 
@@ -110,10 +113,31 @@ const ReadingTest = () => {
           throw questionsError;
         }
 
-        console.log('Questions fetched:', questionsData?.length || 0, 'questions');
+        let finalQuestionsData = questionsData;
 
-        if (questionsData && questionsData.length > 0) {
-          const formattedQuestions: ReadingQuestion[] = questionsData.map(q => {
+        // If no questions found by passage_id, try by book/section/part combination
+        if (!questionsData || questionsData.length === 0) {
+          console.log('No questions found by passage_id, trying book/section/part lookup...');
+          const { data: altQuestionsData, error: altError } = await supabase
+            .from('reading_questions')
+            .select('*')
+            .eq('cambridge_book', passage.cambridge_book)
+            .eq('section_number', passage.section_number)
+            .eq('part_number', passage.part_number || 1)
+            .order('question_number');
+          
+          if (altError) {
+            console.error('Error fetching questions by book/section/part:', altError);
+          } else {
+            finalQuestionsData = altQuestionsData;
+            console.log('Found questions by book/section/part:', altQuestionsData?.length || 0);
+          }
+        }
+
+        console.log('Questions fetched:', finalQuestionsData?.length || 0, 'questions');
+
+        if (finalQuestionsData && finalQuestionsData.length > 0) {
+          const formattedQuestions: ReadingQuestion[] = finalQuestionsData.map(q => {
             console.log('Processing question:', q.question_number, q.question_type, q.options);
             return {
               id: q.id,

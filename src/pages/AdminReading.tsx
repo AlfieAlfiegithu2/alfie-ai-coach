@@ -52,7 +52,7 @@ const AdminReading = () => {
       // Initialize Cambridge books structure
       const structure: any = {};
       
-      // Initialize all books (1-20) with 4 sections each
+      // Initialize all books (1-20) with 4 sections each, 3 parts per section
       for (let book = 1; book <= 20; book++) {
         structure[book] = {
           number: book,
@@ -62,10 +62,19 @@ const AdminReading = () => {
         for (let section = 1; section <= 4; section++) {
           structure[book].sections[section] = {
             number: section,
-            passage: null,
-            questions: [],
+            parts: {},
             hasContent: false
           };
+          
+          // Each section has 3 parts
+          for (let part = 1; part <= 3; part++) {
+            structure[book].sections[section].parts[part] = {
+              number: part,
+              passage: null,
+              questions: [],
+              hasContent: false
+            };
+          }
         }
       }
 
@@ -73,9 +82,11 @@ const AdminReading = () => {
       passages.forEach((passage: any) => {
         const bookNum = passage.book_number || 1;
         const sectionNum = passage.section_number || 1;
+        const partNum = passage.part_number || 1;
         
-        if (structure[bookNum] && structure[bookNum].sections[sectionNum]) {
-          structure[bookNum].sections[sectionNum].passage = passage;
+        if (structure[bookNum] && structure[bookNum].sections[sectionNum] && structure[bookNum].sections[sectionNum].parts[partNum]) {
+          structure[bookNum].sections[sectionNum].parts[partNum].passage = passage;
+          structure[bookNum].sections[sectionNum].parts[partNum].hasContent = true;
           structure[bookNum].sections[sectionNum].hasContent = true;
         }
       });
@@ -87,19 +98,23 @@ const AdminReading = () => {
           if (relatedPassage) {
             const bookNum = relatedPassage.book_number || 1;
             const sectionNum = relatedPassage.section_number || 1;
-            if (structure[bookNum] && structure[bookNum].sections[sectionNum]) {
-              structure[bookNum].sections[sectionNum].questions.push(question);
+            const partNum = relatedPassage.part_number || 1;
+            if (structure[bookNum] && structure[bookNum].sections[sectionNum] && structure[bookNum].sections[sectionNum].parts[partNum]) {
+              structure[bookNum].sections[sectionNum].parts[partNum].questions.push(question);
+              structure[bookNum].sections[sectionNum].parts[partNum].hasContent = true;
               structure[bookNum].sections[sectionNum].hasContent = true;
             }
           }
         } else if (question.cambridge_book && question.section_number) {
-          // Use cambridge_book and section_number from question
+          // Use cambridge_book, section_number, and part_number from question
           const bookMatch = question.cambridge_book.match(/\d+/);
           const bookNum = bookMatch ? parseInt(bookMatch[0]) : 1;
           const sectionNum = question.section_number;
+          const partNum = question.part_number || 1;
           
-          if (structure[bookNum] && structure[bookNum].sections[sectionNum]) {
-            structure[bookNum].sections[sectionNum].questions.push(question);
+          if (structure[bookNum] && structure[bookNum].sections[sectionNum] && structure[bookNum].sections[sectionNum].parts[partNum]) {
+            structure[bookNum].sections[sectionNum].parts[partNum].questions.push(question);
+            structure[bookNum].sections[sectionNum].parts[partNum].hasContent = true;
             structure[bookNum].sections[sectionNum].hasContent = true;
           }
         }
@@ -393,6 +408,9 @@ const AdminReading = () => {
                             className="text-xs"
                           >
                             S{section.number}
+                            {(Object.values(section.parts) as any[]).filter((part: any) => part.hasContent).length > 0 && 
+                              ` (${(Object.values(section.parts) as any[]).filter((part: any) => part.hasContent).length}/3)`
+                            }
                           </Badge>
                         ))}
                       </div>
@@ -412,85 +430,29 @@ const AdminReading = () => {
                                 <h4 className="font-medium">Section {section.number}</h4>
                                 {section.hasContent && (
                                   <Badge variant="outline" className="text-xs">
-                                    {section.questions.length} questions
+                                    {(Object.values(section.parts) as any[]).reduce((total: number, part: any) => total + part.questions.length, 0)} questions
                                   </Badge>
                                 )}
                               </div>
                               <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setUploadBookNumber(book.number);
+                                    setUploadSectionNumber(section.number);
+                                    setUploadPartNumber(1);
+                                    setShowUploadDialog(true);
+                                  }}
+                                  className="rounded-xl"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
                                 {section.hasContent && (
                                   <>
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button size="sm" variant="outline" className="rounded-xl">
-                                          <Eye className="w-4 h-4" />
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                                        <DialogHeader>
-                                          <DialogTitle>
-                                            Cambridge {book.number} - Section {section.number}
-                                          </DialogTitle>
-                                        </DialogHeader>
-                                        <div className="space-y-6">
-                                          {section.passage && (
-                                            <Card className="p-4">
-                                              <h5 className="font-medium mb-3">Reading Passage</h5>
-                                              <div className="prose max-w-none text-sm">
-                                                {section.passage.content.split('\n\n').map((paragraph: string, idx: number) => (
-                                                  <p key={idx} className="mb-3">{paragraph}</p>
-                                                ))}
-                                              </div>
-                                            </Card>
-                                          )}
-                                          
-                                          <Card className="p-4">
-                                            <h5 className="font-medium mb-3">Questions ({section.questions.length})</h5>
-                                            <div className="space-y-4">
-                                              {section.questions.map((question: any) => (
-                                                <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
-                                                  <div className="flex items-start gap-3">
-                                                    <Badge variant="outline">{question.question_number}</Badge>
-                                                    <div className="flex-1">
-                                                      <p className="font-medium mb-2">{question.question_text}</p>
-                                                      {question.options && (
-                                                        <div className="text-sm space-y-1 mb-2">
-                                                          {Array.isArray(question.options) 
-                                                            ? question.options.map((option: string, idx: number) => (
-                                                                <div key={idx} className={`p-2 rounded ${option === question.correct_answer ? 'bg-green-50 text-green-800 font-medium' : 'bg-gray-50'}`}>
-                                                                  {String.fromCharCode(65 + idx)}. {option}
-                                                                </div>
-                                                              ))
-                                                            : <div className="bg-green-50 text-green-800 font-medium p-2 rounded">
-                                                                Answer: {question.correct_answer}
-                                                              </div>
-                                                          }
-                                                        </div>
-                                                      )}
-                                                      <p className="text-sm text-warm-gray">
-                                                        <span className="font-medium">Explanation:</span> {question.explanation}
-                                                      </p>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </Card>
-                                        </div>
-                                      </DialogContent>
-                                    </Dialog>
-
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => setEditingSection({ ...section, bookNumber: book.number })}
-                                      className="rounded-xl"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
                                       onClick={() => deleteSection(book.number, section.number)}
                                       className="rounded-xl"
                                     >
@@ -502,26 +464,133 @@ const AdminReading = () => {
                             </div>
                           </CardHeader>
                           
-                          {section.hasContent ? (
-                            <CardContent className="pt-0">
-                              <div className="text-sm text-warm-gray">
-                                {section.passage ? (
-                                  <p>Passage: {section.passage.title}</p>
-                                ) : (
-                                  <p>Questions without passage</p>
-                                )}
-                                <p>Last updated: {new Date(section.passage?.updated_at || section.questions[0]?.created_at).toLocaleDateString()}</p>
-                              </div>
-                            </CardContent>
-                          ) : (
-                            <CardContent className="pt-0">
-                              <div className="text-center py-6 text-warm-gray">
-                                <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                <p className="text-sm">No content yet</p>
-                                <p className="text-xs">Upload CSV to add questions</p>
-                              </div>
-                            </CardContent>
-                          )}
+                          {/* Parts within Section */}
+                          <CardContent className="pt-0">
+                            <div className="grid gap-3">
+                              {(Object.values(section.parts) as any[]).map((part: any) => (
+                                <Card key={part.number} className="border-light-border bg-gray-50">
+                                  <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs flex items-center justify-center font-medium">
+                                          {part.number}
+                                        </div>
+                                        <h5 className="font-medium text-sm">Part {part.number}</h5>
+                                        {part.hasContent && (
+                                          <Badge variant="secondary" className="text-xs">
+                                            {part.questions.length} questions
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        {!part.hasContent ? (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                              setUploadBookNumber(book.number);
+                                              setUploadSectionNumber(section.number);
+                                              setUploadPartNumber(part.number);
+                                              setShowUploadDialog(true);
+                                            }}
+                                            className="rounded-xl text-xs"
+                                          >
+                                            <Plus className="w-3 h-3 mr-1" />
+                                            Add
+                                          </Button>
+                                        ) : (
+                                          <>
+                                            <Dialog>
+                                              <DialogTrigger asChild>
+                                                <Button size="sm" variant="outline" className="rounded-xl">
+                                                  <Eye className="w-3 h-3" />
+                                                </Button>
+                                              </DialogTrigger>
+                                              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                                                <DialogHeader>
+                                                  <DialogTitle>
+                                                    Cambridge {book.number} - Section {section.number} - Part {part.number}
+                                                  </DialogTitle>
+                                                </DialogHeader>
+                                                <div className="space-y-6">
+                                                  {part.passage && (
+                                                    <Card className="p-4">
+                                                      <h5 className="font-medium mb-3">Reading Passage</h5>
+                                                      <div className="prose max-w-none text-sm">
+                                                        {part.passage.content.split('\n\n').map((paragraph: string, idx: number) => (
+                                                          <p key={idx} className="mb-3">{paragraph}</p>
+                                                        ))}
+                                                      </div>
+                                                    </Card>
+                                                  )}
+                                                  
+                                                  <Card className="p-4">
+                                                    <h5 className="font-medium mb-3">Questions ({part.questions.length})</h5>
+                                                    <div className="space-y-4">
+                                                      {part.questions.map((question: any) => (
+                                                        <div key={question.id} className="border-b border-light-border pb-4 last:border-b-0">
+                                                          <div className="flex items-start gap-3">
+                                                            <Badge variant="outline">{question.question_number}</Badge>
+                                                            <div className="flex-1">
+                                                              <p className="font-medium mb-2">{question.question_text}</p>
+                                                              {question.options && (
+                                                                <div className="text-sm space-y-1 mb-2">
+                                                                  {Array.isArray(question.options) 
+                                                                    ? question.options.map((option: string, idx: number) => (
+                                                                        <div key={idx} className={`p-2 rounded ${option === question.correct_answer ? 'bg-green-50 text-green-800 font-medium' : 'bg-gray-50'}`}>
+                                                                          {String.fromCharCode(65 + idx)}. {option}
+                                                                        </div>
+                                                                      ))
+                                                                    : <div className="bg-green-50 text-green-800 font-medium p-2 rounded">
+                                                                        Answer: {question.correct_answer}
+                                                                      </div>
+                                                                  }
+                                                                </div>
+                                                              )}
+                                                              <p className="text-sm text-warm-gray">
+                                                                <span className="font-medium">Explanation:</span> {question.explanation}
+                                                              </p>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  </Card>
+                                                </div>
+                                              </DialogContent>
+                                            </Dialog>
+
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => setEditingSection({ 
+                                                ...part, 
+                                                bookNumber: book.number, 
+                                                sectionNumber: section.number,
+                                                partNumber: part.number 
+                                              })}
+                                              className="rounded-xl"
+                                            >
+                                              <Edit className="w-3 h-3" />
+                                            </Button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardHeader>
+                                  
+                                  {part.hasContent && (
+                                    <CardContent className="pt-0 pb-3">
+                                      <div className="text-xs text-warm-gray">
+                                        {part.passage?.title || 'No title'}
+                                        {part.questions.length > 0 && ` • ${part.questions.length} questions`}
+                                      </div>
+                                    </CardContent>
+                                  )}
+                                </Card>
+                              ))}
+                            </div>
+                          </CardContent>
                         </Card>
                       ))}
                     </div>

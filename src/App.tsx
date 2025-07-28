@@ -60,6 +60,22 @@ const App = () => {
             <Route path="/admin/pte" element={<AdminPTE />} />
             <Route path="/admin/toefl" element={<AdminTOEFL />} />
             <Route path="/admin/general" element={<AdminGeneral />} />
+            {/* PTE Admin Routes */}
+            <Route path="/admin/pte/listening" element={<AdminListening />} />
+            <Route path="/admin/pte/reading" element={<AdminReading />} />
+            <Route path="/admin/pte/writing" element={<AdminWriting />} />
+            <Route path="/admin/pte/speaking" element={<AdminSpeaking />} />
+            {/* TOEFL Admin Routes */}
+            <Route path="/admin/toefl/listening" element={<AdminListening />} />
+            <Route path="/admin/toefl/reading" element={<AdminReading />} />
+            <Route path="/admin/toefl/writing" element={<AdminWriting />} />
+            <Route path="/admin/toefl/speaking" element={<AdminSpeaking />} />
+            {/* General English Admin Routes */}
+            <Route path="/admin/general/grammar" element={<AdminGeneral />} />
+            <Route path="/admin/general/vocabulary" element={<AdminGeneral />} />
+            <Route path="/admin/general/pronunciation" element={<AdminGeneral />} />
+            <Route path="/dashboard" element={<PersonalPage />} />
+            <Route path="/practice" element={<TestSelection />} />
             <Route path="/personal-page" element={<PersonalPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/tests" element={<TestSelection />} />

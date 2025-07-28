@@ -41,13 +41,43 @@ const WritingTest = () => {
       const result = await listContent('writing_prompts');
       const allPrompts = result.data || [];
       
-      // Filter prompts by Cambridge book and test number
-      const filteredPrompts = allPrompts.filter((prompt: any) => 
-        prompt.cambridge_book === cambridgeBook && 
-        prompt.test_number === parseInt(testNumber)
-      );
+      // Filter prompts by Cambridge book and test number with debug logging
+      console.log(`🔍 All prompts:`, allPrompts.map(p => ({
+        id: p.id,
+        title: p.title,
+        cambridge_book: p.cambridge_book,
+        test_number: p.test_number
+      })));
+      
+      const filteredPrompts = allPrompts.filter((prompt: any) => {
+        const matches = prompt.cambridge_book === cambridgeBook && 
+                       prompt.test_number === parseInt(testNumber);
+        if (matches) {
+          console.log(`✅ Match found:`, {
+            title: prompt.title,
+            cambridge_book: prompt.cambridge_book,
+            test_number: prompt.test_number
+          });
+        }
+        return matches;
+      });
       
       console.log(`✅ Found ${filteredPrompts.length} writing prompts for ${cambridgeBook}, Test ${testNumber}`);
+      
+      // If no prompts found for exact match, check for similar matches
+      if (filteredPrompts.length === 0) {
+        console.log(`❌ No exact matches found. Checking for similar patterns...`);
+        const similarPrompts = allPrompts.filter((prompt: any) => 
+          prompt.cambridge_book?.includes('19') || 
+          prompt.cambridge_book?.includes('C19') ||
+          prompt.test_number === parseInt(testNumber)
+        );
+        console.log(`🔍 Similar prompts found:`, similarPrompts.map(p => ({
+          title: p.title,
+          cambridge_book: p.cambridge_book,
+          test_number: p.test_number
+        })));
+      }
       
       if (filteredPrompts.length === 0) {
         toast({

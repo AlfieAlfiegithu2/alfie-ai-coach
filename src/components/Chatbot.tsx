@@ -120,39 +120,39 @@ const Chatbot = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <Card className={`glass-effect transition-all duration-300 ${isMinimized ? 'w-80 h-16' : 'w-96 h-[500px]'} shadow-xl border-border/30`}>
-        <CardHeader className="pb-3 border-b border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-brand-blue" />
+          <CardHeader className="pb-3 border-b border-border/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-brand-blue" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg text-text-primary">Alfie - Test Coach</CardTitle>
+                  <Badge variant="secondary" className="text-xs mt-1">
+                    IELTS • PTE • TOEFL • General
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-lg">Alfie - AI Assistant</CardTitle>
-                <Badge variant="secondary" className="text-xs mt-1">
-                  IELTS • PTE • TOEFL • General
-                </Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsMinimized(!isMinimized)}
+                  className="w-8 h-8 p-0 hover:bg-surface-2"
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="w-8 h-8 p-0 hover:bg-surface-2"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="w-8 h-8 p-0"
-              >
-                <Minimize2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 p-0"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
 
         {!isMinimized && (
           <CardContent className="p-0 h-full flex flex-col">
@@ -214,15 +214,16 @@ const Chatbot = () => {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask about grammar, vocabulary, test tips..."
-                  className="input-modern flex-1"
+                  placeholder="Type your question here..."
+                  className="flex-1 bg-surface-1 border-border/30 text-text-primary placeholder:text-text-tertiary focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
                   disabled={isTyping}
+                  autoFocus
                 />
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || isTyping}
                   size="sm"
-                  className="btn-primary px-3"
+                  className="btn-primary px-3 flex-shrink-0"
                 >
                   <Send className="w-4 h-4" />
                 </Button>

@@ -116,17 +116,40 @@ const Speaking = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen glass-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading speaking test questions...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-brand-blue" />
+          <p className="text-text-secondary">Loading speaking test...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentPrompt) {
+    return (
+      <div className="min-h-screen glass-background flex items-center justify-center">
+        <div className="text-center glass-card p-8 rounded-2xl max-w-md">
+          <Mic className="h-12 w-12 mx-auto mb-4 text-text-secondary" />
+          <h2 className="text-heading-2 mb-2 text-text-primary">No Speaking Test Available</h2>
+          <p className="text-text-secondary mb-6">
+            No speaking prompts found for this test. Please check with your instructor to upload content.
+          </p>
+          <div className="space-y-3">
+            <Button onClick={() => navigate(-1)} variant="outline" className="w-full">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Back
+            </Button>
+            <Button onClick={() => navigate('/tests')} className="w-full btn-primary">
+              Browse Other Tests
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen glass-background">
       {/* Header */}
       <header className="border-b border-border bg-background shadow-soft">
         <div className="container mx-auto px-4 py-4">

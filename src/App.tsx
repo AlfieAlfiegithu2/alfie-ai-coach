@@ -17,6 +17,10 @@ import AdminReading from "./pages/AdminReading";
 import AdminListening from "./pages/AdminListening";
 import AdminWriting from "./pages/AdminWriting";
 import AdminSpeaking from "./pages/AdminSpeaking";
+import AdminIELTS from "./pages/AdminIELTS";
+import AdminPTE from "./pages/AdminPTE";
+import AdminTOEFL from "./pages/AdminTOEFL";
+import AdminGeneral from "./pages/AdminGeneral";
 import PersonalPage from "./pages/PersonalPage";
 import TestSelection from "./pages/TestSelection";
 import Auth from "./pages/Auth";
@@ -45,6 +49,10 @@ const App = () => {
             <Route path="/admin/listening" element={<AdminListening />} />
             <Route path="/admin/writing" element={<AdminWriting />} />
             <Route path="/admin/speaking" element={<AdminSpeaking />} />
+            <Route path="/admin/ielts" element={<AdminIELTS />} />
+            <Route path="/admin/pte" element={<AdminPTE />} />
+            <Route path="/admin/toefl" element={<AdminTOEFL />} />
+            <Route path="/admin/general" element={<AdminGeneral />} />
             <Route path="/personal-page" element={<PersonalPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/tests" element={<TestSelection />} />

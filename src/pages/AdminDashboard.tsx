@@ -16,34 +16,34 @@ import AdminLayout from "@/components/AdminLayout";
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
-  const contentSections = [
+  const testTypes = [
     {
-      title: "Reading Passages",
-      description: "Manage reading passages and questions from Cambridge books C20 to C1",
+      title: "IELTS Admin",
+      description: "Manage IELTS Academic & General content",
       icon: BookOpen,
-      route: "/admin/reading",
-      count: "0 passages"
+      route: "/admin/ielts",
+      count: "IELTS Tests"
     },
     {
-      title: "Listening Sections", 
-      description: "Manage audio content and questions from Cambridge books C20 to C1",
+      title: "PTE Admin", 
+      description: "Manage PTE Academic content and integrated tasks",
       icon: Headphones,
-      route: "/admin/listening",
-      count: "0 sections"
+      route: "/admin/pte",
+      count: "PTE Tests"
     },
     {
-      title: "Writing Prompts",
-      description: "Manage writing tasks and prompts from Cambridge books C20 to C1", 
+      title: "TOEFL Admin",
+      description: "Manage TOEFL iBT content across all sections", 
       icon: PenTool,
-      route: "/admin/writing",
-      count: "0 prompts"
+      route: "/admin/toefl",
+      count: "TOEFL Tests"
     },
     {
-      title: "Speaking Prompts",
-      description: "Manage speaking questions and prompts from Cambridge books C20 to C1",
+      title: "General English Admin",
+      description: "Manage ESL/EFL lessons and exercises",
       icon: Mic,
-      route: "/admin/speaking", 
-      count: "0 prompts"
+      route: "/admin/general", 
+      count: "English Lessons"
     }
   ];
 
@@ -54,20 +54,20 @@ const AdminDashboard = () => {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-georgia font-bold text-foreground mb-4">
-            Content Management
+            Test Administration Center
           </h1>
           <p className="text-xl text-warm-gray max-w-3xl mx-auto leading-relaxed">
-            Manage IELTS content across Cambridge books C20 to C1. Create comprehensive test materials with our intuitive interface.
+            Manage content for IELTS, PTE, TOEFL, and General English. Independent admin portals for each test type.
           </p>
         </div>
 
         {/* Content Management Grid */}
         <div className="mb-16">
           <h2 className="text-3xl font-georgia font-bold text-center text-foreground mb-8">
-            Content Sections
+            Test Type Administration
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {contentSections.map((section) => {
+            {testTypes.map((section) => {
               const Icon = section.icon;
               return (
                 <Card

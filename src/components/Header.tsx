@@ -1,53 +1,202 @@
 
 import { Button } from "@/components/ui/button";
-import { BookOpen, User, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Menu, X, LogOut, Settings, User } from "lucide-react";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   return (
-    <header className="w-full bg-background/80 backdrop-blur-md border-b border-border/20 shadow-neon sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-electric-blue to-neon-cyan flex items-center justify-center shadow-neon">
-            <BookOpen className="w-6 h-6 text-white" />
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
+        {/* Logo */}
+        <div className="flex items-center space-x-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary">
+            <span className="text-lg font-bold text-primary-foreground">A</span>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground font-orbitron">
-              <span className="text-electric-blue">ALFIE</span> IELTS AI
-            </h1>
-            <p className="text-sm text-muted-foreground">Master IELTS with AI Power</p>
-          </div>
+          <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            ALFIE IELTS AI
+          </span>
         </div>
-        
-        <nav className="hidden md:flex items-center gap-8">
-          <button onClick={() => window.location.href = '/tests'} className="text-foreground hover:text-electric-blue transition-colors relative group">
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/tests')}
+            className="text-sm font-medium transition-colors hover:text-primary"
+          >
             Tests
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </button>
-          <button onClick={() => window.location.href = '/practice'} className="text-foreground hover:text-electric-blue transition-colors relative group">
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/practice')}
+            className="text-sm font-medium transition-colors hover:text-primary"
+          >
             Practice
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </button>
-          <button onClick={() => window.location.href = '/personal-page'} className="text-foreground hover:text-electric-blue transition-colors relative group">
-            Progress
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </button>
-          <button onClick={() => window.location.href = '/community'} className="text-foreground hover:text-electric-blue transition-colors relative group">
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="text-sm font-medium transition-colors hover:text-primary"
+          >
+            Dashboard
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/community')}
+            className="text-sm font-medium transition-colors hover:text-primary"
+          >
             Community
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-neon-cyan group-hover:w-full transition-all duration-300"></span>
-          </button>
+          </Button>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => window.location.href = '/admin'}>
-            <User className="w-4 h-4" />
-            Login
+        {/* Right side actions */}
+        <div className="flex items-center space-x-4">
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
+                  <User className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    <p className="font-medium">{user.email}</p>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                  <User className="mr-2 h-4 w-4" />
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/personal-page')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="hidden md:flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/auth')}
+                className="text-sm font-medium"
+              >
+                Sign In
+              </Button>
+              <Button
+                onClick={() => navigate('/auth')}
+                className="text-sm font-medium bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              >
+                Start Journey
+              </Button>
+            </div>
+          )}
+
+          {/* Admin Login Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin/login')}
+            className="hidden md:flex text-xs"
+          >
+            Admin
           </Button>
-          <Button variant="neon" size="sm" onClick={() => window.location.href = '/tests'}>
-            <Zap className="w-4 h-4" />
-            Start Journey
+
+          {/* Mobile menu button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur">
+          <div className="container px-4 py-4 space-y-3">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/tests')}
+              className="w-full justify-start"
+            >
+              Tests
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/practice')}
+              className="w-full justify-start"
+            >
+              Practice
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              className="w-full justify-start"
+            >
+              Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/community')}
+              className="w-full justify-start"
+            >
+              Community
+            </Button>
+            {!user && (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/auth')}
+                  className="w-full justify-start"
+                >
+                  Sign In
+                </Button>
+                <Button
+                  onClick={() => navigate('/auth')}
+                  className="w-full justify-start bg-gradient-to-r from-primary to-secondary"
+                >
+                  Start Journey
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => navigate('/admin/login')}
+              className="w-full justify-start"
+            >
+              Admin Login
+            </Button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

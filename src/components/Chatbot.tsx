@@ -18,7 +18,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hello! I\'m your IELTS/PTE/TOEFL/General English Assistant. I can help you with:\n\n• Question types and strategies\n• Grammar and vocabulary explanations\n• Study tips and test preparation\n• Error analysis and feedback\n• Practice guidance\n\nWhat would you like to know?',
+      text: 'Hello! I\'m Alfie, your AI-powered English test assistant. I can help you with:\n\n• Question types and strategies\n• Grammar and vocabulary explanations\n• Study tips and test preparation\n• Error analysis and feedback\n• Practice guidance\n• Context-aware support\n\nWhat would you like to know?',
       sender: 'bot',
       timestamp: new Date()
     }
@@ -127,7 +127,7 @@ const Chatbot = () => {
                 <Bot className="w-5 h-5 text-brand-blue" />
               </div>
               <div>
-                <CardTitle className="text-lg">English Assistant</CardTitle>
+                <CardTitle className="text-lg">Alfie - AI Assistant</CardTitle>
                 <Badge variant="secondary" className="text-xs mt-1">
                   IELTS • PTE • TOEFL • General
                 </Badge>

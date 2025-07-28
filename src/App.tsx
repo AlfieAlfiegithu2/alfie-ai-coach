@@ -27,6 +27,8 @@ import PersonalPage from "./pages/PersonalPage";
 import TestSelection from "./pages/TestSelection";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import CommunityPage from "./pages/CommunityPage";
+import SettingsPage from "./pages/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,8 @@ const App = () => {
             <Route path="/personal-page" element={<PersonalPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/tests" element={<TestSelection />} />
+            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <PersistentChatbot />

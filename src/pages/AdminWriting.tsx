@@ -146,6 +146,8 @@ const AdminWriting = () => {
         image_url: finalImageUrl || null
       };
 
+      console.log('📝 Creating writing prompt with data:', promptData);
+
       await createContent('writing_prompts', promptData);
 
       toast({

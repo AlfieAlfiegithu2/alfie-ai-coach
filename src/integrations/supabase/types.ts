@@ -350,6 +350,7 @@ export type Database = {
           cambridge_book: string | null
           completed_at: string | null
           correct_answers: number | null
+          created_at: string
           id: string
           score_percentage: number | null
           section_number: number | null
@@ -363,6 +364,7 @@ export type Database = {
           cambridge_book?: string | null
           completed_at?: string | null
           correct_answers?: number | null
+          created_at?: string
           id?: string
           score_percentage?: number | null
           section_number?: number | null
@@ -376,6 +378,7 @@ export type Database = {
           cambridge_book?: string | null
           completed_at?: string | null
           correct_answers?: number | null
+          created_at?: string
           id?: string
           score_percentage?: number | null
           section_number?: number | null

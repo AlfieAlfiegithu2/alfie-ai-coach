@@ -111,9 +111,16 @@ const Dashboard = () => {
   ];
 
   const handleStartPractice = () => {
-    const route = selectedTestType.toLowerCase() === 'ielts' ? '/tests' : 
-                  selectedTestType.toLowerCase() === 'general' ? '/tests' :
-                  '/tests'; // Will be updated to handle different test types
+    // Route to different portals based on test type
+    const routes = {
+      'IELTS': '/tests',
+      'PTE': '/pte-portal',
+      'TOEFL': '/toefl-portal', 
+      'GENERAL': '/general-portal'
+    };
+    
+    const route = routes[selectedTestType as keyof typeof routes] || '/tests';
+    console.log(`🚀 Starting ${selectedTestType} practice, routing to: ${route}`);
     navigate(route);
   };
 

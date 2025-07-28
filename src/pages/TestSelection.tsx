@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Headphones, PenTool, Mic, ArrowLeft, Clock, Target, Zap, Star } from "lucide-react";
+import { BookOpen, Headphones, PenTool, Mic, ArrowLeft, Clock, Target, Zap, Star, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import StudentLayout from "@/components/StudentLayout";
 
@@ -102,25 +102,46 @@ const TestSelection = () => {
     navigate(`/${sectionId}/random`);
   };
 
-  // Test Configuration View
+  // Test Configuration View - Enhanced
   if (selectedTest) {
     return (
-      <StudentLayout title={`Cambridge IELTS ${selectedTest.version} - Test ${selectedTest.testNumber}`} showBackButton={false}>
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
+      <StudentLayout title={`Cambridge IELTS ${selectedTest.version}`} showBackButton={false}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
             <Button 
               variant="ghost" 
               onClick={() => setSelectedTest(null)}
-              className="mb-6 hover:bg-gentle-blue/10 rounded-xl"
+              className="mb-8 hover-lift text-text-secondary"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Test Selection
+              Back to Book Selection
             </Button>
-            <div className="mb-4">
-              <h1 className="text-4xl font-georgia font-bold text-foreground mb-2">
-                Cambridge IELTS {selectedTest.version}
+            
+            <div className="mb-8">
+              <h1 className="text-heading-1 mb-4">
+                Cambridge IELTS {selectedTest.number}
               </h1>
-              <p className="text-xl text-warm-gray">Test {selectedTest.testNumber} Configuration</p>
+              <p className="text-body-large mb-6">
+                Select your test and configuration to begin your IELTS practice
+              </p>
+              
+              {/* Test Selection Pills */}
+              <div className="flex justify-center gap-3 mb-8">
+                {Array.from({ length: 4 }, (_, i) => i + 1).map((testNum) => (
+                  <Button
+                    key={testNum}
+                    variant={selectedTest.testNumber === testNum ? "default" : "outline"}
+                    onClick={() => setSelectedTest({ ...selectedTest, testNumber: testNum })}
+                    className="rounded-2xl px-6 py-3"
+                  >
+                    Test {testNum}
+                  </Button>
+                ))}
+              </div>
+              
+              <Badge variant="secondary" className="text-sm px-4 py-2">
+                Currently configuring: Test {selectedTest.testNumber}
+              </Badge>
             </div>
           </div>
 
@@ -275,50 +296,70 @@ const TestSelection = () => {
           </p>
         </div>
 
-        {/* Cambridge Tests Grid */}
+        {/* Cambridge Books - Horizontal Scrolling Cards */}
         <div className="mb-16">
-          <h2 className="text-3xl font-georgia font-bold text-center text-foreground mb-8">
+          <h2 className="text-heading-2 text-center mb-8">
             Select Your Cambridge Book
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {cambridgeTests.map((cambridge) => (
-              <div key={cambridge.version} className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-lg font-georgia font-bold text-foreground mb-2">
-                    Cambridge {cambridge.number}
-                  </h3>
-                  <Badge variant="outline" className="text-xs">
-                    {cambridge.number >= 17 ? 'Latest' : cambridge.number >= 10 ? 'Popular' : 'Classic'}
-                  </Badge>
-                </div>
-                <div className="space-y-3">
-                  {cambridge.tests.map((testNumber) => (
-                    <Card 
-                      key={`${cambridge.version}-${testNumber}`}
-                      className="cursor-pointer transition-all duration-300 rounded-2xl border-light-border shadow-soft hover:shadow-lg hover:scale-105"
-                      onClick={() => setSelectedTest({ version: cambridge.version, testNumber, number: cambridge.number })}
-                      style={{ background: 'var(--gradient-card)' }}
+          <p className="text-body text-center mb-8 max-w-2xl mx-auto">
+            Choose from Cambridge 20 (latest) to Cambridge 1 (classic). Each book contains 4 complete practice tests.
+          </p>
+          
+          {/* Horizontal scrolling book cards */}
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-6 min-w-max px-4">
+              {cambridgeTests.map((cambridge) => (
+                <Card 
+                  key={cambridge.version}
+                  className="cursor-pointer transition-all duration-300 rounded-3xl border-border 
+                           hover:shadow-xl hover:scale-105 flex-shrink-0 w-64"
+                  onClick={() => setSelectedTest({ version: cambridge.version, testNumber: 1, number: cambridge.number })}
+                  style={{ background: 'var(--gradient-card)' }}
+                >
+                  <CardContent className="p-8 text-center">
+                    <div className="mb-6">
+                      <div 
+                        className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center mb-4"
+                        style={{ background: 'var(--gradient-hero)' }}
+                      >
+                        <BookOpen className="w-10 h-10 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-display font-bold text-text-primary mb-2">
+                        Cambridge {cambridge.number}
+                      </h3>
+                      <Badge 
+                        variant={cambridge.number >= 17 ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {cambridge.number >= 17 ? 'Latest' : cambridge.number >= 10 ? 'Popular' : 'Classic'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-text-secondary text-sm">4 Complete Tests</p>
+                      <p className="text-text-secondary text-xs">
+                        All sections: Reading, Listening, Writing, Speaking
+                      </p>
+                    </div>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="mt-4 w-full text-brand-blue hover:bg-brand-blue/10"
                     >
-                      <CardContent className="p-6">
-                        <div 
-                          className="rounded-xl p-4 mb-4 text-center"
-                          style={{ background: 'var(--gradient-button)' }}
-                        >
-                          <div className="text-white text-lg font-bold mb-1">IELTS</div>
-                          <div className="text-white/90 text-sm font-medium">
-                            {cambridge.version}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-foreground mb-2 text-lg">Test {testNumber}</div>
-                          <div className="text-sm text-warm-gray">4 Sections Available</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            ))}
+                      Select Book
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          
+          <div className="text-center mt-8">
+            <p className="text-caption">
+              Swipe or scroll horizontally to view all available books
+            </p>
           </div>
         </div>
 

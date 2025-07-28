@@ -533,47 +533,127 @@ const AdminWriting = () => {
                     className="rounded-xl border-light-border"
                   />
 
-                  {/* Task 1 Image Upload */}
+                  {/* Task 1 Image Upload - Fixed */}
                   {taskType === "task1" && (
-                    <div className="space-y-3">
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Task 1 Image (Graph/Chart/Map)
+                    <div className="space-y-4">
+                      <label className="block text-sm font-medium text-foreground">
+                        Task 1 Image Upload (PNG, JPG, JPEG only)
                       </label>
-                      <div className="flex items-center gap-4">
-                        <Button
-                          type="button"
-                          variant="default"
-                          onClick={() => document.getElementById('task1-image-upload')?.click()}
-                          className="rounded-xl h-12 px-6 text-sm bg-gradient-to-r from-gentle-blue to-warm-coral text-white font-medium hover:shadow-lg transition-all"
-                        >
-                          <Upload className="w-5 h-5 mr-2" />
-                          {imageFile ? 'Change Image' : 'Upload Task 1 Image'}
-                        </Button>
-                        {imageFile && (
-                          <span className="text-sm text-green-600 font-medium">
-                            ✅ {imageFile.name}
-                          </span>
-                        )}
+                      
+                      <div className="border-2 border-dashed border-light-border rounded-xl p-6 hover:border-primary/50 transition-colors">
+                        <div className="text-center">
+                          <Button
+                            type="button"
+                            variant="default"
+                            onClick={() => document.getElementById('task1-image-upload')?.click()}
+                            className="rounded-xl h-14 px-8 text-sm font-semibold"
+                            style={{ background: 'var(--gradient-button)', border: 'none' }}
+                          >
+                            <Upload className="w-5 h-5 mr-2" />
+                            {imageFile ? 'Change Image' : 'Upload Chart/Graph Image'}
+                          </Button>
+                          
+                          <p className="text-xs text-warm-gray mt-2">
+                            PNG, JPG, JPEG only • Max 10MB • No PDF files
+                          </p>
+                        </div>
                       </div>
+                      
                       <input
                         id="task1-image-upload"
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpg,image/jpeg"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            // Validate file type strictly
+                            const validTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+                            if (!validTypes.includes(file.type)) {
+                              toast({
+                                title: "Invalid File Type",
+                                description: "Please upload PNG, JPG, or JPEG images only. PDF files are not supported for image uploads.",
+                                variant: "destructive"
+                              });
+                              e.target.value = ''; // Clear the input
+                              return;
+                            }
+                            
+                            // Validate file size (max 10MB)
+                            if (file.size > 10 * 1024 * 1024) {
+                              toast({
+                                title: "File Too Large",
+                                description: "Please upload an image smaller than 10MB.",
+                                variant: "destructive"
+                              });
+                              e.target.value = ''; // Clear the input
+                              return;
+                            }
+                            
                             setImageFile(file);
-                            console.log('📸 Task 1 image selected:', file.name);
+                            setImageUrl(''); // Clear URL input when file is selected
+                            console.log('📸 Valid Task 1 image selected:', file.name, file.type, `${(file.size / 1024 / 1024).toFixed(2)}MB`);
+                            
+                            toast({
+                              title: "Image Selected",
+                              description: `${file.name} ready for upload`,
+                            });
                           }
                         }}
                         className="hidden"
                       />
+                      
+                      {/* Image Preview */}
+                      {imageFile && (
+                        <div className="bg-white border border-light-border rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-foreground">
+                              Image Preview:
+                            </span>
+                            <span className="text-xs text-green-600 font-medium">
+                              ✅ {imageFile.name} ({(imageFile.size / 1024 / 1024).toFixed(2)} MB)
+                            </span>
+                          </div>
+                          <img 
+                            src={URL.createObjectURL(imageFile)} 
+                            alt="Task 1 preview" 
+                            className="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm mx-auto"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="text-center text-sm text-warm-gray">
+                        <span className="font-medium">OR</span>
+                      </div>
+                      
                       <Input
-                        placeholder="Or enter image URL"
+                        placeholder="Enter image URL (alternative to file upload)"
                         value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        className="rounded-xl border-light-border mt-2"
+                        onChange={(e) => {
+                          setImageUrl(e.target.value);
+                          if (e.target.value) {
+                            setImageFile(null); // Clear file when URL is entered
+                          }
+                        }}
+                        className="rounded-xl border-light-border"
                       />
+                      
+                      {imageUrl && !imageFile && (
+                        <div className="bg-white border border-light-border rounded-xl p-4">
+                          <p className="text-sm font-medium text-foreground mb-2">URL Preview:</p>
+                          <img 
+                            src={imageUrl} 
+                            alt="Task 1 URL preview" 
+                            className="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm mx-auto"
+                            onError={() => {
+                              toast({
+                                title: "Invalid Image URL",
+                                description: "Please check the image URL and try again.",
+                                variant: "destructive"
+                              });
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                   

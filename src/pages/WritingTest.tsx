@@ -1,0 +1,336 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Clock, PenTool, Loader2, BookOpen } from "lucide-react";
+import { useAdminContent } from "@/hooks/useAdminContent";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const WritingTest = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { listContent } = useAdminContent();
+  const { toast } = useToast();
+  
+  const [prompts, setPrompts] = useState<any[]>([]);
+  const [currentPrompt, setCurrentPrompt] = useState<any>(null);
+  const [writingText, setWritingText] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [wordCount, setWordCount] = useState(0);
+  const [selectedTask, setSelectedTask] = useState<number>(1);
+  const [loading, setLoading] = useState(true);
+
+  // Get URL parameters for specific test/book
+  const cambridgeBook = searchParams.get('book') || 'C19';
+  const testNumber = searchParams.get('test') || '1';
+
+  useEffect(() => {
+    loadWritingPrompts();
+  }, [cambridgeBook, testNumber]);
+
+  const loadWritingPrompts = async () => {
+    try {
+      setLoading(true);
+      console.log(`📚 Loading writing prompts for ${cambridgeBook}, Test ${testNumber}`);
+      
+      const result = await listContent('writing_prompts');
+      const allPrompts = result.data || [];
+      
+      // Filter prompts by Cambridge book and test number
+      const filteredPrompts = allPrompts.filter((prompt: any) => 
+        prompt.cambridge_book === cambridgeBook && 
+        prompt.test_number === parseInt(testNumber)
+      );
+      
+      console.log(`✅ Found ${filteredPrompts.length} writing prompts for ${cambridgeBook}, Test ${testNumber}`);
+      
+      if (filteredPrompts.length === 0) {
+        toast({
+          title: "No Writing Prompts Found",
+          description: `No writing prompts available for ${cambridgeBook}, Test ${testNumber}. Please check the admin panel.`,
+          variant: "destructive"
+        });
+      }
+      
+      setPrompts(filteredPrompts);
+      
+      // Set default prompt (Task 1 if available, otherwise first prompt)
+      const task1Prompt = filteredPrompts.find((p: any) => p.task_type === 'task1');
+      setCurrentPrompt(task1Prompt || filteredPrompts[0] || null);
+      
+    } catch (error: any) {
+      console.error('❌ Error loading writing prompts:', error);
+      toast({
+        title: "Error Loading Prompts",
+        description: "Failed to load writing prompts. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTaskChange = (taskType: string) => {
+    const prompt = prompts.find((p: any) => p.task_type === taskType);
+    if (prompt) {
+      setCurrentPrompt(prompt);
+      setSelectedTask(parseInt(taskType.replace('task', '')));
+      setWritingText("");
+      setFeedback(null);
+      setWordCount(0);
+    }
+  };
+
+  const handleTextChange = (text: string) => {
+    setWritingText(text);
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    setWordCount(words.length);
+  };
+
+  const handleGetFeedback = async () => {
+    if (writingText.trim().length < 50) {
+      toast({
+        title: "Text too short",
+        description: "Please write more content before requesting feedback.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      console.log('🤖 Requesting AI feedback for writing...');
+      
+      const { data, error } = await supabase.functions.invoke('writing-feedback', {
+        body: {
+          writing: writingText,
+          prompt: currentPrompt?.prompt_text || '',
+          taskType: currentPrompt?.task_type || 'task1',
+          wordLimit: currentPrompt?.word_limit || 250,
+          criteriaMode: 'ielts_bands' // Request IELTS band scoring (0-9 with halves)
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setFeedback(data.feedback);
+        console.log('✅ AI feedback received successfully');
+        toast({
+          title: "Writing Analysis Complete",
+          description: "Your writing has been analyzed with detailed IELTS band scores!",
+        });
+      } else {
+        throw new Error(data.error || 'Analysis failed');
+      }
+    } catch (error: any) {
+      console.error('❌ Feedback error:', error);
+      toast({
+        title: "Analysis Failed", 
+        description: error.message || "Could not analyze your writing. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface-2 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-text-secondary">Loading Writing Test...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentPrompt) {
+    return (
+      <div className="min-h-screen bg-surface-2">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <Card>
+              <CardContent className="pt-8">
+                <BookOpen className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-4">No Writing Prompts Available</h2>
+                <p className="text-text-secondary mb-6">
+                  No writing prompts found for {cambridgeBook}, Test {testNumber}.
+                  Please contact your admin to upload writing content.
+                </p>
+                <Button onClick={() => navigate('/tests')} variant="outline">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Tests
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const availableTasks = prompts.map(p => ({
+    type: p.task_type,
+    number: parseInt(p.task_type.replace('task', ''))
+  })).sort((a, b) => a.number - b.number);
+
+  return (
+    <div className="min-h-screen bg-surface-2">
+      {/* Header */}
+      <header className="border-b border-border bg-surface-1 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/tests")}>
+                <ArrowLeft className="w-4 h-4" />
+                Back to Tests
+              </Button>
+              <div className="flex items-center gap-2">
+                <PenTool className="w-5 h-5 text-brand-blue" />
+                <span className="font-semibold">IELTS Writing Test</span>
+                <Badge variant="secondary">{cambridgeBook} - Test {testNumber}</Badge>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-text-secondary">
+                <Clock className="w-4 h-4" />
+                <span>{currentPrompt?.time_limit || 60} minutes</span>
+              </div>
+              <Button className="btn-primary" size="sm">
+                Submit Test
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          
+          {/* Task Selection */}
+          {availableTasks.length > 1 && (
+            <Card className="card-modern">
+              <CardHeader>
+                <CardTitle className="text-center text-2xl">Select Writing Task</CardTitle>
+                <div className="flex justify-center gap-2 mt-4">
+                  {availableTasks.map((task) => (
+                    <Button
+                      key={task.type}
+                      variant={currentPrompt?.task_type === task.type ? "default" : "outline"}
+                      onClick={() => handleTaskChange(task.type)}
+                      disabled={isAnalyzing}
+                      className="min-w-24"
+                    >
+                      Task {task.number}
+                    </Button>
+                  ))}
+                </div>
+              </CardHeader>
+            </Card>
+          )}
+
+          {/* Current Task */}
+          <Card className="card-modern">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl">
+                  Writing {currentPrompt.task_type.charAt(0).toUpperCase() + currentPrompt.task_type.slice(1)} 
+                  {currentPrompt.task_number && ` - ${currentPrompt.task_number}`}
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Badge variant="outline">
+                    {currentPrompt.word_limit} words minimum
+                  </Badge>
+                  <Badge variant="outline">
+                    {currentPrompt.time_limit} minutes
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-brand-blue/5 border border-brand-blue/20 p-6 rounded-xl mb-6">
+                <h3 className="font-semibold mb-3 text-brand-blue">Task Instructions:</h3>
+                <div className="text-sm leading-relaxed text-text-primary">
+                  {currentPrompt.prompt_text}
+                </div>
+                
+                {/* Display Task 1 Image if available */}
+                {currentPrompt.image_url && (
+                  <div className="mt-4">
+                    <img 
+                      src={currentPrompt.image_url} 
+                      alt="Task 1 Chart/Graph" 
+                      className="max-w-full max-h-80 object-contain border border-border rounded-lg shadow-sm mx-auto"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Your Response:</label>
+                  <div className="text-sm text-text-secondary">
+                    Word count: <span className={wordCount < currentPrompt.word_limit ? "text-brand-red" : "text-brand-green font-semibold"}>
+                      {wordCount}
+                    </span> / {currentPrompt.word_limit} minimum
+                  </div>
+                </div>
+                
+                <Textarea
+                  value={writingText}
+                  onChange={(e) => handleTextChange(e.target.value)}
+                  placeholder={`Start writing your response for ${currentPrompt.task_type}...`}
+                  className="min-h-[350px] text-sm leading-relaxed input-modern"
+                  disabled={isAnalyzing}
+                />
+
+                <Button 
+                  onClick={handleGetFeedback}
+                  disabled={isAnalyzing || writingText.trim().length < 50}
+                  className="w-full btn-primary"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing Writing...
+                    </>
+                  ) : (
+                    "Get AI Feedback & IELTS Band Score"
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Feedback Results */}
+          {feedback && (
+            <Card className="card-modern">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PenTool className="w-5 h-5 text-brand-blue" />
+                  IELTS Writing Analysis & Band Score
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose max-w-none">
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed bg-surface-3 p-4 rounded-xl">
+                    {feedback}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default WritingTest;

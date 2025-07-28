@@ -23,6 +23,7 @@ import {
   Award
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import DailyChallenge from "@/components/DailyChallenge";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -277,39 +278,8 @@ const Dashboard = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Daily Challenge */}
-              <Card className="card-modern">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-brand-orange" />
-                    <CardTitle className="text-lg">Daily Challenge</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-brand-orange/10 rounded-xl border border-brand-orange/20">
-                      <h4 className="font-semibold text-brand-orange mb-2">
-                        Vocabulary Master
-                      </h4>
-                      <p className="text-sm text-text-secondary mb-3">
-                        Complete 10 academic vocabulary questions
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-text-tertiary">
-                          Progress: 6/10
-                        </div>
-                        <Button size="sm" className="btn-primary">
-                          Continue
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-brand-green mb-1">7</div>
-                      <div className="text-sm text-text-secondary">Day Streak</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Daily Challenge - Now Functional */}
+              <DailyChallenge />
 
               {/* Achievements */}
               <Card className="card-modern">

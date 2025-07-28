@@ -10,6 +10,7 @@ import Listening from "./pages/Listening";
 import ListeningTest from "./pages/ListeningTest";
 import ContentSelection from "./pages/ContentSelection";
 import Writing from "./pages/Writing";
+import WritingTest from "./pages/WritingTest";
 import Speaking from "./pages/Speaking";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -41,7 +42,8 @@ const App = () => {
             <Route path="/reading/:testId" element={<ReadingTest />} />
             <Route path="/listening" element={<ContentSelection />} />
             <Route path="/listening/:testId" element={<ListeningTest />} />
-            <Route path="/writing" element={<Writing />} />
+          <Route path="/writing" element={<Writing />} />
+          <Route path="/writing-test" element={<WritingTest />} />
             <Route path="/speaking" element={<Speaking />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />

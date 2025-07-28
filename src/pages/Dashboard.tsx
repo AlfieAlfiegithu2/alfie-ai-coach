@@ -1,208 +1,391 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Headphones, PenTool, Mic, Star, Heart, Lightbulb, Settings } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { 
+  BookOpen, 
+  Target, 
+  TrendingUp, 
+  Trophy, 
+  Users, 
+  Zap, 
+  ChevronRight, 
+  Globe,
+  GraduationCap,
+  MessageSquare,
+  PenTool,
+  Volume2,
+  CheckCircle,
+  Star,
+  Clock,
+  Award
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [selectedTestType, setSelectedTestType] = useState("IELTS");
 
-  const handleStartTest = (testType: string) => {
-    navigate(`/${testType}`);
-  };
-
-  const sections = [
-    { id: "listening", name: "Listening", icon: Headphones, color: "bg-blue-500" },
-    { id: "reading", name: "Reading", icon: BookOpen, color: "bg-green-500" },
-    { id: "writing", name: "Writing", icon: PenTool, color: "bg-purple-500" },
-    { id: "speaking", name: "Speaking", icon: Mic, color: "bg-orange-500" }
+  const testTypes = [
+    {
+      id: "IELTS",
+      name: "IELTS",
+      description: "International English Language Testing System",
+      icon: Globe,
+      color: "text-brand-blue",
+      bgColor: "bg-brand-blue/10",
+      borderColor: "border-brand-blue/20"
+    },
+    {
+      id: "PTE",
+      name: "PTE Academic",
+      description: "Pearson Test of English Academic",
+      icon: GraduationCap,
+      color: "text-brand-green",
+      bgColor: "bg-brand-green/10",
+      borderColor: "border-brand-green/20"
+    },
+    {
+      id: "TOEFL",
+      name: "TOEFL iBT",
+      description: "Test of English as a Foreign Language",
+      icon: BookOpen,
+      color: "text-brand-orange",
+      bgColor: "bg-brand-orange/10",
+      borderColor: "border-brand-orange/20"
+    },
+    {
+      id: "GENERAL",
+      name: "General English",
+      description: "Comprehensive English proficiency practice",
+      icon: MessageSquare,
+      color: "text-brand-purple",
+      bgColor: "bg-brand-purple/10",
+      borderColor: "border-brand-purple/20"
+    }
   ];
 
+  const skills = [
+    {
+      name: "Reading",
+      icon: BookOpen,
+      description: "Comprehension & Analysis",
+      progress: 78,
+      level: "Intermediate",
+      color: "text-brand-blue"
+    },
+    {
+      name: "Listening",
+      icon: Volume2,
+      description: "Audio Understanding",
+      progress: 85,
+      level: "Advanced",
+      color: "text-brand-green"
+    },
+    {
+      name: "Writing",
+      icon: PenTool,
+      description: "Essay & Task Writing",
+      progress: 62,
+      level: "Intermediate",
+      color: "text-brand-orange"
+    },
+    {
+      name: "Speaking",
+      icon: MessageSquare,
+      description: "Fluency & Pronunciation",
+      progress: 71,
+      level: "Intermediate",
+      color: "text-brand-purple"
+    }
+  ];
+
+  const achievements = [
+    { icon: Trophy, label: "7-day streak", color: "text-brand-green" },
+    { icon: Target, label: "95% accuracy", color: "text-brand-blue" },
+    { icon: Award, label: "100 questions", color: "text-brand-orange" },
+    { icon: Star, label: "Top 10%", color: "text-brand-purple" }
+  ];
+
+  const handleStartPractice = () => {
+    const route = selectedTestType.toLowerCase() === 'ielts' ? '/tests' : 
+                  selectedTestType.toLowerCase() === 'general' ? '/tests' :
+                  '/tests'; // Will be updated to handle different test types
+    navigate(route);
+  };
+
+  const handleSkillPractice = (skillName: string) => {
+    const route = skillName.toLowerCase();
+    navigate(`/${route}`);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="container mx-auto px-6 py-16">
-        {/* Hero Section - Phantom Wallet Inspired */}
-        <div className="text-center mb-20">
-          <div className="mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 mb-8 shadow-2xl">
-              <BookOpen className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-6xl font-bold text-white mb-6 tracking-tight">
-              Achieve Your
-              <span className="block bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-                IELTS Goals
+    <div className="min-h-screen bg-surface-2">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-blue via-brand-purple to-brand-blue">
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/10 opacity-20"></div>
+        
+        <div className="relative container mx-auto px-6 py-16 md:py-24">
+          <div className="text-center text-white">
+            <h1 className="text-heading-1 mb-6 animate-fade-in">
+              Master English with
+              <span className="block bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                AI-Powered Learning
               </span>
             </h1>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed mb-8">
-              Personalized AI-powered preparation with authentic Cambridge materials. 
-              Trusted by thousands of successful candidates worldwide.
+            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto animate-slide-up">
+              Achieve your target score with personalized practice, real-time feedback, and comprehensive test preparation
             </p>
             
-            {/* Trust Indicators */}
-            <div className="flex items-center justify-center gap-8 mb-8">
-              <div className="flex items-center gap-2 text-slate-400">
-                <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                <span className="text-sm">Official Cambridge Content</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-400">
-                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                <span className="text-sm">AI-Powered Analysis</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-400">
-                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                <span className="text-sm">Secure & Private</span>
-              </div>
-            </div>
-
-            {/* Primary CTA */}
-            <div className="flex items-center justify-center gap-4">
-              <Button 
-                onClick={() => navigate('/tests')}
-                className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
-              >
-                Start Practice
-              </Button>
-              <Button 
-                onClick={() => navigate('/personal-page')}
-                variant="outline"
-                className="h-14 px-8 text-lg font-semibold border-slate-600 text-slate-300 hover:bg-slate-800 rounded-xl transition-all duration-300"
-              >
-                View Progress
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Action Cards - Modern & Clean */}
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
-          <Card 
-            className="cursor-pointer border-slate-700 bg-slate-800/50 backdrop-blur-xl rounded-2xl overflow-hidden group hover:border-violet-500/50 transition-all duration-300 shadow-2xl"
-            onClick={() => navigate('/tests')}
-          >
-            <CardContent className="p-8 text-center">
-              <div className="mb-6">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Cambridge Tests</h3>
-                <p className="text-slate-300 mb-6 leading-relaxed">
-                  Practice with authentic Cambridge IELTS materials. Experience the real test environment 
-                  with our comprehensive testing platform.
-                </p>
-              </div>
-              <Button 
-                className="w-full h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg"
-              >
-                Start Practice Test
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="cursor-pointer border-slate-700 bg-slate-800/50 backdrop-blur-xl rounded-2xl overflow-hidden group hover:border-violet-500/50 transition-all duration-300 shadow-2xl"
-            onClick={() => navigate('/personal-page')}
-          >
-            <CardContent className="p-8 text-center">
-              <div className="mb-6">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300">
-                  <Star className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Personal Dashboard</h3>
-                <p className="text-slate-300 mb-6 leading-relaxed">
-                  Track your progress with AI-powered insights and personalized recommendations. 
-                  See detailed analytics and improvement areas.
-                </p>
-              </div>
-              
-              {/* Quick Skill Access */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {sections.map((section) => {
-                  const Icon = section.icon;
+            {/* Test Type Selection */}
+            <div className="mb-12 animate-scale-in">
+              <p className="text-white/80 mb-4 text-lg">Choose your test:</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                {testTypes.map((test) => {
+                  const Icon = test.icon;
                   return (
-                    <Button
-                      key={section.id}
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartTest(section.id);
-                      }}
-                      className="flex flex-col gap-2 h-16 text-xs border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500 rounded-lg transition-all duration-200"
+                    <button
+                      key={test.id}
+                      onClick={() => setSelectedTestType(test.id)}
+                      className={`p-4 rounded-2xl border-2 transition-all duration-200 hover:scale-105 ${
+                        selectedTestType === test.id
+                          ? 'bg-white/20 border-white shadow-lg'
+                          : 'bg-white/5 border-white/20 hover:bg-white/10'
+                      }`}
                     >
-                      <Icon className="w-4 h-4" />
-                      <span className="font-medium">{section.name}</span>
-                    </Button>
+                      <Icon className="w-6 h-6 mx-auto mb-2 text-white" />
+                      <p className="font-semibold text-white text-sm">{test.name}</p>
+                      <p className="text-xs text-white/70 mt-1">{test.description.split(' ').slice(0, 3).join(' ')}</p>
+                    </button>
                   );
                 })}
               </div>
-              
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-bounce-gentle">
               <Button 
-                className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg"
+                onClick={handleStartPractice}
+                size="lg" 
+                className="btn-gradient text-lg px-8 py-4 h-auto"
               >
-                View Progress
+                <Zap className="w-5 h-5 mr-2" />
+                Start Practice
               </Button>
-            </CardContent>
-          </Card>
-        </div>
+              <Button 
+                onClick={() => navigate('/auth')}
+                variant="outline" 
+                size="lg"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-lg px-8 py-4 h-auto"
+              >
+                <Users className="w-5 h-5 mr-2" />
+                Sign In
+              </Button>
+            </div>
 
-        {/* Features Section - Minimal & Professional */}
-        <div className="max-w-6xl mx-auto mb-20">
-          <h2 className="text-center text-3xl font-bold text-white mb-16">
-            Why Thousands Choose Our Platform
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center group">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
-                <BookOpen className="w-8 h-8 text-white" />
+            {/* Trust Indicators */}
+            <div className="mt-12 flex flex-wrap justify-center items-center gap-6 text-white/60">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm">Official Content</span>
               </div>
-              <h4 className="text-xl font-bold mb-4 text-white">Official Content</h4>
-              <p className="text-slate-300 leading-relaxed">
-                Authentic Cambridge IELTS materials from C17-C20, exactly as they appear in real tests.
-              </p>
-            </div>
-            
-            <div className="text-center group">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
-                <Heart className="w-8 h-8 text-white" />
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                <span className="text-sm">AI-Powered</span>
               </div>
-              <h4 className="text-xl font-bold mb-4 text-white">AI-Powered Feedback</h4>
-              <p className="text-slate-300 leading-relaxed">
-                Advanced AI provides instant, detailed feedback on speaking and writing performance.
-              </p>
-            </div>
-            
-            <div className="text-center group">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
-                <Lightbulb className="w-8 h-8 text-white" />
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                <span className="text-sm">Proven Results</span>
               </div>
-              <h4 className="text-xl font-bold mb-4 text-white">Smart Analytics</h4>
-              <p className="text-slate-300 leading-relaxed">
-                Detailed progress tracking with personalized recommendations for improvement.
-              </p>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Footer CTA */}
-        <div className="text-center">
-          <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-xl">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-            <span className="text-slate-300">Join 50,000+ successful IELTS candidates</span>
-          </div>
-          
-          <div className="mt-8">
-            <Button
-              onClick={() => navigate('/admin')}
-              variant="outline"
-              className="border-slate-600 text-slate-400 hover:bg-slate-800 hover:border-slate-500 rounded-xl transition-all duration-300"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Admin Portal
-            </Button>
+      {/* Skills Dashboard Section */}
+      <section className="space-section">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-3 gap-8">
+            
+            {/* Skills Overview */}
+            <div className="lg:col-span-2">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-heading-2 mb-2">Your Progress</h2>
+                  <p className="text-body">Track your improvement across all English skills</p>
+                </div>
+                <Button 
+                  onClick={() => navigate('/personal-page')}
+                  variant="outline"
+                  className="hover-lift"
+                >
+                  View Details
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {skills.map((skill) => {
+                  const Icon = skill.icon;
+                  return (
+                    <Card key={skill.name} className="card-interactive">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-xl bg-surface-3 ${skill.color}`}>
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-lg">{skill.name}</CardTitle>
+                              <CardDescription>{skill.description}</CardDescription>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {skill.level}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-text-secondary">Progress</span>
+                            <span className="font-semibold">{skill.progress}%</span>
+                          </div>
+                          <div className="progress-bar h-2">
+                            <div 
+                              className="progress-fill"
+                              style={{ width: `${skill.progress}%` }}
+                            />
+                          </div>
+                          <Button 
+                            onClick={() => handleSkillPractice(skill.name)}
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full mt-3"
+                          >
+                            Practice {skill.name}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Daily Challenge */}
+              <Card className="card-modern">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-brand-orange" />
+                    <CardTitle className="text-lg">Daily Challenge</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-brand-orange/10 rounded-xl border border-brand-orange/20">
+                      <h4 className="font-semibold text-brand-orange mb-2">
+                        Vocabulary Master
+                      </h4>
+                      <p className="text-sm text-text-secondary mb-3">
+                        Complete 10 academic vocabulary questions
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-text-tertiary">
+                          Progress: 6/10
+                        </div>
+                        <Button size="sm" className="btn-primary">
+                          Continue
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-brand-green mb-1">7</div>
+                      <div className="text-sm text-text-secondary">Day Streak</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Achievements */}
+              <Card className="card-modern">
+                <CardHeader>
+                  <CardTitle className="text-lg">Recent Achievements</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {achievements.map((achievement, index) => {
+                      const Icon = achievement.icon;
+                      return (
+                        <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-3 transition-colors">
+                          <div className={`p-2 rounded-lg bg-surface-3 ${achievement.color}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-medium">{achievement.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="space-section bg-surface-1">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-heading-2 mb-4">Why Choose Our Platform</h2>
+            <p className="text-body-large max-w-2xl mx-auto">
+              Advanced AI technology meets proven teaching methods to accelerate your English learning journey
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="card-modern text-center">
+              <CardContent className="pt-8">
+                <div className="w-16 h-16 bg-brand-blue/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="w-8 h-8 text-brand-blue" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Official Content</h3>
+                <p className="text-text-secondary">
+                  Practice with authentic materials from Cambridge, IDP, and other official sources
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-modern text-center">
+              <CardContent className="pt-8">
+                <div className="w-16 h-16 bg-brand-green/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Target className="w-8 h-8 text-brand-green" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">AI-Powered Feedback</h3>
+                <p className="text-text-secondary">
+                  Get instant, detailed analysis of your performance with personalized improvement suggestions
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-modern text-center">
+              <CardContent className="pt-8">
+                <div className="w-16 h-16 bg-brand-purple/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-8 h-8 text-brand-purple" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Smart Analytics</h3>
+                <p className="text-text-secondary">
+                  Track your progress with detailed insights and adaptive learning recommendations
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

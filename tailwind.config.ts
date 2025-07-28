@@ -20,8 +20,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'georgia': ['Georgia', 'serif'],
-				'open-sans': ['Open Sans', 'sans-serif'],
+				'inter': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+				'display': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -57,11 +57,20 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// Warm, minimalistic colors
-				'gentle-blue': 'hsl(var(--gentle-blue))',
-				'soft-green': 'hsl(var(--soft-green))',
-				'warm-gray': 'hsl(var(--warm-gray))',
-				'light-border': 'hsl(var(--light-border))',
+				// Modern EdTech colors
+				'brand-blue': 'hsl(var(--brand-blue))',
+				'brand-green': 'hsl(var(--brand-green))',
+				'brand-orange': 'hsl(var(--brand-orange))',
+				'brand-purple': 'hsl(var(--brand-purple))',
+				'brand-red': 'hsl(var(--brand-red))',
+				// Surface colors
+				'surface-1': 'hsl(var(--surface-1))',
+				'surface-2': 'hsl(var(--surface-2))',
+				'surface-3': 'hsl(var(--surface-3))',
+				// Text hierarchy
+				'text-primary': 'hsl(var(--text-primary))',
+				'text-secondary': 'hsl(var(--text-secondary))',
+				'text-tertiary': 'hsl(var(--text-tertiary))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -74,10 +83,13 @@ export default {
 				}
 			},
 			boxShadow: {
-				'soft': 'var(--shadow-soft)',
-				'medium': 'var(--shadow-medium)',
-				'strong': 'var(--shadow-strong)',
-				'glow': 'var(--shadow-glow)',
+				'xs': 'var(--shadow-xs)',
+				'sm': 'var(--shadow-sm)',
+				'md': 'var(--shadow-md)',
+				'lg': 'var(--shadow-lg)',
+				'xl': 'var(--shadow-xl)',
+				'glow-blue': 'var(--shadow-glow-blue)',
+				'glow-green': 'var(--shadow-glow-green)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

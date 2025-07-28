@@ -19,6 +19,7 @@ import AdminWriting from "./pages/AdminWriting";
 import AdminSpeaking from "./pages/AdminSpeaking";
 import PersonalPage from "./pages/PersonalPage";
 import TestSelection from "./pages/TestSelection";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/admin/writing" element={<AdminWriting />} />
           <Route path="/admin/speaking" element={<AdminSpeaking />} />
           <Route path="/personal-page" element={<PersonalPage />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/tests" element={<TestSelection />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

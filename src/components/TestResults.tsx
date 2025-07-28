@@ -7,6 +7,7 @@ import { CheckCircle, XCircle, TrendingUp, RotateCcw, ArrowRight } from "lucide-
 interface TestResultsProps {
   score: number;
   totalQuestions: number;
+  timeTaken?: number;
   answers: Record<string, string>;
   questions: any[];
   onRetake: () => void;
@@ -17,6 +18,7 @@ interface TestResultsProps {
 const TestResults = ({ 
   score, 
   totalQuestions, 
+  timeTaken, 
   answers, 
   questions, 
   onRetake, 

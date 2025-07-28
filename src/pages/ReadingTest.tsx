@@ -400,11 +400,18 @@ const ReadingTest = () => {
           correct_answers: totalCorrect,
           score_percentage: (totalCorrect / totalQuestions) * 100,
           time_taken: (60 * 60) - timeLeft, // Time taken in seconds
-          test_data: {
+          test_data: JSON.parse(JSON.stringify({
             answers: answers,
-            all_questions: allSectionQuestions.length > 0 ? allSectionQuestions : Object.values(allPartsData).flatMap(p => p.questions),
+            all_questions: (allSectionQuestions.length > 0 ? allSectionQuestions : Object.values(allPartsData).flatMap(p => p.questions)).map(q => ({
+              id: q.id,
+              question_number: q.question_number,
+              question_type: q.question_type,
+              question_text: q.question_text,
+              correct_answer: q.correct_answer,
+              explanation: q.explanation
+            })),
             completed_parts: [...completedParts, currentPart]
-          }
+          }))
         };
 
         const { error } = await supabase
@@ -645,9 +652,9 @@ const ReadingTest = () => {
           score={score}
           totalQuestions={totalQuestions}
           timeTaken={60 * 60 - timeLeft}
-          onRetry={() => window.location.reload()}
-          onBackToMenu={() => navigate('/tests')}
-          testType="reading"
+          onRetake={() => window.location.reload()}
+          onContinue={() => navigate('/tests')}
+          testTitle={`${currentPassage?.cambridge_book} Section ${currentPassage?.section_number} Reading Test`}
           answers={answers}
           questions={allSectionQuestions.length > 0 ? allSectionQuestions : Object.values(allPartsData).flatMap(p => p.questions)}
         />

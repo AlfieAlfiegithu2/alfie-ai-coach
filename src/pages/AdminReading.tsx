@@ -613,7 +613,15 @@ const AdminReading = () => {
               {/* CSV Import Component */}
               <div>
                 <h3 className="font-medium mb-2">Upload Questions (CSV)</h3>
-                <CSVImport onQuestionsPreview={handleCSVPreview} />
+                <CSVImport 
+                  onImport={handleConfirmImport}
+                  onQuestionsPreview={handleCSVPreview}
+                  type="reading"
+                  cambridgeBook={`C${uploadBookNumber}`}
+                  testNumber={uploadBookNumber}
+                  sectionNumber={uploadSectionNumber}
+                  partNumber={uploadPartNumber}
+                />
               </div>
             </div>
           </DialogContent>

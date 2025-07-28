@@ -9,6 +9,7 @@ import { getQuestionTypesForModule, mapQuestionType, validateQuestionType, Quest
 
 interface CSVImportProps {
   onImport: (questions: any[]) => void;
+  onQuestionsPreview?: (questions: any[]) => void;
   type: 'reading' | 'listening' | 'writing' | 'speaking';
   cambridgeBook?: string;
   testNumber?: number;
@@ -16,7 +17,7 @@ interface CSVImportProps {
   partNumber?: number;
 }
 
-const CSVImport = ({ onImport, type, cambridgeBook, testNumber, sectionNumber, partNumber }: CSVImportProps) => {
+const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumber, sectionNumber, partNumber }: CSVImportProps) => {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);

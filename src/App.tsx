@@ -49,6 +49,7 @@ const App = () => {
             <Route path="/writing-test" element={<WritingTest />} />
             <Route path="/writing/:book/:test" element={<WritingTest />} />
             <Route path="/speaking" element={<Speaking />} />
+            <Route path="/speaking/random" element={<Speaking />} />
             <Route path="/speaking/:book/:test" element={<Speaking />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
@@ -65,11 +66,15 @@ const App = () => {
             <Route path="/admin/pte/reading" element={<AdminReading />} />
             <Route path="/admin/pte/writing" element={<AdminWriting />} />
             <Route path="/admin/pte/speaking" element={<AdminSpeaking />} />
+            <Route path="/admin/pte/reading-writing" element={<AdminWriting />} />
+            <Route path="/admin/pte/speaking-writing" element={<AdminWriting />} />
             {/* TOEFL Admin Routes */}
             <Route path="/admin/toefl/listening" element={<AdminListening />} />
             <Route path="/admin/toefl/reading" element={<AdminReading />} />
             <Route path="/admin/toefl/writing" element={<AdminWriting />} />
             <Route path="/admin/toefl/speaking" element={<AdminSpeaking />} />
+            <Route path="/admin/toefl/integrated-writing" element={<AdminWriting />} />
+            <Route path="/admin/toefl/independent-writing" element={<AdminWriting />} />
             {/* General English Admin Routes */}
             <Route path="/admin/general/grammar" element={<AdminGeneral />} />
             <Route path="/admin/general/vocabulary" element={<AdminGeneral />} />

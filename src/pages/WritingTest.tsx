@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 const WritingTest = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const params = useParams();
   const { listContent } = useAdminContent();
   const { toast } = useToast();
   
@@ -24,9 +25,9 @@ const WritingTest = () => {
   const [selectedTask, setSelectedTask] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
-  // Get URL parameters for specific test/book
-  const cambridgeBook = searchParams.get('book') || 'C19';
-  const testNumber = searchParams.get('test') || '1';
+  // Get URL parameters for specific test/book - support both search params and URL params
+  const cambridgeBook = params.book || searchParams.get('book') || 'C19';
+  const testNumber = params.test || searchParams.get('test') || '1';
 
   useEffect(() => {
     loadWritingPrompts();
@@ -141,10 +142,10 @@ const WritingTest = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface-2 flex items-center justify-center">
+      <div className="min-h-screen glass-card flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-text-secondary">Loading Writing Test...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue mx-auto"></div>
+          <p className="mt-2 text-sm text-text-primary">Loading Writing Test...</p>
         </div>
       </div>
     );
@@ -152,18 +153,18 @@ const WritingTest = () => {
 
   if (!currentPrompt) {
     return (
-      <div className="min-h-screen bg-surface-2">
+      <div className="min-h-screen glass-card">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto text-center">
-            <Card>
+            <Card className="glass-effect">
               <CardContent className="pt-8">
-                <BookOpen className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-4">No Writing Prompts Available</h2>
+                <BookOpen className="w-16 h-16 text-text-secondary mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-4 text-text-primary">No Writing Prompts Available</h2>
                 <p className="text-text-secondary mb-6">
                   No writing prompts found for {cambridgeBook}, Test {testNumber}.
                   Please contact your admin to upload writing content.
                 </p>
-                <Button onClick={() => navigate('/tests')} variant="outline">
+                <Button onClick={() => navigate('/tests')} className="glass-button">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Tests
                 </Button>
@@ -181,25 +182,25 @@ const WritingTest = () => {
   })).sort((a, b) => a.number - b.number);
 
   return (
-    <div className="min-h-screen bg-surface-2">
+    <div className="min-h-screen glass-card">
       {/* Header */}
-      <header className="border-b border-border bg-surface-1 shadow-sm">
+      <header className="border-b border-border/30 glass-effect shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/tests")}>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/tests")} className="glass-button">
                 <ArrowLeft className="w-4 h-4" />
                 Back to Tests
               </Button>
               <div className="flex items-center gap-2">
                 <PenTool className="w-5 h-5 text-brand-blue" />
-                <span className="font-semibold">IELTS Writing Test</span>
-                <Badge variant="secondary">{cambridgeBook} - Test {testNumber}</Badge>
+                <span className="font-semibold text-text-primary">IELTS Writing Test</span>
+                <Badge variant="secondary" className="glass-effect">{cambridgeBook} - Test {testNumber}</Badge>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-text-secondary">
+              <div className="flex items-center gap-2 text-sm text-text-primary">
                 <Clock className="w-4 h-4" />
                 <span>{currentPrompt?.time_limit || 60} minutes</span>
               </div>

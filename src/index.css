@@ -56,11 +56,12 @@
     --text-secondary: 240 4% 46%;       /* Secondary text */
     --text-tertiary: 240 4% 64%;        /* Subtle text */
     
-    /* Modern gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(220 90% 56%), hsl(260 60% 65%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(240 10% 98%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 56%), hsl(142 76% 66%));
-    --gradient-premium: linear-gradient(135deg, hsl(260 60% 65%), hsl(280 60% 75%));
+  /* Glassmorphism gradients */
+  --gradient-hero: linear-gradient(135deg, hsl(220 90% 56% / 0.9), hsl(260 60% 65% / 0.9));
+  --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.9), hsl(240 10% 98% / 0.8));
+  --gradient-card: linear-gradient(145deg, hsl(0 0% 100% / 0.8), hsl(240 10% 98% / 0.6));
+  --gradient-success: linear-gradient(135deg, hsl(142 76% 56% / 0.9), hsl(142 76% 66% / 0.8));
+  --gradient-premium: linear-gradient(135deg, hsl(260 60% 65% / 0.9), hsl(280 60% 75% / 0.8));
     
     /* Modern shadows */
     --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
@@ -311,11 +312,34 @@
     }
   }
   
-  /* Utility classes for modern design */
+  /* Glassmorphism utilities */
   .glass-effect {
-    backdrop-filter: blur(10px);
-    background: hsl(var(--surface-1) / 0.8);
+    backdrop-filter: blur(16px) saturate(200%);
+    background: hsl(var(--surface-1) / 0.75);
+    border: 1px solid hsl(var(--border) / 0.3);
+    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.1);
+  }
+  
+  .glass-card {
+    backdrop-filter: blur(20px) saturate(180%);
+    background: var(--gradient-glass);
     border: 1px solid hsl(var(--border) / 0.2);
+    box-shadow: 
+      0 8px 32px hsl(0 0% 0% / 0.08),
+      inset 0 1px 0 hsl(0 0% 100% / 0.5);
+  }
+  
+  .glass-button {
+    backdrop-filter: blur(12px);
+    background: hsl(var(--surface-1) / 0.6);
+    border: 1px solid hsl(var(--border) / 0.4);
+    transition: all 0.3s ease;
+  }
+  
+  .glass-button:hover {
+    backdrop-filter: blur(16px);
+    background: hsl(var(--surface-1) / 0.8);
+    box-shadow: 0 8px 25px hsl(0 0% 0% / 0.15);
   }
   
   .glow-blue {

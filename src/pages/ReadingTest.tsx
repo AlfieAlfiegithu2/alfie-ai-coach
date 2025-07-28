@@ -5,6 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import TranslationHelper from '@/components/TranslationHelper';
 import { ArrowLeft, Clock, BookOpen, CheckCircle, XCircle, Eye, EyeOff, FileText, Target } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
@@ -53,6 +56,12 @@ const ReadingTest = () => {
   const [currentPart, setCurrentPart] = useState(1);
   const [completedParts, setCompletedParts] = useState<number[]>([]);
   const [allPartsData, setAllPartsData] = useState<{[key: number]: {passage: ReadingPassage, questions: ReadingQuestion[]}}>({});
+  
+  // Translation helper state
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
+  const [translationPosition, setTranslationPosition] = useState({ x: 0, y: 0 });
+  const [translationLanguage, setTranslationLanguage] = useState('es'); // Default to Spanish
 
   useEffect(() => {
     fetchReadingTest();
@@ -572,36 +581,86 @@ const ReadingTest = () => {
 
   const renderQuestionInput = (question: ReadingQuestion) => {
     const value = answers[question.id] || '';
+    const questionType = question.question_type?.toLowerCase() || '';
     
-    if (question.question_type === 'Multiple Choice' && question.options) {
+    // True/False/Not Given questions
+    if (questionType.includes('true') && questionType.includes('false') && questionType.includes('not given')) {
+      const options = ['True', 'False', 'Not Given'];
       return (
-        <div className="space-y-2">
-          {question.options.map((option, index) => (
-            <label key={index} className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name={`question-${question.id}`}
-                value={option}
-                checked={value === option}
-                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                className="w-4 h-4 text-blue-600"
-              />
-              <span>{option}</span>
-            </label>
-          ))}
-        </div>
+        <RadioGroup value={value} onValueChange={(val) => handleAnswerChange(question.id, val)}>
+          <div className="grid grid-cols-3 gap-2">
+            {options.map((option) => (
+              <div key={option} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${question.id}-${option}`} />
+                <Label htmlFor={`${question.id}-${option}`} className="cursor-pointer">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </RadioGroup>
       );
     }
     
+    // Yes/No/Not Given questions
+    if (questionType.includes('yes') && questionType.includes('no') && questionType.includes('not given')) {
+      const options = ['Yes', 'No', 'Not Given'];
+      return (
+        <RadioGroup value={value} onValueChange={(val) => handleAnswerChange(question.id, val)}>
+          <div className="grid grid-cols-3 gap-2">
+            {options.map((option) => (
+              <div key={option} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${question.id}-${option}`} />
+                <Label htmlFor={`${question.id}-${option}`} className="cursor-pointer">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </RadioGroup>
+      );
+    }
+    
+    // Multiple Choice questions with predefined options
+    if (question.question_type === 'Multiple Choice' && question.options) {
+      return (
+        <RadioGroup value={value} onValueChange={(val) => handleAnswerChange(question.id, val)}>
+          <div className="space-y-2">
+            {question.options.map((option, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${question.id}-${index}`} />
+                <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </RadioGroup>
+      );
+    }
+    
+    // Fill in the blank or short answer questions
     return (
       <Input
         value={value}
         onChange={(e) => handleAnswerChange(question.id, e.target.value)}
         placeholder="Type your answer..."
         disabled={isSubmitted}
-        className="w-full"
+        className="w-full input-modern"
       />
     );
+  };
+
+  const handleTextSelection = (event: React.MouseEvent) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const selectedText = selection.toString().trim();
+      if (selectedText.split(' ').length <= 3) { // Only show for 1-3 words
+        setSelectedText(selectedText);
+        setTranslationPosition({ x: event.clientX, y: event.clientY });
+        setShowTranslation(true);
+      }
+    }
   };
 
   const getAnsweredQuestionsCount = () => {
@@ -774,7 +833,10 @@ const ReadingTest = () => {
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none">
-                <div className="whitespace-pre-wrap text-sm leading-relaxed bg-gray-50 p-4 rounded-lg max-h-[70vh] overflow-y-auto">
+                <div 
+                  className="whitespace-pre-wrap text-sm leading-relaxed glass-effect p-4 rounded-lg max-h-[70vh] overflow-y-auto cursor-text"
+                  onMouseUp={handleTextSelection}
+                >
                   {currentPassage?.content}
                 </div>
               </div>
@@ -861,6 +923,16 @@ const ReadingTest = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        {/* Translation Helper */}
+        {showTranslation && (
+          <TranslationHelper
+            selectedText={selectedText}
+            position={translationPosition}
+            onClose={() => setShowTranslation(false)}
+            language={translationLanguage}
+          />
+        )}
       </div>
     </StudentLayout>
   );

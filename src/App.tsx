@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PersistentChatbot from "./components/PersistentChatbot";
 import Index from "./pages/Index";
 import Reading from "./pages/Reading";
 import ReadingTest from "./pages/ReadingTest";
@@ -42,9 +43,11 @@ const App = () => {
             <Route path="/reading/:testId" element={<ReadingTest />} />
             <Route path="/listening" element={<ContentSelection />} />
             <Route path="/listening/:testId" element={<ListeningTest />} />
-          <Route path="/writing" element={<Writing />} />
-          <Route path="/writing-test" element={<WritingTest />} />
+            <Route path="/writing" element={<Writing />} />
+            <Route path="/writing-test" element={<WritingTest />} />
+            <Route path="/writing/:book/:test" element={<WritingTest />} />
             <Route path="/speaking" element={<Speaking />} />
+            <Route path="/speaking/:book/:test" element={<Speaking />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/reading" element={<AdminReading />} />
@@ -60,6 +63,7 @@ const App = () => {
             <Route path="/tests" element={<TestSelection />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <PersistentChatbot />
         </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>

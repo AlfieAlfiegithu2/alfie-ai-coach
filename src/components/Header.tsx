@@ -38,7 +38,7 @@ const Header = () => {
             </span>
           </div>
           
-          {/* Login Button in Header */}
+          {/* Login Button in Header - Always Visible */}
           {!user && (
             <Button
               variant="outline"
@@ -46,6 +46,18 @@ const Header = () => {
               className="text-sm font-medium"
             >
               Sign In
+            </Button>
+          )}
+          
+          {/* Dashboard Button when logged in */}
+          {user && (
+            <Button
+              variant="outline"
+              onClick={() => navigate('/dashboard')}
+              className="text-sm font-medium"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Go to Dashboard
             </Button>
           )}
         </div>

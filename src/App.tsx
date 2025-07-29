@@ -108,6 +108,7 @@ const App = () => {
             <Route path="/toefl-portal" element={<TOEFLPortal />} />
             <Route path="/general-portal" element={<GeneralPortal />} />
             <Route path="/dashboard" element={<PersonalPage />} />
+            <Route path="/user-dashboard" element={<PersonalPage />} />
             <Route path="/practice" element={<TestSelection />} />
             <Route path="/personal-page" element={<PersonalPage />} />
             <Route path="/auth" element={<Auth />} />

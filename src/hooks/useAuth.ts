@@ -10,6 +10,7 @@ interface Profile {
   full_name: string;
   subscription_status: string;
   subscription_expires_at?: string;
+  native_language: string;
 }
 
 interface UseAuthReturn {

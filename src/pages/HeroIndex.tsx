@@ -232,11 +232,7 @@ const HeroIndex = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-300 mb-4">{test.description}</p>
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {test.sections.map((section, idx) => <Badge key={idx} variant="secondary" className="text-xs">
-                        {section}
-                      </Badge>)}
-                  </div>
+                  
                   <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
                     Start Practice
                   </Button>

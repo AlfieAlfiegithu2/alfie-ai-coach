@@ -222,9 +222,7 @@ const HeroIndex = () => {
                     <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
                       {test.icon}
                     </div>
-                    <Badge variant="outline" className="border-white/20 text-white">
-                      4 sections
-                    </Badge>
+                    
                   </div>
                   <CardTitle className="text-white group-hover:text-blue-400 transition-colors">
                     {test.title}

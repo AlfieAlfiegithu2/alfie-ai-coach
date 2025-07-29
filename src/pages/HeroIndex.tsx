@@ -24,7 +24,7 @@ const HeroIndex = () => {
 
   const handleAuthAction = () => {
     if (user) {
-      navigate('/tests');
+      navigate('/personal-page');
     } else {
       navigate('/auth');
     }
@@ -53,7 +53,7 @@ const HeroIndex = () => {
     }
   ];
 
-  const testModules = [
+  const ieltsModules = [
     {
       title: "Reading",
       icon: <BookOpen className="w-6 h-6 text-foreground" />,
@@ -66,23 +66,20 @@ const HeroIndex = () => {
       icon: <Headphones className="w-6 h-6 text-foreground" />,
       description: "Audio practice with transcription support",
       path: "/listening",
-      color: "bg-green-500",
       questions: "40+ questions"
     },
     {
       title: "Writing",
-      icon: <PenTool className="w-6 h-6" />,
+      icon: <PenTool className="w-6 h-6 text-foreground" />,
       description: "Task 1 & 2 with detailed AI feedback",
       path: "/writing",
-      color: "bg-purple-500",
       questions: "2 tasks"
     },
     {
       title: "Speaking",
-      icon: <Mic className="w-6 h-6" />,
+      icon: <Mic className="w-6 h-6 text-foreground" />,
       description: "Voice analysis with pronunciation feedback",
       path: "/speaking", 
-      color: "bg-orange-500",
       questions: "3 parts"
     }
   ];
@@ -127,12 +124,23 @@ const HeroIndex = () => {
               <a href="#community" className="hover:text-blue-400 transition-colors">Community</a>
             </div>
 
-            <Button 
-              onClick={handleAuthAction}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
-            >
-              {user ? 'Go to Dashboard' : 'Start Learning'}
-            </Button>
+            <div className="flex items-center gap-4">
+              {!user && (
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/auth')}
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  Sign In
+                </Button>
+              )}
+              <Button 
+                onClick={handleAuthAction}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
+              >
+                {user ? 'Go to Dashboard' : 'Start Learning'}
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -240,31 +248,41 @@ const HeroIndex = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {testModules.map((module, index) => (
-              <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group"
-                    onClick={() => navigate(module.path)}>
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`w-12 h-12 ${module.color} rounded-xl flex items-center justify-center text-white`}>
-                      {module.icon}
+          {/* IELTS Section */}
+          <div className="mb-12">
+            <div className="text-center mb-8">
+              <Badge className="mb-4 bg-primary/20 text-primary border-primary/30 text-lg px-4 py-2">
+                IELTS Academic
+              </Badge>
+              <p className="text-lg text-gray-300">Master all four skills with Cambridge materials</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {ieltsModules.map((module, index) => (
+                <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group"
+                      onClick={() => navigate(module.path)}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                        {module.icon}
+                      </div>
+                      <Badge variant="outline" className="border-white/20 text-white">
+                        {module.questions}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className="border-white/20 text-white">
-                      {module.questions}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-white group-hover:text-blue-400 transition-colors">
-                    {module.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-300 mb-4">{module.description}</p>
-                  <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
-                    Start Practice
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <CardTitle className="text-white group-hover:text-blue-400 transition-colors">
+                      {module.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-300 mb-4">{module.description}</p>
+                    <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
+                      Start Practice
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
           {/* Additional Portals */}
@@ -419,16 +437,14 @@ const HeroIndex = () => {
             <p className="text-gray-400 text-sm">
               © 2024 EnglishAI. All rights reserved. Powered by advanced AI technology.
             </p>
-            {user && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/admin/login')}
-                className="mt-4 text-xs text-gray-500 hover:text-gray-400"
-              >
-                Admin Access
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin/login')}
+              className="mt-4 text-xs text-gray-500 hover:text-gray-400"
+            >
+              Admin Access
+            </Button>
           </div>
         </div>
       </footer>

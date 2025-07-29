@@ -195,7 +195,7 @@ const Pricing = () => {
 
                 <Button
                   onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
-                  disabled={loading === plan.id || (plan.id === 'free' && user)}
+                  disabled={loading === plan.id || (plan.id === 'free' && !!user)}
                   className={`w-full ${
                     plan.popular 
                       ? 'bg-primary hover:bg-primary/90' 

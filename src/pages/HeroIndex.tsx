@@ -129,7 +129,7 @@ const HeroIndex = () => {
 
             <Button 
               onClick={handleAuthAction}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
             >
               {user ? 'Go to Dashboard' : 'Start Learning'}
             </Button>
@@ -158,7 +158,7 @@ const HeroIndex = () => {
               <Button 
                 size="lg" 
                 onClick={handleAuthAction}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
               >
                 <Play className="w-5 h-5 mr-2" />
                 Start Free Practice
@@ -167,7 +167,7 @@ const HeroIndex = () => {
                 size="lg" 
                 variant="outline"
                 onClick={() => navigate('/community')}
-                className="border-white/20 text-white hover:bg-white/10 px-8 py-4 text-lg"
+                className="border-white/20 text-foreground hover:bg-accent px-8 py-4 text-lg"
               >
                 <Users className="w-5 h-5 mr-2" />
                 Join Community
@@ -323,7 +323,7 @@ const HeroIndex = () => {
           <Button 
             size="lg" 
             onClick={() => navigate('/community')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
           >
             <Users className="w-5 h-5 mr-2" />
             Explore Community
@@ -346,7 +346,7 @@ const HeroIndex = () => {
               <Button 
                 size="lg" 
                 onClick={handleAuthAction}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
               >
                 <Star className="w-5 h-5 mr-2" />
                 Start Your Journey
@@ -354,7 +354,8 @@ const HeroIndex = () => {
               <Button 
                 size="lg" 
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 px-8 py-4 text-lg"
+                onClick={() => navigate('/pricing')}
+                className="border-foreground/20 text-foreground hover:bg-accent px-8 py-4 text-lg"
               >
                 View Pricing
               </Button>
@@ -418,6 +419,16 @@ const HeroIndex = () => {
             <p className="text-gray-400 text-sm">
               © 2024 EnglishAI. All rights reserved. Powered by advanced AI technology.
             </p>
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin/login')}
+                className="mt-4 text-xs text-gray-500 hover:text-gray-400"
+              >
+                Admin Access
+              </Button>
+            )}
           </div>
         </div>
       </footer>

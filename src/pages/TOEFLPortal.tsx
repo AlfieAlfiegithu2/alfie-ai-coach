@@ -20,8 +20,8 @@ const TOEFLPortal = () => {
       difficulty: 'Intermediate',
       timeLimit: '54-72 minutes',
       questions: '30-40 questions',
-      color: 'text-brand-blue',
-      bgColor: 'bg-brand-blue/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
       id: 'listening',
@@ -32,8 +32,8 @@ const TOEFLPortal = () => {
       difficulty: 'Advanced',
       timeLimit: '41-57 minutes',
       questions: '28-39 questions',
-      color: 'text-brand-green',
-      bgColor: 'bg-brand-green/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
       id: 'speaking',
@@ -44,8 +44,8 @@ const TOEFLPortal = () => {
       difficulty: 'Advanced',
       timeLimit: '17 minutes',
       questions: '4 tasks',
-      color: 'text-brand-purple',
-      bgColor: 'bg-brand-purple/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
       id: 'writing',
@@ -56,8 +56,8 @@ const TOEFLPortal = () => {
       difficulty: 'Intermediate',
       timeLimit: '50 minutes',
       questions: '2 tasks',
-      color: 'text-brand-orange',
-      bgColor: 'bg-brand-orange/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     }
   ];
 
@@ -119,7 +119,7 @@ const TOEFLPortal = () => {
       <div className="space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Globe className="w-8 h-8 text-brand-blue" />
+            <Globe className="w-8 h-8 text-primary" />
             <h1 className="text-heading-2">TOEFL iBT Test Preparation</h1>
           </div>
           <p className="text-body-large max-w-3xl mx-auto">
@@ -151,7 +151,7 @@ const TOEFLPortal = () => {
                 <Card 
                   key={skill.id} 
                   className={`card-interactive hover:scale-105 transition-all duration-300 ${
-                    selectedSkill === skill.id ? 'ring-2 ring-brand-blue' : ''
+                    selectedSkill === skill.id ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => setSelectedSkill(skill.id)}
                 >
@@ -210,7 +210,7 @@ const TOEFLPortal = () => {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-heading-3">TOEFL Practice Tests</h2>
-            <Badge variant="outline" className="bg-brand-green/10 text-brand-green border-brand-green/20">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
               Official Scoring
             </Badge>
           </div>
@@ -259,7 +259,7 @@ const TOEFLPortal = () => {
           </div>
         </section>
 
-        <section className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 rounded-3xl p-8">
+        <section className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-3xl p-8">
           <div className="text-center">
             <h3 className="text-heading-3 mb-4">Ready to Start?</h3>
             <p className="text-body mb-6">

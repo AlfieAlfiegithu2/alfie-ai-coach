@@ -59,7 +59,7 @@ const StudentHelpWidget: React.FC<StudentHelpWidgetProps> = ({
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('translation-service', {
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
           text: translationText,
           targetLanguage: selectedLanguage,

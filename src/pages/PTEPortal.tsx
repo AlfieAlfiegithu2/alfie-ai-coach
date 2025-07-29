@@ -19,8 +19,8 @@ const PTEPortal = () => {
       sections: ['Reading & Writing Fill in the Blanks', 'Multiple Choice Single Answer', 'Re-order Paragraphs'],
       difficulty: 'Intermediate',
       timeLimit: '32-41 minutes',
-      color: 'text-brand-blue',
-      bgColor: 'bg-brand-blue/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
       id: 'listening',
@@ -30,8 +30,8 @@ const PTEPortal = () => {
       sections: ['Summarize Spoken Text', 'Multiple Choice Multiple Answer', 'Fill in the Blanks'],
       difficulty: 'Advanced',
       timeLimit: '45-57 minutes',
-      color: 'text-brand-green',
-      bgColor: 'bg-brand-green/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
       id: 'writing',
@@ -41,8 +41,8 @@ const PTEPortal = () => {
       sections: ['Summarize Written Text', 'Write Essay'],
       difficulty: 'Intermediate',
       timeLimit: '20 minutes',
-      color: 'text-brand-orange',
-      bgColor: 'bg-brand-orange/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
       id: 'speaking',
@@ -52,8 +52,8 @@ const PTEPortal = () => {
       sections: ['Read Aloud', 'Repeat Sentence', 'Describe Image', 'Re-tell Lecture'],
       difficulty: 'Advanced',
       timeLimit: '54-67 minutes',
-      color: 'text-brand-purple',
-      bgColor: 'bg-brand-purple/10'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     }
   ];
 
@@ -79,7 +79,7 @@ const PTEPortal = () => {
     <StudentLayout title="PTE Academic Portal" showBackButton>
       <div className="space-y-8">
         <div className="text-center">
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-brand-green border-brand-green/20">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
             PTE ACADEMIC MODULE
           </Badge>
           <h1 className="text-heading-2 mb-4">PTE Academic Test Preparation</h1>
@@ -99,7 +99,7 @@ const PTEPortal = () => {
                 <Card 
                   key={skill.id} 
                   className={`card-interactive hover:scale-105 transition-all duration-300 ${
-                    selectedSkill === skill.id ? 'ring-2 ring-brand-blue' : ''
+                    selectedSkill === skill.id ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => setSelectedSkill(skill.id)}
                 >
@@ -154,7 +154,7 @@ const PTEPortal = () => {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-heading-3">PTE Mock Tests</h2>
-            <Badge variant="outline" className="bg-brand-green/10 text-brand-green border-brand-green/20">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
               AI Scoring Available
             </Badge>
           </div>
@@ -165,7 +165,7 @@ const PTEPortal = () => {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{test.title}</CardTitle>
-                    <Target className="w-5 h-5 text-brand-blue" />
+                    <Target className="w-5 h-5 text-primary" />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">

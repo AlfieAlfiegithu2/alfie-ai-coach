@@ -1,5 +1,17 @@
 project_id = "cuumxmfzhwljylbdlflj"
 
+[functions.gemini-chat]
+verify_jwt = false
+
+[functions.content-generator-gemini]
+verify_jwt = false
+
+[functions.elevenlabs-voice]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
 [functions.admin-auth]
 verify_jwt = false
 

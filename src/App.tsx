@@ -33,6 +33,7 @@ import PTEPortal from "./pages/PTEPortal";
 import TOEFLPortal from "./pages/TOEFLPortal";
 import GeneralPortal from "./pages/GeneralPortal";
 import EnhancedGeneralPortal from "./pages/EnhancedGeneralPortal";
+import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,7 @@ const App = () => {
             <Route path="/tests" element={<TestSelection />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <MinimalisticChatbot />

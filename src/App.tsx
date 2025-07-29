@@ -49,11 +49,26 @@ const App = () => {
             <Route path="/listening" element={<ContentSelection />} />
             <Route path="/listening/:testId" element={<ListeningTest />} />
             <Route path="/writing" element={<Writing />} />
+            <Route path="/writing/random" element={<Writing />} />
             <Route path="/writing-test" element={<WritingTest />} />
             <Route path="/writing/:book/:test" element={<WritingTest />} />
             <Route path="/speaking" element={<Speaking />} />
             <Route path="/speaking/random" element={<Speaking />} />
             <Route path="/speaking/:book/:test" element={<Speaking />} />
+            {/* PTE specific routes */}
+            <Route path="/pte/writing" element={<Writing />} />
+            <Route path="/pte/speaking" element={<Speaking />} />
+            <Route path="/pte/reading" element={<Reading />} />
+            <Route path="/pte/listening" element={<Listening />} />
+            {/* TOEFL specific routes */}
+            <Route path="/toefl/writing" element={<Writing />} />
+            <Route path="/toefl/speaking" element={<Speaking />} />
+            <Route path="/toefl/reading" element={<Reading />} />
+            <Route path="/toefl/listening" element={<Listening />} />
+            {/* General English routes */}
+            <Route path="/general/grammar" element={<GeneralPortal />} />
+            <Route path="/general/vocabulary" element={<GeneralPortal />} />
+            <Route path="/general/conversation" element={<GeneralPortal />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/reading" element={<AdminReading />} />

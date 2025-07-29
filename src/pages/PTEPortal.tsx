@@ -67,12 +67,13 @@ const PTEPortal = () => {
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting PTE ${skillId} practice`);
-    navigate(`/${skillId}`);
+    // Route to PTE-specific skill pages
+    navigate(`/pte-${skillId}`);
   };
 
   const handleMockTest = (testId: number) => {
     console.log(`🧪 Starting PTE mock test ${testId}`);
-    navigate(`/tests`);
+    navigate(`/pte-tests?test=${testId}`);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import {
   TrendingUp, 
   Trophy, 
   Users, 
+  User,
   Zap, 
   ChevronRight, 
   Globe,
@@ -20,14 +21,23 @@ import {
   CheckCircle,
   Star,
   Clock,
-  Award
+  Award,
+  BarChart3,
+  PieChart,
+  Activity
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import DailyChallenge from "@/components/DailyChallenge";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
+  const [userStats, setUserStats] = useState<any>(null);
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const testTypes = [
     {
@@ -110,9 +120,54 @@ const Dashboard = () => {
     { icon: Star, label: "Top 10%", color: "text-gray-500" }
   ];
 
+  // Fetch user data from Supabase
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch test results
+        const { data: results } = await supabase
+          .from('test_results')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (results) {
+          setTestResults(results);
+          
+          // Calculate user stats from test results
+          const totalTests = results.length;
+          const avgScore = results.length > 0 
+            ? results.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / results.length 
+            : 0;
+          
+          setUserStats({
+            totalTests,
+            avgScore: Math.round(avgScore),
+            recentImprovement: totalTests > 1 
+              ? Math.round((results[0]?.score_percentage || 0) - (results[1]?.score_percentage || 0))
+              : 0,
+            weeklyProgress: 15 // Placeholder
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
+
   const handleStartPractice = () => {
-    // Route to student dashboard 
-    navigate('/dashboard');
+    // Route to personal page instead of dashboard loop
+    navigate('/personal-page');
   };
 
   const handleSkillPractice = (skillName: string) => {
@@ -173,15 +228,27 @@ const Dashboard = () => {
                 <Zap className="w-5 h-5 mr-2" />
                 Start Practice
               </Button>
-              <Button 
-                onClick={() => navigate('/auth')}
-                variant="outline" 
-                size="lg"
-                className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-lg px-8 py-4 h-auto"
-              >
-                <Users className="w-5 h-5 mr-2" />
-                Sign In
-              </Button>
+              {!user ? (
+                <Button 
+                  onClick={() => navigate('/auth')}
+                  variant="outline" 
+                  size="lg"
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-lg px-8 py-4 h-auto"
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  Sign In
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => navigate('/personal-page')}
+                  variant="outline" 
+                  size="lg"
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-lg px-8 py-4 h-auto"
+                >
+                  <User className="w-5 h-5 mr-2" />
+                  View Profile
+                </Button>
+              )}
             </div>
 
             {/* Trust Indicators */}
@@ -279,6 +346,39 @@ const Dashboard = () => {
               {/* Daily Challenge - Now Functional */}
               <DailyChallenge />
 
+              {/* User Analytics */}
+              {user && userStats && (
+                <Card className="card-modern">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-primary" />
+                      Your Analytics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-surface-3 rounded-lg">
+                        <div className="text-2xl font-bold text-primary">{userStats.totalTests}</div>
+                        <div className="text-xs text-text-secondary">Tests Taken</div>
+                      </div>
+                      <div className="text-center p-3 bg-surface-3 rounded-lg">
+                        <div className="text-2xl font-bold text-brand-green">{userStats.avgScore}%</div>
+                        <div className="text-xs text-text-secondary">Avg Score</div>
+                      </div>
+                    </div>
+                    
+                    {userStats.recentImprovement !== 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <span className="text-sm text-primary font-medium">
+                          {userStats.recentImprovement > 0 ? '+' : ''}{userStats.recentImprovement}% improvement
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Achievements */}
               <Card className="card-modern">
                 <CardHeader>
@@ -300,6 +400,40 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Recent Test Results */}
+              {user && testResults.length > 0 && (
+                <Card className="card-modern">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-brand-green" />
+                      Recent Tests
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {testResults.slice(0, 3).map((result, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-3 transition-colors">
+                          <div>
+                            <div className="text-sm font-medium">{result.test_type}</div>
+                            <div className="text-xs text-text-secondary">
+                              {new Date(result.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-primary">
+                              {result.score_percentage}%
+                            </div>
+                            <div className="text-xs text-text-secondary">
+                              {result.correct_answers}/{result.total_questions}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

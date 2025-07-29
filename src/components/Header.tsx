@@ -120,12 +120,21 @@ const Header = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="hidden md:flex items-center space-x-3">
+            <div className="flex items-center space-x-3">
+              {/* Google Login and Regular Login */}
               <Button
                 onClick={() => navigate('/auth')}
-                className="text-sm font-medium bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                variant="outline"
+                size="sm"
+                className="text-sm font-medium border-white/20 text-foreground hover:bg-primary/10"
               >
-                Start Journey
+                Log In
+              </Button>
+              <Button
+                onClick={() => navigate('/auth')}
+                className="text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Sign Up
               </Button>
             </div>
           )}
@@ -187,12 +196,21 @@ const Header = () => {
               Community
             </Button>
             {!user && (
-              <Button
-                onClick={() => navigate('/auth')}
-                className="w-full justify-start bg-gradient-to-r from-primary to-secondary"
-              >
-                Start Journey
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/auth')}
+                  className="w-full justify-start"
+                >
+                  Log In
+                </Button>
+                <Button
+                  onClick={() => navigate('/auth')}
+                  className="w-full justify-start bg-primary text-primary-foreground"
+                >
+                  Sign Up
+                </Button>
+              </>
             )}
             {!admin && (
               <Button

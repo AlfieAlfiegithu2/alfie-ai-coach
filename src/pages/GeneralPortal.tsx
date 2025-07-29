@@ -126,12 +126,14 @@ const GeneralPortal = () => {
 
   const handleStartLesson = (lessonId: number) => {
     console.log(`🚀 Starting General English lesson ${lessonId}`);
-    navigate('/tests');
+    // Route to specific lesson content - no more "generating" message
+    navigate(`/general-lesson/${lessonId}`);
   };
 
   const handleCategoryPractice = (categoryId: string) => {
     console.log(`🎯 Starting ${categoryId} practice`);
-    navigate('/tests');
+    // Route to specific category practice
+    navigate(`/general-${categoryId}`);
   };
 
   return (

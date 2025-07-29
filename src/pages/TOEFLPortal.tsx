@@ -106,12 +106,13 @@ const TOEFLPortal = () => {
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting TOEFL ${skillId} practice`);
-    navigate(`/${skillId}`);
+    // Route to TOEFL-specific skill pages
+    navigate(`/toefl-${skillId}`);
   };
 
   const handleMockTest = (testId: number) => {
     console.log(`🧪 Starting TOEFL mock test ${testId}`);
-    navigate(`/tests`);
+    navigate(`/toefl-tests?test=${testId}`);
   };
 
   return (

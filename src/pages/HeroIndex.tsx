@@ -32,36 +32,32 @@ const HeroIndex = () => {
       navigate('/auth');
     }
   };
-  const testTypes = [
-    {
-      title: "IELTS",
-      description: "International English Language Testing System",
-      path: "/reading", // Main IELTS portal
-      icon: <BookOpen className="w-6 h-6 text-foreground" />,
-      sections: ["Reading", "Listening", "Writing", "Speaking"]
-    },
-    {
-      title: "PTE Academic",
-      description: "Pearson Test of English Academic",
-      path: "/pte-portal",
-      icon: <Target className="w-6 h-6 text-foreground" />,
-      sections: ["Reading", "Listening", "Writing", "Speaking"]
-    },
-    {
-      title: "TOEFL iBT",
-      description: "Test of English as a Foreign Language",
-      path: "/toefl-portal",
-      icon: <Globe className="w-6 h-6 text-foreground" />,
-      sections: ["Reading", "Listening", "Writing", "Speaking"]
-    },
-    {
-      title: "General English",
-      description: "Daily English improvement lessons",
-      path: "/general-portal",
-      icon: <Users className="w-6 h-6 text-foreground" />,
-      sections: ["Vocabulary", "Grammar", "Conversation", "Practice"]
-    }
-  ];
+  const testTypes = [{
+    title: "IELTS",
+    description: "International English Language Testing System",
+    path: "/reading",
+    // Main IELTS portal
+    icon: <BookOpen className="w-6 h-6 text-foreground" />,
+    sections: ["Reading", "Listening", "Writing", "Speaking"]
+  }, {
+    title: "PTE Academic",
+    description: "Pearson Test of English Academic",
+    path: "/pte-portal",
+    icon: <Target className="w-6 h-6 text-foreground" />,
+    sections: ["Reading", "Listening", "Writing", "Speaking"]
+  }, {
+    title: "TOEFL iBT",
+    description: "Test of English as a Foreign Language",
+    path: "/toefl-portal",
+    icon: <Globe className="w-6 h-6 text-foreground" />,
+    sections: ["Reading", "Listening", "Writing", "Speaking"]
+  }, {
+    title: "General English",
+    description: "Daily English improvement lessons",
+    path: "/general-portal",
+    icon: <Users className="w-6 h-6 text-foreground" />,
+    sections: ["Vocabulary", "Grammar", "Conversation", "Practice"]
+  }];
   const ieltsModules = [{
     title: "Reading",
     icon: <BookOpen className="w-6 h-6 text-foreground" />,
@@ -137,9 +133,7 @@ const HeroIndex = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
-            <Badge className="mb-6 bg-blue-500/20 text-blue-300 border-blue-500/30">
-              AI-Powered English Learning Platform
-            </Badge>
+            
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-200 to-purple-300 bg-clip-text text-transparent">
               Achieve Your English Goals with AI
@@ -194,21 +188,13 @@ const HeroIndex = () => {
           </h2>
           <div className="max-w-2xl mx-auto">
             <div className="relative">
-              <input
-                type="text"
-                placeholder="Search for lessons, tests, or content..."
-                className="w-full px-6 py-4 text-lg rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    // Basic search functionality - redirect to tests page
-                    navigate('/tests');
-                  }
-                }}
-              />
-              <Button 
-                onClick={() => navigate('/tests')}
-                className="absolute right-2 top-2 h-12 px-6 bg-blue-500 hover:bg-blue-600"
-              >
+              <input type="text" placeholder="Search for lessons, tests, or content..." className="w-full px-6 py-4 text-lg rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" onKeyPress={e => {
+              if (e.key === 'Enter') {
+                // Basic search functionality - redirect to tests page
+                navigate('/tests');
+              }
+            }} />
+              <Button onClick={() => navigate('/tests')} className="absolute right-2 top-2 h-12 px-6 bg-blue-500 hover:bg-blue-600">
                 Search
               </Button>
             </div>
@@ -230,8 +216,7 @@ const HeroIndex = () => {
 
           {/* Test Types Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testTypes.map((test, index) => (
-              <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group" onClick={() => navigate(test.path)}>
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group" onClick={() => navigate(test.path)}>
                 <CardHeader>
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
@@ -248,18 +233,15 @@ const HeroIndex = () => {
                 <CardContent>
                   <p className="text-gray-300 mb-4">{test.description}</p>
                   <div className="flex flex-wrap gap-1 mb-4">
-                    {test.sections.map((section, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
+                    {test.sections.map((section, idx) => <Badge key={idx} variant="secondary" className="text-xs">
                         {section}
-                      </Badge>
-                    ))}
+                      </Badge>)}
                   </div>
                   <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
                     Start Practice
                   </Button>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>

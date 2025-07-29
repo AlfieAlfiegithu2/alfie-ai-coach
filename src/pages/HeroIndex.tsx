@@ -7,21 +7,24 @@ import { Progress } from "@/components/ui/progress";
 import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Bot, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       setUser(user);
     };
     getUser();
   }, []);
-
   const handleAuthAction = () => {
     if (user) {
       navigate('/personal-page');
@@ -29,84 +32,65 @@ const HeroIndex = () => {
       navigate('/auth');
     }
   };
-
-  const features = [
-    {
-      icon: <Bot className="w-6 h-6 text-foreground" />,
-      title: "AI-Powered Learning",
-      description: "Personalized study plans with real-time feedback and analysis"
-    },
-    {
-      icon: <Target className="w-6 h-6 text-foreground" />,
-      title: "Goal-Oriented Progress", 
-      description: "Set your target band score and track daily improvement"
-    },
-    {
-      icon: <Globe className="w-6 h-6 text-foreground" />,
-      title: "Multi-Language Support",
-      description: "Practice in your native language with instant translation"
-    },
-    {
-      icon: <Users className="w-6 h-6 text-foreground" />,
-      title: "Community Learning",
-      description: "Connect with fellow learners and share study experiences"
-    }
-  ];
-
-  const ieltsModules = [
-    {
-      title: "Reading",
-      icon: <BookOpen className="w-6 h-6 text-foreground" />,
-      description: "Cambridge IELTS passages with AI analysis",
-      path: "/reading",
-      questions: "40+ questions"
-    },
-    {
-      title: "Listening", 
-      icon: <Headphones className="w-6 h-6 text-foreground" />,
-      description: "Audio practice with transcription support",
-      path: "/listening",
-      questions: "40+ questions"
-    },
-    {
-      title: "Writing",
-      icon: <PenTool className="w-6 h-6 text-foreground" />,
-      description: "Task 1 & 2 with detailed AI feedback",
-      path: "/writing",
-      questions: "2 tasks"
-    },
-    {
-      title: "Speaking",
-      icon: <Mic className="w-6 h-6 text-foreground" />,
-      description: "Voice analysis with pronunciation feedback",
-      path: "/speaking", 
-      questions: "3 parts"
-    }
-  ];
-
-  const additionalPortals = [
-    {
-      title: "PTE Academic",
-      description: "Comprehensive PTE test preparation",
-      path: "/pte-portal",
-      badge: "New"
-    },
-    {
-      title: "TOEFL iBT",
-      description: "Complete TOEFL preparation suite",
-      path: "/toefl-portal",
-      badge: "Popular"
-    },
-    {
-      title: "General English",
-      description: "Daily English improvement lessons",
-      path: "/general-portal",
-      badge: "AI Generated"
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
+  const features = [{
+    icon: <Bot className="w-6 h-6 text-foreground" />,
+    title: "AI-Powered Learning",
+    description: "Personalized study plans with real-time feedback and analysis"
+  }, {
+    icon: <Target className="w-6 h-6 text-foreground" />,
+    title: "Goal-Oriented Progress",
+    description: "Set your target band score and track daily improvement"
+  }, {
+    icon: <Globe className="w-6 h-6 text-foreground" />,
+    title: "Multi-Language Support",
+    description: "Practice in your native language with instant translation"
+  }, {
+    icon: <Users className="w-6 h-6 text-foreground" />,
+    title: "Community Learning",
+    description: "Connect with fellow learners and share study experiences"
+  }];
+  const ieltsModules = [{
+    title: "Reading",
+    icon: <BookOpen className="w-6 h-6 text-foreground" />,
+    description: "Cambridge IELTS passages with AI analysis",
+    path: "/reading",
+    questions: "40+ questions"
+  }, {
+    title: "Listening",
+    icon: <Headphones className="w-6 h-6 text-foreground" />,
+    description: "Audio practice with transcription support",
+    path: "/listening",
+    questions: "40+ questions"
+  }, {
+    title: "Writing",
+    icon: <PenTool className="w-6 h-6 text-foreground" />,
+    description: "Task 1 & 2 with detailed AI feedback",
+    path: "/writing",
+    questions: "2 tasks"
+  }, {
+    title: "Speaking",
+    icon: <Mic className="w-6 h-6 text-foreground" />,
+    description: "Voice analysis with pronunciation feedback",
+    path: "/speaking",
+    questions: "3 parts"
+  }];
+  const additionalPortals = [{
+    title: "PTE Academic",
+    description: "Comprehensive PTE test preparation",
+    path: "/pte-portal",
+    badge: "New"
+  }, {
+    title: "TOEFL iBT",
+    description: "Complete TOEFL preparation suite",
+    path: "/toefl-portal",
+    badge: "Popular"
+  }, {
+    title: "General English",
+    description: "Daily English improvement lessons",
+    path: "/general-portal",
+    badge: "AI Generated"
+  }];
+  return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
       {/* Navigation */}
       <nav className="border-b border-white/10 bg-black/20 backdrop-blur-xl">
         <div className="container mx-auto px-4 py-4">
@@ -125,19 +109,10 @@ const HeroIndex = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              {!user && (
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate('/auth')}
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
+              {!user && <Button variant="outline" onClick={() => navigate('/auth')} className="border-white/20 text-white hover:bg-white/10">
                   Sign In
-                </Button>
-              )}
-              <Button 
-                onClick={handleAuthAction}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
-              >
+                </Button>}
+              <Button onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
                 {user ? 'Go to Dashboard' : 'Start Learning'}
               </Button>
             </div>
@@ -163,20 +138,11 @@ const HeroIndex = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button 
-                size="lg" 
-                onClick={handleAuthAction}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
-              >
+              <Button size="lg" onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
                 <Play className="w-5 h-5 mr-2" />
                 Start Free Practice
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => navigate('/community')}
-                className="border-white/20 text-foreground hover:bg-accent px-8 py-4 text-lg"
-              >
+              <Button size="lg" variant="outline" onClick={() => navigate('/community')} className="border-white/20 text-foreground hover:bg-accent px-8 py-4 text-lg">
                 <Users className="w-5 h-5 mr-2" />
                 Join Community
               </Button>
@@ -184,19 +150,24 @@ const HeroIndex = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-              {[
-                { label: "Active Learners", value: "50K+" },
-                { label: "Practice Tests", value: "1000+" },
-                { label: "AI Feedback", value: "Real-time" },
-                { label: "Success Rate", value: "95%" }
-              ].map((stat, index) => (
-                <div key={index} className="text-center">
+              {[{
+              label: "Active Learners",
+              value: "50K+"
+            }, {
+              label: "Practice Tests",
+              value: "1000+"
+            }, {
+              label: "AI Feedback",
+              value: "Real-time"
+            }, {
+              label: "Success Rate",
+              value: "95%"
+            }].map((stat, index) => <div key={index} className="text-center">
                   <div className="text-2xl md:text-3xl font-bold text-blue-400 mb-1">
                     {stat.value}
                   </div>
                   <div className="text-sm text-gray-400">{stat.label}</div>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </div>
@@ -215,8 +186,7 @@ const HeroIndex = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl">
+            {features.map((feature, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl">
                 <CardHeader className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
                     {feature.icon}
@@ -230,8 +200,7 @@ const HeroIndex = () => {
                     {feature.description}
                   </p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -258,9 +227,7 @@ const HeroIndex = () => {
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {ieltsModules.map((module, index) => (
-                <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group"
-                      onClick={() => navigate(module.path)}>
+              {ieltsModules.map((module, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group" onClick={() => navigate(module.path)}>
                   <CardHeader>
                     <div className="flex items-center justify-between mb-4">
                       <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
@@ -280,33 +247,23 @@ const HeroIndex = () => {
                       Start Practice
                     </Button>
                   </CardContent>
-                </Card>
-              ))}
+                </Card>)}
             </div>
           </div>
 
           {/* Additional Portals */}
           <div className="grid md:grid-cols-3 gap-6">
-            {additionalPortals.map((portal, index) => (
-              <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer"
-                    onClick={() => navigate(portal.path)}>
+            {additionalPortals.map((portal, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer" onClick={() => navigate(portal.path)}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-white">{portal.title}</CardTitle>
-                    <Badge className={
-                      portal.badge === 'New' ? 'bg-green-500' :
-                      portal.badge === 'Popular' ? 'bg-orange-500' :
-                      'bg-purple-500'
-                    }>
-                      {portal.badge}
-                    </Badge>
+                    
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-300">{portal.description}</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -322,27 +279,28 @@ const HeroIndex = () => {
           </p>
           
           <div className="grid md:grid-cols-4 gap-6 mb-12">
-            {[
-              { title: "IELTS Preparation", members: "15K+" },
-              { title: "PTE Practice", members: "8K+" },
-              { title: "TOEFL Study Group", members: "12K+" },
-              { title: "General English", members: "20K+" }
-            ].map((group, index) => (
-              <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl">
+            {[{
+            title: "IELTS Preparation",
+            members: "15K+"
+          }, {
+            title: "PTE Practice",
+            members: "8K+"
+          }, {
+            title: "TOEFL Study Group",
+            members: "12K+"
+          }, {
+            title: "General English",
+            members: "20K+"
+          }].map((group, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl">
                 <CardContent className="pt-6 text-center">
                   <Users className="w-8 h-8 mx-auto mb-3 text-blue-400" />
                   <h3 className="text-white font-semibold mb-2">{group.title}</h3>
                   <p className="text-gray-300">{group.members} members</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
-          <Button 
-            size="lg" 
-            onClick={() => navigate('/community')}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
-          >
+          <Button size="lg" onClick={() => navigate('/community')} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
             <Users className="w-5 h-5 mr-2" />
             Explore Community
           </Button>
@@ -361,20 +319,11 @@ const HeroIndex = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Button 
-                size="lg" 
-                onClick={handleAuthAction}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
-              >
+              <Button size="lg" onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
                 <Star className="w-5 h-5 mr-2" />
                 Start Your Journey
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => navigate('/pricing')}
-                className="border-foreground/20 text-foreground hover:bg-accent px-8 py-4 text-lg"
-              >
+              <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-foreground/20 text-foreground hover:bg-accent px-8 py-4 text-lg">
                 View Pricing
               </Button>
             </div>
@@ -437,19 +386,12 @@ const HeroIndex = () => {
             <p className="text-gray-400 text-sm">
               © 2024 EnglishAI. All rights reserved. Powered by advanced AI technology.
             </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/admin/login')}
-              className="mt-4 text-xs text-gray-500 hover:text-gray-400"
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/login')} className="mt-4 text-xs text-gray-500 hover:text-gray-400">
               Admin Access
             </Button>
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default HeroIndex;

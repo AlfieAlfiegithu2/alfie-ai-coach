@@ -41,6 +41,7 @@ const ContentSelection = () => {
         // Enhanced fetching with generalized C19 fix approach for all books
         console.log('🔍 DEBUG: Fetching reading content with questions using generalized sync method...');
         
+        // Fix: Filter out passages with 0 questions and remove duplicates
         let query = supabase
           .from('reading_passages')
           .select(`
@@ -52,6 +53,7 @@ const ContentSelection = () => {
             part_number,
             reading_questions!inner(id)
           `)
+          .gt('reading_questions.id', 0) // Only get passages that actually have questions
           .order('cambridge_book', { ascending: false })
           .order('test_number', { ascending: true })
           .order('section_number', { ascending: true })
@@ -70,15 +72,24 @@ const ContentSelection = () => {
         console.log('✓ DEBUG: Found reading passages with questions:', passages?.length || 0);
         passages?.forEach(p => console.log(`  - ${p.cambridge_book} Section ${p.section_number} Part ${p.part_number}: ${p.reading_questions?.length || 0} questions`));
 
-        const formattedPassages = passages?.map(passage => ({
-          id: passage.id,
-          title: passage.title,
-          cambridge_book: passage.cambridge_book,
-          test_number: passage.test_number,
-          section_number: passage.section_number,
-          part_number: passage.part_number || 1,
-          question_count: passage.reading_questions?.length || 0
-        })) || [];
+        // Fix: Remove duplicates by unique combination of book+section+part, keep the one with most questions
+        const passageMap = new Map();
+        passages?.forEach(passage => {
+          const key = `${passage.cambridge_book}-${passage.section_number}-${passage.part_number}`;
+          const questionCount = passage.reading_questions?.length || 0;
+          if (!passageMap.has(key) || passageMap.get(key).question_count < questionCount) {
+            passageMap.set(key, {
+              id: passage.id,
+              title: passage.title,
+              cambridge_book: passage.cambridge_book,
+              test_number: passage.test_number,
+              section_number: passage.section_number,
+              part_number: passage.part_number || 1,
+              question_count: questionCount
+            });
+          }
+        });
+        const formattedPassages = Array.from(passageMap.values());
 
         setContentItems(formattedPassages);
         groupContentByBook(formattedPassages);
@@ -87,12 +98,14 @@ const ContentSelection = () => {
         // Enhanced listening fetching with generalized sync and part filtering
         console.log('🔍 DEBUG: Fetching listening content with questions using generalized sync method...');
         
+        // Fix: Filter out sections with 0 questions and remove duplicates
         let query = supabase
           .from('listening_sections')
           .select(`
             *,
             listening_questions!inner(id)
           `)
+          .gt('listening_questions.id', 0) // Only get sections that actually have questions
           .order('cambridge_book', { ascending: false })
           .order('test_number', { ascending: true })
           .order('section_number', { ascending: true })
@@ -111,15 +124,24 @@ const ContentSelection = () => {
         console.log('✓ DEBUG: Found listening sections with questions:', sections?.length || 0);
         sections?.forEach(s => console.log(`  - ${s.cambridge_book} Section ${s.section_number} Part ${s.part_number}: ${s.listening_questions?.length || 0} questions`));
 
-        const formattedSections = sections?.map(section => ({
-          id: section.id,
-          title: section.title || `Section ${section.section_number} Part ${section.part_number}`,
-          cambridge_book: section.cambridge_book,
-          test_number: section.test_number,
-          section_number: section.section_number,
-          part_number: section.part_number || 1,
-          question_count: section.listening_questions?.length || 0
-        })) || [];
+        // Fix: Remove duplicates by unique combination of book+section+part, keep the one with most questions
+        const sectionMap = new Map();
+        sections?.forEach(section => {
+          const key = `${section.cambridge_book}-${section.section_number}-${section.part_number}`;
+          const questionCount = section.listening_questions?.length || 0;
+          if (!sectionMap.has(key) || sectionMap.get(key).question_count < questionCount) {
+            sectionMap.set(key, {
+              id: section.id,
+              title: section.title || `Section ${section.section_number} Part ${section.part_number}`,
+              cambridge_book: section.cambridge_book,
+              test_number: section.test_number,
+              section_number: section.section_number,
+              part_number: section.part_number || 1,
+              question_count: questionCount
+            });
+          }
+        });
+        const formattedSections = Array.from(sectionMap.values());
 
         setContentItems(formattedSections);
         groupContentByBook(formattedSections);

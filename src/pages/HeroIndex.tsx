@@ -27,28 +27,41 @@ const HeroIndex = () => {
   }, []);
   const handleAuthAction = () => {
     if (user) {
-      navigate('/personal-page');
+      navigate('/dashboard');
     } else {
       navigate('/auth');
     }
   };
-  const features = [{
-    icon: <Bot className="w-6 h-6 text-foreground" />,
-    title: "AI-Powered Learning",
-    description: "Personalized study plans with real-time feedback and analysis"
-  }, {
-    icon: <Target className="w-6 h-6 text-foreground" />,
-    title: "Goal-Oriented Progress",
-    description: "Set your target band score and track daily improvement"
-  }, {
-    icon: <Globe className="w-6 h-6 text-foreground" />,
-    title: "Multi-Language Support",
-    description: "Practice in your native language with instant translation"
-  }, {
-    icon: <Users className="w-6 h-6 text-foreground" />,
-    title: "Community Learning",
-    description: "Connect with fellow learners and share study experiences"
-  }];
+  const testTypes = [
+    {
+      title: "IELTS",
+      description: "International English Language Testing System",
+      path: "/reading", // Main IELTS portal
+      icon: <BookOpen className="w-6 h-6 text-foreground" />,
+      sections: ["Reading", "Listening", "Writing", "Speaking"]
+    },
+    {
+      title: "PTE Academic",
+      description: "Pearson Test of English Academic",
+      path: "/pte-portal",
+      icon: <Target className="w-6 h-6 text-foreground" />,
+      sections: ["Reading", "Listening", "Writing", "Speaking"]
+    },
+    {
+      title: "TOEFL iBT",
+      description: "Test of English as a Foreign Language",
+      path: "/toefl-portal",
+      icon: <Globe className="w-6 h-6 text-foreground" />,
+      sections: ["Reading", "Listening", "Writing", "Speaking"]
+    },
+    {
+      title: "General English",
+      description: "Daily English improvement lessons",
+      path: "/general-portal",
+      icon: <Users className="w-6 h-6 text-foreground" />,
+      sections: ["Vocabulary", "Grammar", "Conversation", "Practice"]
+    }
+  ];
   const ieltsModules = [{
     title: "Reading",
     icon: <BookOpen className="w-6 h-6 text-foreground" />,
@@ -133,8 +146,8 @@ const HeroIndex = () => {
             </h1>
             
             <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
-              Master IELTS, PTE, TOEFL with personalized AI coaching. 
-              Track progress, get instant feedback, and reach your target band score faster.
+              Master English tests with AI-powered coaching. 
+              Track progress, get instant feedback, and reach your target score faster.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -173,34 +186,32 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 bg-black/20">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Powered by Advanced AI Technology
-            </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Experience the future of English learning with our cutting-edge AI features
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl">
-                <CardHeader className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-white text-xl">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-300 text-center">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>)}
+      {/* Search Bar Section */}
+      <section className="py-12 px-4 bg-black/20">
+        <div className="container mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Quick Search
+          </h2>
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search for lessons, tests, or content..."
+                className="w-full px-6 py-4 text-lg rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    // Basic search functionality - redirect to tests page
+                    navigate('/tests');
+                  }
+                }}
+              />
+              <Button 
+                onClick={() => navigate('/tests')}
+                className="absolute right-2 top-2 h-12 px-6 bg-blue-500 hover:bg-blue-600"
+              >
+                Search
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -217,53 +228,38 @@ const HeroIndex = () => {
             </p>
           </div>
 
-          {/* IELTS Section */}
-          <div className="mb-12">
-            <div className="text-center mb-8">
-              <Badge className="mb-4 bg-primary/20 text-primary border-primary/30 text-lg px-4 py-2">
-                IELTS Academic
-              </Badge>
-              <p className="text-lg text-gray-300">Master all four skills with Cambridge materials</p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {ieltsModules.map((module, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group" onClick={() => navigate(module.path)}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
-                        {module.icon}
-                      </div>
-                      <Badge variant="outline" className="border-white/20 text-white">
-                        {module.questions}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-white group-hover:text-blue-400 transition-colors">
-                      {module.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-300 mb-4">{module.description}</p>
-                    <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
-                      Start Practice
-                    </Button>
-                  </CardContent>
-                </Card>)}
-            </div>
-          </div>
-
-          {/* Additional Portals */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {additionalPortals.map((portal, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer" onClick={() => navigate(portal.path)}>
+          {/* Test Types Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {testTypes.map((test, index) => (
+              <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all cursor-pointer group" onClick={() => navigate(test.path)}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-white">{portal.title}</CardTitle>
-                    
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                      {test.icon}
+                    </div>
+                    <Badge variant="outline" className="border-white/20 text-white">
+                      4 sections
+                    </Badge>
                   </div>
+                  <CardTitle className="text-white group-hover:text-blue-400 transition-colors">
+                    {test.title}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-300">{portal.description}</p>
+                  <p className="text-gray-300 mb-4">{test.description}</p>
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {test.sections.map((section, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {section}
+                      </Badge>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
+                    Start Practice
+                  </Button>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -323,7 +319,7 @@ const HeroIndex = () => {
                 <Star className="w-5 h-5 mr-2" />
                 Start Your Journey
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-foreground/20 text-foreground hover:bg-accent px-8 py-4 text-lg">
+              <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-white/20 text-white hover:bg-white/10 px-8 py-4 text-lg">
                 View Pricing
               </Button>
             </div>
@@ -354,37 +350,37 @@ const HeroIndex = () => {
             <div>
               <h4 className="text-white font-semibold mb-3">Tests</h4>
               <div className="space-y-2 text-sm text-gray-400">
-                <div>IELTS Academic</div>
-                <div>PTE Academic</div>
-                <div>TOEFL iBT</div>
-                <div>General English</div>
+                <button onClick={() => navigate('/tests')} className="block hover:text-white transition-colors">IELTS Academic</button>
+                <button onClick={() => navigate('/pte-portal')} className="block hover:text-white transition-colors">PTE Academic</button>
+                <button onClick={() => navigate('/toefl-portal')} className="block hover:text-white transition-colors">TOEFL iBT</button>
+                <button onClick={() => navigate('/general-portal')} className="block hover:text-white transition-colors">General English</button>
               </div>
             </div>
             
             <div>
               <h4 className="text-white font-semibold mb-3">Features</h4>
               <div className="space-y-2 text-sm text-gray-400">
-                <div>AI Feedback</div>
-                <div>Progress Tracking</div>
-                <div>Community</div>
-                <div>Daily Challenges</div>
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">AI Feedback</button>
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">Progress Tracking</button>
+                <button onClick={() => navigate('/community')} className="block hover:text-white transition-colors">Community</button>
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">Daily Challenges</button>
               </div>
             </div>
             
             <div>
               <h4 className="text-white font-semibold mb-3">Support</h4>
               <div className="space-y-2 text-sm text-gray-400">
-                <div>Help Center</div>
-                <div>Contact Us</div>
-                <div>Privacy Policy</div>
-                <div>Terms of Service</div>
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">Help Center</button>
+                <button onClick={() => navigate('/community')} className="block hover:text-white transition-colors">Contact Us</button>
+                <div className="text-gray-400">Privacy Policy</div>
+                <div className="text-gray-400">Terms of Service</div>
               </div>
             </div>
           </div>
           
           <div className="text-center pt-8 border-t border-white/10">
             <p className="text-gray-400 text-sm">
-              © 2024 EnglishAI. All rights reserved. Powered by advanced AI technology.
+              © 2024 EnglishAI. All rights reserved.
             </p>
             <Button variant="ghost" size="sm" onClick={() => navigate('/admin/login')} className="mt-4 text-xs text-gray-500 hover:text-gray-400">
               Admin Access

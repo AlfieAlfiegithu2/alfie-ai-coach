@@ -32,6 +32,8 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [chatSize, setChatSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [selectedTopic, setSelectedTopic] = useState('general');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -56,8 +58,29 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
     { code: 'ar', name: 'Arabic' },
-    { code: 'hi', name: 'Hindi' }
+    { code: 'hi', name: 'Hindi' },
+    { code: 'vi', name: 'Vietnamese' },
+    { code: 'th', name: 'Thai' }
   ];
+
+  const topics = [
+    { value: 'general', label: 'General' },
+    { value: 'grammar', label: 'Grammar' },
+    { value: 'vocabulary', label: 'Vocabulary' },
+    { value: 'pronunciation', label: 'Pronunciation' },
+    { value: 'writing', label: 'Writing' },
+    { value: 'speaking', label: 'Speaking' },
+    { value: 'reading', label: 'Reading' },
+    { value: 'listening', label: 'Listening' }
+  ];
+
+  const getChatDimensions = () => {
+    switch (chatSize) {
+      case 'small': return 'w-80 h-96';
+      case 'large': return 'w-[28rem] h-[36rem]';
+      default: return 'w-96 h-[32rem]';
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -82,10 +105,10 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
           message: inputMessage,
-          context: 'english_tutor',
+          context: selectedTopic,
           language: selectedLanguage
         }
       });
@@ -125,18 +148,17 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
     if (selectedLanguage === 'en') return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('translation-service', {
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: { 
-          text,
-          targetLanguage: selectedLanguage,
-          sourceLanguage: 'en'
+          message: `Translate the following text to ${selectedLanguage}: "${text}"`,
+          context: 'translation'
         }
       });
 
-      if (!error && data.translatedText) {
+      if (!error && data.response) {
         const translatedMessage: Message = {
           id: Date.now().toString(),
-          text: `Translation: ${data.translatedText}`,
+          text: `Translation: ${data.response}`,
           isUser: false,
           timestamp: new Date()
         };
@@ -162,8 +184,8 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      <Card className={`glass-card border-border/30 shadow-xl transition-all duration-300 ${
-        isMinimized ? 'w-80 h-16' : 'w-96 h-[32rem]'
+      <Card className={`backdrop-blur-md bg-background/70 border-border/30 shadow-xl transition-all duration-300 ${
+        isMinimized ? 'w-80 h-16' : getChatDimensions()
       }`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/30">
@@ -172,6 +194,18 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
             <span className="font-semibold text-sm">AI English Tutor</span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Size Selector */}
+            <Select value={chatSize} onValueChange={(value: 'small' | 'medium' | 'large') => setChatSize(value)}>
+              <SelectTrigger className="w-16 h-8 text-xs">
+                <span className="text-xs">{chatSize[0].toUpperCase()}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">Small</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="large">Large</SelectItem>
+              </SelectContent>
+            </Select>
+            
             {/* Language Selector */}
             <Select value={selectedLanguage} onValueChange={onLanguageChange}>
               <SelectTrigger className="w-20 h-8 text-xs">
@@ -207,8 +241,26 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
 
         {!isMinimized && (
           <>
+            {/* Topic Selector */}
+            <div className="px-4 py-2 border-b border-border/30">
+              <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+                <SelectTrigger className="w-full h-8 text-xs">
+                  <span className="text-xs">Topic: {topics.find(t => t.value === selectedTopic)?.label}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  {topics.map((topic) => (
+                    <SelectItem key={topic.value} value={topic.value} className="text-xs">
+                      {topic.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ height: '20rem' }}>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ 
+              height: chatSize === 'small' ? '16rem' : chatSize === 'large' ? '24rem' : '20rem' 
+            }}>
               {messages.map((message) => (
                 <div
                   key={message.id}

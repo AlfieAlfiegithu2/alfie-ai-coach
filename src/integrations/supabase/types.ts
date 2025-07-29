@@ -515,6 +515,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_analytics: {
+        Row: {
+          action_type: string
+          anon_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          question_id: string | null
+          timestamp: string
+        }
+        Insert: {
+          action_type: string
+          anon_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          question_id?: string | null
+          timestamp?: string
+        }
+        Update: {
+          action_type?: string
+          anon_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          question_id?: string | null
+          timestamp?: string
+        }
+        Relationships: []
+      }
       user_challenge_progress: {
         Row: {
           answers: Json | null

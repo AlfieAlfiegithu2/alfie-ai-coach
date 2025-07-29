@@ -35,36 +35,36 @@ const Dashboard = () => {
       name: "IELTS",
       description: "International English Language Testing System",
       icon: Globe,
-      color: "text-brand-blue",
-      bgColor: "bg-brand-blue/10",
-      borderColor: "border-brand-blue/20"
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+      borderColor: "border-blue-500/20"
     },
     {
       id: "PTE",
       name: "PTE Academic",
       description: "Pearson Test of English Academic",
       icon: GraduationCap,
-      color: "text-brand-green",
-      bgColor: "bg-brand-green/10",
-      borderColor: "border-brand-green/20"
+      color: "text-gray-500",
+      bgColor: "bg-gray-500/10",
+      borderColor: "border-gray-500/20"
     },
     {
       id: "TOEFL",
       name: "TOEFL iBT",
       description: "Test of English as a Foreign Language",
       icon: BookOpen,
-      color: "text-brand-orange",
-      bgColor: "bg-brand-orange/10",
-      borderColor: "border-brand-orange/20"
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+      borderColor: "border-blue-500/20"
     },
     {
       id: "GENERAL",
       name: "General English",
       description: "Comprehensive English proficiency practice",
       icon: MessageSquare,
-      color: "text-brand-purple",
-      bgColor: "bg-brand-purple/10",
-      borderColor: "border-brand-purple/20"
+      color: "text-gray-500",
+      bgColor: "bg-gray-500/10",
+      borderColor: "border-gray-500/20"
     }
   ];
 
@@ -75,7 +75,7 @@ const Dashboard = () => {
       description: "Comprehension & Analysis",
       progress: 78,
       level: "Intermediate",
-      color: "text-brand-blue"
+      color: "text-blue-500"
     },
     {
       name: "Listening",
@@ -83,7 +83,7 @@ const Dashboard = () => {
       description: "Audio Understanding",
       progress: 85,
       level: "Advanced",
-      color: "text-brand-green"
+      color: "text-gray-500"
     },
     {
       name: "Writing",
@@ -91,7 +91,7 @@ const Dashboard = () => {
       description: "Essay & Task Writing",
       progress: 62,
       level: "Intermediate",
-      color: "text-brand-orange"
+      color: "text-blue-500"
     },
     {
       name: "Speaking",
@@ -99,20 +99,20 @@ const Dashboard = () => {
       description: "Fluency & Pronunciation",
       progress: 71,
       level: "Intermediate",
-      color: "text-brand-purple"
+      color: "text-gray-500"
     }
   ];
 
   const achievements = [
-    { icon: Trophy, label: "7-day streak", color: "text-brand-green" },
-    { icon: Target, label: "95% accuracy", color: "text-brand-blue" },
-    { icon: Award, label: "100 questions", color: "text-brand-orange" },
-    { icon: Star, label: "Top 10%", color: "text-brand-purple" }
+    { icon: Trophy, label: "7-day streak", color: "text-gray-500" },
+    { icon: Target, label: "95% accuracy", color: "text-blue-500" },
+    { icon: Award, label: "100 questions", color: "text-blue-500" },
+    { icon: Star, label: "Top 10%", color: "text-gray-500" }
   ];
 
   const handleStartPractice = () => {
-    // Route to student dashboard instead of Cambridge test
-    navigate('/personal-page');
+    // Route to student dashboard 
+    navigate('/dashboard');
   };
 
   const handleSkillPractice = (skillName: string) => {
@@ -123,7 +123,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-surface-2">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-blue via-brand-purple to-brand-blue">
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
         <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/10 opacity-20"></div>
         
         <div className="relative container mx-auto px-6 py-16 md:py-24">

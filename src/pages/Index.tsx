@@ -30,8 +30,8 @@ const Index = () => {
     );
   }
 
-  // Show hero page for non-authenticated users, dashboard for authenticated users
-  return user ? <Dashboard /> : <HeroIndex />;
+  // Always show hero page first
+  return <HeroIndex />;
 };
 
 export default Index;

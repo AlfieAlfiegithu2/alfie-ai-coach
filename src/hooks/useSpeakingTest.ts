@@ -60,35 +60,61 @@ export const useSpeakingTest = () => {
     }
   }, [toast]);
 
-  // Play prompt audio using efficient TTS with caching
+  // Play prompt audio using ElevenLabs TTS
   const playPromptAudio = async (text: string) => {
     if (!text) return;
     
     setIsPlayingPrompt(true);
     try {
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { text, voice: 'alloy' }
+      const apiKey = localStorage.getItem('elevenlabs_api_key') || prompt("Please enter your ElevenLabs API key:");
+      
+      if (!apiKey) {
+        setIsPlayingPrompt(false);
+        return;
+      }
+      
+      if (!localStorage.getItem('elevenlabs_api_key')) {
+        localStorage.setItem('elevenlabs_api_key', apiKey);
+      }
+
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/9BWtsMINqrJLrRacOk9x`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': apiKey
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_turbo_v2_5",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.5
+          }
+        })
       });
 
-      if (error) throw error;
-
-      if (data.success) {
-        console.log(data.cached ? '💾 Efficient Voice: Reused cached audio, saving API costs!' : '🎵 Efficient Voice: Generated and cached new audio');
-        // Create audio element and play
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-        audio.onended = () => setIsPlayingPrompt(false);
-        audio.onerror = () => {
-          setIsPlayingPrompt(false);
-          toast({
-            title: "Audio playback failed",
-            description: "Could not play the question audio",
-            variant: "destructive",
-          });
-        };
-        await audio.play();
+      if (!response.ok) {
+        throw new Error('Failed to generate speech');
       }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => setIsPlayingPrompt(false);
+      audio.onerror = () => {
+        setIsPlayingPrompt(false);
+        toast({
+          title: "Audio playback failed",
+          description: "Could not play the question audio",
+          variant: "destructive",
+        });
+      };
+      
+      await audio.play();
     } catch (error: any) {
-      console.error('TTS error:', error);
+      console.error('ElevenLabs TTS error:', error);
       setIsPlayingPrompt(false);
       toast({
         title: "Voice generation failed",

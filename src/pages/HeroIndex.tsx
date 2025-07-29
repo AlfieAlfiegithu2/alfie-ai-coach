@@ -32,43 +32,38 @@ const HeroIndex = () => {
 
   const features = [
     {
-      icon: <Bot className="w-8 h-8" />,
+      icon: <Bot className="w-6 h-6 text-foreground" />,
       title: "AI-Powered Learning",
-      description: "Personalized study plans with real-time feedback and analysis",
-      color: "from-blue-500 to-cyan-500"
+      description: "Personalized study plans with real-time feedback and analysis"
     },
     {
-      icon: <Target className="w-8 h-8" />,
-      title: "Goal-Oriented Progress",
-      description: "Set your target band score and track daily improvement",
-      color: "from-green-500 to-emerald-500"
+      icon: <Target className="w-6 h-6 text-foreground" />,
+      title: "Goal-Oriented Progress", 
+      description: "Set your target band score and track daily improvement"
     },
     {
-      icon: <Globe className="w-8 h-8" />,
+      icon: <Globe className="w-6 h-6 text-foreground" />,
       title: "Multi-Language Support",
-      description: "Practice in your native language with instant translation",
-      color: "from-purple-500 to-pink-500"
+      description: "Practice in your native language with instant translation"
     },
     {
-      icon: <Users className="w-8 h-8" />,
+      icon: <Users className="w-6 h-6 text-foreground" />,
       title: "Community Learning",
-      description: "Connect with fellow learners and share study experiences",
-      color: "from-orange-500 to-red-500"
+      description: "Connect with fellow learners and share study experiences"
     }
   ];
 
   const testModules = [
     {
       title: "Reading",
-      icon: <BookOpen className="w-6 h-6" />,
+      icon: <BookOpen className="w-6 h-6 text-foreground" />,
       description: "Cambridge IELTS passages with AI analysis",
       path: "/reading",
-      color: "bg-blue-500",
       questions: "40+ questions"
     },
     {
       title: "Listening", 
-      icon: <Headphones className="w-6 h-6" />,
+      icon: <Headphones className="w-6 h-6 text-foreground" />,
       description: "Audio practice with transcription support",
       path: "/listening",
       color: "bg-green-500",
@@ -215,7 +210,7 @@ const HeroIndex = () => {
             {features.map((feature, index) => (
               <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl">
                 <CardHeader className="text-center">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center text-white`}>
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-white text-xl">

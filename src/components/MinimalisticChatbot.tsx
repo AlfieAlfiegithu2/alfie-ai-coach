@@ -184,7 +184,7 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      <Card className={`backdrop-blur-md bg-background/70 border-border/30 shadow-xl transition-all duration-300 ${
+      <Card className={`backdrop-blur-lg bg-background/30 border-border/20 shadow-xl transition-all duration-300 ${
         isMinimized ? 'w-80 h-16' : getChatDimensions()
       }`}>
         {/* Header */}
@@ -313,21 +313,21 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
+            {/* Input - Always visible */}
             <div className="p-4 border-t border-border/30">
               <div className="flex gap-2">
                 <Input
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask me anything about English..."
-                  className="flex-1 border-border/30 bg-surface-1/50 backdrop-blur-sm text-sm"
+                  placeholder={chatSize === 'small' ? "Type here..." : "Ask me anything about English..."}
+                  className="flex-1 border-border/30 bg-surface-1/80 backdrop-blur-sm text-sm min-h-[40px]"
                   disabled={isLoading}
                 />
                 <Button
                   onClick={handleSendMessage}
                   disabled={isLoading || !inputMessage.trim()}
-                  className="h-10 w-10 p-0 bg-brand-blue hover:bg-brand-blue/90"
+                  className="h-10 w-10 p-0 bg-brand-blue hover:bg-brand-blue/90 flex-shrink-0"
                 >
                   <Send className="h-4 w-4" />
                 </Button>

@@ -122,11 +122,11 @@ const HeroIndex = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              {!user && <Button variant="outline" onClick={() => navigate('/auth')} className="border-white/20 text-white hover:bg-white/10">
-                  Sign In
-                </Button>}
-              <Button onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
-                {user ? 'Go to Dashboard' : 'Start Learning'}
+              <Button 
+                onClick={() => navigate('/auth')}
+                className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                Log In
               </Button>
             </div>
           </div>
@@ -149,13 +149,13 @@ const HeroIndex = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
+              <Button size="lg" onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none">
                 <Play className="w-5 h-5 mr-2" />
                 Start Free Practice
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/community')} className="border-white/20 text-foreground hover:bg-accent px-8 py-4 text-lg">
+              <Button size="lg" onClick={() => navigate('/pricing')} className="bg-secondary hover:bg-secondary/90 text-white px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none">
                 <Users className="w-5 h-5 mr-2" />
-                Join Community
+                View Pricing
               </Button>
             </div>
 
@@ -184,70 +184,14 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Language Picker and Search Section */}
+      {/* Language Picker Section */}
       <section className="py-16 px-4 bg-black/20">
         <div className="container mx-auto">
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Language Picker */}
-            <div>
-              <LanguagePicker
-                selectedLanguage={selectedLanguage}
-                onLanguageChange={setSelectedLanguage}
-              />
-            </div>
-            
-            {/* Search Bar */}
-            <div className="lg:col-span-2">
-              <div className="text-center mb-6">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Quick Search
-                </h2>
-                <p className="text-lg text-gray-300">
-                  Find practice tests, lessons, or specific content
-                </p>
-              </div>
-              <div className="max-w-3xl mx-auto">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Search for IELTS reading, grammar lessons, vocabulary..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-24 py-4 text-lg rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" 
-                    onKeyPress={e => {
-                      if (e.key === 'Enter') {
-                        navigate(`/tests?search=${encodeURIComponent(searchQuery)}`);
-                      }
-                    }} 
-                  />
-                  <Button 
-                    onClick={() => navigate(`/tests?search=${encodeURIComponent(searchQuery)}`)} 
-                    className="absolute right-2 top-2 h-12 px-6 bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    Search
-                  </Button>
-                </div>
-                
-                {/* Popular Searches */}
-                <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                  <span className="text-sm text-gray-400">Popular:</span>
-                  {['IELTS Reading', 'Grammar Rules', 'Vocabulary Practice', 'Speaking Tips'].map((term) => (
-                    <button
-                      key={term}
-                      onClick={() => {
-                        setSearchQuery(term);
-                        navigate(`/tests?search=${encodeURIComponent(term)}`);
-                      }}
-                      className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-full border border-white/20 transition-colors"
-                    >
-                      {term}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="max-w-md mx-auto">
+            <LanguagePicker
+              selectedLanguage={selectedLanguage}
+              onLanguageChange={setSelectedLanguage}
+            />
           </div>
         </div>
       </section>
@@ -283,7 +227,7 @@ const HeroIndex = () => {
                   
                   <Button 
                     size="sm" 
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                   >
                     Start Practice
                   </Button>

@@ -15,9 +15,10 @@ interface CSVImportProps {
   testNumber?: number;
   sectionNumber?: number;
   partNumber?: number;
+  module?: 'ielts' | 'pte' | 'toefl' | 'general';
 }
 
-const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumber, sectionNumber, partNumber }: CSVImportProps) => {
+const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumber, sectionNumber, partNumber, module = 'ielts' }: CSVImportProps) => {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
@@ -237,14 +238,15 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
   };
 
   return (
-    <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-foreground">
-          <FileText className="w-5 h-5" />
-          Bulk CSV Import - {type.charAt(0).toUpperCase() + type.slice(1)} Question Types
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="max-h-[80vh] overflow-y-auto">
+      <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <FileText className="w-5 h-5" />
+            Bulk CSV Import - {module.toUpperCase()} {type.charAt(0).toUpperCase() + type.slice(1)} Questions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
         <div className="text-sm text-warm-gray">
           Import multiple questions at once using a CSV file with comprehensive IELTS Reading question type support. Download the sample file to see the exact format and examples for all question types.
         </div>
@@ -314,8 +316,7 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
             <Button
               onClick={() => fileInputRef.current?.click()}
               disabled={importing}
-              className="rounded-xl flex-1"
-              style={{ background: 'var(--gradient-button)', border: 'none' }}
+              className="rounded-xl flex-1 bg-primary hover:bg-primary/90 text-white font-medium"
             >
               <Upload className="w-4 h-4 mr-2" />
               {importing ? 'Parsing CSV...' : 'Upload CSV'}
@@ -368,8 +369,7 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
             <div className="flex gap-3">
               <Button
                 onClick={handleConfirmImport}
-                className="rounded-xl flex-1"
-                style={{ background: 'var(--gradient-button)', border: 'none' }}
+                className="rounded-xl flex-1 bg-primary hover:bg-primary/90 text-white font-medium"
               >
                 Confirm Import
               </Button>
@@ -385,6 +385,7 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
         )}
       </CardContent>
     </Card>
+    </div>
   );
 };
 

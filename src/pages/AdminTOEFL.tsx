@@ -9,6 +9,7 @@ import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings 
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import CSVImport from "@/components/CSVImport";
+import ModuleSelector from "@/components/ModuleSelector";
 
 const AdminTOEFL = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const AdminTOEFL = () => {
     completionRate: 0,
     avgScore: 0
   });
+  const [selectedModule, setSelectedModule] = useState<'ielts' | 'pte' | 'toefl' | 'general'>('toefl');
 
   useEffect(() => {
     if (!loading && !admin) {
@@ -192,10 +194,15 @@ const AdminTOEFL = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <ModuleSelector 
+                  selectedModule={selectedModule}
+                  onModuleChange={setSelectedModule}
+                />
                 <CSVImport 
                   onImport={() => {}} 
                   onQuestionsPreview={() => {}} 
                   type="reading"
+                  module={selectedModule}
                 />
               </CardContent>
             </Card>

@@ -199,6 +199,295 @@ export type Database = {
         }
         Relationships: []
       }
+      general_listening_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          options: Json | null
+          part_number: number | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+          section_id: string | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          question_number?: number
+          question_text: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "general_listening_questions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "general_listening_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      general_listening_sections: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          general_book: string | null
+          id: string
+          instructions: string | null
+          part_number: number | null
+          photo_url: string | null
+          section_number: number | null
+          test_number: number | null
+          title: string
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          general_book?: string | null
+          id?: string
+          instructions?: string | null
+          part_number?: number | null
+          photo_url?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          general_book?: string | null
+          id?: string
+          instructions?: string | null
+          part_number?: number | null
+          photo_url?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      general_passages: {
+        Row: {
+          book_number: number | null
+          content: string
+          created_at: string
+          general_book: string | null
+          id: string
+          part_number: number | null
+          passage_type: string | null
+          section_number: number | null
+          test_number: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          book_number?: number | null
+          content: string
+          created_at?: string
+          general_book?: string | null
+          id?: string
+          part_number?: number | null
+          passage_type?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          book_number?: number | null
+          content?: string
+          created_at?: string
+          general_book?: string | null
+          id?: string
+          part_number?: number | null
+          passage_type?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      general_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          general_book: string | null
+          id: string
+          options: Json | null
+          part_number: number | null
+          passage_id: string | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+          section_number: number | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          general_book?: string | null
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          passage_id?: string | null
+          question_number?: number
+          question_text: string
+          question_type?: string | null
+          section_number?: number | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          general_book?: string | null
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          passage_id?: string | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+          section_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "general_questions_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "general_passages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      general_speaking_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          follow_up_questions: Json | null
+          general_book: string | null
+          id: string
+          part_number: number | null
+          prompt_text: string
+          sample_answer: string | null
+          test_number: number | null
+          time_limit: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          general_book?: string | null
+          id?: string
+          part_number?: number | null
+          prompt_text: string
+          sample_answer?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          general_book?: string | null
+          id?: string
+          part_number?: number | null
+          prompt_text?: string
+          sample_answer?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      general_writing_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          general_book: string | null
+          id: string
+          image_url: string | null
+          prompt_text: string
+          sample_answer: string | null
+          task_number: number | null
+          task_type: string | null
+          test_number: number | null
+          time_limit: number | null
+          title: string
+          updated_at: string
+          word_limit: number | null
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          general_book?: string | null
+          id?: string
+          image_url?: string | null
+          prompt_text: string
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title: string
+          updated_at?: string
+          word_limit?: number | null
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          general_book?: string | null
+          id?: string
+          image_url?: string | null
+          prompt_text?: string
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title?: string
+          updated_at?: string
+          word_limit?: number | null
+        }
+        Relationships: []
+      }
       listening_questions: {
         Row: {
           band_impact: number | null
@@ -324,6 +613,295 @@ export type Database = {
           subscription_status?: string | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      pte_listening_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          options: Json | null
+          part_number: number | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+          section_id: string | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          question_number?: number
+          question_text: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pte_listening_questions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "pte_listening_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pte_listening_sections: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          id: string
+          instructions: string | null
+          part_number: number | null
+          photo_url: string | null
+          pte_book: string | null
+          section_number: number | null
+          test_number: number | null
+          title: string
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          part_number?: number | null
+          photo_url?: string | null
+          pte_book?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          part_number?: number | null
+          photo_url?: string | null
+          pte_book?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pte_passages: {
+        Row: {
+          book_number: number | null
+          content: string
+          created_at: string
+          id: string
+          part_number: number | null
+          passage_type: string | null
+          pte_book: string | null
+          section_number: number | null
+          test_number: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          book_number?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          part_number?: number | null
+          passage_type?: string | null
+          pte_book?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          book_number?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          part_number?: number | null
+          passage_type?: string | null
+          pte_book?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pte_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          options: Json | null
+          part_number: number | null
+          passage_id: string | null
+          pte_book: string | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+          section_number: number | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          passage_id?: string | null
+          pte_book?: string | null
+          question_number?: number
+          question_text: string
+          question_type?: string | null
+          section_number?: number | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          passage_id?: string | null
+          pte_book?: string | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+          section_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pte_questions_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "pte_passages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pte_speaking_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          follow_up_questions: Json | null
+          id: string
+          part_number: number | null
+          prompt_text: string
+          pte_book: string | null
+          sample_answer: string | null
+          test_number: number | null
+          time_limit: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          part_number?: number | null
+          prompt_text: string
+          pte_book?: string | null
+          sample_answer?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          part_number?: number | null
+          prompt_text?: string
+          pte_book?: string | null
+          sample_answer?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pte_writing_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          id: string
+          image_url: string | null
+          prompt_text: string
+          pte_book: string | null
+          sample_answer: string | null
+          task_number: number | null
+          task_type: string | null
+          test_number: number | null
+          time_limit: number | null
+          title: string
+          updated_at: string
+          word_limit: number | null
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          prompt_text: string
+          pte_book?: string | null
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title: string
+          updated_at?: string
+          word_limit?: number | null
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          prompt_text?: string
+          pte_book?: string | null
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title?: string
+          updated_at?: string
+          word_limit?: number | null
         }
         Relationships: []
       }
@@ -512,6 +1090,295 @@ export type Database = {
           time_taken?: number | null
           total_questions?: number | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      toefl_listening_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          options: Json | null
+          part_number: number | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+          section_id: string | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          question_number?: number
+          question_text: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+          section_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toefl_listening_questions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "toefl_listening_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      toefl_listening_sections: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          id: string
+          instructions: string | null
+          part_number: number | null
+          photo_url: string | null
+          section_number: number | null
+          test_number: number | null
+          title: string
+          toefl_book: string | null
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          part_number?: number | null
+          photo_url?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title: string
+          toefl_book?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          part_number?: number | null
+          photo_url?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title?: string
+          toefl_book?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      toefl_passages: {
+        Row: {
+          book_number: number | null
+          content: string
+          created_at: string
+          id: string
+          part_number: number | null
+          passage_type: string | null
+          section_number: number | null
+          test_number: number | null
+          title: string
+          toefl_book: string | null
+          updated_at: string
+        }
+        Insert: {
+          book_number?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          part_number?: number | null
+          passage_type?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title: string
+          toefl_book?: string | null
+          updated_at?: string
+        }
+        Update: {
+          book_number?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          part_number?: number | null
+          passage_type?: string | null
+          section_number?: number | null
+          test_number?: number | null
+          title?: string
+          toefl_book?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      toefl_questions: {
+        Row: {
+          band_impact: number | null
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          options: Json | null
+          part_number: number | null
+          passage_id: string | null
+          question_number: number
+          question_text: string
+          question_type: string | null
+          section_number: number | null
+          toefl_book: string | null
+        }
+        Insert: {
+          band_impact?: number | null
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          passage_id?: string | null
+          question_number?: number
+          question_text: string
+          question_type?: string | null
+          section_number?: number | null
+          toefl_book?: string | null
+        }
+        Update: {
+          band_impact?: number | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          options?: Json | null
+          part_number?: number | null
+          passage_id?: string | null
+          question_number?: number
+          question_text?: string
+          question_type?: string | null
+          section_number?: number | null
+          toefl_book?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toefl_questions_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "toefl_passages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      toefl_speaking_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          follow_up_questions: Json | null
+          id: string
+          part_number: number | null
+          prompt_text: string
+          sample_answer: string | null
+          test_number: number | null
+          time_limit: number | null
+          title: string
+          toefl_book: string | null
+          updated_at: string
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          part_number?: number | null
+          prompt_text: string
+          sample_answer?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title: string
+          toefl_book?: string | null
+          updated_at?: string
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          part_number?: number | null
+          prompt_text?: string
+          sample_answer?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title?: string
+          toefl_book?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      toefl_writing_prompts: {
+        Row: {
+          band_criteria: Json | null
+          created_at: string
+          id: string
+          image_url: string | null
+          prompt_text: string
+          sample_answer: string | null
+          task_number: number | null
+          task_type: string | null
+          test_number: number | null
+          time_limit: number | null
+          title: string
+          toefl_book: string | null
+          updated_at: string
+          word_limit: number | null
+        }
+        Insert: {
+          band_criteria?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          prompt_text: string
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title: string
+          toefl_book?: string | null
+          updated_at?: string
+          word_limit?: number | null
+        }
+        Update: {
+          band_criteria?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          prompt_text?: string
+          sample_answer?: string | null
+          task_number?: number | null
+          task_type?: string | null
+          test_number?: number | null
+          time_limit?: number | null
+          title?: string
+          toefl_book?: string | null
+          updated_at?: string
+          word_limit?: number | null
         }
         Relationships: []
       }

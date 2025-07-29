@@ -111,17 +111,8 @@ const Dashboard = () => {
   ];
 
   const handleStartPractice = () => {
-    // Route to different portals based on test type
-    const routes = {
-      'IELTS': '/tests',
-      'PTE': '/pte-portal',
-      'TOEFL': '/toefl-portal', 
-      'GENERAL': '/general-portal'
-    };
-    
-    const route = routes[selectedTestType as keyof typeof routes] || '/tests';
-    console.log(`🚀 Starting ${selectedTestType} practice, routing to: ${route}`);
-    navigate(route);
+    // Route to student dashboard instead of Cambridge test
+    navigate('/personal-page');
   };
 
   const handleSkillPractice = (skillName: string) => {

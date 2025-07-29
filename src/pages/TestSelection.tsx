@@ -287,6 +287,9 @@ const TestSelection = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-brand-blue border-brand-blue/20">
+            IELTS MODULE
+          </Badge>
           <h1 className="text-5xl font-georgia font-bold text-foreground mb-6">
             Cambridge IELTS Tests
           </h1>

@@ -2,7 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Menu, X, LogOut, Settings, User } from "lucide-react";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { Menu, X, LogOut, Settings, User, Shield } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
 const Header = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { admin } = useAdminAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -91,6 +93,12 @@ const Header = () => {
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
+                {admin && (
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin Dashboard
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -116,15 +124,17 @@ const Header = () => {
             </div>
           )}
 
-          {/* Admin Login Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/admin/login')}
-            className="hidden md:flex text-xs"
-          >
-            Admin
-          </Button>
+          {/* Admin Button - only show if not already admin */}
+          {!admin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/admin/login')}
+              className="hidden md:flex text-xs"
+            >
+              Admin
+            </Button>
+          )}
 
           {/* Mobile menu button */}
           <Button
@@ -187,13 +197,15 @@ const Header = () => {
                 </Button>
               </>
             )}
-            <Button
-              variant="outline"
-              onClick={() => navigate('/admin/login')}
-              className="w-full justify-start"
-            >
-              Admin Login
-            </Button>
+            {!admin && (
+              <Button
+                variant="outline"
+                onClick={() => navigate('/admin/login')}
+                className="w-full justify-start"
+              >
+                Admin Login
+              </Button>
+            )}
           </div>
         </div>
       )}

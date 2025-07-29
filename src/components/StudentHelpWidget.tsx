@@ -4,45 +4,42 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { 
   MessageCircle, 
-  Languages, 
-  BookOpen, 
-  Lightbulb, 
-  Volume2, 
-  X, 
-  Send,
-  Globe,
-  Sparkles,
+  Languages,
+  BookOpen,
   HelpCircle,
-  Target,
-  Mic
+  Search,
+  Volume2,
+  X
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface StudentHelpWidgetProps {
   isOpen: boolean;
   onClose: () => void;
+  selectedLanguage: string;
+  onLanguageChange: (language: string) => void;
 }
 
-const StudentHelpWidget: React.FC<StudentHelpWidgetProps> = ({ isOpen, onClose }) => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'chat' | 'translate' | 'tips' | 'vocab'>('chat');
+const StudentHelpWidget: React.FC<StudentHelpWidgetProps> = ({
+  isOpen,
+  onClose,
+  selectedLanguage,
+  onLanguageChange
+}) => {
   const [chatMessage, setChatMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', message: string}>>([]);
+  const [translationText, setTranslationText] = useState('');
+  const [translationResult, setTranslationResult] = useState('');
+  const [vocabularyWord, setVocabularyWord] = useState('');
+  const [vocabularyResult, setVocabularyResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [translateText, setTranslateText] = useState('');
-  const [translateFrom, setTranslateFrom] = useState('auto');
-  const [translateTo, setTranslateTo] = useState('en');
-  const [translatedText, setTranslatedText] = useState('');
-  const [vocabWord, setVocabWord] = useState('');
-  const [vocabDefinition, setVocabDefinition] = useState('');
+  const { toast } = useToast();
 
   const languages = [
-    { code: 'auto', name: 'Auto-detect' },
     { code: 'en', name: 'English' },
     { code: 'es', name: 'Spanish' },
     { code: 'fr', name: 'French' },
@@ -50,69 +47,100 @@ const StudentHelpWidget: React.FC<StudentHelpWidgetProps> = ({ isOpen, onClose }
     { code: 'it', name: 'Italian' },
     { code: 'pt', name: 'Portuguese' },
     { code: 'ru', name: 'Russian' },
+    { code: 'zh', name: 'Chinese' },
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
-    { code: 'zh', name: 'Chinese' },
     { code: 'ar', name: 'Arabic' },
-    { code: 'hi', name: 'Hindi' },
-    { code: 'tr', name: 'Turkish' },
-    { code: 'th', name: 'Thai' },
-    { code: 'vi', name: 'Vietnamese' }
+    { code: 'hi', name: 'Hindi' }
   ];
 
-  const dailyTips = [
-    {
-      category: "IELTS Writing",
-      tip: "Use topic sentences at the beginning of each paragraph to clearly state your main point.",
-      icon: "✍️"
-    },
-    {
-      category: "IELTS Speaking", 
-      tip: "Practice extending your answers with examples, reasons, and personal experiences.",
-      icon: "🗣️"
-    },
-    {
-      category: "IELTS Reading",
-      tip: "Scan for keywords in questions first, then locate them in the passage to save time.",
-      icon: "📖"
-    },
-    {
-      category: "IELTS Listening",
-      tip: "Use the preparation time to read ahead and predict what information you need to listen for.",
-      icon: "🎧"
-    },
-    {
-      category: "General English",
-      tip: "Learn collocations (word combinations) like 'heavy rain' instead of just individual words.",
-      icon: "🧠"
+  const handleTranslation = async () => {
+    if (!translationText.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translation-service', {
+        body: { 
+          text: translationText,
+          targetLanguage: selectedLanguage,
+          sourceLanguage: 'en'
+        }
+      });
+
+      if (error) throw error;
+
+      setTranslationResult(data.translatedText);
+      toast({
+        title: "Translation Complete",
+        description: "Text has been translated successfully."
+      });
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast({
+        title: "Translation Error",
+        description: "Failed to translate text. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  const handleChatSubmit = async () => {
+  const handleVocabularyLookup = async () => {
+    if (!vocabularyWord.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: { 
+          message: `Define the word "${vocabularyWord}" and provide example sentences, pronunciation guide, and synonyms`,
+          context: 'vocabulary_helper'
+        }
+      });
+
+      if (error) throw error;
+
+      setVocabularyResult({
+        word: vocabularyWord,
+        definition: data.response
+      });
+      
+      toast({
+        title: "Vocabulary Lookup Complete",
+        description: `Definition found for "${vocabularyWord}"`
+      });
+    } catch (error) {
+      console.error('Vocabulary lookup error:', error);
+      toast({
+        title: "Lookup Error",
+        description: "Failed to lookup word. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleQuickChat = async () => {
     if (!chatMessage.trim()) return;
 
-    const userMessage = chatMessage;
-    setChatMessage('');
-    setChatHistory(prev => [...prev, { role: 'user', message: userMessage }]);
     setIsLoading(true);
-
     try {
-      // Simple AI response for now - in a real app, this would call OpenAI API
-      const responses = [
-        "I'd be happy to help you with that! Can you provide more specific details about what you're struggling with?",
-        "That's a great question! For IELTS preparation, I recommend focusing on understanding the question types first.",
-        "Here's a tip: Practice with authentic materials and time yourself to build test-day confidence.",
-        "Remember to analyze your mistakes - that's where the real learning happens!",
-        "For speaking practice, try recording yourself and listening back to identify areas for improvement."
-      ];
-      
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
-      setTimeout(() => {
-        setChatHistory(prev => [...prev, { role: 'assistant', message: randomResponse }]);
-        setIsLoading(false);
-      }, 1000);
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: { 
+          message: chatMessage,
+          context: 'quick_help',
+          language: selectedLanguage
+        }
+      });
 
+      if (error) throw error;
+
+      toast({
+        title: "AI Response",
+        description: data.response?.substring(0, 100) + "...",
+      });
+      setChatMessage('');
     } catch (error) {
       console.error('Chat error:', error);
       toast({
@@ -120,61 +148,7 @@ const StudentHelpWidget: React.FC<StudentHelpWidgetProps> = ({ isOpen, onClose }
         description: "Failed to get response. Please try again.",
         variant: "destructive"
       });
-      setIsLoading(false);
-    }
-  };
-
-  const handleTranslate = async () => {
-    if (!translateText.trim()) return;
-
-    setIsLoading(true);
-    try {
-      // Mock translation - in a real app, this would use Google Translate API
-      const mockTranslations: Record<string, string> = {
-        'Hello': 'Hola (Spanish), Bonjour (French), Hallo (German)',
-        'Good morning': 'Buenos días (Spanish), Bonjour (French), Guten Morgen (German)',
-        'Thank you': 'Gracias (Spanish), Merci (French), Danke (German)',
-        'How are you?': '¿Cómo estás? (Spanish), Comment allez-vous? (French), Wie geht es Ihnen? (German)'
-      };
-
-      const translation = mockTranslations[translateText] || `Translation of "${translateText}" to ${languages.find(l => l.code === translateTo)?.name}`;
-      setTranslatedText(translation);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Translation error:', error);
-      toast({
-        title: "Translation Error", 
-        description: "Failed to translate text. Please try again.",
-        variant: "destructive"
-      });
-      setIsLoading(false);
-    }
-  };
-
-  const handleVocabLookup = async () => {
-    if (!vocabWord.trim()) return;
-
-    setIsLoading(true);
-    try {
-      // Mock vocabulary lookup
-      const mockDefinitions: Record<string, string> = {
-        'ubiquitous': 'Present everywhere; found in all places. Example: "Smartphones have become ubiquitous in modern society."',
-        'meticulous': 'Extremely careful and precise. Example: "She was meticulous in her research methodology."',
-        'paramount': 'Of the highest importance. Example: "Safety is of paramount concern in this project."',
-        'eloquent': 'Fluent and persuasive in speaking or writing. Example: "The speaker gave an eloquent presentation."',
-        'resilient': 'Able to recover quickly from difficulties. Example: "The community proved resilient after the natural disaster."'
-      };
-
-      const definition = mockDefinitions[vocabWord.toLowerCase()] || `Definition and example for "${vocabWord}" - This word is commonly used in academic English.`;
-      setVocabDefinition(definition);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Vocabulary lookup error:', error);
-      toast({
-        title: "Lookup Error",
-        description: "Failed to find word definition. Please try again.", 
-        variant: "destructive"
-      });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -182,184 +156,155 @@ const StudentHelpWidget: React.FC<StudentHelpWidgetProps> = ({ isOpen, onClose }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-brand-blue to-brand-purple flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <CardTitle className="text-lg">AI Study Assistant</CardTitle>
-            </div>
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden glass-card">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border/30">
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5 text-brand-blue" />
+            Student Help Center
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Select value={selectedLanguage} onValueChange={onLanguageChange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </Button>
-          </div>
-          
-          <div className="flex gap-1 mt-3">
-            {[
-              { id: 'chat', label: 'Chat', icon: MessageCircle },
-              { id: 'translate', label: 'Translate', icon: Languages },
-              { id: 'tips', label: 'Tips', icon: Lightbulb },
-              { id: 'vocab', label: 'Vocab', icon: BookOpen }
-            ].map(({ id, label, icon: Icon }) => (
-              <Button
-                key={id}
-                variant={activeTab === id ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveTab(id as any)}
-                className="flex items-center gap-1 text-xs"
-              >
-                <Icon className="w-3 h-3" />
-                {label}
-              </Button>
-            ))}
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
-          {activeTab === 'chat' && (
-            <div className="space-y-4">
-              <div className="bg-surface-2 rounded-lg p-3 min-h-[200px] max-h-[300px] overflow-y-auto">
-                {chatHistory.length === 0 ? (
-                  <div className="text-center text-text-secondary py-8">
-                    <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Ask me anything about English learning!</p>
-                    <p className="text-xs mt-1">Try: "How can I improve my IELTS writing score?"</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {chatHistory.map((msg, index) => (
-                      <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] p-2 rounded-lg text-sm ${
-                          msg.role === 'user' 
-                            ? 'bg-brand-blue text-white' 
-                            : 'bg-surface-1 border'
-                        }`}>
-                          {msg.message}
-                        </div>
-                      </div>
-                    ))}
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-surface-1 border p-2 rounded-lg text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-brand-blue rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-brand-blue rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                            <div className="w-2 h-2 bg-brand-blue rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                <Input
+        <CardContent className="p-6">
+          <Tabs defaultValue="chat" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="chat" className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                Quick Chat
+              </TabsTrigger>
+              <TabsTrigger value="translate" className="flex items-center gap-2">
+                <Languages className="h-4 w-4" />
+                Translate
+              </TabsTrigger>
+              <TabsTrigger value="vocabulary" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Vocabulary
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="chat" className="space-y-4">
+              <div className="space-y-3">
+                <p className="text-sm text-text-secondary">
+                  Ask me anything about English grammar, vocabulary, or test strategies!
+                </p>
+                <Textarea
+                  placeholder="Type your question here..."
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
-                  placeholder="Ask me about IELTS, PTE, TOEFL, or general English..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleChatSubmit()}
-                  disabled={isLoading}
+                  className="min-h-[100px]"
                 />
-                <Button onClick={handleChatSubmit} disabled={isLoading || !chatMessage.trim()}>
-                  <Send className="w-4 h-4" />
+                <Button 
+                  onClick={handleQuickChat}
+                  disabled={isLoading || !chatMessage.trim()}
+                  className="w-full"
+                >
+                  {isLoading ? 'Getting Answer...' : 'Ask AI Tutor'}
                 </Button>
               </div>
-            </div>
-          )}
+            </TabsContent>
 
-          {activeTab === 'translate' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={translateFrom} onValueChange={setTranslateFrom}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="From" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map(lang => (
-                      <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <TabsContent value="translate" className="space-y-4">
+              <div className="space-y-3">
+                <p className="text-sm text-text-secondary">
+                  Translate English text to {languages.find(l => l.code === selectedLanguage)?.name}
+                </p>
+                <Textarea
+                  placeholder="Enter English text to translate..."
+                  value={translationText}
+                  onChange={(e) => setTranslationText(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <Button 
+                  onClick={handleTranslation}
+                  disabled={isLoading || !translationText.trim() || selectedLanguage === 'en'}
+                  className="w-full"
+                >
+                  {isLoading ? 'Translating...' : 'Translate'}
+                </Button>
                 
-                <Select value={translateTo} onValueChange={setTranslateTo}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="To" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.filter(l => l.code !== 'auto').map(lang => (
-                      <SelectItem key={lang.code} value={lang.code}>{lang.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {translationResult && (
+                  <Card className="bg-surface-2 border-brand-green/20">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary">Translation</Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                        >
+                          <Volume2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-sm">{translationResult}</p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-              
-              <Textarea
-                value={translateText}
-                onChange={(e) => setTranslateText(e.target.value)}
-                placeholder="Enter text to translate..."
-                className="min-h-[100px]"
-              />
-              
-              <Button onClick={handleTranslate} disabled={isLoading || !translateText.trim()} className="w-full">
-                <Globe className="w-4 h-4 mr-2" />
-                Translate
-              </Button>
-              
-              {translatedText && (
-                <div className="bg-surface-2 p-3 rounded-lg">
-                  <p className="text-sm font-medium mb-1">Translation:</p>
-                  <p className="text-sm">{translatedText}</p>
-                </div>
-              )}
-            </div>
-          )}
+            </TabsContent>
 
-          {activeTab === 'tips' && (
-            <div className="space-y-3">
-              {dailyTips.map((tip, index) => (
-                <div key={index} className="bg-surface-2 p-3 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{tip.icon}</span>
-                    <Badge variant="secondary" className="text-xs">{tip.category}</Badge>
-                  </div>
-                  <p className="text-sm text-text-secondary">{tip.tip}</p>
+            <TabsContent value="vocabulary" className="space-y-4">
+              <div className="space-y-3">
+                <p className="text-sm text-text-secondary">
+                  Look up definitions, examples, and pronunciation for any word
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter a word to look up..."
+                    value={vocabularyWord}
+                    onChange={(e) => setVocabularyWord(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleVocabularyLookup()}
+                  />
+                  <Button 
+                    onClick={handleVocabularyLookup}
+                    disabled={isLoading || !vocabularyWord.trim()}
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'vocab' && (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={vocabWord}
-                  onChange={(e) => setVocabWord(e.target.value)}
-                  placeholder="Enter a word to look up..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleVocabLookup()}
-                />
-                <Button onClick={handleVocabLookup} disabled={isLoading || !vocabWord.trim()}>
-                  <Target className="w-4 h-4" />
-                </Button>
+                
+                {vocabularyResult && (
+                  <Card className="bg-surface-2 border-brand-blue/20">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge variant="secondary" className="bg-brand-blue/10 text-brand-blue">
+                          {vocabularyResult.word}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                        >
+                          <Volume2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="prose prose-sm">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {vocabularyResult.definition}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-              
-              {vocabDefinition && (
-                <div className="bg-surface-2 p-3 rounded-lg">
-                  <p className="text-sm font-medium mb-1">Definition & Example:</p>
-                  <p className="text-sm">{vocabDefinition}</p>
-                </div>
-              )}
-              
-              <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg">
-                <h4 className="text-sm font-medium mb-2 text-brand-blue">Word of the Day</h4>
-                <p className="text-sm"><strong>Paradigm</strong> - A typical example or pattern of something; a model.</p>
-                <p className="text-xs text-text-secondary mt-1">"The new teaching methods represent a paradigm shift in education."</p>
-              </div>
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

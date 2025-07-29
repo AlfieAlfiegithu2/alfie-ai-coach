@@ -79,6 +79,9 @@ const PTEPortal = () => {
     <StudentLayout title="PTE Academic Portal" showBackButton>
       <div className="space-y-8">
         <div className="text-center">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-brand-green border-brand-green/20">
+            PTE ACADEMIC MODULE
+          </Badge>
           <h1 className="text-heading-2 mb-4">PTE Academic Test Preparation</h1>
           <p className="text-body-large max-w-3xl mx-auto">
             Master the Pearson Test of English Academic with our comprehensive practice materials, 
@@ -87,7 +90,8 @@ const PTEPortal = () => {
         </div>
 
         <section>
-          <h2 className="text-heading-3 mb-6">Practice by Skill</h2>
+          <h2 className="text-heading-3 mb-6">PTE Skills Practice</h2>
+          <p className="text-text-secondary mb-6">Select a skill to practice specific PTE question types</p>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map((skill) => {
               const Icon = skill.icon;

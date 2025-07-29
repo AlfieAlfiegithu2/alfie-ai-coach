@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import PersistentChatbot from "./components/PersistentChatbot";
+import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import Index from "./pages/Index";
 import Reading from "./pages/Reading";
 import ReadingTest from "./pages/ReadingTest";
@@ -32,6 +32,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PTEPortal from "./pages/PTEPortal";
 import TOEFLPortal from "./pages/TOEFLPortal";
 import GeneralPortal from "./pages/GeneralPortal";
+import EnhancedGeneralPortal from "./pages/EnhancedGeneralPortal";
 
 const queryClient = new QueryClient();
 
@@ -66,9 +67,11 @@ const App = () => {
             <Route path="/toefl/reading" element={<Reading />} />
             <Route path="/toefl/listening" element={<Listening />} />
             {/* General English routes */}
-            <Route path="/general/grammar" element={<GeneralPortal />} />
-            <Route path="/general/vocabulary" element={<GeneralPortal />} />
-            <Route path="/general/conversation" element={<GeneralPortal />} />
+            <Route path="/general/grammar" element={<EnhancedGeneralPortal />} />
+            <Route path="/general/vocabulary" element={<EnhancedGeneralPortal />} />
+            <Route path="/general/conversation" element={<EnhancedGeneralPortal />} />
+            <Route path="/general/listening" element={<EnhancedGeneralPortal />} />
+            <Route path="/general/speaking" element={<EnhancedGeneralPortal />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/reading" element={<AdminReading />} />
@@ -100,7 +103,7 @@ const App = () => {
             {/* Missing portal routes that were causing 404s */}
             <Route path="/pte-portal" element={<PTEPortal />} />
             <Route path="/toefl-portal" element={<TOEFLPortal />} />
-            <Route path="/general-portal" element={<GeneralPortal />} />
+            <Route path="/general-portal" element={<EnhancedGeneralPortal />} />
             <Route path="/dashboard" element={<PersonalPage />} />
             <Route path="/practice" element={<TestSelection />} />
             <Route path="/personal-page" element={<PersonalPage />} />
@@ -110,7 +113,7 @@ const App = () => {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <PersistentChatbot />
+          <MinimalisticChatbot />
         </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>

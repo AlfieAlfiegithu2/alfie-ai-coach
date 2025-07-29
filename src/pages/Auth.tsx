@@ -375,11 +375,15 @@ const Auth = () => {
                   variant="outline"
                   onClick={handleGoogleSignIn}
                   disabled={isSubmitting}
-                  className="w-full"
+                  className="w-full glass-button"
                 >
                   <Chrome className="w-4 h-4 mr-2" />
                   Continue with Google
                 </Button>
+                
+                <div className="text-center text-xs text-muted-foreground mt-4">
+                  <p>Note: If Google sign-in doesn't work, please check that your Site URL and Redirect URLs are properly configured in Supabase Auth settings.</p>
+                </div>
               </Tabs>
             )}
           </CardContent>

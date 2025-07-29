@@ -397,8 +397,8 @@ const PersonalPage = () => {
   }
 
   return (
-    <div className="min-h-screen glass-background">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <StudentLayout title="Personal Progress" showBackButton={false}>
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header with Goal Setting */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
@@ -830,7 +830,7 @@ const PersonalPage = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </StudentLayout>
   );
 };
 

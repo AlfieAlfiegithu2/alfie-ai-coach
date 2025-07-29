@@ -153,7 +153,7 @@ const DailyChallenge = () => {
         
         toast({
           title: "Daily Challenge Complete!",
-          description: `🎉 You've completed today's challenge! Streak: ${newStreak} days`,
+          description: `You've completed today's challenge! Streak: ${newStreak} days`,
         });
         
         // Reset progress for next day
@@ -308,7 +308,7 @@ const DailyChallenge = () => {
                   : 'bg-brand-red/10 border border-brand-red/20 text-brand-red'
               }`}>
                 <p className="font-medium mb-1">
-                  {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
+                  {isCorrect ? 'Correct!' : 'Incorrect'}
                 </p>
                 <p className="text-text-primary">{currentQuestion.explanation}</p>
               </div>
@@ -321,7 +321,7 @@ const DailyChallenge = () => {
                 size="sm" 
                 className="w-full btn-primary"
               >
-                {progress.current >= progress.total ? 'Challenge Complete! 🎉' : 'Next Question'}
+                {progress.current >= progress.total ? 'Challenge Complete!' : 'Next Question'}
               </Button>
             )}
           </div>

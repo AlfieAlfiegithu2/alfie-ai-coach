@@ -174,36 +174,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 bg-black/20">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Powered by Advanced AI Technology
-            </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Experience the future of English learning with our cutting-edge AI features
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-xl">
-                <CardHeader className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-white text-xl">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-300 text-center">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>)}
-          </div>
-        </div>
-      </section>
+      
 
       {/* Test Modules Section */}
       <section id="tests" className="py-20 px-4">

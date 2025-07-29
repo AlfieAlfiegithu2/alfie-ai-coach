@@ -11,3 +11,21 @@ verify_jwt = false
 
 [functions.writing-feedback]
 verify_jwt = false
+
+[functions.openai-chat]
+verify_jwt = false
+
+[functions.daily-challenge-generator]
+verify_jwt = false
+
+[functions.content-generator]
+verify_jwt = false
+
+[functions.translation-service]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.audio-cache]
+verify_jwt = false

@@ -32,5 +32,6 @@ const Index = () => {
 
   // Show hero page for non-authenticated users, dashboard for authenticated users
   return user ? <Dashboard /> : <HeroIndex />;
+};
 
 export default Index;

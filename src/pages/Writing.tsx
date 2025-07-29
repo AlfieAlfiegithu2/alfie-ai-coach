@@ -106,7 +106,7 @@ const Writing = () => {
           {/* Task Selection */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-center text-2xl">IELTS Academic Writing Test</CardTitle>
+              <CardTitle className="text-center text-2xl">Writing Practice</CardTitle>
               <div className="flex justify-center gap-2 mt-4">
                 {[1, 2].map((task) => (
                   <Button

@@ -161,7 +161,7 @@ const Speaking = () => {
               </Button>
               <div className="flex items-center gap-2">
                 <Mic className="w-5 h-5 text-gentle-blue" />
-                <span className="font-semibold">IELTS Speaking Test</span>
+                <span className="font-semibold">Speaking Practice</span>
               </div>
             </div>
             
@@ -196,7 +196,7 @@ const Speaking = () => {
           {/* Part Selection */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-center text-2xl font-georgia">🎤 IELTS Academic Speaking Test</CardTitle>
+              <CardTitle className="text-center text-2xl font-georgia">Speaking Practice</CardTitle>
               <p className="text-center text-muted-foreground">Experience an authentic IELTS speaking test with AI analysis</p>
               <div className="flex justify-center gap-2 mt-6">
                 {[1, 2, 3].map((part) => (

@@ -39,7 +39,7 @@ const HeroIndex = () => {
   const testTypes = [{
     title: "IELTS",
     description: "International English Language Testing System",
-    path: "/reading",
+    path: "/ielts-portal",
     // Main IELTS portal
     icon: <BookOpen className="w-6 h-6 text-foreground" />,
     sections: ["Reading", "Listening", "Writing", "Speaking"]

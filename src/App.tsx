@@ -80,10 +80,10 @@ const App = () => {
             <Route path="/admin/listening" element={<AdminListening />} />
             <Route path="/admin/writing" element={<AdminWriting />} />
             <Route path="/admin/speaking" element={<AdminSpeaking />} />
-            <Route path="/admin/ielts" element={<AdminIELTS />} />
-            <Route path="/admin/pte" element={<AdminPTE />} />
-            <Route path="/admin/toefl" element={<AdminTOEFL />} />
-            <Route path="/admin/general" element={<AdminGeneral />} />
+        <Route path="/admin/ielts" element={<AdminIELTS />} />
+        <Route path="/admin/pte" element={<AdminPTE />} />
+        <Route path="/admin/toefl" element={<AdminTOEFL />} />
+        <Route path="/admin/general-english" element={<AdminGeneral />} />
             {/* PTE Admin Routes */}
             <Route path="/admin/pte/listening" element={<AdminListening />} />
             <Route path="/admin/pte/reading" element={<AdminReading />} />

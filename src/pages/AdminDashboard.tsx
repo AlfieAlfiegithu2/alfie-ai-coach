@@ -42,7 +42,7 @@ const AdminDashboard = () => {
       title: "General English Admin",
       description: "Manage ESL/EFL lessons and exercises",
       icon: Mic,
-      route: "/admin/general", 
+      route: "/admin/general-english", 
       count: "English Lessons"
     }
   ];

@@ -168,9 +168,27 @@ const CommunityPage = () => {
             />
             <div className="flex justify-between items-center">
               <div className="flex gap-2">
-                <Badge variant="outline">Question</Badge>
-                <Badge variant="outline">Study Tip</Badge>
-                <Badge variant="outline">Success Story</Badge>
+                <Badge 
+                  variant={selectedCategory === 'general' ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/90"
+                  onClick={() => setSelectedCategory('general')}
+                >
+                  Question
+                </Badge>
+                <Badge 
+                  variant={selectedCategory === 'tip' ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/90"
+                  onClick={() => setSelectedCategory('tip')}
+                >
+                  Study Tip
+                </Badge>
+                <Badge 
+                  variant={selectedCategory === 'success' ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/90"
+                  onClick={() => setSelectedCategory('success')}
+                >
+                  Success Story
+                </Badge>
               </div>
               <Button onClick={handleCreatePost} disabled={!newPost.trim()} className="bg-blue-500 hover:bg-blue-600 text-white">
                 <Send className="w-4 h-4 mr-2" />
@@ -199,25 +217,25 @@ const CommunityPage = () => {
               All
             </Button>
             <Button 
-              variant={selectedCategory === 'reading' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('reading')}
+              variant={selectedCategory === 'general' ? 'default' : 'outline'}
+              onClick={() => setSelectedCategory('general')}
               size="sm"
             >
-              Reading
+              Question
             </Button>
             <Button 
-              variant={selectedCategory === 'writing' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('writing')}
+              variant={selectedCategory === 'tip' ? 'default' : 'outline'}
+              onClick={() => setSelectedCategory('tip')}
               size="sm"
             >
-              Writing
+              Study Tip
             </Button>
             <Button 
-              variant={selectedCategory === 'speaking' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('speaking')}
+              variant={selectedCategory === 'success' ? 'default' : 'outline'}
+              onClick={() => setSelectedCategory('success')}
               size="sm"
             >
-              Speaking
+              Success Story
             </Button>
           </div>
         </div>

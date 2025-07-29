@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Headphones, PenTool, Mic, Clock, Target, BarChart } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 
-const GeneralPortal = () => {
+const IELTSPortal = () => {
   const navigate = useNavigate();
 
   const skills = [
@@ -14,40 +14,40 @@ const GeneralPortal = () => {
       id: "reading",
       title: "Reading",
       icon: BookOpen,
-      description: "Improve reading comprehension with diverse texts and exercises",
-      questions: "Various formats",
-      duration: "Flexible",
-      difficulty: "Beginner to Advanced",
+      description: "Academic and General Training passages with comprehensive question types",
+      questions: "40 questions",
+      duration: "60 minutes",
+      difficulty: "Band 4.0 - 9.0",
       color: "bg-blue-500"
     },
     {
       id: "listening", 
       title: "Listening",
       icon: Headphones,
-      description: "Enhance listening skills with authentic conversations and audio",
-      questions: "Interactive exercises",
-      duration: "15-30 minutes",
-      difficulty: "Beginner to Advanced", 
+      description: "Four sections covering social and academic contexts",
+      questions: "40 questions",
+      duration: "30 minutes",
+      difficulty: "Band 4.0 - 9.0", 
       color: "bg-green-500"
     },
     {
       id: "writing",
       title: "Writing", 
       icon: PenTool,
-      description: "Develop writing skills from basic sentences to complex essays",
-      questions: "Guided practice",
-      duration: "20-45 minutes",
-      difficulty: "Beginner to Advanced",
+      description: "Task 1 (charts/graphs) and Task 2 (essay writing)",
+      questions: "2 tasks",
+      duration: "60 minutes",
+      difficulty: "Band 4.0 - 9.0",
       color: "bg-purple-500"
     },
     {
       id: "speaking",
       title: "Speaking",
       icon: Mic,
-      description: "Practice pronunciation and fluency with AI feedback", 
-      questions: "Speaking exercises",
-      duration: "10-20 minutes",
-      difficulty: "Beginner to Advanced",
+      description: "Face-to-face interview with examiner in three parts", 
+      questions: "3 parts",
+      duration: "11-14 minutes",
+      difficulty: "Band 4.0 - 9.0",
       color: "bg-orange-500"
     }
   ];
@@ -55,39 +55,39 @@ const GeneralPortal = () => {
   const mockTests = [
     {
       id: 1,
-      title: "English Proficiency Assessment",
+      title: "IELTS Academic Full Test",
       type: "Full Test",
-      difficulty: "All Levels",
-      duration: "90 minutes",
-      description: "Comprehensive assessment of all English skills",
-      scoreRange: "Beginner - Advanced"
+      difficulty: "Mixed Bands",
+      duration: "2h 45m",
+      description: "Complete IELTS Academic test with all four skills",
+      scoreRange: "4.0 - 9.0"
     },
     {
       id: 2, 
-      title: "Reading & Writing Skills Test",
-      type: "Section Test",
-      difficulty: "Intermediate",
-      duration: "60 minutes", 
-      description: "Focused practice on reading comprehension and writing",
-      scoreRange: "Elementary - Upper-Intermediate"
+      title: "IELTS General Training Full Test",
+      type: "Full Test",
+      difficulty: "Mixed Bands",
+      duration: "2h 45m", 
+      description: "Complete IELTS General Training test",
+      scoreRange: "4.0 - 9.0"
     },
     {
       id: 3,
-      title: "Listening & Speaking Assessment",
+      title: "Reading & Writing Skills Test",
       type: "Section Test", 
-      difficulty: "All Levels",
-      duration: "45 minutes",
-      description: "Interactive listening and speaking evaluation",
-      scoreRange: "Beginner - Advanced"
+      difficulty: "Intermediate",
+      duration: "2h",
+      description: "Focused practice on reading and writing skills",
+      scoreRange: "5.0 - 8.0"
     },
     {
       id: 4,
-      title: "Grammar & Vocabulary Test", 
-      type: "Skills Test",
+      title: "Listening & Speaking Skills Test", 
+      type: "Section Test",
       difficulty: "Intermediate",
-      duration: "30 minutes",
-      description: "Test your grammar knowledge and vocabulary range",
-      scoreRange: "Elementary - Upper-Intermediate"
+      duration: "45m",
+      description: "Comprehensive listening and speaking assessment",
+      scoreRange: "5.0 - 8.0"
     }
   ];
 
@@ -115,16 +115,16 @@ const GeneralPortal = () => {
   };
 
   return (
-    <StudentLayout title="General English" showBackButton={true}>
+    <StudentLayout title="IELTS Portal" showBackButton={true}>
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            General English Learning
+            IELTS Test Preparation
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Improve your English skills with comprehensive lessons, practice exercises, and assessments for all proficiency levels
+            Master all four skills of the International English Language Testing System with comprehensive practice materials and mock tests
           </p>
         </div>
 
@@ -185,9 +185,9 @@ const GeneralPortal = () => {
         {/* Mock Tests Section */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">English Assessments</h2>
+            <h2 className="text-2xl font-bold text-gray-900">IELTS Practice Tests</h2>
             <Badge variant="outline" className="text-sm">
-              All Levels Welcome
+              Full & Section Tests
             </Badge>
           </div>
           
@@ -229,7 +229,7 @@ const GeneralPortal = () => {
                     onClick={() => handleMockTest(test.id)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    Start Assessment
+                    Start Test
                   </Button>
                 </CardContent>
               </Card>
@@ -238,19 +238,19 @@ const GeneralPortal = () => {
         </section>
 
         {/* Call to Action */}
-        <section className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 text-center">
+        <section className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 text-center">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Start Your English Learning Journey Today
+            Ready to Achieve Your Target Band Score?
           </h3>
           <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Join thousands of learners improving their English skills with our comprehensive and engaging learning platform.
+            Join thousands of successful test takers who improved their IELTS scores with our comprehensive preparation materials.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={() => handleMockTest(1)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8"
             >
-              Take Assessment Test
+              Take Full Practice Test
             </Button>
             <Button 
               variant="outline" 
@@ -266,4 +266,4 @@ const GeneralPortal = () => {
   );
 };
 
-export default GeneralPortal;
+export default IELTSPortal;

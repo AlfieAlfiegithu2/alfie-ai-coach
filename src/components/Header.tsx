@@ -121,7 +121,6 @@ const Header = () => {
             </DropdownMenu>
           ) : (
             <div className="flex items-center space-x-3">
-              {/* Google Login and Regular Login */}
               <Button
                 onClick={() => navigate('/auth')}
                 variant="outline"

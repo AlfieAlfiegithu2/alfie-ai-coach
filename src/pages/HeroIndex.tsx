@@ -149,11 +149,19 @@ const HeroIndex = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/ielts-portal')} 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none"
+              >
                 <Play className="w-5 h-5 mr-2" />
-                Start Free Practice
+                Start Practice
               </Button>
-              <Button size="lg" onClick={() => navigate('/pricing')} className="bg-secondary hover:bg-secondary/90 text-white px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/pricing')} 
+                className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-2 border-blue-600"
+              >
                 <Users className="w-5 h-5 mr-2" />
                 View Pricing
               </Button>

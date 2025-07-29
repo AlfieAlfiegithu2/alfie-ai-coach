@@ -194,18 +194,6 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
             <span className="font-semibold text-sm">AI English Tutor</span>
           </div>
           <div className="flex items-center gap-2">
-            {/* Size Selector */}
-            <Select value={chatSize} onValueChange={(value: 'small' | 'medium' | 'large') => setChatSize(value)}>
-              <SelectTrigger className="w-16 h-8 text-xs">
-                <span className="text-xs">{chatSize[0].toUpperCase()}</span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
-              </SelectContent>
-            </Select>
-            
             {/* Language Selector */}
             <Select value={selectedLanguage} onValueChange={onLanguageChange}>
               <SelectTrigger className="w-20 h-8 text-xs">

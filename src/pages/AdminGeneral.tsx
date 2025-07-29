@@ -203,6 +203,7 @@ const AdminGeneral = () => {
                   onQuestionsPreview={() => {}} 
                   type="reading"
                   module={selectedModule}
+                  cambridgeBook={`General English ${new Date().getFullYear() - 2000}`}
                 />
               </CardContent>
             </Card>

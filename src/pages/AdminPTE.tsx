@@ -196,6 +196,7 @@ const AdminPTE = () => {
                   onQuestionsPreview={() => {}} 
                   type="reading"
                   module={selectedModule}
+                  cambridgeBook={`PTE ${new Date().getFullYear() - 2000}`}
                 />
               </CardContent>
             </Card>

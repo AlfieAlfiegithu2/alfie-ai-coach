@@ -33,6 +33,7 @@ import PTEPortal from "./pages/PTEPortal";
 import TOEFLPortal from "./pages/TOEFLPortal";
 import GeneralPortal from "./pages/GeneralPortal";
 import EnhancedGeneralPortal from "./pages/EnhancedGeneralPortal";
+import IELTSPortal from "./pages/IELTSPortal";
 import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
@@ -102,9 +103,10 @@ const App = () => {
             <Route path="/admin/general/vocabulary" element={<AdminGeneral />} />
             <Route path="/admin/general/pronunciation" element={<AdminGeneral />} />
             {/* Missing portal routes that were causing 404s */}
+            <Route path="/ielts-portal" element={<IELTSPortal />} />
             <Route path="/pte-portal" element={<PTEPortal />} />
             <Route path="/toefl-portal" element={<TOEFLPortal />} />
-            <Route path="/general-portal" element={<EnhancedGeneralPortal />} />
+            <Route path="/general-portal" element={<GeneralPortal />} />
             <Route path="/dashboard" element={<PersonalPage />} />
             <Route path="/practice" element={<TestSelection />} />
             <Route path="/personal-page" element={<PersonalPage />} />

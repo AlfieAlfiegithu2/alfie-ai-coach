@@ -203,6 +203,7 @@ const AdminTOEFL = () => {
                   onQuestionsPreview={() => {}} 
                   type="reading"
                   module={selectedModule}
+                  cambridgeBook={`TOEFL ${new Date().getFullYear() - 2000}`}
                 />
               </CardContent>
             </Card>

@@ -10,6 +10,7 @@ interface CSVImportProps {
   onImport: (questions: any[]) => void;
   onQuestionsPreview?: (questions: any[]) => void;
   type: 'reading' | 'listening' | 'writing' | 'speaking';
+  module?: 'ielts' | 'pte' | 'toefl' | 'general';
   cambridgeBook?: string;
   testNumber?: number;
   sectionNumber?: number;
@@ -19,6 +20,7 @@ const CSVImport = ({
   onImport,
   onQuestionsPreview,
   type,
+  module = 'ielts',
   cambridgeBook,
   testNumber,
   sectionNumber,
@@ -215,7 +217,11 @@ const CSVImport = ({
           <strong>Supported Question Types:</strong>
           <TooltipProvider>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-1 mt-2">
-              {validQuestionTypes.map(questionType => {})}
+              {validQuestionTypes.map(questionType => (
+                <div key={questionType.value} className="text-xs">
+                  {questionType.label}
+                </div>
+              ))}
             </div>
           </TooltipProvider>
           <br /><br />

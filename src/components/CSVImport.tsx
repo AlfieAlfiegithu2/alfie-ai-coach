@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Upload, Download, FileText, AlertCircle, HelpCircle } from "lucide-react";
 import { getQuestionTypesForModule, mapQuestionType, validateQuestionType, QuestionTypeDefinition } from '@/lib/ielts-question-types';
-
 interface CSVImportProps {
   onImport: (questions: any[]) => void;
   onQuestionsPreview?: (questions: any[]) => void;
@@ -15,61 +14,40 @@ interface CSVImportProps {
   testNumber?: number;
   sectionNumber?: number;
   partNumber?: number;
-  module?: 'ielts' | 'pte' | 'toefl' | 'general';
 }
-
-const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumber, sectionNumber, partNumber, module = 'ielts' }: CSVImportProps) => {
+const CSVImport = ({
+  onImport,
+  onQuestionsPreview,
+  type,
+  cambridgeBook,
+  testNumber,
+  sectionNumber,
+  partNumber
+}: CSVImportProps) => {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const expectedColumns = [
-    'Question Number',
-    'Section', 
-    'Type',
-    'Question Text',
-    'Choices',
-    'Correct Answer',
-    'Explanation'
-  ];
+  const expectedColumns = ['Question Number', 'Section', 'Type', 'Question Text', 'Choices', 'Correct Answer', 'Explanation'];
 
   // Get valid question types for the current module
   const validQuestionTypes = getQuestionTypesForModule(type);
-
   const downloadTemplate = () => {
     // Generate sample data based on module type
     const getSampleData = () => {
       const samples: Record<string, string[]> = {
-        reading: [
-          '1,Reading,True/False/Not Given,"People had expected Andy Murray to become the world\'s top tennis player for at least five years before 2016.","TRUE;FALSE;NOT GIVEN","FALSE","The passage states Murray was regarded as an outsider before 2016."',
-          '2,Reading,Sentence Completion,"Mike and Bob Bryan made changes to the types of ______ used on their racket frames.","","paint","The passage mentions they experimented with different kinds of paint."',
-          '3,Reading,Multiple Choice,"What is the main benefit of racket modifications according to the passage?","A) Increased speed;B) Better control;C) Reduced weight;D) Enhanced power","B","The passage emphasizes control as a key benefit."'
-        ],
-        listening: [
-          '1,Listening,Multiple Choice,"What is the main topic of the conversation?","A) Travel plans;B) Hotel booking;C) Restaurant reservation;D) Meeting schedule","B","The speakers discuss hotel arrangements."',
-          '2,Listening,Form Completion,"The caller\'s name is ______","","Sarah Johnson","As stated by the caller at the beginning."',
-          '3,Listening,Table Completion,"Complete the table: Day | Activity | Time","Monday;Meeting;9:00 AM","Monday=Meeting;9:00 AM","Based on the schedule discussion."'
-        ],
-        writing: [
-          '1,Writing,Task 1 - Graph Description,"Describe the trends shown in the graph","","The graph shows a steady increase...","Model answer describing key trends."',
-          '2,Writing,Task 2 - Essay,"Discuss both views and give your opinion","","While some argue that...","Model essay with balanced arguments."'
-        ],
-        speaking: [
-          '1,Speaking,Part 1 - Introduction and Interview,"What do you do for work or study?","","I work as a software developer...","Sample response with details."',
-          '2,Speaking,Part 2 - Long Turn (Cue Card),"Describe a memorable journey","","I\'d like to talk about a trip...","Sample 2-minute response."'
-        ]
+        reading: ['1,Reading,True/False/Not Given,"People had expected Andy Murray to become the world\'s top tennis player for at least five years before 2016.","TRUE;FALSE;NOT GIVEN","FALSE","The passage states Murray was regarded as an outsider before 2016."', '2,Reading,Sentence Completion,"Mike and Bob Bryan made changes to the types of ______ used on their racket frames.","","paint","The passage mentions they experimented with different kinds of paint."', '3,Reading,Multiple Choice,"What is the main benefit of racket modifications according to the passage?","A) Increased speed;B) Better control;C) Reduced weight;D) Enhanced power","B","The passage emphasizes control as a key benefit."'],
+        listening: ['1,Listening,Multiple Choice,"What is the main topic of the conversation?","A) Travel plans;B) Hotel booking;C) Restaurant reservation;D) Meeting schedule","B","The speakers discuss hotel arrangements."', '2,Listening,Form Completion,"The caller\'s name is ______","","Sarah Johnson","As stated by the caller at the beginning."', '3,Listening,Table Completion,"Complete the table: Day | Activity | Time","Monday;Meeting;9:00 AM","Monday=Meeting;9:00 AM","Based on the schedule discussion."'],
+        writing: ['1,Writing,Task 1 - Graph Description,"Describe the trends shown in the graph","","The graph shows a steady increase...","Model answer describing key trends."', '2,Writing,Task 2 - Essay,"Discuss both views and give your opinion","","While some argue that...","Model essay with balanced arguments."'],
+        speaking: ['1,Speaking,Part 1 - Introduction and Interview,"What do you do for work or study?","","I work as a software developer...","Sample response with details."', '2,Speaking,Part 2 - Long Turn (Cue Card),"Describe a memorable journey","","I\'d like to talk about a trip...","Sample 2-minute response."']
       };
       return samples[type] || samples.reading;
     };
-
-    const csvContent = [
-      expectedColumns.join(','),
-      ...getSampleData()
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const csvContent = [expectedColumns.join(','), ...getSampleData()].join('\n');
+    const blob = new Blob([csvContent], {
+      type: 'text/csv'
+    });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -77,16 +55,13 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
     a.click();
     window.URL.revokeObjectURL(url);
   };
-
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
-    
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       const nextChar = line[i + 1];
-      
       if (char === '"' && !inQuotes) {
         inQuotes = true;
       } else if (char === '"' && inQuotes && nextChar === '"') {
@@ -101,33 +76,25 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
         current += char;
       }
     }
-    
     result.push(current.trim());
     return result;
   };
-
   const parseCSV = (csvText: string) => {
     const lines = csvText.split('\n').filter(line => line.trim());
     if (lines.length < 2) {
       throw new Error('CSV file must contain at least a header row and one data row');
     }
-
     const headers = parseCSVLine(lines[0]).map(h => h.trim());
     const expectedHeaders = expectedColumns;
-    
+
     // Check if all expected headers are present (exact match)
-    const missingHeaders = expectedHeaders.filter(header => 
-      !headers.includes(header)
-    );
-    
+    const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
     if (missingHeaders.length > 0) {
       throw new Error(`Missing required columns: ${missingHeaders.join(', ')}. Expected exact format: ${expectedColumns.join(', ')}`);
     }
-
     const questions = [];
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
-      
       if (values.length < headers.length) continue;
 
       // Fix question numbering to always start from 1 and increment sequentially
@@ -142,18 +109,15 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
       // Map and validate question type
       const mappedType = mapQuestionType(questionType);
       const isValid = validateQuestionType(mappedType, type);
-      
       if (!isValid) {
         const validTypes = validQuestionTypes.map(t => t.value);
         throw new Error(`Invalid question type "${questionType}" in row ${i + 1}. Mapped to "${mappedType}". Supported types: ${validTypes.join(', ')}`);
       }
-      
       const finalQuestionType = mappedType;
 
       // Parse choices based on question type
       let options: string[] = [];
       let parsedChoices: any = null;
-
       if (choices) {
         if (finalQuestionType === 'Multiple Choice') {
           options = choices.split(';').map(choice => choice.trim()).filter(choice => choice);
@@ -183,7 +147,8 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
       // Keep question type in official IELTS format for database (no conversion to snake_case)
       questions.push({
         question_number: questionNumber,
-        question_type: finalQuestionType, // Use the official format directly
+        question_type: finalQuestionType,
+        // Use the official format directly
         question_text: questionText,
         options: options.length > 0 ? options : undefined,
         choices: parsedChoices || undefined,
@@ -194,26 +159,20 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
         part_number: partNumber || 1
       });
     }
-
     return questions;
   };
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setImporting(true);
     setError(null);
     setShowPreview(false);
-
     try {
       const text = await file.text();
       const questions = parseCSV(text);
-      
       if (questions.length === 0) {
         throw new Error('No valid questions found in CSV file');
       }
-
       setPreviewQuestions(questions);
       setShowPreview(true);
     } catch (err: any) {
@@ -225,28 +184,25 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
       }
     }
   };
-
   const handleConfirmImport = () => {
     onImport(previewQuestions);
     setShowPreview(false);
     setPreviewQuestions([]);
   };
-
   const handleCancelImport = () => {
     setShowPreview(false);
     setPreviewQuestions([]);
   };
-
-  return (
-    <div className="max-h-[80vh] overflow-y-auto">
-      <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <FileText className="w-5 h-5" />
-            Bulk CSV Import - {module.toUpperCase()} {type.charAt(0).toUpperCase() + type.slice(1)} Questions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+  return <Card className="rounded-2xl border-light-border shadow-soft" style={{
+    background: 'var(--gradient-card)'
+  }}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-foreground">
+          <FileText className="w-5 h-5" />
+          Bulk CSV Import - {type.charAt(0).toUpperCase() + type.slice(1)} Question Types
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div className="text-sm text-warm-gray">
           Import multiple questions at once using a CSV file with comprehensive IELTS Reading question type support. Download the sample file to see the exact format and examples for all question types.
         </div>
@@ -259,22 +215,7 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
           <strong>Supported Question Types:</strong>
           <TooltipProvider>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-1 mt-2">
-              {validQuestionTypes.map((questionType) => (
-                <Tooltip key={questionType.value}>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 text-xs bg-white/50 px-2 py-1 rounded cursor-help">
-                      <Badge variant="secondary" className="text-xs">{questionType.label}</Badge>
-                      <HelpCircle className="w-3 h-3 text-blue-600" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <div className="text-xs">
-                      <div className="font-medium">{questionType.description}</div>
-                      <div className="text-muted-foreground mt-1">{questionType.tips}</div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+              {validQuestionTypes.map(questionType => {})}
             </div>
           </TooltipProvider>
           <br /><br />
@@ -285,45 +226,29 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
           <br />• Fill/Completion: Leave choices blank for open text answers
         </div>
 
-        {error && (
-          <Alert className="border-red-200 bg-red-50">
+        {error && <Alert className="border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
               {error}
             </AlertDescription>
-          </Alert>
-        )}
+          </Alert>}
 
-        {!showPreview ? (
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              variant="outline"
-              onClick={downloadTemplate}
-              className="rounded-xl border-light-border flex-1"
-            >
+        {!showPreview ? <div className="flex flex-col sm:flex-row gap-3">
+            <Button variant="outline" onClick={downloadTemplate} className="rounded-xl border-light-border flex-1">
               <Download className="w-4 h-4 mr-2" />
               Download Sample CSV
             </Button>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
             
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importing}
-              className="rounded-xl flex-1 bg-primary hover:bg-primary/90 text-white font-medium"
-            >
+            <Button onClick={() => fileInputRef.current?.click()} disabled={importing} className="rounded-xl flex-1" style={{
+          background: 'var(--gradient-button)',
+          border: 'none'
+        }}>
               <Upload className="w-4 h-4 mr-2" />
               {importing ? 'Parsing CSV...' : 'Upload CSV'}
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
+          </div> : <div className="space-y-4">
             <div className="bg-green-50 border border-green-200 rounded-xl p-4">
               <h4 className="font-medium text-green-800 mb-2">Preview: {previewQuestions.length} questions parsed successfully</h4>
               <div className="text-sm text-green-700">
@@ -332,8 +257,7 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
             </div>
 
             <div className="max-h-64 overflow-y-auto border border-light-border rounded-xl p-4 bg-white">
-              {previewQuestions.map((question, index) => (
-                <div key={index} className="border-b border-light-border pb-3 mb-3 last:border-b-0 last:mb-0">
+              {previewQuestions.map((question, index) => <div key={index} className="border-b border-light-border pb-3 mb-3 last:border-b-0 last:mb-0">
                   <div className="flex items-start gap-2">
                     <span className="font-medium text-sm text-foreground min-w-8">
                       {question.question_number}.
@@ -350,43 +274,30 @@ const CSVImport = ({ onImport, onQuestionsPreview, type, cambridgeBook, testNumb
                       <p className="text-sm text-foreground">
                         {question.question_text}
                       </p>
-                      {question.options && question.options.length > 0 && (
-                        <div className="text-xs text-warm-gray mt-1">
+                      {question.options && question.options.length > 0 && <div className="text-xs text-warm-gray mt-1">
                           Options: {question.options.join(' | ')}
-                        </div>
-                      )}
-                      {question.choices && (
-                        <div className="text-xs text-warm-gray mt-1">
+                        </div>}
+                      {question.choices && <div className="text-xs text-warm-gray mt-1">
                           Matches: {Object.entries(question.choices).map(([k, v]) => `${k}=${v}`).join(' | ')}
-                        </div>
-                      )}
+                        </div>}
                     </div>
                   </div>
-                </div>
-              ))}
+                </div>)}
             </div>
 
             <div className="flex gap-3">
-              <Button
-                onClick={handleConfirmImport}
-                className="rounded-xl flex-1 bg-primary hover:bg-primary/90 text-white font-medium"
-              >
+              <Button onClick={handleConfirmImport} className="rounded-xl flex-1" style={{
+            background: 'var(--gradient-button)',
+            border: 'none'
+          }}>
                 Confirm Import
               </Button>
-              <Button
-                variant="outline"
-                onClick={handleCancelImport}
-                className="rounded-xl flex-1 border-light-border"
-              >
+              <Button variant="outline" onClick={handleCancelImport} className="rounded-xl flex-1 border-light-border">
                 Cancel
               </Button>
             </div>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-    </div>
-  );
+    </Card>;
 };
-
 export default CSVImport;

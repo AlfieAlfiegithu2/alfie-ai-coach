@@ -181,26 +181,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Search Bar Section */}
-      <section className="py-12 px-4 bg-black/20">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Quick Search
-          </h2>
-          <div className="max-w-2xl mx-auto">
-            <div className="relative">
-              <input type="text" placeholder="Search for lessons, tests, or content..." className="w-full px-6 py-4 text-lg rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" onKeyPress={e => {
-              if (e.key === 'Enter') {
-                // Basic search functionality - redirect to tests page
-                navigate('/tests');
-              }
-            }} />
-              <Button onClick={() => navigate('/tests')} className="absolute right-2 top-2 h-12 px-6 bg-blue-500 hover:bg-blue-600">
-                Search
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Test Modules Section */}
       <section id="tests" className="py-20 px-4">

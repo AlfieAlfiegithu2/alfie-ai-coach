@@ -62,8 +62,8 @@ const AdminSectionManagement = () => {
     setIsLoading(true);
     try {
       const tableType = getTableType();
-      const data = await listContent(tableType);
-      setContent(data || []);
+      const response = await listContent(tableType);
+      setContent(response?.data || []);
     } catch (error) {
       console.error('Error loading content:', error);
       toast.error('Failed to load content');

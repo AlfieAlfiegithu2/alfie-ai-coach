@@ -81,20 +81,29 @@ const IELTSPortal = () => {
         throw testsError;
       }
 
-      // Fetch questions to determine test status
-      const { data: questionsData, error: questionsError } = await supabase
-        .from('questions')
-        .select('test_id, id');
+      // Fetch questions from both universal and module-specific tables
+      const [universalQuestions, readingQuestions] = await Promise.all([
+        supabase.from('questions').select('test_id, id'),
+        supabase.from('reading_questions').select('test_id, id')
+      ]);
 
-      if (questionsError) {
-        console.error('Error fetching questions:', questionsError);
-      }
-
-      // Count questions per test
+      // Count questions per test from both tables
       const questionCounts = new Map();
-      questionsData?.forEach(q => {
-        const count = questionCounts.get(q.test_id) || 0;
-        questionCounts.set(q.test_id, count + 1);
+      
+      // Count from universal questions table
+      universalQuestions.data?.forEach(q => {
+        if (q.test_id) {
+          const count = questionCounts.get(q.test_id) || 0;
+          questionCounts.set(q.test_id, count + 1);
+        }
+      });
+
+      // Count from reading_questions table
+      readingQuestions.data?.forEach(q => {
+        if (q.test_id) {
+          const count = questionCounts.get(q.test_id) || 0;
+          questionCounts.set(q.test_id, count + 1);
+        }
       });
 
       const transformedTests = testsData?.map(test => {

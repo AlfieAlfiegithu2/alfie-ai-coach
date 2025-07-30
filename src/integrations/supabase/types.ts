@@ -534,6 +534,7 @@ export type Database = {
           question_text: string
           question_type: string | null
           section_id: string | null
+          test_id: string | null
         }
         Insert: {
           band_impact?: number | null
@@ -547,6 +548,7 @@ export type Database = {
           question_text: string
           question_type?: string | null
           section_id?: string | null
+          test_id?: string | null
         }
         Update: {
           band_impact?: number | null
@@ -560,8 +562,16 @@ export type Database = {
           question_text?: string
           question_type?: string | null
           section_id?: string | null
+          test_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_listening_questions_test_id"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listening_questions_section_id_fkey"
             columns: ["section_id"]
@@ -992,6 +1002,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_questions_test_id"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "questions_test_id_fkey"
             columns: ["test_id"]
             isOneToOne: false
@@ -1057,6 +1074,7 @@ export type Database = {
           question_text: string
           question_type: string | null
           section_number: number | null
+          test_id: string | null
         }
         Insert: {
           band_impact?: number | null
@@ -1072,6 +1090,7 @@ export type Database = {
           question_text: string
           question_type?: string | null
           section_number?: number | null
+          test_id?: string | null
         }
         Update: {
           band_impact?: number | null
@@ -1087,8 +1106,16 @@ export type Database = {
           question_text?: string
           question_type?: string | null
           section_number?: number | null
+          test_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_reading_questions_test_id"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reading_questions_passage_id_fkey"
             columns: ["passage_id"]

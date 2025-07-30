@@ -46,7 +46,7 @@ serve(async (req) => {
         result = await listContent(supabaseClient, type);
         break;
       case 'csv_upload':
-        result = await handleCsvUpload(supabaseClient, contentData.csvData, contentData.testType, contentData.testId, contentData.partNumber);
+        result = await handleCsvUpload(supabaseClient, contentData.csvData, contentData.testType, contentData.testId, contentData.partNumber, contentData.module);
         break;
       default:
         throw new Error('Invalid action');
@@ -132,43 +132,98 @@ async function listContent(supabaseClient: any, type: string) {
   return { success: true, data };
 }
 
-async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: string, testId: string, partNumber: number) {
-  console.log('Handling CSV upload:', { testType, testId, partNumber, rowCount: csvData.length });
+async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: string, testId: string, partNumber: number, module?: string) {
+  console.log('Handling CSV upload:', { testType, testId, partNumber, module, rowCount: csvData.length });
   
-  const insertData = csvData.map((row, index) => {
-    // Handle different CSV formats
-    const questionText = row['Question Text'] || row['Question'] || row['QuestionText'] || '';
-    const questionType = row['Question Type'] || row['Type'] || row['QuestionType'] || 'Multiple Choice';
-    const correctAnswer = row['Correct Answer'] || row['Answer'] || row['CorrectAnswer'] || '';
-    const explanation = row['Explanation'] || row['explanation'] || '';
-    const choices = row['Choices'] || row['Options'] || row['choices'] || '';
-    const passageText = row['Passage'] || row['PassageText'] || row['passage'] || '';
+  try {
+    // Verify test exists first
+    const { data: testData, error: testError } = await supabaseClient
+      .from('tests')
+      .select('id, module')
+      .eq('id', testId)
+      .single();
+
+    if (testError || !testData) {
+      throw new Error(`Test with ID ${testId} not found. Please create the test first.`);
+    }
+
+    const targetModule = module || testData.module;
+    console.log('Target module for questions:', targetModule);
+
+    // Determine which questions table to use
+    let tableName = 'questions'; // Default universal table
+    if (targetModule === 'Reading') {
+      tableName = 'reading_questions';
+    } else if (targetModule === 'Listening') {
+      tableName = 'listening_questions';
+    }
+
+    const insertData = csvData.map((row, index) => {
+      // Handle different CSV formats with more robust mapping
+      const questionText = row['Question Text'] || row['Question'] || row['QuestionText'] || row['question_text'] || '';
+      const questionType = row['Question Type'] || row['Type'] || row['QuestionType'] || row['question_type'] || 'Multiple Choice';
+      const correctAnswer = row['Correct Answer'] || row['Answer'] || row['CorrectAnswer'] || row['correct_answer'] || '';
+      const explanation = row['Explanation'] || row['explanation'] || '';
+      const choices = row['Choices'] || row['Options'] || row['choices'] || row['options'] || '';
+      const passageText = row['Passage'] || row['PassageText'] || row['passage'] || row['passage_text'] || '';
+
+      // Base question data
+      const questionData: any = {
+        question_number: ((partNumber - 1) * 10) + (index + 1),
+        question_text: questionText,
+        question_type: questionType,
+        correct_answer: correctAnswer,
+        explanation: explanation || '',
+        part_number: partNumber,
+        test_id: testId
+      };
+
+      // Add module-specific fields
+      if (tableName === 'reading_questions') {
+        questionData.options = choices ? JSON.stringify(choices.split(';').map(c => c.trim())) : null;
+        questionData.cambridge_book = `${testType?.toUpperCase()} Test`;
+        questionData.section_number = partNumber;
+      } else if (tableName === 'listening_questions') {
+        questionData.options = choices ? JSON.stringify(choices.split(';').map(c => c.trim())) : null;
+      } else {
+        // Universal questions table
+        questionData.question_number_in_part = index + 1;
+        questionData.choices = choices;
+        questionData.passage_text = passageText;
+      }
+
+      return questionData;
+    });
+
+    console.log('Inserting into table:', tableName, 'with data:', insertData[0]);
+
+    const { data, error } = await supabaseClient
+      .from(tableName)
+      .insert(insertData)
+      .select();
+
+    if (error) {
+      console.error('CSV upload error:', error);
+      throw new Error(`Database insert failed: ${error.message}`);
+    }
+
+    console.log(`CSV upload successful: ${data?.length} questions inserted into ${tableName}`);
     
-    return {
-      test_id: testId,
-      part_number: partNumber,
-      question_number_in_part: index + 1,
-      question_text: questionText,
-      question_type: questionType,
-      choices: choices,
-      correct_answer: correctAnswer,
-      explanation: explanation,
-      passage_text: passageText
-    };
-  });
+    // Update test question count
+    await supabaseClient
+      .from('tests')
+      .update({ 
+        total_questions: data.length,
+        parts_completed: partNumber,
+        status: partNumber >= 3 ? 'complete' : 'incomplete'
+      })
+      .eq('id', testId);
 
-  const { data, error } = await supabaseClient
-    .from('questions')
-    .insert(insertData)
-    .select();
-
-  if (error) {
-    console.error('CSV upload error:', error);
+    return { success: true, data, table: tableName };
+  } catch (error) {
+    console.error('handleCsvUpload error:', error);
     throw error;
   }
-
-  console.log('CSV upload successful:', data?.length, 'questions inserted');
-  return { success: true, data };
 }
 
 function getTableName(type: string): string {

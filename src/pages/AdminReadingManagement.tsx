@@ -200,7 +200,8 @@ const AdminReadingManagement = () => {
         csvData: questionsData,
         testId: test.id,
         testType: testType?.toUpperCase() || 'IELTS',
-        partNumber: partNumber
+        partNumber: partNumber,
+        module: 'Reading'
       });
 
       if (!result.success) {

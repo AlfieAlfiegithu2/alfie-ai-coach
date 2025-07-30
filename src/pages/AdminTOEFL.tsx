@@ -155,30 +155,19 @@ const AdminTOEFL = () => {
           </TabsList>
 
           <TabsContent value="content" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <Card key={section.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-center space-x-2">
-                        <Icon className="h-5 w-5 text-orange-600" />
-                        <CardTitle className="text-lg">{section.title}</CardTitle>
-                      </div>
-                      <CardDescription>{section.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Button
-                        onClick={() => navigate(section.path)}
-                        className="w-full bg-orange-600 hover:bg-orange-700"
-                        variant="default"
-                      >
-                        Manage {section.title}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="text-center py-8">
+              <h3 className="text-xl font-semibold mb-4">TOEFL Test Management</h3>
+              <p className="text-muted-foreground mb-6">
+                Manage TOEFL iBT tests, create new content, and monitor student progress
+              </p>
+              <Button
+                onClick={() => navigate('/admin/toefl/tests')}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                size="lg"
+              >
+                <BookOpen className="w-5 h-5 mr-2" />
+                Manage TOEFL Tests
+              </Button>
             </div>
           </TabsContent>
 

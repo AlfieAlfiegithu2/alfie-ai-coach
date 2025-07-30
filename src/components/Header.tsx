@@ -38,18 +38,18 @@ const Header = () => {
             </span>
           </div>
           
-          {/* Login Button in Header - Always Visible */}
+        {/* Login and Dashboard Buttons - Side by Side */}
+        <div className="flex items-center space-x-2">
           {!user && (
             <Button
               variant="outline"
               onClick={() => navigate('/auth')}
               className="text-sm font-medium"
             >
-              Sign In
+              Log In
             </Button>
           )}
           
-          {/* Dashboard Button when logged in */}
           {user && (
             <Button
               variant="outline"
@@ -60,6 +60,7 @@ const Header = () => {
               My Dashboard
             </Button>
           )}
+        </div>
         </div>
 
         {/* Desktop Navigation */}

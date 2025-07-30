@@ -17,15 +17,23 @@ export const logUserAction = async (
   details?: Record<string, any>
 ) => {
   try {
-    const anonUserId = getAnonymousUserId();
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      // Skip analytics for non-authenticated users
+      return;
+    }
     
     await supabase
       .from('user_analytics')
       .insert({
-        anon_user_id: anonUserId,
+        user_id: user.id,
         action_type: actionType,
-        question_id: questionId || null,
-        details: details || {}
+        details: {
+          question_id: questionId || null,
+          ...details
+        }
       });
   } catch (error) {
     // Silent fail for analytics - don't break user experience

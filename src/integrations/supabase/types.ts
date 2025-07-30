@@ -813,6 +813,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       update_question_numbering: {
         Args: Record<PropertyKey, never>
         Returns: undefined

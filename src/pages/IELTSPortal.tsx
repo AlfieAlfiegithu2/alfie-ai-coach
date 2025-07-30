@@ -1,179 +1,148 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, Headphones, PenTool, Mic, Clock, Target, BarChart } from "lucide-react";
-import StudentLayout from "@/components/StudentLayout";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock } from 'lucide-react';
+import StudentLayout from '@/components/StudentLayout';
 
 const IELTSPortal = () => {
   const navigate = useNavigate();
+  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 
   const skills = [
     {
-      id: "reading",
-      title: "Reading",
+      id: 'reading',
+      name: 'Reading',
       icon: BookOpen,
-      description: "Academic and General Training passages with comprehensive question types",
-      questions: "40 questions",
-      duration: "60 minutes",
-      difficulty: "Band 4.0 - 9.0",
-      color: "bg-blue-500"
+      description: 'Academic and General Training passages with question types',
+      sections: ['Multiple Choice', 'True/False/Not Given', 'Matching Headings'],
+      difficulty: 'Band 4.0-9.0',
+      timeLimit: '60 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
-      id: "listening", 
-      title: "Listening",
-      icon: Headphones,
-      description: "Four sections covering social and academic contexts",
-      questions: "40 questions",
-      duration: "30 minutes",
-      difficulty: "Band 4.0 - 9.0", 
-      color: "bg-green-500"
+      id: 'listening',
+      name: 'Listening',
+      icon: Volume2,
+      description: 'Four sections covering social and academic contexts',
+      sections: ['Multiple Choice', 'Form Completion', 'Map/Plan Labelling'],
+      difficulty: 'Band 4.0-9.0',
+      timeLimit: '30 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
-      id: "writing",
-      title: "Writing", 
+      id: 'writing',
+      name: 'Writing',
       icon: PenTool,
-      description: "Task 1 (charts/graphs) and Task 2 (essay writing)",
-      questions: "2 tasks",
-      duration: "60 minutes",
-      difficulty: "Band 4.0 - 9.0",
-      color: "bg-purple-500"
+      description: 'Task 1 (charts/graphs) and Task 2 (essay writing)',
+      sections: ['Task 1: Data Description', 'Task 2: Essay Writing'],
+      difficulty: 'Band 4.0-9.0',
+      timeLimit: '60 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
-      id: "speaking",
-      title: "Speaking",
-      icon: Mic,
-      description: "Face-to-face interview with examiner in three parts", 
-      questions: "3 parts",
-      duration: "11-14 minutes",
-      difficulty: "Band 4.0 - 9.0",
-      color: "bg-orange-500"
+      id: 'speaking',
+      name: 'Speaking',
+      icon: MessageSquare,
+      description: 'Face-to-face interview with examiner in three parts',
+      sections: ['Personal Questions', 'Individual Presentation', 'Discussion'],
+      difficulty: 'Band 4.0-9.0',
+      timeLimit: '11-14 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     }
   ];
 
   const mockTests = [
-    {
-      id: 1,
-      title: "IELTS Academic Full Test",
-      type: "Full Test",
-      difficulty: "Mixed Bands",
-      duration: "2h 45m",
-      description: "Complete IELTS Academic test with all four skills",
-      scoreRange: "4.0 - 9.0"
-    },
-    {
-      id: 2, 
-      title: "IELTS General Training Full Test",
-      type: "Full Test",
-      difficulty: "Mixed Bands",
-      duration: "2h 45m", 
-      description: "Complete IELTS General Training test",
-      scoreRange: "4.0 - 9.0"
-    },
-    {
-      id: 3,
-      title: "Reading & Writing Skills Test",
-      type: "Section Test", 
-      difficulty: "Intermediate",
-      duration: "2h",
-      description: "Focused practice on reading and writing skills",
-      scoreRange: "5.0 - 8.0"
-    },
-    {
-      id: 4,
-      title: "Listening & Speaking Skills Test", 
-      type: "Section Test",
-      difficulty: "Intermediate",
-      duration: "45m",
-      description: "Comprehensive listening and speaking assessment",
-      scoreRange: "5.0 - 8.0"
-    }
+    { id: 1, title: 'IELTS Academic Test 1', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
+    { id: 2, title: 'IELTS Academic Test 2', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
+    { id: 3, title: 'IELTS General Test 1', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
+    { id: 4, title: 'IELTS General Test 2', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
+    { id: 5, title: 'IELTS Academic Test 3', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 }
   ];
 
   const handleSkillPractice = (skillId: string) => {
-    switch(skillId) {
-      case 'reading':
-        navigate('/reading');
-        break;
-      case 'listening':
-        navigate('/listening');
-        break;
-      case 'writing':
-        navigate('/writing');
-        break;
-      case 'speaking':
-        navigate('/speaking');
-        break;
-      default:
-        navigate('/');
-    }
+    console.log(`🚀 Starting IELTS ${skillId} practice`);
+    navigate(`/${skillId}`);
   };
 
   const handleMockTest = (testId: number) => {
+    console.log(`🧪 Starting IELTS mock test ${testId}`);
     navigate(`/test/${testId}`);
   };
 
   return (
-    <StudentLayout title="IELTS Portal" showBackButton={true}>
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            IELTS Test Preparation
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Master all four skills of the International English Language Testing System with comprehensive practice materials and mock tests
+    <StudentLayout title="IELTS Portal" showBackButton>
+      <div className="space-y-8">
+        <div className="text-center">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
+            IELTS ACADEMIC & GENERAL
+          </Badge>
+          <h1 className="text-heading-2 mb-4">IELTS Test Preparation</h1>
+          <p className="text-body-large max-w-3xl mx-auto">
+            Master the International English Language Testing System with comprehensive practice materials, 
+            expert feedback, and realistic mock tests for Academic and General Training.
           </p>
         </div>
 
-        {/* Skills Practice Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Practice by Skill</h2>
-            <Badge variant="outline" className="text-sm">
-              4 Skills Available
-            </Badge>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <section>
+          <h2 className="text-heading-3 mb-6">IELTS Skills Practice</h2>
+          <p className="text-text-secondary mb-6">Select a skill to practice specific IELTS question types</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map((skill) => {
               const Icon = skill.icon;
               return (
-                <Card key={skill.id} className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-0 shadow-md">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className={`p-3 rounded-lg ${skill.color} text-white`}>
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {skill.difficulty}
-                      </Badge>
+                <Card 
+                  key={skill.id} 
+                  className={`card-interactive hover:scale-105 transition-all duration-300 ${
+                    selectedSkill === skill.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => setSelectedSkill(skill.id)}
+                >
+                  <CardHeader className="text-center pb-4">
+                    <div className={`w-16 h-16 mx-auto rounded-2xl ${skill.bgColor} flex items-center justify-center mb-4`}>
+                      <Icon className={`w-8 h-8 ${skill.color}`} />
                     </div>
-                    <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">
-                      {skill.title}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-gray-600 line-clamp-2">
-                      {skill.description}
-                    </CardDescription>
+                    <CardTitle className="text-xl">{skill.name}</CardTitle>
+                    <p className="text-text-secondary text-sm">{skill.description}</p>
                   </CardHeader>
-                  <CardContent className="pt-0 space-y-4">
-                    <div className="space-y-2 text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        <span>{skill.questions}</span>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Difficulty:</span>
+                        <Badge variant="secondary">{skill.difficulty}</Badge>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{skill.duration}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Duration:</span>
+                        <span className="font-medium">{skill.timeLimit}</span>
                       </div>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-text-primary">Question Types:</p>
+                      <div className="space-y-1">
+                        {skill.sections.slice(0, 2).map((section, index) => (
+                          <p key={index} className="text-xs text-text-secondary">• {section}</p>
+                        ))}
+                        {skill.sections.length > 2 && (
+                          <p className="text-xs text-text-tertiary">+ {skill.sections.length - 2} more</p>
+                        )}
+                      </div>
+                    </div>
+
                     <Button 
-                      onClick={() => handleSkillPractice(skill.id)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSkillPractice(skill.id);
+                      }}
+                      className="w-full btn-primary"
+                      size="sm"
                     >
-                      Start Practice
+                      Practice {skill.name}
                     </Button>
                   </CardContent>
                 </Card>
@@ -182,54 +151,46 @@ const IELTSPortal = () => {
           </div>
         </section>
 
-        {/* Mock Tests Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">IELTS Practice Tests</h2>
-            <Badge variant="outline" className="text-sm">
-              Full & Section Tests
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-heading-3">IELTS Mock Tests</h2>
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              Band Score Prediction
             </Badge>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mockTests.map((test) => (
-              <Card key={test.id} className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-0 shadow-md">
+              <Card key={test.id} className="card-modern hover-lift">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={test.type === 'Full Test' ? 'default' : 'secondary'} className="text-xs">
-                          {test.type}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {test.difficulty}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">
-                        {test.title}
-                      </CardTitle>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{test.title}</CardTitle>
+                    <Target className="w-5 h-5 text-primary" />
                   </div>
-                  <CardDescription className="text-gray-600">
-                    {test.description}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
+                      <Award className="w-4 h-4 text-text-secondary" />
+                      <span>{test.difficulty}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-text-secondary" />
                       <span>{test.duration}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <BarChart className="h-4 w-4" />
-                      <span>{test.scoreRange}</span>
-                    </div>
                   </div>
+                  
+                  <div className="flex items-center gap-2 text-sm">
+                    <BookOpen className="w-4 h-4 text-text-secondary" />
+                    <span>{test.sections} sections included</span>
+                  </div>
+
                   <Button 
                     onClick={() => handleMockTest(test.id)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full btn-primary"
+                    size="sm"
                   >
-                    Start Test
+                    Start Mock Test
                   </Button>
                 </CardContent>
               </Card>
@@ -237,28 +198,28 @@ const IELTSPortal = () => {
           </div>
         </section>
 
-        {/* Call to Action */}
-        <section className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Ready to Achieve Your Target Band Score?
-          </h3>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Join thousands of successful test takers who improved their IELTS scores with our comprehensive preparation materials.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              onClick={() => handleMockTest(1)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8"
-            >
-              Take Full Practice Test
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard')}
-              className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8"
-            >
-              Track Your Progress
-            </Button>
+        <section className="bg-surface-1 rounded-3xl p-8">
+          <div className="text-center">
+            <h3 className="text-heading-3 mb-4">Ready to Begin?</h3>
+            <p className="text-body mb-6">
+              Start with a diagnostic test or jump into skill-specific practice
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={() => navigate('/tests')}
+                className="btn-gradient px-8"
+                size="lg"
+              >
+                Take Diagnostic Test
+              </Button>
+              <Button 
+                onClick={() => navigate('/personal-page')}
+                variant="outline"
+                size="lg"
+              >
+                View Progress
+              </Button>
+            </div>
           </div>
         </section>
       </div>

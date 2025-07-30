@@ -47,81 +47,46 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
   const fetchTranslation = async (text: string) => {
     setIsLoading(true);
     try {
-      // Mock translation for now - in production, use a real translation API
-      const mockTranslations: Record<string, Record<string, string>> = {
-        'es': {
-          'the': 'el/la',
-          'house': 'casa',
-          'water': 'agua',
-          'book': 'libro',
-          'time': 'tiempo',
-          'people': 'gente',
-          'way': 'manera',
-          'day': 'día',
-          'man': 'hombre',
-          'new': 'nuevo',
-          'first': 'primero',
-          'last': 'último',
-          'long': 'largo',
-          'great': 'grande',
-          'little': 'pequeño',
-          'own': 'propio',
-          'other': 'otro',
-          'old': 'viejo',
-          'right': 'correcto/derecho',
-          'big': 'grande'
-        },
-        'fr': {
-          'the': 'le/la/les',
-          'house': 'maison',
-          'water': 'eau',
-          'book': 'livre',
-          'time': 'temps',
-          'people': 'gens',
-          'way': 'façon',
-          'day': 'jour',
-          'man': 'homme',
-          'new': 'nouveau',
-          'first': 'premier',
-          'last': 'dernier',
-          'long': 'long',
-          'great': 'grand',
-          'little': 'petit',
-          'own': 'propre',
-          'other': 'autre',
-          'old': 'vieux',
-          'right': 'droit/correct',
-          'big': 'grand'
-        },
-        'de': {
-          'the': 'der/die/das',
-          'house': 'Haus',
-          'water': 'Wasser',
-          'book': 'Buch',
-          'time': 'Zeit',
-          'people': 'Leute',
-          'way': 'Weg',
-          'day': 'Tag',
-          'man': 'Mann',
-          'new': 'neu',
-          'first': 'erste',
-          'last': 'letzte',
-          'long': 'lang',
-          'great': 'groß',
-          'little': 'klein',
-          'own': 'eigen',
-          'other': 'andere',
-          'old': 'alt',
-          'right': 'richtig/rechts',
-          'big': 'groß'
-        }
-      };
+      // Use translation service
+      const { translatedText, error } = await import('@/components/TranslationService').then(
+        module => module.translationService.translateText({
+          text: text,
+          targetLanguage: language
+        })
+      );
 
-      const lowerText = text.toLowerCase();
-      const translation = mockTranslations[language]?.[lowerText] || 
-                         `Translation for "${text}" (${language})`;
-      
-      setTranslation(translation);
+      if (error) {
+        console.warn('Translation service error:', error);
+        // Fallback to mock translations
+        const mockTranslations: Record<string, Record<string, string>> = {
+          'es': {
+            'the': 'el/la', 'house': 'casa', 'water': 'agua', 'book': 'libro',
+            'time': 'tiempo', 'people': 'gente', 'way': 'manera', 'day': 'día',
+            'man': 'hombre', 'new': 'nuevo', 'first': 'primero', 'last': 'último',
+            'long': 'largo', 'great': 'grande', 'little': 'pequeño', 'own': 'propio',
+            'other': 'otro', 'old': 'viejo', 'right': 'correcto/derecho', 'big': 'grande'
+          },
+          'fr': {
+            'the': 'le/la/les', 'house': 'maison', 'water': 'eau', 'book': 'livre',
+            'time': 'temps', 'people': 'gens', 'way': 'façon', 'day': 'jour',
+            'man': 'homme', 'new': 'nouveau', 'first': 'premier', 'last': 'dernier',
+            'long': 'long', 'great': 'grand', 'little': 'petit', 'own': 'propre',
+            'other': 'autre', 'old': 'vieux', 'right': 'droit/correct', 'big': 'grand'
+          },
+          'de': {
+            'the': 'der/die/das', 'house': 'Haus', 'water': 'Wasser', 'book': 'Buch',
+            'time': 'Zeit', 'people': 'Leute', 'way': 'Weg', 'day': 'Tag',
+            'man': 'Mann', 'new': 'neu', 'first': 'erste', 'last': 'letzte',
+            'long': 'lang', 'great': 'groß', 'little': 'klein', 'own': 'eigen',
+            'other': 'andere', 'old': 'alt', 'right': 'richtig/rechts', 'big': 'groß'
+          }
+        };
+
+        const lowerText = text.toLowerCase();
+        setTranslation(mockTranslations[language]?.[lowerText] || `Translation for "${text}" (${language})`);
+      } else {
+        setTranslation(translatedText);
+      }
     } catch (error) {
       console.error('Translation error:', error);
       setTranslation('Translation unavailable');

@@ -53,11 +53,11 @@ const Header = () => {
           {user && (
             <Button
               variant="outline"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/personal-page')}
               className="text-sm font-medium"
             >
               <User className="w-4 h-4 mr-2" />
-              Go to Dashboard
+              My Dashboard
             </Button>
           )}
         </div>
@@ -78,13 +78,13 @@ const Header = () => {
           >
             Practice
           </Button>
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/dashboard')}
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            Dashboard
-          </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/personal-page')}
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Dashboard
+            </Button>
           <Button
             variant="ghost"
             onClick={() => navigate('/community')}

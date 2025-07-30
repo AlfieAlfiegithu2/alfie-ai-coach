@@ -1,179 +1,148 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, Headphones, PenTool, Mic, Clock, Target, BarChart } from "lucide-react";
-import StudentLayout from "@/components/StudentLayout";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock } from 'lucide-react';
+import StudentLayout from '@/components/StudentLayout';
 
 const GeneralPortal = () => {
   const navigate = useNavigate();
+  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 
   const skills = [
     {
-      id: "reading",
-      title: "Reading",
+      id: 'reading',
+      name: 'Reading',
       icon: BookOpen,
-      description: "Improve reading comprehension with diverse texts and exercises",
-      questions: "Various formats",
-      duration: "Flexible",
-      difficulty: "Beginner to Advanced",
-      color: "bg-blue-500"
+      description: 'Improve reading comprehension with diverse texts and exercises',
+      sections: ['Multiple Choice', 'Gap Fill', 'Reading Comprehension'],
+      difficulty: 'Beginner-Advanced',
+      timeLimit: '30-45 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
-      id: "listening", 
-      title: "Listening",
-      icon: Headphones,
-      description: "Enhance listening skills with authentic conversations and audio",
-      questions: "Interactive exercises",
-      duration: "15-30 minutes",
-      difficulty: "Beginner to Advanced", 
-      color: "bg-green-500"
+      id: 'listening',
+      name: 'Listening',
+      icon: Volume2,
+      description: 'Enhance listening skills with authentic conversations',
+      sections: ['Dialogues', 'Lectures', 'Conversations'],
+      difficulty: 'Beginner-Advanced',
+      timeLimit: '20-30 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
-      id: "writing",
-      title: "Writing", 
+      id: 'writing',
+      name: 'Writing',
       icon: PenTool,
-      description: "Develop writing skills from basic sentences to complex essays",
-      questions: "Guided practice",
-      duration: "20-45 minutes",
-      difficulty: "Beginner to Advanced",
-      color: "bg-purple-500"
+      description: 'Develop writing skills from sentences to essays',
+      sections: ['Paragraph Writing', 'Essay Structure', 'Creative Writing'],
+      difficulty: 'Beginner-Advanced',
+      timeLimit: '30-60 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     },
     {
-      id: "speaking",
-      title: "Speaking",
-      icon: Mic,
-      description: "Practice pronunciation and fluency with AI feedback", 
-      questions: "Speaking exercises",
-      duration: "10-20 minutes",
-      difficulty: "Beginner to Advanced",
-      color: "bg-orange-500"
+      id: 'speaking',
+      name: 'Speaking',
+      icon: MessageSquare,
+      description: 'Practice pronunciation and fluency with AI feedback',
+      sections: ['Pronunciation', 'Fluency', 'Conversation Practice'],
+      difficulty: 'Beginner-Advanced',
+      timeLimit: '15-30 minutes',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     }
   ];
 
   const mockTests = [
-    {
-      id: 1,
-      title: "English Proficiency Assessment",
-      type: "Full Test",
-      difficulty: "All Levels",
-      duration: "90 minutes",
-      description: "Comprehensive assessment of all English skills",
-      scoreRange: "Beginner - Advanced"
-    },
-    {
-      id: 2, 
-      title: "Reading & Writing Skills Test",
-      type: "Section Test",
-      difficulty: "Intermediate",
-      duration: "60 minutes", 
-      description: "Focused practice on reading comprehension and writing",
-      scoreRange: "Elementary - Upper-Intermediate"
-    },
-    {
-      id: 3,
-      title: "Listening & Speaking Assessment",
-      type: "Section Test", 
-      difficulty: "All Levels",
-      duration: "45 minutes",
-      description: "Interactive listening and speaking evaluation",
-      scoreRange: "Beginner - Advanced"
-    },
-    {
-      id: 4,
-      title: "Grammar & Vocabulary Test", 
-      type: "Skills Test",
-      difficulty: "Intermediate",
-      duration: "30 minutes",
-      description: "Test your grammar knowledge and vocabulary range",
-      scoreRange: "Elementary - Upper-Intermediate"
-    }
+    { id: 1, title: 'English Assessment Test 1', difficulty: 'All Levels', duration: '90 minutes', sections: 4 },
+    { id: 2, title: 'English Assessment Test 2', difficulty: 'Intermediate', duration: '75 minutes', sections: 4 },
+    { id: 3, title: 'English Assessment Test 3', difficulty: 'Advanced', duration: '90 minutes', sections: 4 },
+    { id: 4, title: 'Grammar & Vocabulary Test', difficulty: 'All Levels', duration: '45 minutes', sections: 2 },
+    { id: 5, title: 'Communication Skills Test', difficulty: 'Intermediate', duration: '60 minutes', sections: 2 }
   ];
 
   const handleSkillPractice = (skillId: string) => {
-    switch(skillId) {
-      case 'reading':
-        navigate('/reading');
-        break;
-      case 'listening':
-        navigate('/listening');
-        break;
-      case 'writing':
-        navigate('/writing');
-        break;
-      case 'speaking':
-        navigate('/speaking');
-        break;
-      default:
-        navigate('/');
-    }
+    console.log(`🚀 Starting General English ${skillId} practice`);
+    navigate(`/general-${skillId}`);
   };
 
   const handleMockTest = (testId: number) => {
-    navigate(`/test/${testId}`);
+    console.log(`🧪 Starting General English test ${testId}`);
+    navigate(`/general-test/${testId}`);
   };
 
   return (
-    <StudentLayout title="General English" showBackButton={true}>
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            General English Learning
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Improve your English skills with comprehensive lessons, practice exercises, and assessments for all proficiency levels
+    <StudentLayout title="General English Portal" showBackButton>
+      <div className="space-y-8">
+        <div className="text-center">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
+            GENERAL ENGLISH LEARNING
+          </Badge>
+          <h1 className="text-heading-2 mb-4">General English Test Preparation</h1>
+          <p className="text-body-large max-w-3xl mx-auto">
+            Master essential English skills with comprehensive lessons, interactive exercises, 
+            and personalized feedback for all proficiency levels.
           </p>
         </div>
 
-        {/* Skills Practice Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Practice by Skill</h2>
-            <Badge variant="outline" className="text-sm">
-              4 Skills Available
-            </Badge>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <section>
+          <h2 className="text-heading-3 mb-6">English Skills Practice</h2>
+          <p className="text-text-secondary mb-6">Select a skill to practice and improve your English proficiency</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map((skill) => {
               const Icon = skill.icon;
               return (
-                <Card key={skill.id} className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-0 shadow-md">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className={`p-3 rounded-lg ${skill.color} text-white`}>
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {skill.difficulty}
-                      </Badge>
+                <Card 
+                  key={skill.id} 
+                  className={`card-interactive hover:scale-105 transition-all duration-300 ${
+                    selectedSkill === skill.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => setSelectedSkill(skill.id)}
+                >
+                  <CardHeader className="text-center pb-4">
+                    <div className={`w-16 h-16 mx-auto rounded-2xl ${skill.bgColor} flex items-center justify-center mb-4`}>
+                      <Icon className={`w-8 h-8 ${skill.color}`} />
                     </div>
-                    <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">
-                      {skill.title}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-gray-600 line-clamp-2">
-                      {skill.description}
-                    </CardDescription>
+                    <CardTitle className="text-xl">{skill.name}</CardTitle>
+                    <p className="text-text-secondary text-sm">{skill.description}</p>
                   </CardHeader>
-                  <CardContent className="pt-0 space-y-4">
-                    <div className="space-y-2 text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        <span>{skill.questions}</span>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Level:</span>
+                        <Badge variant="secondary">{skill.difficulty}</Badge>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{skill.duration}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-secondary">Duration:</span>
+                        <span className="font-medium">{skill.timeLimit}</span>
                       </div>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-text-primary">Practice Areas:</p>
+                      <div className="space-y-1">
+                        {skill.sections.slice(0, 2).map((section, index) => (
+                          <p key={index} className="text-xs text-text-secondary">• {section}</p>
+                        ))}
+                        {skill.sections.length > 2 && (
+                          <p className="text-xs text-text-tertiary">+ {skill.sections.length - 2} more</p>
+                        )}
+                      </div>
+                    </div>
+
                     <Button 
-                      onClick={() => handleSkillPractice(skill.id)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSkillPractice(skill.id);
+                      }}
+                      className="w-full btn-primary"
+                      size="sm"
                     >
-                      Start Practice
+                      Practice {skill.name}
                     </Button>
                   </CardContent>
                 </Card>
@@ -182,52 +151,44 @@ const GeneralPortal = () => {
           </div>
         </section>
 
-        {/* Mock Tests Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">English Assessments</h2>
-            <Badge variant="outline" className="text-sm">
-              All Levels Welcome
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-heading-3">English Assessment Tests</h2>
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              Level Assessment Available
             </Badge>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mockTests.map((test) => (
-              <Card key={test.id} className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-0 shadow-md">
+              <Card key={test.id} className="card-modern hover-lift">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={test.type === 'Full Test' ? 'default' : 'secondary'} className="text-xs">
-                          {test.type}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {test.difficulty}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">
-                        {test.title}
-                      </CardTitle>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{test.title}</CardTitle>
+                    <Target className="w-5 h-5 text-primary" />
                   </div>
-                  <CardDescription className="text-gray-600">
-                    {test.description}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
+                      <Award className="w-4 h-4 text-text-secondary" />
+                      <span>{test.difficulty}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-text-secondary" />
                       <span>{test.duration}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <BarChart className="h-4 w-4" />
-                      <span>{test.scoreRange}</span>
-                    </div>
                   </div>
+                  
+                  <div className="flex items-center gap-2 text-sm">
+                    <BookOpen className="w-4 h-4 text-text-secondary" />
+                    <span>{test.sections} sections included</span>
+                  </div>
+
                   <Button 
                     onClick={() => handleMockTest(test.id)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full btn-primary"
+                    size="sm"
                   >
                     Start Assessment
                   </Button>
@@ -237,28 +198,28 @@ const GeneralPortal = () => {
           </div>
         </section>
 
-        {/* Call to Action */}
-        <section className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Start Your English Learning Journey Today
-          </h3>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Join thousands of learners improving their English skills with our comprehensive and engaging learning platform.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              onClick={() => handleMockTest(1)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8"
-            >
-              Take Assessment Test
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard')}
-              className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8"
-            >
-              Track Your Progress
-            </Button>
+        <section className="bg-surface-1 rounded-3xl p-8">
+          <div className="text-center">
+            <h3 className="text-heading-3 mb-4">Ready to Begin?</h3>
+            <p className="text-body mb-6">
+              Start with a level assessment or jump into skill-specific practice
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={() => navigate('/general-test/1')}
+                className="btn-gradient px-8"
+                size="lg"
+              >
+                Take Level Assessment
+              </Button>
+              <Button 
+                onClick={() => navigate('/personal-page')}
+                variant="outline"
+                size="lg"
+              >
+                View Progress
+              </Button>
+            </div>
           </div>
         </section>
       </div>

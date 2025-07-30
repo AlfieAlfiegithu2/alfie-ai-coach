@@ -941,6 +941,65 @@ export type Database = {
         }
         Relationships: []
       }
+      questions: {
+        Row: {
+          audio_url: string | null
+          choices: string | null
+          correct_answer: string
+          created_at: string
+          explanation: string | null
+          id: string
+          image_url: string | null
+          part_number: number
+          passage_text: string | null
+          question_number_in_part: number
+          question_text: string
+          question_type: string
+          test_id: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          choices?: string | null
+          correct_answer: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          part_number?: number
+          passage_text?: string | null
+          question_number_in_part: number
+          question_text: string
+          question_type: string
+          test_id: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          choices?: string | null
+          correct_answer?: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          part_number?: number
+          passage_text?: string | null
+          question_number_in_part?: number
+          question_text?: string
+          question_type?: string
+          test_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reading_passages: {
         Row: {
           book_number: number | null
@@ -1126,6 +1185,45 @@ export type Database = {
           time_taken?: number | null
           total_questions?: number | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      tests: {
+        Row: {
+          created_at: string
+          id: string
+          module: string
+          parts_completed: number | null
+          status: string
+          test_name: string
+          test_number: number
+          test_type: string
+          total_questions: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module?: string
+          parts_completed?: number | null
+          status?: string
+          test_name: string
+          test_number?: number
+          test_type?: string
+          total_questions?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module?: string
+          parts_completed?: number | null
+          status?: string
+          test_name?: string
+          test_number?: number
+          test_type?: string
+          total_questions?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

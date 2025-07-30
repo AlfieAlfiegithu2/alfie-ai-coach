@@ -32,7 +32,7 @@ const AdminReadingManagement = () => {
   const navigate = useNavigate();
   const { testType, testId } = useParams<{ testType: string; testId: string; }>();
   const { admin, loading } = useAdminAuth();
-  const { listContent, createContent } = useAdminContent();
+  const { listContent, createContent, updateContent } = useAdminContent();
   
   const [parts, setParts] = useState<TestPart[]>([
     { number: 1, title: "", content: "", csvFile: null, saved: false },
@@ -154,69 +154,68 @@ const AdminReadingManagement = () => {
         }).filter(q => q.question_text && q.correct_answer);
       }
 
-      // Determine table names based on test type
-      const passageTable = testType === 'ielts' ? 'reading_passages' : `${testType}_passages`;
-      const questionTable = testType === 'ielts' ? 'reading_questions' : `${testType}_questions`;
-      const bookField = testType === 'ielts' ? 'cambridge_book' : `${testType}_book`;
+      // Get or create test in universal tests table
+      const testsResponse = await listContent('tests');
+      let test = testsResponse?.data?.find((t: any) => 
+        t.test_type === testType?.toUpperCase() && 
+        t.module === 'Reading' && 
+        t.test_number === parseInt(testId || '1')
+      );
 
-      // Create passage
-      const passageData = {
-        title: part.title,
-        content: part.content,
-        test_number: parseInt(testId || '1'),
-        [bookField]: `${testType?.toUpperCase()} Test ${testId}`,
-        passage_type: 'Academic',
-        part_number: partNumber,
-        section_number: 1
-      };
-
-      const passageResponse = await createContent(passageTable, passageData);
-      const passageId = passageResponse?.data?.id;
-
-      if (!passageId) {
-        throw new Error('Failed to create passage');
+      if (!test) {
+        // Create test if it doesn't exist
+        const testData = {
+          test_name: `${testType?.toUpperCase()} Test ${testId}`,
+          test_type: testType?.toUpperCase() || 'IELTS',
+          module: 'Reading',
+          test_number: parseInt(testId || '1'),
+          status: 'incomplete',
+          parts_completed: 0,
+          total_questions: 0
+        };
+        
+        const testResult = await createContent('tests', testData);
+        test = testResult.data;
       }
 
-      // Create questions in bulk for better performance
-      const questionsBatch = questions.map((question: any, i: number) => {
-        const questionNumber = ((partNumber - 1) * 13) + (i + 1);
-        
-        return {
-          question_number: questionNumber,
-          question_text: question.question_text || '',
-          question_type: question.question_type || 'Multiple Choice',
-          options: question.options || null,
-          correct_answer: question.correct_answer || '',
-          explanation: question.explanation || '',
-          passage_id: passageId,
-          [bookField]: `${testType?.toUpperCase()} Test ${testId}`,
-          section_number: 1,
-          part_number: partNumber
-        };
+      if (!test) {
+        throw new Error('Failed to create or find test');
+      }
+
+      // Format questions for universal questions table
+      const questionsData = questions.map((q: any, index: number) => ({
+        test_id: test.id,
+        part_number: partNumber,
+        question_number_in_part: index + 1,
+        question_text: q.question_text || q['Question Text'] || q.QuestionText || '',
+        question_type: q.question_type || q['Question Type'] || q.QuestionType || 'Multiple Choice',
+        correct_answer: q.correct_answer || q['Correct Answer'] || q.CorrectAnswer || '',
+        explanation: q.explanation || q.Explanation || '',
+        choices: q.options || q.Options || q.choices || '',
+        passage_text: part.content // Include passage text with each question
+      }));
+
+      // Upload questions using CSV upload endpoint
+      const result = await createContent('csv_upload', {
+        csvData: questionsData,
+        testId: test.id,
+        testType: testType?.toUpperCase() || 'IELTS',
+        partNumber: partNumber
       });
 
-      // Create all questions in bulk
-      await createContent(questionTable, questionsBatch);
-
-      // Update the test record if it exists
-      try {
-        const testsResponse = await listContent('ielts_reading_tests');
-        const existingTest = testsResponse?.data?.find((t: any) => t.test_number === parseInt(testId || '1'));
-        
-        if (existingTest) {
-          // Update test record with new completion data
-          const updateData = {
-            id: existingTest.id,
-            parts_completed: Math.max(existingTest.parts_completed || 0, partNumber),
-            total_questions: (existingTest.total_questions || 0) + questions.length,
-            status: (partNumber === 3) ? 'complete' : 'incomplete'
-          };
-          
-          await createContent('ielts_reading_tests', updateData);
-        }
-      } catch (testUpdateError) {
-        console.log('Test record update skipped:', testUpdateError);
+      if (!result.success) {
+        throw new Error('Failed to upload questions');
       }
+
+      // Update test progress
+      const updateData = {
+        id: test.id,
+        parts_completed: Math.max(test.parts_completed || 0, partNumber),
+        total_questions: (test.total_questions || 0) + questionsData.length,
+        status: partNumber === 3 ? 'complete' : 'incomplete'
+      };
+
+      await updateContent('tests', updateData);
 
       // Update part status
       setParts(prevParts => 
@@ -227,7 +226,7 @@ const AdminReadingManagement = () => {
         )
       );
 
-      toast.success(`Part ${partNumber} saved successfully with ${questions.length} questions`);
+      toast.success(`Part ${partNumber} saved successfully with ${questions.length} questions!`);
     } catch (error: any) {
       console.error('Error saving part:', error);
       const errorMessage = error.message || `Failed to save Part ${partNumber}`;

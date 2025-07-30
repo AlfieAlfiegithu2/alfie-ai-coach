@@ -45,6 +45,9 @@ serve(async (req) => {
       case 'list':
         result = await listContent(supabaseClient, type);
         break;
+      case 'csv_upload':
+        result = await handleCsvUpload(supabaseClient, contentData.csvData, contentData.testType, contentData.testId, contentData.partNumber);
+        break;
       default:
         throw new Error('Invalid action');
     }
@@ -129,16 +132,60 @@ async function listContent(supabaseClient: any, type: string) {
   return { success: true, data };
 }
 
+async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: string, testId: string, partNumber: number) {
+  console.log('Handling CSV upload:', { testType, testId, partNumber, rowCount: csvData.length });
+  
+  const insertData = csvData.map((row, index) => {
+    // Handle different CSV formats
+    const questionText = row['Question Text'] || row['Question'] || row['QuestionText'] || '';
+    const questionType = row['Question Type'] || row['Type'] || row['QuestionType'] || 'Multiple Choice';
+    const correctAnswer = row['Correct Answer'] || row['Answer'] || row['CorrectAnswer'] || '';
+    const explanation = row['Explanation'] || row['explanation'] || '';
+    const choices = row['Choices'] || row['Options'] || row['choices'] || '';
+    const passageText = row['Passage'] || row['PassageText'] || row['passage'] || '';
+    
+    return {
+      test_id: testId,
+      part_number: partNumber,
+      question_number_in_part: index + 1,
+      question_text: questionText,
+      question_type: questionType,
+      choices: choices,
+      correct_answer: correctAnswer,
+      explanation: explanation,
+      passage_text: passageText
+    };
+  });
+
+  const { data, error } = await supabaseClient
+    .from('questions')
+    .insert(insertData)
+    .select();
+
+  if (error) {
+    console.error('CSV upload error:', error);
+    throw error;
+  }
+
+  console.log('CSV upload successful:', data?.length, 'questions inserted');
+  return { success: true, data };
+}
+
 function getTableName(type: string): string {
   const tableMap: Record<string, string> = {
-    // IELTS tables
+    // Universal tables
+    'tests': 'tests',
+    'questions': 'questions',
+    'csv_upload': 'questions', // CSV uploads go to questions table
+    
+    // Legacy tables for backward compatibility
     'reading_passages': 'reading_passages',
     'reading_questions': 'reading_questions',
     'listening_sections': 'listening_sections',
     'listening_questions': 'listening_questions',
     'writing_prompts': 'writing_prompts',
     'speaking_prompts': 'speaking_prompts',
-    'ielts_reading_tests': 'ielts_reading_tests',
+    'ielts_reading_tests': 'tests', // Map to universal tests table
     
     // PTE tables
     'pte_passages': 'pte_passages',

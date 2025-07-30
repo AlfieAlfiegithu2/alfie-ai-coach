@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
+import { supabase } from '@/integrations/supabase/client';
 
 const IELTSPortal = () => {
   const navigate = useNavigate();
@@ -58,39 +59,72 @@ const IELTSPortal = () => {
   ];
 
   const [availableTests, setAvailableTests] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadAvailableTests();
   }, []);
 
   const loadAvailableTests = async () => {
+    setIsLoading(true);
     try {
-      // Try to load from dedicated IELTS tests table first
-      const testsResponse = await fetch(`https://cuumxmfzhwljylbdlflj.supabase.co/rest/v1/ielts_reading_tests?select=*`, {
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI'
-        }
-      });
-      
-      let tests = [];
-      if (testsResponse.ok) {
-        tests = await testsResponse.json();
+      // Fetch from universal tests table
+      const { data: testsData, error: testsError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Reading')
+        .order('test_number', { ascending: true });
+
+      if (testsError) {
+        console.error('Error fetching tests:', testsError);
+        throw testsError;
       }
-      
-      // Fallback to generating default tests if none found
-      if (tests.length === 0) {
-        tests = Array.from({ length: 10 }, (_, i) => ({
+
+      // Fetch questions to determine test status
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('test_id, id');
+
+      if (questionsError) {
+        console.error('Error fetching questions:', questionsError);
+      }
+
+      // Count questions per test
+      const questionCounts = new Map();
+      questionsData?.forEach(q => {
+        const count = questionCounts.get(q.test_id) || 0;
+        questionCounts.set(q.test_id, count + 1);
+      });
+
+      const transformedTests = testsData?.map(test => {
+        const questionCount = questionCounts.get(test.id) || 0;
+        return {
+          id: test.test_number,
+          test_name: test.test_name,
+          test_number: test.test_number,
+          status: questionCount > 0 ? 'complete' : 'incomplete',
+          parts_completed: test.parts_completed || 0,
+          total_questions: questionCount,
+          comingSoon: questionCount === 0
+        };
+      }) || [];
+
+      // Add default tests if none exist
+      if (transformedTests.length === 0) {
+        const defaultTests = Array.from({ length: 10 }, (_, i) => ({
           id: i + 1,
           test_name: `IELTS Test ${i + 1}`,
           test_number: i + 1,
           status: 'incomplete',
           parts_completed: 0,
-          total_questions: 0
+          total_questions: 0,
+          comingSoon: true
         }));
+        setAvailableTests(defaultTests);
+      } else {
+        setAvailableTests(transformedTests);
       }
-      
-      setAvailableTests(tests);
     } catch (error) {
       console.error('Error loading tests:', error);
       // Fallback to default tests
@@ -100,8 +134,11 @@ const IELTSPortal = () => {
         test_number: i + 1,
         status: 'incomplete',
         parts_completed: 0,
-        total_questions: 0
+        total_questions: 0,
+        comingSoon: true
       })));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -236,14 +273,21 @@ const IELTSPortal = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={() => handleMockTest(test.test_number || test.id)}
-                    className="w-full btn-primary"
-                    size="sm"
-                    disabled={!test.total_questions || test.total_questions === 0}
-                  >
-                    {test.total_questions && test.total_questions > 0 ? 'Start Reading Test' : 'Coming Soon'}
-                  </Button>
+                   <Button 
+                     onClick={() => handleMockTest(test.test_number || test.id)}
+                     className="w-full btn-primary"
+                     size="sm"
+                     disabled={test.comingSoon}
+                   >
+                     {test.comingSoon ? (
+                       <span className="flex items-center gap-2">
+                         <Clock className="w-4 h-4" />
+                         Coming Soon
+                       </span>
+                     ) : (
+                       'Start Reading Test'
+                     )}
+                   </Button>
                 </CardContent>
               </Card>
             ))}

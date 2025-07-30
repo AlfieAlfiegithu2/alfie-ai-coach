@@ -45,22 +45,25 @@ const AdminIELTSReadingDashboard = () => {
   const loadTests = async () => {
     setIsLoading(true);
     try {
-      // First load from dedicated IELTS reading tests table
-      const [testsResponse, passagesResponse, questionsResponse] = await Promise.all([
-        listContent('ielts_reading_tests'),
-        listContent('reading_passages'),
-        listContent('reading_questions')
+      // Load from universal tests table
+      const [testsResponse, questionsResponse] = await Promise.all([
+        listContent('tests'),
+        listContent('questions')
       ]);
 
-      const savedTests = testsResponse?.data || [];
-      const passages = passagesResponse?.data || [];
-      const questions = questionsResponse?.data || [];
+      const allTests = testsResponse?.data || [];
+      const allQuestions = questionsResponse?.data || [];
+
+      // Filter for IELTS Reading tests
+      const ieltsReadingTests = allTests.filter((test: any) => 
+        test.test_type === 'IELTS' && test.module === 'Reading'
+      );
 
       // Group by test number to create test list
       const testMap = new Map<number, IELTSTest>();
 
       // Add saved tests from database
-      savedTests.forEach((test: any) => {
+      ieltsReadingTests.forEach((test: any) => {
         testMap.set(test.test_number, {
           id: test.test_number,
           name: test.test_name,
@@ -85,28 +88,17 @@ const AdminIELTSReadingDashboard = () => {
         }
       }
 
-      // Update with actual passage and question data
-      passages.forEach((passage: any) => {
-        if (passage.cambridge_book && passage.cambridge_book.includes('IELTS Test')) {
-          const testMatch = passage.cambridge_book.match(/IELTS Test (\d+)/);
-          if (testMatch) {
-            const testNumber = parseInt(testMatch[1]);
-            const test = testMap.get(testNumber);
-            if (test) {
-              test.partsCompleted = Math.max(test.partsCompleted, passage.part_number || 0);
-            }
-          }
-        }
-      });
-
-      questions.forEach((question: any) => {
-        if (question.cambridge_book && question.cambridge_book.includes('IELTS Test')) {
-          const testMatch = question.cambridge_book.match(/IELTS Test (\d+)/);
-          if (testMatch) {
-            const testNumber = parseInt(testMatch[1]);
-            const test = testMap.get(testNumber);
-            if (test) {
-              test.totalQuestions++;
+      // Count questions per test from universal questions table
+      allQuestions.forEach((question: any) => {
+        if (question.test_id) {
+          // Find the test this question belongs to
+          const testId = question.test_id;
+          const test = ieltsReadingTests.find((t: any) => t.id === testId);
+          if (test) {
+            const testInMap = testMap.get(test.test_number);
+            if (testInMap) {
+              testInMap.totalQuestions++;
+              testInMap.partsCompleted = Math.max(testInMap.partsCompleted, question.part_number || 0);
             }
           }
         }
@@ -139,16 +131,18 @@ const AdminIELTSReadingDashboard = () => {
       const existingNumbers = tests.map(t => t.id);
       const nextNumber = testMatch ? parseInt(testMatch[1]) : Math.max(...existingNumbers, 0) + 1;
       
-      // Create new test record in database
+      // Create new test record in universal tests table
       const testData = {
         test_name: newTestName,
+        test_type: 'IELTS',
+        module: 'Reading',
         test_number: nextNumber,
         status: 'incomplete',
         parts_completed: 0,
         total_questions: 0
       };
 
-      await createContent('ielts_reading_tests', testData);
+      await createContent('tests', testData);
       
       // Navigate to the management page for this test
       navigate(`/admin/ielts/test/${nextNumber}/reading`);

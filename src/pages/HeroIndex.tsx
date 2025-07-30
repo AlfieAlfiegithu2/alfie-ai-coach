@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import LanguagePicker from "@/components/LanguagePicker";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
+import { TypewriterText } from "@/components/TypewriterText";
 const HeroIndex = () => {
   const navigate = useNavigate();
   const {
@@ -147,7 +148,7 @@ const HeroIndex = () => {
             
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-200 to-purple-300 bg-clip-text text-transparent">
-              Achieve Your English Goals with AI
+              <TypewriterText text="Achieve Your English Goals with AI" />
             </h1>
             
             <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">

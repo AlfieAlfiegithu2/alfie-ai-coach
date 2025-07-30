@@ -199,199 +199,6 @@ export type Database = {
         }
         Relationships: []
       }
-      general_listening_questions: {
-        Row: {
-          band_impact: number | null
-          correct_answer: string
-          created_at: string
-          explanation: string
-          id: string
-          options: Json | null
-          part_number: number | null
-          question_number: number
-          question_text: string
-          question_type: string | null
-          section_id: string | null
-        }
-        Insert: {
-          band_impact?: number | null
-          correct_answer: string
-          created_at?: string
-          explanation: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          question_number?: number
-          question_text: string
-          question_type?: string | null
-          section_id?: string | null
-        }
-        Update: {
-          band_impact?: number | null
-          correct_answer?: string
-          created_at?: string
-          explanation?: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          question_number?: number
-          question_text?: string
-          question_type?: string | null
-          section_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "general_listening_questions_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "general_listening_sections"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      general_listening_sections: {
-        Row: {
-          audio_url: string | null
-          created_at: string
-          general_book: string | null
-          id: string
-          instructions: string | null
-          part_number: number | null
-          photo_url: string | null
-          section_number: number | null
-          test_number: number | null
-          title: string
-          transcript: string | null
-          updated_at: string
-        }
-        Insert: {
-          audio_url?: string | null
-          created_at?: string
-          general_book?: string | null
-          id?: string
-          instructions?: string | null
-          part_number?: number | null
-          photo_url?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title: string
-          transcript?: string | null
-          updated_at?: string
-        }
-        Update: {
-          audio_url?: string | null
-          created_at?: string
-          general_book?: string | null
-          id?: string
-          instructions?: string | null
-          part_number?: number | null
-          photo_url?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title?: string
-          transcript?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      general_passages: {
-        Row: {
-          book_number: number | null
-          content: string
-          created_at: string
-          general_book: string | null
-          id: string
-          part_number: number | null
-          passage_type: string | null
-          section_number: number | null
-          test_number: number | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          book_number?: number | null
-          content: string
-          created_at?: string
-          general_book?: string | null
-          id?: string
-          part_number?: number | null
-          passage_type?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          book_number?: number | null
-          content?: string
-          created_at?: string
-          general_book?: string | null
-          id?: string
-          part_number?: number | null
-          passage_type?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      general_questions: {
-        Row: {
-          band_impact: number | null
-          correct_answer: string
-          created_at: string
-          explanation: string
-          general_book: string | null
-          id: string
-          options: Json | null
-          part_number: number | null
-          passage_id: string | null
-          question_number: number
-          question_text: string
-          question_type: string | null
-          section_number: number | null
-        }
-        Insert: {
-          band_impact?: number | null
-          correct_answer: string
-          created_at?: string
-          explanation: string
-          general_book?: string | null
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          passage_id?: string | null
-          question_number?: number
-          question_text: string
-          question_type?: string | null
-          section_number?: number | null
-        }
-        Update: {
-          band_impact?: number | null
-          correct_answer?: string
-          created_at?: string
-          explanation?: string
-          general_book?: string | null
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          passage_id?: string | null
-          question_number?: number
-          question_text?: string
-          question_type?: string | null
-          section_number?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "general_questions_passage_id_fkey"
-            columns: ["passage_id"]
-            isOneToOne: false
-            referencedRelation: "general_passages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       general_speaking_prompts: {
         Row: {
           band_criteria: Json | null
@@ -491,231 +298,26 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
-          email: string | null
           full_name: string | null
           id: string
           native_language: string | null
-          subscription_expires_at: string | null
           subscription_status: string | null
-          updated_at: string | null
-          user_id: string | null
         }
         Insert: {
           created_at?: string | null
-          email?: string | null
           full_name?: string | null
-          id?: string
+          id: string
           native_language?: string | null
-          subscription_expires_at?: string | null
           subscription_status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
         }
         Update: {
           created_at?: string | null
-          email?: string | null
           full_name?: string | null
           id?: string
           native_language?: string | null
-          subscription_expires_at?: string | null
           subscription_status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
         }
         Relationships: []
-      }
-      pte_listening_questions: {
-        Row: {
-          band_impact: number | null
-          correct_answer: string
-          created_at: string
-          explanation: string
-          id: string
-          options: Json | null
-          part_number: number | null
-          question_number: number
-          question_text: string
-          question_type: string | null
-          section_id: string | null
-        }
-        Insert: {
-          band_impact?: number | null
-          correct_answer: string
-          created_at?: string
-          explanation: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          question_number?: number
-          question_text: string
-          question_type?: string | null
-          section_id?: string | null
-        }
-        Update: {
-          band_impact?: number | null
-          correct_answer?: string
-          created_at?: string
-          explanation?: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          question_number?: number
-          question_text?: string
-          question_type?: string | null
-          section_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pte_listening_questions_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "pte_listening_sections"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pte_listening_sections: {
-        Row: {
-          audio_url: string | null
-          created_at: string
-          id: string
-          instructions: string | null
-          part_number: number | null
-          photo_url: string | null
-          pte_book: string | null
-          section_number: number | null
-          test_number: number | null
-          title: string
-          transcript: string | null
-          updated_at: string
-        }
-        Insert: {
-          audio_url?: string | null
-          created_at?: string
-          id?: string
-          instructions?: string | null
-          part_number?: number | null
-          photo_url?: string | null
-          pte_book?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title: string
-          transcript?: string | null
-          updated_at?: string
-        }
-        Update: {
-          audio_url?: string | null
-          created_at?: string
-          id?: string
-          instructions?: string | null
-          part_number?: number | null
-          photo_url?: string | null
-          pte_book?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title?: string
-          transcript?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      pte_passages: {
-        Row: {
-          book_number: number | null
-          content: string
-          created_at: string
-          id: string
-          part_number: number | null
-          passage_type: string | null
-          pte_book: string | null
-          section_number: number | null
-          test_number: number | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          book_number?: number | null
-          content: string
-          created_at?: string
-          id?: string
-          part_number?: number | null
-          passage_type?: string | null
-          pte_book?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          book_number?: number | null
-          content?: string
-          created_at?: string
-          id?: string
-          part_number?: number | null
-          passage_type?: string | null
-          pte_book?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      pte_questions: {
-        Row: {
-          band_impact: number | null
-          correct_answer: string
-          created_at: string
-          explanation: string
-          id: string
-          options: Json | null
-          part_number: number | null
-          passage_id: string | null
-          pte_book: string | null
-          question_number: number
-          question_text: string
-          question_type: string | null
-          section_number: number | null
-        }
-        Insert: {
-          band_impact?: number | null
-          correct_answer: string
-          created_at?: string
-          explanation: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          passage_id?: string | null
-          pte_book?: string | null
-          question_number?: number
-          question_text: string
-          question_type?: string | null
-          section_number?: number | null
-        }
-        Update: {
-          band_impact?: number | null
-          correct_answer?: string
-          created_at?: string
-          explanation?: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          passage_id?: string | null
-          pte_book?: string | null
-          question_number?: number
-          question_text?: string
-          question_type?: string | null
-          section_number?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pte_questions_passage_id_fkey"
-            columns: ["passage_id"]
-            isOneToOne: false
-            referencedRelation: "pte_passages"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       pte_speaking_prompts: {
         Row: {
@@ -828,7 +430,7 @@ export type Database = {
           question_text: string
           question_type: string
           test_id: string
-          updated_at: string
+          transcription: string | null
         }
         Insert: {
           audio_url?: string | null
@@ -838,13 +440,13 @@ export type Database = {
           explanation?: string | null
           id?: string
           image_url?: string | null
-          part_number?: number
+          part_number: number
           passage_text?: string | null
           question_number_in_part: number
           question_text: string
           question_type: string
           test_id: string
-          updated_at?: string
+          transcription?: string | null
         }
         Update: {
           audio_url?: string | null
@@ -860,16 +462,9 @@ export type Database = {
           question_text?: string
           question_type?: string
           test_id?: string
-          updated_at?: string
+          transcription?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_questions_test_id"
-            columns: ["test_id"]
-            isOneToOne: false
-            referencedRelation: "tests"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "questions_test_id_fkey"
             columns: ["test_id"]
@@ -974,232 +569,24 @@ export type Database = {
           created_at: string
           id: string
           module: string
-          parts_completed: number | null
-          status: string
           test_name: string
-          test_number: number
           test_type: string
-          total_questions: number | null
-          updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
-          module?: string
-          parts_completed?: number | null
-          status?: string
+          module: string
           test_name: string
-          test_number?: number
-          test_type?: string
-          total_questions?: number | null
-          updated_at?: string
+          test_type: string
         }
         Update: {
           created_at?: string
           id?: string
           module?: string
-          parts_completed?: number | null
-          status?: string
           test_name?: string
-          test_number?: number
           test_type?: string
-          total_questions?: number | null
-          updated_at?: string
         }
         Relationships: []
-      }
-      toefl_listening_questions: {
-        Row: {
-          band_impact: number | null
-          correct_answer: string
-          created_at: string
-          explanation: string
-          id: string
-          options: Json | null
-          part_number: number | null
-          question_number: number
-          question_text: string
-          question_type: string | null
-          section_id: string | null
-        }
-        Insert: {
-          band_impact?: number | null
-          correct_answer: string
-          created_at?: string
-          explanation: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          question_number?: number
-          question_text: string
-          question_type?: string | null
-          section_id?: string | null
-        }
-        Update: {
-          band_impact?: number | null
-          correct_answer?: string
-          created_at?: string
-          explanation?: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          question_number?: number
-          question_text?: string
-          question_type?: string | null
-          section_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "toefl_listening_questions_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "toefl_listening_sections"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      toefl_listening_sections: {
-        Row: {
-          audio_url: string | null
-          created_at: string
-          id: string
-          instructions: string | null
-          part_number: number | null
-          photo_url: string | null
-          section_number: number | null
-          test_number: number | null
-          title: string
-          toefl_book: string | null
-          transcript: string | null
-          updated_at: string
-        }
-        Insert: {
-          audio_url?: string | null
-          created_at?: string
-          id?: string
-          instructions?: string | null
-          part_number?: number | null
-          photo_url?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title: string
-          toefl_book?: string | null
-          transcript?: string | null
-          updated_at?: string
-        }
-        Update: {
-          audio_url?: string | null
-          created_at?: string
-          id?: string
-          instructions?: string | null
-          part_number?: number | null
-          photo_url?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title?: string
-          toefl_book?: string | null
-          transcript?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      toefl_passages: {
-        Row: {
-          book_number: number | null
-          content: string
-          created_at: string
-          id: string
-          part_number: number | null
-          passage_type: string | null
-          section_number: number | null
-          test_number: number | null
-          title: string
-          toefl_book: string | null
-          updated_at: string
-        }
-        Insert: {
-          book_number?: number | null
-          content: string
-          created_at?: string
-          id?: string
-          part_number?: number | null
-          passage_type?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title: string
-          toefl_book?: string | null
-          updated_at?: string
-        }
-        Update: {
-          book_number?: number | null
-          content?: string
-          created_at?: string
-          id?: string
-          part_number?: number | null
-          passage_type?: string | null
-          section_number?: number | null
-          test_number?: number | null
-          title?: string
-          toefl_book?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      toefl_questions: {
-        Row: {
-          band_impact: number | null
-          correct_answer: string
-          created_at: string
-          explanation: string
-          id: string
-          options: Json | null
-          part_number: number | null
-          passage_id: string | null
-          question_number: number
-          question_text: string
-          question_type: string | null
-          section_number: number | null
-          toefl_book: string | null
-        }
-        Insert: {
-          band_impact?: number | null
-          correct_answer: string
-          created_at?: string
-          explanation: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          passage_id?: string | null
-          question_number?: number
-          question_text: string
-          question_type?: string | null
-          section_number?: number | null
-          toefl_book?: string | null
-        }
-        Update: {
-          band_impact?: number | null
-          correct_answer?: string
-          created_at?: string
-          explanation?: string
-          id?: string
-          options?: Json | null
-          part_number?: number | null
-          passage_id?: string | null
-          question_number?: number
-          question_text?: string
-          question_type?: string | null
-          section_number?: number | null
-          toefl_book?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "toefl_questions_passage_id_fkey"
-            columns: ["passage_id"]
-            isOneToOne: false
-            referencedRelation: "toefl_passages"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       toefl_speaking_prompts: {
         Row: {
@@ -1300,32 +687,34 @@ export type Database = {
       user_analytics: {
         Row: {
           action_type: string
-          anon_user_id: string
           created_at: string
           details: Json | null
-          id: string
-          question_id: string | null
-          timestamp: string
+          id: number
+          user_id: string
         }
         Insert: {
           action_type: string
-          anon_user_id: string
           created_at?: string
           details?: Json | null
-          id?: string
-          question_id?: string | null
-          timestamp?: string
+          id?: number
+          user_id: string
         }
         Update: {
           action_type?: string
-          anon_user_id?: string
           created_at?: string
           details?: Json | null
-          id?: string
-          question_id?: string | null
-          timestamp?: string
+          id?: number
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_challenge_progress: {
         Row: {

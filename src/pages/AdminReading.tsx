@@ -150,35 +150,8 @@ const AdminReading = () => {
 
   // Calculate starting question number for continuous numbering across parts
   const calculateStartingQuestionNumber = async (bookNumber: number, sectionNumber: number, partNumber: number) => {
-    try {
-      const { data: existingQuestions, error } = await supabase
-        .from('questions')
-        .select('question_number, part_number')
-        .eq('cambridge_book', `C${bookNumber}`)
-        .eq('section_number', sectionNumber)
-        .order('part_number')
-        .order('question_number');
-
-      if (error) throw error;
-
-      let startingNumber = 1;
-
-      // Find the highest question number from previous parts
-      if (existingQuestions && existingQuestions.length > 0) {
-        // Find questions from previous parts only
-        const previousPartsQuestions = existingQuestions.filter(q => q.part_number < partNumber);
-        if (previousPartsQuestions.length > 0) {
-          const maxNumber = Math.max(...previousPartsQuestions.map(q => q.question_number));
-          startingNumber = maxNumber + 1;
-        }
-      }
-
-      console.log(`📊 Continuous Numbering: Part ${partNumber} will start at question ${startingNumber}`);
-      return startingNumber;
-    } catch (error) {
-      console.error('Error calculating starting question number:', error);
-      return 1; // Fallback to 1 if error
-    }
+    // For new schema, always start from question 1 within each part
+    return 1;
   };
 
   // Step 1: Preview and validate questions (called by CSVImport component)
@@ -233,35 +206,38 @@ const AdminReading = () => {
 
       console.log('Creating passage with data:', passageData);
 
-      // Create passage first
-      const passageResult = await createContent('reading_passages', passageData);
+      // Create test first
+      const testResult = await createContent('tests', {
+        test_name: finalTitle,
+        test_type: 'IELTS',
+        module: 'Reading'
+      });
       
-      if (!passageResult?.data?.id) {
-        throw new Error('Failed to create passage - no ID returned');
+      if (!testResult?.data?.id) {
+        throw new Error('Failed to create test - no ID returned');
       }
       
-      const passageId = passageResult.data.id;
-      console.log('Passage created with ID:', passageId);
+      const testId = testResult.data.id;
+      console.log('Test created with ID:', testId);
 
       // Create questions with continuous numbering across parts
       for (let i = 0; i < pendingQuestions.length; i++) {
         const question = pendingQuestions[i];
         const questionNumber = startingQuestionNumber + i; // Continuous numbering
         const questionData = {
-          question_number: questionNumber,
-          question_type: question.question_type || 'Multiple Choice',
+          test_id: testId,
+          part_number: uploadPartNumber,
+          question_number_in_part: i + 1,
           question_text: question.question_text || '',
+          question_type: question.question_type || 'Multiple Choice',
+          choices: question.options || null,
           correct_answer: question.correct_answer || '',
           explanation: question.explanation || '',
-          options: question.options || null,
-          passage_id: passageId,
-          cambridge_book: `C${uploadBookNumber}`,
-          section_number: uploadSectionNumber,
-          part_number: uploadPartNumber
+          passage_text: finalContent
         };
         
-        console.log(`📊 Continuous Numbering: Creating question ${questionNumber} for Part ${uploadPartNumber}:`, questionData);
-        await createContent('reading_questions', questionData);
+        console.log(`📊 Creating question ${i + 1} for Part ${uploadPartNumber}:`, questionData);
+        await createContent('questions', questionData);
       }
 
       toast({

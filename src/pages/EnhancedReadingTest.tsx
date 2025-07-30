@@ -77,19 +77,19 @@ const EnhancedReadingTest = () => {
         return;
       }
 
-      // Fetch all passages for this test
-      const { data: passages, error: passageError } = await supabase
-        .from('reading_passages')
+      // Fetch the test first
+      const { data: test, error: testError } = await supabase
+        .from('tests')
         .select('*')
-        .eq('test_number', parseInt(testId))
-        .order('part_number');
+        .eq('id', testId)
+        .single();
 
-      if (passageError) throw passageError;
+      if (testError) throw testError;
 
-      if (!passages || passages.length === 0) {
+      if (!test) {
         toast({
-          title: "No Content Available",
-          description: "This test hasn't been uploaded yet. Please contact your instructor.",
+          title: "Test Not Found",
+          description: "This test doesn't exist. Please check the test ID.",
           variant: "destructive"
         });
         navigate(-1);
@@ -97,12 +97,12 @@ const EnhancedReadingTest = () => {
       }
 
       // Fetch all questions for this test
-      const testBook = passages[0].cambridge_book || `IELTS Test ${testId}`;
       const { data: questions, error: questionError } = await supabase
-        .from('reading_questions')
+        .from('questions')
         .select('*')
-        .eq('cambridge_book', testBook)
-        .order('question_number');
+        .eq('test_id', testId)
+        .order('part_number', { ascending: true })
+        .order('question_number_in_part', { ascending: true });
 
       if (questionError) throw questionError;
 
@@ -120,33 +120,42 @@ const EnhancedReadingTest = () => {
       const partsData: {[key: number]: TestPart} = {};
       const allQuestionsFormatted: ReadingQuestion[] = [];
 
-      // Group passages and questions by part
-      passages.forEach(passage => {
-        const partQuestions = questions.filter(q => q.part_number === passage.part_number);
+      // Group questions by part
+      const partsByNumber: {[key: number]: any[]} = {};
+      questions.forEach(question => {
+        if (!partsByNumber[question.part_number]) {
+          partsByNumber[question.part_number] = [];
+        }
+        partsByNumber[question.part_number].push(question);
+      });
+
+      // Create test parts from questions
+      Object.entries(partsByNumber).forEach(([partNum, partQuestions]) => {
+        const partNumber = parseInt(partNum);
+        const firstQuestion = partQuestions[0];
         
-        partsData[passage.part_number] = {
+        partsData[partNumber] = {
           passage: {
-            id: passage.id,
-            title: passage.title,
-            content: passage.content,
-            part_number: passage.part_number,
-            cambridge_book: passage.cambridge_book,
-            test_number: passage.test_number
+            id: `passage-${partNumber}`,
+            title: `Reading Passage ${partNumber}`,
+            content: firstQuestion?.passage_text || 'Passage content not available',
+            part_number: partNumber,
+            test_number: parseInt(testId)
           },
-            questions: partQuestions.map(q => ({
-              id: q.id,
-              question_number: q.question_number,
-              question_text: q.question_text,
-              question_type: q.question_type,
-              options: Array.isArray(q.options) ? q.options.map(o => String(o)) : (typeof q.options === 'string' ? q.options.split(';') : []),
-              correct_answer: q.correct_answer,
-              explanation: q.explanation,
-              passage_id: q.passage_id,
-              part_number: q.part_number
-            }))
+          questions: partQuestions.map(q => ({
+            id: q.id,
+            question_number: q.question_number_in_part,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options: q.choices ? (Array.isArray(q.choices) ? q.choices.map(o => String(o)) : q.choices.split(';')) : [],
+            correct_answer: q.correct_answer,
+            explanation: q.explanation || '',
+            passage_id: `passage-${partNumber}`,
+            part_number: q.part_number
+          }))
         };
 
-        allQuestionsFormatted.push(...partsData[passage.part_number].questions);
+        allQuestionsFormatted.push(...partsData[partNumber].questions);
       });
 
       setTestParts(partsData);
@@ -207,7 +216,6 @@ const EnhancedReadingTest = () => {
         const testResult = {
           user_id: user.id,
           test_type: 'reading',
-          cambridge_book: testParts[1].passage.cambridge_book,
           section_number: 1,
           total_questions: totalQuestions,
           correct_answers: score,
@@ -223,7 +231,7 @@ const EnhancedReadingTest = () => {
               correct_answer: q.correct_answer,
               explanation: q.explanation
             })),
-            completed_parts: [1, 2, 3]
+            completed_parts: Object.keys(testParts).map(p => parseInt(p))
           }
         };
 

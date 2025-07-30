@@ -128,6 +128,13 @@ const HeroIndex = () => {
               >
                 Log In
               </Button>
+              <Button 
+                onClick={() => navigate('/dashboard')}
+                variant="outline"
+                className="border-primary/30 text-primary bg-white hover:bg-primary hover:text-primary-foreground px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                My Dashboard
+              </Button>
             </div>
           </div>
         </div>

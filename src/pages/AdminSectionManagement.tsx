@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Save, X, FileText, Upload } from "lucide-react";
+import CSVImport from "@/components/CSVImport";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
@@ -168,6 +169,77 @@ const AdminSectionManagement = () => {
     }
   };
 
+  const handleCSVImport = async (questions: any[]) => {
+    try {
+      if (sectionId === 'reading') {
+        // Group questions by part number to create passages and questions
+        const partGroups: {[key: number]: any[]} = {};
+        questions.forEach(q => {
+          const partNum = q.part_number || 1;
+          if (!partGroups[partNum]) partGroups[partNum] = [];
+          partGroups[partNum].push(q);
+        });
+
+        // Create passages and questions for each part
+        for (const [partNumber, partQuestions] of Object.entries(partGroups)) {
+          const partNum = parseInt(partNumber);
+          
+          // Create passage for this part
+          const passageData = {
+            title: `${testType?.toUpperCase()} Test ${testId} - Part ${partNum}`,
+            content: partQuestions[0]?.passage_content || `Reading Passage ${partNum}`,
+            test_number: parseInt(testId || '1'),
+            [`${testType}_book`]: `${testType?.toUpperCase()} Test ${testId}`,
+            passage_type: 'Academic',
+            part_number: partNum,
+            section_number: 1
+          };
+
+          const passageResponse = await createContent('reading_passages', passageData);
+          const passageId = passageResponse?.data?.[0]?.id;
+
+          if (passageId) {
+            // Create questions for this passage
+            for (const question of partQuestions) {
+              const questionData = {
+                question_number: question.question_number,
+                question_text: question.question_text,
+                question_type: question.question_type,
+                options: question.options,
+                correct_answer: question.correct_answer,
+                explanation: question.explanation,
+                passage_id: passageId,
+                cambridge_book: `${testType?.toUpperCase()} Test ${testId}`,
+                section_number: 1,
+                part_number: partNum
+              };
+              
+              await createContent('reading_questions', questionData);
+            }
+          }
+        }
+        
+        toast.success(`Successfully imported ${questions.length} questions across ${Object.keys(partGroups).length} parts`);
+      } else {
+        // Handle other sections
+        for (const question of questions) {
+          const data = {
+            ...question,
+            test_number: parseInt(testId || '1'),
+            [`${testType}_book`]: `${testType?.toUpperCase()} Test ${testId}`
+          };
+          await createContent(getTableType(), data);
+        }
+        toast.success(`Successfully imported ${questions.length} items`);
+      }
+      
+      loadContent();
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      toast.error('Failed to import CSV data');
+    }
+  };
+
   const startEdit = (item: ContentItem) => {
     setEditingItem(item);
     setFormData(item);
@@ -283,21 +355,54 @@ const AdminSectionManagement = () => {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setIsCreating(true)}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add New {sectionId?.charAt(0).toUpperCase()}{sectionId?.slice(1)} Content
-            </Button>
+        {/* Enhanced Actions for Reading Section */}
+        {sectionId === 'reading' ? (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Upload Complete 40-Question Reading Test (3 Parts)</h2>
+              <div className="text-sm text-muted-foreground">
+                {content.length} passages uploaded
+              </div>
+            </div>
+            
+            <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <Upload className="w-12 h-12 text-primary mx-auto" />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">CSV Upload for Full Reading Test</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Upload a structured CSV file containing all 40 questions divided into 3 parts with passages and questions.
+                    </p>
+                  </div>
+                  <CSVImport
+                    onImport={handleCSVImport}
+                    type="reading"
+                    module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
+                    cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}
+                    testNumber={parseInt(testId || '1')}
+                    sectionNumber={1}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {content.length} items total
+        ) : (
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsCreating(true)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add New {sectionId?.charAt(0).toUpperCase()}{sectionId?.slice(1)} Content
+              </Button>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {content.length} items total
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Create/Edit Form */}
         {(isCreating || editingItem) && (

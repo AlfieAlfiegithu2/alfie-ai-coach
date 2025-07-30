@@ -240,19 +240,15 @@ const CSVImport = ({
           </Alert>}
 
         {!showPreview ? <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="outline" onClick={downloadTemplate} className="rounded-xl border-light-border flex-1">
-              <Download className="w-4 h-4 mr-2" />
-              Download Sample CSV
-            </Button>
-
             <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
             
-            <Button onClick={() => fileInputRef.current?.click()} disabled={importing} className="rounded-xl flex-1" style={{
-          background: 'var(--gradient-button)',
-          border: 'none'
-        }}>
+            <Button 
+              onClick={() => fileInputRef.current?.click()} 
+              disabled={importing} 
+              className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-medium w-full"
+            >
               <Upload className="w-4 h-4 mr-2" />
-              {importing ? 'Parsing CSV...' : 'Upload CSV'}
+              {importing ? 'Parsing CSV...' : 'Upload CSV File'}
             </Button>
           </div> : <div className="space-y-4">
             <div className="bg-green-50 border border-green-200 rounded-xl p-4">

@@ -72,7 +72,7 @@ const IELTSPortal = () => {
 
   const handleMockTest = (testId: number) => {
     console.log(`🧪 Starting IELTS mock test ${testId}`);
-    navigate(`/test/${testId}`);
+    navigate(`/enhanced-reading-test/${testId}`);
   };
 
   return (

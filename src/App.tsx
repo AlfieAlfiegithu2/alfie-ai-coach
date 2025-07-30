@@ -38,6 +38,8 @@ import IELTSPortal from "./pages/IELTSPortal";
 import AdminTestManagement from "./pages/AdminTestManagement";
 import AdminTestDetails from "./pages/AdminTestDetails";
 import AdminSectionManagement from "./pages/AdminSectionManagement";
+import AdminReadingManagement from "./pages/AdminReadingManagement";
+import EnhancedReadingTest from "./pages/EnhancedReadingTest";
 import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
@@ -91,6 +93,8 @@ const App = () => {
         <Route path="/admin/:testType/tests" element={<AdminTestManagement />} />
         <Route path="/admin/:testType/test/:testId" element={<AdminTestDetails />} />
         <Route path="/admin/:testType/test/:testId/:sectionId" element={<AdminSectionManagement />} />
+        <Route path="/admin/:testType/test/:testId/reading" element={<AdminReadingManagement />} />
+        <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
             {/* PTE Admin Routes */}
             <Route path="/admin/pte/listening" element={<AdminListening />} />
             <Route path="/admin/pte/reading" element={<AdminReading />} />

@@ -6,19 +6,12 @@ export function useAdminContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getAuthHeader = () => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      console.warn('No admin token found');
-      return '';
-    }
-    return `Bearer ${token}`;
-  };
-
   const createNewTest = async (testType: string, module: string) => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Creating new test:', { testType, module });
+
       // First, get the count of existing tests to determine the next test number
       const { count, error: countError } = await supabase
         .from('tests')
@@ -26,10 +19,15 @@ export function useAdminContent() {
         .eq('test_type', testType)
         .eq('module', module);
 
-      if (countError) throw countError;
+      if (countError) {
+        console.error('Error counting tests:', countError);
+        throw countError;
+      }
 
       const newTestNumber = (count || 0) + 1;
-      const testName = `${testType} ${module} Test ${newTestNumber}`;
+      const testName = `${testType.toUpperCase()} ${module.charAt(0).toUpperCase() + module.slice(1)} Test ${newTestNumber}`;
+
+      console.log('Inserting new test:', { testName, testType, module });
 
       // Insert the new test
       const { data, error: insertError } = await supabase
@@ -42,8 +40,12 @@ export function useAdminContent() {
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error inserting test:', insertError);
+        throw insertError;
+      }
 
+      console.log('Test created successfully:', data);
       setLoading(false);
       return data;
     } catch (err: any) {
@@ -54,24 +56,30 @@ export function useAdminContent() {
     }
   };
 
-  const createContent = async (type: string, data: any) => {
+  const createContent = async (type: 'tests', data: any) => {
     setLoading(true);
     try {
-      const authHeader = getAuthHeader();
-      if (!authHeader) {
-        throw new Error('Authentication required. Please login again.');
+      console.log('Creating content:', type, data);
+      
+      // For tests specifically, use direct Supabase insert
+      if (type === 'tests') {
+        const { data: result, error } = await supabase
+          .from('tests')
+          .insert(data)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw new Error(`Database Error: ${error.message}`);
+        }
+        
+        console.log('Content created successfully:', result);
+        return { data: result };
       }
 
-      const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'create', type, data },
-        headers: { authorization: authHeader }
-      });
-
-      if (error) {
-        console.error('Admin content creation error:', error);
-        throw error;
-      }
-      return result;
+      // For other types, throw error as they should use specific functions
+      throw new Error(`Unsupported content type: ${type}`);
     } catch (error: any) {
       console.error('Create content error:', error);
       throw error;
@@ -80,65 +88,42 @@ export function useAdminContent() {
     }
   };
 
-  const updateContent = async (type: string, data: any) => {
+  const listContent = async (type: 'tests' | 'questions') => {
     setLoading(true);
     try {
-      const authHeader = getAuthHeader();
-      if (!authHeader) {
-        throw new Error('Authentication required. Please login again.');
+      console.log('Listing content for type:', type);
+      
+      if (type === 'tests') {
+        const { data: result, error } = await supabase
+          .from('tests')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Supabase select error:', error);
+          throw new Error(`Database Error: ${error.message}`);
+        }
+        
+        console.log(`Found ${result?.length || 0} ${type} records`);
+        return { data: result };
       }
 
-      const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'update', type, data },
-        headers: { authorization: authHeader }
-      });
+      if (type === 'questions') {
+        const { data: result, error } = await supabase
+          .from('questions')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Admin content update error:', error);
-        throw error;
-      }
-      return result;
-    } catch (error: any) {
-      console.error('Update content error:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteContent = async (type: string, id: string) => {
-    setLoading(true);
-    try {
-      const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'delete', type, data: { id } },
-        headers: { authorization: getAuthHeader() }
-      });
-
-      if (error) throw error;
-      return result;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const listContent = async (type: string) => {
-    setLoading(true);
-    try {
-      const authHeader = getAuthHeader();
-      if (!authHeader) {
-        throw new Error('Authentication required. Please login again.');
+        if (error) {
+          console.error('Supabase select error:', error);
+          throw new Error(`Database Error: ${error.message}`);
+        }
+        
+        console.log(`Found ${result?.length || 0} ${type} records`);
+        return { data: result };
       }
 
-      const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'list', type },
-        headers: { authorization: authHeader }
-      });
-
-      if (error) {
-        console.error('Admin content list error:', error);
-        throw error;
-      }
-      return result;
+      throw new Error(`Unsupported content type: ${type}`);
     } catch (error: any) {
       console.error('List content error:', error);
       throw error;
@@ -174,8 +159,6 @@ export function useAdminContent() {
     error,
     createNewTest,
     createContent,
-    updateContent,
-    deleteContent,
     listContent,
     uploadAudio
   };

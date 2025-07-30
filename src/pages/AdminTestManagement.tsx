@@ -10,6 +10,7 @@ import { BookOpen, Headphones, PenTool, Mic, Clock, Users, Info, Plus } from "lu
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const AdminTestManagement = () => {
@@ -34,14 +35,25 @@ const AdminTestManagement = () => {
 
   const loadTests = async () => {
     try {
-      const response = await listContent('tests');
-      const allTests = response?.data || [];
-      const filteredTests = allTests.filter((test: any) => 
-        test.test_type === testType
-      );
-      setTests(filteredTests);
+      console.log('Loading tests for type:', testType);
+      
+      // Direct Supabase query
+      const { data: allTests, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', testType)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading tests:', error);
+        throw error;
+      }
+
+      console.log('Found tests:', allTests?.length || 0);
+      setTests(allTests || []);
     } catch (error) {
       console.error('Error loading tests:', error);
+      toast.error('Failed to load tests');
     }
   };
 
@@ -51,21 +63,28 @@ const AdminTestManagement = () => {
       return;
     }
 
+    setIsCreating(true);
     try {
+      console.log('Creating test:', { newTestName, testType });
+      
       const testData = {
         test_name: newTestName,
         test_type: testType,
         module: testType === 'ielts' ? 'reading' : testType // Default module
       };
 
-      await createContent('tests', testData);
+      const response = await createContent('tests', testData);
+      console.log('Test created:', response);
+      
       toast.success('Test created successfully');
       setIsCreating(false);
       setNewTestName('');
       loadTests();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating test:', error);
-      toast.error('Failed to create test');
+      toast.error(`Failed to create test: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 

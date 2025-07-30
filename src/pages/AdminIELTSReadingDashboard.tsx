@@ -10,10 +10,11 @@ import { Plus, BookOpen, Edit, Trash2, CheckCircle, AlertCircle } from "lucide-r
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface IELTSTest {
-  id: number;
+  id: string;
   name: string;
   status: 'complete' | 'incomplete';
   partsCompleted: number;
@@ -45,29 +46,45 @@ const AdminIELTSReadingDashboard = () => {
   const loadTests = async () => {
     setIsLoading(true);
     try {
-      // Load from universal tests table
-      const [testsResponse, questionsResponse] = await Promise.all([
-        listContent('tests'),
-        listContent('questions')
-      ]);
+      console.log('Loading IELTS Reading tests...');
+      
+      // Direct Supabase queries - more reliable than edge functions
+      const { data: allTests, error: testsError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'ielts')
+        .eq('module', 'reading')
+        .order('created_at', { ascending: false });
 
-      const allTests = testsResponse?.data || [];
-      const allQuestions = questionsResponse?.data || [];
+      if (testsError) {
+        console.error('Error loading tests:', testsError);
+        throw testsError;
+      }
+
+      const { data: allQuestions, error: questionsError } = await supabase
+        .from('questions')
+        .select('*');
+
+      if (questionsError) {
+        console.error('Error loading questions:', questionsError);
+        throw questionsError;
+      }
+
+      console.log('Found tests:', allTests?.length || 0);
+      console.log('Found questions:', allQuestions?.length || 0);
 
       // Filter for IELTS Reading tests
-      const ieltsReadingTests = allTests.filter((test: any) => 
-        test.test_type === 'ielts' && test.module === 'reading'
-      );
+      const ieltsReadingTests = allTests || [];
 
-      // Group by test number to create test list
-      const testMap = new Map<number, IELTSTest>();
+      // Create test list from database
+      const testList: IELTSTest[] = [];
 
       // Add saved tests from database
       ieltsReadingTests.forEach((test: any) => {
-        const questionsForThisTest = allQuestions.filter((q: any) => q.test_id === test.id).length;
+        const questionsForThisTest = allQuestions?.filter((q: any) => q.test_id === test.id).length || 0;
         
-        testMap.set(parseInt(test.id), {
-          id: parseInt(test.id),
+        testList.push({
+          id: test.id,
           name: test.test_name,
           status: 'incomplete', // Status will be calculated based on questions
           partsCompleted: 0, // Will be calculated from questions
@@ -76,41 +93,25 @@ const AdminIELTSReadingDashboard = () => {
         });
       });
 
-      // Initialize default tests 1-10 if they don't exist
-      for (let i = 1; i <= 10; i++) {
-        if (!testMap.has(i)) {
-          testMap.set(i, {
-            id: i,
-            name: `IELTS Test ${i}`,
-            status: 'incomplete',
-            partsCompleted: 0,
-            totalQuestions: 0,
-            created_at: new Date().toISOString()
-          });
-        }
-      }
-
       // Count questions per test from universal questions table
-      allQuestions.forEach((question: any) => {
+      allQuestions?.forEach((question: any) => {
         if (question.test_id) {
           // Find the test this question belongs to
           const testId = question.test_id;
-          const test = ieltsReadingTests.find((t: any) => t.id === testId);
-          if (test) {
-            const testInMap = testMap.get(parseInt(test.id));
-            if (testInMap) {
-              testInMap.partsCompleted = Math.max(testInMap.partsCompleted, question.part_number || 0);
-            }
+          const testInList = testList.find((t: any) => t.id === testId);
+          if (testInList) {
+            testInList.partsCompleted = Math.max(testInList.partsCompleted, question.part_number || 0);
           }
         }
       });
 
       // Update status based on completion
-      testMap.forEach((test) => {
+      testList.forEach((test) => {
         test.status = (test.partsCompleted === 3 && test.totalQuestions >= 30) ? 'complete' : 'incomplete';
       });
 
-      setTests(Array.from(testMap.values()).sort((a, b) => a.id - b.id));
+      // Sort tests by creation date (newest first)
+      setTests(testList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     } catch (error) {
       console.error('Error loading tests:', error);
       toast.error('Failed to load tests');
@@ -127,10 +128,7 @@ const AdminIELTSReadingDashboard = () => {
 
     setCreating(true);
     try {
-      // Extract test number from name or find next available
-      const testMatch = newTestName.match(/(\d+)/);
-      const existingNumbers = tests.map(t => t.id);
-      const nextNumber = testMatch ? parseInt(testMatch[1]) : Math.max(...existingNumbers, 0) + 1;
+      console.log('Creating new test with name:', newTestName);
       
       // Create new test record in universal tests table
       const testData = {

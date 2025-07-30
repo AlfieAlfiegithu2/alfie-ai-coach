@@ -207,13 +207,32 @@ const CSVImport = ({
 
     try {
       setImporting(true);
+      setError(null); // Clear any previous errors
       await uploadCSV(previewQuestions, testId, testType, partNumber || 1, module);
       onImport(previewQuestions); // Still call onImport for any additional handling
       setShowPreview(false);
       setPreviewQuestions([]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload failed:', error);
-      setError('Failed to upload questions. Please try again.');
+      
+      // Extract specific error message from backend response
+      let errorMessage = 'Failed to upload questions. Please try again.';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // If it's a backend error with details, show specific message
+      if (error?.response?.data?.error) {
+        errorMessage = `Upload Failed: ${error.response.data.error}`;
+        if (error.response.data.details) {
+          errorMessage += ` Details: ${error.response.data.details}`;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setImporting(false);
     }
@@ -318,11 +337,7 @@ const CSVImport = ({
             <Button 
               onClick={handleConfirmImport} 
               disabled={importing || uploading}
-              className="rounded-xl flex-1" 
-              style={{
-                background: 'var(--gradient-button)',
-                border: 'none'
-              }}
+              className="rounded-xl flex-1 bg-primary hover:bg-primary/90 text-white font-medium"
             >
               {importing || uploading ? 'Uploading...' : 'Confirm Import'}
             </Button>

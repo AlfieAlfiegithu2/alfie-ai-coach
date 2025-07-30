@@ -69,6 +69,26 @@ serve(async (req) => {
 async function createContent(supabaseClient: any, type: string, data: any) {
   const tableName = getTableName(type);
   
+  console.log('Creating content:', { type, tableName, dataType: Array.isArray(data) ? 'array' : 'single' });
+  
+  // Clean data for tests table - only use valid columns
+  if (tableName === 'tests') {
+    const cleanData = Array.isArray(data) 
+      ? data.map(item => ({
+          test_name: item.test_name,
+          test_type: item.test_type,
+          module: item.module
+        }))
+      : {
+          test_name: data.test_name,
+          test_type: data.test_type,
+          module: data.module
+        };
+    
+    console.log('Cleaned test data:', cleanData);
+    data = cleanData;
+  }
+  
   // Handle multiple records for bulk operations
   if (Array.isArray(data)) {
     const { data: result, error } = await supabaseClient
@@ -76,7 +96,10 @@ async function createContent(supabaseClient: any, type: string, data: any) {
       .insert(data)
       .select();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Bulk insert error:', error);
+      throw error;
+    }
     return { success: true, data: result };
   }
   
@@ -87,7 +110,10 @@ async function createContent(supabaseClient: any, type: string, data: any) {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Single insert error:', error);
+    throw error;
+  }
   return { success: true, data: result };
 }
 
@@ -129,10 +155,37 @@ async function listContent(supabaseClient: any, type: string) {
 }
 
 async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: string, testId: string, partNumber: number, module?: string) {
-  console.log('Handling CSV upload:', { testType, testId, partNumber, module, rowCount: csvData.length });
+  console.log('Edge Function "handleCsvUpload" received data for test ID:', testId);
+  console.log('Received CSV data payload:', { testType, partNumber, module, rowCount: csvData.length });
   
+  // PRE-EMPTIVE DATA VALIDATION - Guard Clause
+  if (!csvData || csvData.length === 0) {
+    console.error('Validation failed: No CSV data received');
+    return new Response(
+      JSON.stringify({ error: 'Invalid data received. No CSV data provided.' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Validate first row has required fields
+  const firstRow = csvData[0];
+  const requiredFields = ['question_text', 'question_type', 'correct_answer'];
+  
+  for (const field of requiredFields) {
+    if (!firstRow[field] || firstRow[field].trim() === '') {
+      console.error(`Validation failed: Missing required field '${field}' in CSV data`);
+      return new Response(
+        JSON.stringify({ error: `Invalid data received. Missing '${field}' in CSV data.` }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  console.log('Data validation passed');
+
   try {
     // Verify test exists first
+    console.log('Verifying test exists with ID:', testId);
     const { data: testData, error: testError } = await supabaseClient
       .from('tests')
       .select('id, module')
@@ -140,10 +193,11 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
       .single();
 
     if (testError || !testData) {
+      console.error('Test verification failed:', testError);
       throw new Error(`Test with ID ${testId} not found. Please create the test first.`);
     }
 
-    console.log('Target module for questions:', testData.module);
+    console.log('Test verification successful. Target module for questions:', testData.module);
 
     const insertData = csvData.map((row, index) => {
       // Handle different CSV formats with robust mapping
@@ -171,24 +225,55 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
       };
     });
 
-    console.log('Inserting into questions table with data:', insertData[0]);
+    console.log('Preparing to insert', insertData.length, 'questions into the database.');
+    console.log('Sample of first question object being inserted:', insertData[0]);
 
-    const { data, error } = await supabaseClient
-      .from('questions')
-      .insert(insertData)
-      .select();
+    // ROBUST TRY-CATCH AROUND DATABASE INSERT
+    try {
+      const { data, error } = await supabaseClient
+        .from('questions')
+        .insert(insertData)
+        .select();
 
-    if (error) {
-      console.error('CSV upload error:', error);
-      throw new Error(`Database insert failed: ${error.message}`);
+      if (error) {
+        console.error('Database insert error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Database insert failed.', 
+            details: error.message || 'Unknown database error' 
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`CSV upload successful: ${data?.length} questions inserted`);
+      return { success: true, data };
+
+    } catch (dbError: any) {
+      console.error('Database operation catch block:', dbError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Database insert failed.', 
+          details: dbError.message || 'Database operation failed' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
-
-    console.log(`CSV upload successful: ${data?.length} questions inserted`);
     
-    return { success: true, data };
-  } catch (error) {
-    console.error('handleCsvUpload error:', error);
-    throw error;
+  } catch (error: any) {
+    console.error('handleCsvUpload general error:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'CSV upload failed.', 
+        details: error.message || 'Unknown error occurred' 
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
 

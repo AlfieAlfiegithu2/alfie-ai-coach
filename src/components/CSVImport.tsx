@@ -15,6 +15,7 @@ interface CSVImportProps {
   testNumber?: number;
   sectionNumber?: number;
   partNumber?: number;
+  hideDownloadSample?: boolean;
 }
 const CSVImport = ({
   onImport,
@@ -24,7 +25,8 @@ const CSVImport = ({
   cambridgeBook,
   testNumber,
   sectionNumber,
-  partNumber
+  partNumber,
+  hideDownloadSample = false
 }: CSVImportProps) => {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);

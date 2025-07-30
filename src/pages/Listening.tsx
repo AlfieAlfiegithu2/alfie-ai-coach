@@ -57,34 +57,21 @@ const Listening = () => {
 
   const fetchListeningTest = async () => {
     try {
-      // Fetch a random listening section
-      const { data: sections, error: sectionError } = await supabase
-        .from('listening_sections')
-        .select('*')
-        .limit(1);
-
-      if (sectionError) throw sectionError;
-
-      if (sections && sections.length > 0) {
-        const section = sections[0];
-        setCurrentSection(section);
-
-        // Fetch questions for this section
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('listening_questions')
-          .select('*')
-          .eq('section_id', section.id)
-          .order('question_number');
-
-        if (questionsError) throw questionsError;
-        setQuestions(questionsData || []);
-
-        // Initialize audio if URL exists
-        if (section.audio_url) {
-          const audioElement = new Audio(section.audio_url);
-          setAudio(audioElement);
-        }
-      }
+      // For now, show a message that listening tests need to be updated
+      setLoading(false);
+      
+      // Create a placeholder section with sample content
+      const placeholderSection = {
+        id: 'placeholder',
+        title: 'Listening Test Coming Soon',
+        section_number: 1,
+        instructions: 'Listening tests are being updated to the new system. Please check back soon!',
+        audio_url: null,
+        transcript: ''
+      };
+      
+      setCurrentSection(placeholderSection);
+      setQuestions([]);
     } catch (error: any) {
       toast({
         title: "Error",

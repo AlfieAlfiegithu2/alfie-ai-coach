@@ -5,12 +5,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
   id: string;
-  user_id: string;
-  email: string;
   full_name: string;
   subscription_status: string;
-  subscription_expires_at?: string;
   native_language: string;
+  created_at?: string;
 }
 
 interface UseAuthReturn {
@@ -73,7 +71,7 @@ export function useAuth(): UseAuthReturn {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .single();
 
       if (error && error.code !== 'PGRST116') {

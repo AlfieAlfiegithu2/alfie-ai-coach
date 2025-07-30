@@ -81,25 +81,19 @@ const IELTSPortal = () => {
         throw testsError;
       }
 
-      // Fetch questions from both universal and module-specific tables
-      const [universalQuestions, readingQuestions] = await Promise.all([
-        supabase.from('questions').select('test_id, id'),
-        supabase.from('reading_questions').select('test_id, id')
-      ]);
+      // Fetch questions from universal table only
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('test_id, id');
 
-      // Count questions per test from both tables
+      if (questionsError) {
+        console.error('Error fetching questions:', questionsError);
+        throw questionsError;
+      }
+
+      // Count questions per test
       const questionCounts = new Map();
-      
-      // Count from universal questions table
-      universalQuestions.data?.forEach(q => {
-        if (q.test_id) {
-          const count = questionCounts.get(q.test_id) || 0;
-          questionCounts.set(q.test_id, count + 1);
-        }
-      });
-
-      // Count from reading_questions table
-      readingQuestions.data?.forEach(q => {
+      questionsData?.forEach(q => {
         if (q.test_id) {
           const count = questionCounts.get(q.test_id) || 0;
           questionCounts.set(q.test_id, count + 1);
@@ -109,11 +103,11 @@ const IELTSPortal = () => {
       const transformedTests = testsData?.map(test => {
         const questionCount = questionCounts.get(test.id) || 0;
         return {
-          id: test.test_number,
+          id: test.id,
           test_name: test.test_name,
-          test_number: test.test_number,
+          test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
           status: questionCount > 0 ? 'complete' : 'incomplete',
-          parts_completed: test.parts_completed || 0,
+          parts_completed: questionCount > 0 ? 3 : 0,
           total_questions: questionCount,
           comingSoon: questionCount === 0
         };

@@ -53,28 +53,19 @@ const Reading = () => {
 
   const fetchReadingTest = async () => {
     try {
-      // Fetch a random reading passage
-      const { data: passages, error: passageError } = await supabase
-        .from('reading_passages')
-        .select('*')
-        .limit(1);
-
-      if (passageError) throw passageError;
-
-      if (passages && passages.length > 0) {
-        const passage = passages[0];
-        setCurrentPassage(passage);
-
-        // Fetch questions for this passage
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('reading_questions')
-          .select('*')
-          .eq('passage_id', passage.id)
-          .order('question_number');
-
-        if (questionsError) throw questionsError;
-        setQuestions(questionsData || []);
-      }
+      // For now, show a message that reading tests need to be updated
+      setLoading(false);
+      
+      // Create a placeholder passage with sample content
+      const placeholderPassage = {
+        id: 'placeholder',
+        title: 'Reading Test Coming Soon',
+        content: 'Reading tests are being updated to the new system. Please check back soon!',
+        passage_type: 'placeholder'
+      };
+      
+      setCurrentPassage(placeholderPassage);
+      setQuestions([]);
     } catch (error: any) {
       toast({
         title: "Error",

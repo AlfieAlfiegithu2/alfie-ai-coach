@@ -84,116 +84,24 @@ const ListeningTest = () => {
       // Start fresh - no saved answers loaded
       console.log('🔄 Fresh Start: Starting test with no saved answers for clean experience');
 
-      // Fetch listening section based on testId or get random
-      let sectionQuery = supabase.from('listening_sections').select('*');
+      // For now, show a message that listening tests need to be updated
+      setLoading(false);
       
-      if (testId && testId !== 'random') {
-        sectionQuery = sectionQuery.eq('id', testId);
-      } else {
-        // Get a random section, prioritizing newer Cambridge books
-        sectionQuery = sectionQuery.order('cambridge_book', { ascending: false }).order('created_at', { ascending: false });
-      }
+      // Create a placeholder section with sample content
+      const placeholderSection = {
+        id: 'placeholder',
+        title: 'Listening Test Coming Soon',
+        section_number: 1,
+        instructions: 'Listening tests are being updated to the new system. Please check back soon!',
+        audio_url: null,
+        transcript: '',
+        cambridge_book: 'Coming Soon',
+        part_number: 1,
+        test_number: 1
+      };
       
-      const { data: sections, error: sectionError } = await sectionQuery.limit(1);
-
-      if (sectionError) throw sectionError;
-
-      if (sections && sections.length > 0) {
-        const section = sections[0];
-        console.log('Loading listening section:', section.id, section.title);
-        setCurrentSection(section);
-
-        // Fetch questions for this section
-        console.log('Fetching questions for section:', section.id);
-        let { data: questionsData, error: questionsError } = await supabase
-          .from('listening_questions')
-          .select('*')
-          .eq('section_id', section.id)
-          .order('question_number');
-
-        // If no questions found by section_id, fallback query (simplified)
-        if (!questionsData || questionsData.length === 0) {
-          console.log('No questions found by section_id, trying direct fallback...');
-          
-          const { data: fallbackData } = await supabase
-            .from('listening_questions')
-            .select('*')
-            .limit(10)
-            .order('question_number');
-          
-          if (fallbackData && fallbackData.length > 0) {
-            questionsData = fallbackData;
-            console.log(`Fallback: Found ${fallbackData.length} listening questions`);
-          }
-        }
-
-        if (questionsError) {
-          console.error('Error fetching listening questions:', questionsError);
-          throw questionsError;
-        }
-
-        console.log('Listening questions fetched:', questionsData?.length || 0, 'questions');
-
-        if (questionsData && questionsData.length > 0) {
-          const formattedQuestions: ListeningQuestion[] = questionsData.map(q => {
-            console.log('Processing listening question:', q.question_number, q.question_type, q.options);
-            
-            let processedOptions: string[] | undefined = undefined;
-            if (q.options) {
-              if (Array.isArray(q.options)) {
-                processedOptions = q.options.map((o: any) => String(o));
-              } else if (typeof q.options === 'string') {
-                processedOptions = q.options.split(';');
-              }
-            }
-            
-            return {
-              id: q.id,
-              question_text: q.question_text,
-              question_number: q.question_number,
-              options: processedOptions,
-              correct_answer: q.correct_answer,
-              question_type: q.question_type,
-              explanation: q.explanation,
-              section_id: q.section_id
-            };
-          });
-          console.log('Formatted listening questions:', formattedQuestions.length);
-          setQuestions(formattedQuestions);
-        } else {
-          console.warn('No questions found for section:', section.id);
-          toast({
-            title: "No Questions Found", 
-            description: "This section doesn't have any questions yet. Please select another test.",
-            variant: "destructive"
-          });
-        }
-
-        // Initialize audio if URL exists
-        if (section.audio_url) {
-          const audioElement = new Audio(section.audio_url);
-          
-          audioElement.addEventListener('loadedmetadata', () => {
-            setAudioDuration(audioElement.duration);
-          });
-          
-          audioElement.addEventListener('timeupdate', () => {
-            setAudioCurrentTime(audioElement.currentTime);
-          });
-          
-          audioElement.addEventListener('ended', () => {
-            setIsPlaying(false);
-          });
-          
-          setAudio(audioElement);
-        }
-      } else {
-        toast({
-          title: "No Content Available",
-          description: "No listening sections are available yet. Please check back soon or contact your instructor.",
-          variant: "destructive"
-        });
-      }
+      setCurrentSection(placeholderSection);
+      setQuestions([]);
     } catch (error: any) {
       toast({
         title: "Error",

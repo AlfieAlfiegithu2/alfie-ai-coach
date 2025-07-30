@@ -81,8 +81,8 @@ const ContentSelection = () => {
           testItems.push({
             id: `${test.id}-${partNumber}`,
             title: `${test.test_name} - Part ${partNumber}`,
-            cambridge_book: `Cambridge ${test.test_number}`,
-            test_number: test.test_number,
+            cambridge_book: test.test_name.includes('Cambridge') ? test.test_name : `Cambridge ${parseInt(test.test_name.match(/\d+/)?.[0] || '1')}`,
+            test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
             section_number: 1, // Default section
             part_number: partNumber,
             question_count: count

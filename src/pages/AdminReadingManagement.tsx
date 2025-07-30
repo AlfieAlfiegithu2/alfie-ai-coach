@@ -111,7 +111,13 @@ const AdminReadingManagement = () => {
     );
   };
 
-  const handleCSVUpload = (partNumber: number, file: File) => {
+  const handleCSVUpload = (partNumber: number, questions: any[]) => {
+    console.log('CSV uploaded for part', partNumber, 'with questions:', questions);
+    // Create a mock file object to store questions data
+    const questionsData = JSON.stringify(questions);
+    const file = new File([questionsData], `part-${partNumber}-questions.json`, {
+      type: 'application/json'
+    });
     updatePart(partNumber, 'csvFile', file);
   };
 
@@ -126,19 +132,27 @@ const AdminReadingManagement = () => {
 
     setSavingPart(partNumber);
     try {
-      // Parse CSV file
-      const csvText = await part.csvFile.text();
-      const lines = csvText.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      // Parse questions from file
+      const fileContent = await part.csvFile.text();
+      let questions;
       
-      const questions = lines.slice(1).map((line, index) => {
-        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-        const question: any = {};
-        headers.forEach((header, i) => {
-          question[header] = values[i] || '';
-        });
-        return question;
-      }).filter(q => q.question_text && q.correct_answer);
+      try {
+        // Try to parse as JSON first (from our CSV import component)
+        questions = JSON.parse(fileContent);
+      } catch {
+        // Fall back to CSV parsing
+        const lines = fileContent.split('\n').filter(line => line.trim());
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        
+        questions = lines.slice(1).map((line, index) => {
+          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+          const question: any = {};
+          headers.forEach((header, i) => {
+            question[header] = values[i] || '';
+          });
+          return question;
+        }).filter(q => q.question_text && q.correct_answer);
+      }
 
       // Create passage
       const passageData = {
@@ -152,7 +166,7 @@ const AdminReadingManagement = () => {
       };
 
       const passageResponse = await createContent('reading_passages', passageData);
-      const passageId = passageResponse?.data?.[0]?.id;
+      const passageId = passageResponse?.data?.id;
 
       if (!passageId) {
         throw new Error('Failed to create passage');
@@ -167,7 +181,7 @@ const AdminReadingManagement = () => {
           question_number: questionNumber,
           question_text: question.question_text || '',
           question_type: question.question_type || 'Multiple Choice',
-          options: question.options ? JSON.parse(question.options) : null,
+          options: question.options || null,
           correct_answer: question.correct_answer || '',
           explanation: question.explanation || '',
           passage_id: passageId,
@@ -189,9 +203,10 @@ const AdminReadingManagement = () => {
       );
 
       toast.success(`Part ${partNumber} saved successfully with ${questions.length} questions`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving part:', error);
-      toast.error(`Failed to save Part ${partNumber}`);
+      const errorMessage = error.message || `Failed to save Part ${partNumber}`;
+      toast.error(`Error: ${errorMessage}. Please check your data and try again.`);
     } finally {
       setSavingPart(null);
     }
@@ -300,16 +315,7 @@ const AdminReadingManagement = () => {
                       </label>
                       <div className="border-2 border-dashed border-border rounded-lg p-6">
                         <CSVImport
-                          onImport={(questions) => {
-                            // Create a mock file for the questions data
-                            const csvContent = questions.map(q => 
-                              Object.values(q).join(',')
-                            ).join('\n');
-                            const file = new File([csvContent], `part-${part.number}-questions.csv`, {
-                              type: 'text/csv'
-                            });
-                            handleCSVUpload(part.number, file);
-                          }}
+                          onImport={(questions) => handleCSVUpload(part.number, questions)}
                           type="reading"
                           module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
                           cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}

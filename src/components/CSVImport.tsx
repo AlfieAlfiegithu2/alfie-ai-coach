@@ -189,6 +189,7 @@ const CSVImport = ({
     }
   };
   const handleConfirmImport = () => {
+    console.log('Confirming import of questions:', previewQuestions);
     onImport(previewQuestions);
     setShowPreview(false);
     setPreviewQuestions([]);

@@ -65,6 +65,19 @@ serve(async (req) => {
 
 async function createContent(supabaseClient: any, type: string, data: any) {
   const tableName = getTableName(type);
+  
+  // Handle multiple records for bulk operations
+  if (Array.isArray(data)) {
+    const { data: result, error } = await supabaseClient
+      .from(tableName)
+      .insert(data)
+      .select();
+    
+    if (error) throw error;
+    return { success: true, data: result };
+  }
+  
+  // Handle single record
   const { data: result, error } = await supabaseClient
     .from(tableName)
     .insert([data])
@@ -118,12 +131,37 @@ async function listContent(supabaseClient: any, type: string) {
 
 function getTableName(type: string): string {
   const tableMap: Record<string, string> = {
+    // IELTS tables
     'reading_passages': 'reading_passages',
     'reading_questions': 'reading_questions',
     'listening_sections': 'listening_sections',
     'listening_questions': 'listening_questions',
     'writing_prompts': 'writing_prompts',
-    'speaking_prompts': 'speaking_prompts'
+    'speaking_prompts': 'speaking_prompts',
+    
+    // PTE tables
+    'pte_passages': 'pte_passages',
+    'pte_questions': 'pte_questions',
+    'pte_listening_sections': 'pte_listening_sections',
+    'pte_listening_questions': 'pte_listening_questions',
+    'pte_writing_prompts': 'pte_writing_prompts',
+    'pte_speaking_prompts': 'pte_speaking_prompts',
+    
+    // TOEFL tables
+    'toefl_passages': 'toefl_passages',
+    'toefl_questions': 'toefl_questions',
+    'toefl_listening_sections': 'toefl_listening_sections',
+    'toefl_listening_questions': 'toefl_listening_questions',
+    'toefl_writing_prompts': 'toefl_writing_prompts',
+    'toefl_speaking_prompts': 'toefl_speaking_prompts',
+    
+    // General tables
+    'general_passages': 'general_passages',
+    'general_questions': 'general_questions',
+    'general_listening_sections': 'general_listening_sections',
+    'general_listening_questions': 'general_listening_questions',
+    'general_writing_prompts': 'general_writing_prompts',
+    'general_speaking_prompts': 'general_speaking_prompts'
   };
 
   const tableName = tableMap[type];

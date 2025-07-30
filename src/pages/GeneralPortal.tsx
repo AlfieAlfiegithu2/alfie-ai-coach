@@ -57,13 +57,13 @@ const GeneralPortal = () => {
     }
   ];
 
-  const mockTests = [
-    { id: 1, title: 'English Assessment Test 1', difficulty: 'All Levels', duration: '90 minutes', sections: 4 },
-    { id: 2, title: 'English Assessment Test 2', difficulty: 'Intermediate', duration: '75 minutes', sections: 4 },
-    { id: 3, title: 'English Assessment Test 3', difficulty: 'Advanced', duration: '90 minutes', sections: 4 },
-    { id: 4, title: 'Grammar & Vocabulary Test', difficulty: 'All Levels', duration: '45 minutes', sections: 2 },
-    { id: 5, title: 'Communication Skills Test', difficulty: 'Intermediate', duration: '60 minutes', sections: 2 }
-  ];
+  const mockTests = Array.from({ length: 10 }, (_, i) => ({
+    id: i + 1,
+    title: `General English Test ${i + 1}`,
+    difficulty: 'All Levels',
+    duration: '90 minutes',
+    sections: 4
+  }));
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting General English ${skillId} practice`);
@@ -213,11 +213,11 @@ const GeneralPortal = () => {
                 Take Level Assessment
               </Button>
               <Button 
-                onClick={() => navigate('/personal-page')}
+                onClick={() => navigate('/dashboard')}
                 variant="outline"
                 size="lg"
               >
-                View Progress
+                My Dashboard
               </Button>
             </div>
           </div>

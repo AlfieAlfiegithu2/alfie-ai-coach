@@ -57,13 +57,13 @@ const PTEPortal = () => {
     }
   ];
 
-  const mockTests = [
-    { id: 1, title: 'PTE Practice Test 1', difficulty: 'Beginner', duration: '3 hours', sections: 4 },
-    { id: 2, title: 'PTE Practice Test 2', difficulty: 'Intermediate', duration: '3 hours', sections: 4 },
-    { id: 3, title: 'PTE Practice Test 3', difficulty: 'Advanced', duration: '3 hours', sections: 4 },
-    { id: 4, title: 'PTE Practice Test 4', difficulty: 'Expert', duration: '3 hours', sections: 4 },
-    { id: 5, title: 'PTE Practice Test 5', difficulty: 'Mixed', duration: '3 hours', sections: 4 }
-  ];
+  const mockTests = Array.from({ length: 10 }, (_, i) => ({
+    id: i + 1,
+    title: `PTE Test ${i + 1}`,
+    difficulty: 'Mixed Levels',
+    duration: '3 hours',
+    sections: 4
+  }));
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting PTE ${skillId} practice`);
@@ -214,11 +214,11 @@ const PTEPortal = () => {
                 Take Diagnostic Test
               </Button>
               <Button 
-                onClick={() => navigate('/personal-page')}
+                onClick={() => navigate('/dashboard')}
                 variant="outline"
                 size="lg"
               >
-                View Progress
+                My Dashboard
               </Button>
             </div>
           </div>

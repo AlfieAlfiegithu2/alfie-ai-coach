@@ -57,13 +57,13 @@ const IELTSPortal = () => {
     }
   ];
 
-  const mockTests = [
-    { id: 1, title: 'IELTS Academic Test 1', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
-    { id: 2, title: 'IELTS Academic Test 2', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
-    { id: 3, title: 'IELTS General Test 1', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
-    { id: 4, title: 'IELTS General Test 2', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 },
-    { id: 5, title: 'IELTS Academic Test 3', difficulty: 'Mixed Bands', duration: '2h 45m', sections: 4 }
-  ];
+  const mockTests = Array.from({ length: 10 }, (_, i) => ({
+    id: i + 1,
+    title: `IELTS Test ${i + 1}`,
+    difficulty: 'Mixed Bands',
+    duration: '2h 45m',
+    sections: 4
+  }));
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting IELTS ${skillId} practice`);
@@ -213,11 +213,11 @@ const IELTSPortal = () => {
                 Take Diagnostic Test
               </Button>
               <Button 
-                onClick={() => navigate('/personal-page')}
+                onClick={() => navigate('/dashboard')}
                 variant="outline"
                 size="lg"
               >
-                View Progress
+                My Dashboard
               </Button>
             </div>
           </div>

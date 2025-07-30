@@ -239,15 +239,26 @@ const Dashboard = () => {
                   Sign In
                 </Button>
               ) : (
+              <div className="flex gap-4">
                 <Button 
-                  onClick={() => navigate('/personal-page')}
+                  onClick={() => navigate('/dashboard')}
                   variant="outline" 
                   size="lg"
                   className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-lg px-8 py-4 h-auto"
                 >
                   <User className="w-5 h-5 mr-2" />
-                  View Profile
+                  My Dashboard
                 </Button>
+                <Button 
+                  onClick={() => navigate('/vocabulary')}
+                  variant="outline" 
+                  size="lg"
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-lg px-8 py-4 h-auto"
+                >
+                  <BookOpen className="w-5 h-5 mr-2" />
+                  My Vocabulary
+                </Button>
+              </div>
               )}
             </div>
 
@@ -282,14 +293,23 @@ const Dashboard = () => {
                   <h2 className="text-heading-2 mb-2">Your Progress</h2>
                   <p className="text-body">Track your improvement across all English skills</p>
                 </div>
-                <Button 
-                  onClick={() => navigate('/personal-page')}
-                  variant="outline"
-                  className="hover-lift"
-                >
-                  View Details
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => navigate('/settings')}
+                    variant="outline"
+                    className="hover-lift"
+                  >
+                    Settings
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/vocabulary')}
+                    variant="outline"
+                    className="hover-lift"
+                  >
+                    Vocabulary
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">

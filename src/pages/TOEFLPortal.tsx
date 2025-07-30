@@ -61,48 +61,14 @@ const TOEFLPortal = () => {
     }
   ];
 
-  const mockTests = [
-    { 
-      id: 1, 
-      title: 'TOEFL iBT Practice Test 1', 
-      difficulty: 'Beginner', 
-      duration: '3 hours', 
-      score: '0-120',
-      type: 'Full Test'
-    },
-    { 
-      id: 2, 
-      title: 'TOEFL iBT Practice Test 2', 
-      difficulty: 'Intermediate', 
-      duration: '3 hours', 
-      score: '0-120',
-      type: 'Full Test'
-    },
-    { 
-      id: 3, 
-      title: 'TOEFL iBT Practice Test 3', 
-      difficulty: 'Advanced', 
-      duration: '3 hours', 
-      score: '0-120',
-      type: 'Full Test'
-    },
-    { 
-      id: 4, 
-      title: 'TOEFL Speaking Only', 
-      difficulty: 'Mixed', 
-      duration: '17 minutes', 
-      score: '0-30',
-      type: 'Section Test'
-    },
-    { 
-      id: 5, 
-      title: 'TOEFL Writing Only', 
-      difficulty: 'Mixed', 
-      duration: '50 minutes', 
-      score: '0-30',
-      type: 'Section Test'
-    }
-  ];
+  const mockTests = Array.from({ length: 10 }, (_, i) => ({
+    id: i + 1,
+    title: `TOEFL Test ${i + 1}`,
+    difficulty: 'Mixed Levels',
+    duration: '3 hours',
+    score: '0-120',
+    type: 'Full Test'
+  }));
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting TOEFL ${skillId} practice`);
@@ -275,11 +241,11 @@ const TOEFLPortal = () => {
                 Take Full Practice Test
               </Button>
               <Button 
-                onClick={() => navigate('/personal-page')}
+                onClick={() => navigate('/dashboard')}
                 variant="outline"
                 size="lg"
               >
-                Track Progress
+                My Dashboard
               </Button>
             </div>
           </div>

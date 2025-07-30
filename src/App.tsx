@@ -29,6 +29,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CommunityPage from "./pages/CommunityPage";
 import SettingsPage from "./pages/SettingsPage";
+import VocabularyPage from "./pages/VocabularyPage";
 import PTEPortal from "./pages/PTEPortal";
 import TOEFLPortal from "./pages/TOEFLPortal";
 import GeneralPortal from "./pages/GeneralPortal";
@@ -36,6 +37,7 @@ import EnhancedGeneralPortal from "./pages/EnhancedGeneralPortal";
 import IELTSPortal from "./pages/IELTSPortal";
 import AdminTestManagement from "./pages/AdminTestManagement";
 import AdminTestDetails from "./pages/AdminTestDetails";
+import AdminSectionManagement from "./pages/AdminSectionManagement";
 import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
@@ -86,8 +88,9 @@ const App = () => {
             <Route path="/admin/pte" element={<AdminPTE />} />
             <Route path="/admin/toefl" element={<AdminTOEFL />} />
             <Route path="/admin/general" element={<AdminGeneral />} />
-            <Route path="/admin/:testType/tests" element={<AdminTestManagement />} />
-            <Route path="/admin/:testType/test/:testId" element={<AdminTestDetails />} />
+        <Route path="/admin/:testType/tests" element={<AdminTestManagement />} />
+        <Route path="/admin/:testType/test/:testId" element={<AdminTestDetails />} />
+        <Route path="/admin/:testType/test/:testId/:sectionId" element={<AdminSectionManagement />} />
             {/* PTE Admin Routes */}
             <Route path="/admin/pte/listening" element={<AdminListening />} />
             <Route path="/admin/pte/reading" element={<AdminReading />} />
@@ -118,7 +121,8 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/tests" element={<TestSelection />} />
             <Route path="/community" element={<CommunityPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/vocabulary" element={<VocabularyPage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

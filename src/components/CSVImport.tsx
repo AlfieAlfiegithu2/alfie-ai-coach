@@ -208,10 +208,20 @@ const CSVImport = ({
     try {
       setImporting(true);
       setError(null); // Clear any previous errors
+      
+      console.log('Confirm Import clicked - uploading questions to database...');
       await uploadCSV(previewQuestions, testId, testType, partNumber || 1, module);
-      onImport(previewQuestions); // Still call onImport for any additional handling
+      
+      console.log('Database upload completed successfully');
+      
+      // Call the parent component's onImport handler for additional processing
+      onImport(previewQuestions);
+      
+      // Close the preview and clear state
       setShowPreview(false);
       setPreviewQuestions([]);
+      
+      console.log('Import workflow completed - preview closed');
     } catch (error: any) {
       console.error('Upload failed:', error);
       

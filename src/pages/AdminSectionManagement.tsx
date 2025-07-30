@@ -166,10 +166,15 @@ const AdminSectionManagement = () => {
   };
 
   const handleCSVImport = async (questions: any[]) => {
-    // CSV import is now handled by the CSVImport component directly
-    // This function is kept for compatibility but the actual upload
-    // happens through the useCSVUpload hook in CSVImport
-    loadContent();
+    console.log('CSV Import completed successfully. Refreshing content list...');
+    
+    // Refresh the content list to show newly uploaded questions
+    await loadContent();
+    
+    // Show success feedback
+    toast.success(`Successfully imported ${questions.length} questions to the database`);
+    
+    console.log('Content refreshed. Import workflow complete.');
   };
 
   const startEdit = (item: ContentItem) => {
@@ -289,11 +294,18 @@ const AdminSectionManagement = () => {
 
         {/* Enhanced Actions for Reading Section */}
         {sectionId === 'reading' ? (
-          <div className="space-y-6">
+            <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Upload Complete 40-Question Reading Test (3 Parts)</h2>
-              <div className="text-sm text-muted-foreground">
-                {content.length} passages uploaded
+              <h2 className="text-2xl font-semibold">Upload Complete Reading Test Questions</h2>
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-muted-foreground">
+                  {content.length} questions uploaded
+                </div>
+                {content.length > 0 && (
+                  <Badge variant="default" className="bg-green-600 text-white">
+                    ✓ Questions Saved
+                  </Badge>
+                )}
               </div>
             </div>
             

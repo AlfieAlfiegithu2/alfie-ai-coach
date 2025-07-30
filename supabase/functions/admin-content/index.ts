@@ -145,9 +145,6 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
 
     console.log('Target module for questions:', testData.module);
 
-    // Always use universal questions table
-    const tableName = 'questions';
-
     const insertData = csvData.map((row, index) => {
       // Handle different CSV formats with robust mapping
       const questionText = row['Question Text'] || row['Question'] || row['QuestionText'] || row['question_text'] || '';
@@ -159,7 +156,6 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
       const audioUrl = row['Audio URL'] || row['AudioURL'] || row['audio_url'] || '';
       const imageUrl = row['Image URL'] || row['ImageURL'] || row['image_url'] || '';
 
-      // Universal questions table format
       return {
         test_id: testId,
         question_text: questionText,
@@ -171,16 +167,14 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
         choices: choices,
         passage_text: passageText,
         audio_url: audioUrl || null,
-        image_url: imageUrl || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        image_url: imageUrl || null
       };
     });
 
-    console.log('Inserting into universal questions table with data:', insertData[0]);
+    console.log('Inserting into questions table with data:', insertData[0]);
 
     const { data, error } = await supabaseClient
-      .from(tableName)
+      .from('questions')
       .insert(insertData)
       .select();
 
@@ -189,19 +183,9 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
       throw new Error(`Database insert failed: ${error.message}`);
     }
 
-    console.log(`CSV upload successful: ${data?.length} questions inserted into ${tableName}`);
+    console.log(`CSV upload successful: ${data?.length} questions inserted`);
     
-    // Update test question count
-    await supabaseClient
-      .from('tests')
-      .update({ 
-        total_questions: data.length,
-        parts_completed: partNumber,
-        status: partNumber >= 3 ? 'complete' : 'incomplete'
-      })
-      .eq('id', testId);
-
-    return { success: true, data, table: tableName };
+    return { success: true, data };
   } catch (error) {
     console.error('handleCsvUpload error:', error);
     throw error;
@@ -210,7 +194,7 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
 
 function getTableName(type: string): string {
   const tableMap: Record<string, string> = {
-    // Universal tables only
+    // Universal tables
     'tests': 'tests',
     'questions': 'questions',
     'csv_upload': 'questions', // CSV uploads go to questions table
@@ -218,28 +202,10 @@ function getTableName(type: string): string {
     // Module-specific tables that still exist
     'writing_prompts': 'writing_prompts',
     'speaking_prompts': 'speaking_prompts',
-    
-    // PTE tables
-    'pte_passages': 'pte_passages',
-    'pte_questions': 'pte_questions',
-    'pte_listening_sections': 'pte_listening_sections',
-    'pte_listening_questions': 'pte_listening_questions',
     'pte_writing_prompts': 'pte_writing_prompts',
     'pte_speaking_prompts': 'pte_speaking_prompts',
-    
-    // TOEFL tables
-    'toefl_passages': 'toefl_passages',
-    'toefl_questions': 'toefl_questions',
-    'toefl_listening_sections': 'toefl_listening_sections',
-    'toefl_listening_questions': 'toefl_listening_questions',
     'toefl_writing_prompts': 'toefl_writing_prompts',
     'toefl_speaking_prompts': 'toefl_speaking_prompts',
-    
-    // General tables
-    'general_passages': 'general_passages',
-    'general_questions': 'general_questions',
-    'general_listening_sections': 'general_listening_sections',
-    'general_listening_questions': 'general_listening_questions',
     'general_writing_prompts': 'general_writing_prompts',
     'general_speaking_prompts': 'general_speaking_prompts'
   };

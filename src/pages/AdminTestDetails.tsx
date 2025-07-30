@@ -70,13 +70,13 @@ const AdminTestDetails = () => {
     }
   ];
 
-  const handleCSVImport = (questions: any[]) => {
-    console.log('Importing questions:', questions);
-    // Handle CSV import logic here
-  };
-
-  const handleQuestionsPreview = (questions: any[]) => {
-    console.log('Previewing questions:', questions);
+  const handleCSVImport = async (questions: any[], section: string, partNumber: number = 1) => {
+    try {
+      // This will be handled by the CSVImport component's internal logic
+      console.log('Importing questions for section:', section, 'part:', partNumber);
+    } catch (error) {
+      console.error('Error importing questions:', error);
+    }
   };
 
   return (
@@ -148,10 +148,11 @@ const AdminTestDetails = () => {
                     <TabsContent value="upload" className="mt-4">
                       <div className="space-y-3">
                         <CSVImport 
-                          onImport={handleCSVImport}
-                          onQuestionsPreview={handleQuestionsPreview}
+                          onImport={(questions) => handleCSVImport(questions, section.id)}
                           type={section.id as "reading" | "listening" | "writing" | "speaking"}
                           module={testType as "ielts" | "pte" | "toefl" | "general"}
+                          testId={testId}
+                          testType={testType}
                         />
                       </div>
                     </TabsContent>

@@ -74,18 +74,14 @@ const AdminSectionManagement = () => {
   };
 
   const getTableType = () => {
-    const modulePrefix = testType === 'ielts' ? '' : `${testType}_`;
-    
-    if (sectionId === 'reading') {
-      return testType === 'ielts' ? 'reading_passages' : `${modulePrefix}passages`;
-    } else if (sectionId === 'listening') {
-      return `${modulePrefix}listening_sections`;
+    if (sectionId === 'reading' || sectionId === 'listening') {
+      return 'questions'; // Use universal questions table
     } else if (sectionId === 'writing') {
-      return `${modulePrefix}writing_prompts`;
+      return `${testType === 'ielts' ? '' : testType + '_'}writing_prompts`;
     } else if (sectionId === 'speaking') {
-      return `${modulePrefix}speaking_prompts`;
+      return `${testType === 'ielts' ? '' : testType + '_'}speaking_prompts`;
     }
-    return '';
+    return 'questions';
   };
 
   const getSectionConfig = () => {
@@ -170,74 +166,10 @@ const AdminSectionManagement = () => {
   };
 
   const handleCSVImport = async (questions: any[]) => {
-    try {
-      if (sectionId === 'reading') {
-        // Group questions by part number to create passages and questions
-        const partGroups: {[key: number]: any[]} = {};
-        questions.forEach(q => {
-          const partNum = q.part_number || 1;
-          if (!partGroups[partNum]) partGroups[partNum] = [];
-          partGroups[partNum].push(q);
-        });
-
-        // Create passages and questions for each part
-        for (const [partNumber, partQuestions] of Object.entries(partGroups)) {
-          const partNum = parseInt(partNumber);
-          
-          // Create passage for this part
-          const passageData = {
-            title: `${testType?.toUpperCase()} Test ${testId} - Part ${partNum}`,
-            content: partQuestions[0]?.passage_content || `Reading Passage ${partNum}`,
-            test_number: parseInt(testId || '1'),
-            [`${testType}_book`]: `${testType?.toUpperCase()} Test ${testId}`,
-            passage_type: 'Academic',
-            part_number: partNum,
-            section_number: 1
-          };
-
-          const passageResponse = await createContent('reading_passages', passageData);
-          const passageId = passageResponse?.data?.[0]?.id;
-
-          if (passageId) {
-            // Create questions for this passage
-            for (const question of partQuestions) {
-              const questionData = {
-                question_number: question.question_number,
-                question_text: question.question_text,
-                question_type: question.question_type,
-                options: question.options,
-                correct_answer: question.correct_answer,
-                explanation: question.explanation,
-                passage_id: passageId,
-                cambridge_book: `${testType?.toUpperCase()} Test ${testId}`,
-                section_number: 1,
-                part_number: partNum
-              };
-              
-              await createContent('reading_questions', questionData);
-            }
-          }
-        }
-        
-        toast.success(`Successfully imported ${questions.length} questions across ${Object.keys(partGroups).length} parts`);
-      } else {
-        // Handle other sections
-        for (const question of questions) {
-          const data = {
-            ...question,
-            test_number: parseInt(testId || '1'),
-            [`${testType}_book`]: `${testType?.toUpperCase()} Test ${testId}`
-          };
-          await createContent(getTableType(), data);
-        }
-        toast.success(`Successfully imported ${questions.length} items`);
-      }
-      
-      loadContent();
-    } catch (error) {
-      console.error('Error importing CSV:', error);
-      toast.error('Failed to import CSV data');
-    }
+    // CSV import is now handled by the CSVImport component directly
+    // This function is kept for compatibility but the actual upload
+    // happens through the useCSVUpload hook in CSVImport
+    loadContent();
   };
 
   const startEdit = (item: ContentItem) => {
@@ -379,9 +311,8 @@ const AdminSectionManagement = () => {
                     onImport={handleCSVImport}
                     type="reading"
                     module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
-                    cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}
-                    testNumber={parseInt(testId || '1')}
-                    sectionNumber={1}
+                    testId={testId}
+                    testType={testType}
                   />
                 </div>
               </CardContent>

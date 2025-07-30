@@ -3,20 +3,71 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Headphones, PenTool, Mic, Clock, Users, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { BookOpen, Headphones, PenTool, Mic, Clock, Users, Info, Plus } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useAdminContent } from "@/hooks/useAdminContent";
+import { toast } from "sonner";
 
 const AdminTestManagement = () => {
   const navigate = useNavigate();
   const { testType } = useParams<{ testType: string }>();
   const { admin, loading } = useAdminAuth();
+  const { createContent, listContent } = useAdminContent();
+  
+  const [tests, setTests] = useState<any[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newTestName, setNewTestName] = useState("");
 
   useEffect(() => {
     if (!loading && !admin) {
       navigate('/admin/login');
     }
   }, [admin, loading, navigate]);
+
+  useEffect(() => {
+    loadTests();
+  }, [testType]);
+
+  const loadTests = async () => {
+    try {
+      const response = await listContent('tests');
+      const allTests = response?.data || [];
+      const filteredTests = allTests.filter((test: any) => 
+        test.test_type === testType
+      );
+      setTests(filteredTests);
+    } catch (error) {
+      console.error('Error loading tests:', error);
+    }
+  };
+
+  const createNewTest = async () => {
+    if (!newTestName.trim()) {
+      toast.error('Please enter a test name');
+      return;
+    }
+
+    try {
+      const testData = {
+        test_name: newTestName,
+        test_type: testType,
+        module: testType === 'ielts' ? 'reading' : testType // Default module
+      };
+
+      await createContent('tests', testData);
+      toast.success('Test created successfully');
+      setIsCreating(false);
+      setNewTestName('');
+      loadTests();
+    } catch (error) {
+      console.error('Error creating test:', error);
+      toast.error('Failed to create test');
+    }
+  };
 
   if (loading) {
     return (
@@ -70,15 +121,6 @@ const AdminTestManagement = () => {
 
   const config = getTestTypeConfig();
 
-  const tests = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1,
-    title: `${testType?.toUpperCase()} Test ${i + 1}`,
-    subtitle: testType === 'ielts' ? 'Mixed Bands' : 'Mixed Bands',
-    duration: '2h 45m',
-    sections: 4,
-    isActive: true
-  }));
-
   return (
     <AdminLayout 
       title={config.title} 
@@ -96,9 +138,46 @@ const AdminTestManagement = () => {
               {config.description}
             </p>
           </div>
-          <Badge variant="secondary" className="text-sm">
-            {testType?.toUpperCase()} Module
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Dialog open={isCreating} onOpenChange={setIsCreating}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Test
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New {testType?.toUpperCase()} Test</DialogTitle>
+                  <DialogDescription>
+                    Enter a name for the new test. You can manage its content after creation.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="testName">Test Name</Label>
+                    <Input
+                      id="testName"
+                      value={newTestName}
+                      onChange={(e) => setNewTestName(e.target.value)}
+                      placeholder={`e.g., ${testType?.toUpperCase()} Practice Test 1`}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={createNewTest} className="flex-1">
+                      Create Test
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsCreating(false)} className="flex-1">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Badge variant="secondary" className="text-sm">
+              {testType?.toUpperCase()} Module
+            </Badge>
+          </div>
         </div>
 
         {/* Test Cards Grid */}
@@ -112,14 +191,14 @@ const AdminTestManagement = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-foreground">
-                    {test.title}
+                    {test.test_name}
                   </CardTitle>
                   <Info className="w-4 h-4 text-primary" />
                 </div>
                 <CardDescription className="text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Users className="w-3 h-3" />
-                    <span>{test.subtitle}</span>
+                    <span>{test.module?.charAt(0).toUpperCase()}{test.module?.slice(1)} Module</span>
                   </div>
                 </CardDescription>
               </CardHeader>
@@ -128,11 +207,11 @@ const AdminTestManagement = () => {
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Clock className="w-3 h-3" />
-                    <span>{test.duration}</span>
+                    <span>2h 45m</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <BookOpen className="w-3 h-3" />
-                    <span>{test.sections} sections included</span>
+                    <span>4 sections</span>
                   </div>
                 </div>
                 
@@ -148,6 +227,18 @@ const AdminTestManagement = () => {
               </CardContent>
             </Card>
           ))}
+          
+          {tests.length === 0 && (
+            <div className="col-span-full text-center py-12">
+              <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No tests created yet</h3>
+              <p className="text-muted-foreground mb-4">Create your first test to get started</p>
+              <Button onClick={() => setIsCreating(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create First Test
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>

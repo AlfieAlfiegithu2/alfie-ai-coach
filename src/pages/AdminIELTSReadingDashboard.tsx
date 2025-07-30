@@ -56,7 +56,7 @@ const AdminIELTSReadingDashboard = () => {
 
       // Filter for IELTS Reading tests
       const ieltsReadingTests = allTests.filter((test: any) => 
-        test.test_type === 'IELTS' && test.module === 'Reading'
+        test.test_type === 'ielts' && test.module === 'reading'
       );
 
       // Group by test number to create test list
@@ -66,11 +66,11 @@ const AdminIELTSReadingDashboard = () => {
       ieltsReadingTests.forEach((test: any) => {
         const questionsForThisTest = allQuestions.filter((q: any) => q.test_id === test.id).length;
         
-        testMap.set(test.test_number, {
-          id: test.test_number,
+        testMap.set(parseInt(test.id), {
+          id: parseInt(test.id),
           name: test.test_name,
-          status: test.status || 'incomplete',
-          partsCompleted: test.parts_completed || 0,
+          status: 'incomplete', // Status will be calculated based on questions
+          partsCompleted: 0, // Will be calculated from questions
           totalQuestions: questionsForThisTest,
           created_at: test.created_at
         });
@@ -97,9 +97,8 @@ const AdminIELTSReadingDashboard = () => {
           const testId = question.test_id;
           const test = ieltsReadingTests.find((t: any) => t.id === testId);
           if (test) {
-            const testInMap = testMap.get(test.test_number);
+            const testInMap = testMap.get(parseInt(test.id));
             if (testInMap) {
-              testInMap.totalQuestions++;
               testInMap.partsCompleted = Math.max(testInMap.partsCompleted, question.part_number || 0);
             }
           }
@@ -136,18 +135,15 @@ const AdminIELTSReadingDashboard = () => {
       // Create new test record in universal tests table
       const testData = {
         test_name: newTestName,
-        test_type: 'IELTS',
-        module: 'Reading',
-        test_number: nextNumber,
-        status: 'incomplete',
-        parts_completed: 0,
-        total_questions: 0
+        test_type: 'ielts',
+        module: 'reading'
       };
 
-      await createContent('tests', testData);
+      const response = await createContent('tests', testData);
+      const newTestId = response.data?.id;
       
       // Navigate to the management page for this test
-      navigate(`/admin/ielts/test/${nextNumber}/reading`);
+      navigate(`/admin/ielts/test/${newTestId}/reading`);
       
       setShowCreateDialog(false);
       setNewTestName("");

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Upload, Download, FileText, AlertCircle, HelpCircle } from "lucide-react";
 import { getQuestionTypesForModule, mapQuestionType, validateQuestionType, QuestionTypeDefinition } from '@/lib/ielts-question-types';
+import { useCSVUpload } from '@/hooks/useCSVUpload';
 interface CSVImportProps {
   onImport: (questions: any[]) => void;
   onQuestionsPreview?: (questions: any[]) => void;
@@ -16,6 +17,8 @@ interface CSVImportProps {
   sectionNumber?: number;
   partNumber?: number;
   hideDownloadSample?: boolean;
+  testId?: string;
+  testType?: string;
 }
 const CSVImport = ({
   onImport,
@@ -26,7 +29,9 @@ const CSVImport = ({
   testNumber,
   sectionNumber,
   partNumber,
-  hideDownloadSample = false
+  hideDownloadSample = false,
+  testId,
+  testType
 }: CSVImportProps) => {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +39,8 @@ const CSVImport = ({
   const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const expectedColumns = ['Question Number', 'Section', 'Type', 'Question Text', 'Choices', 'Correct Answer', 'Explanation'];
+  
+  const { uploading, uploadCSV } = useCSVUpload();
 
   // Get valid question types for the current module
   const validQuestionTypes = getQuestionTypesForModule(type);
@@ -188,11 +195,28 @@ const CSVImport = ({
       }
     }
   };
-  const handleConfirmImport = () => {
-    console.log('Confirming import of questions:', previewQuestions);
-    onImport(previewQuestions);
-    setShowPreview(false);
-    setPreviewQuestions([]);
+  const handleConfirmImport = async () => {
+    if (!testId || !testType) {
+      // Fallback to the old behavior if testId and testType are not provided
+      console.log('Confirming import of questions:', previewQuestions);
+      onImport(previewQuestions);
+      setShowPreview(false);
+      setPreviewQuestions([]);
+      return;
+    }
+
+    try {
+      setImporting(true);
+      await uploadCSV(previewQuestions, testId, testType, partNumber || 1, module);
+      onImport(previewQuestions); // Still call onImport for any additional handling
+      setShowPreview(false);
+      setPreviewQuestions([]);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setError('Failed to upload questions. Please try again.');
+    } finally {
+      setImporting(false);
+    }
   };
   const handleCancelImport = () => {
     setShowPreview(false);
@@ -291,12 +315,17 @@ const CSVImport = ({
             </div>
 
             <div className="flex gap-3">
-              <Button onClick={handleConfirmImport} className="rounded-xl flex-1" style={{
-            background: 'var(--gradient-button)',
-            border: 'none'
-          }}>
-                Confirm Import
-              </Button>
+            <Button 
+              onClick={handleConfirmImport} 
+              disabled={importing || uploading}
+              className="rounded-xl flex-1" 
+              style={{
+                background: 'var(--gradient-button)',
+                border: 'none'
+              }}
+            >
+              {importing || uploading ? 'Uploading...' : 'Confirm Import'}
+            </Button>
               <Button variant="outline" onClick={handleCancelImport} className="rounded-xl flex-1 border-light-border">
                 Cancel
               </Button>

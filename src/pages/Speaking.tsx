@@ -149,26 +149,31 @@ const Speaking = () => {
   }
 
   return (
-    <div className="min-h-screen glass-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background shadow-soft">
+    <div className="min-h-screen bg-gradient-to-br from-background via-surface-1/30 to-primary/5">
+      {/* Modern Header */}
+      <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="hover:bg-primary/10">
                 <ArrowLeft className="w-4 h-4" />
                 Back to Dashboard
               </Button>
-              <div className="flex items-center gap-2">
-                <Mic className="w-5 h-5 text-gentle-blue" />
-                <span className="font-semibold">Speaking Practice</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Mic className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h1 className="font-semibold text-text-primary">IELTS Speaking Practice</h1>
+                  <p className="text-xs text-text-secondary">AI-Powered Speech Analysis</p>
+                </div>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4" />
-                <span className={`font-mono ${timeRemaining < 60 ? 'text-destructive' : 'text-muted-foreground'}`}>
+              <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 rounded-xl">
+                <Clock className="w-4 h-4 text-primary" />
+                <span className={`font-mono text-sm ${timeRemaining < 60 ? 'text-destructive' : 'text-text-primary'}`}>
                   {formatTime(timeRemaining)}
                 </span>
               </div>
@@ -177,11 +182,12 @@ const Speaking = () => {
                   variant="outline" 
                   size="sm"
                   onClick={isTimerActive ? stopTimer : startTimer}
+                  className="hover:bg-primary/10 border-primary/20"
                 >
                   {isTimerActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   {isTimerActive ? 'Pause' : 'Start'}
                 </Button>
-                <Button variant="outline" size="sm" onClick={resetTimer}>
+                <Button variant="outline" size="sm" onClick={resetTimer} className="hover:bg-secondary/10 border-secondary/20">
                   <RotateCcw className="w-4 h-4" />
                   Reset
                 </Button>
@@ -193,33 +199,56 @@ const Speaking = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Part Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center text-2xl font-georgia">Speaking Practice</CardTitle>
-              <p className="text-center text-muted-foreground">Experience an authentic IELTS speaking test with AI analysis</p>
-              <div className="flex justify-center gap-2 mt-6">
+          {/* Modern Part Selection */}
+          <Card className="bg-gradient-to-r from-background via-surface-1/50 to-background border border-border/60 shadow-lg">
+            <CardHeader className="pb-6">
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Mic className="w-8 h-8 text-primary" />
+                </div>
+                <CardTitle className="text-3xl font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  IELTS Speaking Practice
+                </CardTitle>
+                <p className="text-text-secondary max-w-2xl mx-auto">
+                  Experience an authentic IELTS speaking test with advanced AI analysis and instant feedback
+                </p>
+              </div>
+              
+              <div className="flex justify-center gap-3 mt-8">
                 {[1, 2, 3].map((part) => (
                   <Button
                     key={part}
                     variant={currentPart === part ? "default" : "outline"}
                     onClick={() => changePart(part)}
                     disabled={isAnalyzing || isPlayingPrompt}
-                    className="flex flex-col h-auto p-4"
+                    className={`flex flex-col h-auto p-6 min-w-[140px] transition-all duration-300 ${
+                      currentPart === part 
+                        ? "bg-primary text-primary-foreground shadow-lg scale-105" 
+                        : "hover:bg-primary/5 hover:border-primary/30 hover:scale-102"
+                    }`}
                   >
-                    <span className="font-semibold">Part {part}</span>
-                    <span className="text-xs opacity-75">{getPartDescription(part).split('(')[0]}</span>
+                    <span className="font-semibold text-lg">Part {part}</span>
+                    <span className="text-xs opacity-75 mt-1 text-center leading-tight">
+                      {getPartDescription(part).split('(')[0].trim()}
+                    </span>
+                    <span className="text-xs opacity-60 mt-1">
+                      {getPartDescription(part).match(/\((.*?)\)/)?.[1] || ''}
+                    </span>
                   </Button>
                 ))}
               </div>
               
-              {/* Question Mode Toggle for Parts 1 and 3 */}
+              {/* Enhanced Question Mode Toggle */}
               {(currentPart === 1 || currentPart === 3) && (
-                <div className="flex justify-center mt-4">
+                <div className="flex justify-center mt-6">
                   <Button
                     variant="outline"
                     onClick={() => setUseQuestionByQuestion(!useQuestionByQuestion)}
-                    className="text-sm"
+                    className={`text-sm px-6 py-2 transition-all duration-300 ${
+                      useQuestionByQuestion 
+                        ? "bg-secondary/10 border-secondary/30 text-secondary" 
+                        : "hover:bg-primary/5 hover:border-primary/30"
+                    }`}
                   >
                     {useQuestionByQuestion ? '📝 Switch to Free Practice' : '🎯 One Question at a Time'}
                   </Button>
@@ -236,13 +265,16 @@ const Speaking = () => {
             />
           )}
 
-          {/* Current Task - Regular Mode */}
+          {/* Enhanced Current Task - Regular Mode */}
           {currentPrompt && !useQuestionByQuestion && (
-            <Card>
-              <CardHeader>
+            <Card className="bg-gradient-to-br from-background to-surface-1/30 border border-border/60 shadow-lg">
+              <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="font-georgia">
-                    📝 {currentPrompt.title} - Part {currentPart}
+                  <CardTitle className="text-xl font-medium text-text-primary flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <span className="text-lg">📝</span>
+                    </div>
+                    {currentPrompt.title} - Part {currentPart}
                   </CardTitle>
                   <div className="flex gap-2">
                     <Button
@@ -250,6 +282,7 @@ const Speaking = () => {
                       size="sm"
                       onClick={() => playPromptAudio(currentPrompt.prompt_text)}
                       disabled={isPlayingPrompt}
+                      className="hover:bg-primary/10 border-primary/20"
                     >
                       <Volume2 className="w-4 h-4 mr-2" />
                       {isPlayingPrompt ? 'Playing...' : 'Hear Question'}
@@ -259,37 +292,50 @@ const Speaking = () => {
                       size="sm"
                       onClick={() => loadRandomPrompt(currentPart)}
                       disabled={isAnalyzing || isPlayingPrompt}
+                      className="hover:bg-secondary/10 border-secondary/20"
                     >
                       <RotateCcw className="w-4 h-4 mr-2" />
                       New Question
                     </Button>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{getPartDescription(currentPart)}</p>
+                <div className="flex items-center gap-2 text-sm text-text-secondary">
+                  <Clock className="w-4 h-4" />
+                  <span>{getPartDescription(currentPart)}</span>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="bg-gentle-blue/10 border border-gentle-blue/20 p-6 rounded-lg mb-6">
-                  <h3 className="font-semibold mb-3 text-gentle-blue">🎯 Task Instructions:</h3>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              <CardContent className="space-y-6">
+                <div className="bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/20 p-6 rounded-2xl">
+                  <h3 className="font-semibold mb-4 text-primary flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-sm">🎯</span>
+                    Task Instructions
+                  </h3>
+                  <p className="leading-relaxed whitespace-pre-wrap text-text-primary">
                     {currentPrompt.prompt_text}
                   </p>
                   {currentPrompt.follow_up_questions && Array.isArray(currentPrompt.follow_up_questions) && currentPrompt.follow_up_questions.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gentle-blue/20">
-                      <h4 className="font-medium mb-2 text-gentle-blue">Follow-up questions:</h4>
-                      <ul className="text-sm space-y-1">
+                    <div className="mt-6 pt-4 border-t border-primary/20">
+                      <h4 className="font-medium mb-3 text-primary flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-lg bg-primary/10 flex items-center justify-center text-xs">💬</span>
+                        Follow-up Questions
+                      </h4>
+                      <ul className="space-y-2">
                         {currentPrompt.follow_up_questions.map((question: string, index: number) => (
-                          <li key={index} className="text-muted-foreground">• {question}</li>
+                          <li key={index} className="text-text-secondary flex items-start gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            <span>{question}</span>
+                          </li>
                         ))}
                       </ul>
                     </div>
                   )}
                 </div>
 
-                <div className="text-center mb-6">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {currentPart === 2 ? "You have 1 minute to prepare, then speak for up to 2 minutes" : 
-                     currentPart === 1 ? "Speak naturally for 4-5 minutes" : 
-                     "Engage in discussion for 4-5 minutes"}
+                <div className="text-center py-4 bg-surface-1/50 rounded-xl">
+                  <p className="text-text-secondary font-medium">
+                    {currentPart === 2 ? "🕐 You have 1 minute to prepare, then speak for up to 2 minutes" : 
+                     currentPart === 1 ? "💬 Speak naturally for 4-5 minutes" : 
+                     "🗣️ Engage in discussion for 4-5 minutes"}
                   </p>
                 </div>
 
@@ -299,10 +345,11 @@ const Speaking = () => {
                 />
 
                 {isAnalyzing && (
-                  <div className="text-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gentle-blue" />
-                    <p className="text-muted-foreground">
-                      🔍 Analyzing your speech for pronunciation, fluency, intonation, and accent patterns...
+                  <div className="text-center py-12 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl">
+                    <Loader2 className="w-12 h-12 animate-spin mx-auto mb-6 text-primary" />
+                    <h3 className="font-semibold text-lg text-text-primary mb-2">Analyzing Your Speech</h3>
+                    <p className="text-text-secondary max-w-md mx-auto">
+                      🔍 AI is evaluating pronunciation, fluency, intonation, and accent patterns to provide detailed feedback
                     </p>
                   </div>
                 )}
@@ -310,30 +357,42 @@ const Speaking = () => {
             </Card>
           )}
 
-          {/* Transcription - Only in regular mode */}
+          {/* Enhanced Transcription */}
           {transcription && !useQuestionByQuestion && (
-            <Card>
+            <Card className="bg-gradient-to-br from-secondary/5 to-background border border-secondary/20 shadow-lg">
               <CardHeader>
-                <CardTitle className="font-georgia">📝 What You Said</CardTitle>
+                <CardTitle className="text-xl font-medium text-text-primary flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center">
+                    <span className="text-lg">📝</span>
+                  </div>
+                  Speech Transcription
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="italic">"{transcription}"</p>
+                <div className="bg-gradient-to-r from-surface-1 to-surface-1/50 p-6 rounded-2xl border border-border/60">
+                  <p className="text-text-primary leading-relaxed text-lg italic">"{transcription}"</p>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Analysis Results - Only in regular mode */}
+          {/* Enhanced Analysis Results */}
           {analysis && !useQuestionByQuestion && (
-            <Card>
+            <Card className="bg-gradient-to-br from-primary/5 to-background border border-primary/20 shadow-lg">
               <CardHeader>
-                <CardTitle className="font-georgia">🎯 Detailed Speech Analysis</CardTitle>
+                <CardTitle className="text-xl font-medium text-text-primary flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg">🎯</span>
+                  </div>
+                  AI Speech Analysis & Feedback
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {analysis}
+                <div className="bg-gradient-to-r from-surface-1 to-surface-1/50 p-6 rounded-2xl border border-border/60">
+                  <div className="prose max-w-none">
+                    <div className="whitespace-pre-wrap leading-relaxed text-text-primary">
+                      {analysis}
+                    </div>
                   </div>
                 </div>
               </CardContent>

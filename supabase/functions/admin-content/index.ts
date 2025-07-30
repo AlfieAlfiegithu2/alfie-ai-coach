@@ -138,6 +138,7 @@ function getTableName(type: string): string {
     'listening_questions': 'listening_questions',
     'writing_prompts': 'writing_prompts',
     'speaking_prompts': 'speaking_prompts',
+    'ielts_reading_tests': 'ielts_reading_tests',
     
     // PTE tables
     'pte_passages': 'pte_passages',

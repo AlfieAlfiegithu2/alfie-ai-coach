@@ -6,38 +6,34 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle, ChevronDown, Upload, Circle } from "lucide-react";
+import { CheckCircle, ChevronDown, Upload, Circle, Headphones, Image } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import CSVImport from "@/components/CSVImport";
 import { toast } from "sonner";
 
-interface PartData {
-  title: string;
-  content: string;
-  questions: any[];
-  saved: boolean;
-}
-
-interface TestPart {
+interface ListeningPart {
   number: number;
   title: string;
-  content: string;
+  instructions: string;
+  audioFile: File | null;
+  imageFile: File | null;
   csvFile: File | null;
   saved: boolean;
 }
 
-const AdminReadingManagement = () => {
+const AdminIELTSListening = () => {
   const navigate = useNavigate();
   const { testType, testId } = useParams<{ testType: string; testId: string; }>();
   const { admin, loading } = useAdminAuth();
-  const { listContent, createContent } = useAdminContent();
+  const { listContent, createContent, uploadAudio } = useAdminContent();
   
-  const [parts, setParts] = useState<TestPart[]>([
-    { number: 1, title: "", content: "", csvFile: null, saved: false },
-    { number: 2, title: "", content: "", csvFile: null, saved: false },
-    { number: 3, title: "", content: "", csvFile: null, saved: false }
+  const [parts, setParts] = useState<ListeningPart[]>([
+    { number: 1, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false },
+    { number: 2, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false },
+    { number: 3, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false },
+    { number: 4, title: "", instructions: "", audioFile: null, imageFile: null, csvFile: null, saved: false }
   ]);
   const [openParts, setOpenParts] = useState<Set<number>>(new Set([1]));
   const [savingPart, setSavingPart] = useState<number | null>(null);
@@ -56,15 +52,15 @@ const AdminReadingManagement = () => {
     if (!testType || !testId) return;
     
     try {
-      // Load existing passages and questions for this test
-      const [passagesResponse, questionsResponse] = await Promise.all([
-        listContent('reading_passages'),
-        listContent('reading_questions')
+      // Load existing listening sections and questions for this test
+      const [sectionsResponse, questionsResponse] = await Promise.all([
+        listContent('listening_sections'),
+        listContent('listening_questions')
       ]);
 
-      const passages = passagesResponse?.data?.filter((p: any) => 
-        p.test_number === parseInt(testId) && 
-        p[`${testType}_book`] === `${testType?.toUpperCase()} Test ${testId}`
+      const sections = sectionsResponse?.data?.filter((s: any) => 
+        s.test_number === parseInt(testId) && 
+        s.cambridge_book === `${testType?.toUpperCase()} Test ${testId}`
       ) || [];
 
       const questions = questionsResponse?.data?.filter((q: any) => 
@@ -73,14 +69,14 @@ const AdminReadingManagement = () => {
 
       // Update parts with existing data
       const updatedParts = parts.map(part => {
-        const partPassage = passages.find((p: any) => p.part_number === part.number);
+        const partSection = sections.find((s: any) => s.part_number === part.number);
         const partQuestions = questions.filter((q: any) => q.part_number === part.number);
         
         return {
           ...part,
-          title: partPassage?.title || "",
-          content: partPassage?.content || "",
-          saved: !!(partPassage && partQuestions.length > 0)
+          title: partSection?.title || "",
+          instructions: partSection?.instructions || "",
+          saved: !!(partSection && partQuestions.length > 0)
         };
       });
 
@@ -101,7 +97,7 @@ const AdminReadingManagement = () => {
     setOpenParts(newOpen);
   };
 
-  const updatePart = (partNumber: number, field: keyof TestPart, value: any) => {
+  const updatePart = (partNumber: number, field: keyof ListeningPart, value: any) => {
     setParts(prevParts => 
       prevParts.map(part => 
         part.number === partNumber 
@@ -113,7 +109,6 @@ const AdminReadingManagement = () => {
 
   const handleCSVUpload = (partNumber: number, questions: any[]) => {
     console.log('CSV uploaded for part', partNumber, 'with questions:', questions);
-    // Create a mock file object to store questions data
     const questionsData = JSON.stringify(questions);
     const file = new File([questionsData], `part-${partNumber}-questions.json`, {
       type: 'application/json'
@@ -121,26 +116,49 @@ const AdminReadingManagement = () => {
     updatePart(partNumber, 'csvFile', file);
   };
 
+  const handleAudioUpload = (partNumber: number, file: File) => {
+    updatePart(partNumber, 'audioFile', file);
+    toast.success(`Audio file uploaded for Part ${partNumber}`);
+  };
+
+  const handleImageUpload = (partNumber: number, file: File) => {
+    updatePart(partNumber, 'imageFile', file);
+    toast.success(`Image uploaded for Part ${partNumber}`);
+  };
+
   const savePart = async (partNumber: number) => {
     const part = parts.find(p => p.number === partNumber);
     if (!part) return;
 
-    if (!part.title.trim() || !part.content.trim() || !part.csvFile) {
-      toast.error('Please fill in all fields and upload a CSV file');
+    if (!part.title.trim() || !part.instructions.trim() || !part.csvFile) {
+      toast.error('Please fill in title, instructions and upload a CSV file');
       return;
     }
 
     setSavingPart(partNumber);
     try {
+      let audioUrl = null;
+      let imageUrl = null;
+
+      // Upload audio file if provided
+      if (part.audioFile) {
+        const audioResult = await uploadAudio(part.audioFile);
+        audioUrl = audioResult.url;
+      }
+
+      // Upload image file if provided (using same upload method for now)
+      if (part.imageFile) {
+        const imageResult = await uploadAudio(part.imageFile);
+        imageUrl = imageResult.url;
+      }
+
       // Parse questions from file
       const fileContent = await part.csvFile.text();
       let questions;
       
       try {
-        // Try to parse as JSON first (from our CSV import component)
         questions = JSON.parse(fileContent);
       } catch {
-        // Fall back to CSV parsing
         const lines = fileContent.split('\n').filter(line => line.trim());
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
         
@@ -154,32 +172,28 @@ const AdminReadingManagement = () => {
         }).filter(q => q.question_text && q.correct_answer);
       }
 
-      // Determine table names based on test type
-      const passageTable = testType === 'ielts' ? 'reading_passages' : `${testType}_passages`;
-      const questionTable = testType === 'ielts' ? 'reading_questions' : `${testType}_questions`;
-      const bookField = testType === 'ielts' ? 'cambridge_book' : `${testType}_book`;
-
-      // Create passage
-      const passageData = {
+      // Create listening section
+      const sectionData = {
         title: part.title,
-        content: part.content,
+        instructions: part.instructions,
         test_number: parseInt(testId || '1'),
-        [bookField]: `${testType?.toUpperCase()} Test ${testId}`,
-        passage_type: 'Academic',
+        cambridge_book: `${testType?.toUpperCase()} Test ${testId}`,
         part_number: partNumber,
-        section_number: 1
+        section_number: partNumber,
+        audio_url: audioUrl,
+        photo_url: imageUrl
       };
 
-      const passageResponse = await createContent(passageTable, passageData);
-      const passageId = passageResponse?.data?.id;
+      const sectionResponse = await createContent('listening_sections', sectionData);
+      const sectionId = sectionResponse?.data?.id;
 
-      if (!passageId) {
-        throw new Error('Failed to create passage');
+      if (!sectionId) {
+        throw new Error('Failed to create listening section');
       }
 
-      // Create questions in bulk for better performance
+      // Create questions in bulk
       const questionsBatch = questions.map((question: any, i: number) => {
-        const questionNumber = ((partNumber - 1) * 13) + (i + 1);
+        const questionNumber = ((partNumber - 1) * 10) + (i + 1);
         
         return {
           question_number: questionNumber,
@@ -188,35 +202,12 @@ const AdminReadingManagement = () => {
           options: question.options || null,
           correct_answer: question.correct_answer || '',
           explanation: question.explanation || '',
-          passage_id: passageId,
-          [bookField]: `${testType?.toUpperCase()} Test ${testId}`,
-          section_number: 1,
+          section_id: sectionId,
           part_number: partNumber
         };
       });
 
-      // Create all questions in bulk
-      await createContent(questionTable, questionsBatch);
-
-      // Update the test record if it exists
-      try {
-        const testsResponse = await listContent('ielts_reading_tests');
-        const existingTest = testsResponse?.data?.find((t: any) => t.test_number === parseInt(testId || '1'));
-        
-        if (existingTest) {
-          // Update test record with new completion data
-          const updateData = {
-            id: existingTest.id,
-            parts_completed: Math.max(existingTest.parts_completed || 0, partNumber),
-            total_questions: (existingTest.total_questions || 0) + questions.length,
-            status: (partNumber === 3) ? 'complete' : 'incomplete'
-          };
-          
-          await createContent('ielts_reading_tests', updateData);
-        }
-      } catch (testUpdateError) {
-        console.log('Test record update skipped:', testUpdateError);
-      }
+      await createContent('listening_questions', questionsBatch);
 
       // Update part status
       setParts(prevParts => 
@@ -242,7 +233,7 @@ const AdminReadingManagement = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading Reading Management...</p>
+          <p className="mt-2 text-sm text-muted-foreground">Loading Listening Management...</p>
         </div>
       </div>
     );
@@ -252,19 +243,19 @@ const AdminReadingManagement = () => {
 
   return (
     <AdminLayout 
-      title={`${testType?.toUpperCase()} Test ${testId} - Reading Management`}
+      title={`${testType?.toUpperCase()} Test ${testId} - Listening Management`}
       showBackButton={true}
-      backPath={`/admin/${testType}/reading`}
+      backPath={`/admin/${testType}/listening`}
     >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              {testType?.toUpperCase()} Test {testId} - Reading Management
+              {testType?.toUpperCase()} Test {testId} - Listening Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Create a complete 3-part reading test with passages and questions
+              Create a complete 4-part listening test with audio, questions and optional images
             </p>
           </div>
           <Badge variant="secondary" className="text-sm">
@@ -307,30 +298,108 @@ const AdminReadingManagement = () => {
                 
                 <CollapsibleContent>
                   <CardContent className="space-y-6">
-                    {/* Passage Title */}
+                    {/* Section Title */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium">
-                        Passage Title (Optional)
+                        Section Title *
                       </label>
                       <Input
-                        placeholder={`Reading Passage ${part.number} Title`}
+                        placeholder={`Listening Section ${part.number} Title`}
                         value={part.title}
                         onChange={(e) => updatePart(part.number, 'title', e.target.value)}
                       />
                     </div>
 
-                    {/* Passage Text */}
+                    {/* Instructions */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium">
-                        Passage Text *
+                        Instructions *
                       </label>
                       <Textarea
-                        placeholder="Enter the complete reading passage text here..."
-                        value={part.content}
-                        onChange={(e) => updatePart(part.number, 'content', e.target.value)}
-                        rows={8}
+                        placeholder="Enter the instructions for this listening section..."
+                        value={part.instructions}
+                        onChange={(e) => updatePart(part.number, 'instructions', e.target.value)}
+                        rows={3}
                         className="resize-none"
                       />
+                    </div>
+
+                    {/* Audio Upload */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Audio File *
+                      </label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-4">
+                        <div className="flex items-center justify-center">
+                          <div className="text-center">
+                            <Headphones className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Upload MP3 or WAV audio file
+                            </p>
+                            <input
+                              type="file"
+                              accept="audio/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleAudioUpload(part.number, file);
+                              }}
+                              className="hidden"
+                              id={`audio-${part.number}`}
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => document.getElementById(`audio-${part.number}`)?.click()}
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Choose Audio File
+                            </Button>
+                          </div>
+                        </div>
+                        {part.audioFile && (
+                          <p className="text-sm text-muted-foreground mt-2 text-center">
+                            Audio: {part.audioFile.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Image Upload (Optional) */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Image File (Optional)
+                      </label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-4">
+                        <div className="flex items-center justify-center">
+                          <div className="text-center">
+                            <Image className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Upload image for visual questions (maps, diagrams, etc.)
+                            </p>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleImageUpload(part.number, file);
+                              }}
+                              className="hidden"
+                              id={`image-${part.number}`}
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => document.getElementById(`image-${part.number}`)?.click()}
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Choose Image
+                            </Button>
+                          </div>
+                        </div>
+                        {part.imageFile && (
+                          <p className="text-sm text-muted-foreground mt-2 text-center">
+                            Image: {part.imageFile.name}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Questions CSV Upload */}
@@ -341,11 +410,11 @@ const AdminReadingManagement = () => {
                       <div className="border-2 border-dashed border-border rounded-lg p-6">
                         <CSVImport
                           onImport={(questions) => handleCSVUpload(part.number, questions)}
-                          type="reading"
+                          type="listening"
                           module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
                           cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}
                           testNumber={parseInt(testId || '1')}
-                          sectionNumber={1}
+                          sectionNumber={part.number}
                           hideDownloadSample={true}
                         />
                         {part.csvFile && (
@@ -360,7 +429,7 @@ const AdminReadingManagement = () => {
                     <div className="flex justify-end">
                       <Button 
                         onClick={() => savePart(part.number)}
-                        disabled={savingPart === part.number || !part.title.trim() || !part.content.trim() || !part.csvFile}
+                        disabled={savingPart === part.number || !part.title.trim() || !part.instructions.trim() || !part.csvFile}
                         className="bg-primary hover:bg-primary/90"
                       >
                         {savingPart === part.number ? (
@@ -384,4 +453,4 @@ const AdminReadingManagement = () => {
   );
 };
 
-export default AdminReadingManagement;
+export default AdminIELTSListening;

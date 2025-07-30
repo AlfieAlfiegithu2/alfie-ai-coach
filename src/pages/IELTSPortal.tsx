@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,13 +57,53 @@ const IELTSPortal = () => {
     }
   ];
 
-  const mockTests = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1,
-    title: `IELTS Test ${i + 1}`,
-    difficulty: 'Mixed Bands',
-    duration: '2h 45m',
-    sections: 4
-  }));
+  const [availableTests, setAvailableTests] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadAvailableTests();
+  }, []);
+
+  const loadAvailableTests = async () => {
+    try {
+      // Try to load from dedicated IELTS tests table first
+      const testsResponse = await fetch(`https://cuumxmfzhwljylbdlflj.supabase.co/rest/v1/ielts_reading_tests?select=*`, {
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI'
+        }
+      });
+      
+      let tests = [];
+      if (testsResponse.ok) {
+        tests = await testsResponse.json();
+      }
+      
+      // Fallback to generating default tests if none found
+      if (tests.length === 0) {
+        tests = Array.from({ length: 10 }, (_, i) => ({
+          id: i + 1,
+          test_name: `IELTS Test ${i + 1}`,
+          test_number: i + 1,
+          status: 'incomplete',
+          parts_completed: 0,
+          total_questions: 0
+        }));
+      }
+      
+      setAvailableTests(tests);
+    } catch (error) {
+      console.error('Error loading tests:', error);
+      // Fallback to default tests
+      setAvailableTests(Array.from({ length: 10 }, (_, i) => ({
+        id: i + 1,
+        test_name: `IELTS Test ${i + 1}`,
+        test_number: i + 1,
+        status: 'incomplete',
+        parts_completed: 0,
+        total_questions: 0
+      })));
+    }
+  };
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting IELTS ${skillId} practice`);
@@ -160,37 +200,49 @@ const IELTSPortal = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockTests.map((test) => (
-              <Card key={test.id} className="card-modern hover-lift">
+            {availableTests.map((test) => (
+              <Card key={test.test_number || test.id} className="card-modern hover-lift">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{test.title}</CardTitle>
-                    <Target className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-lg">{test.test_name || test.title || `IELTS Test ${test.test_number || test.id}`}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Target className="w-5 h-5 text-primary" />
+                      {test.status === 'complete' && (
+                        <Badge variant="default" className="text-xs">Complete</Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-text-secondary" />
-                      <span>{test.difficulty}</span>
+                      <span>Band 4.0-9.0</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-text-secondary" />
-                      <span>{test.duration}</span>
+                      <span>60 minutes</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-sm">
-                    <BookOpen className="w-4 h-4 text-text-secondary" />
-                    <span>{test.sections} sections included</span>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-text-secondary" />
+                      <span>{test.parts_completed || 0}/3 parts</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-text-secondary" />
+                      <span>{test.total_questions || 0} questions</span>
+                    </div>
                   </div>
 
                   <Button 
-                    onClick={() => handleMockTest(test.id)}
+                    onClick={() => handleMockTest(test.test_number || test.id)}
                     className="w-full btn-primary"
                     size="sm"
+                    disabled={!test.total_questions || test.total_questions === 0}
                   >
-                    Start Mock Test
+                    {test.total_questions && test.total_questions > 0 ? 'Start Reading Test' : 'Coming Soon'}
                   </Button>
                 </CardContent>
               </Card>

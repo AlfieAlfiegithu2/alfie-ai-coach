@@ -45,31 +45,47 @@ const AdminIELTSReadingDashboard = () => {
   const loadTests = async () => {
     setIsLoading(true);
     try {
-      // Load all passages and questions to determine test status
-      const [passagesResponse, questionsResponse] = await Promise.all([
+      // First load from dedicated IELTS reading tests table
+      const [testsResponse, passagesResponse, questionsResponse] = await Promise.all([
+        listContent('ielts_reading_tests'),
         listContent('reading_passages'),
         listContent('reading_questions')
       ]);
 
+      const savedTests = testsResponse?.data || [];
       const passages = passagesResponse?.data || [];
       const questions = questionsResponse?.data || [];
 
       // Group by test number to create test list
       const testMap = new Map<number, IELTSTest>();
 
-      // Initialize tests 1-10 as found in the system
-      for (let i = 1; i <= 10; i++) {
-        testMap.set(i, {
-          id: i,
-          name: `IELTS Test ${i}`,
-          status: 'incomplete',
-          partsCompleted: 0,
-          totalQuestions: 0,
-          created_at: new Date().toISOString()
+      // Add saved tests from database
+      savedTests.forEach((test: any) => {
+        testMap.set(test.test_number, {
+          id: test.test_number,
+          name: test.test_name,
+          status: test.status || 'incomplete',
+          partsCompleted: test.parts_completed || 0,
+          totalQuestions: test.total_questions || 0,
+          created_at: test.created_at
         });
+      });
+
+      // Initialize default tests 1-10 if they don't exist
+      for (let i = 1; i <= 10; i++) {
+        if (!testMap.has(i)) {
+          testMap.set(i, {
+            id: i,
+            name: `IELTS Test ${i}`,
+            status: 'incomplete',
+            partsCompleted: 0,
+            totalQuestions: 0,
+            created_at: new Date().toISOString()
+          });
+        }
       }
 
-      // Update with actual data
+      // Update with actual passage and question data
       passages.forEach((passage: any) => {
         if (passage.cambridge_book && passage.cambridge_book.includes('IELTS Test')) {
           const testMatch = passage.cambridge_book.match(/IELTS Test (\d+)/);
@@ -118,19 +134,34 @@ const AdminIELTSReadingDashboard = () => {
 
     setCreating(true);
     try {
-      // Extract test number from name or use next available
+      // Extract test number from name or find next available
       const testMatch = newTestName.match(/(\d+)/);
-      const testNumber = testMatch ? parseInt(testMatch[1]) : tests.length + 1;
+      const existingNumbers = tests.map(t => t.id);
+      const nextNumber = testMatch ? parseInt(testMatch[1]) : Math.max(...existingNumbers, 0) + 1;
+      
+      // Create new test record in database
+      const testData = {
+        test_name: newTestName,
+        test_number: nextNumber,
+        status: 'incomplete',
+        parts_completed: 0,
+        total_questions: 0
+      };
+
+      await createContent('ielts_reading_tests', testData);
       
       // Navigate to the management page for this test
-      navigate(`/admin/ielts/test/${testNumber}/reading`);
+      navigate(`/admin/ielts/test/${nextNumber}/reading`);
       
       setShowCreateDialog(false);
       setNewTestName("");
-      toast.success(`Created ${newTestName}`);
-    } catch (error) {
+      toast.success(`Created ${newTestName} successfully`);
+      
+      // Reload the tests list
+      loadTests();
+    } catch (error: any) {
       console.error('Error creating test:', error);
-      toast.error('Failed to create test');
+      toast.error(`Failed to create test: ${error.message || 'Unknown error'}`);
     } finally {
       setCreating(false);
     }

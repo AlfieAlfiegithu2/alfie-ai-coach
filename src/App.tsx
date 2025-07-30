@@ -40,6 +40,7 @@ import AdminTestDetails from "./pages/AdminTestDetails";
 import AdminSectionManagement from "./pages/AdminSectionManagement";
 import AdminReadingManagement from "./pages/AdminReadingManagement";
 import AdminIELTSReadingDashboard from "./pages/AdminIELTSReadingDashboard";
+import AdminIELTSListening from "./pages/AdminIELTSListening";
 import EnhancedReadingTest from "./pages/EnhancedReadingTest";
 import Pricing from "./pages/Pricing";
 
@@ -96,6 +97,7 @@ const App = () => {
         <Route path="/admin/:testType/test/:testId/:sectionId" element={<AdminSectionManagement />} />
         <Route path="/admin/ielts/reading" element={<AdminIELTSReadingDashboard />} />
         <Route path="/admin/:testType/test/:testId/reading" element={<AdminReadingManagement />} />
+        <Route path="/admin/:testType/test/:testId/listening" element={<AdminIELTSListening />} />
         <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
             {/* PTE Admin Routes */}
             <Route path="/admin/pte/listening" element={<AdminListening />} />

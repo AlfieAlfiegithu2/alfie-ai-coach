@@ -488,6 +488,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ielts_reading_tests: {
+        Row: {
+          created_at: string | null
+          id: string
+          parts_completed: number | null
+          status: string | null
+          test_name: string
+          test_number: number
+          total_questions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          parts_completed?: number | null
+          status?: string | null
+          test_name: string
+          test_number: number
+          total_questions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          parts_completed?: number | null
+          status?: string | null
+          test_name?: string
+          test_number?: number
+          total_questions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       listening_questions: {
         Row: {
           band_impact: number | null

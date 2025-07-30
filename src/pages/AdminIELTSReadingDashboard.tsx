@@ -64,12 +64,14 @@ const AdminIELTSReadingDashboard = () => {
 
       // Add saved tests from database
       ieltsReadingTests.forEach((test: any) => {
+        const questionsForThisTest = allQuestions.filter((q: any) => q.test_id === test.id).length;
+        
         testMap.set(test.test_number, {
           id: test.test_number,
           name: test.test_name,
           status: test.status || 'incomplete',
           partsCompleted: test.parts_completed || 0,
-          totalQuestions: test.total_questions || 0,
+          totalQuestions: questionsForThisTest,
           created_at: test.created_at
         });
       });

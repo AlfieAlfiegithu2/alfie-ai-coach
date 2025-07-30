@@ -117,17 +117,13 @@ async function deleteContent(supabaseClient: any, type: string, id: string) {
 
 async function listContent(supabaseClient: any, type: string) {
   const tableName = getTableName(type);
-  let query = supabaseClient.from(tableName).select('*');
   
-  // Add joins for questions
-  if (type === 'reading_questions') {
-    query = query.select('*, reading_passages(title)');
-  } else if (type === 'listening_questions') {
-    query = query.select('*, listening_sections(title)');
-  }
+  // Simplified query - just select all from the table
+  const { data, error } = await supabaseClient
+    .from(tableName)
+    .select('*')
+    .order('created_at', { ascending: false });
   
-  const { data, error } = await query.order('created_at', { ascending: false });
-
   if (error) throw error;
   return { success: true, data };
 }
@@ -147,55 +143,41 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
       throw new Error(`Test with ID ${testId} not found. Please create the test first.`);
     }
 
-    const targetModule = module || testData.module;
-    console.log('Target module for questions:', targetModule);
+    console.log('Target module for questions:', testData.module);
 
-    // Determine which questions table to use
-    let tableName = 'questions'; // Default universal table
-    if (targetModule === 'Reading') {
-      tableName = 'reading_questions';
-    } else if (targetModule === 'Listening') {
-      tableName = 'listening_questions';
-    }
+    // Always use universal questions table
+    const tableName = 'questions';
 
     const insertData = csvData.map((row, index) => {
-      // Handle different CSV formats with more robust mapping
+      // Handle different CSV formats with robust mapping
       const questionText = row['Question Text'] || row['Question'] || row['QuestionText'] || row['question_text'] || '';
       const questionType = row['Question Type'] || row['Type'] || row['QuestionType'] || row['question_type'] || 'Multiple Choice';
       const correctAnswer = row['Correct Answer'] || row['Answer'] || row['CorrectAnswer'] || row['correct_answer'] || '';
       const explanation = row['Explanation'] || row['explanation'] || '';
       const choices = row['Choices'] || row['Options'] || row['choices'] || row['options'] || '';
       const passageText = row['Passage'] || row['PassageText'] || row['passage'] || row['passage_text'] || '';
+      const audioUrl = row['Audio URL'] || row['AudioURL'] || row['audio_url'] || '';
+      const imageUrl = row['Image URL'] || row['ImageURL'] || row['image_url'] || '';
 
-      // Base question data
-      const questionData: any = {
-        question_number: ((partNumber - 1) * 10) + (index + 1),
+      // Universal questions table format
+      return {
+        test_id: testId,
         question_text: questionText,
         question_type: questionType,
         correct_answer: correctAnswer,
         explanation: explanation || '',
         part_number: partNumber,
-        test_id: testId
+        question_number_in_part: index + 1,
+        choices: choices,
+        passage_text: passageText,
+        audio_url: audioUrl || null,
+        image_url: imageUrl || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-
-      // Add module-specific fields
-      if (tableName === 'reading_questions') {
-        questionData.options = choices ? JSON.stringify(choices.split(';').map(c => c.trim())) : null;
-        questionData.cambridge_book = `${testType?.toUpperCase()} Test`;
-        questionData.section_number = partNumber;
-      } else if (tableName === 'listening_questions') {
-        questionData.options = choices ? JSON.stringify(choices.split(';').map(c => c.trim())) : null;
-      } else {
-        // Universal questions table
-        questionData.question_number_in_part = index + 1;
-        questionData.choices = choices;
-        questionData.passage_text = passageText;
-      }
-
-      return questionData;
     });
 
-    console.log('Inserting into table:', tableName, 'with data:', insertData[0]);
+    console.log('Inserting into universal questions table with data:', insertData[0]);
 
     const { data, error } = await supabaseClient
       .from(tableName)
@@ -228,19 +210,14 @@ async function handleCsvUpload(supabaseClient: any, csvData: any[], testType: st
 
 function getTableName(type: string): string {
   const tableMap: Record<string, string> = {
-    // Universal tables
+    // Universal tables only
     'tests': 'tests',
     'questions': 'questions',
     'csv_upload': 'questions', // CSV uploads go to questions table
     
-    // Legacy tables for backward compatibility
-    'reading_passages': 'reading_passages',
-    'reading_questions': 'reading_questions',
-    'listening_sections': 'listening_sections',
-    'listening_questions': 'listening_questions',
+    // Module-specific tables that still exist
     'writing_prompts': 'writing_prompts',
     'speaking_prompts': 'speaking_prompts',
-    'ielts_reading_tests': 'tests', // Map to universal tests table
     
     // PTE tables
     'pte_passages': 'pte_passages',

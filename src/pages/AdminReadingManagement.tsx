@@ -58,8 +58,8 @@ const AdminReadingManagement = () => {
     try {
       // Load existing passages and questions for this test
       const [passagesResponse, questionsResponse] = await Promise.all([
-        listContent('reading_passages'),
-        listContent('reading_questions')
+        listContent('tests'),
+        listContent('questions')
       ]);
 
       const passages = passagesResponse?.data?.filter((p: any) => 

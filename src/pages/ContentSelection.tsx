@@ -37,115 +37,64 @@ const ContentSelection = () => {
     try {
       setLoading(true);
       
-      if (module === 'reading') {
-        // Enhanced fetching with generalized C19 fix approach for all books
-        console.log('🔍 DEBUG: Fetching reading content with questions using generalized sync method...');
+      // Fetch from universal tables only
+      console.log('🔍 DEBUG: Fetching content from universal tables...');
+      
+      // Get all tests that have questions
+      const { data: tests, error: testsError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('module', module === 'reading' ? 'Reading' : 'Listening')
+        .order('test_number', { ascending: true });
+
+      if (testsError) throw testsError;
+
+      // Get all questions for these tests
+      const { data: questions, error: questionsError } = await supabase
+        .from('questions')
+        .select('test_id, part_number, id');
+
+      if (questionsError) throw questionsError;
+
+      // Group tests with their question counts
+      const testItems: ContentItem[] = [];
+      
+      tests?.forEach(test => {
+        const testQuestions = questions?.filter(q => q.test_id === test.id) || [];
         
-        // Fix: Filter out passages with 0 questions and remove duplicates
-        let query = supabase
-          .from('reading_passages')
-          .select(`
-            id,
-            title,
-            cambridge_book,
-            test_number,
-            section_number,
-            part_number,
-            reading_questions!inner(id)
-          `)
-          .gt('reading_questions.id', 0) // Only get passages that actually have questions
-          .order('cambridge_book', { ascending: false })
-          .order('test_number', { ascending: true })
-          .order('section_number', { ascending: true })
-          .order('part_number', { ascending: true });
+        // Group by part number
+        const partCounts = testQuestions.reduce((acc: Record<number, number>, q) => {
+          acc[q.part_number] = (acc[q.part_number] || 0) + 1;
+          return acc;
+        }, {});
 
-        // Apply part filter if selected
-        if (selectedPart !== null) {
-          query = query.eq('part_number', selectedPart);
-          console.log(`🔍 DEBUG: Filtering by part ${selectedPart}`);
-        }
-
-        const { data: passages, error } = await query;
-
-        if (error) throw error;
-
-        console.log('✓ DEBUG: Found reading passages with questions:', passages?.length || 0);
-        passages?.forEach(p => console.log(`  - ${p.cambridge_book} Section ${p.section_number} Part ${p.part_number}: ${p.reading_questions?.length || 0} questions`));
-
-        // Fix: Remove duplicates by unique combination of book+section+part, keep the one with most questions
-        const passageMap = new Map();
-        passages?.forEach(passage => {
-          const key = `${passage.cambridge_book}-${passage.section_number}-${passage.part_number}`;
-          const questionCount = passage.reading_questions?.length || 0;
-          if (!passageMap.has(key) || passageMap.get(key).question_count < questionCount) {
-            passageMap.set(key, {
-              id: passage.id,
-              title: passage.title,
-              cambridge_book: passage.cambridge_book,
-              test_number: passage.test_number,
-              section_number: passage.section_number,
-              part_number: passage.part_number || 1,
-              question_count: questionCount
-            });
+        // Create items for each part that has questions
+        Object.entries(partCounts).forEach(([partNum, count]) => {
+          const partNumber = parseInt(partNum);
+          
+          // Apply part filter if selected
+          if (selectedPart !== null && partNumber !== selectedPart) {
+            return;
           }
+
+          testItems.push({
+            id: `${test.id}-${partNumber}`,
+            title: `${test.test_name} - Part ${partNumber}`,
+            cambridge_book: `Cambridge ${test.test_number}`,
+            test_number: test.test_number,
+            section_number: 1, // Default section
+            part_number: partNumber,
+            question_count: count
+          });
         });
-        const formattedPassages = Array.from(passageMap.values());
+      });
 
-        setContentItems(formattedPassages);
-        groupContentByBook(formattedPassages);
-        
-      } else if (module === 'listening') {
-        // Enhanced listening fetching with generalized sync and part filtering
-        console.log('🔍 DEBUG: Fetching listening content with questions using generalized sync method...');
-        
-        // Fix: Filter out sections with 0 questions and remove duplicates
-        let query = supabase
-          .from('listening_sections')
-          .select(`
-            *,
-            listening_questions!inner(id)
-          `)
-          .gt('listening_questions.id', 0) // Only get sections that actually have questions
-          .order('cambridge_book', { ascending: false })
-          .order('test_number', { ascending: true })
-          .order('section_number', { ascending: true })
-          .order('part_number', { ascending: true });
+      console.log('✓ DEBUG: Found tests with questions:', testItems.length);
 
-        // Apply part filter if selected
-        if (selectedPart !== null) {
-          query = query.eq('part_number', selectedPart);
-          console.log(`🔍 DEBUG: Filtering by part ${selectedPart}`);
-        }
-
-        const { data: sections, error } = await query;
-
-        if (error) throw error;
-
-        console.log('✓ DEBUG: Found listening sections with questions:', sections?.length || 0);
-        sections?.forEach(s => console.log(`  - ${s.cambridge_book} Section ${s.section_number} Part ${s.part_number}: ${s.listening_questions?.length || 0} questions`));
-
-        // Fix: Remove duplicates by unique combination of book+section+part, keep the one with most questions
-        const sectionMap = new Map();
-        sections?.forEach(section => {
-          const key = `${section.cambridge_book}-${section.section_number}-${section.part_number}`;
-          const questionCount = section.listening_questions?.length || 0;
-          if (!sectionMap.has(key) || sectionMap.get(key).question_count < questionCount) {
-            sectionMap.set(key, {
-              id: section.id,
-              title: section.title || `Section ${section.section_number} Part ${section.part_number}`,
-              cambridge_book: section.cambridge_book,
-              test_number: section.test_number,
-              section_number: section.section_number,
-              part_number: section.part_number || 1,
-              question_count: questionCount
-            });
-          }
-        });
-        const formattedSections = Array.from(sectionMap.values());
-
-        setContentItems(formattedSections);
-        groupContentByBook(formattedSections);
-      }
+      setContentItems(testItems);
+      groupContentByBook(testItems);
+      
     } catch (error: any) {
       console.error('Error fetching content:', error);
       toast({

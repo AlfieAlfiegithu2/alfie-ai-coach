@@ -43,8 +43,8 @@ const AdminReading = () => {
     try {
       // Load passages and questions
       const [passagesResult, questionsResult] = await Promise.all([
-        listContent('reading_passages'),
-        listContent('reading_questions')
+        listContent('tests'),
+        listContent('questions')
       ]);
 
       const passages = passagesResult.data || [];
@@ -152,7 +152,7 @@ const AdminReading = () => {
   const calculateStartingQuestionNumber = async (bookNumber: number, sectionNumber: number, partNumber: number) => {
     try {
       const { data: existingQuestions, error } = await supabase
-        .from('reading_questions')
+        .from('questions')
         .select('question_number, part_number')
         .eq('cambridge_book', `C${bookNumber}`)
         .eq('section_number', sectionNumber)

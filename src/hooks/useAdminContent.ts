@@ -1,8 +1,10 @@
+// src/hooks/useAdminContent.ts
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useAdminContent() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const getAuthHeader = () => {
     const token = localStorage.getItem('admin_token');
@@ -11,6 +13,45 @@ export function useAdminContent() {
       return '';
     }
     return `Bearer ${token}`;
+  };
+
+  const createNewTest = async (testType: string, module: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // First, get the count of existing tests to determine the next test number
+      const { count, error: countError } = await supabase
+        .from('tests')
+        .select('*', { count: 'exact', head: true })
+        .eq('test_type', testType)
+        .eq('module', module);
+
+      if (countError) throw countError;
+
+      const newTestNumber = (count || 0) + 1;
+      const testName = `${testType} ${module} Test ${newTestNumber}`;
+
+      // Insert the new test
+      const { data, error: insertError } = await supabase
+        .from('tests')
+        .insert({
+          test_name: testName,
+          test_type: testType,
+          module: module,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setLoading(false);
+      return data;
+    } catch (err: any) {
+      console.error('Error creating new test:', err);
+      setError(err.message);
+      setLoading(false);
+      return null;
+    }
   };
 
   const createContent = async (type: string, data: any) => {
@@ -130,6 +171,8 @@ export function useAdminContent() {
 
   return {
     loading,
+    error,
+    createNewTest,
     createContent,
     updateContent,
     deleteContent,

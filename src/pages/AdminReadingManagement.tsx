@@ -1,387 +1,153 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle, ChevronDown, Upload, Circle } from "lucide-react";
-import AdminLayout from "@/components/AdminLayout";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { useAdminContent } from "@/hooks/useAdminContent";
-import CSVImport from "@/components/CSVImport";
-import { toast } from "sonner";
+// src/pages/AdminReadingManagement.tsx
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import Papa from 'papaparse'; // A robust CSV parsing library
 
-interface PartData {
-  title: string;
-  content: string;
-  questions: any[];
-  saved: boolean;
-}
+// --- Helper Components (can be in the same file or imported) ---
+const AdminHeader = ({ title }: { title: string }) => (
+  <div className="mb-6">
+    <h1 className="text-3xl font-bold text-white">{title}</h1>
+    <p className="text-gray-400">Manage the content for this test part by part.</p>
+  </div>
+);
 
-interface TestPart {
-  number: number;
-  title: string;
-  content: string;
-  csvFile: File | null;
-  saved: boolean;
-}
+const PartUploader = ({ partNumber, testId }: { partNumber: number; testId: string }) => {
+  const [passage, setPassage] = useState('');
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-const AdminReadingManagement = () => {
-  const navigate = useNavigate();
-  const { testType, testId } = useParams<{ testType: string; testId: string; }>();
-  const { admin, loading } = useAdminAuth();
-  const { listContent, createContent, updateContent } = useAdminContent();
-  
-  const [parts, setParts] = useState<TestPart[]>([
-    { number: 1, title: "", content: "", csvFile: null, saved: false },
-    { number: 2, title: "", content: "", csvFile: null, saved: false },
-    { number: 3, title: "", content: "", csvFile: null, saved: false }
-  ]);
-  const [openParts, setOpenParts] = useState<Set<number>>(new Set([1]));
-  const [savingPart, setSavingPart] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!loading && !admin) {
-      navigate('/admin/login');
-    }
-  }, [admin, loading, navigate]);
-
-  useEffect(() => {
-    loadExistingData();
-  }, [testType, testId]);
-
-  const loadExistingData = async () => {
-    if (!testType || !testId) return;
-    
-    try {
-      // Load existing passages and questions for this test
-      const [passagesResponse, questionsResponse] = await Promise.all([
-        listContent('tests'),
-        listContent('questions')
-      ]);
-
-      const passages = passagesResponse?.data?.filter((p: any) => 
-        p.test_number === parseInt(testId) && 
-        p[`${testType}_book`] === `${testType?.toUpperCase()} Test ${testId}`
-      ) || [];
-
-      const questions = questionsResponse?.data?.filter((q: any) => 
-        q.cambridge_book === `${testType?.toUpperCase()} Test ${testId}`
-      ) || [];
-
-      // Update parts with existing data
-      const updatedParts = parts.map(part => {
-        const partPassage = passages.find((p: any) => p.part_number === part.number);
-        const partQuestions = questions.filter((q: any) => q.part_number === part.number);
-        
-        return {
-          ...part,
-          title: partPassage?.title || "",
-          content: partPassage?.content || "",
-          saved: !!(partPassage && partQuestions.length > 0)
-        };
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const parsedQuestions = results.data.map((row: any) => ({
+            question_number_in_part: parseInt(row['Question Number'], 10),
+            question_text: row['Question Text'],
+            question_type: row['Type'],
+            choices: row['Choices'],
+            correct_answer: row['Correct Answer'],
+            explanation: row['Explanation'],
+          }));
+          setQuestions(parsedQuestions);
+          setSuccess(false); // Reset success state on new file
+        },
       });
-
-      setParts(updatedParts);
-    } catch (error) {
-      console.error('Error loading existing data:', error);
-      toast.error('Failed to load existing data');
     }
   };
 
-  const togglePart = (partNumber: number) => {
-    const newOpen = new Set(openParts);
-    if (newOpen.has(partNumber)) {
-      newOpen.delete(partNumber);
-    } else {
-      newOpen.add(partNumber);
-    }
-    setOpenParts(newOpen);
-  };
+  const handleSavePart = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSuccess(false);
 
-  const updatePart = (partNumber: number, field: keyof TestPart, value: any) => {
-    setParts(prevParts => 
-      prevParts.map(part => 
-        part.number === partNumber 
-          ? { ...part, [field]: value, saved: false }
-          : part
-      )
-    );
-  };
-
-  const handleCSVUpload = (partNumber: number, questions: any[]) => {
-    console.log('CSV uploaded for part', partNumber, 'with questions:', questions);
-    // Create a mock file object to store questions data
-    const questionsData = JSON.stringify(questions);
-    const file = new File([questionsData], `part-${partNumber}-questions.json`, {
-      type: 'application/json'
-    });
-    updatePart(partNumber, 'csvFile', file);
-  };
-
-  const savePart = async (partNumber: number) => {
-    const part = parts.find(p => p.number === partNumber);
-    if (!part) return;
-
-    if (!part.title.trim() || !part.content.trim() || !part.csvFile) {
-      toast.error('Please fill in all fields and upload a CSV file');
+    if (questions.length === 0) {
+      setError('No questions to upload. Please select a valid CSV file.');
+      setIsLoading(false);
       return;
     }
 
-    setSavingPart(partNumber);
+    const questionsWithData = questions.map(q => ({
+      ...q,
+      test_id: testId,
+      part_number: partNumber,
+      passage_text: q.question_number_in_part === 1 ? passage : null, // Add passage to first question
+    }));
+
     try {
-      // Parse questions from file
-      const fileContent = await part.csvFile.text();
-      let questions;
-      
-      try {
-        // Try to parse as JSON first (from our CSV import component)
-        questions = JSON.parse(fileContent);
-      } catch {
-        // Fall back to CSV parsing
-        const lines = fileContent.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        
-        questions = lines.slice(1).map((line, index) => {
-          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-          const question: any = {};
-          headers.forEach((header, i) => {
-            question[header] = values[i] || '';
-          });
-          return question;
-        }).filter(q => q.question_text && q.correct_answer);
-      }
-
-      // Get or create test in universal tests table
-      const testsResponse = await listContent('tests');
-      let test = testsResponse?.data?.find((t: any) => 
-        t.test_type === testType?.toUpperCase() && 
-        t.module === 'Reading' && 
-        t.test_number === parseInt(testId || '1')
-      );
-
-      if (!test) {
-        // Create test if it doesn't exist
-        const testData = {
-          test_name: `${testType?.toUpperCase()} Test ${testId}`,
-          test_type: testType?.toUpperCase() || 'IELTS',
-          module: 'Reading',
-          test_number: parseInt(testId || '1'),
-          status: 'incomplete',
-          parts_completed: 0,
-          total_questions: 0
-        };
-        
-        const testResult = await createContent('tests', testData);
-        test = testResult.data;
-      }
-
-      if (!test) {
-        throw new Error('Failed to create or find test');
-      }
-
-      // Format questions for universal questions table
-      const questionsData = questions.map((q: any, index: number) => ({
-        test_id: test.id,
-        part_number: partNumber,
-        question_number_in_part: index + 1,
-        question_text: q.question_text || q['Question Text'] || q.QuestionText || '',
-        question_type: q.question_type || q['Question Type'] || q.QuestionType || 'Multiple Choice',
-        correct_answer: q.correct_answer || q['Correct Answer'] || q.CorrectAnswer || '',
-        explanation: q.explanation || q.Explanation || '',
-        choices: q.options || q.Options || q.choices || '',
-        passage_text: part.content // Include passage text with each question
-      }));
-
-      // Upload questions using CSV upload endpoint
-      const result = await createContent('csv_upload', {
-        csvData: questionsData,
-        testId: test.id,
-        testType: testType?.toUpperCase() || 'IELTS',
-        partNumber: partNumber,
-        module: 'Reading'
+      const { data, error: functionError } = await supabase.functions.invoke('admin-content', {
+        body: { questions: questionsWithData },
       });
 
-      if (!result.success) {
-        throw new Error('Failed to upload questions');
-      }
+      if (functionError) throw functionError;
+      if (data.error) throw new Error(data.error);
 
-      // Update test progress
-      const updateData = {
-        id: test.id,
-        parts_completed: Math.max(test.parts_completed || 0, partNumber),
-        total_questions: (test.total_questions || 0) + questionsData.length,
-        status: partNumber === 3 ? 'complete' : 'incomplete'
-      };
-
-      await updateContent('tests', updateData);
-
-      // Update part status
-      setParts(prevParts => 
-        prevParts.map(p => 
-          p.number === partNumber 
-            ? { ...p, saved: true }
-            : p
-        )
-      );
-
-      toast.success(`Part ${partNumber} saved successfully with ${questions.length} questions!`);
-    } catch (error: any) {
-      console.error('Error saving part:', error);
-      const errorMessage = error.message || `Failed to save Part ${partNumber}`;
-      toast.error(`Error: ${errorMessage}. Please check your data and try again.`);
+      setSuccess(true);
+    } catch (err: any) {
+      console.error(`Error saving Part ${partNumber}:`, err);
+      setError(`Upload Failed: ${err.message}`);
     } finally {
-      setSavingPart(null);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading Reading Management...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!admin) return null;
-
   return (
-    <AdminLayout 
-      title={`${testType?.toUpperCase()} Test ${testId} - Reading Management`}
-      showBackButton={true}
-      backPath={`/admin/${testType}/reading`}
-    >
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              {testType?.toUpperCase()} Test {testId} - Reading Management
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Create a complete 3-part reading test with passages and questions
-            </p>
-          </div>
-          <Badge variant="secondary" className="text-sm">
-            Test {testId}
-          </Badge>
+    <div className="bg-[#1C2333] p-6 rounded-lg mb-4">
+      <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+        Part {partNumber}
+        {success && <span className="ml-3 text-green-400 text-sm">(✓ Saved)</span>}
+      </h2>
+      <div className="space-y-4">
+        <textarea
+          placeholder="Paste the passage text for this part here..."
+          className="w-full p-3 bg-[#0D1117] text-white rounded-md border border-gray-600"
+          rows={8}
+          value={passage}
+          onChange={(e) => setPassage(e.target.value)}
+        />
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Upload Questions CSV</label>
+          <input
+            type="file"
+            accept=".csv"
+            className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#3B82F6] file:text-white hover:file:bg-[#2563EB]"
+            onChange={handleFileUpload}
+          />
+          {questions.length > 0 && <p className="text-xs text-gray-400 mt-1">{questions.length} questions parsed.</p>}
         </div>
-
-        {/* Test Parts */}
-        <div className="space-y-4">
-          {parts.map((part) => (
-            <Card key={part.number} className="border border-border">
-              <Collapsible 
-                open={openParts.has(part.number)} 
-                onOpenChange={() => togglePart(part.number)}
-              >
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <ChevronDown 
-                          className={`w-5 h-5 transition-transform ${
-                            openParts.has(part.number) ? '' : '-rotate-90'
-                          }`} 
-                        />
-                        <CardTitle className="flex items-center gap-2">
-                          {part.saved ? (
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-muted-foreground" />
-                          )}
-                          Part {part.number}
-                        </CardTitle>
-                      </div>
-                      <Badge variant={part.saved ? "default" : "outline"}>
-                        {part.saved ? 'Saved' : 'Not Saved'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <CardContent className="space-y-6">
-                    {/* Passage Title */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Passage Title (Optional)
-                      </label>
-                      <Input
-                        placeholder={`Reading Passage ${part.number} Title`}
-                        value={part.title}
-                        onChange={(e) => updatePart(part.number, 'title', e.target.value)}
-                      />
-                    </div>
-
-                    {/* Passage Text */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Passage Text *
-                      </label>
-                      <Textarea
-                        placeholder="Enter the complete reading passage text here..."
-                        value={part.content}
-                        onChange={(e) => updatePart(part.number, 'content', e.target.value)}
-                        rows={8}
-                        className="resize-none"
-                      />
-                    </div>
-
-                    {/* Questions CSV Upload */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Questions CSV File *
-                      </label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6">
-                        <CSVImport
-                          onImport={(questions) => handleCSVUpload(part.number, questions)}
-                          type="reading"
-                          module={testType as 'ielts' | 'pte' | 'toefl' | 'general'}
-                          cambridgeBook={`${testType?.toUpperCase()} Test ${testId}`}
-                          testNumber={parseInt(testId || '1')}
-                          sectionNumber={1}
-                          hideDownloadSample={true}
-                        />
-                        {part.csvFile && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            File: {part.csvFile.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="flex justify-end">
-                      <Button 
-                        onClick={() => savePart(part.number)}
-                        disabled={savingPart === part.number || !part.title.trim() || !part.content.trim() || !part.csvFile}
-                        className="bg-primary hover:bg-primary/90"
-                      >
-                        {savingPart === part.number ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Saving Part {part.number}...
-                          </>
-                        ) : (
-                          `Save Part ${part.number}`
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          ))}
-        </div>
+        <button
+          onClick={handleSavePart}
+          disabled={isLoading}
+          className="w-full py-2 px-4 bg-[#3B82F6] text-white font-semibold rounded-lg hover:bg-[#2563EB] disabled:bg-gray-500"
+        >
+          {isLoading ? 'Saving...' : `Save Part ${partNumber}`}
+        </button>
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
-    </AdminLayout>
+    </div>
   );
 };
 
-export default AdminReadingManagement;
+
+// --- Main Page Component ---
+export default function AdminReadingManagement() {
+  const { testId } = useParams<{ testId: string }>();
+  const [testName, setTestName] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchTestDetails = async () => {
+      if (testId) {
+        const { data, error } = await supabase
+          .from('tests')
+          .select('test_name')
+          .eq('id', testId)
+          .single();
+        if (error) {
+          console.error('Error fetching test name:', error);
+          navigate('/admin/ielts/reading'); // Redirect if test not found
+        } else {
+          setTestName(data.test_name);
+        }
+      }
+    };
+    fetchTestDetails();
+  }, [testId, navigate]);
+
+
+  if (!testId) return <p className="text-white">Loading or invalid test ID...</p>;
+
+  return (
+    <div className="p-8">
+      <AdminHeader title={`Manage Test: ${testName}`} />
+      <PartUploader partNumber={1} testId={testId} />
+      <PartUploader partNumber={2} testId={testId} />
+      <PartUploader partNumber={3} testId={testId} />
+    </div>
+  );
+}

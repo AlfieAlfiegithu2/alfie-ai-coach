@@ -56,7 +56,7 @@ export function useAdminContent() {
     }
   };
 
-  const createContent = async (type: 'tests', data: any) => {
+  const createContent = async (type: string, data: any) => {
     setLoading(true);
     try {
       console.log('Creating content:', type, data);
@@ -78,8 +78,31 @@ export function useAdminContent() {
         return { data: result };
       }
 
-      // For other types, throw error as they should use specific functions
-      throw new Error(`Unsupported content type: ${type}`);
+      // For CSV uploads, use the Edge Function
+      if (type === 'csv_upload') {
+        const { data: result, error } = await supabase.functions.invoke('admin-content', {
+          body: { questions: data.questions },
+        });
+
+        if (error) {
+          console.error('CSV upload error:', error);
+          throw error;
+        }
+        
+        return { success: true, data: result };
+      }
+
+      // For other types, use the Edge Function (for backward compatibility)
+      const { data: result, error } = await supabase.functions.invoke('admin-content', {
+        body: { action: 'create', type, data },
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+      
+      return result;
     } catch (error: any) {
       console.error('Create content error:', error);
       throw error;
@@ -88,7 +111,55 @@ export function useAdminContent() {
     }
   };
 
-  const listContent = async (type: 'tests' | 'questions') => {
+  const updateContent = async (type: string, data: any) => {
+    setLoading(true);
+    try {
+      console.log('Updating content:', type, data);
+      
+      // For backward compatibility with existing components
+      const { data: result, error } = await supabase.functions.invoke('admin-content', {
+        body: { action: 'update', type, data },
+      });
+
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+      
+      return result;
+    } catch (error: any) {
+      console.error('Update content error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteContent = async (type: string, id: string) => {
+    setLoading(true);
+    try {
+      console.log('Deleting content:', type, id);
+      
+      // For backward compatibility with existing components
+      const { data: result, error } = await supabase.functions.invoke('admin-content', {
+        body: { action: 'delete', type, data: { id } },
+      });
+
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+      
+      return result;
+    } catch (error: any) {
+      console.error('Delete content error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const listContent = async (type: string) => {
     setLoading(true);
     try {
       console.log('Listing content for type:', type);
@@ -123,7 +194,17 @@ export function useAdminContent() {
         return { data: result };
       }
 
-      throw new Error(`Unsupported content type: ${type}`);
+      // For other types, use the Edge Function for backward compatibility
+      const { data: result, error } = await supabase.functions.invoke('admin-content', {
+        body: { action: 'list', type },
+      });
+
+      if (error) {
+        console.error('List content error:', error);
+        throw error;
+      }
+      
+      return result;
     } catch (error: any) {
       console.error('List content error:', error);
       throw error;
@@ -159,6 +240,8 @@ export function useAdminContent() {
     error,
     createNewTest,
     createContent,
+    updateContent,
+    deleteContent,
     listContent,
     uploadAudio
   };

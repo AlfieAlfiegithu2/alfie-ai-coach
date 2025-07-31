@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { PenTool, Save, Image, FileText, Upload } from "lucide-react";
+import { PenTool, Save, Image, FileText, Upload, Trash2 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
@@ -125,6 +125,40 @@ const AdminIELTSWritingTest = () => {
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    try {
+      if (task1.imageUrl) {
+        // Extract file path from URL for deletion
+        const urlParts = task1.imageUrl.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        const filePath = `ielts-writing/${fileName}`;
+
+        const { error: deleteError } = await supabase.storage
+          .from('audio-files')
+          .remove([filePath]);
+
+        if (deleteError) {
+          console.warn('Error deleting file from storage:', deleteError);
+        }
+
+        // Clear the image URL from state regardless of storage deletion result
+        setTask1(prev => ({ ...prev, imageUrl: "" }));
+        
+        toast({
+          title: "Success",
+          description: "Image deleted successfully"
+        });
+      }
+    } catch (error: any) {
+      console.error('Error deleting image:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete image",
+        variant: "destructive"
+      });
     }
   };
 
@@ -277,7 +311,18 @@ const AdminIELTSWritingTest = () => {
               </div>
               {task1.imageUrl && (
                 <div className="mt-2">
-                  <p className="text-sm text-muted-foreground mb-2">Current image:</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-muted-foreground">Current image:</p>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteImage}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Image
+                    </Button>
+                  </div>
                   <img 
                     src={task1.imageUrl} 
                     alt="Task 1 chart/graph" 

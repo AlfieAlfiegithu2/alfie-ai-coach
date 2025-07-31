@@ -73,7 +73,7 @@ const IELTSPortal = () => {
       const { data: testsData, error: testsError } = await supabase
         .from('tests')
         .select('*')
-        .eq('test_type', 'ielts')
+        .eq('test_type', 'IELTS')
         .eq('module', 'reading')
         .order('created_at', { ascending: true });
 

@@ -36,6 +36,7 @@ import TOEFLPortal from "./pages/TOEFLPortal";
 import GeneralPortal from "./pages/GeneralPortal";
 import EnhancedGeneralPortal from "./pages/EnhancedGeneralPortal";
 import IELTSPortal from "./pages/IELTSPortal";
+import IELTSTestModules from "./pages/IELTSTestModules";
 import AdminTestManagement from "./pages/AdminTestManagement";
 import AdminTestDetails from "./pages/AdminTestDetails";
 import AdminSectionManagement from "./pages/AdminSectionManagement";
@@ -130,6 +131,7 @@ const App = () => {
             <Route path="/admin/general/pronunciation" element={<AdminGeneral />} />
             {/* Missing portal routes that were causing 404s */}
             <Route path="/ielts-portal" element={<IELTSPortal />} />
+            <Route path="/ielts-test-modules/:testId" element={<IELTSTestModules />} />
             <Route path="/pte-portal" element={<PTEPortal />} />
             <Route path="/toefl-portal" element={<TOEFLPortal />} />
             <Route path="/general-portal" element={<GeneralPortal />} />

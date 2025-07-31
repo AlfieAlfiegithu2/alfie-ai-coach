@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { PenTool, Save, Image, FileText, Upload, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,8 @@ const AdminIELTSWritingTest = () => {
     title: "",
     instructions: ""
   });
+  const [isLocked, setIsLocked] = useState(false);
+  const [isModifying, setIsModifying] = useState(false);
 
   useEffect(() => {
     if (testId) {
@@ -82,6 +85,11 @@ const AdminIELTSWritingTest = () => {
           instructions: task2Question.passage_text || ""
         });
       }
+
+      // Check if test is locked (both tasks have content)
+      const hasCompleteContent = task1Question && task2Question && 
+                                 task1Question.question_text && task2Question.question_text;
+      setIsLocked(Boolean(hasCompleteContent));
     } catch (error) {
       console.error('Error loading test data:', error);
       toast({
@@ -209,6 +217,12 @@ const AdminIELTSWritingTest = () => {
         title: "Success",
         description: `Task ${taskNumber} saved successfully`
       });
+
+      // Check if we should lock the test (both tasks completed)
+      if (task1.title && task1.instructions && task2.title && task2.instructions) {
+        setIsLocked(true);
+        setIsModifying(false);
+      }
     } catch (error: any) {
       console.error(`Error saving Task ${taskNumber}:`, error);
       toast({
@@ -246,6 +260,18 @@ const AdminIELTSWritingTest = () => {
             <p className="text-muted-foreground mt-1">
               Manage Task 1 and Task 2 content for this IELTS Writing test
             </p>
+            {isLocked && !isModifying && (
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="default" className="bg-green-600">Locked & Complete</Badge>
+                <Button
+                  onClick={() => setIsModifying(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  Modify Content
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -268,6 +294,7 @@ const AdminIELTSWritingTest = () => {
                 value={task1.title}
                 onChange={(e) => setTask1(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g., The chart below shows the number of visitors to a museum..."
+                disabled={isLocked && !isModifying}
               />
             </div>
 
@@ -279,6 +306,7 @@ const AdminIELTSWritingTest = () => {
                 value={task1.instructions}
                 onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="Write the complete task instructions here..."
+                disabled={isLocked && !isModifying}
               />
             </div>
 
@@ -296,13 +324,13 @@ const AdminIELTSWritingTest = () => {
                       handleFileUpload(file);
                     }
                   }}
-                  disabled={uploading}
+                  disabled={uploading || (isLocked && !isModifying)}
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={uploading}
+                  disabled={uploading || (isLocked && !isModifying)}
                   onClick={() => document.getElementById('task1-image')?.click()}
                 >
                   <Upload className="w-4 h-4 mr-2" />
@@ -318,6 +346,7 @@ const AdminIELTSWritingTest = () => {
                       variant="destructive"
                       size="sm"
                       onClick={handleDeleteImage}
+                      disabled={isLocked && !isModifying}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete Image
@@ -340,12 +369,13 @@ const AdminIELTSWritingTest = () => {
                 value={task1.imageContext}
                 onChange={(e) => setTask1(prev => ({ ...prev, imageContext: e.target.value }))}
                 placeholder="Detailed description of the image/chart for accessibility and context..."
+                disabled={isLocked && !isModifying}
               />
             </div>
 
             <Button 
               onClick={() => saveTask(1)}
-              disabled={loading}
+              disabled={loading || (isLocked && !isModifying)}
               className="w-full"
             >
               <Save className="w-4 h-4 mr-2" />
@@ -375,6 +405,7 @@ const AdminIELTSWritingTest = () => {
                 value={task2.title}
                 onChange={(e) => setTask2(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g., Some people think that..."
+                disabled={isLocked && !isModifying}
               />
             </div>
 
@@ -386,12 +417,13 @@ const AdminIELTSWritingTest = () => {
                 value={task2.instructions}
                 onChange={(e) => setTask2(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="Write the complete essay question and instructions here..."
+                disabled={isLocked && !isModifying}
               />
             </div>
 
             <Button 
               onClick={() => saveTask(2)}
-              disabled={loading}
+              disabled={loading || (isLocked && !isModifying)}
               className="w-full"
             >
               <Save className="w-4 h-4 mr-2" />

@@ -59,6 +59,7 @@ const IELTSPortal = () => {
   ];
 
   const [availableTests, setAvailableTests] = useState<any[]>([]);
+  const [writingTests, setWritingTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -68,7 +69,7 @@ const IELTSPortal = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
-      // Fetch from universal tests table
+      // Fetch Reading tests
       const { data: testsData, error: testsError } = await supabase
         .from('tests')
         .select('*')
@@ -79,6 +80,19 @@ const IELTSPortal = () => {
       if (testsError) {
         console.error('Error fetching tests:', testsError);
         throw testsError;
+      }
+
+      // Fetch Writing tests
+      const { data: writingTestsData, error: writingTestsError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Writing')
+        .order('created_at', { ascending: true });
+
+      if (writingTestsError) {
+        console.error('Error fetching writing tests:', writingTestsError);
+        throw writingTestsError;
       }
 
       // Fetch questions from universal table only
@@ -113,12 +127,27 @@ const IELTSPortal = () => {
         };
       }) || [];
 
+      const transformedWritingTests = writingTestsData?.map(test => {
+        const questionCount = questionCounts.get(test.id) || 0;
+        return {
+          id: test.id,
+          test_name: test.test_name,
+          test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
+          status: questionCount > 0 ? 'complete' : 'incomplete',
+          tasks_available: questionCount >= 2 ? 2 : questionCount,
+          total_questions: questionCount,
+          comingSoon: questionCount === 0
+        };
+      }) || [];
+
       // Only show tests that actually exist in the admin panel
       setAvailableTests(transformedTests);
+      setWritingTests(transformedWritingTests);
     } catch (error) {
       console.error('Error loading tests:', error);
       // Show empty array if error occurs
       setAvailableTests([]);
+      setWritingTests([]);
     } finally {
       setIsLoading(false);
     }
@@ -126,12 +155,22 @@ const IELTSPortal = () => {
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting IELTS ${skillId} practice`);
-    navigate(`/${skillId}`);
+    if (skillId === 'writing') {
+      // Show writing tests section instead of generic practice
+      document.getElementById('writing-tests')?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate(`/${skillId}`);
+    }
   };
 
   const handleMockTest = (testId: string) => {
     console.log(`🧪 Starting IELTS mock test ${testId}`);
     navigate(`/enhanced-reading-test/${testId}`);
+  };
+
+  const handleWritingTest = (testId: string) => {
+    console.log(`✍️ Starting IELTS Writing test ${testId}`);
+    navigate(`/ielts-writing-test/${testId}`);
   };
 
   return (
@@ -212,7 +251,7 @@ const IELTSPortal = () => {
 
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-heading-3">IELTS Mock Tests</h2>
+            <h2 className="text-heading-3">IELTS Reading Mock Tests</h2>
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
               Band Score Prediction
             </Badge>
@@ -268,6 +307,72 @@ const IELTSPortal = () => {
                        </span>
                      ) : (
                        'Start Reading Test'
+                     )}
+                   </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <section id="writing-tests">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-heading-3">IELTS Writing Tests</h2>
+            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+              AI Examiner Feedback
+            </Badge>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {writingTests.map((test) => (
+              <Card key={test.test_number || test.id} className="card-modern hover-lift">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{test.test_name || `IELTS Writing Test ${test.test_number || test.id}`}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <PenTool className="w-5 h-5 text-green-600" />
+                      {test.status === 'complete' && (
+                        <Badge variant="default" className="text-xs bg-green-600">Complete</Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-text-secondary" />
+                      <span>Band 4.0-9.0</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-text-secondary" />
+                      <span>60 minutes</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <PenTool className="w-4 h-4 text-text-secondary" />
+                      <span>{test.tasks_available || 0}/2 tasks</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-text-secondary" />
+                      <span>AI Tutor</span>
+                    </div>
+                  </div>
+
+                   <Button 
+                    onClick={() => handleWritingTest(test.id)}
+                     className="w-full bg-green-600 hover:bg-green-700 text-white"
+                     size="sm"
+                     disabled={test.comingSoon}
+                   >
+                     {test.comingSoon ? (
+                       <span className="flex items-center gap-2">
+                         <Clock className="w-4 h-4" />
+                         Coming Soon
+                       </span>
+                     ) : (
+                       'Start Writing Test'
                      )}
                    </Button>
                 </CardContent>

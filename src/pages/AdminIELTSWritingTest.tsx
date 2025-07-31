@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { PenTool, Save, Image, FileText } from "lucide-react";
+import { PenTool, Save, Image, FileText, Upload } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,8 @@ const AdminIELTSWritingTest = () => {
     imageUrl: "",
     imageContext: ""
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [task2, setTask2] = useState({
     id: null,
     title: "",
@@ -87,6 +89,42 @@ const AdminIELTSWritingTest = () => {
         description: "Failed to load test data",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `ielts-writing/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('audio-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('audio-files')
+        .getPublicUrl(filePath);
+
+      setTask1(prev => ({ ...prev, imageUrl: publicUrl }));
+      setSelectedFile(null);
+      
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully"
+      });
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload image",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -211,13 +249,42 @@ const AdminIELTSWritingTest = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="task1-image">Image URL</Label>
-              <Input
-                id="task1-image"
-                value={task1.imageUrl}
-                onChange={(e) => setTask1(prev => ({ ...prev, imageUrl: e.target.value }))}
-                placeholder="https://example.com/chart-image.png"
-              />
+              <Label htmlFor="task1-image">Upload Image</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  id="task1-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedFile(file);
+                      handleFileUpload(file);
+                    }
+                  }}
+                  disabled={uploading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => document.getElementById('task1-image')?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploading ? 'Uploading...' : 'Choose File'}
+                </Button>
+              </div>
+              {task1.imageUrl && (
+                <div className="mt-2">
+                  <p className="text-sm text-muted-foreground mb-2">Current image:</p>
+                  <img 
+                    src={task1.imageUrl} 
+                    alt="Task 1 chart/graph" 
+                    className="max-w-full h-48 object-contain border rounded-md"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

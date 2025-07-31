@@ -13,11 +13,11 @@ export function useAdminContent() {
       console.log('Creating new test:', { testType, module });
 
       // First, get the count of existing tests to determine the next test number
+      // Count tests by test_type only (not by module) to get generic test numbers
       const { count, error: countError } = await supabase
         .from('tests')
         .select('*', { count: 'exact', head: true })
-        .eq('test_type', testType)
-        .eq('module', module);
+        .eq('test_type', testType);
 
       if (countError) {
         console.error('Error counting tests:', countError);
@@ -25,7 +25,8 @@ export function useAdminContent() {
       }
 
       const newTestNumber = (count || 0) + 1;
-      const testName = `${testType.toUpperCase()} ${module.charAt(0).toUpperCase() + module.slice(1)} Test ${newTestNumber}`;
+      // Create generic test names like "IELTS Test 1", "IELTS Test 2", etc.
+      const testName = `${testType.toUpperCase()} Test ${newTestNumber}`;
 
       console.log('Inserting new test:', { testName, testType, module });
 

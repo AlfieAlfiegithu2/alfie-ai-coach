@@ -397,6 +397,7 @@ const EnhancedReadingTest = () => {
   // Get authentic IELTS instruction for question type
   const getQuestionTypeInstruction = (questionType: string, questionRange: string) => {
     const type = questionType?.toLowerCase() || '';
+    console.log(`🎯 Getting instruction for type: "${type}", range: "${questionRange}"`);
     
     if (type.includes('true') || type.includes('false') || type.includes('not given')) {
       if (type.includes('yes') || type.includes('no')) {
@@ -425,13 +426,26 @@ const EnhancedReadingTest = () => {
       return `Choose the correct letter, A, B, C, or D. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
     }
     
-    // For completion types, the instruction is usually already in the question text
-    if (type.includes('completion') || type.includes('summary') || type.includes('flow') || 
-        type.includes('table') || type.includes('diagram') || type.includes('short')) {
-      return null; // No additional instruction needed
+    // Completion questions - these should have instructions
+    if (type.includes('completion') || type.includes('summary')) {
+      return `Complete the summary below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer. Write your answers in boxes ${questionRange} on your answer sheet.`;
     }
     
-    return null;
+    if (type.includes('flow') || type.includes('diagram')) {
+      return `Complete the flow chart/diagram below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer. Write your answers in boxes ${questionRange} on your answer sheet.`;
+    }
+    
+    if (type.includes('table')) {
+      return `Complete the table below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer. Write your answers in boxes ${questionRange} on your answer sheet.`;
+    }
+    
+    if (type.includes('short') && type.includes('answer')) {
+      return `Answer the questions below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer. Write your answers in boxes ${questionRange} on your answer sheet.`;
+    }
+    
+    // If we don't have a specific instruction, provide a generic one
+    console.log(`⚠️ No specific instruction found for type: "${type}"`);
+    return `Read the questions below and answer according to the passage. Write your answers in boxes ${questionRange} on your answer sheet.`;
   };
 
   // Group questions by type to show instructions
@@ -441,11 +455,14 @@ const EnhancedReadingTest = () => {
     const groups: { type: string; questions: ReadingQuestion[]; instruction: string | null }[] = [];
     let currentGroup: { type: string; questions: ReadingQuestion[]; instruction: string | null } | null = null;
     
-    currentTestPart.questions.forEach(question => {
+    console.log('🔍 Grouping questions for Part', currentPart, '- Total questions:', currentTestPart.questions.length);
+    
+    currentTestPart.questions.forEach((question, index) => {
       const questionType = question.question_type?.toLowerCase() || '';
+      console.log(`Question ${question.question_number}: Type="${questionType}"`);
       
       if (!currentGroup || currentGroup.type !== questionType) {
-        // Calculate range for this group
+        // Calculate range for this group - find all questions of this type in the current part
         const groupQuestions = currentTestPart.questions.filter(q => 
           q.question_type?.toLowerCase() === questionType
         );
@@ -454,17 +471,22 @@ const EnhancedReadingTest = () => {
           groupNumbers[0].toString() : 
           `${groupNumbers[0]}-${groupNumbers[groupNumbers.length - 1]}`;
         
+        const instruction = getQuestionTypeInstruction(questionType, groupRange);
+        console.log(`📋 New group for type "${questionType}": Range ${groupRange}, Instruction: ${instruction ? 'YES' : 'NO'}`);
+        
         currentGroup = {
           type: questionType,
           questions: [question],
-          instruction: getQuestionTypeInstruction(questionType, groupRange)
+          instruction: instruction
         };
         groups.push(currentGroup);
       } else {
         currentGroup.questions.push(question);
+        console.log(`➕ Added question ${question.question_number} to existing group "${questionType}"`);
       }
     });
     
+    console.log('📊 Final groups:', groups.map(g => `${g.type} (${g.questions.length} questions) - ${g.instruction ? 'HAS' : 'NO'} instruction`));
     return groups;
   };
 

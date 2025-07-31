@@ -394,6 +394,49 @@ const EnhancedReadingTest = () => {
     return `${questionNumbers[0]} - ${questionNumbers[questionNumbers.length - 1]}`;
   };
 
+  // Detect actual question type from question content
+  const detectQuestionType = (question: ReadingQuestion): string => {
+    const questionText = question.question_text?.toLowerCase() || '';
+    const correctAnswer = question.correct_answer?.toLowerCase() || '';
+    
+    // YES/NO/NOT GIVEN detection
+    if (questionText.includes('statement') && 
+        (correctAnswer.includes('yes') || correctAnswer.includes('no') || correctAnswer.includes('not given'))) {
+      return 'yes_no_not_given';
+    }
+    
+    // TRUE/FALSE/NOT GIVEN detection
+    if (questionText.includes('statement') && 
+        (correctAnswer.includes('true') || correctAnswer.includes('false') || correctAnswer.includes('not given'))) {
+      return 'true_false_not_given';
+    }
+    
+    // Completion questions - look for "Complete the summary" or similar
+    if (questionText.includes('complete the summary') || 
+        questionText.includes('complete the text') ||
+        questionText.includes('choose from the list') ||
+        questionText.includes('write the correct letter')) {
+      return 'completion';
+    }
+    
+    // Matching questions - look for "Match each statement"
+    if (questionText.includes('match each statement') || 
+        questionText.includes('match each') ||
+        questionText.includes('correct theorist') ||
+        questionText.includes('correct letter, a, b, or c')) {
+      return 'matching_features';
+    }
+    
+    // Multiple choice detection
+    if (question.options && question.options.length > 0 && 
+        (questionText.includes('choose the correct') || questionText.includes('which of the following'))) {
+      return 'multiple_choice';
+    }
+    
+    // Default to the original type
+    return question.question_type || 'short_answer';
+  };
+
   // Get authentic IELTS instruction for question type
   const getQuestionTypeInstruction = (questionType: string, questionRange: string) => {
     const type = questionType?.toLowerCase() || '';
@@ -414,8 +457,8 @@ const EnhancedReadingTest = () => {
       return `Which paragraph contains the following information? Write the correct letter in boxes ${questionRange} on your answer sheet. NB You may use any letter more than once.`;
     }
     
-    if (type.includes('matching') && type.includes('feature')) {
-      return `Look at the following statements and the list of features below. Match each statement with the correct feature. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
+    if (type.includes('matching') && (type.includes('feature') || type.includes('theorist'))) {
+      return `Look at the following statements and match each statement with the correct option from the list below. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
     }
     
     if (type.includes('matching') && type.includes('sentence')) {
@@ -428,7 +471,7 @@ const EnhancedReadingTest = () => {
     
     // Completion questions - these should have instructions
     if (type.includes('completion') || type.includes('summary')) {
-      return `Complete the summary below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer. Write your answers in boxes ${questionRange} on your answer sheet.`;
+      return `Complete the summary below using the list of words provided. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
     }
     
     if (type.includes('flow') || type.includes('diagram')) {
@@ -458,31 +501,34 @@ const EnhancedReadingTest = () => {
     console.log('🔍 Grouping questions for Part', currentPart, '- Total questions:', currentTestPart.questions.length);
     
     currentTestPart.questions.forEach((question, index) => {
-      const questionType = question.question_type?.toLowerCase() || '';
-      console.log(`Question ${question.question_number}: Type="${questionType}"`);
+      // Use intelligent detection instead of database type
+      const detectedType = detectQuestionType(question);
+      const originalType = question.question_type?.toLowerCase() || '';
       
-      if (!currentGroup || currentGroup.type !== questionType) {
-        // Calculate range for this group - find all questions of this type in the current part
+      console.log(`Question ${question.question_number}: Original="${originalType}" → Detected="${detectedType}"`);
+      
+      if (!currentGroup || currentGroup.type !== detectedType) {
+        // Calculate range for this group - find all questions of this detected type in the current part
         const groupQuestions = currentTestPart.questions.filter(q => 
-          q.question_type?.toLowerCase() === questionType
+          detectQuestionType(q) === detectedType
         );
         const groupNumbers = groupQuestions.map(q => q.question_number).sort((a, b) => a - b);
         const groupRange = groupNumbers.length === 1 ? 
           groupNumbers[0].toString() : 
           `${groupNumbers[0]}-${groupNumbers[groupNumbers.length - 1]}`;
         
-        const instruction = getQuestionTypeInstruction(questionType, groupRange);
-        console.log(`📋 New group for type "${questionType}": Range ${groupRange}, Instruction: ${instruction ? 'YES' : 'NO'}`);
+        const instruction = getQuestionTypeInstruction(detectedType, groupRange);
+        console.log(`📋 New group for type "${detectedType}": Range ${groupRange}, Instruction: ${instruction ? 'YES' : 'NO'}`);
         
         currentGroup = {
-          type: questionType,
+          type: detectedType,
           questions: [question],
           instruction: instruction
         };
         groups.push(currentGroup);
       } else {
         currentGroup.questions.push(question);
-        console.log(`➕ Added question ${question.question_number} to existing group "${questionType}"`);
+        console.log(`➕ Added question ${question.question_number} to existing group "${detectedType}"`);
       }
     });
     
@@ -765,112 +811,113 @@ const EnhancedReadingTest = () => {
                         </div>
                       )}
                       
-                      {/* Questions in this group */}
-                      {group.questions.map((question) => {
-                        const renderAnswerInput = () => {
-                          const questionType = question.question_type?.toLowerCase() || '';
-                          
-                          // True/False/Not Given questions
-                          if (questionType.includes('true') || questionType.includes('false') || questionType.includes('not given')) {
-                            return (
-                              <RadioGroup
-                                value={answers[question.id] || ''}
-                                onValueChange={(value) => handleAnswerChange(question.id, value)}
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="True" id={`${question.id}-true`} />
-                                  <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="False" id={`${question.id}-false`} />
-                                  <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
-                                  <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
-                                </div>
-                              </RadioGroup>
-                            );
-                          }
-                          
-                          // Yes/No/Not Given questions
-                          if (questionType.includes('yes') || questionType.includes('no')) {
-                            return (
-                              <RadioGroup
-                                value={answers[question.id] || ''}
-                                onValueChange={(value) => handleAnswerChange(question.id, value)}
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="Yes" id={`${question.id}-yes`} />
-                                  <Label htmlFor={`${question.id}-yes`} className="cursor-pointer">Yes</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="No" id={`${question.id}-no`} />
-                                  <Label htmlFor={`${question.id}-no`} className="cursor-pointer">No</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
-                                  <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
-                                </div>
-                              </RadioGroup>
-                            );
-                          }
-                          
-                          // Multiple choice questions
-                          if (questionType.includes('multiple choice') && question.options && question.options.length > 0) {
-                            return (
-                              <RadioGroup
-                                value={answers[question.id] || ''}
-                                onValueChange={(value) => handleAnswerChange(question.id, value)}
-                              >
-                                {question.options.map((option, index) => (
-                                  <div key={index} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={option} id={`${question.id}-${index}`} />
-                                    <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
-                                      {option}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </RadioGroup>
-                            );
-                          }
-                          
-                          // Matching questions (headings, features, sentence endings)
-                          if (questionType.includes('matching') && question.options && question.options.length > 0) {
-                            return (
-                              <RadioGroup
-                                value={answers[question.id] || ''}
-                                onValueChange={(value) => handleAnswerChange(question.id, value)}
-                              >
-                                {question.options.map((option, index) => (
-                                  <div key={index} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={option} id={`${question.id}-${index}`} />
-                                    <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
-                                      {option}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </RadioGroup>
-                            );
-                          }
-                          
-                          // Default to text input for completion types, short answer, etc.
-                          return (
-                            <div className="space-y-2">
-                              <Input
-                                value={answers[question.id] || ''}
-                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                placeholder="Type your answer here..."
-                                className="max-w-md"
-                              />
-                              {(questionType.includes('completion') || questionType.includes('short')) && (
-                                <p className="text-xs text-muted-foreground">
-                                  💡 Remember to check the word limit specified in the question
-                                </p>
-                              )}
-                            </div>
-                          );
-                        };
+                       {/* Questions in this group */}
+                       {group.questions.map((question) => {
+                         const renderAnswerInput = () => {
+                           // Use detected type instead of database type
+                           const detectedType = detectQuestionType(question);
+                           
+                           // YES/NO/NOT GIVEN questions
+                           if (detectedType.includes('yes_no_not_given')) {
+                             return (
+                               <RadioGroup
+                                 value={answers[question.id] || ''}
+                                 onValueChange={(value) => handleAnswerChange(question.id, value)}
+                               >
+                                 <div className="flex items-center space-x-2">
+                                   <RadioGroupItem value="Yes" id={`${question.id}-yes`} />
+                                   <Label htmlFor={`${question.id}-yes`} className="cursor-pointer">Yes</Label>
+                                 </div>
+                                 <div className="flex items-center space-x-2">
+                                   <RadioGroupItem value="No" id={`${question.id}-no`} />
+                                   <Label htmlFor={`${question.id}-no`} className="cursor-pointer">No</Label>
+                                 </div>
+                                 <div className="flex items-center space-x-2">
+                                   <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
+                                   <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
+                                 </div>
+                               </RadioGroup>
+                             );
+                           }
+                           
+                           // TRUE/FALSE/NOT GIVEN questions
+                           if (detectedType.includes('true_false_not_given')) {
+                             return (
+                               <RadioGroup
+                                 value={answers[question.id] || ''}
+                                 onValueChange={(value) => handleAnswerChange(question.id, value)}
+                               >
+                                 <div className="flex items-center space-x-2">
+                                   <RadioGroupItem value="True" id={`${question.id}-true`} />
+                                   <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
+                                 </div>
+                                 <div className="flex items-center space-x-2">
+                                   <RadioGroupItem value="False" id={`${question.id}-false`} />
+                                   <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
+                                 </div>
+                                 <div className="flex items-center space-x-2">
+                                   <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
+                                   <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
+                                 </div>
+                               </RadioGroup>
+                             );
+                           }
+                           
+                           // Multiple choice questions
+                           if (detectedType.includes('multiple_choice') && question.options && question.options.length > 0) {
+                             return (
+                               <RadioGroup
+                                 value={answers[question.id] || ''}
+                                 onValueChange={(value) => handleAnswerChange(question.id, value)}
+                               >
+                                 {question.options.map((option, index) => (
+                                   <div key={index} className="flex items-center space-x-2">
+                                     <RadioGroupItem value={option} id={`${question.id}-${index}`} />
+                                     <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
+                                       {option}
+                                     </Label>
+                                   </div>
+                                 ))}
+                               </RadioGroup>
+                             );
+                           }
+                           
+                           // Matching questions (headings, features, sentence endings)
+                           if (detectedType.includes('matching') && question.options && question.options.length > 0) {
+                             return (
+                               <RadioGroup
+                                 value={answers[question.id] || ''}
+                                 onValueChange={(value) => handleAnswerChange(question.id, value)}
+                               >
+                                 {question.options.map((option, index) => (
+                                   <div key={index} className="flex items-center space-x-2">
+                                     <RadioGroupItem value={option} id={`${question.id}-${index}`} />
+                                     <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
+                                       {option}
+                                     </Label>
+                                   </div>
+                                 ))}
+                               </RadioGroup>
+                             );
+                           }
+                           
+                           // Default to text input for completion types, short answer, etc.
+                           return (
+                             <div className="space-y-2">
+                               <Input
+                                 value={answers[question.id] || ''}
+                                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                 placeholder="Type your answer here..."
+                                 className="max-w-md"
+                               />
+                               {(detectedType.includes('completion') || detectedType.includes('short')) && (
+                                 <p className="text-xs text-muted-foreground">
+                                   💡 Remember to check the word limit specified in the question
+                                 </p>
+                               )}
+                             </div>
+                           );
+                         };
 
                         return (
                           <div key={question.id} className="border-b pb-4 last:border-b-0">

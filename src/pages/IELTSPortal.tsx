@@ -97,8 +97,12 @@ const IELTSPortal = () => {
           if (!testModules.has(q.test_id)) {
             testModules.set(q.test_id, new Set());
           }
-          // Check for different modules based on question types/parts
-          testModules.get(q.test_id).add('writing'); // For now, assume writing if questions exist
+          // Determine module based on question structure - this is a better approach
+          if (q.part_number <= 3) {
+            testModules.get(q.test_id).add('reading');
+          } else {
+            testModules.get(q.test_id).add('writing');
+          }
         }
       });
 

@@ -12,7 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import StudentLayout from '@/components/StudentLayout';
-import TestResults from '@/components/TestResults';
+import CelebrationTestResults from '@/components/CelebrationTestResults';
 
 interface ReadingPassage {
   id: string;
@@ -130,6 +130,10 @@ const EnhancedReadingTest = () => {
       questions.forEach(question => {
         // Skip questions with question_number_in_part = 0 as they are title placeholders
         if (question.question_number_in_part === 0) {
+          // Extract title from these placeholder questions
+          if (!partTitles[question.part_number] && question.question_text) {
+            partTitles[question.part_number] = question.question_text;
+          }
           return;
         }
         
@@ -144,9 +148,9 @@ const EnhancedReadingTest = () => {
         const partNumber = parseInt(partNum);
         const firstQuestion = partQuestions[0];
         
-        // Extract title from passage text if available - look for first line as title
-        let passageTitle = `Reading Passage ${partNumber}`;
-        if (firstQuestion?.passage_text) {
+        // Use title from part titles if available, otherwise extract from passage
+        let passageTitle = partTitles[partNumber] || `Reading Passage ${partNumber}`;
+        if (!partTitles[partNumber] && firstQuestion?.passage_text) {
           const lines = firstQuestion.passage_text.split('\n');
           const firstLine = lines[0]?.trim();
           if (firstLine && firstLine.length < 200 && !firstLine.includes('.')) {
@@ -348,135 +352,18 @@ const EnhancedReadingTest = () => {
   if (showResults) {
     const score = calculateScore();
     const totalQuestions = allQuestions.length;
-    const percentage = Math.round((score / totalQuestions) * 100);
     
     return (
-      <StudentLayout title="Reading Test Results">
-        <div className="min-h-screen bg-background">
-          {/* Results Header */}
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-            <div className="container mx-auto px-4 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Button variant="ghost" onClick={() => navigate('/ielts-portal')}>
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Portal
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary" />
-                    <span className="font-semibold">Reading Test 1 - Results</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-6">
-                  <Badge variant={percentage >= 70 ? "default" : percentage >= 50 ? "secondary" : "destructive"}>
-                    {score}/{totalQuestions} ({percentage}%)
-                  </Badge>
-                  <Button onClick={() => window.location.reload()} variant="outline">
-                    Retake Test
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="container mx-auto px-4 py-6">
-            <div className="grid lg:grid-cols-2 gap-6" style={{ height: 'calc(100vh - 280px)' }}>
-              {/* Passage */}
-              <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
-                <CardHeader className="flex-shrink-0">
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5" />
-                    {currentTestPart?.passage?.title || "Reading Passage"}
-                  </CardTitle>
-                  <Badge variant="outline" className="w-fit">
-                    Part {currentPart} of {Object.keys(testParts).length}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto">
-                  <div className="prose prose-sm max-w-none">
-                    <div className="whitespace-pre-wrap leading-relaxed passage-content">
-                      {currentTestPart?.passage?.content || "Passage content not available"}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Questions with Explanations */}
-              <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
-                <CardHeader className="flex-shrink-0">
-                  <CardTitle>Questions with Explanations</CardTitle>
-                  <Badge variant="secondary">
-                    Test Completed
-                  </Badge>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto">
-                  <div className="space-y-6 pb-6">
-                    {currentTestPart?.questions?.map((question) => {
-                      const userAnswer = answers[question.id] || 'No answer';
-                      const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-                      
-                      return (
-                        <div key={question.id} className="border-b pb-4 last:border-b-0">
-                          <div className="flex items-start gap-3">
-                            <Badge variant={isCorrect ? "default" : "destructive"} className="mt-1">
-                              {question.question_number}
-                            </Badge>
-                            <div className="flex-1 space-y-3">
-                              <p className="font-medium leading-relaxed">
-                                {question.question_text}
-                              </p>
-                              
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">Your answer:</span>
-                                  <Badge variant={isCorrect ? "default" : "destructive"}>
-                                    {userAnswer}
-                                  </Badge>
-                                </div>
-                                
-                                {!isCorrect && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium">Correct answer:</span>
-                                    <Badge variant="default">
-                                      {question.correct_answer}
-                                    </Badge>
-                                  </div>
-                                )}
-                                
-                                {question.explanation && (
-                                  <div 
-                                    className="bg-muted p-3 rounded-md cursor-pointer hover:bg-muted/80 transition-colors"
-                                    onMouseEnter={() => {
-                                      // Highlight text in passage when hovering over explanation
-                                      const passageElement = document.querySelector('.passage-content');
-                                      if (passageElement && question.explanation) {
-                                        // This is a placeholder for highlighting functionality
-                                        // In a real implementation, you'd search for relevant text in the passage
-                                        console.log('Hovering over explanation for question:', question.question_number);
-                                      }
-                                    }}
-                                  >
-                                    <p className="text-sm font-medium mb-1">Explanation:</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {question.explanation}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }) || []}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </StudentLayout>
+      <CelebrationTestResults
+        score={score}
+        totalQuestions={totalQuestions}
+        timeTaken={(60 * 60) - timeLeft}
+        answers={answers}
+        questions={allQuestions}
+        onRetake={() => window.location.reload()}
+        passageContent={currentTestPart?.passage?.content || "Passage content not available"}
+        passageTitle={currentTestPart?.passage?.title || "Reading Passage"}
+      />
     );
   }
   if (!currentTestPart) {

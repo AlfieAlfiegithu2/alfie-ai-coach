@@ -301,6 +301,7 @@ export type Database = {
           full_name: string | null
           id: string
           native_language: string | null
+          role: string | null
           subscription_status: string | null
         }
         Insert: {
@@ -308,6 +309,7 @@ export type Database = {
           full_name?: string | null
           id: string
           native_language?: string | null
+          role?: string | null
           subscription_status?: string | null
         }
         Update: {
@@ -315,6 +317,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           native_language?: string | null
+          role?: string | null
           subscription_status?: string | null
         }
         Relationships: []
@@ -706,15 +709,7 @@ export type Database = {
           id?: number
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_analytics_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_challenge_progress: {
         Row: {

@@ -13,41 +13,48 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    // Create a Supabase client with the service role key to bypass RLS for admin actions
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { questions } = await req.json();
+    const { action, payload } = await req.json();
 
-    if (!questions || !Array.isArray(questions) || questions.length === 0) {
-      return new Response(JSON.stringify({ error: 'Invalid or empty questions data provided.' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    let data, error;
+
+    switch (action) {
+      case 'create_test':
+        ({ data, error } = await supabaseAdmin
+          .from('tests')
+          .insert(payload)
+          .select()
+          .single());
+        break;
+
+      case 'upload_questions':
+        ({ data, error } = await supabaseAdmin
+          .from('questions')
+          .insert(payload)
+          .select());
+        break;
+
+      default:
+        throw new Error(`Invalid action: ${action}`);
     }
 
-    console.log(`Received request to insert ${questions.length} questions.`);
-    console.log('Sample of first question object:', JSON.stringify(questions[0]));
-
-
-    const { data, error } = await supabaseClient
-      .from('questions')
-      .insert(questions)
-      .select();
-
     if (error) {
-      console.error('Supabase insert error:', error);
+      console.error('Supabase error:', error);
       throw new Error(`Database Error: ${error.message}`);
     }
 
-    return new Response(JSON.stringify({ success: true, count: data.length }), {
+    return new Response(JSON.stringify({ success: true, data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Edge Function error:', error);
+    console.error('Edge Function critical error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

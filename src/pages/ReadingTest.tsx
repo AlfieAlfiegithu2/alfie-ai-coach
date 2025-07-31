@@ -91,8 +91,8 @@ const ReadingTest = () => {
         .from('tests')
         .select('*')
         .eq('id', testId)
-        .eq('test_type', 'IELTS')
-        .eq('module', 'Reading')
+        .eq('test_type', 'ielts')
+        .eq('module', 'reading')
         .single();
 
       if (testError) throw testError;

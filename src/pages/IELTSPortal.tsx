@@ -129,7 +129,7 @@ const IELTSPortal = () => {
     navigate(`/${skillId}`);
   };
 
-  const handleMockTest = (testId: number) => {
+  const handleMockTest = (testId: string) => {
     console.log(`🧪 Starting IELTS mock test ${testId}`);
     navigate(`/enhanced-reading-test/${testId}`);
   };
@@ -256,7 +256,7 @@ const IELTSPortal = () => {
                   </div>
 
                    <Button 
-                     onClick={() => handleMockTest(test.test_number || test.id)}
+                    onClick={() => handleMockTest(test.id)}
                      className="w-full btn-primary"
                      size="sm"
                      disabled={test.comingSoon}

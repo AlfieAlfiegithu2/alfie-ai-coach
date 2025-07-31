@@ -858,15 +858,11 @@ const EnhancedReadingTest = () => {
                               </Badge>
                               <div className="flex-1 space-y-3">
                                 {/* Always display the question text clearly */}
-                                <div className="space-y-2">
-                                  <p className="font-medium leading-relaxed text-sm">
-                                    {question.question_text}
-                                  </p>
-                                  {/* Show question type for clarity */}
-                                  <Badge variant="secondary" className="text-xs">
-                                    {question.question_type}
-                                  </Badge>
-                                </div>
+                                 <div className="space-y-2">
+                                   <p className="font-medium leading-relaxed text-sm">
+                                     {question.question_text}
+                                   </p>
+                                 </div>
                                 {renderAnswerInput()}
                               </div>
                             </div>

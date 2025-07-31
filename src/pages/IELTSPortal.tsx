@@ -80,8 +80,6 @@ const IELTSPortal = () => {
         throw testsError;
       }
 
-      console.log('Fetched IELTS tests:', testsData); // Debug log
-
       // Fetch questions to check test completion status
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
@@ -108,8 +106,6 @@ const IELTSPortal = () => {
         const availableModules = testModules.get(test.id) || new Set();
         const questionCount = questionsData?.filter(q => q.test_id === test.id).length || 0;
         
-        console.log('Processing test:', test.test_name, 'ID:', test.id); // Debug log
-        
         return {
           id: test.id,
           test_name: test.test_name, // Use exact test name from admin
@@ -121,7 +117,6 @@ const IELTSPortal = () => {
         };
       }) || [];
 
-      console.log('Transformed tests:', transformedTests); // Debug log
       setAvailableTests(transformedTests);
     } catch (error) {
       console.error('Error loading tests:', error);

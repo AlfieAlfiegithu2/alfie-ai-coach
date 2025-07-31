@@ -212,52 +212,43 @@ Please provide helpful, specific guidance related to this IELTS Writing task. Ke
 
     setIsSubmitting(true);
     try {
-      // Create comprehensive context for AI examiner
-      const examinerContext = `You are an official IELTS Writing examiner. Please evaluate these two writing tasks according to the official IELTS Writing criteria and provide detailed feedback.
-
-TEST DETAILS:
-Test: ${test?.test_name}
-
-TASK 1:
-Prompt: "${task1?.title}"
-Instructions: "${task1?.instructions}"
-${task1?.imageContext ? `Image Description: "${task1?.imageContext}"` : ''}
-
-Student's Task 1 Answer:
-"${task1Answer}"
-
-TASK 2:
-Prompt: "${task2?.title}"
-Instructions: "${task2?.instructions}"
-
-Student's Task 2 Answer:
-"${task2Answer}"
-
-Please provide:
-1. Overall Writing Band Score (0-9)
-2. Task 1 individual score and detailed feedback covering:
-   - Task Achievement
-   - Coherence and Cohesion
-   - Lexical Resource
-   - Grammatical Range and Accuracy
-3. Task 2 individual score and detailed feedback covering:
-   - Task Response
-   - Coherence and Cohesion
-   - Lexical Resource
-   - Grammatical Range and Accuracy
-4. Specific suggestions for improvement
-5. Strengths identified in the writing
-
-Format your response as a comprehensive IELTS Writing assessment report.`;
-
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+      // Get Task 1 feedback
+      const task1Feedback = await supabase.functions.invoke('writing-feedback', {
         body: {
-          message: examinerContext,
-          context: 'english_tutor'
+          writing: task1Answer,
+          prompt: `${task1?.title}\n\n${task1?.instructions}${task1?.imageContext ? `\n\nImage Description: ${task1?.imageContext}` : ''}`,
+          taskType: 'Task 1'
         }
       });
 
-      if (error) throw error;
+      if (task1Feedback.error) throw task1Feedback.error;
+
+      // Get Task 2 feedback
+      const task2Feedback = await supabase.functions.invoke('writing-feedback', {
+        body: {
+          writing: task2Answer,
+          prompt: `${task2?.title}\n\n${task2?.instructions}`,
+          taskType: 'Task 2'
+        }
+      });
+
+      if (task2Feedback.error) throw task2Feedback.error;
+
+      // Combine feedback for overall assessment
+      const combinedFeedback = `# IELTS WRITING TEST RESULTS
+
+## TASK 1 ASSESSMENT
+${task1Feedback.data.feedback}
+
+---
+
+## TASK 2 ASSESSMENT  
+${task2Feedback.data.feedback}
+
+---
+
+## OVERALL PERFORMANCE SUMMARY
+Based on both tasks, your writing demonstrates various strengths and areas for improvement. Focus on the specific recommendations provided for each task to enhance your IELTS Writing performance.`;
 
       // Navigate to results page with the feedback
       navigate('/ielts-writing-results', {
@@ -265,7 +256,7 @@ Format your response as a comprehensive IELTS Writing assessment report.`;
           testName: test?.test_name,
           task1Answer,
           task2Answer,
-          feedback: data.response,
+          feedback: combinedFeedback,
           task1Data: task1,
           task2Data: task2
         }

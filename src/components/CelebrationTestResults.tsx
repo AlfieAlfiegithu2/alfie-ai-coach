@@ -19,8 +19,23 @@ interface CelebrationTestResultsProps {
     question_type: string;
   }>;
   onRetake: () => void;
-  passageContent: string;
-  passageTitle: string;
+  testParts: {[key: number]: {
+    passage: {
+      id: string;
+      title: string;
+      content: string;
+      part_number: number;
+    };
+    questions: Array<{
+      id: string;
+      question_text: string;
+      question_number: number;
+      correct_answer: string;
+      explanation: string;
+      question_type: string;
+      part_number: number;
+    }>;
+  }};
 }
 
 const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
@@ -30,14 +45,33 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   answers,
   questions,
   onRetake,
-  passageContent,
-  passageTitle
+  testParts
 }) => {
   const navigate = useNavigate();
   const [hoveredExplanation, setHoveredExplanation] = useState<string | null>(null);
+  const [currentPart, setCurrentPart] = useState(1);
   
   const percentage = Math.round((score / totalQuestions) * 100);
-  const estimatedBandScore = percentage >= 90 ? 9 : percentage >= 80 ? 8 : percentage >= 70 ? 7 : percentage >= 60 ? 6 : percentage >= 50 ? 5 : 4;
+  
+  // IELTS Reading band score conversion (Academic)
+  const calculateBandScore = (percentage: number) => {
+    if (percentage >= 97) return 9;
+    if (percentage >= 89) return 8.5;
+    if (percentage >= 82) return 8;
+    if (percentage >= 75) return 7.5;
+    if (percentage >= 68) return 7;
+    if (percentage >= 58) return 6.5;
+    if (percentage >= 50) return 6;
+    if (percentage >= 42) return 5.5;
+    if (percentage >= 34) return 5;
+    if (percentage >= 26) return 4.5;
+    if (percentage >= 18) return 4;
+    if (percentage >= 10) return 3.5;
+    if (percentage >= 5) return 3;
+    return 2.5;
+  };
+  
+  const estimatedBandScore = calculateBandScore(percentage);
   
   const getPerformanceLevel = () => {
     if (percentage >= 85) return { level: "Excellent", color: "text-green-600" };
@@ -130,37 +164,43 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           </CardContent>
         </Card>
 
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-12 gap-6">
-          {/* Passage - Wider */}
-          <div className="lg:col-span-5">
-            <Card className="h-[800px]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  {passageTitle}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-80px)] overflow-y-auto">
-                <div 
-                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-7 text-base"
-                  id="passage-content"
+        {/* Part Navigation */}
+        <div className="flex justify-center mb-6">
+          <div className="flex bg-muted rounded-lg p-1">
+            {Object.keys(testParts).map((partNum) => {
+              const partNumber = parseInt(partNum);
+              const partQuestions = testParts[partNumber]?.questions || [];
+              const partAnswered = partQuestions.filter(q => answers[q.id]).length;
+              
+              return (
+                <Button
+                  key={partNumber}
+                  variant={currentPart === partNumber ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setCurrentPart(partNumber)}
+                  className="min-w-[100px]"
                 >
-                  {passageContent}
-                </div>
-              </CardContent>
-            </Card>
+                  Part {partNumber}
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {partAnswered}/{partQuestions.length}
+                  </Badge>
+                </Button>
+              );
+            })}
           </div>
+        </div>
 
-          {/* Results Sidebar */}
-          <div className="lg:col-span-7 space-y-6">
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-12 gap-4">
+          {/* Results Sidebar - Now on Left */}
+          <div className="lg:col-span-7 space-y-4">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Summary</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Correct</span>
                     <Badge variant="default">{correctCount}</Badge>
@@ -177,10 +217,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
               </Card>
 
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Question Types</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Question Types</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-2">
                   {Object.entries(questionTypes).map(([type, count]) => (
                     <div key={type} className="flex justify-between items-center">
                       <span className="text-sm capitalize">{type.replace('_', ' ')}</span>
@@ -193,42 +233,42 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
             {/* Answer Review */}
             <Card>
-              <CardHeader>
-                <CardTitle>Answer Review</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Answer Review - Part {currentPart}</CardTitle>
               </CardHeader>
-              <CardContent className="max-h-[600px] overflow-y-auto">
-                <div className="space-y-6">
-                  {questions.map((question) => {
+              <CardContent className="max-h-[500px] overflow-y-auto">
+                <div className="space-y-4">
+                  {(testParts[currentPart]?.questions || []).map((question) => {
                     const userAnswer = answers[question.id] || 'Not answered';
                     const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
                     const isSkipped = !answers[question.id];
                     
                     return (
-                      <div key={question.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex items-start gap-3">
+                      <div key={question.id} className="border-b pb-3 last:border-b-0">
+                        <div className="flex items-start gap-2">
                           <Badge 
                             variant={isCorrect ? "default" : isSkipped ? "secondary" : "destructive"} 
-                            className="mt-1 min-w-[24px] justify-center"
+                            className="mt-1 min-w-[20px] justify-center text-xs"
                           >
                             {question.question_number}
                           </Badge>
-                          <div className="flex-1 space-y-3">
-                            <p className="font-medium leading-relaxed text-base">
+                          <div className="flex-1 space-y-2">
+                            <p className="font-medium leading-relaxed text-sm">
                               {question.question_text}
                             </p>
                             
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">Your answer:</span>
-                                <Badge variant={isCorrect ? "default" : isSkipped ? "secondary" : "destructive"}>
+                                <span className="text-xs font-medium">Your answer:</span>
+                                <Badge variant={isCorrect ? "default" : isSkipped ? "secondary" : "destructive"} className="text-xs">
                                   {userAnswer}
                                 </Badge>
                               </div>
                               
                               {!isCorrect && !isSkipped && (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">Correct answer:</span>
-                                  <Badge variant="default">
+                                  <span className="text-xs font-medium">Correct answer:</span>
+                                  <Badge variant="default" className="text-xs">
                                     {question.correct_answer}
                                   </Badge>
                                 </div>
@@ -236,12 +276,12 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                               
                               {question.explanation && (
                                 <div 
-                                  className="bg-muted p-4 rounded-md cursor-pointer hover:bg-muted/80 transition-colors border-l-4 border-primary"
+                                  className="bg-muted p-3 rounded-md cursor-pointer hover:bg-muted/80 transition-colors border-l-4 border-primary"
                                   onMouseEnter={() => {
                                     setHoveredExplanation(question.id);
                                     // Highlight relevant text in passage
                                     const keyPhrases = highlightTextInPassage(question.explanation);
-                                    const passageElement = document.getElementById('passage-content');
+                                    const passageElement = document.getElementById(`passage-content-${currentPart}`);
                                     if (passageElement) {
                                       // Store original content
                                       if (!passageElement.dataset.original) {
@@ -259,17 +299,17 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                                   onMouseLeave={() => {
                                     setHoveredExplanation(null);
                                     // Remove highlights
-                                    const passageElement = document.getElementById('passage-content');
+                                    const passageElement = document.getElementById(`passage-content-${currentPart}`);
                                     if (passageElement && passageElement.dataset.original) {
                                       passageElement.innerHTML = passageElement.dataset.original;
                                     }
                                   }}
                                 >
-                                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                                    <Star className="w-4 h-4" />
+                                  <p className="text-xs font-medium mb-1 flex items-center gap-2">
+                                    <Star className="w-3 h-3" />
                                     Explanation:
                                   </p>
-                                  <p className="text-sm leading-relaxed">
+                                  <p className="text-xs leading-relaxed">
                                     {question.explanation}
                                   </p>
                                 </div>
@@ -280,6 +320,27 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                       </div>
                     );
                   })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Passage - Now on Right, Wider */}
+          <div className="lg:col-span-5">
+            <Card className="h-[600px]">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Target className="w-4 h-4" />
+                  {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[calc(100%-60px)] overflow-y-auto p-3">
+                <div 
+                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-6 text-sm"
+                  id={`passage-content-${currentPart}`}
+                  style={{ fontSize: '13px', lineHeight: '1.5' }}
+                >
+                  {testParts[currentPart]?.passage?.content || 'Loading passage...'}
                 </div>
               </CardContent>
             </Card>

@@ -237,8 +237,30 @@ const EnhancedReadingTest = () => {
       duration: 2000,
     });
     
+    const results = allQuestions.map(question => {
+      const userAnswer = answers[question.id] || '';
+      const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+      const isSkipped = !answers[question.id];
+      
+      return {
+        question,
+        userAnswer,
+        isCorrect,
+        isSkipped
+      };
+    });
+
     const score = calculateScore();
     const totalQuestions = allQuestions.length;
+    
+    // Auto-save incorrect/skipped words to vocabulary
+    const savedWordsCount = saveIncorrectWords(results);
+    if (savedWordsCount > 0) {
+      toast({
+        title: "Vocabulary Updated",
+        description: `${savedWordsCount} words from incorrect answers added to your vocabulary.`,
+      });
+    }
     
     // Save test result to database
     try {
@@ -326,12 +348,71 @@ const EnhancedReadingTest = () => {
   };
 
   const saveWordToDictionary = async (word: string, translation?: string) => {
-    // For now, just show a toast. Table will be created later.
-    toast({
-      title: "Word Selected",
-      description: `"${word}" selected for dictionary. Feature coming soon!`,
-    });
+    const savedWords = JSON.parse(localStorage.getItem('alfie-saved-vocabulary') || '[]');
+    const wordExists = savedWords.find((w: any) => w.word.toLowerCase() === word.toLowerCase());
+    
+    if (!wordExists) {
+      const newWord = {
+        id: Date.now().toString(),
+        word,
+        translation: translation || 'Translation coming soon...',
+        context: `Reading Test - Part ${currentPart}`,
+        savedAt: new Date().toISOString()
+      };
+      
+      savedWords.push(newWord);
+      localStorage.setItem('alfie-saved-vocabulary', JSON.stringify(savedWords));
+      
+      toast({
+        title: "Word Saved!",
+        description: `"${word}" has been added to your vocabulary.`,
+      });
+    } else {
+      toast({
+        title: "Already Saved",
+        description: `"${word}" is already in your vocabulary.`,
+      });
+    }
+    
+    setSelectedWord('');
     setShowDictionary(false);
+  };
+
+  // Auto-save incorrect/skipped words to vocabulary
+  const saveIncorrectWords = (results: any[]) => {
+    const savedWords = JSON.parse(localStorage.getItem('alfie-saved-vocabulary') || '[]');
+    const newWords: any[] = [];
+    
+    results.forEach((result) => {
+      if (!result.isCorrect || result.isSkipped) {
+        // Extract key words from question text
+        const questionWords = result.question.question_text
+          .toLowerCase()
+          .match(/\b[a-z]{4,}\b/g) || []; // Extract words with 4+ letters
+        
+        questionWords.forEach((word: string) => {
+          const wordExists = savedWords.find((w: any) => w.word.toLowerCase() === word);
+          const newWordExists = newWords.find((w: any) => w.word.toLowerCase() === word);
+          
+          if (!wordExists && !newWordExists) {
+            newWords.push({
+              id: Date.now().toString() + Math.random(),
+              word,
+              translation: 'Auto-saved from incorrect answer - translation coming soon...',
+              context: `Question ${result.question.question_number} - Auto-saved`,
+              savedAt: new Date().toISOString()
+            });
+          }
+        });
+      }
+    });
+    
+    if (newWords.length > 0) {
+      const updatedWords = [...savedWords, ...newWords];
+      localStorage.setItem('alfie-saved-vocabulary', JSON.stringify(updatedWords));
+    }
+    
+    return newWords.length;
   };
 
   if (loading) {
@@ -361,8 +442,7 @@ const EnhancedReadingTest = () => {
         answers={answers}
         questions={allQuestions}
         onRetake={() => window.location.reload()}
-        passageContent={currentTestPart?.passage?.content || "Passage content not available"}
-        passageTitle={currentTestPart?.passage?.title || "Reading Passage"}
+        testParts={testParts}
       />
     );
   }

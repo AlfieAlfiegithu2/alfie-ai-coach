@@ -380,48 +380,32 @@ const Dashboard = () => {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* My Word Book - Featured Prominently */}
-              <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 shadow-lg">
+              <Card className="card-modern border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2 text-primary">
-                    <BookOpen className="w-5 h-5" />
-                    📚 My Word Book
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    My Word Book
                   </CardTitle>
-                  <CardDescription className="text-sm">
+                  <CardDescription>
                     Your personalized vocabulary collection
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="text-center p-4 bg-white/60 rounded-lg border">
-                    <div className="text-3xl font-bold text-primary mb-1">{savedWords.length}</div>
-                    <div className="text-xs text-muted-foreground font-medium">Words Saved</div>
+                  <div className="text-center p-4 bg-white/50 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">{savedWords.length}</div>
+                    <div className="text-xs text-text-secondary">Words Saved</div>
                   </div>
-                  
-                  {/* Show recent words if any */}
-                  {savedWords.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Recent words:</p>
-                      <div className="space-y-1">
-                        {savedWords.slice(-3).reverse().map((word, index) => (
-                          <div key={index} className="text-xs bg-white/40 rounded px-2 py-1 flex items-center gap-2">
-                            <Languages className="w-3 h-3 text-primary" />
-                            <span className="font-medium">{word.word}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   
                   <Button 
                     onClick={() => navigate('/vocabulary')}
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium"
-                    size="sm"
+                    className="w-full btn-gradient"
                   >
                     <Languages className="w-4 h-4 mr-2" />
-                    View All Words
+                    View My Vocabulary
                   </Button>
                   
-                  <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                    💡 Words from incorrect answers are automatically added to help you learn!
+                  <p className="text-xs text-text-secondary text-center">
+                    Words from incorrect answers are automatically added!
                   </p>
                 </CardContent>
               </Card>

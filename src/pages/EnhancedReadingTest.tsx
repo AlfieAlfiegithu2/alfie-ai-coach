@@ -128,28 +128,14 @@ const EnhancedReadingTest = () => {
       const partTitles: {[key: number]: string} = {};
       
       questions.forEach(question => {
-      // Skip questions with question_number_in_part = 0 as they are title placeholders
-      if (question.question_number_in_part === 0) {
-        // Extract title from these placeholder questions
-        if (!partTitles[question.part_number] && question.question_text) {
-          partTitles[question.part_number] = question.question_text;
+        // Skip questions with question_number_in_part = 0 as they are title placeholders
+        if (question.question_number_in_part === 0) {
+          // Extract title from these placeholder questions
+          if (!partTitles[question.part_number] && question.question_text) {
+            partTitles[question.part_number] = question.question_text;
+          }
+          return;
         }
-        return; // Skip this - it's not a real question
-      }
-      
-      // Also skip if question_text looks like a passage title (not a question)
-      if (question.question_text && !question.question_text.includes('?') && 
-          question.question_text.length < 100 && 
-          !question.question_text.toLowerCase().includes('choose') &&
-          !question.question_text.toLowerCase().includes('complete') &&
-          !question.question_text.toLowerCase().includes('match') &&
-          !question.question_text.toLowerCase().includes('write')) {
-        // This might be a title, extract it
-        if (!partTitles[question.part_number]) {
-          partTitles[question.part_number] = question.question_text;
-        }
-        return; // Skip this - it's likely a title
-      }
         
         if (!partsByNumber[question.part_number]) {
           partsByNumber[question.part_number] = [];
@@ -377,22 +363,14 @@ const EnhancedReadingTest = () => {
       return `Complete each sentence with the correct ending below. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
     }
     
-    if (type.includes('matching')) {
-      return `Match each item with the correct option. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
-    }
-    
     if (type.includes('multiple') && type.includes('choice')) {
       return `Choose the correct letter, A, B, C, or D. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
     }
     
-    if (type.includes('short') && type.includes('answer')) {
-      return `Answer the following questions using NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer. Write your answers in boxes ${questionRange} on your answer sheet.`;
-    }
-    
-    // For completion types, add appropriate instructions
+    // For completion types, the instruction is usually already in the question text
     if (type.includes('completion') || type.includes('summary') || type.includes('flow') || 
-        type.includes('table') || type.includes('diagram')) {
-      return `Complete the following using NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer. Write your answers in boxes ${questionRange} on your answer sheet.`;
+        type.includes('table') || type.includes('diagram') || type.includes('short')) {
+      return null; // No additional instruction needed
     }
     
     return null;

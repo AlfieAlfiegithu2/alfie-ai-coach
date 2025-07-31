@@ -346,7 +346,7 @@ const ReadingTest = () => {
                 </Button>
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">Reading Test {testId}</span>
+                  <span className="font-semibold">Reading Test {Object.keys(testParts).length > 0 ? Object.keys(testParts).length : '1'}</span>
                 </div>
               </div>
               
@@ -401,10 +401,10 @@ const ReadingTest = () => {
 
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-2 gap-6 h-[calc(100vh-280px)]">
             {/* Passage */}
-            <Card className="h-fit">
-              <CardHeader>
+            <Card className="flex flex-col h-full">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <Target className="w-5 h-5" />
                   {currentTestPart.passage.title}
@@ -413,7 +413,7 @@ const ReadingTest = () => {
                   Part {currentPart} of {Object.keys(testParts).length}
                 </Badge>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-y-auto">
                 <div className="prose prose-sm max-w-none">
                   <div className="whitespace-pre-wrap leading-relaxed">
                     {currentTestPart.passage.content}
@@ -423,26 +423,46 @@ const ReadingTest = () => {
             </Card>
 
             {/* Questions */}
-            <Card>
-              <CardHeader>
+            <Card className="flex flex-col h-full">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle>Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}</CardTitle>
                 <Badge variant="secondary">
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {currentTestPart.questions.map((question) => (
-                  <div key={question.id} className="border-b pb-4 last:border-b-0">
-                    <div className="flex items-start gap-3">
-                      <Badge variant="outline" className="mt-1">
-                        {question.question_number}
-                      </Badge>
-                      <div className="flex-1 space-y-3">
-                        <p className="font-medium leading-relaxed">
-                          {question.question_text}
-                        </p>
-                        
-                        {question.options && question.options.length > 0 ? (
+              <CardContent className="flex-1 overflow-y-auto">
+                <div className="space-y-6 pb-6">
+                  {currentTestPart.questions.map((question) => {
+                    const renderAnswerInput = () => {
+                      // Check if it's a True/False/Not Given question
+                      if (question.question_type?.toLowerCase().includes('true') || 
+                          question.question_text?.toLowerCase().includes('true') ||
+                          question.question_text?.toLowerCase().includes('false') ||
+                          question.question_text?.toLowerCase().includes('not given')) {
+                        return (
+                          <RadioGroup
+                            value={answers[question.id] || ''}
+                            onValueChange={(value) => handleAnswerChange(question.id, value)}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="True" id={`${question.id}-true`} />
+                              <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="False" id={`${question.id}-false`} />
+                              <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
+                              <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
+                            </div>
+                          </RadioGroup>
+                        );
+                      }
+                      
+                      // Check if it has predefined options
+                      if (question.options && question.options.length > 0) {
+                        return (
                           <RadioGroup
                             value={answers[question.id] || ''}
                             onValueChange={(value) => handleAnswerChange(question.id, value)}
@@ -456,21 +476,42 @@ const ReadingTest = () => {
                               </div>
                             ))}
                           </RadioGroup>
-                        ) : (
-                          <Input
-                            value={answers[question.id] || ''}
-                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                            placeholder="Type your answer here..."
-                            className="max-w-md"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                        );
+                      }
+                      
+                      // Default to text input
+                      return (
+                        <Input
+                          value={answers[question.id] || ''}
+                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                          placeholder="Type your answer here..."
+                          className="max-w-md"
+                        />
+                      );
+                    };
 
-                {/* Part Navigation */}
-                <div className="flex justify-between pt-4 border-t">
+                    return (
+                      <div key={question.id} className="border-b pb-4 last:border-b-0">
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className="mt-1">
+                            {question.question_number}
+                          </Badge>
+                          <div className="flex-1 space-y-3">
+                            <p className="font-medium leading-relaxed">
+                              {question.question_text}
+                            </p>
+                            {renderAnswerInput()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+              
+              {/* Part Navigation - Fixed at bottom */}
+              <div className="flex-shrink-0 border-t p-4">
+                <div className="flex justify-between">
                   <Button
                     variant="outline"
                     onClick={() => handlePartNavigation(currentPart - 1)}
@@ -494,7 +535,7 @@ const ReadingTest = () => {
                     </Button>
                   )}
                 </div>
-              </CardContent>
+              </div>
             </Card>
           </div>
         </div>

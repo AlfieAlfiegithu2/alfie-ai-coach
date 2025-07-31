@@ -103,7 +103,9 @@ const App = () => {
         <Route path="/admin/ielts/reading" element={<AdminIELTSReadingDashboard />} />
         <Route path="/admin/:testType/test/:testId/reading" element={<AdminReadingManagement />} />
         <Route path="/admin/:testType/test/:testId/listening" element={<AdminIELTSListening />} />
+        <Route path="/admin/ielts/test/:testId/writing" element={<AdminIELTSWritingTest />} />
         <Route path="/admin/ielts/writing" element={<AdminIELTSWriting />} />
+        <Route path="/admin/ielts/writing/test/:testId" element={<AdminIELTSWritingTest />} />
         <Route path="/admin/ielts/writing/test/:testId" element={<AdminIELTSWritingTest />} />
         <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
         <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />

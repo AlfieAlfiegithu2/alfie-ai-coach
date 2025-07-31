@@ -6,7 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, ArrowRight } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, ArrowRight, Plus, Languages } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,8 @@ const EnhancedReadingTest = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [allQuestions, setAllQuestions] = useState<ReadingQuestion[]>([]);
+  const [selectedWord, setSelectedWord] = useState<string>('');
+  const [showDictionary, setShowDictionary] = useState(false);
 
   useEffect(() => {
     fetchReadingTest();
@@ -275,6 +278,38 @@ const EnhancedReadingTest = () => {
     return Object.keys(answers).length;
   };
 
+  const getQuestionRange = () => {
+    if (!currentTestPart?.questions || currentTestPart.questions.length === 0) return "";
+    const questionNumbers = currentTestPart.questions
+      .map(q => q.question_number)
+      .filter(num => num > 0)
+      .sort((a, b) => a - b);
+    
+    if (questionNumbers.length === 0) return "";
+    if (questionNumbers.length === 1) return questionNumbers[0].toString();
+    return `${questionNumbers[0]} - ${questionNumbers[questionNumbers.length - 1]}`;
+  };
+
+  const handleTextSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      const selectedText = selection.toString().trim();
+      if (selectedText.length > 0 && selectedText.split(' ').length <= 3) {
+        setSelectedWord(selectedText);
+        setShowDictionary(true);
+      }
+    }
+  };
+
+  const saveWordToDictionary = async (word: string, translation?: string) => {
+    // For now, just show a toast. Table will be created later.
+    toast({
+      title: "Word Selected",
+      description: `"${word}" selected for dictionary. Feature coming soon!`,
+    });
+    setShowDictionary(false);
+  };
+
   if (loading) {
   return (
     <StudentLayout title="Loading Reading Test">
@@ -288,24 +323,131 @@ const EnhancedReadingTest = () => {
   );
   }
 
+  const currentTestPart = testParts[currentPart];
+
   if (showResults) {
+    const score = calculateScore();
+    const totalQuestions = allQuestions.length;
+    const percentage = Math.round((score / totalQuestions) * 100);
+    
     return (
       <StudentLayout title="Reading Test Results">
-        <TestResults 
-          score={calculateScore()}
-          totalQuestions={allQuestions.length}
-          timeTaken={(60 * 60) - timeLeft}
-          answers={answers}
-          questions={allQuestions}
-          onRetake={() => window.location.reload()}
-          onContinue={() => navigate('/ielts-portal')}
-          testTitle={`Reading Test ${testId}`}
-        />
+        <div className="min-h-screen bg-background">
+          {/* Results Header */}
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
+            <div className="container mx-auto px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Button variant="ghost" onClick={() => navigate('/ielts-portal')}>
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Portal
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    <span className="font-semibold">Reading Test 1 - Results</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-6">
+                  <Badge variant={percentage >= 70 ? "default" : percentage >= 50 ? "secondary" : "destructive"}>
+                    {score}/{totalQuestions} ({percentage}%)
+                  </Badge>
+                  <Button onClick={() => window.location.reload()} variant="outline">
+                    Retake Test
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="container mx-auto px-4 py-6">
+            <div className="grid lg:grid-cols-2 gap-6" style={{ height: 'calc(100vh - 280px)' }}>
+              {/* Passage */}
+              <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
+                <CardHeader className="flex-shrink-0">
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="w-5 h-5" />
+                    {currentTestPart?.passage?.title || "Reading Passage"}
+                  </CardTitle>
+                  <Badge variant="outline" className="w-fit">
+                    Part {currentPart} of {Object.keys(testParts).length}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto">
+                  <div className="prose prose-sm max-w-none">
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {currentTestPart?.passage?.content || "Passage content not available"}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Questions with Explanations */}
+              <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
+                <CardHeader className="flex-shrink-0">
+                  <CardTitle>Questions with Explanations</CardTitle>
+                  <Badge variant="secondary">
+                    Test Completed
+                  </Badge>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto">
+                  <div className="space-y-6 pb-6">
+                    {currentTestPart?.questions?.map((question) => {
+                      const userAnswer = answers[question.id] || 'No answer';
+                      const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+                      
+                      return (
+                        <div key={question.id} className="border-b pb-4 last:border-b-0">
+                          <div className="flex items-start gap-3">
+                            <Badge variant={isCorrect ? "default" : "destructive"} className="mt-1">
+                              {question.question_number}
+                            </Badge>
+                            <div className="flex-1 space-y-3">
+                              <p className="font-medium leading-relaxed">
+                                {question.question_text}
+                              </p>
+                              
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">Your answer:</span>
+                                  <Badge variant={isCorrect ? "default" : "destructive"}>
+                                    {userAnswer}
+                                  </Badge>
+                                </div>
+                                
+                                {!isCorrect && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium">Correct answer:</span>
+                                    <Badge variant="default">
+                                      {question.correct_answer}
+                                    </Badge>
+                                  </div>
+                                )}
+                                
+                                {question.explanation && (
+                                  <div className="bg-muted p-3 rounded-md">
+                                    <p className="text-sm font-medium mb-1">Explanation:</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {question.explanation}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }) || []}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </StudentLayout>
     );
   }
-
-  const currentTestPart = testParts[currentPart];
   if (!currentTestPart) {
     return (
       <StudentLayout title="Reading Test - Part Not Available">
@@ -335,7 +477,7 @@ const EnhancedReadingTest = () => {
                 </Button>
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">Reading Test {Object.keys(testParts).length > 0 ? Object.keys(testParts).length : '1'}</span>
+                  <span className="font-semibold">Reading Test 1</span>
                 </div>
               </div>
               
@@ -390,9 +532,9 @@ const EnhancedReadingTest = () => {
 
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-2 gap-6 h-[calc(100vh-280px)]">
+          <div className="grid lg:grid-cols-2 gap-6" style={{ height: 'calc(100vh - 280px)' }}>
             {/* Passage */}
-            <Card className="flex flex-col h-full">
+            <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
               <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <Target className="w-5 h-5" />
@@ -403,18 +545,57 @@ const EnhancedReadingTest = () => {
                 </Badge>
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto">
-                <div className="prose prose-sm max-w-none">
-                  <div className="whitespace-pre-wrap leading-relaxed">
+                <div className="prose prose-sm max-w-none relative">
+                  <div className="whitespace-pre-wrap leading-relaxed select-text" onMouseUp={handleTextSelection}>
                     {currentTestPart.passage.content}
                   </div>
+                  
+                  {/* Dictionary Popup */}
+                  {showDictionary && selectedWord && (
+                    <Popover open={showDictionary} onOpenChange={setShowDictionary}>
+                      <PopoverTrigger asChild>
+                        <div className="absolute top-0 left-0 invisible" />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80" align="start">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Languages className="w-4 h-4" />
+                            <h4 className="font-semibold">Selected Word</h4>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm">
+                              <strong>Word:</strong> "{selectedWord}"
+                            </p>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => saveWordToDictionary(selectedWord)}
+                                className="flex items-center gap-1"
+                              >
+                                <Plus className="w-3 h-3" />
+                                Save to Dictionary
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => setShowDictionary(false)}
+                              >
+                                Close
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Questions */}
-            <Card className="flex flex-col h-full">
+            <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
               <CardHeader className="flex-shrink-0">
-                <CardTitle>Questions {currentTestPart.questions[0]?.question_number} - {currentTestPart.questions[currentTestPart.questions.length - 1]?.question_number}</CardTitle>
+                <CardTitle>Questions {getQuestionRange()}</CardTitle>
                 <Badge variant="secondary">
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>

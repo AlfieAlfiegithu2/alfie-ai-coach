@@ -24,7 +24,9 @@ import {
   Award,
   BarChart3,
   PieChart,
-  Activity
+  Activity,
+  Languages,
+  Calendar
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +40,8 @@ const Dashboard = () => {
   const [userStats, setUserStats] = useState<any>(null);
   const [testResults, setTestResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savedWords, setSavedWords] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const testTypes = [
     {
@@ -163,7 +167,19 @@ const Dashboard = () => {
     };
 
     fetchUserData();
+    loadSavedWords();
   }, [user]);
+
+  const loadSavedWords = () => {
+    const saved = localStorage.getItem('alfie-saved-vocabulary');
+    if (saved) {
+      try {
+        setSavedWords(JSON.parse(saved));
+      } catch (error) {
+        console.error('Error loading vocabulary:', error);
+      }
+    }
+  };
 
   const handleStartPractice = () => {
     // Route to personal page instead of dashboard loop

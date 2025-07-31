@@ -92,11 +92,28 @@ const IELTSTestModules = () => {
     }
   };
 
-  const handleModuleSelect = (moduleId: string) => {
+  const handleModuleSelect = async (moduleId: string) => {
     if (moduleId === 'writing') {
+      // For writing, use the current test ID if it has writing questions
       navigate(`/ielts-writing-test/${testId}`);
     } else if (moduleId === 'reading') {
-      navigate(`/enhanced-reading-test/${testId}`);
+      // Dynamically find which test has reading questions
+      try {
+        const { data: questions } = await supabase
+          .from('questions')
+          .select('test_id')
+          .in('part_number', [1, 2, 3])  // Reading typically uses parts 1-3
+          .limit(1);
+        
+        if (questions && questions.length > 0) {
+          const readingTestId = questions[0].test_id;
+          navigate(`/enhanced-reading-test/${readingTestId}`);
+        } else {
+          console.log('No reading questions found');
+        }
+      } catch (error) {
+        console.error('Error finding reading test:', error);
+      }
     } else {
       // For listening and speaking, show coming soon or implement later
       console.log(`${moduleId} module coming soon`);

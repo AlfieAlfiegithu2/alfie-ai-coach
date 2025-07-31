@@ -31,8 +31,8 @@ export default function AdminIELTSReadingDashboard() {
       const { data, error } = await supabase
         .from('tests')
         .select('*')
-        .eq('test_type', testType)
-        .eq('module', module)
+        .eq('test_type', testType.toLowerCase())
+        .eq('module', module.toLowerCase())
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -48,11 +48,11 @@ export default function AdminIELTSReadingDashboard() {
   const handleCreateNewTest = async () => {
     setLoading(true);
     setError(null);
-    const { count } = await supabase
-      .from('tests')
-      .select('*', { count: 'exact', head: true })
-      .eq('test_type', testType)
-      .eq('module', module);
+      const { count } = await supabase
+        .from('tests')
+        .select('*', { count: 'exact', head: true })
+        .eq('test_type', testType.toLowerCase())
+        .eq('module', module.toLowerCase());
 
     const newTestNumber = (count || 0) + 1;
     
@@ -61,8 +61,8 @@ export default function AdminIELTSReadingDashboard() {
             action: 'create_test',
             payload: {
                 test_name: `${testType} ${module} Test ${newTestNumber}`,
-                test_type: testType,
-                module: module,
+                test_type: testType.toLowerCase(),
+                module: module.toLowerCase(),
             }
         },
     });

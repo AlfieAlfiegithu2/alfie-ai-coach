@@ -72,9 +72,9 @@ const IELTSPortal = () => {
       const { data: testsData, error: testsError } = await supabase
         .from('tests')
         .select('*')
-        .eq('test_type', 'IELTS')
-        .eq('module', 'Reading')
-        .order('test_number', { ascending: true });
+        .eq('test_type', 'ielts')
+        .eq('module', 'reading')
+        .order('created_at', { ascending: true });
 
       if (testsError) {
         console.error('Error fetching tests:', testsError);
@@ -113,33 +113,12 @@ const IELTSPortal = () => {
         };
       }) || [];
 
-      // Add default tests if none exist
-      if (transformedTests.length === 0) {
-        const defaultTests = Array.from({ length: 10 }, (_, i) => ({
-          id: i + 1,
-          test_name: `IELTS Test ${i + 1}`,
-          test_number: i + 1,
-          status: 'incomplete',
-          parts_completed: 0,
-          total_questions: 0,
-          comingSoon: true
-        }));
-        setAvailableTests(defaultTests);
-      } else {
-        setAvailableTests(transformedTests);
-      }
+      // Only show tests that actually exist in the admin panel
+      setAvailableTests(transformedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
-      // Fallback to default tests
-      setAvailableTests(Array.from({ length: 10 }, (_, i) => ({
-        id: i + 1,
-        test_name: `IELTS Test ${i + 1}`,
-        test_number: i + 1,
-        status: 'incomplete',
-        parts_completed: 0,
-        total_questions: 0,
-        comingSoon: true
-      })));
+      // Show empty array if error occurs
+      setAvailableTests([]);
     } finally {
       setIsLoading(false);
     }

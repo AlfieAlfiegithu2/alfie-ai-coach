@@ -403,14 +403,43 @@ const PartUploader = ({
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const parsedQuestions = results.data.map((row: any) => ({
-            question_number_in_part: parseInt(row['Question Number'], 10) || 1,
-            question_text: row['Question Text'] || '',
-            question_type: row['Type'] || 'multiple_choice',
-            choices: row['Choices'] || '',
-            correct_answer: row['Correct Answer'] || '',
-            explanation: row['Explanation'] || '',
-          }));
+          const parsedQuestions = results.data.map((row: any, index: number) => {
+            // Map CSV column names to our format
+            const questionNumber = parseInt(row['Question Number'], 10) || (index + 1);
+            const questionType = row['Type'] || 'multiple_choice';
+            
+            // Convert IELTS question types to our internal format
+            let internalType = 'multiple_choice';
+            switch (questionType.toLowerCase()) {
+              case 'true/false/not given':
+                internalType = 'true_false_not_given';
+                break;
+              case 'short-answer questions':
+                internalType = 'short_answer';
+                break;
+              case 'flow chart completion':
+                internalType = 'completion';
+                break;
+              case 'matching headings':
+                internalType = 'matching';
+                break;
+              case 'multiple choice':
+                internalType = 'multiple_choice';
+                break;
+              default:
+                internalType = 'short_answer';
+            }
+
+            return {
+              question_number_in_part: questionNumber,
+              question_text: row['Question Text'] || '',
+              question_type: internalType,
+              choices: row['Choices'] || '',
+              correct_answer: row['Correct Answer'] || '',
+              explanation: row['Explanation'] || '',
+              original_type: questionType, // Keep original for reference
+            };
+          });
           setQuestions(parsedQuestions);
           setSuccess(false);
           toast.success(`${parsedQuestions.length} questions loaded from CSV`);
@@ -500,20 +529,42 @@ const PartUploader = ({
 
         <div>
           <Label htmlFor={`csv-${partNumber}`}>Upload Questions CSV</Label>
-          <div className="flex items-center space-x-4">
-            <input
-              id={`csv-${partNumber}`}
-              type="file"
-              accept=".csv"
-              className="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-              onChange={handleFileUpload}
-            />
-          </div>
-          {questions.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {questions.length} questions parsed from CSV
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                id={`csv-${partNumber}`}
+                type="file"
+                accept=".csv"
+                className="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                onChange={handleFileUpload}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Download CSV template
+                  const csvContent = "Question Number,Section,Type,Question Text,Choices,Correct Answer,Explanation\n1,Reading,Multiple Choice,What is the main idea?,Option A;Option B;Option C;Option D,Option A,This explains why A is correct\n2,Reading,True/False/Not Given,The author agrees with this statement.,,,True,The passage clearly states this in paragraph 2";
+                  const blob = new Blob([csvContent], { type: 'text/csv' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `part-${partNumber}-template.csv`;
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                }}
+              >
+                Download Template
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Required columns: Question Number, Section, Type, Question Text, Choices, Correct Answer, Explanation
             </p>
-          )}
+            {questions.length > 0 && (
+              <p className="text-xs text-green-600">
+                {questions.length} questions parsed from CSV
+              </p>
+            )}
+          </div>
         </div>
 
         {existingQuestions.length > 0 && (

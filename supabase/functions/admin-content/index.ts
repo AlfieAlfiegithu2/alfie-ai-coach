@@ -20,15 +20,99 @@ serve(async (req) => {
     );
 
     const requestBody = await req.json();
+    console.log('Received request:', requestBody);
     
-    // Handle both old and new request formats for backward compatibility
+    // Handle different action types
+    if (requestBody.action) {
+      const { action, type, id, data, payload } = requestBody;
+
+      switch (action) {
+        case 'delete':
+          if (type === 'questions' && id) {
+            console.log('Deleting question with ID:', id);
+            const { error } = await supabaseAdmin
+              .from('questions')
+              .delete()
+              .eq('id', id);
+
+            if (error) {
+              console.error('Delete error:', error);
+              throw new Error(`Delete failed: ${error.message}`);
+            }
+
+            return new Response(JSON.stringify({ success: true }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+          }
+          break;
+
+        case 'update':
+          if (type === 'questions' && id && data) {
+            console.log('Updating question with ID:', id, 'Data:', data);
+            const { error } = await supabaseAdmin
+              .from('questions')
+              .update({
+                question_number_in_part: data.question_number_in_part,
+                question_text: data.question_text,
+                question_type: data.question_type,
+                choices: data.choices,
+                correct_answer: data.correct_answer,
+                explanation: data.explanation
+              })
+              .eq('id', id);
+
+            if (error) {
+              console.error('Update error:', error);
+              throw new Error(`Update failed: ${error.message}`);
+            }
+
+            return new Response(JSON.stringify({ success: true }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+          }
+          break;
+
+        case 'upload_questions':
+          if (payload && Array.isArray(payload)) {
+            console.log('Uploading questions via action payload:', payload.length);
+            
+            const questionsToInsert = payload.map((q: any) => ({
+              test_id: q.test_id,
+              part_number: q.part_number || 1,
+              question_number_in_part: q.question_number_in_part || 1,
+              question_text: q.question_text || '',
+              question_type: q.question_type || 'multiple_choice',
+              choices: q.choices || '',
+              correct_answer: q.correct_answer || '',
+              explanation: q.explanation || '',
+              passage_text: q.passage_text || null,
+            }));
+
+            const { data, error } = await supabaseAdmin
+              .from('questions')
+              .insert(questionsToInsert)
+              .select();
+
+            if (error) {
+              console.error('Database insert error:', error);
+              throw new Error(`Insert failed: ${error.message}`);
+            }
+
+            return new Response(JSON.stringify({ success: true, data }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+          }
+          break;
+      }
+    }
+
+    // Legacy support for different request formats
     let action, payload;
     
-    if (requestBody.action && requestBody.payload) {
-      // New format
-      action = requestBody.action;
-      payload = requestBody.payload;
-    } else if (requestBody.questions) {
+    if (requestBody.questions) {
       // Old CSV upload format from AdminReadingManagement
       action = 'upload_questions';
       payload = requestBody.questions;

@@ -336,6 +336,80 @@ const EnhancedReadingTest = () => {
     return `${questionNumbers[0]} - ${questionNumbers[questionNumbers.length - 1]}`;
   };
 
+  // Get authentic IELTS instruction for question type
+  const getQuestionTypeInstruction = (questionType: string, questionRange: string) => {
+    const type = questionType?.toLowerCase() || '';
+    
+    if (type.includes('true') || type.includes('false') || type.includes('not given')) {
+      if (type.includes('yes') || type.includes('no')) {
+        return `Do the following statements agree with the views of the writer in the reading passage? In boxes ${questionRange} on your answer sheet, write YES if the statement agrees with the views of the writer, NO if the statement contradicts the views of the writer, or NOT GIVEN if it is impossible to say what the writer thinks about this.`;
+      }
+      return `Do the following statements agree with the information given in the reading passage? In boxes ${questionRange} on your answer sheet, write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.`;
+    }
+    
+    if (type.includes('matching') && type.includes('heading')) {
+      return `The reading passage has several paragraphs. Choose the correct heading for each paragraph from the list of headings below. Write the correct number in boxes ${questionRange} on your answer sheet.`;
+    }
+    
+    if (type.includes('matching') && type.includes('paragraph')) {
+      return `Which paragraph contains the following information? Write the correct letter in boxes ${questionRange} on your answer sheet. NB You may use any letter more than once.`;
+    }
+    
+    if (type.includes('matching') && type.includes('feature')) {
+      return `Look at the following statements and the list of features below. Match each statement with the correct feature. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
+    }
+    
+    if (type.includes('matching') && type.includes('sentence')) {
+      return `Complete each sentence with the correct ending below. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
+    }
+    
+    if (type.includes('multiple') && type.includes('choice')) {
+      return `Choose the correct letter, A, B, C, or D. Write the correct letter in boxes ${questionRange} on your answer sheet.`;
+    }
+    
+    // For completion types, the instruction is usually already in the question text
+    if (type.includes('completion') || type.includes('summary') || type.includes('flow') || 
+        type.includes('table') || type.includes('diagram') || type.includes('short')) {
+      return null; // No additional instruction needed
+    }
+    
+    return null;
+  };
+
+  // Group questions by type to show instructions
+  const getQuestionGroups = () => {
+    if (!currentTestPart?.questions) return [];
+    
+    const groups: { type: string; questions: ReadingQuestion[]; instruction: string | null }[] = [];
+    let currentGroup: { type: string; questions: ReadingQuestion[]; instruction: string | null } | null = null;
+    
+    currentTestPart.questions.forEach(question => {
+      const questionType = question.question_type?.toLowerCase() || '';
+      
+      if (!currentGroup || currentGroup.type !== questionType) {
+        // Calculate range for this group
+        const groupQuestions = currentTestPart.questions.filter(q => 
+          q.question_type?.toLowerCase() === questionType
+        );
+        const groupNumbers = groupQuestions.map(q => q.question_number).sort((a, b) => a - b);
+        const groupRange = groupNumbers.length === 1 ? 
+          groupNumbers[0].toString() : 
+          `${groupNumbers[0]}-${groupNumbers[groupNumbers.length - 1]}`;
+        
+        currentGroup = {
+          type: questionType,
+          questions: [question],
+          instruction: getQuestionTypeInstruction(questionType, groupRange)
+        };
+        groups.push(currentGroup);
+      } else {
+        currentGroup.questions.push(question);
+      }
+    });
+    
+    return groups;
+  };
+
   const handleTextSelection = () => {
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
@@ -528,23 +602,23 @@ const EnhancedReadingTest = () => {
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content - Optimized Layout */}
         <div className="container mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Passage */}
-            <Card className="flex flex-col h-[calc(100vh-280px)]">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle className="flex items-center gap-2">
+          <div className="flex gap-4 h-[calc(100vh-280px)]">
+            {/* Passage - 45% width */}
+            <Card className="flex flex-col w-[45%]">
+              <CardHeader className="flex-shrink-0 pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Target className="w-5 h-5" />
                   {currentTestPart.passage.title}
                 </CardTitle>
-                <Badge variant="outline" className="w-fit">
+                <Badge variant="outline" className="w-fit text-xs">
                   Part {currentPart} of {Object.keys(testParts).length}
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto min-h-0">
+              <CardContent className="flex-1 overflow-y-auto min-h-0 p-4">
                 <div className="prose prose-sm max-w-none relative">
-                  <div className="whitespace-pre-wrap leading-relaxed select-text" onMouseUp={handleTextSelection}>
+                  <div className="whitespace-pre-wrap leading-relaxed select-text text-sm" onMouseUp={handleTextSelection}>
                     {currentTestPart.passage.content}
                   </div>
                   
@@ -590,90 +664,104 @@ const EnhancedReadingTest = () => {
               </CardContent>
             </Card>
 
-            {/* Questions */}
-            <Card className="flex flex-col h-[calc(100vh-280px)]">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle>Questions {getQuestionRange()}</CardTitle>
-                <Badge variant="secondary">
+            {/* Questions - 55% width */}
+            <Card className="flex flex-col w-[55%]">
+              <CardHeader className="flex-shrink-0 pb-3">
+                <CardTitle className="text-lg">Questions {getQuestionRange()}</CardTitle>
+                <Badge variant="secondary" className="text-xs">
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto min-h-0">
-                <div className="space-y-6 pb-6">
-                  {currentTestPart.questions.map((question) => {
-                    const renderAnswerInput = () => {
-                      // Check if it's a True/False/Not Given question
-                      if (question.question_type?.toLowerCase().includes('true') || 
-                          question.question_text?.toLowerCase().includes('true') ||
-                          question.question_text?.toLowerCase().includes('false') ||
-                          question.question_text?.toLowerCase().includes('not given')) {
-                        return (
-                          <RadioGroup
-                            value={answers[question.id] || ''}
-                            onValueChange={(value) => handleAnswerChange(question.id, value)}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="True" id={`${question.id}-true`} />
-                              <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="False" id={`${question.id}-false`} />
-                              <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
-                              <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
-                            </div>
-                          </RadioGroup>
-                        );
-                      }
-                      
-                      // Check if it has predefined options
-                      if (question.options && question.options.length > 0) {
-                        return (
-                          <RadioGroup
-                            value={answers[question.id] || ''}
-                            onValueChange={(value) => handleAnswerChange(question.id, value)}
-                          >
-                            {question.options.map((option, index) => (
-                              <div key={index} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option} id={`${question.id}-${index}`} />
-                                <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
-                                  {option}
-                                </Label>
-                              </div>
-                            ))}
-                          </RadioGroup>
-                        );
-                      }
-                      
-                      // Default to text input
-                      return (
-                        <Input
-                          value={answers[question.id] || ''}
-                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                          placeholder="Type your answer here..."
-                          className="max-w-md"
-                        />
-                      );
-                    };
-
-                    return (
-                      <div key={question.id} className="border-b pb-4 last:border-b-0">
-                        <div className="flex items-start gap-3">
-                          <Badge variant="outline" className="mt-1">
-                            {question.question_number}
-                          </Badge>
-                          <div className="flex-1 space-y-3">
-                            <p className="font-medium leading-relaxed">
-                              {question.question_text}
-                            </p>
-                            {renderAnswerInput()}
-                          </div>
+              <CardContent className="flex-1 overflow-y-auto min-h-0 p-4">
+                <div className="space-y-4 pb-4">
+                  {getQuestionGroups().map((group, groupIndex) => (
+                    <div key={groupIndex} className="space-y-3">
+                      {/* Authentic IELTS Instruction */}
+                      {group.instruction && (
+                        <div className="bg-muted/30 p-3 rounded-lg border-l-4 border-primary">
+                          <p className="text-sm font-medium text-foreground leading-relaxed">
+                            {group.instruction}
+                          </p>
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+                      
+                      {/* Questions in this group */}
+                      {group.questions.map((question) => {
+                        const renderAnswerInput = () => {
+                          // Check if it's a True/False/Not Given question
+                          if (question.question_type?.toLowerCase().includes('true') || 
+                              question.question_text?.toLowerCase().includes('true') ||
+                              question.question_text?.toLowerCase().includes('false') ||
+                              question.question_text?.toLowerCase().includes('not given')) {
+                            return (
+                              <RadioGroup
+                                value={answers[question.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(question.id, value)}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="True" id={`${question.id}-true`} />
+                                  <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="False" id={`${question.id}-false`} />
+                                  <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
+                                  <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
+                                </div>
+                              </RadioGroup>
+                            );
+                          }
+                          
+                          // Check if it has predefined options
+                          if (question.options && question.options.length > 0) {
+                            return (
+                              <RadioGroup
+                                value={answers[question.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(question.id, value)}
+                              >
+                                {question.options.map((option, index) => (
+                                  <div key={index} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={option} id={`${question.id}-${index}`} />
+                                    <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
+                                      {option}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </RadioGroup>
+                            );
+                          }
+                          
+                          // Default to text input
+                          return (
+                            <Input
+                              value={answers[question.id] || ''}
+                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                              placeholder="Type your answer here..."
+                              className="max-w-md"
+                            />
+                          );
+                        };
+
+                        return (
+                          <div key={question.id} className="border-b pb-4 last:border-b-0">
+                            <div className="flex items-start gap-3">
+                              <Badge variant="outline" className="mt-1">
+                                {question.question_number}
+                              </Badge>
+                              <div className="flex-1 space-y-3">
+                                <p className="font-medium leading-relaxed text-sm">
+                                  {question.question_text}
+                                </p>
+                                {renderAnswerInput()}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
               

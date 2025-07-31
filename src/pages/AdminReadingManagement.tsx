@@ -9,13 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Upload, FileText, Save, X } from 'lucide-react';
+import { Plus, Upload, FileText, Save, X, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 import AdminLayout from '@/components/AdminLayout';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Question {
+  id?: string;
   question_number_in_part: number;
   question_text: string;
   question_type: string;
@@ -23,6 +24,174 @@ interface Question {
   correct_answer: string;
   explanation?: string;
 }
+
+// Question Item Component for editing/deleting existing questions
+const QuestionItem = ({ 
+  question, 
+  onQuestionUpdated 
+}: { 
+  question: Question; 
+  onQuestionUpdated: () => void;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedQuestion, setEditedQuestion] = useState<Question>(question);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleUpdate = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error: functionError } = await supabase.functions.invoke('admin-content', {
+        body: {
+          action: 'update',
+          type: 'questions',
+          id: question.id,
+          data: editedQuestion
+        },
+      });
+
+      if (functionError) throw functionError;
+      if (data.error) throw new Error(data.error);
+
+      toast.success('Question updated successfully');
+      setIsEditing(false);
+      onQuestionUpdated();
+    } catch (err: any) {
+      console.error('Error updating question:', err);
+      toast.error(`Failed to update question: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this question?')) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error: functionError } = await supabase.functions.invoke('admin-content', {
+        body: {
+          action: 'delete',
+          type: 'questions',
+          id: question.id
+        },
+      });
+
+      if (functionError) throw functionError;
+      if (data.error) throw new Error(data.error);
+
+      toast.success('Question deleted successfully');
+      onQuestionUpdated();
+    } catch (err: any) {
+      console.error('Error deleting question:', err);
+      toast.error(`Failed to delete question: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="p-3 border rounded-lg space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            value={editedQuestion.question_number_in_part}
+            onChange={(e) => setEditedQuestion({ ...editedQuestion, question_number_in_part: parseInt(e.target.value) || 1 })}
+            placeholder="Question Number"
+          />
+          <Select 
+            value={editedQuestion.question_type} 
+            onValueChange={(value) => setEditedQuestion({ ...editedQuestion, question_type: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+              <SelectItem value="true_false">True/False</SelectItem>
+              <SelectItem value="fill_in_blank">Fill in the Blank</SelectItem>
+              <SelectItem value="matching">Matching</SelectItem>
+              <SelectItem value="short_answer">Short Answer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <Textarea
+          value={editedQuestion.question_text}
+          onChange={(e) => setEditedQuestion({ ...editedQuestion, question_text: e.target.value })}
+          placeholder="Question Text"
+          rows={2}
+        />
+
+        {editedQuestion.question_type === 'multiple_choice' && (
+          <Textarea
+            value={editedQuestion.choices || ''}
+            onChange={(e) => setEditedQuestion({ ...editedQuestion, choices: e.target.value })}
+            placeholder="Choices (A, B, C, D)"
+            rows={3}
+          />
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            value={editedQuestion.correct_answer}
+            onChange={(e) => setEditedQuestion({ ...editedQuestion, correct_answer: e.target.value })}
+            placeholder="Correct Answer"
+          />
+          <Input
+            value={editedQuestion.explanation || ''}
+            onChange={(e) => setEditedQuestion({ ...editedQuestion, explanation: e.target.value })}
+            placeholder="Explanation (Optional)"
+          />
+        </div>
+
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleUpdate} disabled={isLoading}>
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between p-3 border rounded-lg">
+      <div className="flex-1">
+        <div className="flex items-center space-x-2 mb-1">
+          <span className="font-medium text-sm">Q{question.question_number_in_part}</span>
+          <span className="text-xs bg-muted px-2 py-1 rounded">{question.question_type}</span>
+        </div>
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {question.question_text}
+        </p>
+        <p className="text-xs text-green-600 mt-1">
+          Answer: {question.correct_answer}
+        </p>
+      </div>
+      <div className="flex space-x-1 ml-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsEditing(true)}
+          disabled={isLoading}
+        >
+          <Edit className="w-3 h-3" />
+        </Button>
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          onClick={handleDelete}
+          disabled={isLoading}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 // Manual Question Form Component
 const ManualQuestionForm = ({ 
@@ -350,11 +519,13 @@ const PartUploader = ({
         {existingQuestions.length > 0 && (
           <div>
             <Label>Existing Questions ({existingQuestions.length})</Label>
-            <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+            <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
               {existingQuestions.map((q, index) => (
-                <div key={index} className="text-xs p-2 bg-muted rounded">
-                  <strong>Q{q.question_number_in_part}:</strong> {q.question_text.substring(0, 100)}...
-                </div>
+                <QuestionItem 
+                  key={q.id} 
+                  question={q} 
+                  onQuestionUpdated={onQuestionsUpdated}
+                />
               ))}
             </div>
           </div>

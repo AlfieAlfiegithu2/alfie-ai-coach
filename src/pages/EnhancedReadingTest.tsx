@@ -134,14 +134,17 @@ const EnhancedReadingTest = () => {
           if (!partTitles[question.part_number] && question.question_text) {
             partTitles[question.part_number] = question.question_text;
           }
-          return;
+          return; // Don't include title questions in the actual questions
         }
         
+        // Only include actual questions (not titles)
         if (!partsByNumber[question.part_number]) {
           partsByNumber[question.part_number] = [];
         }
         partsByNumber[question.part_number].push(question);
       });
+
+      console.log('Parts organized:', Object.keys(partsByNumber).map(p => `Part ${p}: ${partsByNumber[parseInt(p)].length} questions`));
 
       // Create test parts from questions
       Object.entries(partsByNumber).forEach(([partNum, partQuestions]) => {

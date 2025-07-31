@@ -24,6 +24,7 @@ import AdminPTE from "./pages/AdminPTE";
 import AdminTOEFL from "./pages/AdminTOEFL";
 import AdminGeneral from "./pages/AdminGeneral";
 import PersonalPage from "./pages/PersonalPage";
+import Dashboard from "./pages/Dashboard";
 import TestSelection from "./pages/TestSelection";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -122,7 +123,7 @@ const App = () => {
             <Route path="/pte-portal" element={<PTEPortal />} />
             <Route path="/toefl-portal" element={<TOEFLPortal />} />
             <Route path="/general-portal" element={<GeneralPortal />} />
-            <Route path="/dashboard" element={<PersonalPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/user-dashboard" element={<PersonalPage />} />
             <Route path="/practice" element={<TestSelection />} />
             <Route path="/personal-page" element={<PersonalPage />} />

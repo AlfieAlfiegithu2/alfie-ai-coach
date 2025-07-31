@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { BookOpen, Search, Trash2, Calendar } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BookOpen, Search, Trash2, Calendar, Languages, Globe } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SavedWord {
   id: string;
@@ -17,6 +19,23 @@ const VocabularyList = () => {
   const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredWords, setFilteredWords] = useState<SavedWord[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState('Spanish');
+  const [translating, setTranslating] = useState<string | null>(null);
+
+  const languages = [
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ko', name: 'Korean' },
+    { code: 'ar', name: 'Arabic' },
+    { code: 'hi', name: 'Hindi' },
+    { code: 'ru', name: 'Russian' },
+    { code: 'tr', name: 'Turkish' }
+  ];
 
   useEffect(() => {
     loadSavedWords();
@@ -60,6 +79,36 @@ const VocabularyList = () => {
     localStorage.removeItem('saved-vocabulary');
   };
 
+  const translateWord = async (wordId: string, word: string) => {
+    setTranslating(wordId);
+    try {
+      const { data, error } = await supabase.functions.invoke('translation-service', {
+        body: {
+          text: word,
+          targetLanguage: selectedLanguage.toLowerCase(),
+          sourceLanguage: 'en'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.translation) {
+        // Update the word with translation
+        const updatedWords = savedWords.map(w => 
+          w.id === wordId 
+            ? { ...w, translation: data.translation }
+            : w
+        );
+        setSavedWords(updatedWords);
+        localStorage.setItem('saved-vocabulary', JSON.stringify(updatedWords));
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+    } finally {
+      setTranslating(null);
+    }
+  };
+
   return (
     <Card className="card-modern">
       <CardHeader>
@@ -77,14 +126,33 @@ const VocabularyList = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {savedWords.length > 0 && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-            <Input
-              placeholder="Search your vocabulary..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 input-modern"
-            />
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+              <Input
+                placeholder="Search your vocabulary..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 input-modern"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Languages className="w-4 h-4 text-text-tertiary" />
+              <span className="text-sm text-text-secondary">Translate to:</span>
+              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.name}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
 
@@ -124,14 +192,31 @@ const VocabularyList = () => {
                     </span>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeWord(word.id)}
-                  className="w-8 h-8 p-0 text-text-tertiary hover:text-brand-red"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {word.translation.includes('Translation coming soon') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => translateWord(word.id, word.word)}
+                      disabled={translating === word.id}
+                      className="px-2 h-7 text-xs text-brand-blue hover:text-brand-blue"
+                    >
+                      {translating === word.id ? (
+                        <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Globe className="w-3 h-3" />
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeWord(word.id)}
+                    className="w-8 h-8 p-0 text-text-tertiary hover:text-brand-red"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

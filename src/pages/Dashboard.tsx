@@ -319,10 +319,10 @@ const Dashboard = () => {
                   </Button>
                   <Button 
                     onClick={() => navigate('/vocabulary')}
-                    variant="outline"
-                    className="hover-lift"
+                    className="btn-gradient hover-lift"
                   >
-                    Vocabulary
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    My Word Book
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
@@ -379,6 +379,37 @@ const Dashboard = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* My Word Book - Featured Prominently */}
+              <Card className="card-modern border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    My Word Book
+                  </CardTitle>
+                  <CardDescription>
+                    Your personalized vocabulary collection
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center p-4 bg-white/50 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">{savedWords.length}</div>
+                    <div className="text-xs text-text-secondary">Words Saved</div>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => navigate('/vocabulary')}
+                    className="w-full btn-gradient"
+                  >
+                    <Languages className="w-4 h-4 mr-2" />
+                    View My Vocabulary
+                  </Button>
+                  
+                  <p className="text-xs text-text-secondary text-center">
+                    Words from incorrect answers are automatically added!
+                  </p>
+                </CardContent>
+              </Card>
+
               {/* Daily Challenge - Now Functional */}
               <DailyChallenge />
 

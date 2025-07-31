@@ -688,11 +688,10 @@ const EnhancedReadingTest = () => {
                       {/* Questions in this group */}
                       {group.questions.map((question) => {
                         const renderAnswerInput = () => {
-                          // Check if it's a True/False/Not Given question
-                          if (question.question_type?.toLowerCase().includes('true') || 
-                              question.question_text?.toLowerCase().includes('true') ||
-                              question.question_text?.toLowerCase().includes('false') ||
-                              question.question_text?.toLowerCase().includes('not given')) {
+                          const questionType = question.question_type?.toLowerCase() || '';
+                          
+                          // True/False/Not Given questions
+                          if (questionType.includes('true') || questionType.includes('false') || questionType.includes('not given')) {
                             return (
                               <RadioGroup
                                 value={answers[question.id] || ''}
@@ -714,8 +713,31 @@ const EnhancedReadingTest = () => {
                             );
                           }
                           
-                          // Check if it has predefined options
-                          if (question.options && question.options.length > 0) {
+                          // Yes/No/Not Given questions
+                          if (questionType.includes('yes') || questionType.includes('no')) {
+                            return (
+                              <RadioGroup
+                                value={answers[question.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(question.id, value)}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="Yes" id={`${question.id}-yes`} />
+                                  <Label htmlFor={`${question.id}-yes`} className="cursor-pointer">Yes</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="No" id={`${question.id}-no`} />
+                                  <Label htmlFor={`${question.id}-no`} className="cursor-pointer">No</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="Not Given" id={`${question.id}-notgiven`} />
+                                  <Label htmlFor={`${question.id}-notgiven`} className="cursor-pointer">Not Given</Label>
+                                </div>
+                              </RadioGroup>
+                            );
+                          }
+                          
+                          // Multiple choice questions
+                          if (questionType.includes('multiple choice') && question.options && question.options.length > 0) {
                             return (
                               <RadioGroup
                                 value={answers[question.id] || ''}
@@ -733,27 +755,60 @@ const EnhancedReadingTest = () => {
                             );
                           }
                           
-                          // Default to text input
+                          // Matching questions (headings, features, sentence endings)
+                          if (questionType.includes('matching') && question.options && question.options.length > 0) {
+                            return (
+                              <RadioGroup
+                                value={answers[question.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(question.id, value)}
+                              >
+                                {question.options.map((option, index) => (
+                                  <div key={index} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={option} id={`${question.id}-${index}`} />
+                                    <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
+                                      {option}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </RadioGroup>
+                            );
+                          }
+                          
+                          // Default to text input for completion types, short answer, etc.
                           return (
-                            <Input
-                              value={answers[question.id] || ''}
-                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                              placeholder="Type your answer here..."
-                              className="max-w-md"
-                            />
+                            <div className="space-y-2">
+                              <Input
+                                value={answers[question.id] || ''}
+                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                placeholder="Type your answer here..."
+                                className="max-w-md"
+                              />
+                              {(questionType.includes('completion') || questionType.includes('short')) && (
+                                <p className="text-xs text-muted-foreground">
+                                  💡 Remember to check the word limit specified in the question
+                                </p>
+                              )}
+                            </div>
                           );
                         };
 
                         return (
                           <div key={question.id} className="border-b pb-4 last:border-b-0">
                             <div className="flex items-start gap-3">
-                              <Badge variant="outline" className="mt-1">
+                              <Badge variant="outline" className="mt-1 flex-shrink-0">
                                 {question.question_number}
                               </Badge>
                               <div className="flex-1 space-y-3">
-                                <p className="font-medium leading-relaxed text-sm">
-                                  {question.question_text}
-                                </p>
+                                {/* Always display the question text clearly */}
+                                <div className="space-y-2">
+                                  <p className="font-medium leading-relaxed text-sm">
+                                    {question.question_text}
+                                  </p>
+                                  {/* Show question type for clarity */}
+                                  <Badge variant="secondary" className="text-xs">
+                                    {question.question_type}
+                                  </Badge>
+                                </div>
                                 {renderAnswerInput()}
                               </div>
                             </div>

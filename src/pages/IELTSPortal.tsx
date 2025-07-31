@@ -80,6 +80,8 @@ const IELTSPortal = () => {
         throw testsError;
       }
 
+      console.log('Fetched IELTS tests:', testsData); // Debug log
+
       // Fetch questions to check test completion status
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
@@ -106,9 +108,11 @@ const IELTSPortal = () => {
         const availableModules = testModules.get(test.id) || new Set();
         const questionCount = questionsData?.filter(q => q.test_id === test.id).length || 0;
         
+        console.log('Processing test:', test.test_name, 'ID:', test.id); // Debug log
+        
         return {
           id: test.id,
-          test_name: test.test_name,
+          test_name: test.test_name, // Use exact test name from admin
           test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
           status: questionCount > 0 ? 'complete' : 'incomplete',
           modules: Array.from(availableModules),
@@ -117,6 +121,7 @@ const IELTSPortal = () => {
         };
       }) || [];
 
+      console.log('Transformed tests:', transformedTests); // Debug log
       setAvailableTests(transformedTests);
     } catch (error) {
       console.error('Error loading tests:', error);
@@ -230,7 +235,7 @@ const IELTSPortal = () => {
               <Card key={test.test_number || test.id} className="card-modern hover-lift">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{test.test_name || `IELTS Test ${test.test_number || test.id}`}</CardTitle>
+                    <CardTitle className="text-lg">{test.test_name}</CardTitle>
                     <div className="flex items-center gap-2">
                       <Target className="w-5 h-5 text-primary" />
                       {test.status === 'complete' && (

@@ -23,6 +23,8 @@ interface Question {
   choices?: string;
   correct_answer: string;
   explanation?: string;
+  original_type?: string;
+  section?: string;
 }
 
 // Question Item Component for editing/deleting existing questions
@@ -49,8 +51,10 @@ const QuestionItem = ({
         },
       });
 
+      console.log('Update response:', data, functionError);
+
       if (functionError) throw functionError;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) throw new Error(data.error);
 
       toast.success('Question updated successfully');
       setIsEditing(false);
@@ -162,14 +166,31 @@ const QuestionItem = ({
       <div className="flex-1">
         <div className="flex items-center space-x-2 mb-1">
           <span className="font-medium text-sm">Q{question.question_number_in_part}</span>
-          <span className="text-xs bg-muted px-2 py-1 rounded">{question.question_type}</span>
+          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+            {question.original_type || question.question_type}
+          </span>
+          {question.section && (
+            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+              {question.section}
+            </span>
+          )}
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-2">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
           {question.question_text}
         </p>
-        <p className="text-xs text-green-600 mt-1">
-          Answer: {question.correct_answer}
+        {question.choices && question.question_type === 'multiple_choice' && (
+          <div className="text-xs text-gray-600 mb-1">
+            <strong>Choices:</strong> {question.choices.split(';').join(', ')}
+          </div>
+        )}
+        <p className="text-xs text-green-600">
+          <strong>Answer:</strong> {question.correct_answer}
         </p>
+        {question.explanation && (
+          <p className="text-xs text-gray-500 mt-1">
+            <strong>Explanation:</strong> {question.explanation.substring(0, 100)}...
+          </p>
+        )}
       </div>
       <div className="flex space-x-1 ml-4">
         <Button 
@@ -403,14 +424,15 @@ const PartUploader = ({
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
+          console.log('CSV parsing results:', results.data);
           const parsedQuestions = results.data.map((row: any, index: number) => {
             // Map CSV column names to our format
             const questionNumber = parseInt(row['Question Number'], 10) || (index + 1);
-            const questionType = row['Type'] || 'multiple_choice';
+            const questionType = row['Type'] || 'Multiple Choice';
             
             // Convert IELTS question types to our internal format
             let internalType = 'multiple_choice';
-            switch (questionType.toLowerCase()) {
+            switch (questionType.toLowerCase().trim()) {
               case 'true/false/not given':
                 internalType = 'true_false_not_given';
                 break;
@@ -430,7 +452,7 @@ const PartUploader = ({
                 internalType = 'short_answer';
             }
 
-            return {
+            const question = {
               question_number_in_part: questionNumber,
               question_text: row['Question Text'] || '',
               question_type: internalType,
@@ -438,8 +460,14 @@ const PartUploader = ({
               correct_answer: row['Correct Answer'] || '',
               explanation: row['Explanation'] || '',
               original_type: questionType, // Keep original for reference
+              section: row['Section'] || 'Reading',
             };
-          });
+            
+            console.log('Parsed question:', question);
+            return question;
+          }).filter(q => q.question_text.trim() !== ''); // Filter out empty questions
+
+          console.log('Final parsed questions:', parsedQuestions);
           setQuestions(parsedQuestions);
           setSuccess(false);
           toast.success(`${parsedQuestions.length} questions loaded from CSV`);
@@ -461,6 +489,8 @@ const PartUploader = ({
     setIsLoading(true);
     setSuccess(false);
 
+    console.log('Saving questions:', questions);
+
     const questionsWithData = questions.map(q => ({
       ...q,
       test_id: testId,
@@ -468,13 +498,20 @@ const PartUploader = ({
       passage_text: q.question_number_in_part === 1 ? passage : null,
     }));
 
+    console.log('Questions to save:', questionsWithData);
+
     try {
       const { data, error: functionError } = await supabase.functions.invoke('admin-content', {
-        body: { questions: questionsWithData },
+        body: { 
+          action: 'upload_questions',
+          payload: questionsWithData 
+        },
       });
 
+      console.log('Save response:', data, functionError);
+
       if (functionError) throw functionError;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) throw new Error(data.error);
 
       setSuccess(true);
       toast.success(`Part ${partNumber} saved successfully`);
@@ -489,9 +526,43 @@ const PartUploader = ({
         .order('question_number_in_part');
       
       if (newQuestions) setExistingQuestions(newQuestions);
+      
+      // Clear the uploaded questions after successful save
+      setQuestions([]);
     } catch (err: any) {
       console.error(`Error saving Part ${partNumber}:`, err);
       toast.error(`Upload Failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAllQuestions = async () => {
+    if (!confirm(`Are you sure you want to delete ALL questions from Part ${partNumber}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Delete all questions for this part
+      const deletePromises = existingQuestions.map(q => 
+        supabase.functions.invoke('admin-content', {
+          body: {
+            action: 'delete',
+            type: 'questions',
+            id: q.id
+          }
+        })
+      );
+
+      await Promise.all(deletePromises);
+      
+      toast.success(`All questions deleted from Part ${partNumber}`);
+      setExistingQuestions([]);
+      onQuestionsUpdated();
+    } catch (err: any) {
+      console.error('Error deleting questions:', err);
+      toast.error(`Failed to delete questions: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -507,6 +578,17 @@ const PartUploader = ({
             {success && <span className="ml-3 text-green-500 text-sm">(✓ Saved)</span>}
           </div>
           <div className="flex space-x-2">
+            {existingQuestions.length > 0 && (
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleDeleteAllQuestions}
+                disabled={isLoading}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete All
+              </Button>
+            )}
             <ManualQuestionForm 
               partNumber={partNumber} 
               testId={testId} 
@@ -566,6 +648,27 @@ const PartUploader = ({
             )}
           </div>
         </div>
+
+        {questions.length > 0 && (
+          <div>
+            <Label>Questions to Upload ({questions.length})</Label>
+            <div className="mt-2 space-y-2 max-h-60 overflow-y-auto border rounded p-3">
+              {questions.map((q, index) => (
+                <div key={index} className="text-xs p-2 bg-blue-50 rounded border">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium">Q{q.question_number_in_part}: {q.original_type || q.question_type}</span>
+                    <span className="text-gray-500">{q.section}</span>
+                  </div>
+                  <p className="text-gray-700 mb-1">{q.question_text.substring(0, 100)}...</p>
+                  {q.choices && (
+                    <p className="text-gray-600"><strong>Choices:</strong> {q.choices}</p>
+                  )}
+                  <p className="text-green-600"><strong>Answer:</strong> {q.correct_answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {existingQuestions.length > 0 && (
           <div>

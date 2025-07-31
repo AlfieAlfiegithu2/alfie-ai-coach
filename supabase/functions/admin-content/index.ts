@@ -19,7 +19,28 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { action, payload } = await req.json();
+    const requestBody = await req.json();
+    
+    // Handle both old and new request formats for backward compatibility
+    let action, payload;
+    
+    if (requestBody.action && requestBody.payload) {
+      // New format
+      action = requestBody.action;
+      payload = requestBody.payload;
+    } else if (requestBody.questions) {
+      // Old CSV upload format from AdminReadingManagement
+      action = 'upload_questions';
+      payload = requestBody.questions;
+    } else if (requestBody.type && requestBody.data) {
+      // Legacy useAdminContent format 
+      action = requestBody.type === 'tests' ? 'create_test' : 'upload_questions';
+      payload = requestBody.data;
+    } else {
+      // Single question format for manual adding
+      action = 'upload_questions';
+      payload = Array.isArray(requestBody) ? requestBody : [requestBody];
+    }
 
     let data, error;
 

@@ -311,7 +311,7 @@ const EnhancedReadingTest = () => {
   };
 
   if (loading) {
-  return (
+    return (
     <StudentLayout title="Loading Reading Test">
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

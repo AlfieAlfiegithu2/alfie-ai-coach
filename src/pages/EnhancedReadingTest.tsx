@@ -128,9 +128,8 @@ const EnhancedReadingTest = () => {
       const partTitles: {[key: number]: string} = {};
       
       questions.forEach(question => {
+        // Skip questions with question_number_in_part = 0 as they are title placeholders
         if (question.question_number_in_part === 0) {
-          // This is a title question
-          partTitles[question.part_number] = question.question_text;
           return;
         }
         
@@ -144,12 +143,21 @@ const EnhancedReadingTest = () => {
       Object.entries(partsByNumber).forEach(([partNum, partQuestions]) => {
         const partNumber = parseInt(partNum);
         const firstQuestion = partQuestions[0];
-        const partTitle = partTitles[partNumber] || `Reading Passage ${partNumber}`;
+        
+        // Extract title from passage text if available - look for first line as title
+        let passageTitle = `Reading Passage ${partNumber}`;
+        if (firstQuestion?.passage_text) {
+          const lines = firstQuestion.passage_text.split('\n');
+          const firstLine = lines[0]?.trim();
+          if (firstLine && firstLine.length < 200 && !firstLine.includes('.')) {
+            passageTitle = firstLine;
+          }
+        }
         
         partsData[partNumber] = {
           passage: {
             id: `passage-${partNumber}`,
-            title: partTitle,
+            title: passageTitle,
             content: firstQuestion?.passage_text || 'Passage content not available',
             part_number: partNumber,
             test_number: parseInt(testId)
@@ -215,11 +223,18 @@ const EnhancedReadingTest = () => {
   };
 
   const handleSubmit = async () => {
+    // Show completion animation first
+    setIsSubmitted(true);
+    
+    // Show test completion modal/toast
+    toast({
+      title: "🎉 Test Completed!",
+      description: "Processing your results...",
+      duration: 2000,
+    });
+    
     const score = calculateScore();
     const totalQuestions = allQuestions.length;
-    
-    setIsSubmitted(true);
-    setShowResults(true);
     
     // Save test result to database
     try {
@@ -260,6 +275,11 @@ const EnhancedReadingTest = () => {
     } catch (error) {
       console.error('Error saving test result:', error);
     }
+    
+    // Delay showing results to show completion animation
+    setTimeout(() => {
+      setShowResults(true);
+    }, 2000);
   };
 
   const formatTime = (seconds: number) => {
@@ -376,7 +396,7 @@ const EnhancedReadingTest = () => {
                 </CardHeader>
                 <CardContent className="flex-1 overflow-y-auto">
                   <div className="prose prose-sm max-w-none">
-                    <div className="whitespace-pre-wrap leading-relaxed">
+                    <div className="whitespace-pre-wrap leading-relaxed passage-content">
                       {currentTestPart?.passage?.content || "Passage content not available"}
                     </div>
                   </div>
@@ -426,7 +446,18 @@ const EnhancedReadingTest = () => {
                                 )}
                                 
                                 {question.explanation && (
-                                  <div className="bg-muted p-3 rounded-md">
+                                  <div 
+                                    className="bg-muted p-3 rounded-md cursor-pointer hover:bg-muted/80 transition-colors"
+                                    onMouseEnter={() => {
+                                      // Highlight text in passage when hovering over explanation
+                                      const passageElement = document.querySelector('.passage-content');
+                                      if (passageElement && question.explanation) {
+                                        // This is a placeholder for highlighting functionality
+                                        // In a real implementation, you'd search for relevant text in the passage
+                                        console.log('Hovering over explanation for question:', question.question_number);
+                                      }
+                                    }}
+                                  >
                                     <p className="text-sm font-medium mb-1">Explanation:</p>
                                     <p className="text-sm text-muted-foreground">
                                       {question.explanation}
@@ -477,7 +508,7 @@ const EnhancedReadingTest = () => {
                 </Button>
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">Reading Test 1</span>
+                  <span className="font-semibold">IELTS Reading Test</span>
                 </div>
               </div>
               
@@ -532,9 +563,9 @@ const EnhancedReadingTest = () => {
 
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-2 gap-6" style={{ height: 'calc(100vh - 280px)' }}>
+          <div className="grid lg:grid-cols-2 gap-6">
             {/* Passage */}
-            <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
+            <Card className="flex flex-col h-[calc(100vh-280px)]">
               <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <Target className="w-5 h-5" />
@@ -544,7 +575,7 @@ const EnhancedReadingTest = () => {
                   Part {currentPart} of {Object.keys(testParts).length}
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto">
+              <CardContent className="flex-1 overflow-y-auto min-h-0">
                 <div className="prose prose-sm max-w-none relative">
                   <div className="whitespace-pre-wrap leading-relaxed select-text" onMouseUp={handleTextSelection}>
                     {currentTestPart.passage.content}
@@ -593,14 +624,14 @@ const EnhancedReadingTest = () => {
             </Card>
 
             {/* Questions */}
-            <Card className="flex flex-col" style={{ height: 'calc(100vh - 280px)' }}>
+            <Card className="flex flex-col h-[calc(100vh-280px)]">
               <CardHeader className="flex-shrink-0">
                 <CardTitle>Questions {getQuestionRange()}</CardTitle>
                 <Badge variant="secondary">
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto">
+              <CardContent className="flex-1 overflow-y-auto min-h-0">
                 <div className="space-y-6 pb-6">
                   {currentTestPart.questions.map((question) => {
                     const renderAnswerInput = () => {

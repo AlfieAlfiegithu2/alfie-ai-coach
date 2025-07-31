@@ -68,11 +68,11 @@ const IELTSPortal = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
-      // Fetch all IELTS tests from admin (regardless of module)
+      // Fetch all IELTS tests from admin (case insensitive)
       const { data: testsData, error: testsError } = await supabase
         .from('tests')
         .select('*')
-        .eq('test_type', 'IELTS')
+        .ilike('test_type', 'IELTS')
         .order('created_at', { ascending: true });
 
       if (testsError) {

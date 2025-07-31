@@ -1,0 +1,319 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { PenTool, Save, Image, FileText } from "lucide-react";
+import AdminLayout from "@/components/AdminLayout";
+import { useAdminContent } from "@/hooks/useAdminContent";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const AdminIELTSWritingTest = () => {
+  const { testId } = useParams<{ testId: string }>();
+  const navigate = useNavigate();
+  const { createContent, updateContent, loading } = useAdminContent();
+  const { toast } = useToast();
+
+  const [test, setTest] = useState<any>(null);
+  const [task1, setTask1] = useState({
+    id: null,
+    title: "",
+    instructions: "",
+    imageUrl: "",
+    imageContext: ""
+  });
+  const [task2, setTask2] = useState({
+    id: null,
+    title: "",
+    instructions: ""
+  });
+
+  useEffect(() => {
+    if (testId) {
+      loadTestData();
+    }
+  }, [testId]);
+
+  const loadTestData = async () => {
+    try {
+      // Load test details
+      const { data: testData, error: testError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('id', testId)
+        .single();
+
+      if (testError) throw testError;
+      setTest(testData);
+
+      // Load existing questions for this test
+      const { data: questions, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('test_id', testId)
+        .order('part_number');
+
+      if (questionsError) throw questionsError;
+
+      // Separate Task 1 and Task 2 questions
+      const task1Question = questions.find(q => q.part_number === 1);
+      const task2Question = questions.find(q => q.part_number === 2);
+
+      if (task1Question) {
+        setTask1({
+          id: task1Question.id,
+          title: task1Question.question_text || "",
+          instructions: task1Question.passage_text || "",
+          imageUrl: task1Question.image_url || "",
+          imageContext: task1Question.explanation || ""
+        });
+      }
+
+      if (task2Question) {
+        setTask2({
+          id: task2Question.id,
+          title: task2Question.question_text || "",
+          instructions: task2Question.passage_text || ""
+        });
+      }
+    } catch (error) {
+      console.error('Error loading test data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load test data",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveTask = async (taskNumber: 1 | 2) => {
+    try {
+      const taskData = taskNumber === 1 ? task1 : task2;
+      const questionData = {
+        test_id: testId,
+        part_number: taskNumber,
+        question_number_in_part: 1,
+        question_text: taskData.title,
+        passage_text: taskData.instructions,
+        question_type: `Task ${taskNumber}`,
+        correct_answer: "N/A", // Required field
+        ...(taskNumber === 1 && {
+          image_url: task1.imageUrl,
+          explanation: task1.imageContext
+        })
+      };
+
+      if (taskData.id) {
+        // Update existing question
+        const { error } = await supabase
+          .from('questions')
+          .update(questionData)
+          .eq('id', taskData.id);
+
+        if (error) throw error;
+      } else {
+        // Create new question
+        const { data, error } = await supabase
+          .from('questions')
+          .insert(questionData)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Update the task with the new ID
+        if (taskNumber === 1) {
+          setTask1(prev => ({ ...prev, id: data.id }));
+        } else {
+          setTask2(prev => ({ ...prev, id: data.id }));
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `Task ${taskNumber} saved successfully`
+      });
+    } catch (error: any) {
+      console.error(`Error saving Task ${taskNumber}:`, error);
+      toast({
+        title: "Error",
+        description: error.message || `Failed to save Task ${taskNumber}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (!test) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading test data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AdminLayout 
+      title={`Writing Test - ${test.test_name}`} 
+      showBackButton={true} 
+      backPath="/admin/ielts/writing"
+    >
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+              {test.test_name}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage Task 1 and Task 2 content for this IELTS Writing test
+            </p>
+          </div>
+        </div>
+
+        {/* Task 1 Section */}
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Image className="w-5 h-5" />
+              Task 1 - Data Description
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Task 1 requires students to describe visual information (graphs, charts, tables, etc.)
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="task1-title">Prompt Title</Label>
+              <Input
+                id="task1-title"
+                value={task1.title}
+                onChange={(e) => setTask1(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g., The chart below shows the number of visitors to a museum..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task1-instructions">Instructions</Label>
+              <Textarea
+                id="task1-instructions"
+                rows={4}
+                value={task1.instructions}
+                onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
+                placeholder="Write the complete task instructions here..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task1-image">Image URL</Label>
+              <Input
+                id="task1-image"
+                value={task1.imageUrl}
+                onChange={(e) => setTask1(prev => ({ ...prev, imageUrl: e.target.value }))}
+                placeholder="https://example.com/chart-image.png"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task1-context">Image Context Description</Label>
+              <Textarea
+                id="task1-context"
+                rows={4}
+                value={task1.imageContext}
+                onChange={(e) => setTask1(prev => ({ ...prev, imageContext: e.target.value }))}
+                placeholder="Detailed description of the image/chart for accessibility and context..."
+              />
+            </div>
+
+            <Button 
+              onClick={() => saveTask(1)}
+              disabled={loading}
+              className="w-full"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Task 1
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Separator />
+
+        {/* Task 2 Section */}
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Task 2 - Essay Writing
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Task 2 requires students to write an argumentative essay on a given topic
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="task2-title">Prompt Title</Label>
+              <Input
+                id="task2-title"
+                value={task2.title}
+                onChange={(e) => setTask2(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g., Some people think that..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task2-instructions">Instructions (Essay Question)</Label>
+              <Textarea
+                id="task2-instructions"
+                rows={6}
+                value={task2.instructions}
+                onChange={(e) => setTask2(prev => ({ ...prev, instructions: e.target.value }))}
+                placeholder="Write the complete essay question and instructions here..."
+              />
+            </div>
+
+            <Button 
+              onClick={() => saveTask(2)}
+              disabled={loading}
+              className="w-full"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Task 2
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Test Info */}
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Total Time</p>
+                <p className="font-medium">60 minutes</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Task 1 Time</p>
+                <p className="font-medium">20 minutes</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Task 2 Time</p>
+                <p className="font-medium">40 minutes</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Test Type</p>
+                <p className="font-medium">IELTS Writing</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default AdminIELTSWritingTest;

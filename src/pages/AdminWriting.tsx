@@ -24,15 +24,17 @@ const AdminWriting = () => {
   const [uploadBookNumber, setUploadBookNumber] = useState<number>(20);
   const [uploadSectionNumber, setUploadSectionNumber] = useState<number>(1);
   const [editingSection, setEditingSection] = useState<any>(null);
-  const [promptTitle, setPromptTitle] = useState("");
-  const [promptText, setPromptText] = useState("");
-  const [taskType, setTaskType] = useState("task1");
-  const [taskNumber, setTaskNumber] = useState(1);
-  const [wordLimit, setWordLimit] = useState(250);
-  const [timeLimit, setTimeLimit] = useState(20);
-  const [sampleAnswer, setSampleAnswer] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState("");
+  // Part 1 fields
+  const [part1Title, setPart1Title] = useState("");
+  const [part1Text, setPart1Text] = useState("");
+  const [part1Answer, setPart1Answer] = useState("");
+  const [part1ImageFile, setPart1ImageFile] = useState<File | null>(null);
+  const [part1ImageUrl, setPart1ImageUrl] = useState("");
+
+  // Part 2 fields
+  const [part2Title, setPart2Title] = useState("");
+  const [part2Text, setPart2Text] = useState("");
+  const [part2Answer, setPart2Answer] = useState("");
 
   useEffect(() => {
     loadCambridgeStructure();
@@ -97,29 +99,29 @@ const AdminWriting = () => {
 
   const handleUpload = async () => {
     try {
-      if (!promptTitle || !promptText) {
+      if (!part1Title || !part1Text || !part2Title || !part2Text) {
         toast({
           title: "Error",
-          description: "Please provide prompt title and text",
+          description: "Please provide titles and texts for both Part 1 and Part 2",
           variant: "destructive"
         });
         return;
       }
 
-      let finalImageUrl = imageUrl;
+      let part1FinalImageUrl = part1ImageUrl;
 
-      // Upload image if provided (for Task 1)
-      if (imageFile && taskType === "task1") {
-        console.log('📸 Uploading Task 1 image...', imageFile.name);
+      // Upload image for Part 1 if provided
+      if (part1ImageFile) {
+        console.log('📸 Uploading Part 1 image...', part1ImageFile.name);
         try {
-          const uploadResult = await uploadAudio(imageFile); // Reusing upload function for images
+          const uploadResult = await uploadAudio(part1ImageFile); // Reusing upload function for images
           if (uploadResult.success) {
-            finalImageUrl = uploadResult.url;
-            console.log('✅ Task 1 image uploaded successfully:', finalImageUrl);
+            part1FinalImageUrl = uploadResult.url;
+            console.log('✅ Part 1 image uploaded successfully:', part1FinalImageUrl);
           } else {
             toast({
               title: "Image Upload Failed",
-              description: "Failed to upload Task 1 image. Continuing without image.",
+              description: "Failed to upload Part 1 image. Continuing without image.",
               variant: "destructive"
             });
           }
@@ -133,44 +135,60 @@ const AdminWriting = () => {
         }
       }
 
-      const promptData = {
-        title: promptTitle,
-        prompt_text: promptText,
-        task_type: taskType,
-        task_number: taskNumber,
-        word_limit: wordLimit,
-        time_limit: timeLimit,
-        sample_answer: sampleAnswer,
+      // Create Part 1 prompt
+      const part1Data = {
+        title: part1Title,
+        prompt_text: part1Text,
+        task_type: "Task 1",
+        task_number: 1,
+        word_limit: null, // No word limit
+        time_limit: 60, // 60 minutes total for both parts
+        sample_answer: part1Answer,
         test_number: uploadSectionNumber,
         cambridge_book: `C${uploadBookNumber}`,
-        image_url: finalImageUrl || null
+        image_url: part1FinalImageUrl || null
       };
 
-      console.log('📝 Creating writing prompt with data:', promptData);
+      // Create Part 2 prompt
+      const part2Data = {
+        title: part2Title,
+        prompt_text: part2Text,
+        task_type: "Task 2",
+        task_number: 2,
+        word_limit: null, // No word limit
+        time_limit: 60, // 60 minutes total for both parts
+        sample_answer: part2Answer,
+        test_number: uploadSectionNumber,
+        cambridge_book: `C${uploadBookNumber}`,
+        image_url: null
+      };
 
-      await createContent('writing_prompts', promptData);
+      console.log('📝 Creating writing prompts:', { part1Data, part2Data });
+
+      // Create both parts
+      await createContent('writing_prompts', part1Data);
+      await createContent('writing_prompts', part2Data);
 
       toast({
         title: "Success",
-        description: `Writing prompt uploaded to Cambridge ${uploadBookNumber}, Test ${uploadSectionNumber}${finalImageUrl ? ' with image' : ''}`,
+        description: `Writing test created with Part 1${part1FinalImageUrl ? ' (with image)' : ''} and Part 2 for Cambridge ${uploadBookNumber}, Test ${uploadSectionNumber}`,
       });
 
       // Reset form and close dialog
-      setPromptTitle("");
-      setPromptText("");
-      setTaskType("task1");
-      setTaskNumber(1);
-      setWordLimit(250);
-      setTimeLimit(20);
-      setSampleAnswer("");
-      setImageFile(null);
-      setImageUrl("");
+      setPart1Title("");
+      setPart1Text("");
+      setPart1Answer("");
+      setPart1ImageFile(null);
+      setPart1ImageUrl("");
+      setPart2Title("");
+      setPart2Text("");
+      setPart2Answer("");
       setShowUploadDialog(false);
       loadCambridgeStructure();
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to upload prompt",
+        description: error.message || "Failed to upload prompts",
         variant: "destructive"
       });
     }
@@ -267,7 +285,7 @@ const AdminWriting = () => {
             style={{ background: 'var(--gradient-button)', border: 'none' }}
           >
             <Upload className="w-4 h-4 mr-2" />
-            Upload Prompt
+            Create Writing Test
           </Button>
         </div>
 
@@ -440,7 +458,7 @@ const AdminWriting = () => {
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
           <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Upload Prompt to Cambridge {uploadBookNumber}, Test {uploadSectionNumber}</DialogTitle>
+              <DialogTitle>Create Writing Test - Cambridge {uploadBookNumber}, Test {uploadSectionNumber}</DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
               {/* Book and Test Selection */}
@@ -473,201 +491,202 @@ const AdminWriting = () => {
                 </div>
               </div>
 
-              {/* Writing Prompt Input */}
+              {/* Part 1 Input */}
               <Card className="rounded-2xl border-light-border" style={{ background: 'white' }}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-foreground">
                     <PenTool className="w-5 h-5" />
-                    Writing Prompt
+                    Part 1 (Visual Task)
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Input
-                    placeholder="Prompt Title (e.g., 'Task 1: Bar Chart Analysis')"
-                    value={promptTitle}
-                    onChange={(e) => setPromptTitle(e.target.value)}
+                    placeholder="Part 1 Title (e.g., 'Task 1: Bar Chart Analysis')"
+                    value={part1Title}
+                    onChange={(e) => setPart1Title(e.target.value)}
                     className="rounded-xl border-light-border"
                   />
                   
-                  <div className="grid grid-cols-3 gap-4">
-                    <Select value={taskType} onValueChange={setTaskType}>
-                      <SelectTrigger className="rounded-xl border-light-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="task1">Task 1</SelectItem>
-                        <SelectItem value="task2">Task 2</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Input
-                      type="number"
-                      placeholder="Task Number"
-                      value={taskNumber}
-                      onChange={(e) => setTaskNumber(parseInt(e.target.value))}
-                      className="rounded-xl border-light-border"
-                    />
-                    
-                    <Input
-                      type="number"
-                      placeholder={taskType === 'task1' ? 'Minimum 150 words' : 'Minimum 250 words'}
-                      value={wordLimit}
-                      onChange={(e) => setWordLimit(parseInt(e.target.value))}
-                      className="rounded-xl border-light-border"
-                    />
-                  </div>
+                  <Textarea
+                    placeholder="Part 1 prompt text..."
+                    value={part1Text}
+                    onChange={(e) => setPart1Text(e.target.value)}
+                    rows={4}
+                    className="rounded-xl border-light-border"
+                  />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Part 1 Image Upload */}
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-foreground">
+                      Part 1 Image Upload (PNG, JPG, JPEG only)
+                    </label>
+                    
+                    <div className="border-2 border-dashed border-light-border rounded-xl p-6 hover:border-primary/50 transition-colors">
+                      <div className="text-center">
+                        <Button
+                          type="button"
+                          variant="default"
+                          onClick={() => document.getElementById('part1-image-upload')?.click()}
+                          className="rounded-xl h-14 px-8 text-sm font-semibold"
+                          style={{ background: 'var(--gradient-button)', border: 'none' }}
+                        >
+                          <Upload className="w-5 h-5 mr-2" />
+                          {part1ImageFile ? 'Change Image' : 'Upload Chart/Graph Image'}
+                        </Button>
+                        
+                        <p className="text-xs text-warm-gray mt-2">
+                          PNG, JPG, JPEG only • Max 10MB • No PDF files
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <input
+                      id="part1-image-upload"
+                      type="file"
+                      accept="image/png,image/jpg,image/jpeg"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const validTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+                          if (!validTypes.includes(file.type)) {
+                            toast({
+                              title: "Invalid File Type",
+                              description: "Please upload PNG, JPG, or JPEG images only.",
+                              variant: "destructive"
+                            });
+                            e.target.value = '';
+                            return;
+                          }
+                          
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({
+                              title: "File Too Large",
+                              description: "Please upload an image smaller than 10MB.",
+                              variant: "destructive"
+                            });
+                            e.target.value = '';
+                            return;
+                          }
+                          
+                          setPart1ImageFile(file);
+                          setPart1ImageUrl('');
+                          
+                          toast({
+                            title: "Image Selected",
+                            description: `${file.name} ready for upload`,
+                          });
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    
+                    {/* Image Preview */}
+                    {part1ImageFile && (
+                      <div className="bg-white border border-light-border rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-foreground">
+                            Image Preview:
+                          </span>
+                          <span className="text-xs text-green-600 font-medium">
+                            ✅ {part1ImageFile.name} ({(part1ImageFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <img 
+                          src={URL.createObjectURL(part1ImageFile)} 
+                          alt="Part 1 preview" 
+                          className="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm mx-auto"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="text-center text-sm text-warm-gray">
+                      <span className="font-medium">OR</span>
+                    </div>
+                    
                     <Input
-                      type="number"
-                      placeholder="Time Limit (minutes)"
-                      value={timeLimit}
-                      onChange={(e) => setTimeLimit(parseInt(e.target.value))}
+                      placeholder="Enter image URL (alternative to file upload)"
+                      value={part1ImageUrl}
+                      onChange={(e) => {
+                        setPart1ImageUrl(e.target.value);
+                        if (e.target.value) {
+                          setPart1ImageFile(null);
+                        }
+                      }}
                       className="rounded-xl border-light-border"
                     />
+                    
+                    {part1ImageUrl && !part1ImageFile && (
+                      <div className="bg-white border border-light-border rounded-xl p-4">
+                        <p className="text-sm font-medium text-foreground mb-2">URL Preview:</p>
+                        <img 
+                          src={part1ImageUrl} 
+                          alt="Part 1 URL preview" 
+                          className="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm mx-auto"
+                          onError={() => {
+                            toast({
+                              title: "Invalid Image URL",
+                              description: "Please check the image URL and try again.",
+                              variant: "destructive"
+                            });
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   <Textarea
-                    placeholder="Writing prompt text..."
-                    value={promptText}
-                    onChange={(e) => setPromptText(e.target.value)}
+                    placeholder="Band 9 model answer for Part 1"
+                    value={part1Answer}
+                    onChange={(e) => setPart1Answer(e.target.value)}
                     rows={6}
                     className="rounded-xl border-light-border"
                   />
+                </CardContent>
+              </Card>
 
-                  {/* Task 1 Image Upload - Fixed */}
-                  {taskType === "task1" && (
-                    <div className="space-y-4">
-                      <label className="block text-sm font-medium text-foreground">
-                        Task 1 Image Upload (PNG, JPG, JPEG only)
-                      </label>
-                      
-                      <div className="border-2 border-dashed border-light-border rounded-xl p-6 hover:border-primary/50 transition-colors">
-                        <div className="text-center">
-                          <Button
-                            type="button"
-                            variant="default"
-                            onClick={() => document.getElementById('task1-image-upload')?.click()}
-                            className="rounded-xl h-14 px-8 text-sm font-semibold"
-                            style={{ background: 'var(--gradient-button)', border: 'none' }}
-                          >
-                            <Upload className="w-5 h-5 mr-2" />
-                            {imageFile ? 'Change Image' : 'Upload Chart/Graph Image'}
-                          </Button>
-                          
-                          <p className="text-xs text-warm-gray mt-2">
-                            PNG, JPG, JPEG only • Max 10MB • No PDF files
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <input
-                        id="task1-image-upload"
-                        type="file"
-                        accept="image/png,image/jpg,image/jpeg"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            // Validate file type strictly
-                            const validTypes = ['image/png', 'image/jpg', 'image/jpeg'];
-                            if (!validTypes.includes(file.type)) {
-                              toast({
-                                title: "Invalid File Type",
-                                description: "Please upload PNG, JPG, or JPEG images only. PDF files are not supported for image uploads.",
-                                variant: "destructive"
-                              });
-                              e.target.value = ''; // Clear the input
-                              return;
-                            }
-                            
-                            // Validate file size (max 10MB)
-                            if (file.size > 10 * 1024 * 1024) {
-                              toast({
-                                title: "File Too Large",
-                                description: "Please upload an image smaller than 10MB.",
-                                variant: "destructive"
-                              });
-                              e.target.value = ''; // Clear the input
-                              return;
-                            }
-                            
-                            setImageFile(file);
-                            setImageUrl(''); // Clear URL input when file is selected
-                            console.log('📸 Valid Task 1 image selected:', file.name, file.type, `${(file.size / 1024 / 1024).toFixed(2)}MB`);
-                            
-                            toast({
-                              title: "Image Selected",
-                              description: `${file.name} ready for upload`,
-                            });
-                          }
-                        }}
-                        className="hidden"
-                      />
-                      
-                      {/* Image Preview */}
-                      {imageFile && (
-                        <div className="bg-white border border-light-border rounded-xl p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-foreground">
-                              Image Preview:
-                            </span>
-                            <span className="text-xs text-green-600 font-medium">
-                              ✅ {imageFile.name} ({(imageFile.size / 1024 / 1024).toFixed(2)} MB)
-                            </span>
-                          </div>
-                          <img 
-                            src={URL.createObjectURL(imageFile)} 
-                            alt="Task 1 preview" 
-                            className="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm mx-auto"
-                          />
-                        </div>
-                      )}
-                      
-                      <div className="text-center text-sm text-warm-gray">
-                        <span className="font-medium">OR</span>
-                      </div>
-                      
-                      <Input
-                        placeholder="Enter image URL (alternative to file upload)"
-                        value={imageUrl}
-                        onChange={(e) => {
-                          setImageUrl(e.target.value);
-                          if (e.target.value) {
-                            setImageFile(null); // Clear file when URL is entered
-                          }
-                        }}
-                        className="rounded-xl border-light-border"
-                      />
-                      
-                      {imageUrl && !imageFile && (
-                        <div className="bg-white border border-light-border rounded-xl p-4">
-                          <p className="text-sm font-medium text-foreground mb-2">URL Preview:</p>
-                          <img 
-                            src={imageUrl} 
-                            alt="Task 1 URL preview" 
-                            className="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm mx-auto"
-                            onError={() => {
-                              toast({
-                                title: "Invalid Image URL",
-                                description: "Please check the image URL and try again.",
-                                variant: "destructive"
-                              });
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {/* Part 2 Input */}
+              <Card className="rounded-2xl border-light-border" style={{ background: 'white' }}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-foreground">
+                    <PenTool className="w-5 h-5" />
+                    Part 2 (Essay Task)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="Part 2 Title (e.g., 'Task 2: Opinion Essay')"
+                    value={part2Title}
+                    onChange={(e) => setPart2Title(e.target.value)}
+                    className="rounded-xl border-light-border"
+                  />
                   
                   <Textarea
-                    placeholder="Sample answer (optional)"
-                    value={sampleAnswer}
-                    onChange={(e) => setSampleAnswer(e.target.value)}
+                    placeholder="Part 2 prompt text..."
+                    value={part2Text}
+                    onChange={(e) => setPart2Text(e.target.value)}
+                    rows={4}
+                    className="rounded-xl border-light-border"
+                  />
+                  
+                  <Textarea
+                    placeholder="Band 9 model answer for Part 2"
+                    value={part2Answer}
+                    onChange={(e) => setPart2Answer(e.target.value)}
                     rows={8}
                     className="rounded-xl border-light-border"
                   />
                 </CardContent>
               </Card>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h4 className="font-medium text-blue-900 mb-2">Test Configuration</h4>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>• Total time: 60 minutes for both parts</p>
+                  <p>• No word limit restrictions</p>
+                  <p>• Part 1: Visual data analysis task</p>
+                  <p>• Part 2: Academic essay task</p>
+                </div>
+              </div>
               
               <div className="flex gap-3">
                 <Button
@@ -676,7 +695,7 @@ const AdminWriting = () => {
                   className="rounded-xl flex-1"
                   style={{ background: 'var(--gradient-button)', border: 'none' }}
                 >
-                  Upload Prompt
+                  Create Writing Test
                 </Button>
                 <Button
                   variant="outline"

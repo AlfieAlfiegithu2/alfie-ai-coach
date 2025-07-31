@@ -151,6 +151,13 @@ const EnhancedReadingTest = () => {
         const partNumber = parseInt(partNum);
         const firstQuestion = partQuestions[0];
         
+        console.log(`Processing Part ${partNumber}:`, {
+          questionCount: partQuestions.length,
+          firstQuestionId: firstQuestion?.id,
+          hasPassageText: !!firstQuestion?.passage_text,
+          passageTextLength: firstQuestion?.passage_text?.length || 0
+        });
+        
         // Use title from part titles if available, otherwise extract from passage
         let passageTitle = partTitles[partNumber] || `Reading Passage ${partNumber}`;
         if (!partTitles[partNumber] && firstQuestion?.passage_text) {
@@ -161,11 +168,29 @@ const EnhancedReadingTest = () => {
           }
         }
         
+        // Try to find passage content from any question in this part
+        let passageContent = firstQuestion?.passage_text;
+        if (!passageContent) {
+          // Look for passage_text in other questions of this part
+          for (const question of partQuestions) {
+            if (question.passage_text) {
+              passageContent = question.passage_text;
+              console.log(`Found passage content in question ${question.id} for part ${partNumber}`);
+              break;
+            }
+          }
+        }
+        
+        if (!passageContent) {
+          console.warn(`No passage content found for Part ${partNumber}`);
+          passageContent = 'Passage content not available - please contact administrator';
+        }
+        
         partsData[partNumber] = {
           passage: {
             id: `passage-${partNumber}`,
             title: passageTitle,
-            content: firstQuestion?.passage_text || 'Passage content not available',
+            content: passageContent,
             part_number: partNumber,
             test_number: parseInt(testId)
           },

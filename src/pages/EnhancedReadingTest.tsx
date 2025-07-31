@@ -126,15 +126,35 @@ const EnhancedReadingTest = () => {
       // Group questions by part
       const partsByNumber: {[key: number]: any[]} = {};
       const partTitles: {[key: number]: string} = {};
+      const allPassageTexts: {[key: number]: string} = {};
       
+      // First pass: collect all passage texts and titles
       questions.forEach(question => {
-        // Skip questions with question_number_in_part = 0 as they are title placeholders
+        // Collect passage text from any question that has it
+        if (question.passage_text && question.passage_text.trim()) {
+          allPassageTexts[question.part_number] = question.passage_text;
+        }
+        
+        // Handle title extraction - check for question_number_in_part = 0 OR if question text looks like a title
         if (question.question_number_in_part === 0) {
-          // Extract title from these placeholder questions
           if (!partTitles[question.part_number] && question.question_text) {
             partTitles[question.part_number] = question.question_text;
+            console.log(`📋 Found title for Part ${question.part_number}: "${question.question_text}"`);
           }
           return; // Don't include title questions in the actual questions
+        }
+        
+        // Check if this looks like a title question (short text, no question marks, etc.)
+        const isLikelyTitle = question.question_text && 
+                             question.question_text.length < 100 && 
+                             !question.question_text.includes('?') && 
+                             !question.question_text.includes('___') &&
+                             question.question_number_in_part === 1;
+        
+        if (isLikelyTitle && !partTitles[question.part_number]) {
+          partTitles[question.part_number] = question.question_text;
+          console.log(`📋 Found title-like question for Part ${question.part_number}: "${question.question_text}"`);
+          return; // Don't include this as a regular question
         }
         
         // Only include actual questions (not titles)
@@ -143,6 +163,9 @@ const EnhancedReadingTest = () => {
         }
         partsByNumber[question.part_number].push(question);
       });
+
+      console.log('🗂️ Passage texts found:', Object.keys(allPassageTexts).map(p => `Part ${p}: ${allPassageTexts[parseInt(p)]?.length || 0} chars`));
+      console.log('📚 Part titles:', partTitles);
 
       console.log('Parts organized:', Object.keys(partsByNumber).map(p => `Part ${p}: ${partsByNumber[parseInt(p)].length} questions`));
 
@@ -168,22 +191,29 @@ const EnhancedReadingTest = () => {
           }
         }
         
-        // Try to find passage content from any question in this part
-        let passageContent = firstQuestion?.passage_text;
+        // Use collected passage text for this part
+        let passageContent = allPassageTexts[partNumber];
+        
+        // If not found in collected texts, try to find from questions in this part
         if (!passageContent) {
-          // Look for passage_text in other questions of this part
-          for (const question of partQuestions) {
-            if (question.passage_text) {
-              passageContent = question.passage_text;
-              console.log(`Found passage content in question ${question.id} for part ${partNumber}`);
-              break;
+          passageContent = firstQuestion?.passage_text;
+          if (!passageContent) {
+            // Look for passage_text in other questions of this part
+            for (const question of partQuestions) {
+              if (question.passage_text) {
+                passageContent = question.passage_text;
+                console.log(`📖 Found passage content in question ${question.id} for part ${partNumber}`);
+                break;
+              }
             }
           }
         }
         
         if (!passageContent) {
-          console.warn(`No passage content found for Part ${partNumber}`);
+          console.error(`❌ No passage content found for Part ${partNumber}`);
           passageContent = 'Passage content not available - please contact administrator';
+        } else {
+          console.log(`✅ Using passage content for Part ${partNumber} (${passageContent.length} chars)`);
         }
         
         partsData[partNumber] = {

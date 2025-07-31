@@ -27,7 +27,158 @@ interface Question {
   section?: string;
 }
 
-// Question Item Component for editing/deleting existing questions
+interface Part {
+  title: string;
+  passage: string;
+  questions: Question[];
+}
+
+// Student Preview Component
+const StudentPreview = ({ 
+  title, 
+  passage, 
+  questions, 
+  partNumber 
+}: { 
+  title: string;
+  passage: string;
+  questions: Question[];
+  partNumber: number;
+}) => {
+  const renderQuestion = (question: Question, index: number) => {
+    const { question_type, question_text, choices, original_type } = question;
+    
+    switch (question_type) {
+      case 'multiple_choice':
+        const choiceOptions = choices ? choices.split(';') : [];
+        return (
+          <div key={index} className="mb-4 p-4 border rounded-lg">
+            <p className="font-medium mb-3">
+              {question.question_number_in_part}. {question_text}
+            </p>
+            <div className="space-y-2">
+              {choiceOptions.map((choice, i) => (
+                <label key={i} className="flex items-center space-x-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name={`question-${question.question_number_in_part}`}
+                    className="w-4 h-4" 
+                    disabled 
+                  />
+                  <span className="text-sm">{choice.trim()}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        );
+        
+      case 'true_false_not_given':
+        return (
+          <div key={index} className="mb-4 p-4 border rounded-lg">
+            <p className="font-medium mb-3">
+              {question.question_number_in_part}. {question_text}
+            </p>
+            <div className="space-y-2">
+              {['True', 'False', 'Not Given'].map((option, i) => (
+                <label key={i} className="flex items-center space-x-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name={`question-${question.question_number_in_part}`}
+                    className="w-4 h-4" 
+                    disabled 
+                  />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        );
+        
+      case 'short_answer':
+      case 'completion':
+        return (
+          <div key={index} className="mb-4 p-4 border rounded-lg">
+            <p className="font-medium mb-3">
+              {question.question_number_in_part}. {question_text}
+            </p>
+            <input 
+              type="text" 
+              className="w-full p-2 border rounded" 
+              placeholder="Enter your answer..."
+              disabled
+            />
+          </div>
+        );
+        
+      case 'matching':
+        return (
+          <div key={index} className="mb-4 p-4 border rounded-lg">
+            <p className="font-medium mb-3">
+              {question.question_number_in_part}. {question_text}
+            </p>
+            <select className="w-full p-2 border rounded" disabled>
+              <option>Select an option...</option>
+            </select>
+          </div>
+        );
+        
+      default:
+        return (
+          <div key={index} className="mb-4 p-4 border rounded-lg">
+            <p className="font-medium mb-3">
+              {question.question_number_in_part}. {question_text}
+            </p>
+            <input 
+              type="text" 
+              className="w-full p-2 border rounded" 
+              placeholder="Enter your answer..."
+              disabled
+            />
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="mt-6 p-6 bg-gray-50 rounded-lg border">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Student Preview - Part {partNumber}</h3>
+        <span className="text-sm text-gray-500">Read-only preview</span>
+      </div>
+      
+      {title && (
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-center mb-4">{title}</h2>
+        </div>
+      )}
+      
+      {passage && (
+        <div className="mb-6 p-4 bg-white rounded border">
+          <h3 className="font-semibold mb-3">Reading Passage</h3>
+          <div className="prose max-w-none">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">{passage}</p>
+          </div>
+        </div>
+      )}
+      
+      {questions.length > 0 && (
+        <div className="bg-white rounded border p-4">
+          <h3 className="font-semibold mb-4">Questions</h3>
+          <div className="space-y-4">
+            {questions
+              .filter(q => q.question_number_in_part > 0) // Filter out title questions
+              .sort((a, b) => a.question_number_in_part - b.question_number_in_part)
+              .map((question, index) => renderQuestion(question, index))}
+          </div>
+        </div>
+      )}
+      
+      {!title && !passage && questions.length === 0 && (
+        <p className="text-center text-gray-500 py-8">No content to preview yet</p>
+      )}
+    </div>
+  );
+};
 const QuestionItem = ({ 
   question, 
   onQuestionUpdated 
@@ -390,15 +541,19 @@ const PartUploader = ({
   testId: string; 
   onQuestionsUpdated: () => void;
 }) => {
+  const [title, setTitle] = useState('');
   const [passage, setPassage] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [existingQuestions, setExistingQuestions] = useState<Question[]>([]);
+  const [existingPassage, setExistingPassage] = useState('');
+  const [existingTitle, setExistingTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
-  // Load existing questions for this part
+  // Load existing questions and passage for this part
   useEffect(() => {
-    const loadExistingQuestions = async () => {
+    const loadExistingData = async () => {
       try {
         const { data, error } = await supabase
           .from('questions')
@@ -409,12 +564,23 @@ const PartUploader = ({
 
         if (!error && data) {
           setExistingQuestions(data);
+          // Get passage and title from the first question if it exists
+          if (data.length > 0 && data[0].passage_text) {
+            setExistingPassage(data[0].passage_text);
+            setPassage(data[0].passage_text);
+          }
+          // Check for title in metadata (we'll store it in passage_text for first question)
+          const titleQuestion = data.find(q => q.question_number_in_part === 0);
+          if (titleQuestion?.question_text) {
+            setExistingTitle(titleQuestion.question_text);
+            setTitle(titleQuestion.question_text);
+          }
         }
       } catch (err) {
-        console.error('Error loading existing questions:', err);
+        console.error('Error loading existing data:', err);
       }
     };
-    loadExistingQuestions();
+    loadExistingData();
   }, [testId, partNumber]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -481,8 +647,8 @@ const PartUploader = ({
   };
 
   const handleSavePart = async () => {
-    if (questions.length === 0) {
-      toast.error('No questions to upload. Please select a valid CSV file or add questions manually.');
+    if (questions.length === 0 && !title.trim() && !passage.trim()) {
+      toast.error('Please add a title, passage, or questions before saving.');
       return;
     }
 
@@ -495,12 +661,35 @@ const PartUploader = ({
       ...q,
       test_id: testId,
       part_number: partNumber,
-      passage_text: q.question_number_in_part === 1 ? passage : null,
+      passage_text: passage.trim() || null,
     }));
+
+    // Add title as a special question with question_number_in_part = 0
+    if (title.trim()) {
+      questionsWithData.unshift({
+        test_id: testId,
+        part_number: partNumber,
+        question_number_in_part: 0,
+        question_text: title.trim(),
+        question_type: 'title',
+        correct_answer: '',
+        passage_text: passage.trim() || null,
+      });
+    }
 
     console.log('Questions to save:', questionsWithData);
 
     try {
+      // Delete existing title if updating
+      if (existingTitle) {
+        await supabase
+          .from('questions')
+          .delete()
+          .eq('test_id', testId)
+          .eq('part_number', partNumber)
+          .eq('question_number_in_part', 0);
+      }
+
       const { data, error: functionError } = await supabase.functions.invoke('admin-content', {
         body: { 
           action: 'upload_questions',
@@ -525,7 +714,18 @@ const PartUploader = ({
         .eq('part_number', partNumber)
         .order('question_number_in_part');
       
-      if (newQuestions) setExistingQuestions(newQuestions);
+      if (newQuestions) {
+        const actualQuestions = newQuestions.filter(q => q.question_number_in_part > 0);
+        const titleQuestion = newQuestions.find(q => q.question_number_in_part === 0);
+        
+        setExistingQuestions(actualQuestions);
+        if (titleQuestion) {
+          setExistingTitle(titleQuestion.question_text);
+        }
+        if (actualQuestions.length > 0 && actualQuestions[0].passage_text) {
+          setExistingPassage(actualQuestions[0].passage_text);
+        }
+      }
       
       // Clear the uploaded questions after successful save
       setQuestions([]);
@@ -599,6 +799,21 @@ const PartUploader = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
+          <Label htmlFor={`title-${partNumber}`}>Part Title</Label>
+          <Input
+            id={`title-${partNumber}`}
+            placeholder={`Enter title for Part ${partNumber}...`}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          {existingTitle && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Current title: {existingTitle}
+            </p>
+          )}
+        </div>
+
+        <div>
           <Label htmlFor={`passage-${partNumber}`}>Reading Passage</Label>
           <Textarea
             id={`passage-${partNumber}`}
@@ -607,6 +822,11 @@ const PartUploader = ({
             value={passage}
             onChange={(e) => setPassage(e.target.value)}
           />
+          {existingPassage && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Current passage: {existingPassage.substring(0, 100)}...
+            </p>
+          )}
         </div>
 
         <div>
@@ -685,14 +905,35 @@ const PartUploader = ({
           </div>
         )}
 
-        <Button
-          onClick={handleSavePart}
-          disabled={isLoading}
-          className="w-full"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isLoading ? 'Saving...' : `Save Part ${partNumber}`}
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            onClick={handleSavePart}
+            disabled={isLoading}
+            className="flex-1"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {isLoading ? 'Saving...' : `Save Part ${partNumber}`}
+          </Button>
+          
+          {(existingQuestions.length > 0 || existingPassage || existingTitle) && (
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview(!showPreview)}
+              disabled={isLoading}
+            >
+              {showPreview ? 'Hide Preview' : 'Preview'}
+            </Button>
+          )}
+        </div>
+
+        {showPreview && (existingQuestions.length > 0 || existingPassage || existingTitle) && (
+          <StudentPreview 
+            title={existingTitle || title}
+            passage={existingPassage || passage}
+            questions={existingQuestions}
+            partNumber={partNumber}
+          />
+        )}
       </CardContent>
     </Card>
   );

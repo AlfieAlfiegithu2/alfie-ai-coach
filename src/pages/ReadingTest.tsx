@@ -133,7 +133,15 @@ const ReadingTest = () => {
 
       // Group questions by part
       const partsByNumber: {[key: number]: any[]} = {};
+      const partTitles: {[key: number]: string} = {};
+      
       questions.forEach(question => {
+        if (question.question_number_in_part === 0) {
+          // This is a title question
+          partTitles[question.part_number] = question.question_text;
+          return;
+        }
+        
         if (!partsByNumber[question.part_number]) {
           partsByNumber[question.part_number] = [];
         }
@@ -144,11 +152,12 @@ const ReadingTest = () => {
       Object.entries(partsByNumber).forEach(([partNum, partQuestions]) => {
         const partNumber = parseInt(partNum);
         const firstQuestion = partQuestions[0];
+        const partTitle = partTitles[partNumber] || `Reading Passage ${partNumber}`;
         
         partsData[partNumber] = {
           passage: {
             id: `passage-${partNumber}`,
-            title: `Reading Passage ${partNumber}`,
+            title: partTitle,
             content: firstQuestion?.passage_text || 'Passage content not available',
             part_number: partNumber,
             test_number: parseInt(testId)

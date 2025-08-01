@@ -217,6 +217,17 @@ const AdminIELTSWritingTest = () => {
       // Reload test data to check if both tasks are completed
       await loadTestData();
       
+      // If both tasks are now completed, lock the content
+      const { data: questionsCheck } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('test_id', testId)
+        .in('question_type', ['Task 1', 'Task 2']);
+      
+      if (questionsCheck && questionsCheck.length === 2) {
+        setIsModifying(false);
+      }
+      
       toast({
         title: "Success",
         description: `Task ${taskNumber} saved successfully`

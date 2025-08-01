@@ -89,9 +89,19 @@ const IELTSWritingTestInterface = () => {
       }
 
       if (task2Question) {
+        // For Task 2 (writing essays), if question_text starts with "Paragraph", use the first line of passage_text as title
+        let taskTitle = task2Question.question_text || "";
+        if (taskTitle.toLowerCase().startsWith('paragraph') && task2Question.passage_text) {
+          // Extract the first line which should be the main title
+          const firstLine = task2Question.passage_text.split('\n')[0];
+          if (firstLine && !firstLine.startsWith('A ') && !firstLine.startsWith('B ')) {
+            taskTitle = firstLine;
+          }
+        }
+        
         setTask2({
           id: task2Question.id,
-          title: task2Question.question_text || "",
+          title: taskTitle,
           instructions: task2Question.passage_text || ""
         });
       }
@@ -143,10 +153,17 @@ const IELTSWritingTestInterface = () => {
 
 **Task ${currentTask} Details:**
 - Prompt: "${currentTaskData.title}"
-- Instructions: "${currentTaskData.instructions}"`;
+- Instructions: "${currentTaskData.instructions.substring(0, 500)}${currentTaskData.instructions.length > 500 ? '...' : ''}"`;
 
       if (currentTask === 1 && currentTaskData.imageContext) {
         contextPrompt += `\n- Image Context: "${currentTaskData.imageContext}"`;
+      }
+      
+      // Add task type context to help AI understand what the student should focus on
+      if (currentTask === 1) {
+        contextPrompt += `\n- Task Type: Data Description (charts, graphs, tables, diagrams)`;
+      } else {
+        contextPrompt += `\n- Task Type: Essay Writing (present arguments, opinions with examples)`;
       }
 
       // Add current writing progress if available

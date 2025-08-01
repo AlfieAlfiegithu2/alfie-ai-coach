@@ -5,14 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings, ArrowLeft } from "lucide-react";
+import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings, ArrowLeft, Plus } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useAdminContent } from "@/hooks/useAdminContent";
 import CSVImport from "@/components/CSVImport";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminIELTS = () => {
   const navigate = useNavigate();
   const { admin, loading } = useAdminAuth();
+  const { createContent } = useAdminContent();
+  const [tests, setTests] = useState<any[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newTestName, setNewTestName] = useState("");
   const [stats, setStats] = useState({
     totalTests: 0,
     activeStudents: 0,
@@ -20,9 +27,53 @@ const AdminIELTS = () => {
     avgScore: 0
   });
 
+  const loadTests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTests(data || []);
+      setStats(prev => ({ ...prev, totalTests: (data || []).length }));
+    } catch (error) {
+      console.error('Error loading tests:', error);
+      toast.error('Failed to load tests');
+    }
+  };
+
+  const createNewTest = async () => {
+    if (!newTestName.trim()) {
+      toast.error('Please enter a test name');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await createContent('tests', {
+        test_name: newTestName,
+        test_type: 'IELTS',
+        module: 'ielts'
+      });
+
+      toast.success('Test created successfully');
+      setNewTestName('');
+      loadTests();
+    } catch (error) {
+      console.error('Error creating test:', error);
+      toast.error('Failed to create test');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   useEffect(() => {
     if (!loading && !admin) {
       navigate('/admin/login');
+    } else if (admin) {
+      loadTests();
     }
   }, [admin, loading, navigate]);
 
@@ -153,19 +204,69 @@ const AdminIELTS = () => {
           </TabsList>
 
           <TabsContent value="content" className="space-y-4">
-            <div className="text-center py-8">
-              <h3 className="text-xl font-semibold mb-4">IELTS Test Management</h3>
-              <p className="text-muted-foreground mb-6">
-                Manage IELTS tests, create new content, and monitor student progress
-              </p>
-              <Button
-                onClick={() => navigate('/admin/ielts/tests')}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                size="lg"
-              >
-                <BookOpen className="w-5 h-5 mr-2" />
-                Manage IELTS Tests
-              </Button>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold">IELTS Tests</h3>
+                  <p className="text-muted-foreground">
+                    Manage your IELTS practice tests
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Test name"
+                    value={newTestName}
+                    onChange={(e) => setNewTestName(e.target.value)}
+                    className="px-3 py-2 border rounded-md"
+                    onKeyPress={(e) => e.key === 'Enter' && createNewTest()}
+                  />
+                  <Button 
+                    onClick={createNewTest}
+                    disabled={isCreating}
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Test
+                  </Button>
+                </div>
+              </div>
+
+              {tests.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {tests.map((test) => (
+                    <Card 
+                      key={test.id} 
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => navigate(`/admin/ielts/test/${test.id}`)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center space-x-2">
+                          <BookOpen className="w-5 h-5 text-primary" />
+                          <span>{test.test_name}</span>
+                        </CardTitle>
+                        <CardDescription>
+                          Created: {new Date(test.created_at).toLocaleDateString()}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>Type: {test.test_type}</span>
+                          <span>Module: {test.module}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No IELTS tests found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create your first IELTS test to get started
+                  </p>
+                </div>
+              )}
             </div>
           </TabsContent>
 

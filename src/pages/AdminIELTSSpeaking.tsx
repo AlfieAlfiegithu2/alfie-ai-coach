@@ -199,14 +199,32 @@ const AdminIELTSSpeaking = () => {
     try {
       let prompts: SpeakingPrompt[] = [];
       
+      console.log(`🔄 Saving Part ${partNumber}...`);
+      
       if (partNumber === 1) {
-        prompts = part1Prompts.filter(p => p.audio_url); // Only save if audio is uploaded
+        // Save all Part 1 prompts regardless of audio (audio and transcription can be added separately)
+        prompts = part1Prompts.map((prompt, index) => ({
+          ...prompt,
+          title: `Interview Question ${index + 1}`,
+          prompt_text: "Audio prompt",
+          part_number: 1,
+          time_limit: 2
+        }));
+        console.log(`📝 Part 1 prompts to save:`, prompts);
       } else if (partNumber === 2) {
-        if (part2Prompt.prompt_text) {
+        if (part2Prompt.prompt_text.trim()) {
           prompts = [part2Prompt];
         }
       } else if (partNumber === 3) {
-        prompts = part3Prompts.filter(p => p.audio_url); // Only save if audio is uploaded
+        // Save all Part 3 prompts regardless of audio (audio and transcription can be added separately)
+        prompts = part3Prompts.map((prompt, index) => ({
+          ...prompt,
+          title: `Discussion Question ${index + 1}`,
+          prompt_text: "Audio prompt",
+          part_number: 3,
+          time_limit: 2
+        }));
+        console.log(`📝 Part 3 prompts to save:`, prompts);
       }
 
       // Delete existing prompts for this part
@@ -225,12 +243,15 @@ const AdminIELTSSpeaking = () => {
           prompt_text: prompt.prompt_text,
           part_number: prompt.part_number,
           time_limit: prompt.time_limit,
-          sample_answer: null, // No sample answers needed
+          sample_answer: null,
           test_number: parseInt(testName) || 1,
           cambridge_book: `Test ${testName}`,
           transcription: prompt.transcription || null,
+          audio_url: prompt.audio_url || null,
           is_locked: true // Lock after saving
         }));
+
+        console.log(`💾 Inserting prompts:`, promptsToInsert);
 
         const { error: insertError } = await supabase
           .from('speaking_prompts')
@@ -383,6 +404,7 @@ const AdminIELTSSpeaking = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleAudioRemove(1, index)}
+                          disabled={isLocked && !isModifying}
                           className="text-red-600 border-red-200 hover:bg-red-50"
                         >
                           Remove
@@ -556,6 +578,7 @@ const AdminIELTSSpeaking = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleAudioRemove(3, index)}
+                          disabled={isLocked && !isModifying}
                           className="text-red-600 border-red-200 hover:bg-red-50"
                         >
                           Remove

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getBandScore } from '@/lib/ielts-scoring';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,28 +54,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   
   const percentage = Math.round((score / totalQuestions) * 100);
   
-  // IELTS Reading band score conversion (Official 0-9 scale)
-  const calculateBandScore = (percentage: number) => {
-    if (percentage >= 97) return 9;
-    if (percentage >= 89) return 8.5;
-    if (percentage >= 82) return 8;
-    if (percentage >= 75) return 7.5;
-    if (percentage >= 68) return 7;
-    if (percentage >= 58) return 6.5;
-    if (percentage >= 50) return 6;
-    if (percentage >= 42) return 5.5;
-    if (percentage >= 34) return 5;
-    if (percentage >= 26) return 4.5;
-    if (percentage >= 18) return 4;
-    if (percentage >= 10) return 3.5;
-    if (percentage >= 5) return 3;
-    if (percentage >= 2) return 2.5;
-    if (percentage >= 1) return 2;
-    if (percentage > 0) return 1;
-    return 0;
-  };
-  
-  const estimatedBandScore = calculateBandScore(percentage);
+  // Use official IELTS band score conversion based on correct answers
+  const estimatedBandScore = getBandScore(score, 'academic-reading');
   
   const getPerformanceLevel = () => {
     if (percentage >= 85) return { level: "Excellent", color: "text-green-600" };

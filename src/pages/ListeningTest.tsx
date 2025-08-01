@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { getBandScore } from '@/lib/ielts-scoring';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -216,20 +217,8 @@ const ListeningTest = () => {
     console.log(`🔍 Sequential Flow: Fetching data for Part ${partNumber}`);
   };
 
-  const getBandScore = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 90) return "9.0";
-    if (percentage >= 80) return "8.0-8.5";
-    if (percentage >= 70) return "7.0-7.5";
-    if (percentage >= 60) return "6.0-6.5";
-    if (percentage >= 50) return "5.0-5.5";
-    if (percentage >= 40) return "4.0-4.5";
-    if (percentage >= 30) return "3.5-4.0";
-    if (percentage >= 20) return "3.0-3.5";
-    if (percentage >= 10) return "2.0-3.0";
-    if (percentage >= 5) return "1.0-2.0";
-    if (percentage > 0) return "0.5-1.0";
-    return "0";
+  const getListeningBandScore = (score: number) => {
+    return getBandScore(score, 'listening').toString();
   };
 
   const formatTime = (seconds: number) => {
@@ -297,7 +286,7 @@ const ListeningTest = () => {
               {isSubmitted && (
                 <div className="text-center">
                   <div className="text-2xl font-bold text-primary">{score}/{questions.length}</div>
-                  <div className="text-sm text-warm-gray">Band {getBandScore(score, questions.length)}</div>
+                  <div className="text-sm text-warm-gray">Band {getListeningBandScore(score)}</div>
                 </div>
               )}
             </div>

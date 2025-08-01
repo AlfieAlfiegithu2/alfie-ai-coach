@@ -1,3 +1,5 @@
+import React from 'react';
+import { getBandScore } from '@/lib/ielts-scoring';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,23 +28,9 @@ const TestResults = ({
   testTitle 
 }: TestResultsProps) => {
   const percentage = Math.round((score / totalQuestions) * 100);
-  const getBandScore = (percentage: number) => {
-    if (percentage >= 90) return 9.0;
-    if (percentage >= 80) return 8.0;
-    if (percentage >= 70) return 7.0;
-    if (percentage >= 60) return 6.5;
-    if (percentage >= 50) return 6.0;
-    if (percentage >= 40) return 5.5;
-    if (percentage >= 30) return 5.0;
-    if (percentage >= 20) return 4.5;
-    if (percentage >= 10) return 4.0;
-    if (percentage >= 5) return 3.0;
-    if (percentage >= 2) return 2.0;
-    if (percentage > 0) return 1.0;
-    return 0;
-  };
-
-  const bandScore = getBandScore(percentage);
+  
+  // Use official IELTS band score conversion based on correct answers
+  const bandScore = getBandScore(score, 'academic-reading');
   const correctAnswers = questions.filter(q => 
     answers[q.id]?.toLowerCase().trim() === q.correct_answer?.toLowerCase().trim()
   );

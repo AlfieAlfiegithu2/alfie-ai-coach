@@ -23,68 +23,83 @@ serve(async (req) => {
       throw new Error('Writing content and prompt are required');
     }
 
-    const feedbackPrompt = `You are an expert IELTS Writing examiner. Analyze this IELTS Academic Writing ${taskType} response comprehensively.
+    const feedbackPrompt = `You are a senior, highly experienced IELTS examiner. Your goal is to provide a holistic and accurate assessment based *only* on the official IELTS band descriptors and scoring rules provided below. Evaluate the student's response against these criteria and justify your feedback by referencing them.
+
+Focus on overall communicative effectiveness. Do not just count errors; explain their impact on the band score for a specific criterion.
+
+You will first provide a whole number band score (0-9) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
+
+Now, please assess the following submission against the relevant band descriptors:
 
 TASK PROMPT: ${prompt}
 
 STUDENT RESPONSE:
 "${writing}"
 
-Provide detailed analysis in the following format:
+[-- IELTS WRITING BAND DESCRIPTORS --]
 
-**WORD COUNT**: [Count and note if appropriate for task]
+Task Achievement / Response:
 
-**TASK ACHIEVEMENT/RESPONSE** (25%):
-- Task requirements addressed: [Rate 1-10]
-- Key features covered: [List what's included/missing]
-- Position clarity: [For Task 2, is the position clear?]
-- Overview effectiveness: [For Task 1, is overview present and effective?]
-- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+Band 9: Fully addresses all parts of the task with a fully developed response.
+Band 8: Sufficiently covers all parts of the task.
+Band 7: Covers all requirements of the task; presents a clear overview/purpose.
+Band 6: Addresses all parts of the task, though some may be more fully covered than others.
+Band 5: Addresses the task only partially.
+Band 4: Responds to the task only in a minimal way.
+Band 3: Does not address the task.
+Band 2: Barely responds to the task.
 
-**COHERENCE & COHESION** (25%):
-- Overall organization: [Rate 1-10]
-- Paragraph structure: [Analyze logical flow]
-- Cohesive devices: [Identify overuse/underuse/misuse]
-- Progression of ideas: [Note any unclear connections]
-- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+Coherence and Cohesion:
 
-**LEXICAL RESOURCE** (25%):
-- Vocabulary range: [Rate 1-10, note sophistication]
-- Accuracy of word choice: [Identify errors/awkward usage]
-- Spelling accuracy: [Count and list errors]
-- Word formation: [Note any issues]
-- Collocations: [Identify natural/unnatural combinations]
-- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+Band 9: Skillful use of cohesion; seamless paragraphing.
+Band 8: Manages all aspects of cohesion well.
+Band 7: Logically organizes information; clear progression; uses a range of cohesive devices appropriately.
+Band 6: Arranges information coherently; clear overall progression.
+Band 5: Some organization, but lack of overall progression; inadequate or repetitive use of cohesive devices.
+Band 4: Information is not logically organized.
+Band 3: Does not organize ideas logically.
+Band 2: Little control of organizational features.
 
-**GRAMMATICAL RANGE & ACCURACY** (25%):
-- Sentence variety: [Analyze simple/complex structures]
-- Grammar accuracy: [Count and categorize errors]
-- Punctuation: [Note errors and patterns]
-- Common error patterns: [Identify systematic issues]
-- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+Lexical Resource (Vocabulary):
 
-**PREDICTED BAND SCORE**: [Overall band 0-9 with half-bands (e.g., 6.5, 7.5) - detailed explanation]
+Band 9: Wide range of vocabulary with natural and sophisticated control.
+Band 8: Wide range of vocabulary; skillfully uses less common items.
+Band 7: Sufficient range of vocabulary; uses some less common items.
+Band 6: Adequate range of vocabulary for the task.
+Band 5: Limited range of vocabulary; noticeable errors.
+Band 4: Uses only basic vocabulary; frequent errors.
+Band 3: Uses only a very limited range of words.
+Band 2: Uses only isolated words.
 
-**ERROR ANALYSIS**:
-- Critical errors: [List errors that impede communication]
-- Minor errors: [List errors that don't impede meaning]
-- Patterns to address: [Systematic issues to focus on]
+Grammatical Range and Accuracy:
 
-**SPECIFIC IMPROVEMENTS**:
-1. **Immediate Priority**: [Most important area with specific examples]
-2. **Vocabulary Development**: [Specific words/phrases to learn]
-3. **Grammar Focus**: [Specific structures to practice]
-4. **Organization**: [Structural improvements needed]
+Band 9: Wide range of structures with full flexibility and accuracy.
+Band 8: Wide range of structures; the majority of sentences are error-free.
+Band 7: Uses a variety of complex structures; produces frequent error-free sentences.
+Band 6: Uses a mix of simple and complex sentences; some errors in grammar.
+Band 5: Uses only a limited range of structures; frequent grammatical errors.
+Band 4: Uses only very basic sentence structures with frequent errors.
+Band 3: Cannot use sentence forms.
+Band 2: Cannot produce basic sentence forms.
 
-**REWRITE SUGGESTIONS**:
-[Provide 2-3 improved versions of problematic sentences]
+**Final Score Calculation Rules (CRITICAL):**
 
-**PRACTICE RECOMMENDATIONS**:
-- [3-5 specific exercises targeting identified weaknesses]
-- [Resources for improvement]
+After you have determined the individual band scores (whole numbers from 0-9) for each of the four criteria, you must calculate the Overall Band Score.
 
-**STRENGTH HIGHLIGHTS**:
-[Acknowledge what the student did well]
+1. Calculate the average of the four criteria scores.
+2. You must then apply the official IELTS rounding rules to this average:
+   * If the average ends in .25, you must round it UP to the next half-band (e.g., an average of 6.25 becomes an Overall Score of 6.5).
+   * If the average ends in .75, you must round it UP to the next whole band (e.g., an average of 6.75 becomes an Overall Score of 7.0).
+   * For all other values, round to the nearest whole or half-band as normal.
+
+Please return your assessment in the following structured format:
+
+**TASK ACHIEVEMENT/RESPONSE**: [Band Score 0-9 with detailed justification]
+**COHERENCE & COHESION**: [Band Score 0-9 with detailed justification]
+**LEXICAL RESOURCE**: [Band Score 0-9 with detailed justification]
+**GRAMMATICAL RANGE & ACCURACY**: [Band Score 0-9 with detailed justification]
+**OVERALL BAND SCORE**: [Final calculated score following the rounding rules above]
+**DETAILED FEEDBACK**: [Comprehensive analysis with specific examples and improvement recommendations]
 
 Be specific, constructive, and provide actionable feedback that helps achieve higher band scores.`;
 
@@ -99,7 +114,7 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
         messages: [
           {
             role: 'system',
-            content: 'You are an expert IELTS Writing examiner with deep knowledge of band descriptors and assessment criteria. Use the official IELTS 0-9 band scale with half-bands (e.g., 6.5, 7.5). Provide detailed, professional feedback.'
+            content: 'You are a senior IELTS Writing examiner with comprehensive knowledge of official band descriptors. Follow the assessment criteria and scoring rules provided in the user prompt exactly. Use the official IELTS 0-9 band scale and apply the precise rounding rules for calculating the overall band score.'
           },
           {
             role: 'user',

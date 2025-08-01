@@ -51,55 +51,84 @@ serve(async (req) => {
     const transcription = transcriptionResult.text;
 
     // Analyze the transcription with advanced prompting
-    const analysisPrompt = `You are an expert IELTS Speaking examiner and phonetics specialist. Analyze this IELTS Speaking ${speakingPart} response comprehensively.
+    const analysisPrompt = `You are a senior, highly experienced IELTS examiner. Your goal is to provide a holistic and accurate assessment based *only* on the official IELTS band descriptors and scoring rules provided below. Evaluate the student's response against these criteria and justify your feedback by referencing them.
+
+Focus on overall communicative effectiveness. Do not just count errors; explain their impact on the band score for a specific criterion.
+
+You will first provide a whole number band score (0-9) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
+
+Now, please assess the following submission against the relevant band descriptors:
 
 PROMPT: ${prompt}
 
 STUDENT RESPONSE: "${transcription}"
 
-Provide detailed analysis in the following format:
+[-- IELTS SPEAKING BAND DESCRIPTORS --]
 
-**TRANSCRIPTION ACCURACY**: [Rate 1-10 and note any unclear pronunciations]
+Fluency and Coherence:
 
-**PRONUNCIATION ANALYSIS**:
-- Overall clarity: [Rate 1-10]
-- Problem sounds: [List specific sounds/phonemes that need work]
-- Word stress patterns: [Identify incorrect stress]
-- Connected speech: [Analyze linking, elision, assimilation]
+Band 9: Speaks fluently with only rare, content-related hesitation.
+Band 8: Speaks fluently with only occasional repetition or self-correction.
+Band 7: Speaks at length without noticeable effort; may have some language-related hesitation.
+Band 6: Is willing to speak at length, though may lose coherence at times.
+Band 5: Usually maintains a flow of speech, but uses repetition and self-correction to keep going.
+Band 4: Cannot respond without noticeable pauses.
+Band 3: Speaks with long pauses.
+Band 2: Pauses for long periods before most words.
 
-**INTONATION & RHYTHM**:
-- Natural intonation: [Rate 1-10, describe patterns]
-- Sentence stress: [Identify issues]
-- Rhythm and pace: [Too fast/slow, choppy/smooth]
+Lexical Resource (Vocabulary):
 
-**FLUENCY INDICATORS**:
-- Hesitations and fillers: [Count and type]
-- Self-corrections: [Note frequency]
-- Repetitions: [Identify patterns]
-- Overall flow: [Rate 1-10]
+Band 9: Uses vocabulary with full flexibility and precision.
+Band 8: Uses a wide vocabulary resource readily and flexibly.
+Band 7: Discusses a variety of topics flexibly; uses some less common vocabulary.
+Band 6: Has a wide enough vocabulary to discuss topics at length.
+Band 5: Manages to talk about topics but with limited flexibility.
+Band 4: Can only convey basic meaning on familiar topics.
+Band 3: Uses simple vocabulary to convey personal information.
+Band 2: Only produces isolated utterances.
 
-**ACCENT INFLUENCE**:
-- Native language interference: [Identify L1 patterns]
-- Intelligibility impact: [Rate 1-10]
-- Specific accent features: [List observable characteristics]
+Grammatical Range and Accuracy:
 
-**IELTS SPEAKING CRITERIA**:
-- Fluency & Coherence: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
-- Lexical Resource: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
-- Grammatical Range: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
-- Pronunciation: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+Band 9: Uses a full range of structures naturally and accurately.
+Band 8: Uses a wide range of structures flexibly; majority of sentences are error-free.
+Band 7: Uses a range of complex structures with some flexibility.
+Band 6: Uses a mix of simple and complex structures, but with limited flexibility.
+Band 5: Produces basic sentence forms with reasonable accuracy.
+Band 4: Produces basic sentence forms but with frequent errors.
+Band 3: Attempts basic sentence forms but with only rare success.
+Band 2: Cannot produce basic sentence forms.
 
-**PREDICTED BAND SCORE**: [Overall band 0-9 with half-bands (e.g., 6.5, 7.5) - detailed explanation]
+Pronunciation:
 
-**SPECIFIC IMPROVEMENT RECOMMENDATIONS**:
-1. [Immediate focus area with practice suggestions]
-2. [Second priority with specific exercises]
-3. [Long-term development goals]
+Band 9: Is effortless to understand.
+Band 8: Is easy to understand; accent has minimal effect on intelligibility.
+Band 7: Is generally easy to understand, but accent influences sounds at times.
+Band 6: Is generally intelligible, but mispronunciation reduces clarity at times.
+Band 5: Shows features of Band 4 but with some mixed control.
+Band 4: Is often unintelligible.
+Band 3: Speech is often unintelligible.
+Band 2: Speech is largely unintelligible.
 
-**PRACTICE EXERCISES**:
-- [3-5 specific exercises targeting identified weaknesses]
+**Final Score Calculation Rules (CRITICAL):**
 
-Be specific, constructive, and provide actionable feedback that helps improve performance.`;
+After you have determined the individual band scores (whole numbers from 0-9) for each of the four criteria, you must calculate the Overall Band Score.
+
+1. Calculate the average of the four criteria scores.
+2. You must then apply the official IELTS rounding rules to this average:
+   * If the average ends in .25, you must round it UP to the next half-band (e.g., an average of 6.25 becomes an Overall Score of 6.5).
+   * If the average ends in .75, you must round it UP to the next whole band (e.g., an average of 6.75 becomes an Overall Score of 7.0).
+   * For all other values, round to the nearest whole or half-band as normal.
+
+Please return your assessment in the following structured format:
+
+**FLUENCY & COHERENCE**: [Band Score 0-9 with detailed justification]
+**LEXICAL RESOURCE**: [Band Score 0-9 with detailed justification]
+**GRAMMATICAL RANGE & ACCURACY**: [Band Score 0-9 with detailed justification]
+**PRONUNCIATION**: [Band Score 0-9 with detailed justification]
+**OVERALL BAND SCORE**: [Final calculated score following the rounding rules above]
+**DETAILED FEEDBACK**: [Comprehensive analysis with specific examples and improvement recommendations]
+
+Be specific, constructive, and provide actionable feedback that helps achieve higher band scores.`;
 
     const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -112,7 +141,7 @@ Be specific, constructive, and provide actionable feedback that helps improve pe
         messages: [
           {
             role: 'system',
-            content: 'You are an expert IELTS examiner specializing in pronunciation, phonetics, and accent analysis. Use the official IELTS 0-9 band scale with half-bands (e.g., 6.5, 7.5). Provide detailed, professional feedback.'
+            content: 'You are a senior IELTS Speaking examiner with comprehensive knowledge of official band descriptors. Follow the assessment criteria and scoring rules provided in the user prompt exactly. Use the official IELTS 0-9 band scale and apply the precise rounding rules for calculating the overall band score.'
           },
           {
             role: 'user',

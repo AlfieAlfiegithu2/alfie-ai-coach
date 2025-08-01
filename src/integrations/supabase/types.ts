@@ -484,6 +484,7 @@ export type Database = {
           created_at: string
           follow_up_questions: Json | null
           id: string
+          is_locked: boolean | null
           part_number: number | null
           prompt_text: string
           sample_answer: string | null
@@ -499,6 +500,7 @@ export type Database = {
           created_at?: string
           follow_up_questions?: Json | null
           id?: string
+          is_locked?: boolean | null
           part_number?: number | null
           prompt_text: string
           sample_answer?: string | null
@@ -514,6 +516,7 @@ export type Database = {
           created_at?: string
           follow_up_questions?: Json | null
           id?: string
+          is_locked?: boolean | null
           part_number?: number | null
           prompt_text?: string
           sample_answer?: string | null

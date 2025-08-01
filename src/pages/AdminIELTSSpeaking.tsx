@@ -21,6 +21,7 @@ interface SpeakingPrompt {
   sample_answer?: string;
   audio_url?: string;
   transcription?: string;
+  is_locked?: boolean;
 }
 
 const AdminIELTSSpeaking = () => {
@@ -31,6 +32,8 @@ const AdminIELTSSpeaking = () => {
   
   const [testName, setTestName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isModifying, setIsModifying] = useState(false);
   
   // Part 1: Interview (4 audio slots only)
   const [part1Prompts, setPart1Prompts] = useState<SpeakingPrompt[]>([
@@ -84,6 +87,10 @@ const AdminIELTSSpeaking = () => {
       if (promptsError) throw promptsError;
 
       if (prompts && prompts.length > 0) {
+        // Check if test is locked
+        const isTestLocked = prompts.some(p => p.is_locked);
+        setIsLocked(isTestLocked);
+        
         // Organize prompts by part
         const part1 = prompts.filter(p => p.part_number === 1);
         const part2 = prompts.filter(p => p.part_number === 2);
@@ -221,7 +228,8 @@ const AdminIELTSSpeaking = () => {
           sample_answer: null, // No sample answers needed
           test_number: parseInt(testName) || 1,
           cambridge_book: `Test ${testName}`,
-          transcription: prompt.transcription || null
+          transcription: prompt.transcription || null,
+          is_locked: true // Lock after saving
         }));
 
         const { error: insertError } = await supabase
@@ -235,6 +243,10 @@ const AdminIELTSSpeaking = () => {
         title: "Success",
         description: `Part ${partNumber} saved successfully`
       });
+      
+      // Lock the test after saving
+      setIsLocked(true);
+      setIsModifying(false);
     } catch (error) {
       console.error('Error saving part:', error);
       toast({
@@ -244,6 +256,33 @@ const AdminIELTSSpeaking = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleModifyTest = async () => {
+    try {
+      // Unlock all speaking prompts for this test
+      const { error } = await supabase
+        .from('speaking_prompts')
+        .update({ is_locked: false })
+        .eq('cambridge_book', `Test ${testName}`);
+
+      if (error) throw error;
+
+      setIsLocked(false);
+      setIsModifying(true);
+      
+      toast({
+        title: "Success",
+        description: "Test unlocked for modification"
+      });
+    } catch (error) {
+      console.error('Error unlocking test:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unlock test",
+        variant: "destructive"
+      });
     }
   };
 
@@ -266,10 +305,19 @@ const AdminIELTSSpeaking = () => {
                 IELTS Speaking Test Management
               </h1>
               <p className="text-muted-foreground">
-                Test: {testName}
+                Test: {testName} {isLocked && <Badge variant="secondary">Locked</Badge>}
               </p>
             </div>
           </div>
+          {isLocked && !isModifying && (
+            <Button
+              onClick={handleModifyTest}
+              variant="outline"
+              className="rounded-xl"
+            >
+              Modify Test
+            </Button>
+          )}
         </div>
 
         {/* Part 1: Interview */}
@@ -287,7 +335,7 @@ const AdminIELTSSpeaking = () => {
               </div>
               <Button 
                 onClick={() => savePart(1)}
-                disabled={saving}
+                disabled={saving || (isLocked && !isModifying)}
                 className="rounded-xl"
               >
                 <Save className="w-4 h-4 mr-2" />
@@ -316,6 +364,7 @@ const AdminIELTSSpeaking = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => document.getElementById(`audio-part1-${index}`)?.click()}
+                        disabled={isLocked && !isModifying}
                         className="rounded-xl"
                       >
                         <Upload className="w-4 h-4 mr-2" />
@@ -364,6 +413,7 @@ const AdminIELTSSpeaking = () => {
                         updated[index].transcription = e.target.value;
                         setPart1Prompts(updated);
                       }}
+                      disabled={isLocked && !isModifying}
                       className="rounded-xl min-h-[80px]"
                     />
                   </div>
@@ -388,7 +438,7 @@ const AdminIELTSSpeaking = () => {
               </div>
               <Button 
                 onClick={() => savePart(2)}
-                disabled={saving}
+                disabled={saving || (isLocked && !isModifying)}
                 className="rounded-xl"
               >
                 <Save className="w-4 h-4 mr-2" />
@@ -422,6 +472,7 @@ const AdminIELTSSpeaking = () => {
                     ...prev, 
                     prompt_text: e.target.value 
                   }))}
+                  disabled={isLocked && !isModifying}
                   className="rounded-xl min-h-[120px]"
                 />
               </CardContent>
@@ -456,7 +507,7 @@ const AdminIELTSSpeaking = () => {
                 </div>
                 <Button 
                   onClick={() => savePart(3)}
-                  disabled={saving}
+                  disabled={saving || (isLocked && !isModifying)}
                   className="rounded-xl"
                 >
                   <Save className="w-4 h-4 mr-2" />
@@ -486,6 +537,7 @@ const AdminIELTSSpeaking = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => document.getElementById(`audio-part3-${index}`)?.click()}
+                        disabled={isLocked && !isModifying}
                         className="rounded-xl"
                       >
                         <Upload className="w-4 h-4 mr-2" />
@@ -534,6 +586,7 @@ const AdminIELTSSpeaking = () => {
                         updated[index].transcription = e.target.value;
                         setPart3Prompts(updated);
                       }}
+                      disabled={isLocked && !isModifying}
                       className="rounded-xl min-h-[80px]"
                     />
                   </div>

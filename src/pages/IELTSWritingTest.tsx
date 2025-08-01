@@ -36,11 +36,20 @@ const IELTSWritingTestInterface = () => {
   const [currentTask, setCurrentTask] = useState<1 | 2>(1);
   const [task1Answer, setTask1Answer] = useState("");
   const [task2Answer, setTask2Answer] = useState("");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+  // Separate chat messages for each task to prevent context bleeding
+  const [task1ChatMessages, setTask1ChatMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       type: 'bot',
-      content: "Hello! I'm **Catbot**, your friendly IELTS Writing tutor! 🐱 I'm here to guide you through this writing task with personalized advice. I won't write your essay for you, but I'll help you develop your ideas and structure. What would you like help with first?",
+      content: "Hello! I'm **Catbot**, your friendly IELTS Writing tutor! 🐱 I'm here to help you with **Task 1 - Data Description**. I'll guide you through analyzing charts, graphs, or diagrams and structuring your description. What would you like help with?",
+      timestamp: new Date()
+    }
+  ]);
+  const [task2ChatMessages, setTask2ChatMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      type: 'bot',
+      content: "Hello! I'm **Catbot**, your friendly IELTS Writing tutor! 🐱 I'm here to help you with **Task 2 - Essay Writing**. I'll guide you through structuring arguments, developing ideas, and presenting your opinion clearly. What would you like help with?",
       timestamp: new Date()
     }
   ]);
@@ -89,20 +98,43 @@ const IELTSWritingTestInterface = () => {
       }
 
       if (task2Question) {
-        // For Task 2 (writing essays), if question_text starts with "Paragraph", use the first line of passage_text as title
-        let taskTitle = task2Question.question_text || "";
-        if (taskTitle.toLowerCase().startsWith('paragraph') && task2Question.passage_text) {
-          // Extract the first line which should be the main title
-          const firstLine = task2Question.passage_text.split('\n')[0];
-          if (firstLine && !firstLine.startsWith('A ') && !firstLine.startsWith('B ')) {
-            taskTitle = firstLine;
+        // For Task 2, ensure we use the correct field mapping
+        let taskTitle = "";
+        let taskInstructions = "";
+        
+        // If question_text contains the actual essay prompt, use it as title
+        if (task2Question.question_text && !task2Question.question_text.toLowerCase().includes('paragraph')) {
+          taskTitle = task2Question.question_text;
+          taskInstructions = task2Question.passage_text || "";
+        } else if (task2Question.passage_text) {
+          // Extract the main question from passage_text
+          const lines = task2Question.passage_text.split('\n').filter(line => line.trim());
+          // Find the actual question (usually starts with common essay prompts)
+          const questionLine = lines.find(line => 
+            line.includes('To what extent') || 
+            line.includes('Do you agree') || 
+            line.includes('Discuss both') || 
+            line.includes('What is your opinion') ||
+            line.includes('Some people') ||
+            line.includes('Many people') ||
+            line.length > 50 // Essay questions are typically longer
+          );
+          
+          if (questionLine) {
+            taskTitle = questionLine;
+            // Use remaining text as instructions, or use explanation field
+            taskInstructions = task2Question.explanation || lines.filter(line => line !== questionLine).join('\n');
+          } else {
+            // Fallback: use first substantial line as title
+            taskTitle = lines[0] || task2Question.question_text || "Essay Writing Task";
+            taskInstructions = lines.slice(1).join('\n') || task2Question.explanation || "";
           }
         }
         
         setTask2({
           id: task2Question.id,
           title: taskTitle,
-          instructions: task2Question.passage_text || ""
+          instructions: taskInstructions
         });
       }
     } catch (error) {
@@ -129,6 +161,16 @@ const IELTSWritingTestInterface = () => {
     return text.trim().split(/\s+/).filter(word => word.length > 0).length;
   };
 
+  // Get current chat messages based on active task
+  const getCurrentChatMessages = () => currentTask === 1 ? task1ChatMessages : task2ChatMessages;
+  const setCurrentChatMessages = (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+    if (currentTask === 1) {
+      setTask1ChatMessages(messages);
+    } else {
+      setTask2ChatMessages(messages);
+    }
+  };
+
   const sendChatMessage = async (messageText?: string) => {
     const message = messageText || newMessage.trim();
     if (!message || isChatLoading) return;
@@ -140,7 +182,7 @@ const IELTSWritingTestInterface = () => {
       timestamp: new Date()
     };
 
-    setChatMessages(prev => [...prev, userMessage]);
+    setCurrentChatMessages(prev => [...prev, userMessage]);
     if (!messageText) setNewMessage("");
     setIsChatLoading(true);
 
@@ -192,7 +234,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         timestamp: new Date()
       };
 
-      setChatMessages(prev => [...prev, botMessage]);
+      setCurrentChatMessages(prev => [...prev, botMessage]);
     } catch (error: any) {
       console.error('Error sending chat message:', error);
       toast({
@@ -219,14 +261,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       return;
     }
     setCurrentTask(2);
-    setChatMessages([
-      {
-        id: Date.now().toString(),
-        type: 'bot',
-        content: "Great! Now let's move on to Task 2. This is an essay task where you need to present your opinion with clear arguments and examples. How can I help you with this task?",
-        timestamp: new Date()
-      }
-    ]);
+    // Task 2 already has its own isolated chat messages - no need to reset
+  };
+
+  // Handle task switching with proper context isolation
+  const switchToTask = (taskNumber: 1 | 2) => {
+    setCurrentTask(taskNumber);
+    // Each task maintains its own chat context - no bleeding between tasks
   };
 
   const submitTest = async () => {
@@ -309,7 +350,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <Button
                   variant={currentTask === 1 ? "default" : "secondary"}
                   size="sm"
-                  onClick={() => setCurrentTask(1)}
+                  onClick={() => switchToTask(1)}
                   className="relative"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
@@ -319,7 +360,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <Button
                   variant={currentTask === 2 ? "default" : "secondary"}
                   size="sm"
-                  onClick={() => setCurrentTask(2)}
+                  onClick={() => switchToTask(2)}
                   className="relative"
                 >
                   Task 2
@@ -472,7 +513,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </CardHeader>
               <CardContent>
                 <div className="h-80 overflow-y-auto mb-4 space-y-3 border border-border rounded-lg p-4 bg-surface-2/30">
-                  {chatMessages.map((message) => (
+                  {getCurrentChatMessages().map((message) => (
                     <div
                       key={message.id}
                       className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}

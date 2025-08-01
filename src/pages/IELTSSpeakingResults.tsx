@@ -53,6 +53,7 @@ const IELTSSpeakingResults = () => {
     setIsLoading(true);
     try {
       console.log('🤖 Starting comprehensive audio-first analysis...');
+      console.log('📊 Input data:', { testData: !!testData, recordingsCount: recordings.length });
 
       // Prepare all recordings for batch analysis
       const recordingsWithDetails = await Promise.all(recordings.map(async (recording: any) => {
@@ -108,13 +109,26 @@ const IELTSSpeakingResults = () => {
 
       if (error) throw error;
 
+      console.log('📈 Analysis result:', {
+        hasIndividualAnalyses: !!result?.individualAnalyses,
+        individualAnalysesCount: result?.individualAnalyses?.length || 0,
+        hasOverallAnalysis: !!result?.analysis,
+        success: result?.success
+      });
+
       if (result.individualAnalyses) {
+        console.log('✅ Setting individual analyses:', result.individualAnalyses.length);
         setQuestionAnalyses(result.individualAnalyses);
+      } else {
+        console.warn('⚠️ No individual analyses received');
       }
 
       if (result.analysis) {
         const overallData = parseOverallAnalysis(result.analysis);
+        console.log('✅ Setting overall feedback:', overallData);
         setOverallFeedback(overallData);
+      } else {
+        console.warn('⚠️ No overall analysis received');
       }
 
     } catch (error) {

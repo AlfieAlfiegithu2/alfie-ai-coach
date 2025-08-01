@@ -12,19 +12,35 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Enhanced speech analysis started');
+    
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
     const { allRecordings, testData, analysisType = "comprehensive" } = await req.json();
+    
+    console.log('📊 Received data:', {
+      recordingsCount: allRecordings?.length || 0,
+      hasTestData: !!testData,
+      analysisType
+    });
 
     if (!allRecordings || allRecordings.length === 0) {
       throw new Error('No recording data provided');
     }
 
     // Process individual question analyses first (direct audio analysis)
-    const individualAnalyses = await Promise.all(allRecordings.map(async (recording: any) => {
+    console.log('🎯 Starting individual question analyses...');
+    const individualAnalyses = await Promise.all(allRecordings.map(async (recording: any, index: number) => {
+      console.log(`🎤 Processing recording ${index + 1}/${allRecordings.length}:`, {
+        part: recording.part,
+        partNum: recording.partNum,
+        questionIndex: recording.questionIndex,
+        hasAudio: !!recording.audio_base64,
+        questionText: recording.questionTranscription?.substring(0, 50) + '...'
+      });
       const binaryString = atob(recording.audio_base64);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -46,11 +62,14 @@ serve(async (req) => {
       });
 
       if (!transcriptionResponse.ok) {
-        throw new Error(`Transcription failed for ${recording.part}: ${await transcriptionResponse.text()}`);
+        const errorText = await transcriptionResponse.text();
+        console.error(`❌ Transcription failed for ${recording.part}:`, errorText);
+        throw new Error(`Transcription failed for ${recording.part}: ${errorText}`);
       }
 
       const transcriptionResult = await transcriptionResponse.json();
       const studentTranscription = transcriptionResult.text;
+      console.log(`✅ Transcription complete for ${recording.part}:`, studentTranscription.substring(0, 100) + '...');
 
       // Individual question analysis prompt for detailed feedback
       const questionPrompt = `You are a senior, highly experienced IELTS examiner. You will analyze the following audio recording of a student's answer to an IELTS Speaking question. The question asked was: "${recording.questionTranscription || recording.prompt}"
@@ -76,7 +95,7 @@ Return your feedback as a concise, bulleted list of 2-3 key points.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: 'gpt-4o',
           messages: [
             {
               role: 'system',
@@ -92,10 +111,14 @@ Return your feedback as a concise, bulleted list of 2-3 key points.`;
       });
 
       if (!analysisResponse.ok) {
-        throw new Error(`Individual analysis failed: ${await analysisResponse.text()}`);
+        const errorText = await analysisResponse.text();
+        console.error(`❌ Individual analysis failed for ${recording.part}:`, errorText);
+        throw new Error(`Individual analysis failed: ${errorText}`);
       }
 
       const analysisResult = await analysisResponse.json();
+      const feedback = analysisResult.choices[0].message.content;
+      console.log(`✅ Individual analysis complete for ${recording.part}:`, feedback.substring(0, 100) + '...');
       
       return {
         part: recording.part,
@@ -103,10 +126,12 @@ Return your feedback as a concise, bulleted list of 2-3 key points.`;
         questionIndex: recording.questionIndex,
         questionText: recording.questionTranscription || recording.prompt,
         transcription: studentTranscription,
-        feedback: analysisResult.choices[0].message.content,
+        feedback: feedback,
         audio_url: recording.audio_url
       };
     }));
+
+    console.log(`🎉 Individual analyses complete! Generated ${individualAnalyses.length} question analyses`);
 
     // Create overall transcriptions for comprehensive analysis
     const allTranscriptions = individualAnalyses.map(analysis => ({
@@ -182,7 +207,7 @@ Please return your assessment in this format:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
@@ -203,6 +228,13 @@ Please return your assessment in this format:
 
     const analysisResult = await analysisResponse.json();
     const analysis = analysisResult.choices[0].message.content;
+
+    console.log('🎯 Final response data:', {
+      transcriptionsCount: allTranscriptions.length,
+      individualAnalysesCount: individualAnalyses.length,
+      hasOverallAnalysis: !!analysis,
+      analysisType: "comprehensive_full_test"
+    });
 
     return new Response(
       JSON.stringify({

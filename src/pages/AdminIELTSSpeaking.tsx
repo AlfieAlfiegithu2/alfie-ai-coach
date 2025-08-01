@@ -111,14 +111,23 @@ const AdminIELTSSpeaking = () => {
         }
 
         if (part3.length > 0) {
+          // Fix: Properly handle Part 3 data loading to prevent disappearing content
           const updatedPart3 = [...part3Prompts];
           part3.forEach((prompt, index) => {
             if (index < updatedPart3.length) {
-              updatedPart3[index] = prompt;
+              updatedPart3[index] = {
+                ...updatedPart3[index],
+                ...prompt, // Override with saved data
+                id: prompt.id
+              };
+            } else {
+              // Add additional prompts if saved data has more than default
+              updatedPart3.push(prompt);
             }
           });
           setPart3Prompts(updatedPart3);
-          setPart3Questions(part3.length);
+          setPart3Questions(Math.max(part3.length, 4)); // Ensure at least 4 questions
+          console.log(`📝 Part 3 loaded: ${part3.length} prompts`);
         }
       }
     } catch (error) {

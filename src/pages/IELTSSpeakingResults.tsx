@@ -136,7 +136,9 @@ const IELTSSpeakingResults = () => {
               part: recording.part,
               audio_base64: base64Audio,
               questionTranscription,
-              prompt
+              prompt,
+              partNum: partMatch ? parseInt(partMatch[1]) : 1,
+              questionIndex: partMatch ? parseInt(partMatch[2]) : 0
             });
           };
           reader.readAsDataURL(blob);
@@ -145,29 +147,69 @@ const IELTSSpeakingResults = () => {
 
       const audioData = await Promise.all(analysisPromises);
 
-      // Send to speech analysis function with the first recording and its question transcription
-      const firstRecording = audioData[0] as any;
+      // NEW: Comprehensive Full-Test Analysis - Send ALL recordings for holistic assessment
+      console.log('🤖 Starting comprehensive full-test AI analysis...');
+      
+      // Prepare comprehensive prompt with all recordings and questions
+      const fullTestContext = audioData.map((recording: any) => ({
+        part: `Part ${recording.partNum}`,
+        question: recording.questionTranscription || recording.prompt,
+        audio: recording.audio_base64
+      }));
+
+      // Send comprehensive analysis request
       const { data: result, error } = await supabase.functions.invoke('speech-analysis', {
         body: {
-          audio: firstRecording.audio_base64,
-          prompt: firstRecording.prompt,
-          speakingPart: "overall",
-          questionTranscription: firstRecording.questionTranscription
+          // Use the first audio for the primary analysis but include context of all parts
+          audio: audioData[0].audio_base64,
+          prompt: `COMPREHENSIVE IELTS SPEAKING TEST ANALYSIS
+
+This student has completed a full IELTS Speaking test with the following structure:
+${fullTestContext.map((ctx, i) => `${ctx.part} Question ${i + 1}: "${ctx.question}"`).join('\n')}
+
+Please provide a holistic assessment based on the student's COMPLETE performance across all parts of the test. Consider:
+- Overall fluency and coherence throughout the entire test
+- Vocabulary range demonstrated across different topics
+- Grammatical accuracy patterns across all responses  
+- Pronunciation consistency throughout
+- How well they handled different question types and parts
+
+Original Question Context: "${audioData[0].questionTranscription || audioData[0].prompt}"`,
+          speakingPart: "comprehensive_full_test",
+          questionTranscription: audioData[0].questionTranscription,
+          // Include metadata about the full test structure
+          fullTestData: {
+            totalParts: Math.max(...audioData.map((a: any) => a.partNum)),
+            totalQuestions: audioData.length,
+            testStructure: fullTestContext
+          }
         }
       });
 
       if (error) throw error;
 
-      if (result?.analysis && result?.transcription) {
-        // Parse the AI analysis to extract structured feedback
+      if (result?.analysis) {
+        // Parse the comprehensive AI analysis to extract structured feedback
         const analysis = result.analysis;
-        const transcription = result.transcription;
+        const allTranscriptions = result.transcriptions || [];
+        
+        // Combine all transcriptions for display
+        const combinedTranscription = allTranscriptions
+          .map((t: any) => `${t.part}: ${t.transcription}`)
+          .join('\n\n');
         
         // Extract band scores and feedback from the analysis text
-        const feedbackData = parseAnalysisText(analysis, transcription, firstRecording.questionTranscription, firstRecording.prompt);
+        const feedbackData = parseAnalysisText(
+          analysis, 
+          combinedTranscription, 
+          audioData[0].questionTranscription, 
+          "Complete IELTS Speaking Test"
+        );
         setFeedback(feedbackData);
+        
+        console.log('✅ Comprehensive full-test analysis completed successfully');
       } else {
-        throw new Error('No feedback received');
+        throw new Error('No comprehensive feedback received');
       }
 
     } catch (error) {

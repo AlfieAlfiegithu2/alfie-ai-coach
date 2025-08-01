@@ -42,6 +42,9 @@ const IELTSSpeakingTest = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [preparationTime, setPreparationTime] = useState(60);
   const [recordings, setRecordings] = useState<{[key: string]: Blob}>({});
+  const [part2Notes, setPart2Notes] = useState("");
+  const [showNoteTips, setShowNoteTips] = useState(false);
+  const [noteTips, setNoteTips] = useState("");
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -241,6 +244,58 @@ const IELTSSpeakingTest = () => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setTimeLeft(0);
+    }
+  };
+
+  const playRecording = async (recordingKey: string) => {
+    const recording = recordings[recordingKey];
+    if (!recording) return;
+    
+    try {
+      const audioUrl = URL.createObjectURL(recording);
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+      };
+      
+      await audio.play();
+      console.log(`🎵 Playing back recording: ${recordingKey}`);
+    } catch (error) {
+      console.error('Error playing recording:', error);
+      toast({
+        title: "Playback Error",
+        description: "Failed to play your recording",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getNoteTakingTips = async () => {
+    if (!testData?.part2_prompt) return;
+    
+    setShowNoteTips(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: {
+          messages: [
+            {
+              role: "system",
+              content: "You are an IELTS Speaking expert. Provide 2-3 specific, actionable note-taking tips for the given Part 2 cue card. Be concise and practical."
+            },
+            {
+              role: "user", 
+              content: `Give me specific note-taking tips for this IELTS Part 2 cue card: "${testData.part2_prompt.prompt_text}"`
+            }
+          ]
+        }
+      });
+      
+      if (error) throw error;
+      setNoteTips(data.response || "Focus on the key points: what, when, where, why, and how you felt about it.");
+    } catch (error) {
+      console.error('Error getting note tips:', error);
+      setNoteTips("Focus on the key points: what, when, where, why, and how you felt about it.");
     }
   };
 
@@ -454,15 +509,51 @@ const IELTSSpeakingTest = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Part 2 Preparation Timer */}
+            {/* Part 2 Preparation Timer with Note-taking */}
             {currentPart === 2 && preparationTime > 0 && (
-              <div className="text-center p-6 bg-blue-50 rounded-lg">
-                <Clock className="w-8 h-8 mx-auto mb-3 text-blue-600" />
-                <h3 className="text-lg font-semibold mb-2">Preparation Time</h3>
-                <p className="text-2xl font-bold text-blue-600">{formatTime(preparationTime)}</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Use this time to prepare your response
-                </p>
+              <div className="space-y-4">
+                <div className="text-center p-6 bg-blue-50 rounded-lg">
+                  <Clock className="w-8 h-8 mx-auto mb-3 text-blue-600" />
+                  <h3 className="text-lg font-semibold mb-2">Preparation Time</h3>
+                  <p className="text-2xl font-bold text-blue-600">{formatTime(preparationTime)}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Use this time to prepare your response and take notes
+                  </p>
+                </div>
+                
+                {/* Note-taking area */}
+                <Card className="bg-yellow-50 border-yellow-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between text-lg">
+                      <span className="flex items-center gap-2">
+                        📝 Your Notes
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={getNoteTakingTips}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      >
+                        💡 Need help with note-taking?
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <textarea
+                      placeholder="Write your preparation notes here..."
+                      value={part2Notes}
+                      onChange={(e) => setPart2Notes(e.target.value)}
+                      className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    
+                    {showNoteTips && noteTips && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 className="font-semibold text-blue-800 mb-2">💡 Note-taking Tips:</h4>
+                        <p className="text-sm text-blue-700">{noteTips}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             )}
 
@@ -553,11 +644,28 @@ const IELTSSpeakingTest = () => {
                   )}
                 </div>
 
-                {/* Recording indicator for current question */}
+                {/* Recording indicator and playback for current question */}
                 {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                  <div className="flex items-center justify-center space-x-2 text-green-600">
-                    <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                    <span className="text-sm">Response recorded</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center space-x-2 text-green-600">
+                      <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                      <span className="text-sm">Response recorded</span>
+                    </div>
+                    
+                    {/* Listen to Your Recording Feature */}
+                    {(currentPart === 1 || currentPart === 3) && (
+                      <div className="flex justify-center space-x-3">
+                        <Button
+                          onClick={() => playRecording(`part${currentPart}_q${currentQuestion}`)}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl border-green-300 text-green-700 hover:bg-green-50"
+                        >
+                          <Volume2 className="w-4 h-4 mr-2" />
+                          Listen to Your Recording
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -577,26 +685,41 @@ const IELTSSpeakingTest = () => {
               </Button>
 
               {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                <Button
-                  onClick={nextQuestion}
-                  className="rounded-xl"
-                >
-                  {currentPart === 1 && currentQuestion < testData.part1_prompts.length - 1 && (
-                    <>Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
+                <div className="flex space-x-3">
+                  {/* Listen to Recording button for Parts 1 & 3 */}
+                  {(currentPart === 1 || currentPart === 3) && (
+                    <Button
+                      onClick={() => playRecording(`part${currentPart}_q${currentQuestion}`)}
+                      variant="outline"
+                      className="rounded-xl border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      <Volume2 className="w-4 h-4 mr-2" />
+                      Listen to Your Recording
+                    </Button>
                   )}
-                  {currentPart === 1 && currentQuestion === testData.part1_prompts.length - 1 && (
-                    <>Proceed to Part 2 <ArrowRight className="w-4 h-4 ml-2" /></>
-                  )}
-                  {currentPart === 2 && (
-                    <>Proceed to Part 3 <ArrowRight className="w-4 h-4 ml-2" /></>
-                  )}
-                  {currentPart === 3 && currentQuestion < testData.part3_prompts.length - 1 && (
-                    <>Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
-                  )}
-                  {currentPart === 3 && currentQuestion === testData.part3_prompts.length - 1 && (
-                    <>Submit Test <Upload className="w-4 h-4 ml-2" /></>
-                  )}
-                </Button>
+                  
+                  {/* Continue/Next button */}
+                  <Button
+                    onClick={nextQuestion}
+                    className="rounded-xl"
+                  >
+                    {currentPart === 1 && currentQuestion < testData.part1_prompts.length - 1 && (
+                      <>Continue to Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 1 && currentQuestion === testData.part1_prompts.length - 1 && (
+                      <>Continue to Part 2 <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 2 && (
+                      <>Continue to Part 3 <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 3 && currentQuestion < testData.part3_prompts.length - 1 && (
+                      <>Continue to Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 3 && currentQuestion === testData.part3_prompts.length - 1 && (
+                      <>Submit Test <Upload className="w-4 h-4 ml-2" /></>
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
           </CardContent>

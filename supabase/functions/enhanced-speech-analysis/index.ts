@@ -72,21 +72,13 @@ serve(async (req) => {
       console.log(`✅ Transcription complete for ${recording.part}:`, studentTranscription.substring(0, 100) + '...');
 
       // Individual question analysis prompt for detailed feedback
-      const questionPrompt = `You are a senior, highly experienced IELTS examiner. You will analyze the following audio recording of a student's answer to an IELTS Speaking question. The question asked was: "${recording.questionTranscription || recording.prompt}"
+      const questionPrompt = `You are a senior, highly experienced IELTS examiner. Listen to this student's response to the question: "${recording.questionTranscription || recording.prompt}"
 
-Listen to the student's audio response. Then, provide a detailed, holistic assessment focusing on the key speaking criteria. Your feedback must go beyond the words used. Analyze the following:
+Student's response: ${studentTranscription}
 
-**Student's Transcribed Response:** ${studentTranscription}
+Please provide genuine, conversational feedback as if you're speaking directly to the student. Focus on what you noticed about their speaking performance for this specific answer. Consider their fluency, pronunciation, vocabulary use, and overall delivery. 
 
-**Fluency and Coherence:** How was the flow and pace? Were there unnatural pauses or hesitation? Did they use filler words?
-
-**Pronunciation:** How clear was their speech? Were there any specific words or sounds that were difficult to understand?
-
-**Intonation and Delivery:** Did their voice sound natural and engaging, or was it monotonous? Did they use stress and intonation to convey meaning effectively?
-
-**Lexical Resource and Grammatical Accuracy:** Briefly comment on their vocabulary and grammar in this specific answer.
-
-Return your feedback as a concise, bulleted list of 2-3 key points.`;
+Write your feedback in a natural, encouraging tone without using categories or bullet points. Keep it to 2-3 sentences that give specific, actionable insights about their performance on this question.`;
 
       const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -99,7 +91,7 @@ Return your feedback as a concise, bulleted list of 2-3 key points.`;
           messages: [
             {
               role: 'system',
-              content: 'You are a senior IELTS Speaking examiner. Provide specific, actionable feedback focusing on audio-based criteria like fluency, pronunciation, and intonation.'
+              content: 'You are a friendly but experienced IELTS Speaking examiner. Give natural, conversational feedback that feels like genuine advice from a teacher. Avoid robotic categories and be encouraging while being honest about areas for improvement.'
             },
             {
               role: 'user',
@@ -143,62 +135,36 @@ Return your feedback as a concise, bulleted list of 2-3 key points.`;
     }));
 
     // Create comprehensive analysis prompt
-    const comprehensivePrompt = `You are a senior, highly experienced IELTS examiner conducting a COMPREHENSIVE FULL-TEST ANALYSIS. Your goal is to provide a holistic and accurate assessment based on the student's COMPLETE performance across ALL parts of the IELTS Speaking test.
-
-**IMPORTANT**: Base your assessment on the ENTIRE test performance, not just individual questions. Look for patterns, development, and overall communicative effectiveness across all parts.
-
-**FULL TEST TRANSCRIPT:**
+    const comprehensivePrompt = `You are a senior IELTS examiner providing overall feedback on this student's complete Speaking test. Here's what they said across all parts:
 
 ${allTranscriptions.map(t => `
-**${t.part} Question:** ${t.question}
-**Student Response:** ${t.transcription}
+${t.part} Question: ${t.question}
+Student Response: ${t.transcription}
 `).join('\n')}
 
-**COMPREHENSIVE ANALYSIS INSTRUCTIONS:**
+Please evaluate their overall performance and provide:
 
-Evaluate the student's OVERALL performance across the complete test using these criteria:
+1. Individual band scores (0-9) for:
+   - Fluency & Coherence
+   - Lexical Resource  
+   - Grammatical Range & Accuracy
+   - Pronunciation
 
-**Fluency and Coherence (0-9):**
-- How well did they maintain speech flow throughout ALL parts?
-- Did they show improvement or decline across parts?
-- Overall coherence and logical development across different question types
+2. Calculate the overall band score using IELTS rounding rules:
+   - .25 rounds UP to next half-band (6.25 → 6.5)
+   - .75 rounds UP to next whole band (6.75 → 7.0)
+   - Other values round to nearest half-band
 
-**Lexical Resource (0-9):**
-- Range of vocabulary demonstrated across ALL topics and parts
-- Flexibility in vocabulary use between different speaking tasks
-- Appropriateness of language for different contexts (interview, long turn, discussion)
+3. Write genuine, encouraging feedback that sounds like a real teacher talking to their student. Include specific examples from their responses and practical advice for improvement.
 
-**Grammatical Range and Accuracy (0-9):**
-- Variety of structures used throughout the complete test
-- Accuracy patterns across all responses
-- Ability to handle different grammatical demands of each part
+Format your response exactly like this:
 
-**Pronunciation (0-9):**
-- Consistency of pronunciation throughout the entire test
-- Intelligibility across all parts and question types
-- Impact on communication across the full performance
-
-**CRITICAL REQUIREMENTS:**
-1. Provide specific examples from DIFFERENT parts of the test in your feedback
-2. Show how performance varied or remained consistent across parts
-3. Give a truly holistic assessment, not just based on one question
-4. Reference patterns observed across the complete test
-
-**Final Score Calculation Rules:**
-1. Calculate the average of the four criteria scores
-2. Apply official IELTS rounding rules:
-   - .25 → round UP to next half-band (6.25 → 6.5)
-   - .75 → round UP to next whole band (6.75 → 7.0)
-   - All other values round to nearest half-band
-
-Please return your assessment in this format:
-
-**FLUENCY & COHERENCE**: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
-**LEXICAL RESOURCE**: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
-**GRAMMATICAL RANGE & ACCURACY**: [Band Score 0-9] - [Detailed justification with examples from multiple parts]  
-**PRONUNCIATION**: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
-**OVERALL BAND SCORE**: [Final calculated score following rounding rules]
-**COMPREHENSIVE FEEDBACK**: [Holistic analysis showing patterns across all parts, specific examples from different sections, and improvement recommendations based on complete performance]`;
+FLUENCY_COHERENCE: [score]
+LEXICAL_RESOURCE: [score]
+GRAMMATICAL_RANGE: [score]
+PRONUNCIATION: [score]
+OVERALL_BAND_SCORE: [calculated score]
+COMPREHENSIVE_FEEDBACK: [Your natural, conversational feedback without categories or formatting - just genuine advice like you're talking to the student face-to-face]`;
 
     const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -211,7 +177,7 @@ Please return your assessment in this format:
         messages: [
           {
             role: 'system',
-            content: 'You are a senior IELTS Speaking examiner with comprehensive knowledge of official band descriptors. You must analyze the COMPLETE speaking test performance holistically, providing examples from different parts to support your assessment. Follow the assessment criteria and scoring rules exactly.'
+            content: 'You are an experienced IELTS examiner who gives helpful, genuine feedback. Analyze the complete test performance and provide natural, encouraging advice. Avoid robotic categories and speak like a supportive teacher.'
           },
           {
             role: 'user',

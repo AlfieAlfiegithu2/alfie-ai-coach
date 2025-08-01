@@ -479,6 +479,7 @@ export type Database = {
       }
       speaking_prompts: {
         Row: {
+          audio_url: string | null
           band_criteria: Json | null
           cambridge_book: string | null
           created_at: string
@@ -495,6 +496,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audio_url?: string | null
           band_criteria?: Json | null
           cambridge_book?: string | null
           created_at?: string
@@ -511,6 +513,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audio_url?: string | null
           band_criteria?: Json | null
           cambridge_book?: string | null
           created_at?: string

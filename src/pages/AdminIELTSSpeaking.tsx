@@ -20,6 +20,7 @@ interface SpeakingPrompt {
   time_limit: number;
   sample_answer?: string;
   audio_url?: string;
+  transcription?: string;
 }
 
 const AdminIELTSSpeaking = () => {
@@ -33,10 +34,10 @@ const AdminIELTSSpeaking = () => {
   
   // Part 1: Interview (4 audio slots only)
   const [part1Prompts, setPart1Prompts] = useState<SpeakingPrompt[]>([
-    { title: "Interview Question 1", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 },
-    { title: "Interview Question 2", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 },
-    { title: "Interview Question 3", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 },
-    { title: "Interview Question 4", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 }
+    { title: "Interview Question 1", prompt_text: "Audio prompt", part_number: 1, time_limit: 2, transcription: "" },
+    { title: "Interview Question 2", prompt_text: "Audio prompt", part_number: 1, time_limit: 2, transcription: "" },
+    { title: "Interview Question 3", prompt_text: "Audio prompt", part_number: 1, time_limit: 2, transcription: "" },
+    { title: "Interview Question 4", prompt_text: "Audio prompt", part_number: 1, time_limit: 2, transcription: "" }
   ]);
 
   // Part 2: Long Turn / Cue Card (text only, no sample answer)
@@ -50,10 +51,10 @@ const AdminIELTSSpeaking = () => {
   // Part 3: Discussion (4-6 audio questions only)
   const [part3Questions, setPart3Questions] = useState(4);
   const [part3Prompts, setPart3Prompts] = useState<SpeakingPrompt[]>([
-    { title: "Discussion Question 1", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 },
-    { title: "Discussion Question 2", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 },
-    { title: "Discussion Question 3", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 },
-    { title: "Discussion Question 4", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 }
+    { title: "Discussion Question 1", prompt_text: "Audio prompt", part_number: 3, time_limit: 2, transcription: "" },
+    { title: "Discussion Question 2", prompt_text: "Audio prompt", part_number: 3, time_limit: 2, transcription: "" },
+    { title: "Discussion Question 3", prompt_text: "Audio prompt", part_number: 3, time_limit: 2, transcription: "" },
+    { title: "Discussion Question 4", prompt_text: "Audio prompt", part_number: 3, time_limit: 2, transcription: "" }
   ]);
 
   useEffect(() => {
@@ -179,7 +180,8 @@ const AdminIELTSSpeaking = () => {
         title: `Discussion Question ${index + 1}`, 
         prompt_text: "Audio prompt", 
         part_number: 3, 
-        time_limit: 2 
+        time_limit: 2,
+        transcription: ""
       }
     );
     setPart3Prompts(newPrompts);
@@ -218,7 +220,8 @@ const AdminIELTSSpeaking = () => {
           time_limit: prompt.time_limit,
           sample_answer: null, // No sample answers needed
           test_number: parseInt(testName) || 1,
-          cambridge_book: `Test ${testName}`
+          cambridge_book: `Test ${testName}`,
+          transcription: prompt.transcription || null
         }));
 
         const { error: insertError } = await supabase
@@ -347,6 +350,23 @@ const AdminIELTSSpeaking = () => {
                       <p className="text-sm text-gray-500">Upload audio for this question</p>
                     </div>
                   )}
+                  
+                  {/* Question Transcription Field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Question Transcription
+                    </label>
+                    <Textarea
+                      placeholder="Enter the exact text of the audio question..."
+                      value={prompt.transcription || ""}
+                      onChange={(e) => {
+                        const updated = [...part1Prompts];
+                        updated[index].transcription = e.target.value;
+                        setPart1Prompts(updated);
+                      }}
+                      className="rounded-xl min-h-[80px]"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -500,6 +520,23 @@ const AdminIELTSSpeaking = () => {
                       <p className="text-sm text-gray-500">Upload audio for this question</p>
                     </div>
                   )}
+                  
+                  {/* Question Transcription Field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Question Transcription
+                    </label>
+                    <Textarea
+                      placeholder="Enter the exact text of the audio question..."
+                      value={prompt.transcription || ""}
+                      onChange={(e) => {
+                        const updated = [...part3Prompts];
+                        updated[index].transcription = e.target.value;
+                        setPart3Prompts(updated);
+                      }}
+                      className="rounded-xl min-h-[80px]"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ))}

@@ -17,7 +17,7 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    const { audio, prompt, speakingPart } = await req.json();
+    const { audio, prompt, speakingPart, questionTranscription } = await req.json();
 
     if (!audio) {
       throw new Error('No audio data provided');
@@ -59,7 +59,7 @@ You will first provide a whole number band score (0-9) for each of the four crit
 
 Now, please assess the following submission against the relevant band descriptors:
 
-PROMPT: ${prompt}
+ORIGINAL QUESTION: "${questionTranscription || prompt}"
 
 STUDENT RESPONSE: "${transcription}"
 

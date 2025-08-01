@@ -17,6 +17,7 @@ interface SpeakingPrompt {
   part_number: number;
   time_limit: number;
   audio_url?: string;
+  transcription?: string;
 }
 
 interface TestData {
@@ -300,7 +301,7 @@ const IELTSSpeakingTest = () => {
 
       const uploadedRecordings = await Promise.all(uploadPromises);
 
-      // Navigate to results page with recordings data
+      // Navigate to results page with recordings data and test prompts for transcriptions
       navigate('/ielts-speaking-results', { 
         state: { 
           testData, 

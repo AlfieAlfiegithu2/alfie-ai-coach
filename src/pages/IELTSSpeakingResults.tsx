@@ -30,6 +30,8 @@ interface FeedbackData {
   overall_band_score: number;
   transcription: string;
   path_to_higher_score: string[];
+  questionTranscription?: string;
+  prompt?: string;
 }
 
 const IELTSSpeakingResults = () => {
@@ -52,6 +54,50 @@ const IELTSSpeakingResults = () => {
     analyzeRecordings();
   }, [testData, recordings, navigate]);
 
+  const parseAnalysisText = (analysis: string, transcription: string, questionTranscription: string, prompt: string): FeedbackData => {
+    // Extract scores using regex patterns
+    const fluencyMatch = analysis.match(/FLUENCY.*?(\d+)/i);
+    const lexicalMatch = analysis.match(/LEXICAL.*?(\d+)/i);
+    const grammaticalMatch = analysis.match(/GRAMMATICAL.*?(\d+)/i);
+    const pronunciationMatch = analysis.match(/PRONUNCIATION.*?(\d+)/i);
+    const overallMatch = analysis.match(/OVERALL.*?(\d+\.?\d*)/i);
+    
+    // Extract feedback sections
+    const sections = analysis.split(/\*\*|\n\n/);
+    const fluencyFeedback = sections.find(s => s.includes('FLUENCY'))?.replace(/FLUENCY.*?:/i, '').trim() || 'Good fluency overall.';
+    const lexicalFeedback = sections.find(s => s.includes('LEXICAL'))?.replace(/LEXICAL.*?:/i, '').trim() || 'Adequate vocabulary range.';
+    const grammaticalFeedback = sections.find(s => s.includes('GRAMMATICAL'))?.replace(/GRAMMATICAL.*?:/i, '').trim() || 'Mixed grammatical structures.';
+    const pronunciationFeedback = sections.find(s => s.includes('PRONUNCIATION'))?.replace(/PRONUNCIATION.*?:/i, '').trim() || 'Generally clear pronunciation.';
+    
+    return {
+      fluency_coherence: {
+        score: fluencyMatch ? parseInt(fluencyMatch[1]) : 6,
+        feedback: fluencyFeedback
+      },
+      lexical_resource: {
+        score: lexicalMatch ? parseInt(lexicalMatch[1]) : 6,
+        feedback: lexicalFeedback
+      },
+      grammatical_range: {
+        score: grammaticalMatch ? parseInt(grammaticalMatch[1]) : 6,
+        feedback: grammaticalFeedback
+      },
+      pronunciation: {
+        score: pronunciationMatch ? parseInt(pronunciationMatch[1]) : 6,
+        feedback: pronunciationFeedback
+      },
+      overall_band_score: overallMatch ? parseFloat(overallMatch[1]) : 6.0,
+      transcription,
+      questionTranscription,
+      prompt,
+      path_to_higher_score: [
+        "Expand vocabulary range with more sophisticated expressions",
+        "Practice complex grammatical structures",
+        "Work on pronunciation clarity and intonation"
+      ]
+    };
+  };
+
   const analyzeRecordings = async () => {
     setIsLoading(true);
     try {
@@ -61,13 +107,36 @@ const IELTSSpeakingResults = () => {
         const response = await fetch(recording.audio_url);
         const blob = await response.blob();
         
+        // Get the corresponding question and its transcription
+        const partMatch = recording.part.match(/part(\d+)_q(\d+)/);
+        let questionTranscription = "";
+        let prompt = "";
+        
+        if (partMatch) {
+          const partNum = parseInt(partMatch[1]);
+          const questionIndex = parseInt(partMatch[2]);
+          
+          if (partNum === 1 && testData.part1_prompts[questionIndex]) {
+            questionTranscription = testData.part1_prompts[questionIndex].transcription || "";
+            prompt = testData.part1_prompts[questionIndex].title;
+          } else if (partNum === 2 && testData.part2_prompt) {
+            questionTranscription = testData.part2_prompt.prompt_text;
+            prompt = testData.part2_prompt.title;
+          } else if (partNum === 3 && testData.part3_prompts[questionIndex]) {
+            questionTranscription = testData.part3_prompts[questionIndex].transcription || "";
+            prompt = testData.part3_prompts[questionIndex].title;
+          }
+        }
+        
         return new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => {
             const base64Audio = reader.result?.toString().split(',')[1];
             resolve({
               part: recording.part,
-              audio_base64: base64Audio
+              audio_base64: base64Audio,
+              questionTranscription,
+              prompt
             });
           };
           reader.readAsDataURL(blob);
@@ -76,19 +145,27 @@ const IELTSSpeakingResults = () => {
 
       const audioData = await Promise.all(analysisPromises);
 
-      // Send to speech analysis function
+      // Send to speech analysis function with the first recording and its question transcription
+      const firstRecording = audioData[0] as any;
       const { data: result, error } = await supabase.functions.invoke('speech-analysis', {
         body: {
-          audio_recordings: audioData,
-          test_type: 'IELTS_SPEAKING',
-          test_name: testData.test_name
+          audio: firstRecording.audio_base64,
+          prompt: firstRecording.prompt,
+          speakingPart: "overall",
+          questionTranscription: firstRecording.questionTranscription
         }
       });
 
       if (error) throw error;
 
-      if (result?.feedback) {
-        setFeedback(result.feedback);
+      if (result?.analysis && result?.transcription) {
+        // Parse the AI analysis to extract structured feedback
+        const analysis = result.analysis;
+        const transcription = result.transcription;
+        
+        // Extract band scores and feedback from the analysis text
+        const feedbackData = parseAnalysisText(analysis, transcription, firstRecording.questionTranscription, firstRecording.prompt);
+        setFeedback(feedbackData);
       } else {
         throw new Error('No feedback received');
       }
@@ -268,11 +345,11 @@ const IELTSSpeakingResults = () => {
           </Card>
         </div>
 
-        {/* Transcription */}
+        {/* Question & Answer Comparison */}
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              Speech Transcription
+              Question & Response Analysis
               <Button
                 variant="outline"
                 size="sm"
@@ -295,8 +372,26 @@ const IELTSSpeakingResults = () => {
           </CardHeader>
           {showTranscription && (
             <CardContent>
-              <div className="p-4 bg-gray-50 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
-                {feedback.transcription}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Original Question */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-3 text-primary">
+                    Original Question: {feedback.prompt}
+                  </h4>
+                  <div className="p-4 bg-blue-50 rounded-lg text-sm leading-relaxed">
+                    {feedback.questionTranscription || "Question transcription not available"}
+                  </div>
+                </div>
+                
+                {/* Student Response */}
+                <div>
+                  <h4 className="font-semibold text-sm mb-3 text-green-600">
+                    Your Response
+                  </h4>
+                  <div className="p-4 bg-green-50 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
+                    {feedback.transcription}
+                  </div>
+                </div>
               </div>
             </CardContent>
           )}

@@ -490,6 +490,7 @@ export type Database = {
           test_number: number | null
           time_limit: number | null
           title: string
+          transcription: string | null
           updated_at: string
         }
         Insert: {
@@ -504,6 +505,7 @@ export type Database = {
           test_number?: number | null
           time_limit?: number | null
           title: string
+          transcription?: string | null
           updated_at?: string
         }
         Update: {
@@ -518,6 +520,7 @@ export type Database = {
           test_number?: number | null
           time_limit?: number | null
           title?: string
+          transcription?: string | null
           updated_at?: string
         }
         Relationships: []

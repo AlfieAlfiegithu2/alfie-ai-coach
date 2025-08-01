@@ -61,13 +61,11 @@ const AdminIELTSWritingTest = () => {
         .select('*')
         .eq('test_id', testId)
         .in('question_type', ['Task 1', 'Task 2'])
-        .order('part_number, created_at DESC');
+        .order('part_number');
 
       if (questionsError) throw questionsError;
 
-      console.log('Admin portal - loaded questions:', questions);
-
-      // Separate Task 1 and Task 2 questions (get most recent if duplicates exist)
+      // Separate Task 1 and Task 2 questions
       const task1Question = questions.find(q => q.part_number === 1);
       const task2Question = questions.find(q => q.part_number === 2);
 

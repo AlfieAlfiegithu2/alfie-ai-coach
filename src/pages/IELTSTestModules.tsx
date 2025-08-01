@@ -93,23 +93,39 @@ const IELTSTestModules = () => {
   };
 
   const handleModuleSelect = async (moduleId: string) => {
+    console.log(`🧪 Opening IELTS ${moduleId} for test ${testId}`);
+    
     if (moduleId === 'writing') {
-      // For writing, use the current test ID if it has writing questions
+      // For writing, navigate to the current test ID
       navigate(`/ielts-writing-test/${testId}`);
     } else if (moduleId === 'reading') {
-      // Dynamically find which test has reading questions
+      // For reading, use the current test ID directly
+      // Check if this test has reading questions first
       try {
         const { data: questions } = await supabase
           .from('questions')
-          .select('test_id')
-          .in('part_number', [1, 2, 3])  // Reading typically uses parts 1-3
+          .select('test_id, question_type')
+          .eq('test_id', testId)
+          .in('question_type', ['true_false_not_given', 'multiple_choice', 'short_answer', 'matching', 'title'])
           .limit(1);
         
         if (questions && questions.length > 0) {
-          const readingTestId = questions[0].test_id;
-          navigate(`/enhanced-reading-test/${readingTestId}`);
+          console.log(`📚 Found reading questions for test ${testId}`);
+          navigate(`/enhanced-reading-test/${testId}`);
         } else {
-          console.log('No reading questions found');
+          console.log(`❌ No reading questions found for test ${testId}`);
+          // Fallback: find any test with reading questions
+          const { data: fallbackQuestions } = await supabase
+            .from('questions')
+            .select('test_id, question_type')
+            .in('question_type', ['true_false_not_given', 'multiple_choice', 'short_answer', 'matching', 'title'])
+            .limit(1);
+          
+          if (fallbackQuestions && fallbackQuestions.length > 0) {
+            const readingTestId = fallbackQuestions[0].test_id;
+            console.log(`📚 Using fallback reading test ${readingTestId}`);
+            navigate(`/enhanced-reading-test/${readingTestId}`);
+          }
         }
       } catch (error) {
         console.error('Error finding reading test:', error);

@@ -45,6 +45,7 @@ import AdminIELTSReadingDashboard from "./pages/AdminIELTSReadingDashboard";
 import AdminIELTSListening from "./pages/AdminIELTSListening";
 import AdminIELTSWriting from "./pages/AdminIELTSWriting";
 import AdminIELTSWritingTest from "./pages/AdminIELTSWritingTest";
+import AdminIELTSSpeaking from "./pages/AdminIELTSSpeaking";
 import IELTSWritingTest from "./pages/IELTSWritingTest";
 import IELTSWritingResults from "./pages/IELTSWritingResults";
 import EnhancedReadingTest from "./pages/EnhancedReadingTest";
@@ -107,7 +108,7 @@ const App = () => {
         <Route path="/admin/ielts/test/:testId/writing" element={<AdminIELTSWritingTest />} />
         <Route path="/admin/ielts/writing" element={<AdminIELTSWriting />} />
         <Route path="/admin/ielts/writing/test/:testId" element={<AdminIELTSWritingTest />} />
-        <Route path="/admin/ielts/writing/test/:testId" element={<AdminIELTSWritingTest />} />
+        <Route path="/admin/ielts/test/:testId/speaking" element={<AdminIELTSSpeaking />} />
         <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
         <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
         <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />

@@ -90,6 +90,16 @@ const IELTSPortal = () => {
         throw questionsError;
       }
 
+      // Fetch speaking prompts to check speaking tests
+      const { data: speakingData, error: speakingError } = await supabase
+        .from('speaking_prompts')
+        .select('test_number, cambridge_book, id');
+
+      if (speakingError) {
+        console.error('Error fetching speaking prompts:', speakingError);
+        throw speakingError;
+      }
+
       // Group questions by test and check module availability
       const testModules = new Map();
       questionsData?.forEach(q => {
@@ -106,18 +116,42 @@ const IELTSPortal = () => {
         }
       });
 
+      // Add speaking tests
+      speakingData?.forEach(sp => {
+        // Find corresponding test by name
+        const matchingTest = testsData?.find(t => 
+          t.test_name === sp.test_number?.toString() || 
+          t.test_name.includes(sp.test_number?.toString() || '') ||
+          sp.cambridge_book?.includes(t.test_name)
+        );
+        
+        if (matchingTest) {
+          if (!testModules.has(matchingTest.id)) {
+            testModules.set(matchingTest.id, new Set());
+          }
+          testModules.get(matchingTest.id).add('speaking');
+        }
+      });
+
       const transformedTests = testsData?.map(test => {
         const availableModules = testModules.get(test.id) || new Set();
         const questionCount = questionsData?.filter(q => q.test_id === test.id).length || 0;
+        const speakingCount = speakingData?.filter(sp => 
+          sp.test_number?.toString() === test.test_name || 
+          sp.cambridge_book?.includes(test.test_name)
+        ).length || 0;
+        
+        const totalContent = questionCount + speakingCount;
         
         return {
           id: test.id,
           test_name: test.test_name, // Use exact test name from admin
           test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
-          status: questionCount > 0 ? 'complete' : 'incomplete',
+          status: totalContent > 0 ? 'complete' : 'incomplete',
           modules: Array.from(availableModules),
           total_questions: questionCount,
-          comingSoon: questionCount === 0
+          speaking_prompts: speakingCount,
+          comingSoon: totalContent === 0
         };
       }) || [];
 

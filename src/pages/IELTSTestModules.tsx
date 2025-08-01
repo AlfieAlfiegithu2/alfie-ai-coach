@@ -130,8 +130,29 @@ const IELTSTestModules = () => {
       } catch (error) {
         console.error('Error finding reading test:', error);
       }
+    } else if (moduleId === 'speaking') {
+      // For speaking, check if this test has speaking prompts
+      try {
+        const { data: prompts } = await supabase
+          .from('speaking_prompts')
+          .select('*')
+          .eq('cambridge_book', `Test ${test.test_name}`)
+          .limit(1);
+        
+        if (prompts && prompts.length > 0) {
+          console.log(`🎤 Found speaking prompts for test ${testId}`);
+          navigate(`/speaking/test/${test.test_name}`);
+        } else {
+          console.log(`❌ No speaking prompts found for test ${testId}`);
+          // Navigate to general speaking practice
+          navigate('/speaking');
+        }
+      } catch (error) {
+        console.error('Error finding speaking test:', error);
+        navigate('/speaking');
+      }
     } else {
-      // For listening and speaking, show coming soon or implement later
+      // For listening, show coming soon or implement later
       console.log(`${moduleId} module coming soon`);
     }
   };
@@ -179,7 +200,7 @@ const IELTSTestModules = () => {
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {modules.map((module) => {
               const Icon = module.icon;
-              const isAvailable = module.id === 'writing' || module.id === 'reading';
+              const isAvailable = module.id === 'writing' || module.id === 'reading' || module.id === 'speaking';
               
               return (
                 <Card 

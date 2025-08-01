@@ -106,6 +106,27 @@ const AdminIELTS = () => {
     }
   };
 
+  const createSpeakingTest = async () => {
+    setIsCreating(true);
+    try {
+      const result = await createContent('tests', {
+        test_name: `IELTS Speaking Test ${tests.length + 1}`,
+        test_type: 'IELTS',
+        module: 'Speaking'
+      });
+
+      if (result.data) {
+        toast.success('Speaking test created successfully');
+        navigate(`/admin/ielts/test/${result.data.id}/speaking`);
+      }
+    } catch (error) {
+      console.error('Error creating speaking test:', error);
+      toast.error('Failed to create speaking test');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   useEffect(() => {
     if (!loading && !admin) {
       navigate('/admin/login');
@@ -156,7 +177,8 @@ const AdminIELTS = () => {
       title: "Speaking",
       icon: Mic,
       description: "Manage IELTS Speaking topics and assessments",
-      path: "/admin/speaking"
+      path: "/admin/speaking",
+      createTest: () => createSpeakingTest()
     }
   ];
 
@@ -176,6 +198,24 @@ const AdminIELTS = () => {
           <Badge variant="secondary" className="text-sm">
             IELTS Module
           </Badge>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          {sections.map((section) => (
+            <Card key={section.id} className="cursor-pointer hover:shadow-lg transition-shadow" 
+                  onClick={() => section.id === 'speaking' ? createSpeakingTest() : navigate(section.path)}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">+ Add {section.title}</CardTitle>
+                <section.icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  {section.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Quick Stats */}
@@ -275,7 +315,7 @@ const AdminIELTS = () => {
                     <Card 
                       key={test.id} 
                       className="cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => !editingTestId && navigate(`/admin/ielts/test/${test.id}`)}
+                      onClick={() => !editingTestId && navigate(test.module === 'Speaking' ? `/admin/ielts/test/${test.id}/speaking` : `/admin/ielts/test/${test.id}`)}
                     >
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">

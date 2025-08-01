@@ -53,7 +53,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   
   const percentage = Math.round((score / totalQuestions) * 100);
   
-  // IELTS Reading band score conversion (Academic)
+  // IELTS Reading band score conversion (Official 0-9 scale)
   const calculateBandScore = (percentage: number) => {
     if (percentage >= 97) return 9;
     if (percentage >= 89) return 8.5;
@@ -68,7 +68,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
     if (percentage >= 18) return 4;
     if (percentage >= 10) return 3.5;
     if (percentage >= 5) return 3;
-    return 2.5;
+    if (percentage >= 2) return 2.5;
+    if (percentage >= 1) return 2;
+    if (percentage > 0) return 1;
+    return 0;
   };
   
   const estimatedBandScore = calculateBandScore(percentage);

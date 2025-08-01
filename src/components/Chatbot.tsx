@@ -43,7 +43,7 @@ const Chatbot = () => {
     'listening': 'IELTS Listening tips:\n\n• Listen for keywords and synonyms\n• Predict answers from context\n• Write as you listen\n• Check spelling and grammar\n• Use time between sections wisely\n• Practice with different accents\n\nAny specific listening challenges I can help with?',
     'grammar': 'Common grammar areas for English tests:\n\n• Tenses (present perfect vs past simple)\n• Articles (a, an, the)\n• Prepositions (in, on, at)\n• Conditional sentences\n• Passive voice\n• Modal verbs\n\nWhich grammar topic would you like me to explain?',
     'vocabulary': 'Building vocabulary for English tests:\n\n• Learn academic word lists\n• Practice collocations\n• Use vocabulary in context\n• Learn word families (noun, verb, adjective)\n• Practice synonyms and paraphrasing\n• Read widely for exposure\n\nWant specific vocabulary for any topic?',
-    'band': 'IELTS Band scores explained:\n\n• Band 9: Expert user\n• Band 8: Very good user\n• Band 7: Good user (often required)\n• Band 6: Competent user\n• Band 5: Modest user\n\nEach skill is scored separately, then averaged. Most universities require 6.5-7.0 overall.\n\nWhat band score are you aiming for?'
+    'band': 'IELTS Band scores explained (Official 0-9 scale):\n\n• Band 9: Expert user\n• Band 8: Very good user\n• Band 7: Good user (often required)\n• Band 6: Competent user\n• Band 5: Modest user\n• Band 4: Limited user\n• Band 3: Extremely limited user\n• Band 2: Intermittent user\n• Band 1: Non-user\n• Band 0: Did not attempt\n\nEach skill is scored separately with half-bands (e.g., 6.5, 7.5), then averaged. Most universities require 6.5-7.0 overall.\n\nWhat band score are you aiming for?'
   };
 
   const getResponse = (message: string): string => {
@@ -62,7 +62,7 @@ const Chatbot = () => {
     }
     
     if (lowerMessage.includes('score') || lowerMessage.includes('band')) {
-      return 'Test scores vary by exam:\n\n• IELTS: Bands 1-9 (half bands allowed)\n• PTE: Scores 10-90\n• TOEFL: Total 0-120 (each skill 0-30)\n\nWhat\'s your target score and which test are you taking?';
+      return 'Test scores vary by exam:\n\n• IELTS: Bands 0-9 (half bands allowed, e.g., 6.5, 7.5)\n• PTE: Scores 10-90\n• TOEFL: Total 0-120 (each skill 0-30)\n\nWhat\'s your target score and which test are you taking?';
     }
     
     return 'I understand you\'re asking about "' + message + '". Let me help you with that!\n\nFor specific guidance, try asking about:\n• Writing techniques\n• Speaking strategies\n• Grammar rules\n• Vocabulary building\n• Test preparation\n\nWhat specific aspect would you like to focus on?';

@@ -35,7 +35,11 @@ const TestResults = ({
     if (percentage >= 40) return 5.5;
     if (percentage >= 30) return 5.0;
     if (percentage >= 20) return 4.5;
-    return 4.0;
+    if (percentage >= 10) return 4.0;
+    if (percentage >= 5) return 3.0;
+    if (percentage >= 2) return 2.0;
+    if (percentage > 0) return 1.0;
+    return 0;
   };
 
   const bandScore = getBandScore(percentage);

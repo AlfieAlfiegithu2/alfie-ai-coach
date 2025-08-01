@@ -224,7 +224,12 @@ const ListeningTest = () => {
     if (percentage >= 60) return "6.0-6.5";
     if (percentage >= 50) return "5.0-5.5";
     if (percentage >= 40) return "4.0-4.5";
-    return "Below 4.0";
+    if (percentage >= 30) return "3.5-4.0";
+    if (percentage >= 20) return "3.0-3.5";
+    if (percentage >= 10) return "2.0-3.0";
+    if (percentage >= 5) return "1.0-2.0";
+    if (percentage > 0) return "0.5-1.0";
+    return "0";
   };
 
   const formatTime = (seconds: number) => {

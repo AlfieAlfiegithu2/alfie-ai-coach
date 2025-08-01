@@ -55,7 +55,7 @@ Please provide a comprehensive assessment using this EXACT format:
 ## TASK 1 ASSESSMENT
 
 ### Task Achievement
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
@@ -63,7 +63,7 @@ Please provide a comprehensive assessment using this EXACT format:
 • [List specific areas with examples]
 
 ### Coherence and Cohesion  
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
@@ -71,7 +71,7 @@ Please provide a comprehensive assessment using this EXACT format:
 • [List specific areas with examples]
 
 ### Lexical Resource
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
@@ -79,21 +79,21 @@ Please provide a comprehensive assessment using this EXACT format:
 • [List specific areas with examples]
 
 ### Grammatical Range and Accuracy
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
 **Areas for Improvement:**
 • [List specific areas with examples]
 
-**Task 1 Overall Band Score: [4-9]**
+**Task 1 Overall Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 
 ---
 
 ## TASK 2 ASSESSMENT
 
 ### Task Response
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
@@ -101,7 +101,7 @@ Please provide a comprehensive assessment using this EXACT format:
 • [List specific areas with examples]
 
 ### Coherence and Cohesion
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
@@ -109,7 +109,7 @@ Please provide a comprehensive assessment using this EXACT format:
 • [List specific areas with examples]
 
 ### Lexical Resource
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
@@ -117,20 +117,20 @@ Please provide a comprehensive assessment using this EXACT format:
 • [List specific areas with examples]
 
 ### Grammatical Range and Accuracy
-**Band Score: [4-9]**
+**Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 **Positive Feedback:**
 • [List specific strengths]
 
 **Areas for Improvement:**
 • [List specific areas with examples]
 
-**Task 2 Overall Band Score: [4-9]**
+**Task 2 Overall Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 
 ---
 
 ## OVERALL WRITING ASSESSMENT
 
-**Overall Writing Band Score: [4-9]**
+**Overall Writing Band Score: [0-9 with half-bands e.g., 6.5, 7.5]**
 
 ### Your Path to a Higher Score
 [Provide 2-3 clear, actionable steps the student can take to improve, based on their performance. Be specific and practical.]
@@ -148,7 +148,7 @@ Be precise, professional, and constructive in your feedback. Focus on actionable
         messages: [
           {
             role: 'system',
-            content: 'You are a senior IELTS Writing examiner who values effective communication over mechanical correctness. Your assessment should be holistic, focusing on how well the student communicates their ideas rather than simply counting errors. For Task Achievement/Response, prioritize whether they answered the specific question fully and effectively. For Coherence, focus on logical flow and clarity. For Lexical Resource, reward natural and precise word choice over "fancy" vocabulary. For Grammar, assess flexibility and communication effectiveness, not just accuracy. Your feedback should feel human and encouraging while maintaining professional standards.'
+            content: 'You are a senior IELTS Writing examiner who values effective communication over mechanical correctness. Use the official IELTS 0-9 band scale with half-bands (e.g., 6.5, 7.5). Your assessment should be holistic, focusing on how well the student communicates their ideas rather than simply counting errors. For Task Achievement/Response, prioritize whether they answered the specific question fully and effectively. For Coherence, focus on logical flow and clarity. For Lexical Resource, reward natural and precise word choice over "fancy" vocabulary. For Grammar, assess flexibility and communication effectiveness, not just accuracy. Your feedback should feel human and encouraging while maintaining professional standards.'
           },
           {
             role: 'user',

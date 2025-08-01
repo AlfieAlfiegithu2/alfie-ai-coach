@@ -39,14 +39,14 @@ Provide detailed analysis in the following format:
 - Key features covered: [List what's included/missing]
 - Position clarity: [For Task 2, is the position clear?]
 - Overview effectiveness: [For Task 1, is overview present and effective?]
-- Band Score: [4-9 with detailed justification]
+- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
 
 **COHERENCE & COHESION** (25%):
 - Overall organization: [Rate 1-10]
 - Paragraph structure: [Analyze logical flow]
 - Cohesive devices: [Identify overuse/underuse/misuse]
 - Progression of ideas: [Note any unclear connections]
-- Band Score: [4-9 with detailed justification]
+- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
 
 **LEXICAL RESOURCE** (25%):
 - Vocabulary range: [Rate 1-10, note sophistication]
@@ -54,16 +54,16 @@ Provide detailed analysis in the following format:
 - Spelling accuracy: [Count and list errors]
 - Word formation: [Note any issues]
 - Collocations: [Identify natural/unnatural combinations]
-- Band Score: [4-9 with detailed justification]
+- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
 
 **GRAMMATICAL RANGE & ACCURACY** (25%):
 - Sentence variety: [Analyze simple/complex structures]
 - Grammar accuracy: [Count and categorize errors]
 - Punctuation: [Note errors and patterns]
 - Common error patterns: [Identify systematic issues]
-- Band Score: [4-9 with detailed justification]
+- Band Score: [0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
 
-**PREDICTED BAND SCORE**: [Overall band 4-9 with explanation]
+**PREDICTED BAND SCORE**: [Overall band 0-9 with half-bands (e.g., 6.5, 7.5) - detailed explanation]
 
 **ERROR ANALYSIS**:
 - Critical errors: [List errors that impede communication]
@@ -99,7 +99,7 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
         messages: [
           {
             role: 'system',
-            content: 'You are an expert IELTS Writing examiner with deep knowledge of band descriptors and assessment criteria. Provide detailed, professional feedback.'
+            content: 'You are an expert IELTS Writing examiner with deep knowledge of band descriptors and assessment criteria. Use the official IELTS 0-9 band scale with half-bands (e.g., 6.5, 7.5). Provide detailed, professional feedback.'
           },
           {
             role: 'user',

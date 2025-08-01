@@ -84,12 +84,12 @@ Provide detailed analysis in the following format:
 - Specific accent features: [List observable characteristics]
 
 **IELTS SPEAKING CRITERIA**:
-- Fluency & Coherence: [Band score 4-9 with justification]
-- Lexical Resource: [Band score 4-9 with justification]
-- Grammatical Range: [Band score 4-9 with justification]
-- Pronunciation: [Band score 4-9 with justification]
+- Fluency & Coherence: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+- Lexical Resource: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+- Grammatical Range: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
+- Pronunciation: [Band score 0-9 with half-bands (e.g., 6.5, 7.5) - detailed justification]
 
-**PREDICTED BAND SCORE**: [Overall band with explanation]
+**PREDICTED BAND SCORE**: [Overall band 0-9 with half-bands (e.g., 6.5, 7.5) - detailed explanation]
 
 **SPECIFIC IMPROVEMENT RECOMMENDATIONS**:
 1. [Immediate focus area with practice suggestions]
@@ -112,7 +112,7 @@ Be specific, constructive, and provide actionable feedback that helps improve pe
         messages: [
           {
             role: 'system',
-            content: 'You are an expert IELTS examiner specializing in pronunciation, phonetics, and accent analysis. Provide detailed, professional feedback.'
+            content: 'You are an expert IELTS examiner specializing in pronunciation, phonetics, and accent analysis. Use the official IELTS 0-9 band scale with half-bands (e.g., 6.5, 7.5). Provide detailed, professional feedback.'
           },
           {
             role: 'user',

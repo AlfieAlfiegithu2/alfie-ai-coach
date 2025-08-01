@@ -31,15 +31,15 @@ const AdminIELTSSpeaking = () => {
   const [testName, setTestName] = useState("");
   const [saving, setSaving] = useState(false);
   
-  // Part 1: Interview (4 slots)
+  // Part 1: Interview (4 audio slots only)
   const [part1Prompts, setPart1Prompts] = useState<SpeakingPrompt[]>([
-    { title: "", prompt_text: "", part_number: 1, time_limit: 2 },
-    { title: "", prompt_text: "", part_number: 1, time_limit: 2 },
-    { title: "", prompt_text: "", part_number: 1, time_limit: 2 },
-    { title: "", prompt_text: "", part_number: 1, time_limit: 2 }
+    { title: "Interview Question 1", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 },
+    { title: "Interview Question 2", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 },
+    { title: "Interview Question 3", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 },
+    { title: "Interview Question 4", prompt_text: "Audio prompt", part_number: 1, time_limit: 2 }
   ]);
 
-  // Part 2: Long Turn / Cue Card
+  // Part 2: Long Turn / Cue Card (text only, no sample answer)
   const [part2Prompt, setPart2Prompt] = useState<SpeakingPrompt>({
     title: "Cue Card",
     prompt_text: "",
@@ -47,13 +47,13 @@ const AdminIELTSSpeaking = () => {
     time_limit: 3
   });
 
-  // Part 3: Discussion (4-6 questions)
+  // Part 3: Discussion (4-6 audio questions only)
   const [part3Questions, setPart3Questions] = useState(4);
   const [part3Prompts, setPart3Prompts] = useState<SpeakingPrompt[]>([
-    { title: "", prompt_text: "", part_number: 3, time_limit: 2 },
-    { title: "", prompt_text: "", part_number: 3, time_limit: 2 },
-    { title: "", prompt_text: "", part_number: 3, time_limit: 2 },
-    { title: "", prompt_text: "", part_number: 3, time_limit: 2 }
+    { title: "Discussion Question 1", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 },
+    { title: "Discussion Question 2", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 },
+    { title: "Discussion Question 3", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 },
+    { title: "Discussion Question 4", prompt_text: "Audio prompt", part_number: 3, time_limit: 2 }
   ]);
 
   useEffect(() => {
@@ -156,7 +156,12 @@ const AdminIELTSSpeaking = () => {
   const updatePart3Questions = (count: number) => {
     setPart3Questions(count);
     const newPrompts = Array.from({ length: count }, (_, index) => 
-      part3Prompts[index] || { title: "", prompt_text: "", part_number: 3, time_limit: 2 }
+      part3Prompts[index] || { 
+        title: `Discussion Question ${index + 1}`, 
+        prompt_text: "Audio prompt", 
+        part_number: 3, 
+        time_limit: 2 
+      }
     );
     setPart3Prompts(newPrompts);
   };
@@ -167,13 +172,13 @@ const AdminIELTSSpeaking = () => {
       let prompts: SpeakingPrompt[] = [];
       
       if (partNumber === 1) {
-        prompts = part1Prompts.filter(p => p.title && p.prompt_text);
+        prompts = part1Prompts.filter(p => p.audio_url); // Only save if audio is uploaded
       } else if (partNumber === 2) {
         if (part2Prompt.prompt_text) {
           prompts = [part2Prompt];
         }
       } else if (partNumber === 3) {
-        prompts = part3Prompts.filter(p => p.title && p.prompt_text);
+        prompts = part3Prompts.filter(p => p.audio_url); // Only save if audio is uploaded
       }
 
       // Delete existing prompts for this part
@@ -192,7 +197,7 @@ const AdminIELTSSpeaking = () => {
           prompt_text: prompt.prompt_text,
           part_number: prompt.part_number,
           time_limit: prompt.time_limit,
-          sample_answer: prompt.sample_answer || null,
+          sample_answer: null, // No sample answers needed
           test_number: parseInt(testName) || 1,
           cambridge_book: `Test ${testName}`
         }));
@@ -273,51 +278,38 @@ const AdminIELTSSpeaking = () => {
               <Card key={index} className="border-light-border bg-white/50">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline">Question {index + 1}</Badge>
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleAudioUpload(file, 1, index);
-                      }}
-                      className="hidden"
-                      id={`audio-part1-${index}`}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById(`audio-part1-${index}`)?.click()}
-                      className="rounded-xl"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Audio
-                    </Button>
+                    <Badge variant="outline">Audio Question {index + 1}</Badge>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAudioUpload(file, 1, index);
+                        }}
+                        className="hidden"
+                        id={`audio-part1-${index}`}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById(`audio-part1-${index}`)?.click()}
+                        className="rounded-xl"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Audio
+                      </Button>
+                    </div>
                   </div>
-                  <Input
-                    placeholder="Question title"
-                    value={prompt.title}
-                    onChange={(e) => {
-                      const updated = [...part1Prompts];
-                      updated[index].title = e.target.value;
-                      setPart1Prompts(updated);
-                    }}
-                    className="rounded-xl"
-                  />
-                  <Textarea
-                    placeholder="Question text"
-                    value={prompt.prompt_text}
-                    onChange={(e) => {
-                      const updated = [...part1Prompts];
-                      updated[index].prompt_text = e.target.value;
-                      setPart1Prompts(updated);
-                    }}
-                    className="rounded-xl min-h-[80px]"
-                  />
-                  {prompt.audio_url && (
+                  {prompt.audio_url ? (
                     <div className="flex items-center space-x-2 text-sm text-green-600">
                       <Mic className="w-4 h-4" />
-                      <span>Audio uploaded</span>
+                      <span>Audio uploaded successfully</span>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                      <Mic className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-500">Upload audio for this question</p>
                     </div>
                   )}
                 </CardContent>
@@ -377,15 +369,6 @@ const AdminIELTSSpeaking = () => {
                   }))}
                   className="rounded-xl min-h-[120px]"
                 />
-                <Textarea
-                  placeholder="Sample answer (optional)"
-                  value={part2Prompt.sample_answer || ""}
-                  onChange={(e) => setPart2Prompt(prev => ({ 
-                    ...prev, 
-                    sample_answer: e.target.value 
-                  }))}
-                  className="rounded-xl min-h-[80px]"
-                />
               </CardContent>
             </Card>
           </CardContent>
@@ -432,51 +415,38 @@ const AdminIELTSSpeaking = () => {
               <Card key={index} className="border-light-border bg-white/50">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline">Question {index + 1}</Badge>
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleAudioUpload(file, 3, index);
-                      }}
-                      className="hidden"
-                      id={`audio-part3-${index}`}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById(`audio-part3-${index}`)?.click()}
-                      className="rounded-xl"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Audio
-                    </Button>
+                    <Badge variant="outline">Audio Question {index + 1}</Badge>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAudioUpload(file, 3, index);
+                        }}
+                        className="hidden"
+                        id={`audio-part3-${index}`}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById(`audio-part3-${index}`)?.click()}
+                        className="rounded-xl"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Audio
+                      </Button>
+                    </div>
                   </div>
-                  <Input
-                    placeholder="Question title"
-                    value={prompt.title}
-                    onChange={(e) => {
-                      const updated = [...part3Prompts];
-                      updated[index].title = e.target.value;
-                      setPart3Prompts(updated);
-                    }}
-                    className="rounded-xl"
-                  />
-                  <Textarea
-                    placeholder="Discussion question"
-                    value={prompt.prompt_text}
-                    onChange={(e) => {
-                      const updated = [...part3Prompts];
-                      updated[index].prompt_text = e.target.value;
-                      setPart3Prompts(updated);
-                    }}
-                    className="rounded-xl min-h-[80px]"
-                  />
-                  {prompt.audio_url && (
+                  {prompt.audio_url ? (
                     <div className="flex items-center space-x-2 text-sm text-green-600">
                       <Mic className="w-4 h-4" />
-                      <span>Audio uploaded</span>
+                      <span>Audio uploaded successfully</span>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                      <Mic className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-500">Upload audio for this question</p>
                     </div>
                   )}
                 </CardContent>

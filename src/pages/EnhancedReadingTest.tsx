@@ -882,24 +882,28 @@ const EnhancedReadingTest = () => {
                              );
                            }
                            
-                           // Matching questions (headings, features, sentence endings)
-                           if (detectedType.includes('matching') && question.options && question.options.length > 0) {
-                             return (
-                               <RadioGroup
-                                 value={answers[question.id] || ''}
-                                 onValueChange={(value) => handleAnswerChange(question.id, value)}
-                               >
-                                 {question.options.map((option, index) => (
-                                   <div key={index} className="flex items-center space-x-2">
-                                     <RadioGroupItem value={option} id={`${question.id}-${index}`} />
-                                     <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
-                                       {option}
-                                     </Label>
-                                   </div>
-                                 ))}
-                               </RadioGroup>
-                             );
-                           }
+                            // Matching questions (headings, features, sentence endings)
+                            if (detectedType.includes('matching') && question.options && question.options.length > 0) {
+                              return (
+                                <RadioGroup
+                                  value={answers[question.id] || ''}
+                                  onValueChange={(value) => handleAnswerChange(question.id, value)}
+                                >
+                                  {question.options.map((option, index) => {
+                                    // Extract just the Roman numeral or letter from the beginning of the option
+                                    const optionValue = option.match(/^([ivxlcdm]+|[a-z])\./i)?.[1] || option;
+                                    return (
+                                      <div key={index} className="flex items-center space-x-2">
+                                        <RadioGroupItem value={optionValue} id={`${question.id}-${index}`} />
+                                        <Label htmlFor={`${question.id}-${index}`} className="cursor-pointer">
+                                          {option}
+                                        </Label>
+                                      </div>
+                                    );
+                                  })}
+                                </RadioGroup>
+                              );
+                            }
                            
                            // Default to text input for completion types, short answer, etc.
                            return (

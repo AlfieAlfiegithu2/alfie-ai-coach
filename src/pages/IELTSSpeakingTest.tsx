@@ -70,13 +70,25 @@ const IELTSSpeakingTest = () => {
     
     setIsLoading(true);
     try {
-      const { data: prompts, error } = await supabase
-        .from('speaking_prompts')
-        .select('*')
-        .eq('cambridge_book', `Test ${testName}`)
-        .order('part_number', { ascending: true });
+      console.log(`🔍 Loading speaking test data for: ${testName}`);
+      
+      // Try multiple query patterns to find speaking content
+      const queries = [
+        supabase.from('speaking_prompts').select('*').eq('cambridge_book', `Test ${testName}`),
+        supabase.from('speaking_prompts').select('*').eq('test_number', parseInt(testName.match(/\d+/)?.[0] || '1')),
+        supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%${testName}%`)
+      ];
 
-      if (error) throw error;
+      let prompts = null;
+      for (const query of queries) {
+        const { data, error } = await query.order('part_number', { ascending: true });
+        if (error) throw error;
+        if (data && data.length > 0) {
+          prompts = data;
+          console.log(`✅ Found ${data.length} speaking prompts using query pattern`);
+          break;
+        }
+      }
 
       if (prompts && prompts.length > 0) {
         const part1 = prompts.filter(p => p.part_number === 1);
@@ -90,13 +102,18 @@ const IELTSSpeakingTest = () => {
           part2_prompt: part2 || null,
           part3_prompts: part3
         });
+        
+        console.log(`📝 Test data loaded: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
       } else {
-        toast({
-          title: "No Content Found",
-          description: "This test doesn't have speaking content yet.",
-          variant: "destructive"
+        console.log(`⚠️ No speaking content found for test ${testName} - showing placeholder interface`);
+        // Show interface even without content, with helpful message
+        setTestData({
+          id: testName,
+          test_name: testName,
+          part1_prompts: [],
+          part2_prompt: null,
+          part3_prompts: []
         });
-        navigate('/ielts-portal');
       }
     } catch (error) {
       console.error('Error loading test data:', error);
@@ -105,7 +122,7 @@ const IELTSSpeakingTest = () => {
         description: "Failed to load test data",
         variant: "destructive"
       });
-      navigate('/ielts-portal');
+      // Don't navigate away, show error state instead
     } finally {
       setIsLoading(false);
     }
@@ -291,6 +308,40 @@ const IELTSSpeakingTest = () => {
           </Button>
         </div>
       </div>
+    );
+  }
+
+  // Show no content message if test has no speaking prompts
+  if (testData.part1_prompts.length === 0 && !testData.part2_prompt && testData.part3_prompts.length === 0) {
+    return (
+      <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="text-center">
+            <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
+              IELTS SPEAKING TEST
+            </Badge>
+            <h1 className="text-heading-2 mb-2">{testData.test_name}</h1>
+          </div>
+          
+          <Card className="card-modern">
+            <CardContent className="p-8 text-center">
+              <Mic className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h2 className="text-xl font-semibold mb-2">No Speaking Content Available</h2>
+              <p className="text-muted-foreground mb-6">
+                This test doesn't have speaking content created yet. Please contact your administrator or try another test.
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                  Back to Portal
+                </Button>
+                <Button onClick={() => navigate('/speaking')}>
+                  Try General Speaking Practice
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </StudentLayout>
     );
   }
 

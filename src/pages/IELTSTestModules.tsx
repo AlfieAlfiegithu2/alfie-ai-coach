@@ -133,23 +133,37 @@ const IELTSTestModules = () => {
     } else if (moduleId === 'speaking') {
       // For speaking, check if this test has speaking prompts
       try {
-        const { data: prompts } = await supabase
-          .from('speaking_prompts')
-          .select('*')
-          .eq('cambridge_book', `Test ${test.test_name}`)
-          .limit(1);
+        console.log(`🔍 Looking for speaking prompts for test: ${test.test_name}`);
+        
+        // Try multiple query patterns to find speaking content
+        const queries = [
+          supabase.from('speaking_prompts').select('*').eq('cambridge_book', `Test ${test.test_name}`),
+          supabase.from('speaking_prompts').select('*').eq('test_number', parseInt(test.test_name.match(/\d+/)?.[0] || '1')),
+          supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%${test.test_name}%`)
+        ];
+
+        let prompts = null;
+        for (const query of queries) {
+          const { data } = await query.limit(1);
+          if (data && data.length > 0) {
+            prompts = data;
+            break;
+          }
+        }
         
         if (prompts && prompts.length > 0) {
-          console.log(`🎤 Found speaking prompts for test ${testId}`);
+          console.log(`🎤 Found speaking prompts for test ${test.test_name}`);
           navigate(`/ielts-speaking-test/${test.test_name}`);
         } else {
-          console.log(`❌ No speaking prompts found for test ${testId}`);
-          // Navigate to general speaking practice
-          navigate('/speaking');
+          console.log(`❌ No speaking prompts found for test ${test.test_name}`);
+          console.log(`🔄 Redirecting to new IELTS speaking interface with test name: ${test.test_name}`);
+          // Always use the new interface, even if no content found yet
+          navigate(`/ielts-speaking-test/${test.test_name}`);
         }
       } catch (error) {
         console.error('Error finding speaking test:', error);
-        navigate('/speaking');
+        // Still redirect to new interface on error
+        navigate(`/ielts-speaking-test/${test.test_name}`);
       }
     } else {
       // For listening, show coming soon or implement later

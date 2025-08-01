@@ -188,7 +188,22 @@ Please provide a comprehensive assessment using this EXACT format:
 
 ## OVERALL WRITING ASSESSMENT
 
-**Overall Writing Band Score: [Calculate using rounding rules]**
+--- **Final Overall Writing Score Calculation (CRITICAL - Weighted Average):**
+
+After you have calculated the individual Overall Band Scores for Task 1 and Task 2, you must combine them to produce the final Overall Writing Band Score.
+
+The calculation must follow the official IELTS weighting: **Task 2 is worth twice as much as Task 1.**
+
+You must use the following formula: Overall Writing Score = ( (Task 1 Overall Score * 1) + (Task 2 Overall Score * 2) ) / 3
+
+**Example Calculation:** If Task 1 Score = 7.0 and Task 2 Score = 8.0: The calculation is: ((7.0 * 1) + (8.0 * 2)) / 3 = (7.0 + 16.0) / 3 = 23 / 3 = 7.666...
+
+After calculating this weighted average, you must then apply the final rounding rule: * The result (e.g., 7.666...) is rounded to the nearest whole or half band. * In the example above, 7.666... rounds to an Overall Writing Band Score of 7.5.
+
+The final assessment must include the individual scores for Task 1 and Task 2, as well as this final, correctly weighted and rounded Overall Writing Band Score.
+---
+
+**Overall Writing Band Score: [Calculate using the weighted formula above]**
 
 ### Your Path to a Higher Score
 [Provide 2-3 clear, actionable steps the student can take to improve, based on their performance. Be specific and practical.]

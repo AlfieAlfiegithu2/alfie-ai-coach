@@ -141,7 +141,7 @@ const IELTSTestModules = () => {
         
         if (prompts && prompts.length > 0) {
           console.log(`🎤 Found speaking prompts for test ${testId}`);
-          navigate(`/speaking/test/${test.test_name}`);
+          navigate(`/ielts-speaking-test/${test.test_name}`);
         } else {
           console.log(`❌ No speaking prompts found for test ${testId}`);
           // Navigate to general speaking practice

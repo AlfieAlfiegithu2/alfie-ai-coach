@@ -48,6 +48,8 @@ import AdminIELTSWritingTest from "./pages/AdminIELTSWritingTest";
 import AdminIELTSSpeaking from "./pages/AdminIELTSSpeaking";
 import IELTSWritingTest from "./pages/IELTSWritingTest";
 import IELTSWritingResults from "./pages/IELTSWritingResults";
+import IELTSSpeakingTest from "./pages/IELTSSpeakingTest";
+import IELTSSpeakingResults from "./pages/IELTSSpeakingResults";
 import EnhancedReadingTest from "./pages/EnhancedReadingTest";
 import Pricing from "./pages/Pricing";
 
@@ -111,6 +113,8 @@ const App = () => {
         <Route path="/admin/ielts/test/:testId/speaking" element={<AdminIELTSSpeaking />} />
         <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
         <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
+        <Route path="/ielts-speaking-test/:testName" element={<IELTSSpeakingTest />} />
+        <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
         <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
             {/* PTE Admin Routes */}
             <Route path="/admin/pte/listening" element={<AdminListening />} />

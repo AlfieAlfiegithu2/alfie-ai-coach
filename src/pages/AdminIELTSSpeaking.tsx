@@ -153,6 +153,25 @@ const AdminIELTSSpeaking = () => {
     }
   };
 
+  const handleAudioRemove = (partNumber: number, index?: number) => {
+    if (partNumber === 1 && index !== undefined) {
+      const updated = [...part1Prompts];
+      updated[index].audio_url = undefined;
+      setPart1Prompts(updated);
+    } else if (partNumber === 2) {
+      setPart2Prompt(prev => ({ ...prev, audio_url: undefined }));
+    } else if (partNumber === 3 && index !== undefined) {
+      const updated = [...part3Prompts];
+      updated[index].audio_url = undefined;
+      setPart3Prompts(updated);
+    }
+    
+    toast({
+      title: "Success",
+      description: "Audio removed"
+    });
+  };
+
   const updatePart3Questions = (count: number) => {
     setPart3Questions(count);
     const newPrompts = Array.from({ length: count }, (_, index) => 
@@ -302,9 +321,25 @@ const AdminIELTSSpeaking = () => {
                     </div>
                   </div>
                   {prompt.audio_url ? (
-                    <div className="flex items-center space-x-2 text-sm text-green-600">
-                      <Mic className="w-4 h-4" />
-                      <span>Audio uploaded successfully</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <div className="flex items-center space-x-2 text-sm text-green-600">
+                          <Mic className="w-4 h-4" />
+                          <span>Audio uploaded successfully</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAudioRemove(1, index)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      <audio controls className="w-full">
+                        <source src={prompt.audio_url} type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
                     </div>
                   ) : (
                     <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
@@ -439,9 +474,25 @@ const AdminIELTSSpeaking = () => {
                     </div>
                   </div>
                   {prompt.audio_url ? (
-                    <div className="flex items-center space-x-2 text-sm text-green-600">
-                      <Mic className="w-4 h-4" />
-                      <span>Audio uploaded successfully</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <div className="flex items-center space-x-2 text-sm text-green-600">
+                          <Mic className="w-4 h-4" />
+                          <span>Audio uploaded successfully</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAudioRemove(3, index)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      <audio controls className="w-full">
+                        <source src={prompt.audio_url} type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
                     </div>
                   ) : (
                     <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">

@@ -1,0 +1,492 @@
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload } from "lucide-react";
+import StudentLayout from "@/components/StudentLayout";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SpeakingPrompt {
+  id: string;
+  title: string;
+  prompt_text: string;
+  part_number: number;
+  time_limit: number;
+  audio_url?: string;
+}
+
+interface TestData {
+  id: string;
+  test_name: string;
+  part1_prompts: SpeakingPrompt[];
+  part2_prompt: SpeakingPrompt | null;
+  part3_prompts: SpeakingPrompt[];
+}
+
+const IELTSSpeakingTest = () => {
+  const { testName } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [testData, setTestData] = useState<TestData | null>(null);
+  const [currentPart, setCurrentPart] = useState(1);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [preparationTime, setPreparationTime] = useState(60);
+  const [recordings, setRecordings] = useState<{[key: string]: Blob}>({});
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  useEffect(() => {
+    loadTestData();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [testName]);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+    } else if (timeLeft === 0 && isRecording) {
+      stopRecording();
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [timeLeft, isRecording]);
+
+  const loadTestData = async () => {
+    if (!testName) return;
+    
+    setIsLoading(true);
+    try {
+      const { data: prompts, error } = await supabase
+        .from('speaking_prompts')
+        .select('*')
+        .eq('cambridge_book', `Test ${testName}`)
+        .order('part_number', { ascending: true });
+
+      if (error) throw error;
+
+      if (prompts && prompts.length > 0) {
+        const part1 = prompts.filter(p => p.part_number === 1);
+        const part2 = prompts.find(p => p.part_number === 2);
+        const part3 = prompts.filter(p => p.part_number === 3);
+
+        setTestData({
+          id: testName,
+          test_name: testName,
+          part1_prompts: part1,
+          part2_prompt: part2 || null,
+          part3_prompts: part3
+        });
+      } else {
+        toast({
+          title: "No Content Found",
+          description: "This test doesn't have speaking content yet.",
+          variant: "destructive"
+        });
+        navigate('/ielts-portal');
+      }
+    } catch (error) {
+      console.error('Error loading test data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load test data",
+        variant: "destructive"
+      });
+      navigate('/ielts-portal');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const playAudio = async (audioUrl: string) => {
+    if (!audioUrl) return;
+    
+    try {
+      setIsPlaying(true);
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.onended = () => setIsPlaying(false);
+      await audioRef.current.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsPlaying(false);
+      toast({
+        title: "Audio Error",
+        description: "Failed to play audio prompt",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      chunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const recordingKey = `part${currentPart}_q${currentQuestion}`;
+        setRecordings(prev => ({ ...prev, [recordingKey]: blob }));
+        
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      
+      // Set timer based on current part
+      if (currentPart === 1 || currentPart === 3) {
+        setTimeLeft(120); // 2 minutes
+      } else if (currentPart === 2) {
+        setTimeLeft(120); // 2 minutes for Part 2 response
+      }
+
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording Error",
+        description: "Failed to start recording. Please check microphone permissions.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setTimeLeft(0);
+    }
+  };
+
+  const nextQuestion = () => {
+    if (currentPart === 1) {
+      if (currentQuestion < (testData?.part1_prompts.length || 0) - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+        // Auto-play next audio
+        const nextPrompt = testData?.part1_prompts[currentQuestion + 1];
+        if (nextPrompt?.audio_url) {
+          setTimeout(() => playAudio(nextPrompt.audio_url!), 500);
+        }
+      } else {
+        // Move to Part 2
+        setCurrentPart(2);
+        setCurrentQuestion(0);
+        setPreparationTime(60);
+        startPreparationTimer();
+      }
+    } else if (currentPart === 3) {
+      if (currentQuestion < (testData?.part3_prompts.length || 0) - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+        // Auto-play next audio
+        const nextPrompt = testData?.part3_prompts[currentQuestion + 1];
+        if (nextPrompt?.audio_url) {
+          setTimeout(() => playAudio(nextPrompt.audio_url!), 500);
+        }
+      } else {
+        // Test complete
+        submitTest();
+      }
+    }
+  };
+
+  const startPreparationTimer = () => {
+    const timer = setInterval(() => {
+      setPreparationTime(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Auto-start recording after preparation
+          setTimeout(startRecording, 1000);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const submitTest = async () => {
+    try {
+      const recordingEntries = Object.entries(recordings);
+      const uploadPromises = recordingEntries.map(async ([key, blob]) => {
+        const fileName = `speaking_${testData?.id}_${key}_${Date.now()}.webm`;
+        const { data, error } = await supabase.storage
+          .from('audio-files')
+          .upload(fileName, blob);
+
+        if (error) throw error;
+
+        const { data: publicData } = supabase.storage
+          .from('audio-files')
+          .getPublicUrl(fileName);
+
+        return {
+          part: key,
+          audio_url: publicData.publicUrl
+        };
+      });
+
+      const uploadedRecordings = await Promise.all(uploadPromises);
+
+      // Navigate to results page with recordings data
+      navigate('/ielts-speaking-results', { 
+        state: { 
+          testData, 
+          recordings: uploadedRecordings 
+        } 
+      });
+
+    } catch (error) {
+      console.error('Error submitting test:', error);
+      toast({
+        title: "Submission Error",
+        description: "Failed to submit test. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading speaking test...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!testData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-muted-foreground">Test not found</p>
+          <Button onClick={() => navigate('/ielts-portal')} className="mt-4">
+            Back to Portal
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const getCurrentPrompt = () => {
+    if (currentPart === 1) return testData.part1_prompts[currentQuestion];
+    if (currentPart === 2) return testData.part2_prompt;
+    if (currentPart === 3) return testData.part3_prompts[currentQuestion];
+    return null;
+  };
+
+  const currentPrompt = getCurrentPrompt();
+
+  return (
+    <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
+            IELTS SPEAKING TEST
+          </Badge>
+          <h1 className="text-heading-2 mb-2">{testData.test_name}</h1>
+          <p className="text-muted-foreground">
+            Part {currentPart} of 3 • {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
+          </p>
+        </div>
+
+        {/* Progress */}
+        <Card className="card-modern">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium">Test Progress</span>
+              <span className="text-sm text-muted-foreground">
+                {currentPart === 1 && `Question ${currentQuestion + 1} of ${testData.part1_prompts.length}`}
+                {currentPart === 2 && 'Cue Card Response'}
+                {currentPart === 3 && `Question ${currentQuestion + 1} of ${testData.part3_prompts.length}`}
+              </span>
+            </div>
+            <Progress 
+              value={
+                currentPart === 1 ? ((currentQuestion + 1) / testData.part1_prompts.length) * 33.33 :
+                currentPart === 2 ? 66.66 :
+                66.66 + ((currentQuestion + 1) / testData.part3_prompts.length) * 33.33
+              } 
+              className="h-2"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Main Content */}
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>
+                Part {currentPart}: {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
+              </span>
+              {timeLeft > 0 && (
+                <Badge variant="outline" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {formatTime(timeLeft)}
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Part 2 Preparation Timer */}
+            {currentPart === 2 && preparationTime > 0 && (
+              <div className="text-center p-6 bg-blue-50 rounded-lg">
+                <Clock className="w-8 h-8 mx-auto mb-3 text-blue-600" />
+                <h3 className="text-lg font-semibold mb-2">Preparation Time</h3>
+                <p className="text-2xl font-bold text-blue-600">{formatTime(preparationTime)}</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Use this time to prepare your response
+                </p>
+              </div>
+            )}
+
+            {/* Audio Prompt */}
+            {currentPrompt?.audio_url && currentPart !== 2 && (
+              <div className="text-center p-6 bg-green-50 rounded-lg">
+                <Button
+                  onClick={() => playAudio(currentPrompt.audio_url!)}
+                  disabled={isPlaying}
+                  className="rounded-xl"
+                  size="lg"
+                >
+                  {isPlaying ? (
+                    <>
+                      <Pause className="w-5 h-5 mr-2" />
+                      Playing...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2" />
+                      Play Question
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Cue Card Display */}
+            {currentPart === 2 && currentPrompt && (
+              <div className="p-6 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold mb-3">Cue Card</h3>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                  {currentPrompt.prompt_text}
+                </div>
+              </div>
+            )}
+
+            {/* Recording Interface */}
+            {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
+              <div className="text-center space-y-4">
+                <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg">
+                  {isRecording ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center space-x-2 text-red-600">
+                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                        <span className="font-medium">Recording...</span>
+                      </div>
+                      <Button
+                        onClick={stopRecording}
+                        variant="outline"
+                        className="rounded-xl"
+                      >
+                        <Mic className="w-4 h-4 mr-2" />
+                        Stop Recording
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Mic className="w-8 h-8 mx-auto text-gray-400" />
+                      <p className="text-sm text-gray-500">Ready to record your response</p>
+                      <Button
+                        onClick={startRecording}
+                        className="rounded-xl"
+                        size="lg"
+                      >
+                        <Mic className="w-4 h-4 mr-2" />
+                        Start Recording
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recording indicator for current question */}
+                {recordings[`part${currentPart}_q${currentQuestion}`] && (
+                  <div className="flex items-center justify-center space-x-2 text-green-600">
+                    <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                    <span className="text-sm">Response recorded</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/ielts-portal')}
+                className="rounded-xl"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Exit Test
+              </Button>
+
+              {recordings[`part${currentPart}_q${currentQuestion}`] && (
+                <Button
+                  onClick={nextQuestion}
+                  className="rounded-xl"
+                >
+                  {currentPart === 1 && currentQuestion < testData.part1_prompts.length - 1 && (
+                    <>Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
+                  )}
+                  {currentPart === 1 && currentQuestion === testData.part1_prompts.length - 1 && (
+                    <>Proceed to Part 2 <ArrowRight className="w-4 h-4 ml-2" /></>
+                  )}
+                  {currentPart === 2 && (
+                    <>Proceed to Part 3 <ArrowRight className="w-4 h-4 ml-2" /></>
+                  )}
+                  {currentPart === 3 && currentQuestion < testData.part3_prompts.length - 1 && (
+                    <>Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
+                  )}
+                  {currentPart === 3 && currentQuestion === testData.part3_prompts.length - 1 && (
+                    <>Submit Test <Upload className="w-4 h-4 ml-2" /></>
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </StudentLayout>
+  );
+};
+
+export default IELTSSpeakingTest;

@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings, ArrowLeft, Plus } from "lucide-react";
+import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings, ArrowLeft, Plus, Edit3, Check, X } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
@@ -20,6 +21,8 @@ const AdminIELTS = () => {
   const [tests, setTests] = useState<any[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newTestName, setNewTestName] = useState("");
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
+  const [editingTestName, setEditingTestName] = useState("");
   const [stats, setStats] = useState({
     totalTests: 0,
     activeStudents: 0,
@@ -55,7 +58,7 @@ const AdminIELTS = () => {
       await createContent('tests', {
         test_name: newTestName,
         test_type: 'IELTS',
-        module: 'ielts'
+        module: 'academic'
       });
 
       toast.success('Test created successfully');
@@ -66,6 +69,40 @@ const AdminIELTS = () => {
       toast.error('Failed to create test');
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const startEditingTest = (test: any) => {
+    setEditingTestId(test.id);
+    setEditingTestName(test.test_name);
+  };
+
+  const cancelEditingTest = () => {
+    setEditingTestId(null);
+    setEditingTestName("");
+  };
+
+  const saveEditedTestName = async () => {
+    if (!editingTestName.trim()) {
+      toast.error('Test name cannot be empty');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tests')
+        .update({ test_name: editingTestName })
+        .eq('id', editingTestId);
+
+      if (error) throw error;
+
+      toast.success('Test name updated successfully');
+      setEditingTestId(null);
+      setEditingTestName("");
+      loadTests();
+    } catch (error) {
+      console.error('Error updating test name:', error);
+      toast.error('Failed to update test name');
     }
   };
 
@@ -238,12 +275,43 @@ const AdminIELTS = () => {
                     <Card 
                       key={test.id} 
                       className="cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => navigate(`/admin/ielts/test/${test.id}`)}
+                      onClick={() => !editingTestId && navigate(`/admin/ielts/test/${test.id}`)}
                     >
                       <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                          <BookOpen className="w-5 h-5 text-primary" />
-                          <span>{test.test_name}</span>
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="w-5 h-5 text-primary" />
+                            {editingTestId === test.id ? (
+                              <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                                <Input
+                                  value={editingTestName}
+                                  onChange={(e) => setEditingTestName(e.target.value)}
+                                  className="text-lg font-semibold h-8"
+                                  onKeyPress={(e) => e.key === 'Enter' && saveEditedTestName()}
+                                />
+                                <Button size="sm" variant="ghost" onClick={saveEditedTestName}>
+                                  <Check className="w-4 h-4 text-green-600" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={cancelEditingTest}>
+                                  <X className="w-4 h-4 text-red-600" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span>{test.test_name}</span>
+                            )}
+                          </div>
+                          {editingTestId !== test.id && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingTest(test);
+                              }}
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </CardTitle>
                         <CardDescription>
                           Created: {new Date(test.created_at).toLocaleDateString()}

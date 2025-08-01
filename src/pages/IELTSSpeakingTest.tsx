@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Sparkles } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
-import AIAssistantModal from "@/components/AIAssistantModal";
+import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SpeakingPrompt {
@@ -594,6 +594,22 @@ const IELTSSpeakingTest = () => {
               </div>
             )}
 
+            {/* Part 2 Notes Display During Recording - FIXED: Notes remain visible during recording */}
+            {currentPart === 2 && preparationTime === 0 && part2Notes && (
+              <Card className="bg-yellow-50 border-yellow-200">
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    📝 Your Notes (for reference while recording)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-3 bg-white border border-yellow-300 rounded-lg text-sm whitespace-pre-wrap">
+                    {part2Notes}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Audio Prompt with Auto-play and Repeat */}
             {currentPrompt?.audio_url && currentPart !== 2 && (
               <Card className="bg-blue-50 border-blue-200">
@@ -762,8 +778,8 @@ const IELTSSpeakingTest = () => {
           </CardContent>
         </Card>
 
-        {/* AI Assistant Modal */}
-        <AIAssistantModal
+        {/* Interactive AI Assistant */}
+        <InteractiveSpeakingAssistant
           isOpen={showAIAssistant}
           onClose={() => setShowAIAssistant(false)}
           questionText={currentQuestionText}

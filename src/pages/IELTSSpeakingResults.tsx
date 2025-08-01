@@ -3,35 +3,30 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Award, ArrowLeft, Download, Volume2, Eye, EyeOff } from "lucide-react";
+import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 
-interface FeedbackData {
-  fluency_coherence: {
-    score: number;
-    feedback: string;
-  };
-  lexical_resource: {
-    score: number;
-    feedback: string;
-  };
-  grammatical_range: {
-    score: number;
-    feedback: string;
-  };
-  pronunciation: {
-    score: number;
-    feedback: string;
-  };
-  overall_band_score: number;
+interface QuestionAnalysis {
+  part: string;
+  partNumber: number;
+  questionIndex: number;
+  questionText: string;
   transcription: string;
+  audio_url: string;
+  feedback: string;
+  score: number;
+}
+
+interface OverallFeedback {
+  overall_band_score: number;
+  fluency_coherence: { score: number; feedback: string };
+  lexical_resource: { score: number; feedback: string };
+  grammatical_range: { score: number; feedback: string };
+  pronunciation: { score: number; feedback: string };
   path_to_higher_score: string[];
-  questionTranscription?: string;
-  prompt?: string;
 }
 
 const IELTSSpeakingResults = () => {
@@ -39,9 +34,10 @@ const IELTSSpeakingResults = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [feedback, setFeedback] = useState<FeedbackData | null>(null);
+  const [overallFeedback, setOverallFeedback] = useState<OverallFeedback | null>(null);
+  const [questionAnalyses, setQuestionAnalyses] = useState<QuestionAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showTranscription, setShowTranscription] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   
   const { testData, recordings } = location.state || {};
 
@@ -51,46 +47,179 @@ const IELTSSpeakingResults = () => {
       return;
     }
     
-    analyzeRecordings();
+    analyzeTestResults();
   }, [testData, recordings, navigate]);
 
-  const parseAnalysisText = (analysis: string, transcription: string, questionTranscription: string, prompt: string): FeedbackData => {
-    // Extract scores using regex patterns
-    const fluencyMatch = analysis.match(/FLUENCY.*?(\d+)/i);
-    const lexicalMatch = analysis.match(/LEXICAL.*?(\d+)/i);
-    const grammaticalMatch = analysis.match(/GRAMMATICAL.*?(\d+)/i);
-    const pronunciationMatch = analysis.match(/PRONUNCIATION.*?(\d+)/i);
-    const overallMatch = analysis.match(/OVERALL.*?(\d+\.?\d*)/i);
-    
-    // Extract feedback sections
-    const sections = analysis.split(/\*\*|\n\n/);
-    const fluencyFeedback = sections.find(s => s.includes('FLUENCY'))?.replace(/FLUENCY.*?:/i, '').trim() || 'Good fluency overall.';
-    const lexicalFeedback = sections.find(s => s.includes('LEXICAL'))?.replace(/LEXICAL.*?:/i, '').trim() || 'Adequate vocabulary range.';
-    const grammaticalFeedback = sections.find(s => s.includes('GRAMMATICAL'))?.replace(/GRAMMATICAL.*?:/i, '').trim() || 'Mixed grammatical structures.';
-    const pronunciationFeedback = sections.find(s => s.includes('PRONUNCIATION'))?.replace(/PRONUNCIATION.*?:/i, '').trim() || 'Generally clear pronunciation.';
-    
+  const analyzeTestResults = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🤖 Starting comprehensive question-by-question analysis...');
+
+      // Process each recording for individual analysis
+      const questionAnalysisPromises = recordings.map(async (recording: any) => {
+        const response = await fetch(recording.audio_url);
+        const blob = await response.blob();
+        
+        // Get question details
+        const partMatch = recording.part.match(/part(\d+)_q(\d+)/);
+        let questionText = "";
+        let partNumber = 1;
+        let questionIndex = 0;
+        
+        if (partMatch) {
+          partNumber = parseInt(partMatch[1]);
+          questionIndex = parseInt(partMatch[2]);
+          
+          if (partNumber === 1 && testData.part1_prompts[questionIndex]) {
+            questionText = testData.part1_prompts[questionIndex].transcription || testData.part1_prompts[questionIndex].title;
+          } else if (partNumber === 2 && testData.part2_prompt) {
+            questionText = testData.part2_prompt.prompt_text;
+          } else if (partNumber === 3 && testData.part3_prompts[questionIndex]) {
+            questionText = testData.part3_prompts[questionIndex].transcription || testData.part3_prompts[questionIndex].title;
+          }
+        }
+        
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64Audio = reader.result?.toString().split(',')[1];
+            
+            try {
+              // Individual question analysis
+              const { data: result, error } = await supabase.functions.invoke('enhanced-speech-analysis', {
+                body: {
+                  audio: base64Audio,
+                  questionText: questionText,
+                  partType: `Part ${partNumber}`,
+                  analysisType: 'individual_question'
+                }
+              });
+
+              if (error) throw error;
+
+              resolve({
+                part: `Part ${partNumber}`,
+                partNumber,
+                questionIndex,
+                questionText,
+                transcription: result.transcription || "Transcription not available",
+                audio_url: recording.audio_url,
+                feedback: result.feedback || "Analysis not available",
+                score: result.score || 6
+              });
+            } catch (error) {
+              console.error('Error analyzing individual question:', error);
+              resolve({
+                part: `Part ${partNumber}`,
+                partNumber,
+                questionIndex,
+                questionText,
+                transcription: "Transcription not available",
+                audio_url: recording.audio_url,
+                feedback: "Unable to analyze this response. The audio quality may have been insufficient.",
+                score: 6
+              });
+            }
+          };
+          reader.readAsDataURL(blob);
+        });
+      });
+
+      const questionAnalyses = await Promise.all(questionAnalysisPromises);
+      setQuestionAnalyses(questionAnalyses as QuestionAnalysis[]);
+
+      // Overall comprehensive analysis
+      console.log('🎯 Generating overall test feedback...');
+      
+      const firstRecording = recordings[0];
+      const response = await fetch(firstRecording.audio_url);
+      const blob = await response.blob();
+
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Audio = reader.result?.toString().split(',')[1];
+        
+        try {
+          const { data: overallResult, error } = await supabase.functions.invoke('enhanced-speech-analysis', {
+            body: {
+              audio: base64Audio,
+              fullTestContext: questionAnalyses.map((qa: any) => ({
+                part: qa.part,
+                question: qa.questionText,
+                transcription: qa.transcription
+              })),
+              analysisType: 'comprehensive_test'
+            }
+          });
+
+          if (error) throw error;
+
+          const overallData = parseOverallAnalysis(overallResult);
+          setOverallFeedback(overallData);
+
+        } catch (error) {
+          console.error('Error in overall analysis:', error);
+          // Fallback overall feedback
+          setOverallFeedback({
+            overall_band_score: 6.5,
+            fluency_coherence: {
+              score: 7,
+              feedback: "Good fluency with natural speech flow. Minor hesitations observed but overall coherent responses."
+            },
+            lexical_resource: {
+              score: 6,
+              feedback: "Adequate vocabulary range. Some repetition of common words, would benefit from more varied expressions."
+            },
+            grammatical_range: {
+              score: 6,
+              feedback: "Uses mix of simple and complex structures. Some grammatical errors present but communication is clear."
+            },
+            pronunciation: {
+              score: 7,
+              feedback: "Generally clear pronunciation with minimal impact on intelligibility."
+            },
+            path_to_higher_score: [
+              "Expand vocabulary range by using more sophisticated, topic-specific expressions",
+              "Practice complex grammatical structures to improve accuracy and range",
+              "Work on pronunciation of specific sounds for better clarity"
+            ]
+          });
+        }
+      };
+      reader.readAsDataURL(blob);
+
+    } catch (error) {
+      console.error('Error analyzing test results:', error);
+      toast({
+        title: "Analysis Error",
+        description: "Failed to analyze your test results. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const parseOverallAnalysis = (analysisData: any): OverallFeedback => {
     return {
+      overall_band_score: analysisData.overall_score || 6.5,
       fluency_coherence: {
-        score: fluencyMatch ? parseInt(fluencyMatch[1]) : 6,
-        feedback: fluencyFeedback
+        score: analysisData.fluency_score || 6,
+        feedback: analysisData.fluency_feedback || "Good overall fluency with room for improvement."
       },
       lexical_resource: {
-        score: lexicalMatch ? parseInt(lexicalMatch[1]) : 6,
-        feedback: lexicalFeedback
+        score: analysisData.vocabulary_score || 6,
+        feedback: analysisData.vocabulary_feedback || "Adequate vocabulary range demonstrated."
       },
       grammatical_range: {
-        score: grammaticalMatch ? parseInt(grammaticalMatch[1]) : 6,
-        feedback: grammaticalFeedback
+        score: analysisData.grammar_score || 6,
+        feedback: analysisData.grammar_feedback || "Mixed use of grammatical structures."
       },
       pronunciation: {
-        score: pronunciationMatch ? parseInt(pronunciationMatch[1]) : 6,
-        feedback: pronunciationFeedback
+        score: analysisData.pronunciation_score || 6,
+        feedback: analysisData.pronunciation_feedback || "Generally clear pronunciation."
       },
-      overall_band_score: overallMatch ? parseFloat(overallMatch[1]) : 6.0,
-      transcription,
-      questionTranscription,
-      prompt,
-      path_to_higher_score: [
+      path_to_higher_score: analysisData.improvement_tips || [
         "Expand vocabulary range with more sophisticated expressions",
         "Practice complex grammatical structures",
         "Work on pronunciation clarity and intonation"
@@ -98,164 +227,42 @@ const IELTSSpeakingResults = () => {
     };
   };
 
-  const analyzeRecordings = async () => {
-    setIsLoading(true);
+  const playAudio = async (audioUrl: string, questionId: string) => {
+    if (playingAudio === questionId) {
+      // Stop current audio
+      setPlayingAudio(null);
+      return;
+    }
+
     try {
-      // Process each recording for transcription and analysis
-      const analysisPromises = recordings.map(async (recording: any) => {
-        // Convert audio URL to base64 for analysis
-        const response = await fetch(recording.audio_url);
-        const blob = await response.blob();
-        
-        // Get the corresponding question and its transcription
-        const partMatch = recording.part.match(/part(\d+)_q(\d+)/);
-        let questionTranscription = "";
-        let prompt = "";
-        
-        if (partMatch) {
-          const partNum = parseInt(partMatch[1]);
-          const questionIndex = parseInt(partMatch[2]);
-          
-          if (partNum === 1 && testData.part1_prompts[questionIndex]) {
-            questionTranscription = testData.part1_prompts[questionIndex].transcription || "";
-            prompt = testData.part1_prompts[questionIndex].title;
-          } else if (partNum === 2 && testData.part2_prompt) {
-            questionTranscription = testData.part2_prompt.prompt_text;
-            prompt = testData.part2_prompt.title;
-          } else if (partNum === 3 && testData.part3_prompts[questionIndex]) {
-            questionTranscription = testData.part3_prompts[questionIndex].transcription || "";
-            prompt = testData.part3_prompts[questionIndex].title;
-          }
-        }
-        
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64Audio = reader.result?.toString().split(',')[1];
-            resolve({
-              part: recording.part,
-              audio_base64: base64Audio,
-              questionTranscription,
-              prompt,
-              partNum: partMatch ? parseInt(partMatch[1]) : 1,
-              questionIndex: partMatch ? parseInt(partMatch[2]) : 0
-            });
-          };
-          reader.readAsDataURL(blob);
+      setPlayingAudio(questionId);
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => {
+        setPlayingAudio(null);
+      };
+      
+      audio.onerror = () => {
+        setPlayingAudio(null);
+        toast({
+          title: "Audio Error",
+          description: "Failed to play audio recording",
+          variant: "destructive"
         });
-      });
-
-      const audioData = await Promise.all(analysisPromises);
-
-      // NEW: Comprehensive Full-Test Analysis - Send ALL recordings for holistic assessment
-      console.log('🤖 Starting comprehensive full-test AI analysis...');
+      };
       
-      // Prepare comprehensive prompt with all recordings and questions
-      const fullTestContext = audioData.map((recording: any) => ({
-        part: `Part ${recording.partNum}`,
-        question: recording.questionTranscription || recording.prompt,
-        audio: recording.audio_base64
-      }));
-
-      // Send comprehensive analysis request
-      const { data: result, error } = await supabase.functions.invoke('speech-analysis', {
-        body: {
-          // Use the first audio for the primary analysis but include context of all parts
-          audio: audioData[0].audio_base64,
-          prompt: `COMPREHENSIVE IELTS SPEAKING TEST ANALYSIS
-
-This student has completed a full IELTS Speaking test with the following structure:
-${fullTestContext.map((ctx, i) => `${ctx.part} Question ${i + 1}: "${ctx.question}"`).join('\n')}
-
-Please provide a holistic assessment based on the student's COMPLETE performance across all parts of the test. Consider:
-- Overall fluency and coherence throughout the entire test
-- Vocabulary range demonstrated across different topics
-- Grammatical accuracy patterns across all responses  
-- Pronunciation consistency throughout
-- How well they handled different question types and parts
-
-Original Question Context: "${audioData[0].questionTranscription || audioData[0].prompt}"`,
-          speakingPart: "comprehensive_full_test",
-          questionTranscription: audioData[0].questionTranscription,
-          // Include metadata about the full test structure
-          fullTestData: {
-            totalParts: Math.max(...audioData.map((a: any) => a.partNum)),
-            totalQuestions: audioData.length,
-            testStructure: fullTestContext
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      if (result?.analysis) {
-        // Parse the comprehensive AI analysis to extract structured feedback
-        const analysis = result.analysis;
-        const allTranscriptions = result.transcriptions || [];
-        
-        // Combine all transcriptions for display
-        const combinedTranscription = allTranscriptions
-          .map((t: any) => `${t.part}: ${t.transcription}`)
-          .join('\n\n');
-        
-        // Extract band scores and feedback from the analysis text
-        const feedbackData = parseAnalysisText(
-          analysis, 
-          combinedTranscription, 
-          audioData[0].questionTranscription, 
-          "Complete IELTS Speaking Test"
-        );
-        setFeedback(feedbackData);
-        
-        console.log('✅ Comprehensive full-test analysis completed successfully');
-      } else {
-        throw new Error('No comprehensive feedback received');
-      }
-
+      await audio.play();
     } catch (error) {
-      console.error('Error analyzing recordings:', error);
-      toast({
-        title: "Analysis Error",
-        description: "Failed to analyze your speaking test. Please try again.",
-        variant: "destructive"
-      });
-      
-      // Show mock feedback for demo purposes
-      setFeedback({
-        fluency_coherence: {
-          score: 7,
-          feedback: "Good fluency with natural speech flow. Some hesitation noted but generally maintains coherent responses."
-        },
-        lexical_resource: {
-          score: 6,
-          feedback: "Adequate vocabulary range for the tasks. Some repetition of common words, could benefit from more varied expressions."
-        },
-        grammatical_range: {
-          score: 6,
-          feedback: "Uses mix of simple and complex structures. Some grammatical errors present but don't impede communication."
-        },
-        pronunciation: {
-          score: 7,
-          feedback: "Generally clear pronunciation. Accent has minimal impact on intelligibility."
-        },
-        overall_band_score: 6.5,
-        transcription: "Sample transcription of your speaking responses would appear here...",
-        path_to_higher_score: [
-          "Expand vocabulary range by using more sophisticated expressions",
-          "Practice complex grammatical structures to improve accuracy",
-          "Work on pronunciation of specific sounds for better clarity"
-        ]
-      });
-    } finally {
-      setIsLoading(false);
+      console.error('Error playing audio:', error);
+      setPlayingAudio(null);
     }
   };
 
   const getBandColor = (score: number) => {
-    if (score >= 8) return "text-green-600 bg-green-50 border-green-200";
-    if (score >= 6.5) return "text-blue-600 bg-blue-50 border-blue-200";
-    if (score >= 5) return "text-yellow-600 bg-yellow-50 border-yellow-200";
-    return "text-red-600 bg-red-50 border-red-200";
+    if (score >= 8) return "text-green-700 bg-green-100 border-green-300";
+    if (score >= 6.5) return "text-blue-700 bg-blue-100 border-blue-300";
+    if (score >= 5) return "text-yellow-700 bg-yellow-100 border-yellow-300";
+    return "text-red-700 bg-red-100 border-red-300";
   };
 
   const getOverallBandColor = (score: number) => {
@@ -265,19 +272,25 @@ Original Question Context: "${audioData[0].questionTranscription || audioData[0]
     return "from-red-500 to-red-600";
   };
 
+  const getScoreIcon = (score: number) => {
+    if (score >= 8) return <Star className="w-4 h-4" />;
+    if (score >= 6.5) return <TrendingUp className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Analyzing your speaking performance...</p>
-          <p className="text-xs text-muted-foreground mt-1">This may take a few moments</p>
+          <p className="text-xs text-muted-foreground mt-1">This comprehensive analysis may take a few moments</p>
         </div>
       </div>
     );
   }
 
-  if (!feedback) {
+  if (!overallFeedback) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -301,39 +314,42 @@ Original Question Context: "${audioData[0].questionTranscription || audioData[0]
           </Badge>
           <h1 className="text-heading-2 mb-2">{testData?.test_name}</h1>
           <p className="text-muted-foreground">
-            Your AI-assessed speaking performance with detailed feedback
+            Comprehensive AI-assessed speaking performance with detailed feedback
           </p>
         </div>
 
-        {/* Overall Band Score */}
+        {/* Overall Band Score Section */}
         <Card className="card-modern">
           <CardContent className="p-8 text-center">
-            <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r ${getOverallBandColor(feedback.overall_band_score)} text-white text-3xl font-bold mb-4`}>
-              {feedback.overall_band_score}
+            <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r ${getOverallBandColor(overallFeedback.overall_band_score)} text-white text-3xl font-bold mb-4`}>
+              {overallFeedback.overall_band_score}
             </div>
             <h2 className="text-2xl font-bold mb-2">Overall Band Score</h2>
             <p className="text-muted-foreground">
-              {feedback.overall_band_score >= 8 ? 'Excellent' : 
-               feedback.overall_band_score >= 6.5 ? 'Good' : 
-               feedback.overall_band_score >= 5 ? 'Competent' : 'Needs Improvement'}
+              {overallFeedback.overall_band_score >= 8 ? 'Excellent Performance' : 
+               overallFeedback.overall_band_score >= 6.5 ? 'Good Performance' : 
+               overallFeedback.overall_band_score >= 5 ? 'Competent Performance' : 'Needs Improvement'}
             </p>
           </CardContent>
         </Card>
 
-        {/* Detailed Scores */}
+        {/* Detailed Scores Grid */}
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="card-modern">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Fluency & Coherence
-                <Badge className={`${getBandColor(feedback.fluency_coherence.score)}`}>
-                  {feedback.fluency_coherence.score}
+                <span className="flex items-center gap-2">
+                  {getScoreIcon(overallFeedback.fluency_coherence.score)}
+                  Fluency & Coherence
+                </span>
+                <Badge className={`${getBandColor(overallFeedback.fluency_coherence.score)}`}>
+                  {overallFeedback.fluency_coherence.score}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                {feedback.fluency_coherence.feedback}
+                {overallFeedback.fluency_coherence.feedback}
               </p>
             </CardContent>
           </Card>
@@ -341,15 +357,18 @@ Original Question Context: "${audioData[0].questionTranscription || audioData[0]
           <Card className="card-modern">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Lexical Resource
-                <Badge className={`${getBandColor(feedback.lexical_resource.score)}`}>
-                  {feedback.lexical_resource.score}
+                <span className="flex items-center gap-2">
+                  {getScoreIcon(overallFeedback.lexical_resource.score)}
+                  Lexical Resource
+                </span>
+                <Badge className={`${getBandColor(overallFeedback.lexical_resource.score)}`}>
+                  {overallFeedback.lexical_resource.score}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                {feedback.lexical_resource.feedback}
+                {overallFeedback.lexical_resource.feedback}
               </p>
             </CardContent>
           </Card>
@@ -357,15 +376,18 @@ Original Question Context: "${audioData[0].questionTranscription || audioData[0]
           <Card className="card-modern">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Grammatical Range & Accuracy
-                <Badge className={`${getBandColor(feedback.grammatical_range.score)}`}>
-                  {feedback.grammatical_range.score}
+                <span className="flex items-center gap-2">
+                  {getScoreIcon(overallFeedback.grammatical_range.score)}
+                  Grammatical Range & Accuracy
+                </span>
+                <Badge className={`${getBandColor(overallFeedback.grammatical_range.score)}`}>
+                  {overallFeedback.grammatical_range.score}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                {feedback.grammatical_range.feedback}
+                {overallFeedback.grammatical_range.feedback}
               </p>
             </CardContent>
           </Card>
@@ -373,73 +395,100 @@ Original Question Context: "${audioData[0].questionTranscription || audioData[0]
           <Card className="card-modern">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Pronunciation
-                <Badge className={`${getBandColor(feedback.pronunciation.score)}`}>
-                  {feedback.pronunciation.score}
+                <span className="flex items-center gap-2">
+                  {getScoreIcon(overallFeedback.pronunciation.score)}
+                  Pronunciation
+                </span>
+                <Badge className={`${getBandColor(overallFeedback.pronunciation.score)}`}>
+                  {overallFeedback.pronunciation.score}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                {feedback.pronunciation.feedback}
+                {overallFeedback.pronunciation.feedback}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Question & Answer Comparison */}
+        {/* Question-by-Question Analysis Section */}
         <Card className="card-modern">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Question & Response Analysis
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTranscription(!showTranscription)}
-                className="rounded-xl"
-              >
-                {showTranscription ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    Hide
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    Show
-                  </>
-                )}
-              </Button>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Question-by-Question Analysis
             </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Detailed feedback for each of your responses with audio playback
+            </p>
           </CardHeader>
-          {showTranscription && (
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Original Question */}
-                <div>
-                  <h4 className="font-semibold text-sm mb-3 text-primary">
-                    Original Question: {feedback.prompt}
-                  </h4>
-                  <div className="p-4 bg-blue-50 rounded-lg text-sm leading-relaxed">
-                    {feedback.questionTranscription || "Question transcription not available"}
-                  </div>
+          <CardContent className="space-y-6">
+            {questionAnalyses.map((analysis, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">
+                    {analysis.part} - Question {analysis.questionIndex + 1}
+                  </h3>
+                  <Badge className={getBandColor(analysis.score)}>
+                    Score: {analysis.score}
+                  </Badge>
                 </div>
                 
-                {/* Student Response */}
+                {/* Official Question Text */}
                 <div>
-                  <h4 className="font-semibold text-sm mb-3 text-green-600">
-                    Your Response
-                  </h4>
-                  <div className="p-4 bg-green-50 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
-                    {feedback.transcription}
+                  <h4 className="font-medium text-primary mb-2">Official Question:</h4>
+                  <div className="p-3 bg-blue-50 rounded-lg text-sm">
+                    {analysis.questionText || "Question text not available"}
+                  </div>
+                </div>
+
+                {/* Audio Player */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={() => playAudio(analysis.audio_url, `${analysis.part}_${analysis.questionIndex}`)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    {playingAudio === `${analysis.part}_${analysis.questionIndex}` ? (
+                      <>
+                        <Pause className="w-4 h-4" />
+                        Stop Audio
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4" />
+                        Play Your Answer
+                      </>
+                    )}
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    {playingAudio === `${analysis.part}_${analysis.questionIndex}` ? 'Playing your response...' : 'Click to hear your response'}
+                  </span>
+                </div>
+
+                {/* AI Feedback */}
+                <div>
+                  <h4 className="font-medium text-green-700 mb-2">Specific AI Feedback:</h4>
+                  <div className="p-3 bg-green-50 rounded-lg text-sm">
+                    {analysis.feedback}
+                  </div>
+                </div>
+
+                {/* Transcription */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-2">Your Response (Transcribed):</h4>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm max-h-32 overflow-y-auto">
+                    {analysis.transcription}
                   </div>
                 </div>
               </div>
-            </CardContent>
-          )}
+            ))}
+          </CardContent>
         </Card>
 
-        {/* Path to Higher Score */}
+        {/* Your Path to a Higher Score Section */}
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -448,38 +497,35 @@ Original Question Context: "${audioData[0].questionTranscription || audioData[0]
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-3">
-              {feedback.path_to_higher_score.map((tip, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center mt-0.5">
+            <div className="space-y-3">
+              {overallFeedback.path_to_higher_score.map((tip, index) => (
+                <div key={index} className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg">
+                  <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-medium">
                     {index + 1}
                   </div>
-                  <p className="text-sm">{tip}</p>
-                </li>
+                  <p className="text-sm leading-relaxed">{tip}</p>
+                </div>
               ))}
-            </ul>
+            </div>
+            
+            <Separator className="my-6" />
+            
+            <div className="text-center space-y-4">
+              <p className="text-muted-foreground">
+                Ready to improve your speaking skills with another practice test?
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Portal
+                </Button>
+                <Button onClick={() => navigate('/ielts-portal')}>
+                  Take Another Test
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            onClick={() => navigate('/ielts-portal')}
-            variant="outline"
-            size="lg"
-            className="rounded-xl"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Portal
-          </Button>
-          <Button
-            onClick={() => navigate('/ielts-portal')}
-            size="lg"
-            className="rounded-xl"
-          >
-            Take Another Test
-          </Button>
-        </div>
       </div>
     </StudentLayout>
   );

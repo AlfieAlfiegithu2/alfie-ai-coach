@@ -40,7 +40,7 @@ const IELTSWritingTestInterface = () => {
     {
       id: '1',
       type: 'bot',
-      content: "Hi! I'm your AI writing tutor. I'm here to help you with this IELTS Writing task. Feel free to ask me questions about the prompt, writing techniques, or anything else related to your essay!",
+      content: "Hello! I'm **Catbot**, your friendly IELTS Writing tutor! 🐱 I'm here to guide you through this writing task with personalized advice. I won't write your essay for you, but I'll help you develop your ideas and structure. What would you like help with first?",
       timestamp: new Date()
     }
   ]);
@@ -119,42 +119,50 @@ const IELTSWritingTestInterface = () => {
     return text.trim().split(/\s+/).filter(word => word.length > 0).length;
   };
 
-  const sendChatMessage = async () => {
-    if (!newMessage.trim() || isChatLoading) return;
+  const sendChatMessage = async (messageText?: string) => {
+    const message = messageText || newMessage.trim();
+    if (!message || isChatLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       type: 'user',
-      content: newMessage.trim(),
+      content: message,
       timestamp: new Date()
     };
 
     setChatMessages(prev => [...prev, userMessage]);
-    setNewMessage("");
+    if (!messageText) setNewMessage("");
     setIsChatLoading(true);
 
     try {
       const currentTaskData = getCurrentTask();
       if (!currentTaskData) throw new Error('No task data available');
 
-      // Create context-specific prompt
-      let context = `You are an expert IELTS Writing tutor. The student is currently working on IELTS Writing Task ${currentTask}.
+      // Create context-aware prompt for Catbot
+      let contextPrompt = `CONTEXT: The student is working on IELTS Writing Task ${currentTask}.
 
-Task ${currentTask} Prompt: "${currentTaskData.title}"
-Task ${currentTask} Instructions: "${currentTaskData.instructions}"`;
+**Task ${currentTask} Details:**
+- Prompt: "${currentTaskData.title}"
+- Instructions: "${currentTaskData.instructions}"`;
 
       if (currentTask === 1 && currentTaskData.imageContext) {
-        context += `\nImage Description: "${currentTaskData.imageContext}"`;
+        contextPrompt += `\n- Image Context: "${currentTaskData.imageContext}"`;
       }
 
-      context += `\n\nStudent's question: "${userMessage.content}"
+      // Add current writing progress if available
+      const currentAnswer = getCurrentAnswer();
+      if (currentAnswer.trim()) {
+        contextPrompt += `\n\n**Current Writing Progress:** (${getWordCount(currentAnswer)} words)\n"${currentAnswer.substring(0, 200)}${currentAnswer.length > 200 ? '...' : ''}"`;
+      }
 
-Please provide helpful, specific guidance related to this IELTS Writing task. Keep your response concise but informative.`;
+      contextPrompt += `\n\n**Student's Question:** "${message}"
+
+Please provide context-aware guidance. If they ask "How do I start?", guide them with leading questions about the specific task. Never write content for them - help them think it through.`;
 
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
-          message: context,
-          context: 'english_tutor'
+          message: contextPrompt,
+          context: 'catbot'
         }
       });
 
@@ -172,12 +180,16 @@ Please provide helpful, specific guidance related to this IELTS Writing task. Ke
       console.error('Error sending chat message:', error);
       toast({
         title: "Error",
-        description: "Failed to get response from tutor",
+        description: "Failed to get response from Catbot",
         variant: "destructive"
       });
     } finally {
       setIsChatLoading(false);
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendChatMessage(suggestion);
   };
 
   const proceedToTask2 = () => {
@@ -212,53 +224,29 @@ Please provide helpful, specific guidance related to this IELTS Writing task. Ke
 
     setIsSubmitting(true);
     try {
-      // Get Task 1 feedback
-      const task1Feedback = await supabase.functions.invoke('writing-feedback', {
+      // Use the new AI Examiner for comprehensive assessment
+      const examinerResponse = await supabase.functions.invoke('ielts-writing-examiner', {
         body: {
-          writing: task1Answer,
-          prompt: `${task1?.title}\n\n${task1?.instructions}${task1?.imageContext ? `\n\nImage Description: ${task1?.imageContext}` : ''}`,
-          taskType: 'Task 1'
+          task1Answer,
+          task2Answer,
+          task1Data: task1,
+          task2Data: task2
         }
       });
 
-      if (task1Feedback.error) throw task1Feedback.error;
+      if (examinerResponse.error) throw examinerResponse.error;
 
-      // Get Task 2 feedback
-      const task2Feedback = await supabase.functions.invoke('writing-feedback', {
-        body: {
-          writing: task2Answer,
-          prompt: `${task2?.title}\n\n${task2?.instructions}`,
-          taskType: 'Task 2'
-        }
-      });
-
-      if (task2Feedback.error) throw task2Feedback.error;
-
-      // Combine feedback for overall assessment
-      const combinedFeedback = `# IELTS WRITING TEST RESULTS
-
-## TASK 1 ASSESSMENT
-${task1Feedback.data.feedback}
-
----
-
-## TASK 2 ASSESSMENT  
-${task2Feedback.data.feedback}
-
----
-
-## OVERALL PERFORMANCE SUMMARY
-Based on both tasks, your writing demonstrates various strengths and areas for improvement. Focus on the specific recommendations provided for each task to enhance your IELTS Writing performance.`;
-
-      // Navigate to results page with the feedback
+      // Navigate to the enhanced results page
       navigate('/ielts-writing-results', {
         state: {
           testName: test?.test_name,
           task1Answer,
           task2Answer,
-          feedback: combinedFeedback,
+          feedback: examinerResponse.data.feedback,
           task1Data: task1,
-          task2Data: task2
+          task2Data: task2,
+          task1WordCount: examinerResponse.data.task1WordCount,
+          task2WordCount: examinerResponse.data.task2WordCount
         }
       });
     } catch (error: any) {
@@ -462,7 +450,7 @@ Based on both tasks, your writing demonstrates various strengths and areas for i
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
-                  AI Writing Tutor
+                  🐱 Catbot - Your AI Writing Tutor
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -487,7 +475,17 @@ Based on both tasks, your writing demonstrates various strengths and areas for i
                               : 'bg-background border border-border'
                           }`}
                         >
-                          {message.content}
+                          <div 
+                            className="prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{
+                              __html: message.content
+                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                .replace(/^• (.*)$/gm, '<li>$1</li>')
+                                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                                .replace(/\n/g, '<br>')
+                            }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -506,18 +504,40 @@ Based on both tasks, your writing demonstrates various strengths and areas for i
                   )}
                 </div>
                 
+                {/* Suggestion Buttons */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuggestionClick("Help with Writing Structure")}
+                    disabled={isChatLoading}
+                    className="text-xs h-8 bg-primary/5 hover:bg-primary/10 border-primary/20"
+                  >
+                    📝 Writing Structure
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuggestionClick("Suggest Some Vocabulary")}
+                    disabled={isChatLoading}
+                    className="text-xs h-8 bg-secondary/5 hover:bg-secondary/10 border-secondary/20"
+                  >
+                    📚 Vocabulary Help
+                  </Button>
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
-                    placeholder="Ask about writing techniques, structure, etc..."
+                    placeholder="Ask Catbot about writing techniques, structure, etc..."
                     className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                     disabled={isChatLoading}
                   />
                   <Button 
-                    onClick={sendChatMessage}
+                    onClick={() => sendChatMessage()}
                     disabled={isChatLoading || !newMessage.trim()}
                     size="sm"
                   >
@@ -526,12 +546,12 @@ Based on both tasks, your writing demonstrates various strengths and areas for i
                 </div>
 
                 <div className="mt-4 p-3 bg-surface-2 rounded-lg text-sm">
-                  <p className="font-medium text-text-primary mb-1">Ask me about:</p>
+                  <p className="font-medium text-text-primary mb-2">💡 **Catbot can help you with:**</p>
                   <ul className="text-text-secondary space-y-1">
-                    <li>• Writing structure and organization</li>
-                    <li>• Grammar and vocabulary usage</li>
-                    <li>• Task-specific requirements</li>
-                    <li>• Common IELTS writing mistakes</li>
+                    <li>• **Task-specific guidance** for this exact prompt</li>
+                    <li>• **Writing structure** and organization tips</li>
+                    <li>• **Vocabulary suggestions** relevant to your topic</li>
+                    <li>• **Grammar clarifications** and sentence building</li>
                   </ul>
                 </div>
               </CardContent>

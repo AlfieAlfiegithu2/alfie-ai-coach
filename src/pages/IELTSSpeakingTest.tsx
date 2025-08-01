@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2 } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -64,6 +64,20 @@ const IELTSSpeakingTest = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [timeLeft, isRecording]);
+
+  // Auto-play audio when test data loads or question changes
+  useEffect(() => {
+    if (testData && currentPart !== 2) {
+      const currentPrompt = getCurrentPrompt();
+      if (currentPrompt?.audio_url && !isRecording) {
+        // Small delay to ensure UI is ready
+        setTimeout(() => {
+          console.log(`🎵 Auto-playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
+          playAudio(currentPrompt.audio_url!);
+        }, 1000);
+      }
+    }
+  }, [testData, currentPart, currentQuestion]);
 
   const loadTestData = async () => {
     if (!testName) return;
@@ -133,17 +147,46 @@ const IELTSSpeakingTest = () => {
     
     try {
       setIsPlaying(true);
+      
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      
       audioRef.current = new Audio(audioUrl);
-      audioRef.current.onended = () => setIsPlaying(false);
+      audioRef.current.onended = () => {
+        setIsPlaying(false);
+        console.log(`✅ Audio playback completed`);
+      };
+      audioRef.current.onerror = () => {
+        setIsPlaying(false);
+        console.error('Audio playback error');
+        toast({
+          title: "Audio Error",
+          description: "Failed to play audio prompt",
+          variant: "destructive"
+        });
+      };
+      
+      console.log(`▶️ Playing audio: ${audioUrl}`);
       await audioRef.current.play();
     } catch (error) {
       console.error('Error playing audio:', error);
       setIsPlaying(false);
       toast({
-        title: "Audio Error",
-        description: "Failed to play audio prompt",
+        title: "Audio Error", 
+        description: "Failed to play audio prompt. Please try the repeat button.",
         variant: "destructive"
       });
+    }
+  };
+
+  const repeatAudio = () => {
+    const currentPrompt = getCurrentPrompt();
+    if (currentPrompt?.audio_url) {
+      console.log(`🔁 Repeating audio for Part ${currentPart}`);
+      playAudio(currentPrompt.audio_url);
     }
   };
 
@@ -199,28 +242,22 @@ const IELTSSpeakingTest = () => {
     if (currentPart === 1) {
       if (currentQuestion < (testData?.part1_prompts.length || 0) - 1) {
         setCurrentQuestion(currentQuestion + 1);
-        // Auto-play next audio
-        const nextPrompt = testData?.part1_prompts[currentQuestion + 1];
-        if (nextPrompt?.audio_url) {
-          setTimeout(() => playAudio(nextPrompt.audio_url!), 500);
-        }
+        console.log(`➡️ Moving to Part 1, Question ${currentQuestion + 2}`);
       } else {
         // Move to Part 2
         setCurrentPart(2);
         setCurrentQuestion(0);
         setPreparationTime(60);
+        console.log(`➡️ Moving to Part 2 - Long Turn`);
         startPreparationTimer();
       }
     } else if (currentPart === 3) {
       if (currentQuestion < (testData?.part3_prompts.length || 0) - 1) {
         setCurrentQuestion(currentQuestion + 1);
-        // Auto-play next audio
-        const nextPrompt = testData?.part3_prompts[currentQuestion + 1];
-        if (nextPrompt?.audio_url) {
-          setTimeout(() => playAudio(nextPrompt.audio_url!), 500);
-        }
+        console.log(`➡️ Moving to Part 3, Question ${currentQuestion + 2}`);
       } else {
         // Test complete
+        console.log(`🏁 Test completed`);
         submitTest();
       }
     }
@@ -418,28 +455,46 @@ const IELTSSpeakingTest = () => {
               </div>
             )}
 
-            {/* Audio Prompt */}
+            {/* Audio Prompt with Auto-play and Repeat */}
             {currentPrompt?.audio_url && currentPart !== 2 && (
-              <div className="text-center p-6 bg-green-50 rounded-lg">
-                <Button
-                  onClick={() => playAudio(currentPrompt.audio_url!)}
-                  disabled={isPlaying}
-                  className="rounded-xl"
-                  size="lg"
-                >
-                  {isPlaying ? (
-                    <>
-                      <Pause className="w-5 h-5 mr-2" />
-                      Playing...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-5 h-5 mr-2" />
-                      Play Question
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-6">
+                  <div className="text-center space-y-4">
+                    <div className="flex items-center justify-center space-x-2 mb-3">
+                      <Volume2 className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium text-blue-900">
+                        {isPlaying ? 'Playing Question Audio...' : 'Question Audio Ready'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-center space-x-3">
+                      <Button
+                        onClick={repeatAudio}
+                        disabled={isPlaying}
+                        variant="outline"
+                        className="rounded-xl border-blue-300 text-blue-700 hover:bg-blue-100"
+                        size="lg"
+                      >
+                        {isPlaying ? (
+                          <>
+                            <Pause className="w-5 h-5 mr-2" />
+                            Playing...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-5 h-5 mr-2" />
+                            Repeat Audio
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <p className="text-sm text-blue-700">
+                      {currentPart === 1 ? 'Listen carefully and answer the question' : 'Listen to the discussion question'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Cue Card Display */}

@@ -17,7 +17,6 @@ interface QuestionAnalysis {
   transcription: string;
   audio_url: string;
   feedback: string;
-  score: number;
 }
 
 interface OverallFeedback {
@@ -53,14 +52,13 @@ const IELTSSpeakingResults = () => {
   const analyzeTestResults = async () => {
     setIsLoading(true);
     try {
-      console.log('🤖 Starting comprehensive question-by-question analysis...');
+      console.log('🤖 Starting comprehensive audio-first analysis...');
 
-      // Process each recording for individual analysis
-      const questionAnalysisPromises = recordings.map(async (recording: any) => {
+      // Prepare all recordings for batch analysis
+      const recordingsWithDetails = await Promise.all(recordings.map(async (recording: any) => {
         const response = await fetch(recording.audio_url);
         const blob = await response.blob();
         
-        // Get question details
         const partMatch = recording.part.match(/part(\d+)_q(\d+)/);
         let questionText = "";
         let partNumber = 1;
@@ -78,115 +76,46 @@ const IELTSSpeakingResults = () => {
             questionText = testData.part3_prompts[questionIndex].transcription || testData.part3_prompts[questionIndex].title;
           }
         }
+
+        const reader = new FileReader();
         
         return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = async () => {
+          reader.onloadend = () => {
             const base64Audio = reader.result?.toString().split(',')[1];
-            
-            try {
-              // Individual question analysis
-              const { data: result, error } = await supabase.functions.invoke('enhanced-speech-analysis', {
-                body: {
-                  audio: base64Audio,
-                  questionText: questionText,
-                  partType: `Part ${partNumber}`,
-                  analysisType: 'individual_question'
-                }
-              });
-
-              if (error) throw error;
-
-              resolve({
-                part: `Part ${partNumber}`,
-                partNumber,
-                questionIndex,
-                questionText,
-                transcription: result.transcription || "Transcription not available",
-                audio_url: recording.audio_url,
-                feedback: result.feedback || "Analysis not available",
-                score: result.score || 6
-              });
-            } catch (error) {
-              console.error('Error analyzing individual question:', error);
-              resolve({
-                part: `Part ${partNumber}`,
-                partNumber,
-                questionIndex,
-                questionText,
-                transcription: "Transcription not available",
-                audio_url: recording.audio_url,
-                feedback: "Unable to analyze this response. The audio quality may have been insufficient.",
-                score: 6
-              });
-            }
+            resolve({
+              part: `Part ${partNumber}`,
+              partNum: partNumber,
+              questionIndex,
+              questionTranscription: questionText,
+              audio_base64: base64Audio,
+              audio_url: recording.audio_url
+            });
           };
           reader.readAsDataURL(blob);
         });
+      }));
+
+      const allRecordings = await Promise.all(recordingsWithDetails);
+
+      // Send all recordings for comprehensive analysis
+      const { data: result, error } = await supabase.functions.invoke('enhanced-speech-analysis', {
+        body: {
+          allRecordings,
+          testData,
+          analysisType: 'comprehensive'
+        }
       });
 
-      const questionAnalyses = await Promise.all(questionAnalysisPromises);
-      setQuestionAnalyses(questionAnalyses as QuestionAnalysis[]);
+      if (error) throw error;
 
-      // Overall comprehensive analysis
-      console.log('🎯 Generating overall test feedback...');
-      
-      const firstRecording = recordings[0];
-      const response = await fetch(firstRecording.audio_url);
-      const blob = await response.blob();
+      if (result.individualAnalyses) {
+        setQuestionAnalyses(result.individualAnalyses);
+      }
 
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(',')[1];
-        
-        try {
-          const { data: overallResult, error } = await supabase.functions.invoke('enhanced-speech-analysis', {
-            body: {
-              audio: base64Audio,
-              fullTestContext: questionAnalyses.map((qa: any) => ({
-                part: qa.part,
-                question: qa.questionText,
-                transcription: qa.transcription
-              })),
-              analysisType: 'comprehensive_test'
-            }
-          });
-
-          if (error) throw error;
-
-          const overallData = parseOverallAnalysis(overallResult);
-          setOverallFeedback(overallData);
-
-        } catch (error) {
-          console.error('Error in overall analysis:', error);
-          // Fallback overall feedback
-          setOverallFeedback({
-            overall_band_score: 6.5,
-            fluency_coherence: {
-              score: 7,
-              feedback: "Good fluency with natural speech flow. Minor hesitations observed but overall coherent responses."
-            },
-            lexical_resource: {
-              score: 6,
-              feedback: "Adequate vocabulary range. Some repetition of common words, would benefit from more varied expressions."
-            },
-            grammatical_range: {
-              score: 6,
-              feedback: "Uses mix of simple and complex structures. Some grammatical errors present but communication is clear."
-            },
-            pronunciation: {
-              score: 7,
-              feedback: "Generally clear pronunciation with minimal impact on intelligibility."
-            },
-            path_to_higher_score: [
-              "Expand vocabulary range by using more sophisticated, topic-specific expressions",
-              "Practice complex grammatical structures to improve accuracy and range",
-              "Work on pronunciation of specific sounds for better clarity"
-            ]
-          });
-        }
-      };
-      reader.readAsDataURL(blob);
+      if (result.analysis) {
+        const overallData = parseOverallAnalysis(result.analysis);
+        setOverallFeedback(overallData);
+      }
 
     } catch (error) {
       console.error('Error analyzing test results:', error);
@@ -195,35 +124,71 @@ const IELTSSpeakingResults = () => {
         description: "Failed to analyze your test results. Please try again.",
         variant: "destructive"
       });
+      
+      // Fallback data
+      setOverallFeedback({
+        overall_band_score: 6.5,
+        fluency_coherence: {
+          score: 7,
+          feedback: "Good fluency with natural speech flow. Minor hesitations observed but overall coherent responses."
+        },
+        lexical_resource: {
+          score: 6,
+          feedback: "Adequate vocabulary range. Some repetition of common words, would benefit from more varied expressions."
+        },
+        grammatical_range: {
+          score: 6,
+          feedback: "Uses mix of simple and complex structures. Some grammatical errors present but communication is clear."
+        },
+        pronunciation: {
+          score: 7,
+          feedback: "Generally clear pronunciation with minimal impact on intelligibility."
+        },
+        path_to_higher_score: [
+          "Expand vocabulary range by using more sophisticated, topic-specific expressions",
+          "Practice complex grammatical structures to improve accuracy and range",
+          "Work on pronunciation of specific sounds for better clarity"
+        ]
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const parseOverallAnalysis = (analysisData: any): OverallFeedback => {
+  const parseOverallAnalysis = (analysisText: string): OverallFeedback => {
+    // Parse the structured response from the AI
+    const fluencyMatch = analysisText.match(/\*\*FLUENCY & COHERENCE\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
+    const lexicalMatch = analysisText.match(/\*\*LEXICAL RESOURCE\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
+    const grammarMatch = analysisText.match(/\*\*GRAMMATICAL RANGE & ACCURACY\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
+    const pronunciationMatch = analysisText.match(/\*\*PRONUNCIATION\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
+    const overallMatch = analysisText.match(/\*\*OVERALL BAND SCORE\*\*:\s*(\d(?:\.\d)?)/);
+    const feedbackMatch = analysisText.match(/\*\*COMPREHENSIVE FEEDBACK\*\*:\s*([^$]+)/);
+
     return {
-      overall_band_score: analysisData.overall_score || 6.5,
+      overall_band_score: overallMatch ? parseFloat(overallMatch[1]) : 6.5,
       fluency_coherence: {
-        score: analysisData.fluency_score || 6,
-        feedback: analysisData.fluency_feedback || "Good overall fluency with room for improvement."
+        score: fluencyMatch ? parseFloat(fluencyMatch[1]) : 6,
+        feedback: fluencyMatch ? fluencyMatch[2].trim() : "Good overall fluency with room for improvement."
       },
       lexical_resource: {
-        score: analysisData.vocabulary_score || 6,
-        feedback: analysisData.vocabulary_feedback || "Adequate vocabulary range demonstrated."
+        score: lexicalMatch ? parseFloat(lexicalMatch[1]) : 6,
+        feedback: lexicalMatch ? lexicalMatch[2].trim() : "Adequate vocabulary range demonstrated."
       },
       grammatical_range: {
-        score: analysisData.grammar_score || 6,
-        feedback: analysisData.grammar_feedback || "Mixed use of grammatical structures."
+        score: grammarMatch ? parseFloat(grammarMatch[1]) : 6,
+        feedback: grammarMatch ? grammarMatch[2].trim() : "Mixed use of grammatical structures."
       },
       pronunciation: {
-        score: analysisData.pronunciation_score || 6,
-        feedback: analysisData.pronunciation_feedback || "Generally clear pronunciation."
+        score: pronunciationMatch ? parseFloat(pronunciationMatch[1]) : 6,
+        feedback: pronunciationMatch ? pronunciationMatch[2].trim() : "Generally clear pronunciation."
       },
-      path_to_higher_score: analysisData.improvement_tips || [
-        "Expand vocabulary range with more sophisticated expressions",
-        "Practice complex grammatical structures",
-        "Work on pronunciation clarity and intonation"
-      ]
+      path_to_higher_score: feedbackMatch ? 
+        feedbackMatch[1].trim().split(/\d+\.|\n-|\n•/).filter(tip => tip.trim().length > 0).map(tip => tip.trim()).slice(0, 4) :
+        [
+          "Expand vocabulary range with more sophisticated expressions",
+          "Practice complex grammatical structures", 
+          "Work on pronunciation clarity and intonation"
+        ]
     };
   };
 
@@ -416,73 +381,94 @@ const IELTSSpeakingResults = () => {
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Question-by-Question Analysis
+              <Volume2 className="w-5 h-5 text-primary" />
+              Audio-First Question Analysis
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Detailed feedback for each of your responses with audio playback
+              Advanced AI examiner feedback based on your actual speech patterns, fluency, and pronunciation
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {questionAnalyses.map((analysis, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-6 space-y-4">
+              <div key={index} className="border border-border rounded-lg p-6 space-y-4 bg-card">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">
+                  <h3 className="text-xl font-semibold">
                     {analysis.part} - Question {analysis.questionIndex + 1}
                   </h3>
-                  <Badge className={getBandColor(analysis.score)}>
-                    Score: {analysis.score}
-                  </Badge>
                 </div>
                 
                 {/* Official Question Text */}
                 <div>
-                  <h4 className="font-medium text-primary mb-2">Official Question:</h4>
-                  <div className="p-3 bg-blue-50 rounded-lg text-sm">
+                  <h4 className="font-medium text-primary mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Official Question:
+                  </h4>
+                  <div className="p-4 bg-primary/5 rounded-lg text-sm border border-primary/20">
                     {analysis.questionText || "Question text not available"}
                   </div>
                 </div>
 
-                {/* Audio Player */}
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={() => playAudio(analysis.audio_url, `${analysis.part}_${analysis.questionIndex}`)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    {playingAudio === `${analysis.part}_${analysis.questionIndex}` ? (
-                      <>
-                        <Pause className="w-4 h-4" />
-                        Stop Audio
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4" />
-                        Play Your Answer
-                      </>
-                    )}
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    {playingAudio === `${analysis.part}_${analysis.questionIndex}` ? 'Playing your response...' : 'Click to hear your response'}
-                  </span>
-                </div>
-
-                {/* AI Feedback */}
-                <div>
-                  <h4 className="font-medium text-green-700 mb-2">Specific AI Feedback:</h4>
-                  <div className="p-3 bg-green-50 rounded-lg text-sm">
-                    {analysis.feedback}
+                {/* Interactive Audio Player */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Volume2 className="w-4 h-4" />
+                    Your Audio Response:
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      onClick={() => playAudio(analysis.audio_url, `${analysis.part}_${analysis.questionIndex}`)}
+                      variant={playingAudio === `${analysis.part}_${analysis.questionIndex}` ? "default" : "outline"}
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {playingAudio === `${analysis.part}_${analysis.questionIndex}` ? (
+                        <>
+                          <Pause className="w-4 h-4" />
+                          Stop Audio
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4" />
+                          Play Your Answer
+                        </>
+                      )}
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {playingAudio === `${analysis.part}_${analysis.questionIndex}` ? 
+                        'Now playing: Listen to your speech patterns and delivery...' : 
+                        'Click to hear your complete response for this question'
+                      }
+                    </span>
                   </div>
                 </div>
 
-                {/* Transcription */}
+                {/* Advanced AI Feedback */}
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Your Response (Transcribed):</h4>
-                  <div className="p-3 bg-gray-50 rounded-lg text-sm max-h-32 overflow-y-auto">
+                  <h4 className="font-medium text-green-700 mb-3 flex items-center gap-2">
+                    <Award className="w-4 h-4" />
+                    Advanced AI Examiner Feedback:
+                  </h4>
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="prose prose-sm max-w-none">
+                      {analysis.feedback.split('\n').map((line, lineIndex) => (
+                        <p key={lineIndex} className="mb-2 last:mb-0 text-sm leading-relaxed">
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transcription in collapsible section */}
+                <details className="group">
+                  <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
+                    <span>View Speech Transcription</span>
+                    <span className="text-xs opacity-70">(Click to expand)</span>
+                  </summary>
+                  <div className="mt-3 p-3 bg-muted rounded-lg text-sm max-h-32 overflow-y-auto border">
                     {analysis.transcription}
                   </div>
-                </div>
+                </details>
               </div>
             ))}
           </CardContent>

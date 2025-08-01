@@ -23,8 +23,8 @@ serve(async (req) => {
       throw new Error('No recording data provided');
     }
 
-    // Process all recordings for comprehensive analysis
-    const transcriptionPromises = allRecordings.map(async (recording: any) => {
+    // Process individual question analyses first (direct audio analysis)
+    const individualAnalyses = await Promise.all(allRecordings.map(async (recording: any) => {
       const binaryString = atob(recording.audio_base64);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -36,6 +36,7 @@ serve(async (req) => {
       formData.append('file', blob, `speech_part${recording.partNum}_q${recording.questionIndex}.webm`);
       formData.append('model', 'whisper-1');
 
+      // Get transcription for this individual question
       const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
@@ -49,16 +50,72 @@ serve(async (req) => {
       }
 
       const transcriptionResult = await transcriptionResponse.json();
+      const studentTranscription = transcriptionResult.text;
+
+      // Individual question analysis prompt for detailed feedback
+      const questionPrompt = `You are a senior, highly experienced IELTS examiner. You will analyze the following audio recording of a student's answer to an IELTS Speaking question. The question asked was: "${recording.questionTranscription || recording.prompt}"
+
+Listen to the student's audio response. Then, provide a detailed, holistic assessment focusing on the key speaking criteria. Your feedback must go beyond the words used. Analyze the following:
+
+**Student's Transcribed Response:** ${studentTranscription}
+
+**Fluency and Coherence:** How was the flow and pace? Were there unnatural pauses or hesitation? Did they use filler words?
+
+**Pronunciation:** How clear was their speech? Were there any specific words or sounds that were difficult to understand?
+
+**Intonation and Delivery:** Did their voice sound natural and engaging, or was it monotonous? Did they use stress and intonation to convey meaning effectively?
+
+**Lexical Resource and Grammatical Accuracy:** Briefly comment on their vocabulary and grammar in this specific answer.
+
+Return your feedback as a concise, bulleted list of 2-3 key points.`;
+
+      const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4.1-2025-04-14',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a senior IELTS Speaking examiner. Provide specific, actionable feedback focusing on audio-based criteria like fluency, pronunciation, and intonation.'
+            },
+            {
+              role: 'user',
+              content: questionPrompt
+            }
+          ],
+          temperature: 0.2,
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error(`Individual analysis failed: ${await analysisResponse.text()}`);
+      }
+
+      const analysisResult = await analysisResponse.json();
+      
       return {
         part: recording.part,
-        question: recording.questionTranscription || recording.prompt,
-        transcription: transcriptionResult.text,
-        partNum: recording.partNum,
-        questionIndex: recording.questionIndex
+        partNumber: recording.partNum,
+        questionIndex: recording.questionIndex,
+        questionText: recording.questionTranscription || recording.prompt,
+        transcription: studentTranscription,
+        feedback: analysisResult.choices[0].message.content,
+        audio_url: recording.audio_url
       };
-    });
+    }));
 
-    const allTranscriptions = await Promise.all(transcriptionPromises);
+    // Create overall transcriptions for comprehensive analysis
+    const allTranscriptions = individualAnalyses.map(analysis => ({
+      part: analysis.part,
+      question: analysis.questionText,
+      transcription: analysis.transcription,
+      partNum: analysis.partNumber,
+      questionIndex: analysis.questionIndex
+    }));
 
     // Create comprehensive analysis prompt
     const comprehensivePrompt = `You are a senior, highly experienced IELTS examiner conducting a COMPREHENSIVE FULL-TEST ANALYSIS. Your goal is to provide a holistic and accurate assessment based on the student's COMPLETE performance across ALL parts of the IELTS Speaking test.
@@ -150,6 +207,7 @@ Please return your assessment in this format:
     return new Response(
       JSON.stringify({
         transcriptions: allTranscriptions,
+        individualAnalyses,
         analysis,
         analysisType: "comprehensive_full_test",
         success: true

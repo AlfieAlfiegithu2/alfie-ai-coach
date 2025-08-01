@@ -75,11 +75,12 @@ const IELTSWritingTestInterface = () => {
       if (testError) throw testError;
       setTest(testData);
 
-      // Load questions for this test
+      // Load questions for this test (only IELTS Writing tasks)
       const { data: questions, error: questionsError } = await supabase
         .from('questions')
         .select('*')
         .eq('test_id', testId)
+        .in('question_type', ['Task 1', 'Task 2'])
         .order('part_number');
 
       if (questionsError) throw questionsError;

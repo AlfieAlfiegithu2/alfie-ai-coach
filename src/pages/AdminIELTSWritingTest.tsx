@@ -213,16 +213,13 @@ const AdminIELTSWritingTest = () => {
         }
       }
 
+      // Reload test data to check if both tasks are completed
+      await loadTestData();
+      
       toast({
         title: "Success",
         description: `Task ${taskNumber} saved successfully`
       });
-
-      // Check if we should lock the test (both tasks completed)
-      if (task1.title && task1.instructions && task2.title && task2.instructions) {
-        setIsLocked(true);
-        setIsModifying(false);
-      }
     } catch (error: any) {
       console.error(`Error saving Task ${taskNumber}:`, error);
       toast({

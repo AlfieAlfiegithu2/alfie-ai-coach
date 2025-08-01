@@ -36,7 +36,7 @@ const AdminIELTS = () => {
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       setTests(data || []);

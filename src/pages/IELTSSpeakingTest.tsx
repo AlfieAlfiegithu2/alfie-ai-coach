@@ -206,7 +206,12 @@ const IELTSSpeakingTest = () => {
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         const recordingKey = `part${currentPart}_q${currentQuestion}`;
-        setRecordings(prev => ({ ...prev, [recordingKey]: blob }));
+        console.log(`💾 Saving recording for ${recordingKey}, blob size: ${blob.size}`);
+        setRecordings(prev => {
+          const updated = { ...prev, [recordingKey]: blob };
+          console.log(`📱 Recordings updated:`, Object.keys(updated));
+          return updated;
+        });
         
         stream.getTracks().forEach(track => track.stop());
       };
@@ -252,6 +257,11 @@ const IELTSSpeakingTest = () => {
         console.log(`➡️ Moving to Part 2 - Long Turn`);
         startPreparationTimer();
       }
+    } else if (currentPart === 2) {
+      // Move to Part 3 after Part 2
+      setCurrentPart(3);
+      setCurrentQuestion(0);
+      console.log(`➡️ Moving to Part 3 - Discussion`);
     } else if (currentPart === 3) {
       if (currentQuestion < (testData?.part3_prompts.length || 0) - 1) {
         setCurrentQuestion(currentQuestion + 1);

@@ -81,9 +81,11 @@ const IELTSWritingTestInterface = () => {
         .select('*')
         .eq('test_id', testId)
         .in('question_type', ['Task 1', 'Task 2'])
-        .order('part_number');
+        .order('part_number, created_at DESC');
 
       if (questionsError) throw questionsError;
+
+      console.log('Student portal - loaded questions:', questions);
 
       const task1Question = questions.find(q => q.part_number === 1);
       const task2Question = questions.find(q => q.part_number === 2);

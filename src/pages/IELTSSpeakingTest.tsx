@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2 } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Sparkles } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
+import AIAssistantModal from "@/components/AIAssistantModal";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SpeakingPrompt {
@@ -45,6 +46,7 @@ const IELTSSpeakingTest = () => {
   const [part2Notes, setPart2Notes] = useState("");
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -455,7 +457,29 @@ const IELTSSpeakingTest = () => {
     return null;
   };
 
+  const getCurrentQuestionText = (): string => {
+    const prompt = getCurrentPrompt();
+    if (!prompt) return "";
+    
+    // For Part 2, use the prompt_text (cue card content)
+    if (currentPart === 2) {
+      return prompt.prompt_text || "";
+    }
+    
+    // For Parts 1 & 3, use transcription if available, otherwise fall back to title
+    return prompt.transcription || prompt.title || "";
+  };
+
+  const getQuestionType = (): string => {
+    if (currentPart === 1) return "Part 1 (Interview)";
+    if (currentPart === 2) return "Part 2 (Long Turn)"; 
+    if (currentPart === 3) return "Part 3 (Discussion)";
+    return "Unknown Part";
+  };
+
   const currentPrompt = getCurrentPrompt();
+  const currentQuestionText = getCurrentQuestionText();
+  const questionType = getQuestionType();
 
   return (
     <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
@@ -500,12 +524,25 @@ const IELTSSpeakingTest = () => {
               <span>
                 Part {currentPart}: {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
               </span>
-              {timeLeft > 0 && (
-                <Badge variant="outline" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  {formatTime(timeLeft)}
-                </Badge>
-              )}
+              <div className="flex items-center gap-3">
+                {/* AI Assistant Button */}
+                <Button
+                  onClick={() => setShowAIAssistant(true)}
+                  variant="outline"
+                  size="sm"
+                  className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  AI Assistant
+                </Button>
+                
+                {timeLeft > 0 && (
+                  <Badge variant="outline" className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    {formatTime(timeLeft)}
+                  </Badge>
+                )}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -724,6 +761,15 @@ const IELTSSpeakingTest = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* AI Assistant Modal */}
+        <AIAssistantModal
+          isOpen={showAIAssistant}
+          onClose={() => setShowAIAssistant(false)}
+          questionText={currentQuestionText}
+          questionType={questionType}
+          partNumber={currentPart}
+        />
       </div>
     </StudentLayout>
   );

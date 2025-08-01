@@ -29,7 +29,9 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `You are an expert IELTS Writing examiner with extensive experience in assessing IELTS Academic Writing tests. You will evaluate both Task 1 and Task 2 responses according to the official IELTS band descriptors and provide detailed, professional feedback.
+    const examinerPrompt = `You are an experienced, senior IELTS examiner with over 10 years of experience. You are not a robot. You understand that great writing is more than just a checklist of grammatical points. Your goal is to provide feedback that is holistic, insightful, and focused on helping the student become a more effective communicator.
+
+When you assess the essay, you must look beyond surface-level features. Consider the clarity of the argument, the development of ideas, the persuasive force of the examples, and the overall impression the writing leaves on you as an expert reader. Your feedback should reflect this holistic understanding.
 
 **TASK 1 DETAILS:**
 Prompt: ${task1Data?.title || 'Task 1'}
@@ -45,6 +47,8 @@ Instructions: ${task2Data?.instructions || ''}
 
 **STUDENT'S TASK 2 RESPONSE:**
 "${task2Answer}"
+
+CRITICAL: First and foremost, assess whether the student fully and precisely answered the specific questions asked above. This is paramount to the evaluation.
 
 Please provide a comprehensive assessment using this EXACT format:
 
@@ -144,7 +148,7 @@ Be precise, professional, and constructive in your feedback. Focus on actionable
         messages: [
           {
             role: 'system',
-            content: 'You are an expert IELTS Writing examiner with deep knowledge of IELTS band descriptors and assessment criteria. Provide detailed, professional feedback that follows the exact format requested.'
+            content: 'You are a senior IELTS Writing examiner who values effective communication over mechanical correctness. Your assessment should be holistic, focusing on how well the student communicates their ideas rather than simply counting errors. For Task Achievement/Response, prioritize whether they answered the specific question fully and effectively. For Coherence, focus on logical flow and clarity. For Lexical Resource, reward natural and precise word choice over "fancy" vocabulary. For Grammar, assess flexibility and communication effectiveness, not just accuracy. Your feedback should feel human and encouraging while maintaining professional standards.'
           },
           {
             role: 'user',

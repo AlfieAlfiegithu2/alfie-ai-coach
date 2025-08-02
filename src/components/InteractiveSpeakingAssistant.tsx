@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -200,6 +200,9 @@ const InteractiveSpeakingAssistant = ({
             <Sparkles className="w-5 h-5 text-primary" />
             AI Speaking Assistant - {questionType}
           </DialogTitle>
+          <DialogDescription>
+            Get personalized help from Catbot for your IELTS Speaking question
+          </DialogDescription>
         </DialogHeader>
 
         {/* Question Context */}

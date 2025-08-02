@@ -169,6 +169,16 @@ const IELTSSpeakingResults = () => {
     }
   };
 
+  // IELTS Band Score Rounding Rules
+  const roundToIELTSBandScore = (score: number): number => {
+    if (score < 0) return 0;
+    if (score > 9) return 9;
+    
+    // Round to nearest 0.5
+    const rounded = Math.round(score * 2) / 2;
+    return Math.max(0, Math.min(9, rounded));
+  };
+
   const parseOverallAnalysis = (analysisText: string): OverallFeedback => {
     // Parse the structured response from the AI - remove asterisks for cleaner parsing
     const cleanText = analysisText.replace(/\*\*/g, '');
@@ -185,21 +195,21 @@ const IELTSSpeakingResults = () => {
     const defaultFeedback = "Unable to properly assess. Please retake the test with substantive responses.";
 
     return {
-      overall_band_score: overallMatch ? parseFloat(overallMatch[1]) : defaultScore,
+      overall_band_score: roundToIELTSBandScore(overallMatch ? parseFloat(overallMatch[1]) : defaultScore),
       fluency_coherence: {
-        score: fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore,
+        score: roundToIELTSBandScore(fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore),
         feedback: fluencyMatch ? fluencyMatch[2].trim() : defaultFeedback
       },
       lexical_resource: {
-        score: lexicalMatch ? parseFloat(lexicalMatch[1]) : defaultScore,
+        score: roundToIELTSBandScore(lexicalMatch ? parseFloat(lexicalMatch[1]) : defaultScore),
         feedback: lexicalMatch ? lexicalMatch[2].trim() : defaultFeedback
       },
       grammatical_range: {
-        score: grammarMatch ? parseFloat(grammarMatch[1]) : defaultScore,
+        score: roundToIELTSBandScore(grammarMatch ? parseFloat(grammarMatch[1]) : defaultScore),
         feedback: grammarMatch ? grammarMatch[2].trim() : defaultFeedback
       },
       pronunciation: {
-        score: pronunciationMatch ? parseFloat(pronunciationMatch[1]) : defaultScore,
+        score: roundToIELTSBandScore(pronunciationMatch ? parseFloat(pronunciationMatch[1]) : defaultScore),
         feedback: pronunciationMatch ? pronunciationMatch[2].trim() : defaultFeedback
       },
       path_to_higher_score: feedbackMatch ? 

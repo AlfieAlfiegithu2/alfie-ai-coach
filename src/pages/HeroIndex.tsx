@@ -106,42 +106,31 @@ const HeroIndex = () => {
     path: "/general-portal",
     badge: "AI Generated"
   }];
-  return <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+  return <div className="min-h-screen relative overflow-hidden" style={{
+    background: 'var(--gradient-hero)'
+  }}>
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Floating Particles */}
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 10}s`,
-              animationDuration: `${8 + Math.random() * 4}s`
-            }}
-          />
-        ))}
+        {[...Array(20)].map((_, i) => <div key={i} className="absolute w-2 h-2 bg-white/20 rounded-full animate-float" style={{
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        animationDelay: `${Math.random() * 10}s`,
+        animationDuration: `${8 + Math.random() * 4}s`
+      }} />)}
         
         {/* Gradient Orbs */}
         <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl animate-ping" style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{
+        animationDelay: '2s'
+      }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl animate-ping" style={{
+        animationDuration: '4s'
+      }} />
       </div>
 
       {/* Light Rays Background Effect */}
-      <LightRays 
-        raysOrigin="top-center"
-        raysColor="#8b5cf6"
-        raysSpeed={0.2}
-        lightSpread={1.5}
-        rayLength={4}
-        fadeDistance={3}
-        saturation={0.4}
-        followMouse={true}
-        mouseInfluence={0.03}
-        className="absolute inset-0 opacity-30"
-      />
+      <LightRays raysOrigin="top-center" raysColor="#8b5cf6" raysSpeed={0.2} lightSpread={1.5} rayLength={4} fadeDistance={3} saturation={0.4} followMouse={true} mouseInfluence={0.03} className="absolute inset-0 opacity-30" />
 
       {/* Navigation */}
       <nav className="border-b border-white/20 bg-white/10 backdrop-blur-xl relative z-10">
@@ -161,17 +150,10 @@ const HeroIndex = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button 
-                onClick={() => navigate('/auth')}
-                className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
-              >
+              <Button onClick={() => navigate('/auth')} className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200">
                 Log In
               </Button>
-              <Button 
-                onClick={() => navigate('/dashboard')}
-                variant="outline"
-                className="border-white/30 text-white bg-white/10 hover:bg-white/20 px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
-              >
+              <Button onClick={() => navigate('/dashboard')} variant="outline" className="border-white/30 text-white bg-white/10 hover:bg-white/20 px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200">
                 My Dashboard
               </Button>
             </div>
@@ -184,41 +166,36 @@ const HeroIndex = () => {
         <div className="container mx-auto text-center relative z-10">
           <div className="max-w-4xl mx-auto">
             {/* Animated Hero Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-8 animate-bounce">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-              <span className="text-white/90 text-sm font-medium">AI-Powered English Learning</span>
-            </div>
+            
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-200 to-purple-300 bg-clip-text text-transparent animate-fade-in">
               <TypewriterText text="Achieve Your English Goals with AI" />
             </h1>
             
-            <p className="text-xl md:text-2xl text-white/80 mb-8 leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <p className="text-xl md:text-2xl text-white/80 mb-8 leading-relaxed animate-fade-in" style={{
+            animationDelay: '0.3s'
+          }}>
               Master English tests with AI-powered coaching. 
               Track progress, get instant feedback, and reach your target score faster.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-fade-in" style={{ animationDelay: '0.6s' }}>
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/ielts-portal')} 
-                className="bg-white text-blue-600 hover:bg-white/90 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none group"
-              >
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-fade-in" style={{
+            animationDelay: '0.6s'
+          }}>
+              <Button size="lg" onClick={() => navigate('/ielts-portal')} className="bg-white text-blue-600 hover:bg-white/90 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none group">
                 <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                 Start Practice
               </Button>
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/pricing')} 
-                className="bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm border border-white/30 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl group"
-              >
+              <Button size="lg" onClick={() => navigate('/pricing')} className="bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm border border-white/30 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl group">
                 <Users className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                 View Pricing
               </Button>
             </div>
 
             {/* Animated Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 animate-fade-in" style={{ animationDelay: '0.9s' }}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 animate-fade-in" style={{
+            animationDelay: '0.9s'
+          }}>
               {[{
               label: "Active Learners",
               value: "50K+",
@@ -236,7 +213,7 @@ const HeroIndex = () => {
               value: "95%",
               icon: "🏆"
             }].map((stat, index) => <div key={index} className="text-center group hover:scale-105 transition-transform duration-300">
-                  <div className="text-4xl mb-2 animate-bounce" style={{ animationDelay: `${index * 0.2}s` }}>{stat.icon}</div>
+                  
                   <div className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-yellow-300 transition-colors">
                     {stat.value}
                   </div>
@@ -251,10 +228,7 @@ const HeroIndex = () => {
       <section className="py-16 px-4 bg-white/10 backdrop-blur-sm relative z-10">
         <div className="container mx-auto">
           <div className="max-w-md mx-auto">
-            <LanguagePicker
-              selectedLanguage={selectedLanguage}
-              onLanguageChange={setSelectedLanguage}
-            />
+            <LanguagePicker selectedLanguage={selectedLanguage} onLanguageChange={setSelectedLanguage} />
           </div>
         </div>
       </section>
@@ -273,7 +247,9 @@ const HeroIndex = () => {
 
           {/* Animated Test Types Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }} onClick={() => navigate(test.path)}>
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 animate-fade-in" style={{
+            animationDelay: `${index * 0.1}s`
+          }} onClick={() => navigate(test.path)}>
                 <CardHeader>
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
@@ -288,10 +264,7 @@ const HeroIndex = () => {
                 <CardContent>
                   <p className="text-white/70 mb-4">{test.description}</p>
                   
-                  <Button 
-                    size="sm" 
-                    className="w-full bg-white text-blue-600 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all duration-200 group-hover:scale-105"
-                  >
+                  <Button size="sm" className="w-full bg-white text-blue-600 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all duration-200 group-hover:scale-105">
                     Start Practice
                   </Button>
                 </CardContent>
@@ -355,12 +328,7 @@ const HeroIndex = () => {
                 <Star className="w-5 h-5 mr-2" />
                 Start Your Journey
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => navigate('/pricing')} 
-                className="border-white/30 text-white bg-white/10 hover:bg-white/20 px-8 py-4 text-lg"
-              >
+              <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-white/30 text-white bg-white/10 hover:bg-white/20 px-8 py-4 text-lg">
                 View Pricing
               </Button>
             </div>
@@ -431,10 +399,7 @@ const HeroIndex = () => {
       </footer>
       
       {/* AI Chatbot */}
-      <MinimalisticChatbot 
-        selectedLanguage={selectedLanguage}
-        onLanguageChange={setSelectedLanguage}
-      />
+      <MinimalisticChatbot selectedLanguage={selectedLanguage} onLanguageChange={setSelectedLanguage} />
     </div>;
 };
 export default HeroIndex;

@@ -49,7 +49,7 @@ const InteractiveSpeakingAssistant = ({
     if (isOpen && messages.length === 0) {
       const welcomeMessage: Message = {
         id: 'welcome',
-        text: `Hello! I'm your AI Speaking Assistant for ${questionType}. I can help you with vocabulary, structure, and grammar specific to your current question. What would you like help with?`,
+        text: `Hey there! I'm Catbot, your personal speaking coach. I'm here to help with this question. What can I help you with?`,
         isUser: false,
         timestamp: new Date()
       };
@@ -69,19 +69,19 @@ const InteractiveSpeakingAssistant = ({
   const helpButtons = [
     {
       id: "vocabulary",
-      label: "Suggest vocabulary",
+      label: "Suggest some vocabulary",
       icon: BookOpen,
       description: "Get relevant vocabulary for this topic"
     },
     {
       id: "structure", 
-      label: "Help with structure",
+      label: "Help me with my structure",
       icon: Target,
       description: "Learn how to organize your answer"
     },
     {
       id: "grammar",
-      label: "Grammar tips",
+      label: "What grammar is useful?",
       icon: Zap,
       description: "Useful grammar for this question"
     }
@@ -94,27 +94,37 @@ const InteractiveSpeakingAssistant = ({
 
     switch (helpType) {
       case "vocabulary":
-        return `The student is working on the question: '${questionText}'. They have asked for 'relevant vocabulary'. Provide exactly **3-4 advanced lexical items** with very brief, one-line definitions. Do not provide example sentences unless the word is very unusual.`;
+        return `The student is working on the question: '${questionText}'. They clicked 'Suggest vocabulary'. Provide 3-4 advanced lexical items with brief definitions, then ask an engaging question to continue the conversation. Be conversational and encouraging like: "Of course! Thinking about this topic, some great words are..." then end with "Would you like to try using one of these in a sentence?"`;
 
       case "structure":
-        return `The student is working on the question: '${questionText}'. They have asked for 'help with structure'. Provide a simple, 2-3 step structure for answering this specific question.`;
+        return `The student is working on the question: '${questionText}'. They clicked 'Help with structure'. Provide a simple 2-3 step structure, then ask an engaging question to continue the conversation. Be conversational and encouraging like: "Great question! Here's a simple way to structure your answer..." then end with "Which part would you like to practice first?"`;
 
       case "grammar":
-        return `The student is working on the question: '${questionText}'. They have asked for 'useful grammar'. Suggest **one or two specific grammatical structures** that are relevant to this question.`;
+        return `The student is working on the question: '${questionText}'. They clicked 'Grammar tips'. Suggest 1-2 specific grammatical structures with brief examples, then ask an engaging question to continue the conversation. Be conversational and encouraging like: "Perfect! For this question, you could use..." then end with "Would you like me to help you practice using one of these?"`;
 
       default:
-        return `The student is working on Part ${partNumber} of the IELTS Speaking test with the question: "${questionText}". Provide helpful, specific advice.`;
+        return `The student is working on Part ${partNumber} of the IELTS Speaking test with the question: "${questionText}". They asked: "${customMessage}". Provide helpful, specific advice in a conversational way and ask a follow-up question to keep the conversation going.`;
     }
   };
 
   const sendMessage = async (message: string, helpType?: string) => {
     if (!message.trim() && !helpType) return;
 
-    // Add user message (only if it's a custom message, not a help button click)
-    if (!helpType) {
+    // Add user message for both custom messages and help button clicks
+    let userMessageText = message;
+    if (helpType) {
+      const buttonLabels = {
+        "vocabulary": "Suggest some vocabulary",
+        "structure": "Help me with my structure", 
+        "grammar": "What grammar is useful?"
+      };
+      userMessageText = buttonLabels[helpType as keyof typeof buttonLabels] || message;
+    }
+
+    if (userMessageText) {
       const userMessage: Message = {
         id: Date.now().toString(),
-        text: message,
+        text: userMessageText,
         isUser: true,
         timestamp: new Date()
       };

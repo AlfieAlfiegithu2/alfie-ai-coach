@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, Headphones, PenTool, Mic, Zap, Star, Globe, Bot, Search, TrendingUp, Clock, CheckCircle, BookOpen, Target, Users, Award } from "lucide-react";
+import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Bot, Award, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import LanguagePicker from "@/components/LanguagePicker";
@@ -12,7 +12,6 @@ import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import { TypewriterText } from "@/components/TypewriterText";
 import HeroAnimation from "@/components/animations/HeroAnimation";
 import LightRays from "@/components/animations/LightRays";
-import CardSwap, { Card as SwapCard } from "@/components/CardSwap";
 const HeroIndex = () => {
   const navigate = useNavigate();
   const {
@@ -164,114 +163,6 @@ const HeroIndex = () => {
 
       {/* Hero Section with Enhanced Animations */}
       <section className="py-20 px-4 relative overflow-hidden">
-        {/* Background CardSwap */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-20">
-          <div className="w-80 h-96">
-            <CardSwap
-              cardDistance={60}
-              verticalDistance={70}
-              delay={5000}
-              pauseOnHover={false}
-            >
-              <SwapCard>
-                <div className="bg-gradient-to-br from-blue-500/80 to-purple-600/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 h-full shadow-2xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                      <BookOpen className="w-6 h-6 text-white" />
-                    </div>
-                    <Badge className="bg-white/20 text-white border-none">Most Popular</Badge>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">IELTS</h3>
-                  <p className="text-white/80 mb-4">International English Language Testing System</p>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-white/70">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm">40 Reading Questions</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-white/70">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm">3 Hour Practice</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-white/70">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="text-sm">Band 9 Achievable</span>
-                    </div>
-                  </div>
-                  <div className="mt-auto">
-                    <Button className="w-full bg-white text-blue-600 hover:bg-white/90">
-                      Start IELTS Practice
-                    </Button>
-                  </div>
-                </div>
-              </SwapCard>
-              
-              <SwapCard>
-                <div className="bg-gradient-to-br from-green-500/80 to-emerald-600/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 h-full shadow-2xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                      <Target className="w-6 h-6 text-white" />
-                    </div>
-                    <Badge className="bg-white/20 text-white border-none">AI Powered</Badge>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">PTE Academic</h3>
-                  <p className="text-white/80 mb-4">Pearson Test of English Academic</p>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-white/70">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm">Computer-based Test</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-white/70">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm">2 Hour Practice</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-white/70">
-                      <Award className="w-4 h-4" />
-                      <span className="text-sm">90 Score Possible</span>
-                    </div>
-                  </div>
-                  <div className="mt-auto">
-                    <Button className="w-full bg-white text-green-600 hover:bg-white/90">
-                      Start PTE Practice
-                    </Button>
-                  </div>
-                </div>
-              </SwapCard>
-              
-              <SwapCard>
-                <div className="bg-gradient-to-br from-orange-500/80 to-red-600/80 backdrop-blur-sm border border-white/20 rounded-2xl p-6 h-full shadow-2xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                      <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <Badge className="bg-white/20 text-white border-none">Daily Practice</Badge>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">General English</h3>
-                  <p className="text-white/80 mb-4">Improve your everyday English skills</p>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-white/70">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm">Daily Vocabulary</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-white/70">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm">15 Min Sessions</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-white/70">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="text-sm">Progress Tracking</span>
-                    </div>
-                  </div>
-                  <div className="mt-auto">
-                    <Button className="w-full bg-white text-orange-600 hover:bg-white/90">
-                      Start Learning
-                    </Button>
-                  </div>
-                </div>
-              </SwapCard>
-            </CardSwap>
-          </div>
-        </div>
-        
         <div className="container mx-auto text-center relative z-10">
           <div className="max-w-4xl mx-auto">
             {/* Animated Hero Badge */}

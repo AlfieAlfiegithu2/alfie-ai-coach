@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
+import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
 
 interface QuestionAnalysis {
   part: string;
@@ -302,11 +303,7 @@ const IELTSSpeakingResults = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Analyzing your speaking performance...</p>
-          <p className="text-xs text-muted-foreground mt-1">This comprehensive analysis may take a few moments</p>
-        </div>
+        <CatLoadingAnimation size="lg" message="Analyzing your speaking performance..." />
       </div>
     );
   }

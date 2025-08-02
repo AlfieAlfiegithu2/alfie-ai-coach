@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Volume2, PenTool, MessageSquare, Clock, ArrowLeft } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
+import CatLoadingAnimation from '@/components/animations/CatLoadingAnimation';
 
 const IELTSTestModules = () => {
   const { testId } = useParams<{ testId: string }>();
@@ -174,10 +175,7 @@ const IELTSTestModules = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading test...</p>
-        </div>
+        <CatLoadingAnimation size="lg" message="Loading test..." />
       </div>
     );
   }

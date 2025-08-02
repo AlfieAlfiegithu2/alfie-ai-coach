@@ -6,6 +6,7 @@ import { Volume2, RotateCcw, ArrowRight, ArrowLeft } from "lucide-react";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
 
 interface SpeakingPrompt {
   id: string;
@@ -178,8 +179,7 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
   if (isLoading) {
     return (
       <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gentle-blue mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Loading questions...</p>
+        <CatLoadingAnimation size="md" message="Loading questions..." />
       </div>
     );
   }

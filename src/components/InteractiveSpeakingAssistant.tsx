@@ -44,9 +44,9 @@ const InteractiveSpeakingAssistant = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Initialize welcome message when modal opens
+  // Initialize welcome message when modal opens and clear conversation for new questions
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen) {
       const welcomeMessage: Message = {
         id: 'welcome',
         text: `Hey there! I'm Catbot, your personal speaking coach. I'm here to help with this question. What can I help you with?`,
@@ -55,7 +55,7 @@ const InteractiveSpeakingAssistant = ({
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen, questionType]);
+  }, [isOpen, questionText]); // Reset conversation when question changes
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {

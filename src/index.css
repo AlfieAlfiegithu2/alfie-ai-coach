@@ -45,6 +45,7 @@
     --brand-orange: 25 95% 53%;          /* Orange for warnings */
     --brand-purple: 260 60% 65%;         /* Purple accents */
     --brand-red: 0 84% 65%;              /* Red #FF6B6B errors */
+    --brand-gold: 43 96% 56%;            /* Golden-yellow #F59E0B for scores */
     
     /* Functional Colors - Gray backgrounds */
     --surface-1: 0 0% 100%;             /* White cards */

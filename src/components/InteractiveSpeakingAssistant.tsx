@@ -194,8 +194,8 @@ const InteractiveSpeakingAssistant = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
             AI Speaking Assistant - {questionType}
@@ -206,17 +206,19 @@ const InteractiveSpeakingAssistant = ({
         </DialogHeader>
 
         {/* Question Context */}
-        <Card className="bg-primary/5 border-primary/20 flex-shrink-0">
-          <CardContent className="p-4">
-            <h4 className="font-semibold text-primary mb-2">Current Question:</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {questionText || "Question text not available"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="px-6 py-2 flex-shrink-0">
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4">
+              <h4 className="font-semibold text-primary mb-2">Current Question:</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {questionText || "Question text not available"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto space-y-4 min-h-[350px] max-h-[450px] bg-muted/30 rounded-lg p-4">
+        <div className="flex-1 overflow-y-auto space-y-4 mx-6 bg-muted/30 rounded-lg p-4 min-h-0">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -268,7 +270,7 @@ const InteractiveSpeakingAssistant = ({
         </div>
 
         {/* Quick Help Buttons */}
-        <div className="flex-shrink-0 space-y-3">
+        <div className="flex-shrink-0 p-6 pt-2 space-y-3">
           <div className="flex flex-wrap gap-2 justify-center">
             {helpButtons.map((button) => {
               const IconComponent = button.icon;

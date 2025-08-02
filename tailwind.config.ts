@@ -63,7 +63,6 @@ export default {
 				'brand-orange': 'hsl(var(--brand-orange))',
 				'brand-purple': 'hsl(var(--brand-purple))',
 				'brand-red': 'hsl(var(--brand-red))',
-				'brand-gold': 'hsl(var(--brand-gold))',
 				// Surface colors
 				'surface-1': 'hsl(var(--surface-1))',
 				'surface-2': 'hsl(var(--surface-2))',

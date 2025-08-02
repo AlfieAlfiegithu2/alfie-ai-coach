@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import HeroIndex from "./HeroIndex";
 import Dashboard from "./Dashboard";
-import LoadingAnimation from "@/components/animations/LoadingAnimation";
+import VideoLoadingAnimation from "@/components/animations/VideoLoadingAnimation";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -26,7 +26,10 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-primary flex items-center justify-center">
-        <LoadingAnimation size="lg" />
+        <VideoLoadingAnimation 
+          videoSrc="/path/to/your/loading-animation.mp4"
+          size="lg" 
+        />
       </div>
     );
   }

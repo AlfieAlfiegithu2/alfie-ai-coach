@@ -174,9 +174,25 @@ const IELTSSpeakingResults = () => {
     if (score < 0) return 0;
     if (score > 9) return 9;
     
-    // Round to nearest 0.5
-    const rounded = Math.round(score * 2) / 2;
-    return Math.max(0, Math.min(9, rounded));
+    const decimal = score - Math.floor(score);
+    
+    // .00 or .50 stays as is
+    if (decimal === 0 || decimal === 0.5) {
+      return score;
+    }
+    
+    // .25 rounds UP to next half band
+    if (decimal === 0.25) {
+      return Math.floor(score) + 0.5;
+    }
+    
+    // .75 rounds UP to next whole band
+    if (decimal === 0.75) {
+      return Math.ceil(score);
+    }
+    
+    // All other decimals round to nearest half band (traditional rounding)
+    return Math.round(score * 2) / 2;
   };
 
   const parseOverallAnalysis = (analysisText: string): OverallFeedback => {

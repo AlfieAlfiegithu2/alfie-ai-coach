@@ -355,10 +355,19 @@ const IELTSSpeakingResults = () => {
         {/* Overall Band Score Section */}
         <Card className="card-modern">
           <CardContent className="p-8 text-center">
-            <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r ${getOverallBandColor(overallFeedback.overall_band_score)} text-white text-3xl font-bold mb-4`}>
-              {overallFeedback.overall_band_score}
+            <div className="flex items-center justify-center gap-8">
+              <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r ${getOverallBandColor(overallFeedback.overall_band_score)} text-white text-3xl font-bold`}>
+                {overallFeedback.overall_band_score}
+              </div>
+              <dotlottie-wc 
+                src="https://lottie.host/0fe81d4c-ce6d-47ce-9f32-cbf478902f97/IONCXdpNpV.lottie" 
+                style={{width: "300px", height: "300px"}} 
+                speed="1" 
+                autoplay 
+                loop
+              />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Overall Band Score</h2>
+            <h2 className="text-2xl font-bold mb-2 mt-4">Overall Band Score</h2>
             <p className="text-muted-foreground">
               {overallFeedback.overall_band_score >= 8 ? 'Excellent Performance' : 
                overallFeedback.overall_band_score >= 6.5 ? 'Good Performance' : 

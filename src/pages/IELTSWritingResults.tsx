@@ -27,10 +27,14 @@ const IELTSWritingResults = () => {
     return null;
   }
 
+  const roundToValidBandScore = (score: number) => {
+    return Math.round(score * 2) / 2; // Rounds to nearest 0.5
+  };
+
   const extractBandScore = (feedbackText: string, scoreType: string = 'overall') => {
     const regex = new RegExp(`${scoreType}.*?band.*?score.*?(\\d+(?:\\.\\d+)?)`, 'i');
     const match = feedbackText.match(regex);
-    return match ? parseFloat(match[1]) : 7.0;
+    return match ? roundToValidBandScore(parseFloat(match[1])) : 7.0;
   };
 
   const extractCriteriaScores = (feedbackText: string) => {
@@ -56,7 +60,7 @@ const IELTSWritingResults = () => {
         scoreMatches = section.match(/\*\*Band Score: (\d+(?:\.\d+)?)\*\*/g);
       }
       if (scoreMatches) {
-        scores.push(...scoreMatches.map(match => parseFloat(match.match(/(\d+(?:\.\d+)?)/)?.[1] || '7')));
+        scores.push(...scoreMatches.map(match => roundToValidBandScore(parseFloat(match.match(/(\d+(?:\.\d+)?)/)?.[1] || '7'))));
       }
       return scores;
     };
@@ -68,10 +72,10 @@ const IELTSWritingResults = () => {
     const task1OverallMatch = task1Match[1].match(/Task 1 Overall Band Score: (\d+(?:\.\d+)?)/);
     const task2OverallMatch = task2Match[1].match(/Task 2 Overall Band Score: (\d+(?:\.\d+)?)/);
     
-    const task1Overall = task1OverallMatch ? parseFloat(task1OverallMatch[1]) : 
-                        (task1Scores.length > 0 ? Math.round((task1Scores.reduce((a, b) => a + b, 0) / task1Scores.length) * 2) / 2 : 7.0);
-    const task2Overall = task2OverallMatch ? parseFloat(task2OverallMatch[1]) : 
-                        (task2Scores.length > 0 ? Math.round((task2Scores.reduce((a, b) => a + b, 0) / task2Scores.length) * 2) / 2 : 7.0);
+    const task1Overall = task1OverallMatch ? roundToValidBandScore(parseFloat(task1OverallMatch[1])) : 
+                        (task1Scores.length > 0 ? roundToValidBandScore(task1Scores.reduce((a, b) => a + b, 0) / task1Scores.length) : 7.0);
+    const task2Overall = task2OverallMatch ? roundToValidBandScore(parseFloat(task2OverallMatch[1])) : 
+                        (task2Scores.length > 0 ? roundToValidBandScore(task2Scores.reduce((a, b) => a + b, 0) / task2Scores.length) : 7.0);
     
     // Try new format first, then fallback to old format
     let overallMatch = feedbackText.match(/Overall Writing Band Score: (\d+(?:\.\d+)?)/);
@@ -82,11 +86,11 @@ const IELTSWritingResults = () => {
     // If no overall match found, calculate using correct weighting
     let overall = 7.0;
     if (overallMatch) {
-      overall = parseFloat(overallMatch[1]);
+      overall = roundToValidBandScore(parseFloat(overallMatch[1]));
     } else {
       // Apply correct IELTS weighting: Task 1 = 33%, Task 2 = 67%
       const weightedAverage = ((task1Overall * 1) + (task2Overall * 2)) / 3;
-      overall = Math.round(weightedAverage * 2) / 2; // Round to nearest 0.5
+      overall = roundToValidBandScore(weightedAverage);
     }
 
     return { task1: task1Scores, task2: task2Scores, overall, task1Overall, task2Overall };
@@ -255,64 +259,115 @@ const IELTSWritingResults = () => {
           </Card>
         </div>
 
-        {/* Criteria Breakdown */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <Card className="card-modern border border-brand-green/20 bg-gradient-to-br from-brand-green/5 to-brand-green/10">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-sm flex items-center justify-center gap-1 text-brand-green">
-                <Target className="w-4 h-4" />
-                Task Achievement
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <div className="text-2xl font-bold text-brand-green">
-                {scores.task1.length > 0 ? scores.task1[0]?.toFixed(1) : '7.0'}
+        {/* Criteria Breakdown - Task 1 */}
+        <Card className="mb-6 card-elevated border-2 border-brand-blue/20">
+          <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-blue/5">
+            <CardTitle className="flex items-center gap-2 text-brand-blue">
+              <div className="p-2 rounded-xl bg-brand-blue/10">
+                <Target className="w-5 h-5" />
               </div>
-            </CardContent>
-          </Card>
+              Task 1 - Criteria Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-green/10 mb-2">
+                  <Target className="w-6 h-6 text-brand-green mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-green">
+                    {scores.task1.length > 0 ? scores.task1[0]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Task Achievement</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-blue/10 mb-2">
+                  <MessageSquare className="w-6 h-6 text-brand-blue mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-blue">
+                    {scores.task1.length > 1 ? scores.task1[1]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Coherence & Cohesion</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-purple/10 mb-2">
+                  <Book className="w-6 h-6 text-brand-purple mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-purple">
+                    {scores.task1.length > 2 ? scores.task1[2]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Lexical Resource</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-orange/10 mb-2">
+                  <Edit3 className="w-6 h-6 text-brand-orange mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-orange">
+                    {scores.task1.length > 3 ? scores.task1[3]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Grammar Range</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="card-modern border border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-brand-blue/10">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-sm flex items-center justify-center gap-1 text-brand-blue">
-                <MessageSquare className="w-4 h-4" />
-                Coherence & Cohesion
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <div className="text-2xl font-bold text-brand-blue">
-                {scores.task1.length > 1 ? scores.task1[1]?.toFixed(1) : '7.0'}
+        {/* Criteria Breakdown - Task 2 */}
+        <Card className="mb-8 card-elevated border-2 border-brand-purple/20">
+          <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-purple/5">
+            <CardTitle className="flex items-center gap-2 text-brand-purple">
+              <div className="p-2 rounded-xl bg-brand-purple/10">
+                <Edit3 className="w-5 h-5" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-modern border border-brand-purple/20 bg-gradient-to-br from-brand-purple/5 to-brand-purple/10">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-sm flex items-center justify-center gap-1 text-brand-purple">
-                <Book className="w-4 h-4" />
-                Lexical Resource
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <div className="text-2xl font-bold text-brand-purple">
-                {scores.task1.length > 2 ? scores.task1[2]?.toFixed(1) : '7.0'}
+              Task 2 - Criteria Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-green/10 mb-2">
+                  <Target className="w-6 h-6 text-brand-green mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-green">
+                    {scores.task2.length > 0 ? scores.task2[0]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Task Response</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-modern border border-brand-orange/20 bg-gradient-to-br from-brand-orange/5 to-brand-orange/10">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-sm flex items-center justify-center gap-1 text-brand-orange">
-                <Edit3 className="w-4 h-4" />
-                Grammar Range
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <div className="text-2xl font-bold text-brand-orange">
-                {scores.task1.length > 3 ? scores.task1[3]?.toFixed(1) : '7.0'}
+              
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-blue/10 mb-2">
+                  <MessageSquare className="w-6 h-6 text-brand-blue mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-blue">
+                    {scores.task2.length > 1 ? scores.task2[1]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Coherence & Cohesion</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-purple/10 mb-2">
+                  <Book className="w-6 h-6 text-brand-purple mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-purple">
+                    {scores.task2.length > 2 ? scores.task2[2]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Lexical Resource</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="p-4 rounded-2xl bg-brand-orange/10 mb-2">
+                  <Edit3 className="w-6 h-6 text-brand-orange mx-auto mb-1" />
+                  <div className="text-2xl font-bold text-brand-orange">
+                    {scores.task2.length > 3 ? scores.task2[3]?.toFixed(1) : '7.0'}
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-text-primary">Grammar Range</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* AI Examiner Report */}
         <Card className="mb-8 card-elevated border-2 border-brand-blue/20">

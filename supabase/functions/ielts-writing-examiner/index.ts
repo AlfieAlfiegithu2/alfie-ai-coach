@@ -29,9 +29,14 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `You are a senior, highly experienced IELTS examiner. Your goal is to provide a holistic and accurate assessment based *only* on the official IELTS band descriptors and scoring rules provided below. Evaluate the student's response against these criteria and justify your feedback by referencing them.
+    const examinerPrompt = `You are a senior, highly experienced IELTS examiner. Your goal is to provide a holistic and accurate assessment based *only* on the official IELTS band descriptors and scoring rules provided below. 
 
-Focus on overall communicative effectiveness. Do not just count errors; explain their impact on the band score for a specific criterion.
+CRITICAL VALIDATION REQUIREMENTS:
+- For Task 1: The response MUST address the specific data/chart/graph provided. If the response discusses a completely different topic or ignores the visual data entirely, the Task Achievement score should be 1.0-3.0 maximum.
+- For Task 2: The response MUST address the specific question/topic provided. Off-topic responses should receive 1.0-3.0 for Task Response.
+- Responses that don't match the task requirements cannot receive high scores regardless of language quality.
+
+Focus on overall communicative effectiveness while ensuring the response addresses the correct task. Do not just count errors; explain their impact on the band score for a specific criterion.
 
 You will first provide a whole number band score (0-9) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
 
@@ -41,6 +46,7 @@ Now, please assess the following submission against the relevant band descriptor
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
 ${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}
+${task1Data?.imageUrl ? `Visual Data Present: Yes (chart/graph/table provided)` : 'Visual Data Present: No'}
 
 **STUDENT'S TASK 1 RESPONSE:**
 "${task1Answer}"

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import LanguagePicker from "@/components/LanguagePicker";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import { TypewriterText } from "@/components/TypewriterText";
+import HeroAnimation from "@/components/animations/HeroAnimation";
 const HeroIndex = () => {
   const navigate = useNavigate();
   const {
@@ -142,8 +143,9 @@ const HeroIndex = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center">
+      <section className="py-20 px-4 relative overflow-hidden">
+        <HeroAnimation className="opacity-30" />
+        <div className="container mx-auto text-center relative z-10">
           <div className="max-w-4xl mx-auto">
             
             

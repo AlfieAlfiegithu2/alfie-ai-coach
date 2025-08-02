@@ -139,29 +139,29 @@ const IELTSSpeakingResults = () => {
         variant: "destructive"
       });
       
-      // Fallback data
+      // Fallback data for analysis failure - give low scores since we can't properly assess
       setOverallFeedback({
-        overall_band_score: 6.5,
+        overall_band_score: 1.0,
         fluency_coherence: {
-          score: 7,
-          feedback: "Good fluency with natural speech flow. Minor hesitations observed but overall coherent responses."
+          score: 1,
+          feedback: "Unable to assess due to technical issues. Please retake the test to receive proper evaluation."
         },
         lexical_resource: {
-          score: 6,
-          feedback: "Adequate vocabulary range. Some repetition of common words, would benefit from more varied expressions."
+          score: 1,
+          feedback: "Unable to assess due to technical issues. Please retake the test to receive proper evaluation."
         },
         grammatical_range: {
-          score: 6,
-          feedback: "Uses mix of simple and complex structures. Some grammatical errors present but communication is clear."
+          score: 1,
+          feedback: "Unable to assess due to technical issues. Please retake the test to receive proper evaluation."
         },
         pronunciation: {
-          score: 7,
-          feedback: "Generally clear pronunciation with minimal impact on intelligibility."
+          score: 1,
+          feedback: "Unable to assess due to technical issues. Please retake the test to receive proper evaluation."
         },
         path_to_higher_score: [
-          "Expand vocabulary range by using more sophisticated, topic-specific expressions",
-          "Practice complex grammatical structures to improve accuracy and range",
-          "Work on pronunciation of specific sounds for better clarity"
+          "Technical error occurred during analysis. Please retake the test for accurate assessment.",
+          "Ensure you speak clearly and provide substantial responses to each question.",
+          "Practice speaking for the full allocated time with relevant content."
         ]
       });
     } finally {
@@ -170,38 +170,44 @@ const IELTSSpeakingResults = () => {
   };
 
   const parseOverallAnalysis = (analysisText: string): OverallFeedback => {
-    // Parse the structured response from the AI
-    const fluencyMatch = analysisText.match(/\*\*FLUENCY & COHERENCE\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
-    const lexicalMatch = analysisText.match(/\*\*LEXICAL RESOURCE\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
-    const grammarMatch = analysisText.match(/\*\*GRAMMATICAL RANGE & ACCURACY\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
-    const pronunciationMatch = analysisText.match(/\*\*PRONUNCIATION\*\*:\s*(\d(?:\.\d)?)\s*-\s*([^*]+)/);
-    const overallMatch = analysisText.match(/\*\*OVERALL BAND SCORE\*\*:\s*(\d(?:\.\d)?)/);
-    const feedbackMatch = analysisText.match(/\*\*COMPREHENSIVE FEEDBACK\*\*:\s*([^$]+)/);
+    // Parse the structured response from the AI - remove asterisks for cleaner parsing
+    const cleanText = analysisText.replace(/\*\*/g, '');
+    
+    const fluencyMatch = cleanText.match(/FLUENCY & COHERENCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const lexicalMatch = cleanText.match(/LEXICAL RESOURCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const grammarMatch = cleanText.match(/GRAMMATICAL RANGE & ACCURACY:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const pronunciationMatch = cleanText.match(/PRONUNCIATION:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const overallMatch = cleanText.match(/OVERALL BAND SCORE:\s*(\d(?:\.\d)?)/);
+    const feedbackMatch = cleanText.match(/COMPREHENSIVE FEEDBACK:\s*([^$]+)/);
+
+    // Ensure scores are realistic - if parsing fails, use very low scores
+    const defaultScore = 1;
+    const defaultFeedback = "Unable to properly assess. Please retake the test with substantive responses.";
 
     return {
-      overall_band_score: overallMatch ? parseFloat(overallMatch[1]) : 6.5,
+      overall_band_score: overallMatch ? parseFloat(overallMatch[1]) : defaultScore,
       fluency_coherence: {
-        score: fluencyMatch ? parseFloat(fluencyMatch[1]) : 6,
-        feedback: fluencyMatch ? fluencyMatch[2].trim() : "Good overall fluency with room for improvement."
+        score: fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore,
+        feedback: fluencyMatch ? fluencyMatch[2].trim() : defaultFeedback
       },
       lexical_resource: {
-        score: lexicalMatch ? parseFloat(lexicalMatch[1]) : 6,
-        feedback: lexicalMatch ? lexicalMatch[2].trim() : "Adequate vocabulary range demonstrated."
+        score: lexicalMatch ? parseFloat(lexicalMatch[1]) : defaultScore,
+        feedback: lexicalMatch ? lexicalMatch[2].trim() : defaultFeedback
       },
       grammatical_range: {
-        score: grammarMatch ? parseFloat(grammarMatch[1]) : 6,
-        feedback: grammarMatch ? grammarMatch[2].trim() : "Mixed use of grammatical structures."
+        score: grammarMatch ? parseFloat(grammarMatch[1]) : defaultScore,
+        feedback: grammarMatch ? grammarMatch[2].trim() : defaultFeedback
       },
       pronunciation: {
-        score: pronunciationMatch ? parseFloat(pronunciationMatch[1]) : 6,
-        feedback: pronunciationMatch ? pronunciationMatch[2].trim() : "Generally clear pronunciation."
+        score: pronunciationMatch ? parseFloat(pronunciationMatch[1]) : defaultScore,
+        feedback: pronunciationMatch ? pronunciationMatch[2].trim() : defaultFeedback
       },
       path_to_higher_score: feedbackMatch ? 
         feedbackMatch[1].trim().split(/\d+\.|\n-|\n•/).filter(tip => tip.trim().length > 0).map(tip => tip.trim()).slice(0, 4) :
         [
-          "Expand vocabulary range with more sophisticated expressions",
-          "Practice complex grammatical structures", 
-          "Work on pronunciation clarity and intonation"
+          "Provide substantive responses to all questions instead of silence or minimal words",
+          "Practice speaking for the full allocated time with relevant content", 
+          "Work on developing complete thoughts and explanations for each question"
         ]
     };
   };

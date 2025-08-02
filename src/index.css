@@ -391,4 +391,14 @@
   .responsive-heading {
     @apply text-2xl md:text-3xl lg:text-4xl;
   }
+  
+  /* Cute floating animation for animal elements */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
 }

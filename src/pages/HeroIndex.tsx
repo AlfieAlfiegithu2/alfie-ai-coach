@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Bot, Award, Search } from "lucide-react";
+import { Zap, Heart, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import LanguagePicker from "@/components/LanguagePicker";
@@ -20,6 +20,8 @@ const HeroIndex = () => {
   const [user, setUser] = useState<any>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [searchQuery, setSearchQuery] = useState('');
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [clickedCard, setClickedCard] = useState<number | null>(null);
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -42,52 +44,39 @@ const HeroIndex = () => {
     title: "IELTS",
     description: "International English Language Testing System",
     path: "/ielts-portal",
-    // Main IELTS portal
-    icon: <BookOpen className="w-6 h-6 text-foreground" />,
+    animal: "🦉",
     sections: ["Reading", "Listening", "Writing", "Speaking"]
   }, {
-    title: "PTE Academic",
+    title: "PTE Academic", 
     description: "Pearson Test of English Academic",
     path: "/pte-portal",
-    icon: <Target className="w-6 h-6 text-foreground" />,
+    animal: "🐨",
     sections: ["Reading", "Listening", "Writing", "Speaking"]
   }, {
     title: "TOEFL iBT",
-    description: "Test of English as a Foreign Language",
+    description: "Test of English as a Foreign Language", 
     path: "/toefl-portal",
-    icon: <Globe className="w-6 h-6 text-foreground" />,
+    animal: "🦘",
     sections: ["Reading", "Listening", "Writing", "Speaking"]
   }, {
     title: "General English",
     description: "Daily English improvement lessons",
-    path: "/general-portal",
-    icon: <Users className="w-6 h-6 text-foreground" />,
+    path: "/general-portal", 
+    animal: "🐼",
     sections: ["Vocabulary", "Grammar", "Conversation", "Practice"]
   }];
-  const ieltsModules = [{
-    title: "Reading",
-    icon: <BookOpen className="w-6 h-6 text-foreground" />,
-    description: "Cambridge IELTS passages with AI analysis",
-    path: "/reading",
-    questions: "40+ questions"
+  const features = [{
+    title: "Bite-sized lessons",
+    description: "Learn English with short, fun lessons that fit into your daily routine.",
+    animal: "🐰"
   }, {
-    title: "Listening",
-    icon: <Headphones className="w-6 h-6 text-foreground" />,
-    description: "Audio practice with transcription support",
-    path: "/listening",
-    questions: "40+ questions"
+    title: "AI-powered feedback", 
+    description: "Get instant, personalized feedback that adapts to your learning style.",
+    animal: "🦊"
   }, {
-    title: "Writing",
-    icon: <PenTool className="w-6 h-6 text-foreground" />,
-    description: "Task 1 & 2 with detailed AI feedback",
-    path: "/writing",
-    questions: "2 tasks"
-  }, {
-    title: "Speaking",
-    icon: <Mic className="w-6 h-6 text-foreground" />,
-    description: "Voice analysis with pronunciation feedback",
-    path: "/speaking",
-    questions: "3 parts"
+    title: "Track progress",
+    description: "Stay motivated with achievements and progress tracking.",
+    animal: "🐸"
   }];
   const additionalPortals = [{
     title: "PTE Academic",
@@ -143,78 +132,89 @@ const HeroIndex = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-16 px-4 bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="container mx-auto">
+      <section className="py-16 px-4 bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
+        {/* Floating Animals Animation */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 animate-bounce" style={{animationDelay: '0s', animationDuration: '3s'}}>
+            <span className="text-4xl">🦋</span>
+          </div>
+          <div className="absolute top-40 right-20 animate-bounce" style={{animationDelay: '1s', animationDuration: '4s'}}>
+            <span className="text-3xl">🐝</span>
+          </div>
+          <div className="absolute bottom-40 left-20 animate-bounce" style={{animationDelay: '2s', animationDuration: '3.5s'}}>
+            <span className="text-3xl">🐱</span>
+          </div>
+        </div>
+
+        <div className="container mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               <h1 className="text-4xl md:text-6xl font-bold mb-6 text-gray-800 leading-tight">
                 <TypewriterText text="Learn English the fun way!" />
+                <div className="inline-block ml-4 animate-pulse">🎉</div>
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Master English tests with AI-powered coaching. Practice with fun, 
-                bite-sized lessons that help you reach your goals faster.
+                Master English with your cute AI animal friends! 🐾 
+                Fun, bite-sized lessons that make learning feel like playing.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
                 <Button 
                   size="lg" 
-                  onClick={() => navigate('/ielts-portal')} 
-                  className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl"
+                  onClick={() => {
+                    setClickedCard(0);
+                    setTimeout(() => navigate('/ielts-portal'), 300);
+                  }}
+                  className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl group"
                 >
-                  Get Started
+                  Start Learning <span className="ml-2 group-hover:animate-bounce">🚀</span>
                 </Button>
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/auth')} 
                   variant="outline"
-                  className="border-2 border-blue-500 text-blue-600 hover:bg-blue-50 px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl"
+                  className="border-2 border-primary text-primary hover:bg-primary/5 px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl"
                 >
-                  I Have An Account
+                  Sign In <Heart className="ml-2 w-5 h-5 inline" />
                 </Button>
               </div>
 
-              {/* Language flags */}
-              <div className="flex items-center justify-center lg:justify-start gap-2 text-sm text-gray-500">
-                <span>🇺🇸</span>
-                <span>🇬🇧</span>
-                <span>🇨🇦</span>
-                <span>🇦🇺</span>
-                <span>🇮🇳</span>
-                <span>🇿🇦</span>
-                <span className="ml-2">Free fun effective</span>
+              {/* Interactive Fun Fact */}
+              <div 
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 cursor-pointer hover:bg-white/90 transition-all duration-300 hover:scale-105"
+                onClick={() => toast({ title: "🎉 Fun Fact!", description: "Learning with animal friends increases retention by 40%!" })}
+              >
+                <div className="flex items-center justify-center lg:justify-start gap-2 text-primary font-medium">
+                  <span className="animate-spin">🌟</span>
+                  <span>Click for a fun learning fact!</span>
+                  <span className="animate-pulse">✨</span>
+                </div>
               </div>
             </div>
 
             <div className="relative">
-              <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-green-400 transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-800">AI Language Coach</h3>
-                    <p className="text-gray-600 text-sm">Your personal tutor</p>
-                  </div>
+              {/* Main Animal Animation */}
+              <div className="text-center mb-8">
+                <div className="text-8xl animate-bounce" style={{animationDuration: '2s'}}>
+                  🦁
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Award className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <span className="text-gray-700">Personalized lessons</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Target className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <span className="text-gray-700">Real-time feedback</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Star className="w-4 h-4 text-green-600" />
-                    </div>
-                    <span className="text-gray-700">Track your progress</span>
+                <p className="text-lg font-bold text-gray-700 mt-2">Leo, your AI Learning Buddy!</p>
+              </div>
+
+              {/* Interactive Learning Card */}
+              <div 
+                className="bg-white rounded-3xl p-6 shadow-2xl border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 cursor-pointer group"
+                onClick={() => toast({ title: "🎯 Let's Start!", description: "Choose a test below to begin your adventure!" })}
+              >
+                <div className="text-center">
+                  <div className="text-4xl mb-4 group-hover:animate-spin transition-all duration-300">🎯</div>
+                  <h3 className="font-bold text-gray-800 mb-2">Ready to Learn?</h3>
+                  <p className="text-gray-600 text-sm mb-4">Pick your favorite animal friend below!</p>
+                  <div className="flex justify-center gap-2">
+                    <span className="animate-pulse">🐰</span>
+                    <span className="animate-pulse" style={{animationDelay: '0.5s'}}>🦊</span>
+                    <span className="animate-pulse" style={{animationDelay: '1s'}}>🐼</span>
                   </div>
                 </div>
               </div>
@@ -228,49 +228,48 @@ const HeroIndex = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-800">
-              Free. Fun. Effective.
+              Learn with Animal Friends! <span className="animate-bounce inline-block">🎈</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Practice with bite-sized lessons and get instant feedback with our AI coach
+              Each feature comes with a cute animal companion to guide your learning journey
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-12 items-center">
-            {/* Feature 1 */}
-            <div className="text-center lg:text-left">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto lg:mx-0 mb-6">
-                <BookOpen className="w-8 h-8 text-green-600" />
+          <div className="grid lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <div 
+                key={index}
+                className="text-center group cursor-pointer"
+                onMouseEnter={() => setHoveredCard(index)}
+                onMouseLeave={() => setHoveredCard(null)}
+                onClick={() => toast({ 
+                  title: `${feature.animal} ${feature.title}`, 
+                  description: "This feature makes learning super fun!" 
+                })}
+              >
+                <div className={`relative mb-6 transition-all duration-300 ${hoveredCard === index ? 'scale-110' : ''}`}>
+                  <div className="text-6xl mb-4 filter drop-shadow-lg">
+                    {feature.animal}
+                  </div>
+                  {hoveredCard === index && (
+                    <div className="absolute -top-2 -right-2 text-2xl animate-bounce">
+                      ❤️
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-primary transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
+                {hoveredCard === index && (
+                  <div className="mt-4 text-sm text-primary font-medium animate-pulse">
+                    Click me! 🎉
+                  </div>
+                )}
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Bite-sized lessons</h3>
-              <p className="text-gray-600">
-                Learn English with short, fun lessons that fit into your daily routine. 
-                Each lesson is designed to help you progress step by step.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="text-center lg:text-left">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto lg:mx-0 mb-6">
-                <Target className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Backed by science</h3>
-              <p className="text-gray-600">
-                Our AI uses proven methods to help you learn faster and remember better. 
-                Get personalized feedback that adapts to your learning style.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="text-center lg:text-left">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto lg:mx-0 mb-6">
-                <Star className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Stay motivated</h3>
-              <p className="text-gray-600">
-                Track your progress, earn achievements, and stay motivated with our 
-                engaging learning system designed to keep you coming back.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -280,109 +279,150 @@ const HeroIndex = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-800">
-              Learn anytime, anywhere.
+              Choose Your Learning Adventure! <span className="animate-pulse">🌟</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Practice all test sections with Cambridge materials and AI-powered feedback
+              Each test type has its own adorable animal mascot to guide you through your journey
             </p>
           </div>
 
           {/* Test Types Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testTypes.map((test, index) => {
-              const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500'];
-              const lightColors = ['bg-green-50', 'bg-blue-50', 'bg-purple-50', 'bg-orange-50'];
-              return (
-                <Card 
-                  key={index} 
-                  className="bg-white border-2 border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all cursor-pointer group transform hover:-translate-y-2"
-                  onClick={() => navigate(test.path)}
-                >
-                  <CardHeader className="text-center pb-6">
-                    <div className={`w-16 h-16 ${colors[index]} rounded-2xl flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition-transform`}>
-                      <div className="text-white text-2xl font-bold">
-                        {test.title.charAt(0)}
-                      </div>
+            {testTypes.map((test, index) => (
+              <Card 
+                key={index} 
+                className={`bg-white/80 backdrop-blur-sm border-2 border-gray-100 hover:border-primary/30 hover:shadow-xl transition-all cursor-pointer group transform hover:-translate-y-3 hover:scale-105 ${clickedCard === index ? 'animate-pulse' : ''}`}
+                onClick={() => {
+                  setClickedCard(index);
+                  toast({ 
+                    title: `${test.animal} Welcome!`, 
+                    description: `Let's start your ${test.title} journey together!` 
+                  });
+                  setTimeout(() => navigate(test.path), 500);
+                }}
+                onMouseEnter={() => setHoveredCard(index)}
+                onMouseLeave={() => setHoveredCard(null)}
+              >
+                <CardHeader className="text-center pb-6">
+                  <div className="relative">
+                    <div className={`text-6xl mb-4 transition-all duration-300 ${hoveredCard === index ? 'animate-bounce' : ''}`}>
+                      {test.animal}
                     </div>
-                    <CardTitle className="text-gray-800 group-hover:text-blue-600 transition-colors text-xl">
-                      {test.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-gray-600 mb-6 text-sm">{test.description}</p>
-                    
-                    <Button 
-                      className={`w-full ${colors[index]} hover:opacity-90 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200`}
-                    >
-                      Start Learning
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    {hoveredCard === index && (
+                      <div className="absolute top-0 right-6 text-xl animate-ping">
+                        ✨
+                      </div>
+                    )}
+                  </div>
+                  <CardTitle className="text-gray-800 group-hover:text-primary transition-colors text-xl font-bold">
+                    {test.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-gray-600 mb-6 text-sm leading-relaxed">{test.description}</p>
+                  
+                  <div className={`w-full bg-primary/5 hover:bg-primary/10 text-primary border-2 border-primary/20 hover:border-primary/40 font-bold py-3 rounded-xl transition-all duration-300 group-hover:shadow-lg ${hoveredCard === index ? 'animate-pulse' : ''}`}>
+                    Start Adventure {hoveredCard === index ? '🚀' : '🎯'}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Personalized Learning Section */}
-      <section className="py-20 px-4 bg-gradient-to-br from-green-50 to-yellow-50">
-        <div className="container mx-auto">
+      <section className="py-20 px-4 bg-gradient-to-br from-green-50 to-yellow-50 relative overflow-hidden">
+        {/* Floating Hearts */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 left-1/4 animate-float" style={{animationDelay: '0s'}}>
+            <span className="text-2xl">💚</span>
+          </div>
+          <div className="absolute top-20 right-1/4 animate-float" style={{animationDelay: '2s'}}>
+            <span className="text-2xl">💙</span>
+          </div>
+          <div className="absolute bottom-20 left-1/3 animate-float" style={{animationDelay: '4s'}}>
+            <span className="text-2xl">💜</span>
+          </div>
+        </div>
+
+        <div className="container mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
-              <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-yellow-400 transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+              <div 
+                className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border-2 border-primary/20 transition-all duration-500 hover:scale-105 cursor-pointer group"
+                onClick={() => toast({ 
+                  title: "🎉 Amazing Progress!", 
+                  description: "Your animal friends are so proud of you!" 
+                })}
+              >
                 <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star className="w-8 h-8 text-white" />
+                  <div className="text-6xl mb-4 animate-bounce group-hover:animate-spin transition-all duration-300">
+                    🏆
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800">Personalized Learning</h3>
+                  <h3 className="text-xl font-bold text-gray-800">Your Learning Journey</h3>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Speaking Practice</span>
+                  <div className="flex items-center justify-between group-hover:scale-105 transition-transform">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🗣️</span>
+                      <span className="text-gray-700">Speaking with 🦜 Polly</span>
+                    </div>
                     <div className="flex gap-1">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
                       <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Grammar Skills</span>
+                  <div className="flex items-center justify-between group-hover:scale-105 transition-transform">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">📚</span>
+                      <span className="text-gray-700">Reading with 🐰 Bunny</span>
+                    </div>
                     <div className="flex gap-1">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
                       <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
                       <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Reading Speed</span>
+                  <div className="flex items-center justify-between group-hover:scale-105 transition-transform">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">✍️</span>
+                      <span className="text-gray-700">Writing with 🦉 Ollie</span>
+                    </div>
                     <div className="flex gap-1">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
                     </div>
                   </div>
+                </div>
+                <div className="mt-6 text-center text-sm text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Tap to celebrate! 🎉
                 </div>
               </div>
             </div>
 
             <div className="order-1 lg:order-2 text-center lg:text-left">
               <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-800">
-                Personalized learning
+                Learn with Your Animal Squad! <span className="animate-spin inline-block">🎪</span>
               </h2>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Combine the best of AI and language science to create personalized 
-                lessons that adapt to your level and learning style. Our AI tracks 
-                your progress and adjusts difficulty in real-time.
+                Our adorable AI animal friends create personalized lessons just for you! 
+                Each animal has special powers to help you master different skills. 🌟
               </p>
               <Button 
                 size="lg"
-                onClick={() => navigate('/ielts-portal')}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl"
+                onClick={() => {
+                  toast({ title: "🚀 Adventure Time!", description: "Your animal friends are waiting!" });
+                  setTimeout(() => navigate('/ielts-portal'), 500);
+                }}
+                className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl group"
               >
-                Start Learning
+                Meet Your Squad <span className="ml-2 group-hover:animate-bounce">🐾</span>
               </Button>
             </div>
           </div>

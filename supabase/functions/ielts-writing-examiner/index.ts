@@ -36,6 +36,11 @@ CRITICAL VALIDATION REQUIREMENTS:
 - For Task 2: The response MUST address the specific question/topic provided. Off-topic responses should receive 1.0-3.0 for Task Response.
 - Responses that don't match the task requirements cannot receive high scores regardless of language quality.
 
+CRITICAL BAND SCORE RULES:
+- ALL band scores MUST be whole numbers or half-band scores only (e.g., 6.0, 6.5, 7.0, 7.5, 8.0)
+- NO scores like 6.8, 7.3, 8.2 are allowed - round to nearest 0.5
+- When calculating averages, always round to the nearest 0.5 band
+
 FEEDBACK FORMAT REQUIREMENTS:
 - Be specific and actionable in all feedback
 - For every criticism, provide a concrete example from the student's text
@@ -45,7 +50,7 @@ FEEDBACK FORMAT REQUIREMENTS:
 
 Focus on overall communicative effectiveness while ensuring the response addresses the correct task. Do not just count errors; explain their impact on the band score for a specific criterion.
 
-You will first provide a whole number band score (0-9) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
+You will first provide a band score (whole numbers or half-bands only: 0, 0.5, 1.0, 1.5, etc.) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
 
 Now, please assess the following submission against the relevant band descriptors:
 
@@ -113,20 +118,18 @@ Band 2: Cannot produce basic sentence forms.
 
 **Final Score Calculation Rules (CRITICAL):**
 
-After you have determined the individual band scores (whole numbers from 0-9) for each of the four criteria, you must calculate the Overall Band Score.
+After you have determined the individual band scores (whole numbers or half-bands only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0) for each of the four criteria, you must calculate the Overall Band Score.
 
 1. Calculate the average of the four criteria scores.
-2. You must then apply the official IELTS rounding rules to this average:
-   * If the average ends in .25, you must round it UP to the next half-band (e.g., an average of 6.25 becomes an Overall Score of 6.5).
-   * If the average ends in .75, you must round it UP to the next whole band (e.g., an average of 6.75 becomes an Overall Score of 7.0).
-   * For all other values, round to the nearest whole or half-band as normal.
+2. Round this average to the nearest half-band (0.5) to get the Task Overall Band Score.
+   * Examples: 6.25 → 6.5, 6.75 → 7.0, 7.125 → 7.0, 7.375 → 7.5
 
 Please provide a comprehensive assessment using this EXACT format:
 
 TASK 1 ASSESSMENT
 
 Task Achievement
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -134,7 +137,7 @@ Areas for Improvement:
 • [List specific issues with examples from text and show how to fix them]
 
 Coherence and Cohesion  
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -142,7 +145,7 @@ Areas for Improvement:
 • [List specific issues with examples from text and show how to fix them]
 
 Lexical Resource
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -150,7 +153,7 @@ Areas for Improvement:
 • [List specific issues with examples from text and show how to fix them]
 
 Grammatical Range and Accuracy
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -164,7 +167,7 @@ Task 1 Overall Band Score: [Calculate using rounding rules]
 TASK 2 ASSESSMENT
 
 Task Response
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -172,7 +175,7 @@ Areas for Improvement:
 • [List specific issues with examples from text and show how to fix them]
 
 Coherence and Cohesion
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -180,7 +183,7 @@ Areas for Improvement:
 • [List specific issues with examples from text and show how to fix them]
 
 Lexical Resource
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -188,7 +191,7 @@ Areas for Improvement:
 • [List specific issues with examples from text and show how to fix them]
 
 Grammatical Range and Accuracy
-Band Score: [0-9]
+Band Score: [whole number or half-band only: 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
 Positive Feedback:
 • [List specific strengths with direct quotes from student text]
 
@@ -209,9 +212,11 @@ The calculation must follow the official IELTS weighting: **Task 2 is worth twic
 
 You must use the following formula: Overall Writing Score = ( (Task 1 Overall Score * 1) + (Task 2 Overall Score * 2) ) / 3
 
-**Example Calculation:** If Task 1 Score = 7.0 and Task 2 Score = 8.0: The calculation is: ((7.0 * 1) + (8.0 * 2)) / 3 = (7.0 + 16.0) / 3 = 23 / 3 = 7.666...
+**Example Calculation:** If Task 1 Score = 7.0 and Task 2 Score = 8.0: 
+Step 1: Calculate weighted average: ((7.0 * 1) + (8.0 * 2)) / 3 = (7.0 + 16.0) / 3 = 23.0 / 3 = 7.666...
+Step 2: Round to nearest half-band: 7.666... rounds to 7.5
 
-After calculating this weighted average, you must then apply the final rounding rule: * The result (e.g., 7.666...) is rounded to the nearest whole or half band. * In the example above, 7.666... rounds to an Overall Writing Band Score of 7.5.
+**CRITICAL: You MUST show this exact calculation in your response and round the final result to the nearest half-band (0.5 increment).**
 
 The final assessment must include the individual scores for Task 1 and Task 2, as well as this final, correctly weighted and rounded Overall Writing Band Score.
 ---

@@ -45,7 +45,7 @@ const IELTSWritingResults = () => {
     }
     
     if (!task1Match || !task2Match) {
-      return { task1: [], task2: [], overall: 7.0 };
+      return { task1: [], task2: [], overall: 7.0, task1Overall: 7.0, task2Overall: 7.0 };
     }
 
     const extractScoresFromSection = (section: string) => {
@@ -64,14 +64,32 @@ const IELTSWritingResults = () => {
     const task1Scores = extractScoresFromSection(task1Match[1]);
     const task2Scores = extractScoresFromSection(task2Match[1]);
     
+    // Extract individual task overall scores
+    const task1OverallMatch = task1Match[1].match(/Task 1 Overall Band Score: (\d+(?:\.\d+)?)/);
+    const task2OverallMatch = task2Match[1].match(/Task 2 Overall Band Score: (\d+(?:\.\d+)?)/);
+    
+    const task1Overall = task1OverallMatch ? parseFloat(task1OverallMatch[1]) : 
+                        (task1Scores.length > 0 ? Math.round((task1Scores.reduce((a, b) => a + b, 0) / task1Scores.length) * 2) / 2 : 7.0);
+    const task2Overall = task2OverallMatch ? parseFloat(task2OverallMatch[1]) : 
+                        (task2Scores.length > 0 ? Math.round((task2Scores.reduce((a, b) => a + b, 0) / task2Scores.length) * 2) / 2 : 7.0);
+    
     // Try new format first, then fallback to old format
     let overallMatch = feedbackText.match(/Overall Writing Band Score: (\d+(?:\.\d+)?)/);
     if (!overallMatch) {
       overallMatch = feedbackText.match(/\*\*Overall Writing Band Score: (\d+(?:\.\d+)?)\*\*/);
     }
-    const overall = overallMatch ? parseFloat(overallMatch[1]) : 7.0;
+    
+    // If no overall match found, calculate using correct weighting
+    let overall = 7.0;
+    if (overallMatch) {
+      overall = parseFloat(overallMatch[1]);
+    } else {
+      // Apply correct IELTS weighting: Task 1 = 33%, Task 2 = 67%
+      const weightedAverage = ((task1Overall * 1) + (task2Overall * 2)) / 3;
+      overall = Math.round(weightedAverage * 2) / 2; // Round to nearest 0.5
+    }
 
-    return { task1: task1Scores, task2: task2Scores, overall };
+    return { task1: task1Scores, task2: task2Scores, overall, task1Overall, task2Overall };
   };
 
   const scores = extractCriteriaScores(feedback);
@@ -127,7 +145,19 @@ const IELTSWritingResults = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const element = document.createElement('a');
+                  const file = new Blob([feedback], { type: 'text/plain' });
+                  element.href = URL.createObjectURL(file);
+                  element.download = `IELTS-Writing-Report-${new Date().toISOString().split('T')[0]}.txt`;
+                  document.body.appendChild(element);
+                  element.click();
+                  document.body.removeChild(element);
+                }}
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Download Report
               </Button>
@@ -195,9 +225,9 @@ const IELTSWritingResults = () => {
             </CardHeader>
             <CardContent className="text-center">
               <div className="text-3xl font-bold mb-2 text-brand-blue">
-                {scores.task1.length > 0 ? (scores.task1.reduce((a, b) => a + b, 0) / scores.task1.length).toFixed(1) : '7.0'}
+                {scores.task1Overall ? scores.task1Overall.toFixed(1) : '7.0'}
               </div>
-              <p className="text-caption mb-2">Average Band Score</p>
+              <p className="text-caption mb-2">Overall Band Score</p>
               <Badge variant="outline" className="text-brand-blue border-brand-blue/30 rounded-full">
                 {task1WordCount || task1Answer?.trim().split(/\s+/).filter(word => word.length > 0).length || 0} words
               </Badge>
@@ -215,9 +245,9 @@ const IELTSWritingResults = () => {
             </CardHeader>
             <CardContent className="text-center">
               <div className="text-3xl font-bold mb-2 text-brand-purple">
-                {scores.task2.length > 0 ? (scores.task2.reduce((a, b) => a + b, 0) / scores.task2.length).toFixed(1) : '7.0'}
+                {scores.task2Overall ? scores.task2Overall.toFixed(1) : '7.0'}
               </div>
-              <p className="text-caption mb-2">Average Band Score</p>
+              <p className="text-caption mb-2">Overall Band Score</p>
               <Badge variant="outline" className="text-brand-purple border-brand-purple/30 rounded-full">
                 {task2WordCount || task2Answer?.trim().split(/\s+/).filter(word => word.length > 0).length || 0} words
               </Badge>

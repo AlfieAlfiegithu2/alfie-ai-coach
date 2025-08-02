@@ -210,22 +210,32 @@ const IELTSSpeakingResults = () => {
     const defaultScore = 1;
     const defaultFeedback = "Unable to properly assess. Please retake the test with substantive responses.";
 
+    // Calculate individual scores with rounding
+    const fluencyScore = roundToIELTSBandScore(fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore);
+    const lexicalScore = roundToIELTSBandScore(lexicalMatch ? parseFloat(lexicalMatch[1]) : defaultScore);
+    const grammarScore = roundToIELTSBandScore(grammarMatch ? parseFloat(grammarMatch[1]) : defaultScore);
+    const pronunciationScore = roundToIELTSBandScore(pronunciationMatch ? parseFloat(pronunciationMatch[1]) : defaultScore);
+    
+    // Calculate overall band score from individual scores (not from AI response)
+    const averageScore = (fluencyScore + lexicalScore + grammarScore + pronunciationScore) / 4;
+    const overallBandScore = roundToIELTSBandScore(averageScore);
+
     return {
-      overall_band_score: roundToIELTSBandScore(overallMatch ? parseFloat(overallMatch[1]) : defaultScore),
+      overall_band_score: overallBandScore,
       fluency_coherence: {
-        score: roundToIELTSBandScore(fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore),
+        score: fluencyScore,
         feedback: fluencyMatch ? fluencyMatch[2].trim() : defaultFeedback
       },
       lexical_resource: {
-        score: roundToIELTSBandScore(lexicalMatch ? parseFloat(lexicalMatch[1]) : defaultScore),
+        score: lexicalScore,
         feedback: lexicalMatch ? lexicalMatch[2].trim() : defaultFeedback
       },
       grammatical_range: {
-        score: roundToIELTSBandScore(grammarMatch ? parseFloat(grammarMatch[1]) : defaultScore),
+        score: grammarScore,
         feedback: grammarMatch ? grammarMatch[2].trim() : defaultFeedback
       },
       pronunciation: {
-        score: roundToIELTSBandScore(pronunciationMatch ? parseFloat(pronunciationMatch[1]) : defaultScore),
+        score: pronunciationScore,
         feedback: pronunciationMatch ? pronunciationMatch[2].trim() : defaultFeedback
       },
       path_to_higher_score: feedbackMatch ? 

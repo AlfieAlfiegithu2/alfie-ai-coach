@@ -7,6 +7,7 @@ import { AudioRecorder } from "@/components/AudioRecorder";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import VolumeSlider from "@/components/ui/VolumeSlider";
 
 interface SpeakingPrompt {
   id: string;
@@ -208,7 +209,8 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
               {currentQuestion.time_limit} minutes
             </Badge>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <VolumeSlider defaultValue={50} className="w-24" />
             <Button
               variant="outline"
               size="sm"

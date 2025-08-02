@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useSpeakingTest } from "@/hooks/useSpeakingTest";
 import SpeakingQuestionByQuestion from "@/components/SpeakingQuestionByQuestion";
+import VolumeSlider from "@/components/ui/VolumeSlider";
 
 const Speaking = () => {
   const navigate = useNavigate();
@@ -171,6 +172,7 @@ const Speaking = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              <VolumeSlider defaultValue={50} className="w-48" />
               <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 rounded-xl">
                 <Clock className="w-4 h-4 text-primary" />
                 <span className={`font-mono text-sm ${timeRemaining < 60 ? 'text-destructive' : 'text-text-primary'}`}>

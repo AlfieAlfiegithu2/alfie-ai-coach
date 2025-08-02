@@ -10,6 +10,7 @@ import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Sparkl
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
 import { supabase } from "@/integrations/supabase/client";
+import VolumeSlider from "@/components/ui/VolumeSlider";
 
 interface SpeakingPrompt {
   id: string;
@@ -529,6 +530,8 @@ const IELTSSpeakingTest = () => {
                 Part {currentPart}: {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
               </span>
               <div className="flex items-center gap-3">
+                <VolumeSlider defaultValue={50} className="w-32" />
+                
                 {/* AI Assistant Button */}
                 <Button
                   onClick={() => setShowAIAssistant(true)}

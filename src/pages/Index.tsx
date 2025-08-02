@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import HeroIndex from "./HeroIndex";
 import Dashboard from "./Dashboard";
-import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -26,7 +26,7 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-primary flex items-center justify-center">
-        <CatLoadingAnimation size="lg" />
+        <LottieLoadingAnimation size="lg" />
       </div>
     );
   }

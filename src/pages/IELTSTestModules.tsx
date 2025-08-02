@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Volume2, PenTool, MessageSquare, Clock, ArrowLeft } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
-import CatLoadingAnimation from '@/components/animations/CatLoadingAnimation';
+import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
 
 const IELTSTestModules = () => {
   const { testId } = useParams<{ testId: string }>();
@@ -175,7 +175,7 @@ const IELTSTestModules = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <CatLoadingAnimation size="lg" message="Loading test..." />
+        <LottieLoadingAnimation size="lg" message="Loading test..." />
       </div>
     );
   }

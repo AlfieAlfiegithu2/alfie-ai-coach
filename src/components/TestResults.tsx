@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, TrendingUp, RotateCcw, ArrowRight } from "lucide-react";
+import LightRays from '@/components/animations/LightRays';
 
 interface TestResultsProps {
   score: number;
@@ -40,7 +41,21 @@ const TestResults = ({
   const skippedAnswers = questions.filter(q => !answers[q.id]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6 relative">
+      <LightRays 
+        raysOrigin="top-right"
+        raysColor="#F59E0B"
+        raysSpeed={0.6}
+        lightSpread={1.2}
+        rayLength={1.5}
+        pulsating={true}
+        fadeDistance={1.0}
+        saturation={0.8}
+        followMouse={true}
+        mouseInfluence={0.1}
+        noiseAmount={0.12}
+        distortion={0.25}
+      />
       {/* Header */}
       <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
         <CardHeader className="text-center pb-4">

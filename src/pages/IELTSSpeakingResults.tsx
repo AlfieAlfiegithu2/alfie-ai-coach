@@ -9,6 +9,7 @@ import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Spa
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import LightRays from "@/components/animations/LightRays";
 
 interface QuestionAnalysis {
   part: string;
@@ -323,6 +324,21 @@ const IELTSSpeakingResults = () => {
   }
 
   return (
+    <div className="min-h-screen bg-background relative">
+      <LightRays 
+        raysOrigin="bottom-center"
+        raysColor="#8B5CF6"
+        raysSpeed={0.4}
+        lightSpread={1.8}
+        rayLength={1.8}
+        pulsating={false}
+        fadeDistance={1.3}
+        saturation={0.7}
+        followMouse={true}
+        mouseInfluence={0.06}
+        noiseAmount={0.08}
+        distortion={0.15}
+      />
     <StudentLayout title="IELTS Speaking Results" showBackButton>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
@@ -571,6 +587,7 @@ const IELTSSpeakingResults = () => {
         </Card>
       </div>
     </StudentLayout>
+    </div>
   );
 };
 

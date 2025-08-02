@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DailyChallenge from "@/components/DailyChallenge";
+import LightRays from "@/components/animations/LightRays";
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -155,7 +156,21 @@ const Dashboard = () => {
     const route = skillName.toLowerCase();
     navigate(`/${route}`);
   };
-  return <div className="min-h-screen bg-surface-2">
+  return <div className="min-h-screen bg-surface-2 relative">
+      <LightRays 
+        raysOrigin="top-center"
+        raysColor="#4F46E5"
+        raysSpeed={0.5}
+        lightSpread={2}
+        rayLength={1.5}
+        pulsating={false}
+        fadeDistance={1.2}
+        saturation={0.8}
+        followMouse={true}
+        mouseInfluence={0.05}
+        noiseAmount={0.1}
+        distortion={0.2}
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
         <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/10 opacity-20"></div>

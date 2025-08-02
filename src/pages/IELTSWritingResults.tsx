@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Star, ArrowLeft, Download, Share2, Trophy, Target, Book, MessageSquare, Edit3 } from "lucide-react";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
+import LightRays from "@/components/animations/LightRays";
 
 const IELTSWritingResults = () => {
   const location = useLocation();
@@ -76,7 +77,21 @@ const IELTSWritingResults = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <LightRays 
+        raysOrigin="top-left"
+        raysColor="#10B981"
+        raysSpeed={0.3}
+        lightSpread={1.5}
+        rayLength={2}
+        pulsating={true}
+        fadeDistance={1.5}
+        saturation={0.9}
+        followMouse={true}
+        mouseInfluence={0.08}
+        noiseAmount={0.05}
+        distortion={0.1}
+      />
       {/* Header */}
       <div className="bg-white border-b border-border sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">

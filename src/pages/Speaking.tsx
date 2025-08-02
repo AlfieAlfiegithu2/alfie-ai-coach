@@ -172,7 +172,7 @@ const Speaking = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              <VolumeSlider defaultValue={50} className="w-48" />
+              <VolumeSlider defaultValue={50} className="w-32" />
               <div className="flex items-center gap-2 px-3 py-2 bg-surface-1 rounded-xl">
                 <Clock className="w-4 h-4 text-primary" />
                 <span className={`font-mono text-sm ${timeRemaining < 60 ? 'text-destructive' : 'text-text-primary'}`}>

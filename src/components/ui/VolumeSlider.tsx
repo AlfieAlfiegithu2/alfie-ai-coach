@@ -6,7 +6,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { VolumeX, Volume2 } from "lucide-react";
+import { Volume2 } from "lucide-react";
 import './ElasticSlider.css';
 
 const MAX_OVERFLOW = 50;
@@ -22,14 +22,22 @@ export default function VolumeSlider({
   onVolumeChange,
   className = "",
 }: VolumeSliderProps) {
+  const handleVolumeChange = (volume: number) => {
+    // Set global audio volume
+    const audioElements = document.querySelectorAll('audio');
+    audioElements.forEach(audio => {
+      audio.volume = volume / 100;
+    });
+    onVolumeChange?.(volume);
+  };
+
   return (
     <div className={`slider-container ${className}`}>
       <Slider
         defaultValue={defaultValue}
         startingValue={0}
         maxValue={100}
-        onVolumeChange={onVolumeChange}
-        leftIcon={<VolumeX size={20} />}
+        onVolumeChange={handleVolumeChange}
         rightIcon={<Volume2 size={20} />}
       />
     </div>
@@ -41,7 +49,6 @@ interface SliderProps {
   startingValue: number;
   maxValue: number;
   onVolumeChange?: (volume: number) => void;
-  leftIcon: React.ReactNode;
   rightIcon: React.ReactNode;
 }
 
@@ -50,7 +57,6 @@ function Slider({
   startingValue,
   maxValue,
   onVolumeChange,
-  leftIcon,
   rightIcon,
 }: SliderProps) {
   const [value, setValue] = useState(defaultValue);
@@ -128,20 +134,6 @@ function Slider({
         }}
         className="slider-wrapper"
       >
-        <motion.div
-          animate={{
-            scale: region === "left" ? [1, 1.4, 1] : 1,
-            transition: { duration: 0.25 },
-          }}
-          style={{
-            x: useTransform(() =>
-              region === "left" ? -overflow.get() / scale.get() : 0,
-            ),
-          }}
-        >
-          {leftIcon}
-        </motion.div>
-
         <div
           ref={sliderRef}
           className="slider-root"

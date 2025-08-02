@@ -210,7 +210,7 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
             </Badge>
           </div>
           <div className="flex gap-2 items-center">
-            <VolumeSlider defaultValue={50} className="w-24" />
+            <VolumeSlider defaultValue={50} className="w-20" />
             <Button
               variant="outline"
               size="sm"

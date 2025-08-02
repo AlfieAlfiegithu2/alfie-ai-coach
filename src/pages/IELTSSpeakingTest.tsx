@@ -530,7 +530,7 @@ const IELTSSpeakingTest = () => {
                 Part {currentPart}: {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
               </span>
               <div className="flex items-center gap-3">
-                <VolumeSlider defaultValue={50} className="w-32" />
+                <VolumeSlider defaultValue={50} className="w-20" />
                 
                 {/* AI Assistant Button */}
                 <Button
@@ -711,21 +711,6 @@ const IELTSSpeakingTest = () => {
                       <div className="w-3 h-3 bg-green-600 rounded-full"></div>
                       <span className="text-sm">Response recorded</span>
                     </div>
-                    
-                    {/* Listen to Your Recording Feature */}
-                    {(currentPart === 1 || currentPart === 3) && (
-                      <div className="flex justify-center space-x-3">
-                        <Button
-                          onClick={() => playRecording(`part${currentPart}_q${currentQuestion}`)}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-xl border-green-300 text-green-700 hover:bg-green-50"
-                        >
-                          <Volume2 className="w-4 h-4 mr-2" />
-                          Listen to Your Recording
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trophy, Target, RotateCcw, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 
 interface CelebrationTestResultsProps {
   score: number;
@@ -120,8 +121,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         {/* Celebration Header */}
         <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
           <CardContent className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-6">
-              <Trophy className="w-10 h-10" />
+            <div className="flex items-center justify-center mb-6">
+              <CelebrationLottieAnimation size="md" />
             </div>
             <h1 className="text-4xl font-bold mb-2">Test Completed! 🎉</h1>
             <p className="text-xl opacity-90 mb-6">Reading Test - Cambridge IELTS Academic</p>

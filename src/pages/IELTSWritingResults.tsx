@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Star, ArrowLeft, Download, Share2, Trophy, Target, Book, MessageSquare, Edit3 } from "lucide-react";
+import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 
 const IELTSWritingResults = () => {
   const location = useLocation();
@@ -131,6 +132,9 @@ const IELTSWritingResults = () => {
             </div>
           </CardHeader>
           <CardContent className="text-center py-8">
+            <div className="flex items-center justify-center mb-6">
+              <CelebrationLottieAnimation size="md" />
+            </div>
             <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {overallBand.toFixed(1)}
             </div>

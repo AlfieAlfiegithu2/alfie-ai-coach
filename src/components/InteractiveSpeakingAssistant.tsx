@@ -88,54 +88,22 @@ const InteractiveSpeakingAssistant = ({
   ];
 
   const generateContextualPrompt = (helpType: string, customMessage?: string): string => {
-    const baseContext = `The student is taking an IELTS Speaking test and is working on ${questionType}. The specific question they are answering is: "${questionText}"`;
-    
     if (customMessage) {
-      return `${baseContext}
-
-The student has asked: "${customMessage}"
-
-Please provide helpful, specific advice related to their question about IELTS Speaking. Be encouraging and practical.`;
+      return `The student is working on Part ${partNumber} of the IELTS Speaking test with the question: "${questionText}". They asked: "${customMessage}". Provide helpful, specific advice.`;
     }
 
     switch (helpType) {
       case "vocabulary":
-        return `${baseContext}
-
-The student has requested help with relevant vocabulary. Please provide:
-- 4-5 advanced vocabulary items specifically relevant to this question  
-- Brief definitions for each word/phrase
-- Example of how to use each item naturally in context
-- Focus on vocabulary that would help achieve band 7-8+
-
-Keep your response concise and practical.`;
+        return `The student is working on the question: '${questionText}'. They have asked for 'relevant vocabulary'. Provide exactly **3-4 advanced lexical items** with very brief, one-line definitions. Do not provide example sentences unless the word is very unusual.`;
 
       case "structure":
-        return `${baseContext}
-
-The student has requested help with structuring their answer. Please provide:
-- A clear step-by-step structure for answering this specific question
-- Key points they should cover
-- Logical flow and organization tips specific to ${questionType}
-- How to make their answer coherent and well-developed
-
-Be specific to this exact question and provide actionable guidance.`;
+        return `The student is working on the question: '${questionText}'. They have asked for 'help with structure'. Provide a simple, 2-3 step structure for answering this specific question.`;
 
       case "grammar":
-        return `${baseContext}
-
-The student has requested help with useful grammar for this topic. Please provide:
-- 3-4 specific grammar structures that would be impressive for this question
-- Examples of how to use each structure with this topic
-- Why these structures would help achieve higher band scores
-- Natural ways to incorporate complex grammar into their response
-
-Focus on grammar that's specifically relevant to answering this question effectively.`;
+        return `The student is working on the question: '${questionText}'. They have asked for 'useful grammar'. Suggest **one or two specific grammatical structures** that are relevant to this question.`;
 
       default:
-        return `${baseContext}
-
-Please provide helpful, specific advice for answering this IELTS Speaking question effectively.`;
+        return `The student is working on Part ${partNumber} of the IELTS Speaking test with the question: "${questionText}". Provide helpful, specific advice.`;
     }
   };
 
@@ -161,16 +129,8 @@ Please provide helpful, specific advice for answering this IELTS Speaking questi
       
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
-          messages: [
-            {
-              role: "system",
-              content: "You are an expert IELTS Speaking coach. Provide specific, actionable advice that will help students achieve higher band scores. Be encouraging, practical, and concise. Format your responses clearly."
-            },
-            {
-              role: "user",
-              content: prompt
-            }
-          ]
+          message: prompt,
+          context: 'english_tutor'
         }
       });
 

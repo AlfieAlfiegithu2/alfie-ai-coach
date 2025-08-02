@@ -267,6 +267,17 @@
     animation: slide-up 0.4s ease-out;
   }
   
+  /* Floating Animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(-10px) rotate(120deg); }
+    66% { transform: translateY(5px) rotate(240deg); }
+  }
+  
+  .animate-float {
+    animation: float 8s ease-in-out infinite;
+  }
+
   .animate-scale-in {
     animation: scale-in 0.3s ease-out;
   }

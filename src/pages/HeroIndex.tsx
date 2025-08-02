@@ -106,36 +106,58 @@ const HeroIndex = () => {
     path: "/general-portal",
     badge: "AI Generated"
   }];
-  return <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 text-gray-800 relative">
+  return <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floating Particles */}
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-white/20 rounded-full animate-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 10}s`,
+              animationDuration: `${8 + Math.random() * 4}s`
+            }}
+          />
+        ))}
+        
+        {/* Gradient Orbs */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl animate-ping" style={{ animationDuration: '4s' }} />
+      </div>
+
       {/* Light Rays Background Effect */}
       <LightRays 
         raysOrigin="top-center"
-        raysColor="#fbbf24"
-        raysSpeed={0.3}
-        lightSpread={2}
-        rayLength={3}
-        fadeDistance={2}
-        saturation={0.6}
+        raysColor="#8b5cf6"
+        raysSpeed={0.2}
+        lightSpread={1.5}
+        rayLength={4}
+        fadeDistance={3}
+        saturation={0.4}
         followMouse={true}
-        mouseInfluence={0.05}
-        className="absolute inset-0 opacity-20"
+        mouseInfluence={0.03}
+        className="absolute inset-0 opacity-30"
       />
 
       {/* Navigation */}
-      <nav className="border-b border-orange-200/30 bg-white/50 backdrop-blur-xl relative z-10">
+      <nav className="border-b border-white/20 bg-white/10 backdrop-blur-xl relative z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center">
                 <Zap className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-800">EnglishAI</span>
+              <span className="text-xl font-bold text-white">EnglishAI</span>
             </div>
             
             <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-gray-700 hover:text-primary transition-colors">Features</a>
-              <a href="#tests" className="text-gray-700 hover:text-primary transition-colors">Tests</a>
-              <a href="#community" className="text-gray-700 hover:text-primary transition-colors">Community</a>
+              <a href="#features" className="text-white/80 hover:text-white transition-colors">Features</a>
+              <a href="#tests" className="text-white/80 hover:text-white transition-colors">Tests</a>
+              <a href="#community" className="text-white/80 hover:text-white transition-colors">Community</a>
             </div>
 
             <div className="flex items-center gap-4">
@@ -148,7 +170,7 @@ const HeroIndex = () => {
               <Button 
                 onClick={() => navigate('/dashboard')}
                 variant="outline"
-                className="border-primary/30 text-primary bg-orange-50 hover:bg-primary hover:text-primary-foreground px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                className="border-white/30 text-white bg-white/10 hover:bg-white/20 px-6 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 My Dashboard
               </Button>
@@ -157,60 +179,68 @@ const HeroIndex = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section with Enhanced Animations */}
       <section className="py-20 px-4 relative overflow-hidden">
-        <HeroAnimation className="opacity-30" />
         <div className="container mx-auto text-center relative z-10">
           <div className="max-w-4xl mx-auto">
+            {/* Animated Hero Badge */}
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-8 animate-bounce">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+              <span className="text-white/90 text-sm font-medium">AI-Powered English Learning</span>
+            </div>
             
-            
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-gray-800 via-primary to-orange-600 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-200 to-purple-300 bg-clip-text text-transparent animate-fade-in">
               <TypewriterText text="Achieve Your English Goals with AI" />
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-xl md:text-2xl text-white/80 mb-8 leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
               Master English tests with AI-powered coaching. 
               Track progress, get instant feedback, and reach your target score faster.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-fade-in" style={{ animationDelay: '0.6s' }}>
               <Button 
                 size="lg" 
                 onClick={() => navigate('/ielts-portal')} 
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none"
+                className="bg-white text-blue-600 hover:bg-white/90 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-none group"
               >
-                <Play className="w-5 h-5 mr-2" />
+                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                 Start Practice
               </Button>
               <Button 
                 size="lg" 
                 onClick={() => navigate('/pricing')} 
-                className="bg-white text-primary hover:bg-orange-50 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl border-2 border-primary"
+                className="bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm border border-white/30 px-8 py-4 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl group"
               >
-                <Users className="w-5 h-5 mr-2" />
+                <Users className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                 View Pricing
               </Button>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            {/* Animated Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 animate-fade-in" style={{ animationDelay: '0.9s' }}>
               {[{
               label: "Active Learners",
-              value: "50K+"
+              value: "50K+",
+              icon: "👥"
             }, {
               label: "Practice Tests",
-              value: "1000+"
+              value: "1000+",
+              icon: "📚"
             }, {
               label: "AI Feedback",
-              value: "Real-time"
+              value: "Real-time",
+              icon: "🤖"
             }, {
               label: "Success Rate",
-              value: "95%"
-            }].map((stat, index) => <div key={index} className="text-center">
-                  <div className="text-2xl md:text-3xl font-bold text-primary mb-1">
+              value: "95%",
+              icon: "🏆"
+            }].map((stat, index) => <div key={index} className="text-center group hover:scale-105 transition-transform duration-300">
+                  <div className="text-4xl mb-2 animate-bounce" style={{ animationDelay: `${index * 0.2}s` }}>{stat.icon}</div>
+                  <div className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-yellow-300 transition-colors">
                     {stat.value}
                   </div>
-                  <div className="text-sm text-gray-500">{stat.label}</div>
+                  <div className="text-sm text-white/70">{stat.label}</div>
                 </div>)}
             </div>
           </div>
@@ -218,7 +248,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Language Picker Section */}
-      <section className="py-16 px-4 bg-white/30 backdrop-blur-sm relative z-10">
+      <section className="py-16 px-4 bg-white/10 backdrop-blur-sm relative z-10">
         <div className="container mx-auto">
           <div className="max-w-md mx-auto">
             <LanguagePicker
@@ -236,14 +266,14 @@ const HeroIndex = () => {
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Complete Test Preparation
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">
               Practice all test sections with Cambridge materials and AI-powered feedback
             </p>
           </div>
 
-          {/* Test Types Grid */}
+          {/* Animated Test Types Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testTypes.map((test, index) => <Card key={index} className="bg-white/70 border-orange-200 backdrop-blur-xl hover:bg-white/90 transition-all cursor-pointer group shadow-lg" onClick={() => navigate(test.path)}>
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }} onClick={() => navigate(test.path)}>
                 <CardHeader>
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
@@ -251,16 +281,16 @@ const HeroIndex = () => {
                     </div>
                     
                   </div>
-                  <CardTitle className="text-gray-800 group-hover:text-primary transition-colors">
+                  <CardTitle className="text-white group-hover:text-yellow-300 transition-colors duration-300">
                     {test.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 mb-4">{test.description}</p>
+                  <p className="text-white/70 mb-4">{test.description}</p>
                   
                   <Button 
                     size="sm" 
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="w-full bg-white text-blue-600 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all duration-200 group-hover:scale-105"
                   >
                     Start Practice
                   </Button>
@@ -271,12 +301,12 @@ const HeroIndex = () => {
       </section>
 
       {/* Community Section */}
-      <section id="community" className="py-20 px-4 bg-white/30 backdrop-blur-sm relative z-10">
+      <section id="community" className="py-20 px-4 bg-black/20 backdrop-blur-sm relative z-10">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Join Our Learning Community
           </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
             Connect with thousands of learners, share experiences, and achieve your goals together
           </p>
           
@@ -293,16 +323,16 @@ const HeroIndex = () => {
           }, {
             title: "General English",
             members: "20K+"
-          }].map((group, index) => <Card key={index} className="bg-white/70 border-orange-200 backdrop-blur-xl shadow-lg">
+          }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl shadow-lg hover:bg-white/20 transition-all duration-300 hover:scale-105">
                 <CardContent className="pt-6 text-center">
-                  <Users className="w-8 h-8 mx-auto mb-3 text-primary" />
-                  <h3 className="text-gray-800 font-semibold mb-2">{group.title}</h3>
-                  <p className="text-gray-600">{group.members} members</p>
+                  <Users className="w-8 h-8 mx-auto mb-3 text-yellow-400" />
+                  <h3 className="text-white font-semibold mb-2">{group.title}</h3>
+                  <p className="text-white/70">{group.members} members</p>
                 </CardContent>
               </Card>)}
           </div>
 
-          <Button size="lg" onClick={() => navigate('/community')} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
+          <Button size="lg" onClick={() => navigate('/community')} className="bg-white text-blue-600 hover:bg-white/90 px-8 py-4 text-lg">
             <Users className="w-5 h-5 mr-2" />
             Explore Community
           </Button>
@@ -316,12 +346,12 @@ const HeroIndex = () => {
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Ready to Master English with AI?
             </h2>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-xl text-white/80 mb-8">
               Join thousands of successful learners who achieved their target scores with our AI-powered platform
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Button size="lg" onClick={handleAuthAction} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
+              <Button size="lg" onClick={handleAuthAction} className="bg-white text-blue-600 hover:bg-white/90 px-8 py-4 text-lg">
                 <Star className="w-5 h-5 mr-2" />
                 Start Your Journey
               </Button>
@@ -329,13 +359,13 @@ const HeroIndex = () => {
                 size="lg" 
                 variant="outline" 
                 onClick={() => navigate('/pricing')} 
-                className="border-primary/30 text-primary bg-orange-50 hover:bg-primary hover:text-primary-foreground px-8 py-4 text-lg"
+                className="border-white/30 text-white bg-white/10 hover:bg-white/20 px-8 py-4 text-lg"
               >
                 View Pricing
               </Button>
             </div>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-white/60">
               Free to start • No credit card required • Cancel anytime
             </p>
           </div>
@@ -343,7 +373,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-orange-200/30 bg-white/30 backdrop-blur-sm relative z-10">
+      <footer className="py-12 px-4 border-t border-white/20 bg-black/30 backdrop-blur-sm relative z-10">
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -351,49 +381,49 @@ const HeroIndex = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-bold text-gray-800">EnglishAI</span>
+                <span className="text-lg font-bold text-white">EnglishAI</span>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-white/60 text-sm">
                 AI-powered English learning platform for IELTS, PTE, and TOEFL preparation.
               </p>
             </div>
             
             <div>
-              <h4 className="text-gray-800 font-semibold mb-3">Tests</h4>
-              <div className="space-y-2 text-sm text-gray-600">
-                <button onClick={() => navigate('/tests')} className="block hover:text-primary transition-colors">IELTS Academic</button>
-                <button onClick={() => navigate('/pte-portal')} className="block hover:text-primary transition-colors">PTE Academic</button>
-                <button onClick={() => navigate('/toefl-portal')} className="block hover:text-primary transition-colors">TOEFL iBT</button>
-                <button onClick={() => navigate('/general-portal')} className="block hover:text-primary transition-colors">General English</button>
+              <h4 className="text-white font-semibold mb-3">Tests</h4>
+              <div className="space-y-2 text-sm text-white/60">
+                <button onClick={() => navigate('/tests')} className="block hover:text-white transition-colors">IELTS Academic</button>
+                <button onClick={() => navigate('/pte-portal')} className="block hover:text-white transition-colors">PTE Academic</button>
+                <button onClick={() => navigate('/toefl-portal')} className="block hover:text-white transition-colors">TOEFL iBT</button>
+                <button onClick={() => navigate('/general-portal')} className="block hover:text-white transition-colors">General English</button>
               </div>
             </div>
             
             <div>
-              <h4 className="text-gray-800 font-semibold mb-3">Features</h4>
-              <div className="space-y-2 text-sm text-gray-600">
-                <button onClick={() => navigate('/dashboard')} className="block hover:text-primary transition-colors">AI Feedback</button>
-                <button onClick={() => navigate('/dashboard')} className="block hover:text-primary transition-colors">Progress Tracking</button>
-                <button onClick={() => navigate('/community')} className="block hover:text-primary transition-colors">Community</button>
-                <button onClick={() => navigate('/dashboard')} className="block hover:text-primary transition-colors">Daily Challenges</button>
+              <h4 className="text-white font-semibold mb-3">Features</h4>
+              <div className="space-y-2 text-sm text-white/60">
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">AI Feedback</button>
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">Progress Tracking</button>
+                <button onClick={() => navigate('/community')} className="block hover:text-white transition-colors">Community</button>
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">Daily Challenges</button>
               </div>
             </div>
             
             <div>
-              <h4 className="text-gray-800 font-semibold mb-3">Support</h4>
-              <div className="space-y-2 text-sm text-gray-600">
-                <button onClick={() => navigate('/dashboard')} className="block hover:text-primary transition-colors">Help Center</button>
-                <button onClick={() => navigate('/community')} className="block hover:text-primary transition-colors">Contact Us</button>
-                <div className="text-gray-600">Privacy Policy</div>
-                <div className="text-gray-600">Terms of Service</div>
+              <h4 className="text-white font-semibold mb-3">Support</h4>
+              <div className="space-y-2 text-sm text-white/60">
+                <button onClick={() => navigate('/dashboard')} className="block hover:text-white transition-colors">Help Center</button>
+                <button onClick={() => navigate('/community')} className="block hover:text-white transition-colors">Contact Us</button>
+                <div className="text-white/60">Privacy Policy</div>
+                <div className="text-white/60">Terms of Service</div>
               </div>
             </div>
           </div>
           
-          <div className="text-center pt-8 border-t border-orange-200/30">
-            <p className="text-gray-600 text-sm">
+          <div className="text-center pt-8 border-t border-white/20">
+            <p className="text-white/60 text-sm">
               © 2024 EnglishAI. All rights reserved.
             </p>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/login')} className="mt-4 text-xs text-gray-500 hover:text-gray-700">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/login')} className="mt-4 text-xs text-white/40 hover:text-white/60">
               Admin Access
             </Button>
           </div>

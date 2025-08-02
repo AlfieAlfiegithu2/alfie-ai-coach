@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star } from "lucide-react";
+import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -458,17 +458,18 @@ const IELTSSpeakingResults = () => {
 
                 {/* Advanced AI Feedback */}
                 <div>
-                  <h4 className="font-medium text-green-700 mb-3 flex items-center gap-2">
-                    <Award className="w-4 h-4" />
+                  <h4 className="font-medium text-primary mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
                     Advanced AI Examiner Feedback:
                   </h4>
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 rounded-xl p-6 border border-primary/10 shadow-soft">
                     <div className="prose prose-sm max-w-none">
-                      {analysis.feedback.split('\n').map((line, lineIndex) => (
-                        <p key={lineIndex} className="mb-2 last:mb-0 text-sm leading-relaxed">
-                          {line}
-                        </p>
-                      ))}
+                      <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-medium">
+                        {analysis.feedback ? 
+                          analysis.feedback.replace(/\*\*/g, '').replace(/###/g, '').replace(/\*/g, '') : 
+                          "Feedback analysis in progress..."
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -489,21 +490,24 @@ const IELTSSpeakingResults = () => {
         </Card>
 
         {/* Your Path to a Higher Score Section */}
-        <Card className="card-modern">
+        <Card className="card-modern bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-primary" />
-              Your Path to a Higher Score
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Path to Higher Score
             </CardTitle>
+            <p className="text-sm text-muted-foreground">Actionable steps to improve your speaking performance</p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="grid gap-4">
               {overallFeedback.path_to_higher_score.map((tip, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg">
-                  <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-medium">
+                <div key={index} className="flex items-start gap-4 p-4 bg-card/80 rounded-xl border border-primary/10 shadow-soft backdrop-blur-sm">
+                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full text-white text-sm font-bold flex items-center justify-center">
                     {index + 1}
                   </div>
-                  <p className="text-sm leading-relaxed">{tip}</p>
+                  <p className="text-sm text-foreground/90 leading-relaxed font-medium">
+                    {tip.replace(/\*\*/g, '').replace(/###/g, '').replace(/\*/g, '')}
+                  </p>
                 </div>
               ))}
             </div>

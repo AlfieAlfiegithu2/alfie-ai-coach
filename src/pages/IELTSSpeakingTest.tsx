@@ -336,8 +336,12 @@ const IELTSSpeakingTest = () => {
       setPreparationTime(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Auto-start recording after preparation
-          setTimeout(startRecording, 1000);
+          // Don't auto-start recording - student must click manually
+          toast({
+            title: "Preparation Time Complete",
+            description: "You may now start recording your response.",
+            duration: 5000
+          });
           return 0;
         }
         return prev - 1;

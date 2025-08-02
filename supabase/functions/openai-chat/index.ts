@@ -19,21 +19,41 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { message, context = "english_tutor" } = await req.json();
+    const { messages, message, context = "english_tutor" } = await req.json();
 
-    if (!message) {
+    // Support both old format (message) and new format (messages)
+    const finalMessage = messages ? messages[messages.length - 1].content : message;
+    
+    if (!finalMessage) {
       throw new Error('Message is required');
     }
 
-    console.log('🤖 AI Chat Request:', { message, context });
+    console.log('🤖 AI Chat Request:', { message: finalMessage, context });
 
     const systemPrompts = {
-      catbot: `You are 'Catbot,' a friendly, encouraging, and highly professional IELTS Writing tutor. Your tone is supportive and clear. You must never write the essay for the student. Instead, you will guide them by asking leading questions and providing structured advice. You must format all your responses using clean markdown, without using ### or ***. Use bolding for emphasis and bullet points for lists. Always provide specific, context-aware guidance based on the task they're working on.`,
-      english_tutor: `You are an expert English tutor specializing in IELTS, PTE, and TOEFL preparation. You provide helpful, encouraging, and constructive feedback. Keep responses concise but informative. Focus on practical English learning tips, grammar explanations, and test strategies.`,
+      catbot: `You are 'Catbot,' a friendly, encouraging, and highly professional IELTS Writing tutor. Your tone is supportive and clear. You must never write the essay for the student. Instead, you will guide them by asking leading questions and providing structured advice. You must format all your responses using clean markdown, without using hashtags or asterisks. Use bolding for emphasis and bullet points for lists. Always provide specific, context-aware guidance based on the task they're working on.`,
+      english_tutor: `You are an expert English tutor specializing in IELTS, PTE, and TOEFL preparation. You provide helpful, encouraging, and constructive feedback. Keep responses concise but informative. Focus on practical English learning tips, grammar explanations, and test strategies. Never use hashtags or asterisks in your formatting.`,
       translation: `You are a professional translator. Provide accurate translations and explain any cultural or contextual nuances when helpful.`,
       vocabulary: `You are a vocabulary expert. Provide clear definitions, usage examples, pronunciation guides, and memory tips for English words and phrases.`,
       general: `You are a helpful English learning assistant. Provide clear, encouraging, and practical advice for English learners of all levels.`
     };
+
+    // Build messages array for the API
+    let apiMessages = [];
+    
+    if (messages && Array.isArray(messages)) {
+      // New format with full conversation history
+      apiMessages = messages;
+    } else {
+      // Old format with single message
+      apiMessages = [
+        { 
+          role: 'system', 
+          content: systemPrompts[context as keyof typeof systemPrompts] || systemPrompts.general
+        },
+        { role: 'user', content: finalMessage }
+      ];
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -43,13 +63,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: systemPrompts[context as keyof typeof systemPrompts] || systemPrompts.general
-          },
-          { role: 'user', content: message }
-        ],
+        messages: apiMessages,
         max_tokens: 500,
         temperature: 0.7,
       }),

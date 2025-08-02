@@ -277,39 +277,7 @@ const IELTSPortal = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-text-secondary" />
-                      <span>Band 4.0-9.0</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-text-secondary" />
-                      <span>Variable Time</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-text-secondary" />
-                      <span>4 Modules</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-text-secondary" />
-                      <span>{test.total_questions || 0} questions</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-text-primary">Available Modules:</p>
-                    <div className="flex flex-wrap gap-1">
-                      <Badge variant="secondary" className="text-xs">Reading</Badge>
-                      <Badge variant="secondary" className="text-xs">Listening</Badge>
-                      <Badge variant="secondary" className="text-xs">Writing</Badge>
-                      <Badge variant="secondary" className="text-xs">Speaking</Badge>
-                    </div>
-                  </div>
-
+                <CardContent className="pt-4">
                    <Button 
                     onClick={() => handleTestClick(test.id)}
                      className="w-full btn-primary"

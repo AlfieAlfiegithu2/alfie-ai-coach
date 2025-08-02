@@ -36,6 +36,13 @@ CRITICAL VALIDATION REQUIREMENTS:
 - For Task 2: The response MUST address the specific question/topic provided. Off-topic responses should receive 1.0-3.0 for Task Response.
 - Responses that don't match the task requirements cannot receive high scores regardless of language quality.
 
+FEEDBACK FORMAT REQUIREMENTS:
+- Be specific and actionable in all feedback
+- For every criticism, provide a concrete example from the student's text
+- For improvements, show exactly how to fix the issue with specific examples
+- Use clear, direct language without markdown symbols (###, **, etc.)
+- Focus on the most impactful improvements first
+
 Focus on overall communicative effectiveness while ensuring the response addresses the correct task. Do not just count errors; explain their impact on the band score for a specific criterion.
 
 You will first provide a whole number band score (0-9) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
@@ -116,83 +123,83 @@ After you have determined the individual band scores (whole numbers from 0-9) fo
 
 Please provide a comprehensive assessment using this EXACT format:
 
-## TASK 1 ASSESSMENT
+TASK 1 ASSESSMENT
 
-### Task Achievement
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
+Task Achievement
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
 
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
 
-### Coherence and Cohesion  
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
+Coherence and Cohesion  
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
 
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
 
-### Lexical Resource
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
+Lexical Resource
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
 
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
 
-### Grammatical Range and Accuracy
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
+Grammatical Range and Accuracy
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
 
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
 
-**Task 1 Overall Band Score: [Calculate using rounding rules]**
-
----
-
-## TASK 2 ASSESSMENT
-
-### Task Response
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
-
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
-
-### Coherence and Cohesion
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
-
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
-
-### Lexical Resource
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
-
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
-
-### Grammatical Range and Accuracy
-**Band Score: [0-9]**
-**Positive Feedback:**
-• [List specific strengths based on band descriptors]
-
-**Areas for Improvement:**
-• [List specific areas with examples from band descriptors]
-
-**Task 2 Overall Band Score: [Calculate using rounding rules]**
+Task 1 Overall Band Score: [Calculate using rounding rules]
 
 ---
 
-## OVERALL WRITING ASSESSMENT
+TASK 2 ASSESSMENT
+
+Task Response
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
+
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
+
+Coherence and Cohesion
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
+
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
+
+Lexical Resource
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
+
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
+
+Grammatical Range and Accuracy
+Band Score: [0-9]
+Positive Feedback:
+• [List specific strengths with direct quotes from student text]
+
+Areas for Improvement:
+• [List specific issues with examples from text and show how to fix them]
+
+Task 2 Overall Band Score: [Calculate using rounding rules]
+
+---
+
+OVERALL WRITING ASSESSMENT
 
 --- **Final Overall Writing Score Calculation (CRITICAL - Weighted Average):**
 
@@ -209,10 +216,10 @@ After calculating this weighted average, you must then apply the final rounding 
 The final assessment must include the individual scores for Task 1 and Task 2, as well as this final, correctly weighted and rounded Overall Writing Band Score.
 ---
 
-**Overall Writing Band Score: [Calculate using the weighted formula above]**
+Overall Writing Band Score: [Calculate using the weighted formula above]
 
-### Your Path to a Higher Score
-[Provide 2-3 clear, actionable steps the student can take to improve, based on their performance. Be specific and practical.]
+Your Path to a Higher Score
+[Provide 3-4 clear, actionable steps with specific examples. Each recommendation should show exactly what to change in their writing.]
 
 Be precise, professional, and constructive in your feedback. Focus on actionable advice that helps students improve their IELTS Writing performance.`;
 

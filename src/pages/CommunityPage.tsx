@@ -142,187 +142,199 @@ const CommunityPage = () => {
   };
 
   return (
-    <StudentLayout title="Study Community" showBackButton={true}>
-      <div className="max-w-4xl mx-auto space-y-6">
-        
+    <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
+      {/* Background Image */}
+      <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
+        backgroundImage: "url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/44dea03b-7cbb-41b6-934f-6482f1fdf2e3_3840w.jpg')"
+      }} />
+      
+      <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-heading-1 mb-4">Study Community</h1>
-          <p className="text-body">Connect with fellow students, share tips, and get support on your English learning journey</p>
-        </div>
+        <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
+          <h1 className="text-3xl font-semibold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+            Study Community
+          </h1>
+        </header>
 
-        {/* Create Post */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-brand-blue" />
-              Share with the Community
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="Ask a question, share a tip, or start a discussion..."
-              className="min-h-[100px] input-modern"
-            />
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <Badge 
-                  variant={selectedCategory === 'general' ? 'default' : 'outline'}
-                  className="cursor-pointer hover:bg-primary/90"
-                  onClick={() => setSelectedCategory('general')}
-                >
-                  Question
-                </Badge>
-                <Badge 
-                  variant={selectedCategory === 'tip' ? 'default' : 'outline'}
-                  className="cursor-pointer hover:bg-primary/90"
-                  onClick={() => setSelectedCategory('tip')}
-                >
-                  Study Tip
-                </Badge>
-                <Badge 
-                  variant={selectedCategory === 'success' ? 'default' : 'outline'}
-                  className="cursor-pointer hover:bg-primary/90"
-                  onClick={() => setSelectedCategory('success')}
-                >
-                  Success Story
-                </Badge>
-              </div>
-              <Button onClick={handleCreatePost} disabled={!newPost.trim()} className="bg-blue-500 hover:bg-blue-600 text-white">
-                <Send className="w-4 h-4 mr-2" />
-                Post
-              </Button>
+        {/* Main Content */}
+        <main className="relative sm:px-6 lg:px-12 pr-4 pb-8 pl-4">
+          <div className="max-w-4xl mx-auto space-y-6 pt-6">
+            
+            {/* Header */}
+            <div className="text-center mb-8">
+              <p className="text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>Connect with fellow students, share tips, and get support on your English learning journey</p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Search and Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder="Search posts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant={selectedCategory === 'all' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('all')}
-              size="sm"
-            >
-              All
-            </Button>
-            <Button 
-              variant={selectedCategory === 'general' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('general')}
-              size="sm"
-            >
-              Question
-            </Button>
-            <Button 
-              variant={selectedCategory === 'tip' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('tip')}
-              size="sm"
-            >
-              Study Tip
-            </Button>
-            <Button 
-              variant={selectedCategory === 'success' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory('success')}
-              size="sm"
-            >
-              Success Story
-            </Button>
-          </div>
-        </div>
-
-        {/* Posts */}
-        <div className="space-y-4">
-          {loading ? (
-            <Card className="p-6 text-center">
-              <p>Loading posts...</p>
-            </Card>
-          ) : filteredPosts.length === 0 ? (
-            <Card className="p-6 text-center">
-              <p>No posts found. Be the first to start a discussion!</p>
-            </Card>
-          ) : (
-            filteredPosts.map((post) => (
-            <Card key={post.id} className="card-interactive">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold">{post.username}</p>
-                        </div>
-                        <p className="text-sm text-gray-500">{getTimeAgo(post.created_at)}</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {post.category}
+            {/* Create Post */}
+            <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
+              <h3 className="flex items-center gap-2 text-lg font-semibold mb-4 text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                <MessageSquare className="w-5 h-5 text-slate-600" />
+                Share with the Community
+              </h3>
+              <div className="space-y-4">
+                <Textarea
+                  value={newPost}
+                  onChange={(e) => setNewPost(e.target.value)}
+                  placeholder="Ask a question, share a tip, or start a discussion..."
+                  className="min-h-[100px] bg-white/10 border-white/20 text-slate-800 placeholder:text-slate-500"
+                />
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-2">
+                    <Badge 
+                      variant={selectedCategory === 'general' ? 'default' : 'outline'}
+                      className="cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 text-slate-700"
+                      onClick={() => setSelectedCategory('general')}
+                    >
+                      Question
+                    </Badge>
+                    <Badge 
+                      variant={selectedCategory === 'tip' ? 'default' : 'outline'}
+                      className="cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 text-slate-700"
+                      onClick={() => setSelectedCategory('tip')}
+                    >
+                      Study Tip
+                    </Badge>
+                    <Badge 
+                      variant={selectedCategory === 'success' ? 'default' : 'outline'}
+                      className="cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 text-slate-700"
+                      onClick={() => setSelectedCategory('success')}
+                    >
+                      Success Story
                     </Badge>
                   </div>
-                  
-                  <p className="text-text-primary leading-relaxed">{post.content}</p>
-                  
-                  <div className="flex items-center gap-4">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-gray-500 hover:text-blue-500"
-                      onClick={() => handleLikePost(post.id)}
-                    >
-                      <ThumbsUp className="w-4 h-4 mr-1" />
-                      {post.likes_count || 0}
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-500">
-                      <MessageSquare className="w-4 h-4 mr-1" />
-                      {post.comments_count || 0} replies
-                    </Button>
-                  </div>
+                  <Button onClick={handleCreatePost} disabled={!newPost.trim()} className="bg-slate-800/80 backdrop-blur-sm text-white hover:bg-slate-700/80 border border-white/20">
+                    <Send className="w-4 h-4 mr-2" />
+                    Post
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-            ))
-          )}
-        </div>
-
-        {/* Coming Soon Features */}
-        <Card className="card-modern">
-          <CardHeader>
-            <CardTitle>Coming Soon</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="text-center p-4">
-                <Users className="w-8 h-8 text-brand-blue mx-auto mb-2" />
-                <h4 className="font-semibold mb-1">Study Groups</h4>
-                <p className="text-sm text-text-secondary">Join or create study groups with students at your level</p>
-              </div>
-              <div className="text-center p-4">
-                <MessageSquare className="w-8 h-8 text-brand-green mx-auto mb-2" />
-                <h4 className="font-semibold mb-1">Live Q&A</h4>
-                <p className="text-sm text-text-secondary">Weekly live sessions with English teachers and experts</p>
-              </div>
-              <div className="text-center p-4">
-                <Star className="w-8 h-8 text-brand-purple mx-auto mb-2" />
-                <h4 className="font-semibold mb-1">Peer Reviews</h4>
-                <p className="text-sm text-text-secondary">Get feedback on your writing from other students</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Search and Filter Bar */}
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search posts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/10 border-white/20 text-slate-800 placeholder:text-slate-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                  onClick={() => setSelectedCategory('all')}
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20"
+                >
+                  All
+                </Button>
+                <Button 
+                  variant={selectedCategory === 'general' ? 'default' : 'outline'}
+                  onClick={() => setSelectedCategory('general')}
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20"
+                >
+                  Question
+                </Button>
+                <Button 
+                  variant={selectedCategory === 'tip' ? 'default' : 'outline'}
+                  onClick={() => setSelectedCategory('tip')}
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20"
+                >
+                  Study Tip
+                </Button>
+                <Button 
+                  variant={selectedCategory === 'success' ? 'default' : 'outline'}
+                  onClick={() => setSelectedCategory('success')}
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20"
+                >
+                  Success Story
+                </Button>
+              </div>
+            </div>
+
+            {/* Posts */}
+            <div className="space-y-4">
+              {loading ? (
+                <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl text-center">
+                  <p className="text-slate-600">Loading posts...</p>
+                </div>
+              ) : filteredPosts.length === 0 ? (
+                <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl text-center">
+                  <p className="text-slate-600">No posts found. Be the first to start a discussion!</p>
+                </div>
+              ) : (
+                filteredPosts.map((post) => (
+                <div key={post.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-800/20 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                          <Users className="w-5 h-5 text-slate-600" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>{post.username}</p>
+                          </div>
+                          <p className="text-sm text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>{getTimeAgo(post.created_at)}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs bg-white/10 border-white/20 text-slate-700">
+                        {post.category}
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-slate-700 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{post.content}</p>
+                    
+                    <div className="flex items-center gap-4">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-slate-600 hover:text-slate-800 hover:bg-white/10"
+                        onClick={() => handleLikePost(post.id)}
+                      >
+                        <ThumbsUp className="w-4 h-4 mr-1" />
+                        {post.likes_count || 0}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-white/10">
+                        <MessageSquare className="w-4 h-4 mr-1" />
+                        {post.comments_count || 0} replies
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                ))
+              )}
+            </div>
+
+            {/* Coming Soon Features */}
+            <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
+              <h3 className="text-lg font-semibold mb-4 text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>Coming Soon</h3>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="text-center p-4">
+                  <Users className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <h4 className="font-semibold mb-1 text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>Study Groups</h4>
+                  <p className="text-sm text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>Join or create study groups with students at your level</p>
+                </div>
+                <div className="text-center p-4">
+                  <MessageSquare className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <h4 className="font-semibold mb-1 text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>Live Q&A</h4>
+                  <p className="text-sm text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>Weekly live sessions with English teachers and experts</p>
+                </div>
+                <div className="text-center p-4">
+                  <Star className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <h4 className="font-semibold mb-1 text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>Peer Reviews</h4>
+                  <p className="text-sm text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>Get feedback on your writing from other students</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
-    </StudentLayout>
+    </div>
   );
 };
 

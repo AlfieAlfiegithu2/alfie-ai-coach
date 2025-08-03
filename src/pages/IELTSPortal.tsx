@@ -158,22 +158,23 @@ const IELTSPortal = () => {
     console.log(`🧪 Opening IELTS test ${testId}`);
     navigate(`/ielts-test-modules/${testId}`);
   };
-  return <div className="min-h-screen relative bg-gray-900">
+  return <div className="min-h-screen bg-gray-900 relative">
       <LightRays 
         raysOrigin="top-center"
-        raysColor="#1E3A8A"
-        raysSpeed={0.5}
-        lightSpread={2}
-        rayLength={1.5}
+        raysColor="#3B82F6"
+        raysSpeed={0.8}
+        lightSpread={1.5}
+        rayLength={1.8}
         pulsating={false}
-        fadeDistance={1.2}
-        saturation={0.6}
+        fadeDistance={1.0}
+        saturation={0.7}
         followMouse={true}
-        mouseInfluence={0.05}
-        noiseAmount={0.15}
-        distortion={0.1}
-        className="absolute inset-0"
+        mouseInfluence={0.08}
+        noiseAmount={0.05}
+        distortion={0.05}
+        className="absolute inset-0 z-0"
       />
+      <div className="relative z-10">
       <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
         {/* Dashboard Header */}
@@ -240,21 +241,89 @@ const IELTSPortal = () => {
             </Badge>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {availableTests.slice(0, 8).map(test => <Card key={test.test_number || test.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 aspect-square flex flex-col">
-                <CardHeader className="pb-2 flex-shrink-0">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold text-white">{test.test_name}</CardTitle>
-                    
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative bg-white/5 border-white/10 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 group">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-blue-600/20 rounded-lg">
+                        <BarChart3 className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-semibold text-white">{test.test_name}</CardTitle>
+                        <p className="text-sm text-gray-300">Cambridge IELTS Test</p>
+                      </div>
+                    </div>
+                    {!test.comingSoon && (
+                      <Badge variant="outline" className="bg-green-900/30 text-green-300 border-green-400/30">
+                        Available
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
-                <CardContent className="pt-2 flex-grow flex flex-col justify-center">
-                   <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0 disabled:bg-gray-600 disabled:text-gray-300">
-                     {test.comingSoon ? <span className="flex items-center gap-2">
-                         <Clock className="w-4 h-4" />
-                         Coming Soon
-                       </span> : 'Enter Test'}
-                   </Button>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Questions:</span>
+                        <span className="text-white font-medium">{test.total_questions || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Speaking:</span>
+                        <span className="text-white font-medium">{test.speaking_prompts || 'N/A'}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Duration:</span>
+                        <span className="text-white font-medium">3 hours</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Modules:</span>
+                        <span className="text-white font-medium">{test.modules?.length || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {test.modules?.includes('reading') && (
+                      <Badge variant="secondary" className="bg-blue-900/40 text-blue-200 border-blue-400/30">
+                        <BookOpen className="w-3 h-3 mr-1" />
+                        Reading
+                      </Badge>
+                    )}
+                    {test.modules?.includes('writing') && (
+                      <Badge variant="secondary" className="bg-purple-900/40 text-purple-200 border-purple-400/30">
+                        <PenTool className="w-3 h-3 mr-1" />
+                        Writing
+                      </Badge>
+                    )}
+                    {test.modules?.includes('speaking') && (
+                      <Badge variant="secondary" className="bg-green-900/40 text-green-200 border-green-400/30">
+                        <MessageSquare className="w-3 h-3 mr-1" />
+                        Speaking
+                      </Badge>
+                    )}
+                  </div>
+
+                  <Button 
+                    onClick={() => handleTestClick(test.id)} 
+                    size="sm" 
+                    disabled={test.comingSoon} 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0 disabled:bg-gray-600 disabled:text-gray-300 mt-4 group-hover:bg-blue-500 transition-colors"
+                  >
+                    {test.comingSoon ? (
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Coming Soon
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Start Test
+                      </span>
+                    )}
+                  </Button>
                 </CardContent>
               </Card>)}
           </div>
@@ -264,6 +333,7 @@ const IELTSPortal = () => {
         
       </div>
       </StudentLayout>
+      </div>
     </div>;
 };
 export default IELTSPortal;

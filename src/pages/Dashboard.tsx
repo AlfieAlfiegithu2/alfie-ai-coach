@@ -368,14 +368,7 @@ const Dashboard = () => {
                           </div>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex -space-x-2">
-                            <div className="w-6 h-6 rounded-full bg-slate-800/20 border-2 border-white/50 flex items-center justify-center">
-                              <CheckCircle className="w-3 h-3 text-slate-700" />
-                            </div>
-                            <div className="w-6 h-6 rounded-full bg-blue-500/20 border-2 border-white/50 flex items-center justify-center">
-                              <Target className="w-3 h-3 text-blue-600" />
-                            </div>
-                          </div>
+                          
                           <button onClick={() => handleSkillPractice(skill.name)} className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
                         fontFamily: 'Inter, sans-serif'
                       }}>

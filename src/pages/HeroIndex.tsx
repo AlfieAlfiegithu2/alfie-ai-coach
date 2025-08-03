@@ -63,12 +63,12 @@ const HeroIndex = () => {
         className="absolute inset-0 bg-cover bg-center bg-fixed"
         style={{
           backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)',
-          filter: 'brightness(0.3)'
+          filter: 'brightness(0.7)'
         }}
       />
       
-      {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/30 to-black/50" />
+      {/* Lighter overlay for contrast */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/20 to-black/30" />
 
       {/* Header */}
       <header className="relative z-10 px-8 py-4">

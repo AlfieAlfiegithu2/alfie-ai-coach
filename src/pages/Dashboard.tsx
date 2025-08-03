@@ -391,7 +391,7 @@ const Dashboard = () => {
                       }}>
                               No {skill.toLowerCase()} tests taken yet
                             </p>
-                            <button onClick={() => handleSkillPractice(skill)} className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
+                            <button onClick={() => handleSkillPractice(skill)} className="text-sm font-medium bg-[#FFFFF0] backdrop-blur-sm text-black px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-[#F5F5DC] transition border border-white/20" style={{
                         fontFamily: 'Inter, sans-serif'
                       }}>
                               Start First Test <ChevronRight className="w-4 h-4" />

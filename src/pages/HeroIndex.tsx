@@ -198,7 +198,7 @@ const HeroIndex = () => {
             members: "20K+"
           }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all duration-300 hover:scale-105">
                 <CardContent className="pt-6 text-center">
-                  <Users className="w-8 h-8 mx-auto mb-3 text-blue-400" />
+                  
                   <h3 className="mb-2 text-zinc-950 font-light text-sm">{group.title}</h3>
                   <p className="text-sm text-zinc-950 font-extralight">{group.members} members</p>
                 </CardContent>

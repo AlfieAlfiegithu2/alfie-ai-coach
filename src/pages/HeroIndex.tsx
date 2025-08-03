@@ -91,7 +91,7 @@ const HeroIndex = () => {
           
           
           {/* Headline with Animation */}
-          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light">
+          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light mx-0 my-[250px]">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>
@@ -119,12 +119,10 @@ const HeroIndex = () => {
           }, {
             label: "Success Rate",
             value: "95%"
-          }].map((metric, index) => (
-            <div key={index} className="text-center">
+          }].map((metric, index) => <div key={index} className="text-center">
               <div className="text-2xl font-bold text-zinc-900 mb-2">{metric.value}</div>
               <div className="text-sm text-zinc-700">{metric.label}</div>
-            </div>
-          ))}
+            </div>)}
           </div>
         </div>
       </section>

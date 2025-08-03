@@ -156,6 +156,27 @@ const Dashboard = () => {
     const route = skillName.toLowerCase();
     navigate(`/${route}`);
   };
+
+  // Convert percentage to IELTS band score
+  const convertToIELTSScore = (percentage: number) => {
+    if (percentage >= 95) return "9.0";
+    if (percentage >= 90) return "8.5";
+    if (percentage >= 85) return "8.0";
+    if (percentage >= 80) return "7.5";
+    if (percentage >= 75) return "7.0";
+    if (percentage >= 70) return "6.5";
+    if (percentage >= 65) return "6.0";
+    if (percentage >= 60) return "5.5";
+    if (percentage >= 55) return "5.0";
+    if (percentage >= 50) return "4.5";
+    if (percentage >= 45) return "4.0";
+    if (percentage >= 40) return "3.5";
+    if (percentage >= 35) return "3.0";
+    if (percentage >= 30) return "2.5";
+    if (percentage >= 25) return "2.0";
+    if (percentage >= 20) return "1.5";
+    return "1.0";
+  };
   return <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 pt-6 pr-4 pb-6 pl-4">
       {/* Background Image */}
       <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
@@ -201,7 +222,7 @@ const Dashboard = () => {
               </h1>
 
               {/* Progress Summary Card */}
-              <div className="flex lg:px-5 lg:py-4 bg-white/30 border-white/30 border rounded-xl pt-3 pr-4 pb-3 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-sm items-center justify-between">
+              <div className="flex lg:px-5 lg:py-4 bg-white/10 border-white/20 rounded-xl pt-3 pr-4 pb-3 pl-4 backdrop-blur-xl items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="text-sm font-semibold text-slate-800" style={{
@@ -215,20 +236,20 @@ const Dashboard = () => {
                 <ChevronRight className="w-5 h-5 text-slate-500" />
               </div>
 
-              {/* Productivity Score */}
+              {/* IELTS Band Score */}
               <div className="flex flex-col gap-2">
                 <span className="text-6xl sm:text-7xl lg:text-[90px] leading-none text-slate-800 font-semibold" style={{
                 fontFamily: 'Bricolage Grotesque, sans-serif'
               }}>
-                  {userStats?.avgScore || 0}%
+                  {convertToIELTSScore(userStats?.avgScore || 0)}
                 </span>
                 <p className="text-base lg:text-lg text-slate-600 -mt-2 lg:-mt-4" style={{
                 fontFamily: 'Inter, sans-serif'
-              }}>Average test score</p>
+              }}>IELTS Band Score</p>
               </div>
 
               {/* Skills Distribution */}
-              <div className="relative lg:p-6 bg-white/20 border-white/30 border rounded-2xl pt-4 pr-4 pb-4 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-sm">
+              <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                 <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{
                 fontFamily: 'Inter, sans-serif'
               }}>Skills Overview</h3>
@@ -245,7 +266,7 @@ const Dashboard = () => {
               </div>
 
               {/* Analytics Card */}
-              <div className="relative lg:p-6 bg-white/20 border-white/30 border rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-sm">
+              <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                 <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{
                 fontFamily: 'Inter, sans-serif'
               }}>Study Progress</h3>
@@ -333,7 +354,7 @@ const Dashboard = () => {
                     label: 'Practice'
                   }];
                   const tag = tagColors[index] || tagColors[0];
-                  return <div key={skill.name} className="relative lg:p-6 bg-white/40 border-white/30 border rounded-xl pt-4 pr-4 pb-4 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-md">
+                  return <div key={skill.name} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                         
                         <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold mb-3 lg:mb-4 text-slate-800" style={{
                       fontFamily: 'Inter, sans-serif'

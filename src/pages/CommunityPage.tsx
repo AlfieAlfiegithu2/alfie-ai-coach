@@ -145,7 +145,7 @@ const CommunityPage = () => {
     <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
       {/* Background Image */}
       <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
-        backgroundImage: "url('/lovable-uploads/162e6d77-a23d-4ff0-abd9-61aabafae00e.png')"
+        backgroundImage: "url('/lovable-uploads/6c10bf57-6843-477b-aacf-81f2ba5252ce.png')"
       }} />
       
       <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">

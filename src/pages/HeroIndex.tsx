@@ -102,7 +102,7 @@ const HeroIndex = () => {
           </h1>
           
           {/* Subheadline */}
-          <p className="text-xl text-zinc-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900">
             Go beyond practice tests. Get personalized coaching, track your progress, 
             and reach your target score with confidence.
           </p>
@@ -164,7 +164,7 @@ const HeroIndex = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-center text-sm mb-6 text-slate-900">{test.description}</p>
-                  <Button size="sm" className="w-full bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all duration-200">
+                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950">
                     Start Practice
                   </Button>
                 </CardContent>

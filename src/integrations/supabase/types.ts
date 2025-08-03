@@ -761,6 +761,71 @@ export type Database = {
           },
         ]
       }
+      user_vocabulary: {
+        Row: {
+          context: string | null
+          id: string
+          saved_at: string
+          user_id: string
+          vocabulary_word_id: string
+        }
+        Insert: {
+          context?: string | null
+          id?: string
+          saved_at?: string
+          user_id: string
+          vocabulary_word_id: string
+        }
+        Update: {
+          context?: string | null
+          id?: string
+          saved_at?: string
+          user_id?: string
+          vocabulary_word_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_vocabulary_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_words: {
+        Row: {
+          created_at: string
+          id: string
+          language_code: string
+          translation: string
+          updated_at: string
+          usage_count: number | null
+          verified: boolean | null
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language_code: string
+          translation: string
+          updated_at?: string
+          usage_count?: number | null
+          verified?: boolean | null
+          word: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language_code?: string
+          translation?: string
+          updated_at?: string
+          usage_count?: number | null
+          verified?: boolean | null
+          word?: string
+        }
+        Relationships: []
+      }
       writing_prompts: {
         Row: {
           band_criteria: Json | null

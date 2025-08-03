@@ -6,23 +6,22 @@ import { Calendar, Trash2, Languages, Globe } from 'lucide-react';
 interface SavedWord {
   id: string;
   word: string;
-  translation: string;
-  context: string;
+  translation?: string;
+  context?: string;
   savedAt: string;
+  languageCode?: string;
 }
 
 interface VocabularyFlipCardProps {
   word: SavedWord;
-  onRemove: (wordId: string) => void;
-  onTranslate?: (wordId: string, word: string) => Promise<void>;
-  selectedLanguage?: string;
-  translating?: string | null;
+  onRemove: () => void;
+  translating?: boolean;
 }
 
-const VocabularyFlipCard = ({ word, onRemove, onTranslate, selectedLanguage = 'Spanish', translating }: VocabularyFlipCardProps) => {
+const VocabularyFlipCard = ({ word, onRemove, translating = false }: VocabularyFlipCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const needsTranslation = word.translation.includes('Translation coming soon') || word.translation.includes('Auto saved from');
+  const needsTranslation = !word.translation;
 
   return (
     <div 
@@ -45,26 +44,13 @@ const VocabularyFlipCard = ({ word, onRemove, onTranslate, selectedLanguage = 'S
               {needsTranslation ? (
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    Not translated yet
+                    Translation saved automatically
                   </h3>
-                  {onTranslate && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onTranslate(word.id, word.word);
-                      }}
-                      disabled={translating === word.id}
-                      className="text-white/70 hover:text-white hover:bg-white/20 border border-white/30"
-                    >
-                      {translating === word.id ? (
-                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : (
-                        <Globe className="w-3 h-3 mr-2" />
-                      )}
-                      Translate to {selectedLanguage}
-                    </Button>
+                  {translating && (
+                    <div className="flex items-center text-white/70">
+                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Processing...
+                    </div>
                   )}
                 </div>
               ) : (
@@ -72,10 +58,12 @@ const VocabularyFlipCard = ({ word, onRemove, onTranslate, selectedLanguage = 'S
                   <h3 className="text-lg font-semibold text-white mb-2">
                     {word.translation}
                   </h3>
-                  <div className="text-sm text-white/80 bg-white/10 p-2 rounded-lg">
-                    <span className="text-xs text-white/60 block mb-1">Context:</span>
-                    "{word.context}"
-                  </div>
+                  {word.context && (
+                    <div className="text-sm text-white/80 bg-white/10 p-2 rounded-lg">
+                      <span className="text-xs text-white/60 block mb-1">Context:</span>
+                      "{word.context}"
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -84,7 +72,7 @@ const VocabularyFlipCard = ({ word, onRemove, onTranslate, selectedLanguage = 'S
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                onRemove(word.id);
+                onRemove();
               }}
               className="text-white/70 hover:text-red-400 hover:bg-red-500/20"
             >

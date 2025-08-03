@@ -9,21 +9,27 @@ import { Search, Trash2, BookOpen, Calendar, Languages, Globe } from 'lucide-rea
 import StudentLayout from '@/components/StudentLayout';
 import VocabularyFlipCard from '@/components/VocabularyFlipCard';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface SavedWord {
   id: string;
   word: string;
-  translation: string;
-  context: string;
+  translation?: string;
+  context?: string;
   savedAt: string;
+  languageCode?: string;
 }
 
 const VocabularyPage = () => {
+  const { user } = useAuth();
   const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredWords, setFilteredWords] = useState<SavedWord[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState('Spanish');
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [translating, setTranslating] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedLanguage, setSelectedLanguage] = useState('Spanish');
 
   const languages = [
     { code: 'es', name: 'Spanish' },
@@ -41,15 +47,18 @@ const VocabularyPage = () => {
   ];
 
   useEffect(() => {
-    loadSavedWords();
-  }, []);
+    if (user) {
+      loadUserProfile();
+      loadSavedWords();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (searchTerm) {
       const filtered = savedWords.filter(word =>
         word.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        word.translation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        word.context.toLowerCase().includes(searchTerm.toLowerCase())
+        (word.translation && word.translation.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (word.context && word.context.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredWords(filtered);
     } else {
@@ -57,32 +66,79 @@ const VocabularyPage = () => {
     }
   }, [searchTerm, savedWords]);
 
-  const loadSavedWords = () => {
-    // Check both possible storage keys for backward compatibility
-    const saved = localStorage.getItem('alfie-saved-vocabulary') || localStorage.getItem('saved-vocabulary');
-    if (saved) {
-      try {
-        const words = JSON.parse(saved);
-        setSavedWords(words);
-        // Unify storage under 'alfie-saved-vocabulary'
-        localStorage.setItem('alfie-saved-vocabulary', JSON.stringify(words));
-        localStorage.removeItem('saved-vocabulary');
-      } catch (error) {
-        console.error('Error loading saved vocabulary:', error);
+  const loadUserProfile = async () => {
+    if (!user) return;
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('native_language')
+      .eq('id', user.id)
+      .single();
+    
+    setUserProfile(profile);
+  };
+
+  const loadSavedWords = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
+        body: {
+          action: 'getUserVocabulary',
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.vocabulary) {
+        setSavedWords(data.vocabulary);
       }
+    } catch (error) {
+      console.error('Error loading vocabulary:', error);
+      toast.error('Failed to load vocabulary');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const removeWord = (wordId: string) => {
-    const updatedWords = savedWords.filter(word => word.id !== wordId);
-    setSavedWords(updatedWords);
-    localStorage.setItem('alfie-saved-vocabulary', JSON.stringify(updatedWords));
+  const removeWord = async (wordId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase.functions.invoke('smart-vocabulary', {
+        body: {
+          action: 'removeWord',
+          wordId: wordId,
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      const updatedWords = savedWords.filter(word => word.id !== wordId);
+      setSavedWords(updatedWords);
+      toast.success('Word removed from vocabulary');
+    } catch (error) {
+      console.error('Error removing word:', error);
+      toast.error('Failed to remove word');
+    }
   };
 
-  const clearAll = () => {
-    if (confirm('Are you sure you want to clear all saved vocabulary?')) {
+  const clearAll = async () => {
+    if (!window.confirm('Are you sure you want to clear all saved vocabulary?')) return;
+    
+    try {
+      // Remove all words one by one (could be optimized with batch delete)
+      for (const word of savedWords) {
+        await removeWord(word.id);
+      }
       setSavedWords([]);
-      localStorage.removeItem('alfie-saved-vocabulary');
+      toast.success('All vocabulary cleared');
+    } catch (error) {
+      console.error('Error clearing vocabulary:', error);
+      toast.error('Failed to clear vocabulary');
     }
   };
 
@@ -120,6 +176,27 @@ const VocabularyPage = () => {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <CardTitle className="text-2xl mb-4">Please Sign In</CardTitle>
+          <p className="text-gray-600">You need to be signed in to access your vocabulary.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <CardTitle className="text-2xl mb-4">Loading Vocabulary...</CardTitle>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
       {/* Background Image - Same as Dashboard */}
@@ -154,27 +231,19 @@ const VocabularyPage = () => {
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Clear All
-                </Button>
-              )}
-            </div>
-            
-            {/* Language Selector */}
-            <div className="flex items-center gap-3">
-              <Languages className="w-5 h-5 text-black/70" />
-              <span className="text-sm text-black/70">Translate to:</span>
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                <SelectTrigger className="w-40 bg-white/10 border-white/30 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 z-50">
-                  {languages.map((lang) => (
-                    <SelectItem key={lang.code} value={lang.name} className="hover:bg-gray-100">
-                      {lang.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                 </Button>
+               )}
+             </div>
+             
+             {/* User's Native Language Display */}
+             {userProfile?.native_language && (
+               <div className="flex items-center gap-3">
+                 <Languages className="w-5 h-5 text-black/70" />
+                 <span className="text-sm text-black/70">
+                   Your vocabulary in: {userProfile.native_language}
+                 </span>
+               </div>
+             )}
           </CardHeader>
           
           {savedWords.length > 0 && (
@@ -217,14 +286,12 @@ const VocabularyPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredWords.map((word) => (
-              <VocabularyFlipCard
-                key={word.id}
-                word={word}
-                onRemove={removeWord}
-                onTranslate={translateWord}
-                selectedLanguage={selectedLanguage}
-                translating={translating}
-              />
+               <VocabularyFlipCard
+                 key={word.id}
+                 word={word}
+                 onRemove={() => removeWord(word.id)}
+                 translating={translating === word.id}
+               />
             ))}
           </div>
         )}

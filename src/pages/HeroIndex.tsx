@@ -146,7 +146,7 @@ const HeroIndex = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-center text-sm mb-6 text-slate-900">{test.description}</p>
+                  
                   <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
                     Start Practice
                   </Button>

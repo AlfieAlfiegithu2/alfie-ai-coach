@@ -9,7 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [user, setUser] = useState<any>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   useEffect(() => {
@@ -30,41 +32,32 @@ const HeroIndex = () => {
       navigate('/auth');
     }
   };
-  const testTypes = [
-    {
-      title: "IELTS",
-      description: "Comprehensive international test practice",
-      path: "/ielts-portal",
-      icon: <BookOpen className="w-8 h-8 text-white" />
-    },
-    {
-      title: "PTE Academic", 
-      description: "Pearson Test of English preparation",
-      path: "/pte-portal",
-      icon: <Headphones className="w-8 h-8 text-white" />
-    },
-    {
-      title: "TOEFL iBT",
-      description: "Test of English as a Foreign Language",
-      path: "/toefl-portal", 
-      icon: <PenTool className="w-8 h-8 text-white" />
-    },
-    {
-      title: "General English",
-      description: "Improve your everyday fluency",
-      path: "/general-portal",
-      icon: <Mic className="w-8 h-8 text-white" />
-    }
-  ];
-  return (
-    <div className="min-h-screen relative overflow-hidden">
+  const testTypes = [{
+    title: "IELTS",
+    description: "Comprehensive international test practice",
+    path: "/ielts-portal",
+    icon: <BookOpen className="w-8 h-8 text-white" />
+  }, {
+    title: "PTE Academic",
+    description: "Pearson Test of English preparation",
+    path: "/pte-portal",
+    icon: <Headphones className="w-8 h-8 text-white" />
+  }, {
+    title: "TOEFL iBT",
+    description: "Test of English as a Foreign Language",
+    path: "/toefl-portal",
+    icon: <PenTool className="w-8 h-8 text-white" />
+  }, {
+    title: "General English",
+    description: "Improve your everyday fluency",
+    path: "/general-portal",
+    icon: <Mic className="w-8 h-8 text-white" />
+  }];
+  return <div className="min-h-screen relative overflow-hidden">
       {/* Background Image - Original Brightness */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-fixed"
-        style={{
-          backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)'
-        }}
-      />
+      <div className="absolute inset-0 bg-cover bg-center bg-fixed" style={{
+      backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)'
+    }} />
 
       {/* Header */}
       <header className="relative z-10 px-8 py-4">
@@ -86,21 +79,12 @@ const HeroIndex = () => {
 
           {/* Button Group */}
           <div className="flex items-center gap-4">
-            <Button 
-              onClick={() => navigate('/auth')} 
-              variant="ghost"
-              className="text-white hover:bg-white/10 transition-all duration-200"
-            >
+            <Button onClick={() => navigate('/auth')} variant="ghost" className="text-white hover:bg-white/10 transition-all duration-200">
               Log In
             </Button>
-            {user && (
-              <Button 
-                onClick={() => navigate('/dashboard')} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200"
-              >
+            {user && <Button onClick={() => navigate('/dashboard')} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200">
                 My Dashboard
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
       </header>
@@ -109,13 +93,10 @@ const HeroIndex = () => {
       <section className="relative z-10 px-8 py-20 text-center">
         <div className="max-w-4xl mx-auto">
           {/* Hero Badge */}
-          <Badge className="mb-8 bg-white/10 backdrop-blur-sm border-white/20 text-white px-6 py-2 text-base rounded-full">
-            <Sparkles className="w-4 h-4 mr-2" />
-            ✨ Your AI-Powered English Coach
-          </Badge>
+          
           
           {/* Headline with Animation */}
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight animate-fade-in">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight animate-fade-in text-zinc-950">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>
@@ -128,37 +109,33 @@ const HeroIndex = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button 
-              size="lg" 
-              onClick={handleAuthAction}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-            >
+            <Button size="lg" onClick={handleAuthAction} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <Play className="w-5 h-5 mr-2" />
               Start Your Journey
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => navigate('/pricing')}
-              className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm px-8 py-4 text-lg font-medium rounded-lg transition-all duration-300 hover:scale-105"
-            >
+            <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm px-8 py-4 text-lg font-medium rounded-lg transition-all duration-300 hover:scale-105">
               View Pricing
             </Button>
           </div>
 
           {/* Social Proof Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { label: "Active Learners", value: "50K+" },
-              { label: "Practice Tests", value: "1000+" },
-              { label: "AI Feedback", value: "Real-time" },
-              { label: "Success Rate", value: "95%" }
-            ].map((metric, index) => (
-              <div key={index} className="text-center">
+            {[{
+            label: "Active Learners",
+            value: "50K+"
+          }, {
+            label: "Practice Tests",
+            value: "1000+"
+          }, {
+            label: "AI Feedback",
+            value: "Real-time"
+          }, {
+            label: "Success Rate",
+            value: "95%"
+          }].map((metric, index) => <div key={index} className="text-center">
                 <div className="text-3xl font-bold text-white mb-2">{metric.value}</div>
                 <div className="text-zinc-400 text-sm">{metric.label}</div>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -178,33 +155,20 @@ const HeroIndex = () => {
 
           {/* Test Cards Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testTypes.map((test, index) => (
-              <Card 
-                key={index} 
-                className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" 
-                onClick={() => navigate(test.path)}
-              >
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" onClick={() => navigate(test.path)}>
                 <CardHeader>
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                      {test.icon}
-                    </div>
-                  </div>
-                  <CardTitle className="text-white text-center group-hover:text-blue-300 transition-colors">
+                  
+                  <CardTitle className="text-center transition-colors text-zinc-950">
                     {test.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-zinc-300 text-center text-sm mb-6">{test.description}</p>
-                  <Button 
-                    size="sm" 
-                    className="w-full bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all duration-200"
-                  >
+                  <p className="text-center text-sm mb-6 text-slate-900">{test.description}</p>
+                  <Button size="sm" className="w-full bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all duration-200">
                     Start Practice
                   </Button>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -220,27 +184,28 @@ const HeroIndex = () => {
           </p>
           
           <div className="grid md:grid-cols-4 gap-6 mb-12">
-            {[
-              { title: "IELTS Preparation", members: "15K+" },
-              { title: "PTE Practice", members: "8K+" },
-              { title: "TOEFL Study Group", members: "12K+" },
-              { title: "General English", members: "20K+" }
-            ].map((group, index) => (
-              <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all duration-300 hover:scale-105">
+            {[{
+            title: "IELTS Preparation",
+            members: "15K+"
+          }, {
+            title: "PTE Practice",
+            members: "8K+"
+          }, {
+            title: "TOEFL Study Group",
+            members: "12K+"
+          }, {
+            title: "General English",
+            members: "20K+"
+          }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all duration-300 hover:scale-105">
                 <CardContent className="pt-6 text-center">
                   <Users className="w-8 h-8 mx-auto mb-3 text-blue-400" />
                   <h3 className="text-white font-semibold mb-2">{group.title}</h3>
                   <p className="text-zinc-400">{group.members} members</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
-          <Button 
-            size="lg" 
-            onClick={() => navigate('/community')} 
-            className="bg-white/10 text-white border border-white/20 hover:bg-white/20 px-8 py-4 text-lg transition-all duration-300"
-          >
+          <Button size="lg" onClick={() => navigate('/community')} className="bg-white/10 text-white border border-white/20 hover:bg-white/20 px-8 py-4 text-lg transition-all duration-300">
             <Users className="w-5 h-5 mr-2" />
             Explore Community
           </Button>
@@ -307,7 +272,6 @@ const HeroIndex = () => {
       
       {/* AI Chatbot */}
       <MinimalisticChatbot selectedLanguage={selectedLanguage} onLanguageChange={setSelectedLanguage} />
-    </div>
-  );
+    </div>;
 };
 export default HeroIndex;

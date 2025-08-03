@@ -85,31 +85,8 @@ const HeroIndex = () => {
         </div>
       </header>
 
-      {/* Test Preparation Section - Moved Up */}
-      <section id="tests" className="relative z-10 px-8 py-20 mt-16">
-        <div className="max-w-6xl mx-auto">
-          {/* Test Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 font-light text-center">
-            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" onClick={() => navigate(test.path)}>
-                <CardHeader>
-                  
-                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-base">
-                    {test.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  
-                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
-                    Start Practice
-                  </Button>
-                </CardContent>
-              </Card>)}
-          </div>
-        </div>
-      </section>
-
-      {/* Hero Section - Moved Down */}
-      <section className="relative z-10 px-8 py-32 text-center">
+      {/* Hero Section - Centered */}
+      <section className="relative z-10 px-8 min-h-screen flex items-center justify-center">
         <div className="max-w-4xl mx-auto bg-white/10 border border-white/20 backdrop-blur-xl rounded-xl p-8">
           {/* Headline with Animation */}
           <h1 className="text-5xl mb-8 leading-tight animate-fade-in text-zinc-950 md:text-6xl font-semibold my-0 py-0 px-0">
@@ -152,6 +129,35 @@ const HeroIndex = () => {
               </div>
               <div className="text-sm text-zinc-700">Success Rate</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Test Preparation Section - Moved Down */}
+      <section id="tests" className="relative z-10 px-8 py-20">
+        <div className="max-w-6xl mx-auto">
+          {/* Test Cards Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {testTypes.map((test, index) => (
+              <Card 
+                key={index} 
+                className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" 
+                onClick={() => navigate(test.path)}
+              >
+                <CardHeader>
+                  
+                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-base">
+                    {test.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  
+                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
+                    Start Practice
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>

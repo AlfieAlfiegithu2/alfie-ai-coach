@@ -91,7 +91,7 @@ const HeroIndex = () => {
 
       {/* Hero Section */}
       <section className="relative z-10 px-8 py-32 text-center">
-        <div className="max-w-4xl mx-auto mt-16">
+        <div className="max-w-4xl mx-auto mt-32">
           {/* Hero Badge */}
           
           

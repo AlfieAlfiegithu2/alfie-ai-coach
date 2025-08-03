@@ -939,6 +939,7 @@ export type Database = {
           preferred_name: string | null
           target_deadline: string | null
           target_score: number | null
+          target_scores: Json | null
           target_test_type: string | null
           updated_at: string
           user_id: string
@@ -949,6 +950,7 @@ export type Database = {
           preferred_name?: string | null
           target_deadline?: string | null
           target_score?: number | null
+          target_scores?: Json | null
           target_test_type?: string | null
           updated_at?: string
           user_id: string
@@ -959,6 +961,7 @@ export type Database = {
           preferred_name?: string | null
           target_deadline?: string | null
           target_score?: number | null
+          target_scores?: Json | null
           target_test_type?: string | null
           updated_at?: string
           user_id?: string

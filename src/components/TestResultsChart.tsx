@@ -24,7 +24,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
   const [dateRange, setDateRange] = useState('1week');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userPreferences, setUserPreferences] = useState<{ target_score?: number; target_deadline?: string } | null>(null);
+  const [userPreferences, setUserPreferences] = useState<{ target_score?: number; target_deadline?: string; target_scores?: any } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -39,7 +39,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     try {
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('target_score, target_deadline')
+        .select('target_score, target_deadline, target_scores')
         .eq('user_id', user.id)
         .single();
 
@@ -202,7 +202,17 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                     activeDot={{ r: 6, stroke: 'rgb(59, 130, 246)', strokeWidth: 2 }}
                   />
                   {/* Target Score Line */}
-                  {userPreferences?.target_score && (
+                  {userPreferences?.target_scores && selectedSkill !== 'overall' ? (
+                    <Line 
+                      type="monotone"
+                      dataKey={() => (userPreferences.target_scores as any)?.[selectedSkill] || userPreferences.target_score}
+                      stroke="rgb(239, 68, 68)" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      activeDot={false}
+                    />
+                  ) : userPreferences?.target_score && (
                     <Line 
                       type="monotone"
                       dataKey={() => userPreferences.target_score}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar } from "lucide-react";
+import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import LightRays from "@/components/animations/LightRays";
 import SettingsModal from "@/components/SettingsModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
+import SectionScoreSelector from "@/components/SectionScoreSelector";
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -185,6 +186,12 @@ const Dashboard = () => {
             <button onClick={() => navigate('/vocabulary')} className="text-slate-600 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>My Vocab</button>
+            <button onClick={() => navigate('/')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
+            fontFamily: 'Inter, sans-serif'
+          }}>
+              <Home className="w-4 h-4" />
+              Home
+            </button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Settings Button */}
@@ -254,6 +261,9 @@ const Dashboard = () => {
                 
               </div>
 
+              {/* Section Score Selector */}
+              <SectionScoreSelector onScoresUpdate={() => setRefreshKey(prev => prev + 1)} />
+              
               {/* Test Results Chart */}
               <TestResultsChart selectedSkill={selectedSkill} selectedTestType={selectedTestType} />
               

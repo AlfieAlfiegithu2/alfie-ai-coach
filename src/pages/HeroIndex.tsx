@@ -91,14 +91,13 @@ const HeroIndex = () => {
         <div className="max-w-4xl mx-auto bg-white/10 border border-white/20 backdrop-blur-xl rounded-xl p-8">
           {/* Headline with Animation */}
           <h1 className="text-5xl mb-8 leading-tight text-zinc-950 md:text-6xl font-light my-0 py-0 px-0">
-            <TypewriterText text="Unlock Your Potential. Master English with AI." speed={80} />
+            <TypewriterText text="Master English with AI" speed={80} />
           </h1>
           
           {/* Subheadline */}
-          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-lg text-sky-950">
-            Go beyond practice tests. Get personalized coaching, track your progress, 
-            and reach your target score with confidence.
-          </p>
+          <div className="mb-12 max-w-3xl mx-auto leading-relaxed text-lg text-sky-950">
+            <TypewriterText text="Go beyond practice tests. Get personalized coaching, track your progress, and reach your target score with confidence." speed={30} />
+          </div>
 
           {/* Action Button */}
           <div className="mb-16">
@@ -108,23 +107,23 @@ const HeroIndex = () => {
           {/* Social Proof Metrics with Animated Counters */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-2xl font-bold text-zinc-900 mb-2">
+              <div className="text-2xl font-light text-zinc-900 mb-2">
                 <AnimatedCounter endValue={50} suffix="K+" />
               </div>
               <div className="text-sm text-zinc-700">Active Learners</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-zinc-900 mb-2">
+              <div className="text-2xl font-light text-zinc-900 mb-2">
                 <AnimatedCounter endValue={1000} suffix="+" />
               </div>
               <div className="text-sm text-zinc-700">Practice Tests</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-zinc-900 mb-2">Real-time</div>
+              <div className="text-2xl font-light text-zinc-900 mb-2">Real-time</div>
               <div className="text-sm text-zinc-700">AI Feedback</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-zinc-900 mb-2">
+              <div className="text-2xl font-light text-zinc-900 mb-2">
                 <AnimatedCounter endValue={95} suffix="%" />
               </div>
               <div className="text-sm text-zinc-700">Success Rate</div>

@@ -158,19 +158,19 @@ const IELTSPortal = () => {
     console.log(`🧪 Opening IELTS test ${testId}`);
     navigate(`/ielts-test-modules/${testId}`);
   };
-  return <div className="min-h-screen relative">
+  return <div className="min-h-screen relative bg-gray-900">
       <LightRays 
         raysOrigin="top-center"
-        raysColor="#4A90E2"
+        raysColor="#1E3A8A"
         raysSpeed={0.5}
         lightSpread={2}
         rayLength={1.5}
         pulsating={false}
         fadeDistance={1.2}
-        saturation={0.8}
+        saturation={0.6}
         followMouse={true}
         mouseInfluence={0.05}
-        noiseAmount={0.1}
+        noiseAmount={0.15}
         distortion={0.1}
         className="absolute inset-0"
       />
@@ -182,19 +182,19 @@ const IELTSPortal = () => {
         {/* Skills Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">IELTS Practice</h2>
-            <Button variant="outline" size="sm">View All</Button>
+            <h2 className="text-xl font-semibold text-white">IELTS Practice</h2>
+            <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">View All</Button>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map(skill => {
               const Icon = skill.icon;
-              return <Card key={skill.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/15 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
+              return <Card key={skill.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
                   <CardHeader className="pb-4">
                     <div className="flex items-center gap-3 mb-3 my-[3px]">
                       
                       <div>
-                        <CardTitle className="text-lg">{skill.name}</CardTitle>
-                        <div className="text-sm text-gray-500">Band 6.8</div>
+                        <CardTitle className="text-lg text-white">{skill.name}</CardTitle>
+                        <div className="text-sm text-gray-300">Band 6.8</div>
                       </div>
                     </div>
                     
@@ -202,27 +202,27 @@ const IELTSPortal = () => {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Difficulty:</span>
-                        <Badge variant="secondary">{skill.difficulty}</Badge>
+                        <span className="text-gray-300">Difficulty:</span>
+                        <Badge variant="secondary" className="bg-white/10 text-white border-white/20">{skill.difficulty}</Badge>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Duration:</span>
-                        <span className="font-medium">{skill.timeLimit}</span>
+                        <span className="text-gray-300">Duration:</span>
+                        <span className="font-medium text-white">{skill.timeLimit}</span>
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-text-primary">Question Types:</p>
+                      <p className="text-sm font-medium text-white">Question Types:</p>
                       <div className="space-y-1">
-                        {skill.sections.slice(0, 2).map((section, index) => <p key={index} className="text-xs text-text-secondary">• {section}</p>)}
-                        {skill.sections.length > 2 && <p className="text-xs text-text-tertiary">+ {skill.sections.length - 2} more</p>}
+                        {skill.sections.slice(0, 2).map((section, index) => <p key={index} className="text-xs text-gray-300">• {section}</p>)}
+                        {skill.sections.length > 2 && <p className="text-xs text-gray-400">+ {skill.sections.length - 2} more</p>}
                       </div>
                     </div>
 
                     <Button onClick={e => {
                     e.stopPropagation();
                     handleSkillPractice(skill.id);
-                  }} size="sm" className="w-full btn-primary bg-slate-500 hover:bg-slate-400">
+                  }} size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
                       Practice {skill.name}
                     </Button>
                   </CardContent>
@@ -234,22 +234,22 @@ const IELTSPortal = () => {
         {/* Practice Tests Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">IELTS Mock Test</h2>
-            <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+            <h2 className="text-xl font-semibold text-white">IELTS Mock Test</h2>
+            <Badge variant="outline" className="bg-blue-900/50 text-blue-200 border-blue-400/30">
               {availableTests.length} Available
             </Badge>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {availableTests.slice(0, 8).map(test => <Card key={test.test_number || test.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/15 transition-all duration-200 aspect-square flex flex-col">
+            {availableTests.slice(0, 8).map(test => <Card key={test.test_number || test.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 aspect-square flex flex-col">
                 <CardHeader className="pb-2 flex-shrink-0">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold">{test.test_name}</CardTitle>
+                    <CardTitle className="text-base font-semibold text-white">{test.test_name}</CardTitle>
                     
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2 flex-grow flex flex-col justify-center">
-                   <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full btn-primary bg-slate-500 hover:bg-slate-400">
+                   <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0 disabled:bg-gray-600 disabled:text-gray-300">
                      {test.comingSoon ? <span className="flex items-center gap-2">
                          <Clock className="w-4 h-4" />
                          Coming Soon

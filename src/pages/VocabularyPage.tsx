@@ -10,6 +10,7 @@ import StudentLayout from '@/components/StudentLayout';
 import VocabularyFlipCard from '@/components/VocabularyFlipCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 interface SavedWord {
@@ -23,6 +24,7 @@ interface SavedWord {
 
 const VocabularyPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredWords, setFilteredWords] = useState<SavedWord[]>([]);
@@ -223,16 +225,25 @@ const VocabularyPage = () => {
                   </p>
                 </div>
               </div>
-              {savedWords.length > 0 && (
+              <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  onClick={clearAll}
+                  onClick={() => navigate('/dashboard')}
                   className="text-black border-black/30 hover:bg-black/20"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear All
-                 </Button>
-               )}
+                  Back to Dashboard
+                </Button>
+                {savedWords.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    onClick={clearAll}
+                    className="text-black border-black/30 hover:bg-black/20"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear All
+                   </Button>
+                )}
+              </div>
              </div>
              
              {/* User's Native Language Display */}
@@ -272,7 +283,7 @@ const VocabularyPage = () => {
               <p className="text-black/70 mb-6">
                 Start reading passages and click on words to save them to your vocabulary list
               </p>
-              <Button onClick={() => window.history.back()} className="bg-white/20 hover:bg-white/30 text-black border-black/30">
+              <Button onClick={() => navigate('/reading')} className="bg-white/20 hover:bg-white/30 text-black border-black/30">
                 Start Reading Practice
               </Button>
             </CardContent>

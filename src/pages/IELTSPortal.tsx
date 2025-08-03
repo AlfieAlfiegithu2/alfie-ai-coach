@@ -180,7 +180,16 @@ const IELTSPortal = () => {
   };
 
   return (
-    <StudentLayout title="My IELTS Dashboard" showBackButton>
+    <div 
+      className="min-h-screen"
+      style={{
+        backgroundImage: `url('/lovable-uploads/b11f4d55-58d5-47a6-9d52-60e86704d82e.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
         {/* Dashboard Header */}
         <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
@@ -374,7 +383,8 @@ const IELTSPortal = () => {
           </div>
         </section>
       </div>
-    </StudentLayout>
+      </StudentLayout>
+    </div>
   );
 };
 

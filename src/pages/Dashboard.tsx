@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home } from "lucide-react";
+import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -185,12 +185,6 @@ const Dashboard = () => {
             <button onClick={() => navigate('/vocabulary')} className="text-slate-600 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>My Vocab</button>
-            <button onClick={() => navigate('/')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>
-              <Home className="w-4 h-4" />
-              Home
-            </button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Settings Button */}
@@ -386,9 +380,9 @@ const Dashboard = () => {
                               View Detailed Results <ChevronRight className="w-4 h-4" />
                             </button>
                           </div> : <div className="text-center py-6">
-                            <p className="text-slate-600 mb-4" style={{
+                            <p style={{
                         fontFamily: 'Inter, sans-serif'
-                      }}>
+                      }} className="mb-4 text-zinc-950 bg-stone-300 hover:bg-stone-200">
                               No {skill.toLowerCase()} tests taken yet
                             </p>
                             <button onClick={() => handleSkillPractice(skill)} className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{

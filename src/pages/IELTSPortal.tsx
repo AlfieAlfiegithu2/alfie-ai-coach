@@ -170,7 +170,7 @@ const IELTSPortal = () => {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-white">IELTS Practice</h2>
-            <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">View All</Button>
+            <Button variant="outline" size="sm" className="border-white/30 hover:bg-white/10 text-slate-800">View All</Button>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map(skill => {
@@ -240,9 +240,7 @@ const IELTSPortal = () => {
                         <p className="text-sm text-gray-300">Cambridge IELTS Test</p>
                       </div>
                     </div>
-                    {!test.comingSoon && <Badge variant="outline" className="bg-green-900/30 text-green-300 border-green-400/30">
-                        Available
-                      </Badge>}
+                    {!test.comingSoon}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">

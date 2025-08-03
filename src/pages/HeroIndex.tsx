@@ -95,7 +95,7 @@ const HeroIndex = () => {
           </h1>
           
           {/* Subheadline */}
-          <div className="mb-12 max-w-3xl mx-auto leading-relaxed text-lg text-sky-950">
+          <div className="mb-12 max-w-2xl mx-auto leading-relaxed text-lg text-sky-950">
             <TypewriterText text="Go beyond practice tests. Get personalized coaching, track your progress, and reach your target score with confidence." speed={30} />
           </div>
 

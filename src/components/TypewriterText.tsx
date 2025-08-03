@@ -24,11 +24,7 @@ export const TypewriterText = ({ text, speed = 50 }: TypewriterTextProps) => {
     <span>
       {displayText.split(' ').map((word, index) => (
         <span key={index}>
-          {word === 'AI' ? (
-            <span className="text-accent">{word}</span>
-          ) : (
-            word
-          )}
+          {word}
           {index < displayText.split(' ').length - 1 && ' '}
         </span>
       ))}

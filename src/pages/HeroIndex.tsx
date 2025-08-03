@@ -84,60 +84,11 @@ const HeroIndex = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative z-10 px-8 py-20 text-center">
-        <div className="max-w-4xl mx-auto my-0">
-          {/* Hero Badge */}
-          
-          
-          {/* Headline with Animation */}
-          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl mx-0 my-[17px] font-semibold">
-            Unlock Your Potential.<br />
-            Master English with AI.
-          </h1>
-          
-          {/* Subheadline */}
-          <p className="mb-12 max-w-3xl leading-relaxed text-zinc-900 text-lg px-[9px] mx-0 my-[27px]">
-            Go beyond practice tests. Get personalized coaching, track your progress, 
-            and reach your target score with confidence.
-          </p>
-
-          {/* CTA Buttons */}
-          
-
-          {/* Social Proof Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[{
-            label: "Active Learners",
-            value: "50K+"
-          }, {
-            label: "Practice Tests",
-            value: "1000+"
-          }, {
-            label: "AI Feedback",
-            value: "Real-time"
-          }, {
-            label: "Success Rate",
-            value: "95%"
-          }].map((metric, index) => <div key={index} className="text-center">
-              <div className="text-2xl font-bold text-zinc-900 mb-2">{metric.value}</div>
-              <div className="text-sm text-zinc-700">{metric.label}</div>
-            </div>)}
-          </div>
-        </div>
-      </section>
-
       {/* Test Preparation Section */}
       <section id="tests" className="relative z-10 px-8 py-20">
         <div className="max-w-6xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            
-            
-          </div>
-
           {/* Test Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
             {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" onClick={() => navigate(test.path)}>
                 <CardHeader>
                   
@@ -152,6 +103,47 @@ const HeroIndex = () => {
                   </Button>
                 </CardContent>
               </Card>)}
+          </div>
+
+          {/* Hero Section - Moved Down */}
+          <div className="max-w-4xl mx-auto my-0 text-center">
+            {/* Headline with Animation */}
+            <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl mx-0 my-[17px] font-semibold">
+              Unlock Your Potential.<br />
+              Master English with AI.
+            </h1>
+            
+            {/* Subheadline */}
+            <p className="mb-12 max-w-3xl leading-relaxed text-zinc-900 text-lg px-[9px] mx-0 my-[27px]">
+              Go beyond practice tests. Get personalized coaching, track your progress, 
+              and reach your target score with confidence.
+            </p>
+
+            {/* CTA Button */}
+            <Button size="lg" onClick={handleAuthAction} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg mb-12 transition-all duration-300">
+              <Play className="w-5 h-5 mr-2" />
+              {user ? 'Go to Dashboard' : 'Start Learning Today'}
+            </Button>
+
+            {/* Social Proof Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {[{
+              label: "Active Learners",
+              value: "50K+"
+            }, {
+              label: "Practice Tests",
+              value: "1000+"
+            }, {
+              label: "AI Feedback",
+              value: "Real-time"
+            }, {
+              label: "Success Rate",
+              value: "95%"
+            }].map((metric, index) => <div key={index} className="text-center">
+                <div className="text-2xl font-bold text-zinc-900 mb-2">{metric.value}</div>
+                <div className="text-sm text-zinc-700">{metric.label}</div>
+              </div>)}
+            </div>
           </div>
         </div>
       </section>

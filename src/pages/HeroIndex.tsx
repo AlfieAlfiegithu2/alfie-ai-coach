@@ -125,9 +125,7 @@ const HeroIndex = () => {
 
           {/* Action Button */}
           <div className="mb-16">
-            <Button size="lg" onClick={handleAuthAction} className="px-8 py-4 text-lg font-semibold bg-zinc-950 hover:bg-zinc-800 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-              {user ? "Continue Learning" : "Start Your Journey"}
-            </Button>
+            
           </div>
 
           {/* Social Proof Metrics with Animated Counters */}

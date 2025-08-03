@@ -91,13 +91,13 @@ const HeroIndex = () => {
           
           
           {/* Headline with Animation */}
-          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light mx-0 my-[250px]">
+          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light mx-0 my-[219px]">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>
           
           {/* Subheadline */}
-          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900 text-lg">
+          <p className="mb-12 max-w-3xl leading-relaxed text-zinc-900 text-lg px-[9px] mx-0 my-[27px]">
             Go beyond practice tests. Get personalized coaching, track your progress, 
             and reach your target score with confidence.
           </p>

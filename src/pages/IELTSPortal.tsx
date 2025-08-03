@@ -179,20 +179,14 @@ const IELTSPortal = () => {
               const Icon = skill.icon;
               return <Card key={skill.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/15 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
                   <CardHeader className="pb-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-12 h-12 rounded-xl ${skill.bgColor} flex items-center justify-center`}>
-                        <Icon className={`w-6 h-6 ${skill.color}`} />
-                      </div>
+                    <div className="flex items-center gap-3 mb-3 my-[3px]">
+                      
                       <div>
                         <CardTitle className="text-lg">{skill.name}</CardTitle>
                         <div className="text-sm text-gray-500">Band 6.8</div>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{
-                      width: '68%'
-                    }}></div>
-                    </div>
+                    
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -217,7 +211,7 @@ const IELTSPortal = () => {
                     <Button onClick={e => {
                     e.stopPropagation();
                     handleSkillPractice(skill.id);
-                  }} className="w-full btn-primary" size="sm">
+                  }} size="sm" className="w-full btn-primary bg-rose-400 hover:bg-rose-300">
                       Practice {skill.name}
                     </Button>
                   </CardContent>
@@ -240,14 +234,11 @@ const IELTSPortal = () => {
                 <CardHeader className="pb-2 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base font-semibold">{test.test_name}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Target className="w-5 h-5 text-primary" />
-                      {test.status === 'complete' && <Badge variant="default" className="text-xs">Available</Badge>}
-                    </div>
+                    
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2 flex-grow flex flex-col justify-center">
-                   <Button onClick={() => handleTestClick(test.id)} className="w-full btn-primary" size="sm" disabled={test.comingSoon}>
+                   <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full btn-primary bg-rose-400 hover:bg-rose-300">
                      {test.comingSoon ? <span className="flex items-center gap-2">
                          <Clock className="w-4 h-4" />
                          Coming Soon

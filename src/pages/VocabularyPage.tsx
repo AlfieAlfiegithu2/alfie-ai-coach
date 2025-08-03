@@ -214,7 +214,7 @@ const VocabularyPage = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-white/20">
-                  <BookOpen className="w-6 h-6 text-white" />
+                  <BookOpen className="w-6 h-6 text-black" />
                 </div>
                 <div>
                   <CardTitle className="text-2xl text-black">My Saved Vocabulary</CardTitle>
@@ -227,7 +227,7 @@ const VocabularyPage = () => {
                 <Button 
                   variant="outline" 
                   onClick={clearAll}
-                  className="text-white border-white/30 hover:bg-white/20"
+                  className="text-black border-black/30 hover:bg-black/20"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Clear All
@@ -249,12 +249,12 @@ const VocabularyPage = () => {
           {savedWords.length > 0 && (
             <CardContent>
               <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-white/50" />
+                <Search className="absolute left-3 top-3 w-4 h-4 text-black/50" />
                 <Input
                   placeholder="Search your vocabulary..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                  className="pl-10 bg-white/10 border-white/30 text-black placeholder:text-black/50"
                 />
               </div>
             </CardContent>
@@ -266,13 +266,13 @@ const VocabularyPage = () => {
           <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
             <CardContent className="text-center py-12">
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Languages className="w-8 h-8 text-white" />
+                <Languages className="w-8 h-8 text-black" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-white">No vocabulary saved yet</h3>
-              <p className="text-white/70 mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-black">No vocabulary saved yet</h3>
+              <p className="text-black/70 mb-6">
                 Start reading passages and click on words to save them to your vocabulary list
               </p>
-              <Button onClick={() => window.history.back()} className="bg-white/20 hover:bg-white/30 text-white border-white/30">
+              <Button onClick={() => window.history.back()} className="bg-white/20 hover:bg-white/30 text-black border-black/30">
                 Start Reading Practice
               </Button>
             </CardContent>
@@ -280,7 +280,7 @@ const VocabularyPage = () => {
         ) : filteredWords.length === 0 ? (
           <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
             <CardContent className="text-center py-8">
-              <p className="text-white/70">No words match your search</p>
+              <p className="text-black/70">No words match your search</p>
             </CardContent>
           </Card>
         ) : (
@@ -301,28 +301,28 @@ const VocabularyPage = () => {
           <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
             <CardContent className="pt-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-white">{savedWords.length}</div>
-                  <div className="text-sm text-white/70">Total Words</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-400">
-                    {new Set(savedWords.map(w => w.word.charAt(0).toUpperCase())).size}
-                  </div>
-                  <div className="text-sm text-white/70">Starting Letters</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-orange-400">
-                    {Math.round(savedWords.reduce((acc, word) => acc + word.word.length, 0) / savedWords.length) || 0}
-                  </div>
-                  <div className="text-sm text-white/70">Avg. Length</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-400">
-                    {savedWords.filter(w => new Date(w.savedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
-                  </div>
-                  <div className="text-sm text-white/70">This Week</div>
-                </div>
+                 <div>
+                   <div className="text-2xl font-bold text-black">{savedWords.length}</div>
+                   <div className="text-sm text-black/70">Total Words</div>
+                 </div>
+                 <div>
+                   <div className="text-2xl font-bold text-black">
+                     {new Set(savedWords.map(w => w.word.charAt(0).toUpperCase())).size}
+                   </div>
+                   <div className="text-sm text-black/70">Starting Letters</div>
+                 </div>
+                 <div>
+                   <div className="text-2xl font-bold text-black">
+                     {Math.round(savedWords.reduce((acc, word) => acc + word.word.length, 0) / savedWords.length) || 0}
+                   </div>
+                   <div className="text-sm text-black/70">Avg. Length</div>
+                 </div>
+                 <div>
+                   <div className="text-2xl font-bold text-black">
+                     {savedWords.filter(w => new Date(w.savedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
+                   </div>
+                   <div className="text-sm text-black/70">This Week</div>
+                 </div>
               </div>
             </CardContent>
           </Card>

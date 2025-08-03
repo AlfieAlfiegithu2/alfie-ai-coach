@@ -158,7 +158,7 @@ const IELTSPortal = () => {
     navigate(`/ielts-test-modules/${testId}`);
   };
   return <div className="min-h-screen" style={{
-    backgroundImage: `url('/lovable-uploads/b11f4d55-58d5-47a6-9d52-60e86704d82e.png')`,
+    backgroundImage: `url('/lovable-uploads/44e15319-2a4d-4bf1-950b-ef802a55ae19.png')`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat'

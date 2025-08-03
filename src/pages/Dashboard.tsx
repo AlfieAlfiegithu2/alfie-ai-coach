@@ -89,12 +89,9 @@ const Dashboard = () => {
       }
       try {
         // Fetch user preferences
-        const { data: preferences } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-        
+        const {
+          data: preferences
+        } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).single();
         if (preferences) {
           setUserPreferences(preferences);
           setSelectedTestType(preferences.target_test_type || 'IELTS');
@@ -215,46 +212,37 @@ const Dashboard = () => {
 
               {/* Skills Selection Card */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
-                {skills.map((skill) => {
-                  const isSelected = selectedSkill === skill.toLowerCase();
-                  const getIcon = (skillName: string) => {
-                    switch(skillName) {
-                      case 'Reading': return BookOpen;
-                      case 'Listening': return Volume2;
-                      case 'Writing': return PenTool;
-                      case 'Speaking': return MessageSquare;
-                      default: return BookOpen;
-                    }
-                  };
-                  const Icon = getIcon(skill);
-                  
-                  return (
-                    <button
-                      key={skill}
-                      onClick={() => setSelectedSkill(skill.toLowerCase())}
-                      className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${
-                        isSelected 
-                          ? 'bg-white/20 border-white/40 shadow-lg' 
-                          : 'bg-white/10 border-white/20 hover:bg-white/15'
-                      }`}
-                    >
+                {skills.map(skill => {
+                const isSelected = selectedSkill === skill.toLowerCase();
+                const getIcon = (skillName: string) => {
+                  switch (skillName) {
+                    case 'Reading':
+                      return BookOpen;
+                    case 'Listening':
+                      return Volume2;
+                    case 'Writing':
+                      return PenTool;
+                    case 'Speaking':
+                      return MessageSquare;
+                    default:
+                      return BookOpen;
+                  }
+                };
+                const Icon = getIcon(skill);
+                return <button key={skill} onClick={() => setSelectedSkill(skill.toLowerCase())} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
                       <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
-                      <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+                      <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
                         {skill}
                       </span>
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => setSelectedSkill('overall')}
-                  className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${
-                    selectedSkill === 'overall'
-                      ? 'bg-white/20 border-white/40 shadow-lg' 
-                      : 'bg-white/10 border-white/20 hover:bg-white/15'
-                  }`}
-                >
+                    </button>;
+              })}
+                <button onClick={() => setSelectedSkill('overall')} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${selectedSkill === 'overall' ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
                   <BarChart3 className={`w-5 h-5 lg:w-6 lg:h-6 ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} />
-                  <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+                  <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
+                  fontFamily: 'Inter, sans-serif'
+                }}>
                     Overall
                   </span>
                 </button>
@@ -262,14 +250,8 @@ const Dashboard = () => {
 
               {/* Target Score Display */}
               <div className="flex flex-col gap-2">
-                <span className="text-6xl sm:text-7xl lg:text-[90px] leading-none text-slate-800 font-semibold" style={{
-                fontFamily: 'Bricolage Grotesque, sans-serif'
-              }}>
-                  {userPreferences?.target_score || convertToIELTSScore(userStats?.avgScore || 0)}
-                </span>
-                <p className="text-base lg:text-lg text-slate-600 -mt-2 lg:-mt-4" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Target {selectedTestType} Score</p>
+                
+                
               </div>
 
               {/* Test Results Chart */}
@@ -330,84 +312,87 @@ const Dashboard = () => {
               <div className="grid xl:grid-cols-1 gap-4 lg:gap-6">
                 {/* Test Results and Feedback Cards */}
                 <div className="flex flex-col gap-4 lg:gap-6">
-                  {skills.map((skill) => {
-                    const getIcon = (skillName: string) => {
-                      switch(skillName) {
-                        case 'Reading': return BookOpen;
-                        case 'Listening': return Volume2;
-                        case 'Writing': return PenTool;
-                        case 'Speaking': return MessageSquare;
-                        default: return BookOpen;
-                      }
-                    };
-                    const Icon = getIcon(skill);
-                    
-                    // Get recent test results for this skill
-                    const skillResults = testResults.filter(result => 
-                      result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase())
-                    ).slice(0, 3);
+                  {skills.map(skill => {
+                  const getIcon = (skillName: string) => {
+                    switch (skillName) {
+                      case 'Reading':
+                        return BookOpen;
+                      case 'Listening':
+                        return Volume2;
+                      case 'Writing':
+                        return PenTool;
+                      case 'Speaking':
+                        return MessageSquare;
+                      default:
+                        return BookOpen;
+                    }
+                  };
+                  const Icon = getIcon(skill);
 
-                    const averageScore = skillResults.length > 0 
-                      ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length)
-                      : 0;
-
-                    return (
-                      <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
+                  // Get recent test results for this skill
+                  const skillResults = testResults.filter(result => result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase())).slice(0, 3);
+                  const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
+                  return <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                         <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold mb-3 lg:mb-4 text-slate-800" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>
+                      fontFamily: 'Inter, sans-serif'
+                    }}>
                           <Icon className="w-4 h-4" />
                           {skill} Results & Feedback
                         </h3>
                         
-                        {skillResults.length > 0 ? (
-                          <div className="space-y-3">
+                        {skillResults.length > 0 ? <div className="space-y-3">
                             <div className="grid grid-cols-3 gap-3 text-xs text-slate-600 mb-4">
                               <div>
-                                <p className="font-medium text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                <p className="font-medium text-slate-800" style={{
+                            fontFamily: 'Inter, sans-serif'
+                          }}>
                                   Tests Taken:
                                 </p>
-                                <p style={{ fontFamily: 'Inter, sans-serif' }}>{skillResults.length}</p>
+                                <p style={{
+                            fontFamily: 'Inter, sans-serif'
+                          }}>{skillResults.length}</p>
                               </div>
                               <div>
-                                <p className="font-medium text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                <p className="font-medium text-slate-800" style={{
+                            fontFamily: 'Inter, sans-serif'
+                          }}>
                                   Average Score:
                                 </p>
-                                <p style={{ fontFamily: 'Inter, sans-serif' }}>{averageScore}%</p>
+                                <p style={{
+                            fontFamily: 'Inter, sans-serif'
+                          }}>{averageScore}%</p>
                               </div>
                               <div>
-                                <p className="font-medium text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                <p className="font-medium text-slate-800" style={{
+                            fontFamily: 'Inter, sans-serif'
+                          }}>
                                   Latest Score:
                                 </p>
-                                <p style={{ fontFamily: 'Inter, sans-serif' }}>{skillResults[0]?.score_percentage || 0}%</p>
+                                <p style={{
+                            fontFamily: 'Inter, sans-serif'
+                          }}>{skillResults[0]?.score_percentage || 0}%</p>
                               </div>
                             </div>
                             
-                            <button 
-                              onClick={() => handleSkillPractice(skill)} 
-                              className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" 
-                              style={{ fontFamily: 'Inter, sans-serif' }}
-                            >
+                            <button onClick={() => handleSkillPractice(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
+                        fontFamily: 'Inter, sans-serif'
+                      }}>
                               View Detailed Results <ChevronRight className="w-4 h-4" />
                             </button>
-                          </div>
-                        ) : (
-                          <div className="text-center py-6">
-                            <p className="text-slate-600 mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          </div> : <div className="text-center py-6">
+                            <p className="text-slate-600 mb-4" style={{
+                        fontFamily: 'Inter, sans-serif'
+                      }}>
                               No {skill.toLowerCase()} tests taken yet
                             </p>
-                            <button 
-                              onClick={() => handleSkillPractice(skill)} 
-                              className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" 
-                              style={{ fontFamily: 'Inter, sans-serif' }}
-                            >
+                            <button onClick={() => handleSkillPractice(skill)} className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
+                        fontFamily: 'Inter, sans-serif'
+                      }}>
                               Start First Test <ChevronRight className="w-4 h-4" />
                             </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          </div>}
+                      </div>;
+                })}
                 </div>
 
                 {/* Quick Actions */}

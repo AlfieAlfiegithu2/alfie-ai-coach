@@ -112,24 +112,20 @@ const HeroIndex = () => {
       <section className="relative z-10 px-8 py-32 text-center">
         <div className="max-w-4xl mx-auto">
           {/* Headline with Animation */}
-          <h1 className="text-5xl mb-8 leading-tight animate-fade-in text-zinc-950 md:text-6xl font-semibold">
+          <h1 className="text-5xl mb-8 leading-tight animate-fade-in text-zinc-950 md:text-6xl font-semibold my-0 py-0 px-0">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>
           
           {/* Subheadline */}
-          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900 text-lg">
+          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-lg text-sky-950">
             Go beyond practice tests. Get personalized coaching, track your progress, 
             and reach your target score with confidence.
           </p>
 
           {/* Action Button */}
           <div className="mb-16">
-            <Button 
-              size="lg"
-              onClick={handleAuthAction}
-              className="px-8 py-4 text-lg font-semibold bg-zinc-950 hover:bg-zinc-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-            >
+            <Button size="lg" onClick={handleAuthAction} className="px-8 py-4 text-lg font-semibold bg-zinc-950 hover:bg-zinc-800 text-white shadow-lg hover:shadow-xl transition-all duration-300">
               {user ? "Continue Learning" : "Start Your Journey"}
             </Button>
           </div>

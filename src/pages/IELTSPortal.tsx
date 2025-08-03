@@ -267,20 +267,7 @@ const IELTSPortal = () => {
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {test.modules?.includes('reading') && <Badge variant="secondary" className="bg-blue-900/40 text-blue-200 border-blue-400/30">
-                        <BookOpen className="w-3 h-3 mr-1" />
-                        Reading
-                      </Badge>}
-                    {test.modules?.includes('writing') && <Badge variant="secondary" className="bg-purple-900/40 text-purple-200 border-purple-400/30">
-                        <PenTool className="w-3 h-3 mr-1" />
-                        Writing
-                      </Badge>}
-                    {test.modules?.includes('speaking') && <Badge variant="secondary" className="bg-green-900/40 text-green-200 border-green-400/30">
-                        <MessageSquare className="w-3 h-3 mr-1" />
-                        Speaking
-                      </Badge>}
-                  </div>
+                  
 
                   <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full text-white border-0 disabled:text-gray-300 mt-4 transition-colors bg-zinc-700 hover:bg-zinc-600">
                     {test.comingSoon ? <span className="flex items-center gap-2">

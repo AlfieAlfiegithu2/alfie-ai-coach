@@ -88,8 +88,10 @@ export default {
 				'md': 'var(--shadow-md)',
 				'lg': 'var(--shadow-lg)',
 				'xl': 'var(--shadow-xl)',
-				'glow-blue': 'var(--shadow-glow-blue)',
-				'glow-green': 'var(--shadow-glow-green)',
+				'glass': 'var(--shadow-glass)',
+				'glass-strong': 'var(--shadow-glass-strong)',
+				'blue-glow': 'var(--shadow-blue-glow)',
+				'blue-glow-strong': 'var(--shadow-blue-glow-strong)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

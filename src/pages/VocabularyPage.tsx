@@ -89,20 +89,25 @@ const VocabularyPage = () => {
   const translateWord = async (wordId: string, word: string) => {
     setTranslating(wordId);
     try {
+      // Get the language code from the selected language name
+      const selectedLang = languages.find(lang => lang.name === selectedLanguage);
+      const targetLangCode = selectedLang?.code || 'es';
+
       const { data, error } = await supabase.functions.invoke('translation-service', {
         body: {
           text: word,
-          targetLanguage: selectedLanguage.toLowerCase(),
-          sourceLanguage: 'en'
+          targetLang: targetLangCode,
+          sourceLang: 'en'
         }
       });
 
       if (error) throw error;
 
-      if (data?.translation) {
+      // Fix response parsing - the translation is nested in data.result.translation
+      if (data?.success && data?.result?.translation) {
         const updatedWords = savedWords.map(w => 
           w.id === wordId 
-            ? { ...w, translation: data.translation }
+            ? { ...w, translation: data.result.translation }
             : w
         );
         setSavedWords(updatedWords);

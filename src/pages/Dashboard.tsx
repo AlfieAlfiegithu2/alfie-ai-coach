@@ -177,7 +177,7 @@ const Dashboard = () => {
     if (percentage >= 20) return "1.5";
     return "1.0";
   };
-  return <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 pt-6 pr-4 pb-6 pl-4">
+  return <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
       {/* Background Image */}
       <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
       backgroundImage: "url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/44dea03b-7cbb-41b6-934f-6482f1fdf2e3_3840w.jpg')"
@@ -196,9 +196,9 @@ const Dashboard = () => {
             <a href="#" className="text-slate-800 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>Dashboard</a>
-            
-            
-            
+            <button onClick={() => navigate('/vocabulary-page')} className="text-slate-600 hover:text-blue-600 transition" style={{
+            fontFamily: 'Inter, sans-serif'
+          }}>My Vocab</button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">
             {/* User Avatar */}

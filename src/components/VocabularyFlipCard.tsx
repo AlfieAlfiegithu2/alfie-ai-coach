@@ -39,6 +39,7 @@ const VocabularyFlipCard = ({ word, onRemove, onTranslate, selectedLanguage = 'S
           </h3>
         </div>
 
+        {/* Back Side - Translation */}
         <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-xl bg-white/90 border border-white/40 backdrop-blur-xl flex items-center justify-center shadow-soft">
           {needsTranslation ? (
             <div className="text-center">

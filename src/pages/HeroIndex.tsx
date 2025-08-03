@@ -91,7 +91,7 @@ const HeroIndex = () => {
           
           
           {/* Headline with Animation */}
-          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light mx-0 my-[17px]">
+          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl mx-0 my-[17px] font-semibold">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>

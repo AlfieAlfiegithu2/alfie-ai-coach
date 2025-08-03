@@ -155,9 +155,9 @@ const CommunityPage = () => {
       }}>
           Study Community
         </h1>
-        <Button onClick={() => navigate('/')} variant="ghost" className="text-slate-600 hover:text-slate-800 hover:bg-white/10 flex items-center gap-2" style={{
+        <Button onClick={() => navigate('/')} variant="ghost" style={{
         fontFamily: 'Inter, sans-serif'
-      }}>
+      }} className="hover:bg-white/10 flex items-center gap-2 text-slate-950">
           <Home className="w-4 h-4" />
           Home
         </Button>

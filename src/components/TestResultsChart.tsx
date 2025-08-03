@@ -24,12 +24,35 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
   const [dateRange, setDateRange] = useState('1week');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userPreferences, setUserPreferences] = useState<{ target_score?: number; target_deadline?: string } | null>(null);
 
   useEffect(() => {
     if (user) {
       loadTestResults();
+      loadUserPreferences();
     }
   }, [user, dateRange, selectedSkill, selectedTestType]);
+
+  const loadUserPreferences = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('target_score, target_deadline')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading user preferences:', error);
+        return;
+      }
+
+      setUserPreferences(data);
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  };
 
   const loadTestResults = async () => {
     if (!user) return;
@@ -75,19 +98,42 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     }
   };
 
+  // Convert percentage to IELTS band score
+  const convertToIELTSScore = (percentage: number): number => {
+    if (percentage >= 95) return 9;
+    if (percentage >= 90) return 8.5;
+    if (percentage >= 85) return 8;
+    if (percentage >= 80) return 7.5;
+    if (percentage >= 75) return 7;
+    if (percentage >= 70) return 6.5;
+    if (percentage >= 65) return 6;
+    if (percentage >= 60) return 5.5;
+    if (percentage >= 55) return 5;
+    if (percentage >= 50) return 4.5;
+    if (percentage >= 45) return 4;
+    if (percentage >= 40) return 3.5;
+    if (percentage >= 35) return 3;
+    if (percentage >= 30) return 2.5;
+    if (percentage >= 25) return 2;
+    if (percentage >= 20) return 1.5;
+    if (percentage >= 15) return 1;
+    if (percentage >= 10) return 0.5;
+    return 0;
+  };
+
   const chartData = testResults.map((result, index) => ({
     test: `Test ${index + 1}`,
-    score: result.score_percentage || 0,
+    score: convertToIELTSScore(result.score_percentage || 0),
     date: format(new Date(result.created_at), 'MMM dd'),
     type: result.test_type
   }));
 
   const averageScore = testResults.length > 0 
-    ? Math.round(testResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / testResults.length)
+    ? convertToIELTSScore(testResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / testResults.length)
     : 0;
 
   const improvement = testResults.length > 1
-    ? Math.round((testResults[testResults.length - 1]?.score_percentage || 0) - (testResults[0]?.score_percentage || 0))
+    ? convertToIELTSScore(testResults[testResults.length - 1]?.score_percentage || 0) - convertToIELTSScore(testResults[0]?.score_percentage || 0)
     : 0;
 
   return (
@@ -133,8 +179,9 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   <YAxis 
                     stroke="rgb(71, 85, 105)"
                     fontSize={12}
-                    domain={['dataMin - 5', 'dataMax + 5']}
-                    tickFormatter={(value) => `${Math.round(value)}%`}
+                    domain={[0, 9]}
+                    ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                    tickFormatter={(value) => `${value}`}
                   />
                   <Tooltip 
                     contentStyle={{
@@ -143,7 +190,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                       borderRadius: '8px',
                       backdropFilter: 'blur(12px)'
                     }}
-                    formatter={(value: number, name: string) => [`${value}%`, 'Score']}
+                    formatter={(value: number, name: string) => [`${value}`, 'IELTS Band']}
                     labelFormatter={(label) => `${label}`}
                   />
                   <Line 
@@ -154,6 +201,18 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                     dot={{ fill: 'rgb(59, 130, 246)', strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6, stroke: 'rgb(59, 130, 246)', strokeWidth: 2 }}
                   />
+                  {/* Target Score Line */}
+                  {userPreferences?.target_score && (
+                    <Line 
+                      type="monotone"
+                      dataKey={() => userPreferences.target_score}
+                      stroke="rgb(239, 68, 68)" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      activeDot={false}
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -170,7 +229,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
               </div>
               <div className="text-center">
                 <p className="text-2xl font-semibold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                  {averageScore}%
+                  {averageScore.toFixed(1)}
                 </p>
                 <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
                   Average Score
@@ -178,7 +237,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
               </div>
               <div className="text-center">
                 <p className={`text-2xl font-semibold ${improvement >= 0 ? 'text-green-600' : 'text-red-600'}`} style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                  {improvement > 0 ? '+' : ''}{improvement}%
+                  {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}
                 </p>
                 <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
                   Improvement

@@ -12,6 +12,7 @@ import DailyChallenge from "@/components/DailyChallenge";
 import LightRays from "@/components/animations/LightRays";
 import SettingsModal from "@/components/SettingsModal";
 import TestResultsChart from "@/components/TestResultsChart";
+import CountdownTimer from "@/components/CountdownTimer";
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -273,6 +274,9 @@ const Dashboard = () => {
 
               {/* Test Results Chart */}
               <TestResultsChart selectedSkill={selectedSkill} selectedTestType={selectedTestType} />
+              
+              {/* Countdown Timer */}
+              <CountdownTimer targetDate={userPreferences?.target_deadline || null} />
 
               {/* Analytics Card */}
               <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">

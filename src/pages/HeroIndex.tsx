@@ -7,6 +7,7 @@ import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Glo
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
 const HeroIndex = () => {
   const navigate = useNavigate();
   const {
@@ -84,58 +85,9 @@ const HeroIndex = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative z-10 px-8 py-20 text-center">
-        <div className="max-w-4xl mx-auto my-0">
-          {/* Hero Badge */}
-          
-          
-          {/* Headline with Animation */}
-          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl mx-0 my-[17px] font-semibold">
-            Unlock Your Potential.<br />
-            Master English with AI.
-          </h1>
-          
-          {/* Subheadline */}
-          <p className="mb-12 max-w-3xl leading-relaxed text-zinc-900 text-lg px-[9px] mx-0 my-[27px]">
-            Go beyond practice tests. Get personalized coaching, track your progress, 
-            and reach your target score with confidence.
-          </p>
-
-          {/* CTA Buttons */}
-          
-
-          {/* Social Proof Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[{
-            label: "Active Learners",
-            value: "50K+"
-          }, {
-            label: "Practice Tests",
-            value: "1000+"
-          }, {
-            label: "AI Feedback",
-            value: "Real-time"
-          }, {
-            label: "Success Rate",
-            value: "95%"
-          }].map((metric, index) => <div key={index} className="text-center">
-              <div className="text-2xl font-bold text-zinc-900 mb-2">{metric.value}</div>
-              <div className="text-sm text-zinc-700">{metric.label}</div>
-            </div>)}
-          </div>
-        </div>
-      </section>
-
-      {/* Test Preparation Section */}
-      <section id="tests" className="relative z-10 px-8 py-20">
+      {/* Test Preparation Section - Moved Up */}
+      <section id="tests" className="relative z-10 px-8 py-20 mt-16">
         <div className="max-w-6xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            
-            
-          </div>
-
           {/* Test Cards Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" onClick={() => navigate(test.path)}>
@@ -155,6 +107,61 @@ const HeroIndex = () => {
           </div>
         </div>
       </section>
+
+      {/* Hero Section - Moved Down */}
+      <section className="relative z-10 px-8 py-32 text-center">
+        <div className="max-w-4xl mx-auto">
+          {/* Headline with Animation */}
+          <h1 className="text-5xl mb-8 leading-tight animate-fade-in text-zinc-950 md:text-6xl font-semibold">
+            Unlock Your Potential.<br />
+            Master English with AI.
+          </h1>
+          
+          {/* Subheadline */}
+          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900 text-lg">
+            Go beyond practice tests. Get personalized coaching, track your progress, 
+            and reach your target score with confidence.
+          </p>
+
+          {/* Action Button */}
+          <div className="mb-16">
+            <Button 
+              size="lg"
+              onClick={handleAuthAction}
+              className="px-8 py-4 text-lg font-semibold bg-zinc-950 hover:bg-zinc-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              {user ? "Continue Learning" : "Start Your Journey"}
+            </Button>
+          </div>
+
+          {/* Social Proof Metrics with Animated Counters */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-zinc-900 mb-2">
+                <AnimatedCounter endValue={50} suffix="K+" />
+              </div>
+              <div className="text-sm text-zinc-700">Active Learners</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-zinc-900 mb-2">
+                <AnimatedCounter endValue={1000} suffix="+" />
+              </div>
+              <div className="text-sm text-zinc-700">Practice Tests</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-zinc-900 mb-2">Real-time</div>
+              <div className="text-sm text-zinc-700">AI Feedback</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-zinc-900 mb-2">
+                <AnimatedCounter endValue={95} suffix="%" />
+              </div>
+              <div className="text-sm text-zinc-700">Success Rate</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* Community Section */}
       <section id="community" className="relative z-10 px-8 py-20 bg-black/20 backdrop-blur-sm">

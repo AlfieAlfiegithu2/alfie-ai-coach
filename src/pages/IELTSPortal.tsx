@@ -162,17 +162,17 @@ const IELTSPortal = () => {
       <LightRays 
         raysOrigin="top-center"
         raysColor="#3B82F6"
-        raysSpeed={0.8}
-        lightSpread={1.5}
-        rayLength={1.8}
+        raysSpeed={0.6}
+        lightSpread={2.5}
+        rayLength={1.2}
         pulsating={false}
-        fadeDistance={1.0}
-        saturation={0.7}
+        fadeDistance={1.5}
+        saturation={0.4}
         followMouse={true}
-        mouseInfluence={0.08}
-        noiseAmount={0.05}
-        distortion={0.05}
-        className="absolute inset-0 z-0"
+        mouseInfluence={0.03}
+        noiseAmount={0.15}
+        distortion={0.02}
+        className="absolute inset-0 z-0 opacity-60"
       />
       <div className="relative z-10">
       <StudentLayout title="My IELTS Dashboard" showBackButton>

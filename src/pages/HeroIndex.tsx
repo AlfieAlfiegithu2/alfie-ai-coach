@@ -109,11 +109,11 @@ const HeroIndex = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button size="lg" onClick={handleAuthAction} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Button size="lg" onClick={handleAuthAction} className="text-white px-8 py-4 text-lg font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-zinc-500 hover:bg-zinc-400">
               <Play className="w-5 h-5 mr-2" />
               Start Your Journey
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-white/30 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm px-8 py-4 text-lg font-medium rounded-lg transition-all duration-300 hover:scale-105">
+            <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-white/30 bg-white/10 hover:bg-white/20 backdrop-blur-sm px-8 py-4 text-lg font-medium rounded-lg transition-all duration-300 hover:scale-105 text-zinc-900">
               View Pricing
             </Button>
           </div>
@@ -133,8 +133,8 @@ const HeroIndex = () => {
             label: "Success Rate",
             value: "95%"
           }].map((metric, index) => <div key={index} className="text-center">
-                <div className="text-3xl font-bold text-white mb-2">{metric.value}</div>
-                <div className="text-zinc-400 text-sm">{metric.label}</div>
+                
+                
               </div>)}
           </div>
         </div>
@@ -145,10 +145,10 @@ const HeroIndex = () => {
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-zinc-900">
               Complete Test Preparation
             </h2>
-            <p className="text-xl text-zinc-300 max-w-2xl mx-auto">
+            <p className="text-xl max-w-2xl mx-auto text-zinc-900">
               Practice all test sections with Cambridge materials and AI-powered feedback
             </p>
           </div>
@@ -200,7 +200,7 @@ const HeroIndex = () => {
                 <CardContent className="pt-6 text-center">
                   <Users className="w-8 h-8 mx-auto mb-3 text-blue-400" />
                   <h3 className="text-white font-semibold mb-2">{group.title}</h3>
-                  <p className="text-zinc-400">{group.members} members</p>
+                  <p className="text-gray-200">{group.members} members</p>
                 </CardContent>
               </Card>)}
           </div>

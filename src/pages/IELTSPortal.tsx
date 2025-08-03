@@ -232,11 +232,9 @@ const IELTSPortal = () => {
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 bg-blue-600/20 rounded-lg">
-                        <BarChart3 className="w-6 h-6 text-blue-400" />
-                      </div>
+                      
                       <div>
-                        <CardTitle className="text-lg font-semibold text-white">{test.test_name}</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-white text-right">{test.test_name}</CardTitle>
                         <p className="text-sm text-gray-300">Cambridge IELTS Test</p>
                       </div>
                     </div>

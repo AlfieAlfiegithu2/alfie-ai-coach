@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, TrendingUp, Calendar, CheckCircle2, BarChart3 } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
+import LightRays from '@/components/animations/LightRays';
 const IELTSPortal = () => {
   const navigate = useNavigate();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
@@ -157,12 +158,22 @@ const IELTSPortal = () => {
     console.log(`🧪 Opening IELTS test ${testId}`);
     navigate(`/ielts-test-modules/${testId}`);
   };
-  return <div className="min-h-screen" style={{
-    backgroundImage: `url('/lovable-uploads/44e15319-2a4d-4bf1-950b-ef802a55ae19.png')`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat'
-  }}>
+  return <div className="min-h-screen relative">
+      <LightRays 
+        raysOrigin="top-center"
+        raysColor="#4A90E2"
+        raysSpeed={0.5}
+        lightSpread={2}
+        rayLength={1.5}
+        pulsating={false}
+        fadeDistance={1.2}
+        saturation={0.8}
+        followMouse={true}
+        mouseInfluence={0.05}
+        noiseAmount={0.1}
+        distortion={0.1}
+        className="absolute inset-0"
+      />
       <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
         {/* Dashboard Header */}

@@ -240,13 +240,13 @@ const CommunityPage = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-slate-800" style={{
+                            <p style={{
                         fontFamily: 'Inter, sans-serif'
-                      }}>{post.username}</p>
+                      }} className="font-semibold text-slate-950">{post.username}</p>
                           </div>
-                          <p className="text-sm text-slate-600" style={{
+                          <p style={{
                       fontFamily: 'Inter, sans-serif'
-                    }}>{getTimeAgo(post.created_at)}</p>
+                    }} className="text-sm text-slate-950">{getTimeAgo(post.created_at)}</p>
                         </div>
                       </div>
                       <Badge variant="outline" className="text-xs bg-white/10 border-white/20 text-slate-700">
@@ -254,9 +254,9 @@ const CommunityPage = () => {
                       </Badge>
                     </div>
                     
-                    <p className="text-slate-700 leading-relaxed" style={{
+                    <p style={{
                 fontFamily: 'Inter, sans-serif'
-              }}>{post.content}</p>
+              }} className="leading-relaxed text-slate-950">{post.content}</p>
                     
                     <div className="flex items-center gap-4">
                       <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-white/10" onClick={() => handleLikePost(post.id)}>

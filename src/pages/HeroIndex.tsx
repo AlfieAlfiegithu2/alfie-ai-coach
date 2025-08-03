@@ -158,13 +158,13 @@ const HeroIndex = () => {
             {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" onClick={() => navigate(test.path)}>
                 <CardHeader>
                   
-                  <CardTitle className="text-center transition-colors text-zinc-950">
+                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-base">
                     {test.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-center text-sm mb-6 text-slate-900">{test.description}</p>
-                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950">
+                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
                     Start Practice
                   </Button>
                 </CardContent>

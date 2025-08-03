@@ -25,7 +25,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-nav">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
         {/* Logo and Login */}
         <div className="flex items-center space-x-4">
@@ -33,7 +33,7 @@ const Header = () => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary">
               <span className="text-lg font-bold text-primary-foreground">A</span>
             </div>
-            <span className="text-xl font-bold text-text-primary">
+            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               ALFIE IELTS AI
             </span>
           </div>

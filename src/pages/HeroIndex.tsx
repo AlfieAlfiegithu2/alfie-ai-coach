@@ -53,37 +53,31 @@ const HeroIndex = () => {
     path: "/general-portal",
     icon: <Mic className="w-8 h-8 text-white" />
   }];
-  return <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Premium Glass Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/30 to-background" />
-      <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-primary/10" />
+  return <div className="min-h-screen relative overflow-hidden">
+      {/* Background Image - Original Brightness */}
+      <div className="absolute inset-0 bg-cover bg-center bg-fixed" style={{
+      backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)'
+    }} />
 
-      {/* Glassmorphism Header */}
-      <header className="relative z-10 px-8 py-4 glass-nav">
+      {/* Header */}
+      <header className="relative z-10 px-8 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 glow-blue">
-              <span className="text-lg font-bold text-white">A</span>
-            </div>
-            <span className="text-xl font-bold text-text-primary">
-              ALFIE IELTS AI
-            </span>
-          </div>
+          
           
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-text-secondary hover:text-primary transition-colors font-medium">Features</a>
-            <a href="#tests" className="text-text-secondary hover:text-primary transition-colors font-medium">Tests</a>
-            <a href="#community" className="text-text-secondary hover:text-primary transition-colors font-medium">Community</a>
+            <a href="#features" className="text-zinc-300 hover:text-white transition-colors font-medium">Features</a>
+            <a href="#tests" className="text-zinc-300 hover:text-white transition-colors font-medium">Tests</a>
+            <a href="#community" className="text-zinc-300 hover:text-white transition-colors font-medium">Community</a>
           </nav>
 
           {/* Button Group */}
           <div className="flex items-center gap-4">
-            <Button onClick={() => navigate('/auth')} variant="glass" className="transition-all duration-300">
+            <Button onClick={() => navigate('/auth')} variant="ghost" className="text-white transition-all duration-200 bg-zinc-950 hover:bg-zinc-800">
               Log In
             </Button>
-            {user && <Button onClick={() => navigate('/dashboard')} variant="premium" className="transition-all duration-300">
+            {user && <Button onClick={() => navigate('/dashboard')} className="text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-500 hover:bg-gray-400">
                 My Dashboard
               </Button>}
           </div>
@@ -96,14 +90,14 @@ const HeroIndex = () => {
           {/* Hero Badge */}
           
           
-          {/* Hero Title */}
-          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-text-primary md:text-6xl font-bold">
+          {/* Headline with Animation */}
+          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light">
             Unlock Your Potential.<br />
-            <span className="text-primary glow-blue">Master English with AI.</span>
+            Master English with AI.
           </h1>
           
           {/* Subheadline */}
-          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-text-secondary text-xl">
+          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900 text-lg">
             Go beyond practice tests. Get personalized coaching, track your progress, 
             and reach your target score with confidence.
           </p>
@@ -126,9 +120,9 @@ const HeroIndex = () => {
             label: "Success Rate",
             value: "95%"
           }].map((metric, index) => (
-            <div key={index} className="text-center glass-card p-4 rounded-2xl hover:glow-blue transition-all duration-300">
-              <div className="text-3xl font-bold text-primary mb-2 glow-blue">{metric.value}</div>
-              <div className="text-sm text-text-tertiary">{metric.label}</div>
+            <div key={index} className="text-center">
+              <div className="text-2xl font-bold text-zinc-900 mb-2">{metric.value}</div>
+              <div className="text-sm text-zinc-700">{metric.label}</div>
             </div>
           ))}
           </div>
@@ -140,30 +134,26 @@ const HeroIndex = () => {
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl mb-4 text-text-primary font-bold">
+            <h2 className="text-4xl md:text-5xl mb-4 text-zinc-900 font-extralight">
               Complete Test Preparation
             </h2>
-            <p className="max-w-2xl mx-auto text-text-secondary text-lg">
+            <p className="max-w-2xl mx-auto text-zinc-900 text-lg">
               Practice all test sections with Cambridge materials and AI-powered feedback
             </p>
           </div>
 
           {/* Test Cards Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testTypes.map((test, index) => <Card key={index} className="glass-card cursor-pointer group hover:glow-blue transition-all duration-300 hover:scale-105" onClick={() => navigate(test.path)}>
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" onClick={() => navigate(test.path)}>
                 <CardHeader>
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-xl glass-effect flex items-center justify-center group-hover:glow-blue transition-all duration-300">
-                    <div className="text-primary">
-                      {test.icon}
-                    </div>
-                  </div>
-                  <CardTitle className="text-center transition-colors text-text-primary font-semibold text-lg">
+                  
+                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-base">
                     {test.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-center text-sm mb-6 text-text-secondary">{test.description}</p>
-                  <Button size="sm" variant="premium" className="w-full">
+                  <p className="text-center text-sm mb-6 text-slate-900">{test.description}</p>
+                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
                     Start Practice
                   </Button>
                 </CardContent>
@@ -173,12 +163,12 @@ const HeroIndex = () => {
       </section>
 
       {/* Community Section */}
-      <section id="community" className="relative z-10 px-8 py-20 glass-effect">
+      <section id="community" className="relative z-10 px-8 py-20 bg-black/20 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-4xl mb-4 md:text-4xl font-bold text-text-primary">
+          <h2 className="text-4xl mb-4 md:text-4xl font-extralight text-zinc-950">
             Join Our Learning Community
           </h2>
-          <p className="mb-12 max-w-2xl mx-auto text-text-secondary text-lg">
+          <p className="mb-12 max-w-2xl mx-auto text-zinc-950 text-base font-light">
             Connect with thousands of learners, share experiences, and achieve your goals together
           </p>
           
@@ -195,16 +185,16 @@ const HeroIndex = () => {
           }, {
             title: "General English",
             members: "20K+"
-          }].map((group, index) => <Card key={index} className="glass-card hover:glow-blue transition-all duration-300">
+          }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all duration-300 hover:scale-105">
                 <CardContent className="pt-6 text-center">
-                  <Users className="w-8 h-8 mx-auto mb-3 text-primary" />
-                  <h3 className="mb-2 text-text-primary font-semibold text-sm">{group.title}</h3>
-                  <p className="text-sm text-text-tertiary">{group.members} members</p>
+                  
+                  <h3 className="mb-2 text-zinc-950 font-light text-sm">{group.title}</h3>
+                  <p className="text-sm text-zinc-950 font-extralight">{group.members} members</p>
                 </CardContent>
               </Card>)}
           </div>
 
-          <Button size="lg" onClick={() => navigate('/community')} variant="premium" className="px-8 py-4 text-lg">
+          <Button size="lg" onClick={() => navigate('/community')} className="bg-white/10 text-white border border-white/20 hover:bg-white/20 px-8 py-4 text-lg transition-all duration-300">
             <Users className="w-5 h-5 mr-2" />
             Explore Community
           </Button>
@@ -212,7 +202,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 px-8 py-12 glass-nav border-t border-glass-border">
+      <footer className="relative z-10 px-8 py-12 border-t border-white/20 bg-black/30 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             {/* Company Info */}
@@ -223,19 +213,19 @@ const HeroIndex = () => {
                 </div>
                 <span className="text-lg font-bold text-white">EnglishAI</span>
               </div>
-              <p className="text-sm text-text-secondary">
+              <p className="text-sm text-zinc-950">
                 AI-powered English learning platform for IELTS, PTE, and TOEFL preparation.
               </p>
             </div>
             
             {/* Tests Column */}
             <div>
-              <h4 className="text-text-primary font-semibold mb-3">Tests</h4>
-              <div className="space-y-2 text-sm text-text-tertiary">
-                <button onClick={() => navigate('/ielts-portal')} className="block hover:text-primary transition-colors">IELTS Academic</button>
-                <button onClick={() => navigate('/pte-portal')} className="block hover:text-primary transition-colors">PTE Academic</button>
-                <button onClick={() => navigate('/toefl-portal')} className="block hover:text-primary transition-colors">TOEFL iBT</button>
-                <button onClick={() => navigate('/general-portal')} className="block hover:text-primary transition-colors">General English</button>
+              <h4 className="text-white font-semibold mb-3">Tests</h4>
+              <div className="space-y-2 text-sm text-zinc-400">
+                <button onClick={() => navigate('/ielts-portal')} className="block hover:text-white transition-colors">IELTS Academic</button>
+                <button onClick={() => navigate('/pte-portal')} className="block hover:text-white transition-colors">PTE Academic</button>
+                <button onClick={() => navigate('/toefl-portal')} className="block hover:text-white transition-colors">TOEFL iBT</button>
+                <button onClick={() => navigate('/general-portal')} className="block hover:text-white transition-colors">General English</button>
               </div>
             </div>
             

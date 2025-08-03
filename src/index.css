@@ -6,75 +6,73 @@
 
 @layer base {
   :root {
-    /* Global Glassmorphism Design System with Premium Blue Accent */
-    --background: 240 10% 6%;           /* Dark rich background */
-    --foreground: 0 0% 98%;             /* Light foreground */
+    /* Consistent Theme Colors */
+    --background: 240 10% 98%;          /* Light gray (#F8F9FA) */
+    --foreground: 240 10% 9%;           /* Dark charcoal */
 
-    --card: 0 0% 100%;                  /* Glass card base */
+    --card: 0 0% 100%;                  /* Pure white */
     --card-foreground: 240 10% 9%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 9%;
 
-    /* Premium Blue Accent - Single accent color system */
-    --primary: 214 100% 59%;            /* Premium Blue #3B82F6 */
+    /* Primary - Blue CTAs (#007BFF) */
+    --primary: 212 100% 50%;             /* Blue #007BFF */
     --primary-foreground: 0 0% 100%;
 
-    /* Monochrome Secondary - No competing colors */
-    --secondary: 240 5% 96%;            /* Light gray */
+    /* Secondary - Soft gray */
+    --secondary: 240 5% 96%;             /* Light gray */
     --secondary-foreground: 240 4% 46%;
 
     /* Muted - Neutral grays */
-    --muted: 240 5% 16%;               /* Dark muted */
-    --muted-foreground: 240 4% 64%;    /* Medium gray text */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    /* Accent remains the premium blue */
-    --accent: 214 100% 59%;            /* Same as primary blue */
+    /* Accent - Success green (#2ECC71) */
+    --accent: 145 63% 49%;               /* Green #2ECC71 */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;          /* Red for errors */
+    --destructive: 0 84% 65%;            /* Red #FF6B6B */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 20%;              /* Dark borders for glass effect */
+    --border: 240 6% 90%;               /* Light gray borders */
     --input: 0 0% 100%;
-    --ring: 214 100% 59%;              /* Premium blue ring */
+    --ring: 212 100% 50%;
 
-    /* Premium Blue as primary brand color */
-    --brand-blue: 214 100% 59%;        /* Premium Blue #3B82F6 */
-    --brand-green: 142 76% 56%;        /* Keep for success states only */
-    --brand-orange: 25 95% 53%;        /* Keep for warnings only */
-    --brand-purple: 260 60% 65%;       /* Deprecated */
-    --brand-red: 0 84% 60%;            /* Keep for errors only */
+    /* Brand Colors - Consistent Theme */
+    --brand-blue: 212 100% 50%;          /* Blue #007BFF CTAs */
+    --brand-green: 145 63% 49%;          /* Green #2ECC71 progress */
+    --brand-orange: 25 95% 53%;          /* Orange for warnings */
+    --brand-purple: 260 60% 65%;         /* Purple accents */
+    --brand-red: 0 84% 65%;              /* Red #FF6B6B errors */
     
-    /* Glass surface colors */
-    --surface-1: 0 0% 100%;            /* Glass white overlay */
-    --surface-2: 240 10% 8%;           /* Dark background variant */
-    --surface-3: 240 5% 12%;           /* Subtle background variant */
+    /* Functional Colors - Gray backgrounds */
+    --surface-1: 0 0% 100%;             /* White cards */
+    --surface-2: 0 0% 97%;              /* Light gray #F8F9FA background */
+    --surface-3: 240 5% 96%;            /* Subtle background */
     
-    /* Monochrome text hierarchy */
-    --text-primary: 0 0% 98%;          /* White primary text */
-    --text-secondary: 240 4% 70%;      /* Light gray secondary */
-    --text-tertiary: 240 4% 50%;       /* Medium gray tertiary */
+    /* Text hierarchy */
+    --text-primary: 240 10% 9%;         /* Main text */
+    --text-secondary: 240 4% 46%;       /* Secondary text */
+    --text-tertiary: 240 4% 64%;        /* Subtle text */
     
-    /* Glassmorphism effects */
-    --glass-light: rgba(255, 255, 255, 0.1);
-    --glass-medium: rgba(255, 255, 255, 0.15);
-    --glass-strong: rgba(255, 255, 255, 0.2);
-    --glass-border: rgba(255, 255, 255, 0.2);
+  /* Glassmorphism gradients */
+  --gradient-hero: linear-gradient(135deg, hsl(220 90% 56% / 0.9), hsl(260 60% 65% / 0.9));
+  --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.9), hsl(240 10% 98% / 0.8));
+  --gradient-card: linear-gradient(145deg, hsl(0 0% 100% / 0.8), hsl(240 10% 98% / 0.6));
+  --gradient-success: linear-gradient(135deg, hsl(142 76% 56% / 0.9), hsl(142 76% 66% / 0.8));
+  --gradient-premium: linear-gradient(135deg, hsl(260 60% 65% / 0.9), hsl(280 60% 75% / 0.8));
     
-    /* Premium gradients with glass effect */
-    --gradient-hero: linear-gradient(135deg, hsl(214 100% 59% / 0.9), hsl(214 100% 49% / 0.8));
-    --gradient-glass: linear-gradient(145deg, var(--glass-medium), var(--glass-light));
-    --gradient-glass-strong: linear-gradient(145deg, var(--glass-strong), var(--glass-medium));
-    --gradient-blue-glass: linear-gradient(135deg, hsl(214 100% 59% / 0.2), hsl(214 100% 69% / 0.1));
-    
-    /* Premium shadows with blur */
-    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.12);
-    --shadow-glass-strong: 0 20px 40px rgba(0, 0, 0, 0.15);
-    --shadow-blue-glow: 0 0 30px hsl(214 100% 59% / 0.3);
-    --shadow-blue-glow-strong: 0 0 50px hsl(214 100% 59% / 0.4);
+    /* Modern shadows */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+    --shadow-glow-blue: 0 0 20px hsl(220 90% 56% / 0.3);
+    --shadow-glow-green: 0 0 20px hsl(142 76% 56% / 0.3);
 
-    --radius: 1.25rem;
+    --radius: 1rem;
 
     /* Sidebar theming */
     --sidebar-background: 0 0% 100%;
@@ -88,28 +86,22 @@
   }
 
   .dark {
-    /* Enhanced dark mode with premium glass effects */
+    /* Dark mode with vibrant accents */
     --background: 240 10% 4%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 8%;
+    --card: 240 10% 6%;
     --card-foreground: 0 0% 98%;
-    --primary: 214 100% 59%;           /* Same premium blue */
+    --primary: 220 90% 60%;
     --primary-foreground: 240 10% 4%;
-    --secondary: 240 5% 12%;
-    --secondary-foreground: 240 4% 70%;
+    --secondary: 260 60% 15%;
+    --secondary-foreground: 260 60% 80%;
     --muted: 240 5% 8%;
     --muted-foreground: 240 4% 54%;
-    --accent: 214 100% 59%;            /* Same premium blue */
+    --accent: 142 76% 60%;
     --accent-foreground: 240 10% 4%;
-    --border: 240 6% 15%;
-    --input: 240 10% 8%;
-    --ring: 214 100% 59%;              /* Premium blue ring */
-    
-    /* Enhanced glass effects for dark mode */
-    --glass-light: rgba(255, 255, 255, 0.05);
-    --glass-medium: rgba(255, 255, 255, 0.08);
-    --glass-strong: rgba(255, 255, 255, 0.12);
-    --glass-border: rgba(255, 255, 255, 0.15);
+    --border: 240 6% 20%;
+    --input: 240 10% 6%;
+    --ring: 220 90% 60%;
   }
 }
 
@@ -121,26 +113,7 @@
   body {
     @apply bg-background text-foreground font-inter;
     background: hsl(var(--background));
-    background-image: 
-      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.02) 1px, transparent 0);
-    background-size: 20px 20px;
     font-feature-settings: "rlig" 1, "calt" 1;
-    position: relative;
-  }
-
-  /* Subtle noise texture overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: 
-      radial-gradient(circle at 25% 25%, hsl(214 100% 59% / 0.02) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, hsl(214 100% 59% / 0.01) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: -1;
   }
   
   /* Consistent Typography - Roboto */
@@ -172,14 +145,12 @@
 }
 
 @layer components {
-  /* Premium Glassmorphism Buttons */
+  /* Modern EdTech Buttons */
   .btn-primary {
-    background: hsl(var(--brand-blue));
-    box-shadow: var(--shadow-blue-glow);
-    @apply text-white font-semibold px-6 py-3 
-           rounded-2xl hover:shadow-blue-glow-strong
+    @apply bg-brand-blue text-white font-semibold px-6 py-3 
+           rounded-2xl shadow-md hover:shadow-lg 
            hover:scale-[1.02] active:scale-[0.98]
-           transition-all duration-300 ease-out
+           transition-all duration-200 ease-out
            focus:ring-2 focus:ring-brand-blue/30 focus:ring-offset-2;
   }
   
@@ -192,40 +163,29 @@
   
   .btn-gradient {
     background: var(--gradient-hero);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
     @apply text-white font-semibold px-8 py-4 
-           rounded-2xl shadow-glass hover:shadow-glass-strong
+           rounded-2xl shadow-lg hover:shadow-xl 
            hover:scale-[1.02] active:scale-[0.98]
-           transition-all duration-300 ease-out;
+           transition-all duration-200 ease-out;
   }
   
-  /* Glassmorphism Cards */
+  /* Modern Cards */
   .card-modern {
-    background: var(--glass-light);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
-    @apply rounded-3xl hover:shadow-glass-strong
-           hover:scale-[1.01] 
+    @apply bg-surface-1 border border-border 
+           rounded-3xl shadow-sm hover:shadow-md 
            transition-all duration-300 ease-out;
   }
   
   .card-elevated {
-    background: var(--glass-medium);
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass-strong);
-    @apply rounded-3xl hover:scale-[1.01]
+    @apply bg-surface-1 border-0 
+           rounded-3xl shadow-lg hover:shadow-xl 
            transition-all duration-300 ease-out;
   }
   
   .card-interactive {
-    background: var(--glass-light);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    @apply rounded-3xl shadow-glass hover:shadow-glass-strong
-           hover:scale-[1.02] cursor-pointer
+    @apply bg-surface-1 border border-border 
+           rounded-3xl shadow-sm hover:shadow-lg 
+           hover:scale-[1.01] cursor-pointer
            transition-all duration-300 ease-out;
   }
   
@@ -365,69 +325,42 @@
     }
   }
   
-  /* Premium Glassmorphism System */
+  /* Glassmorphism utilities */
   .glass-effect {
-    background: var(--glass-light);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(16px) saturate(200%);
+    background: hsl(var(--surface-1) / 0.75);
+    border: 1px solid hsl(var(--border) / 0.3);
+    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.1);
   }
   
   .glass-card {
-    background: var(--glass-medium);
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
-    transition: all 0.3s ease;
-  }
-  
-  .glass-card:hover {
-    background: var(--glass-strong);
-    backdrop-filter: blur(20px);
-    box-shadow: var(--shadow-glass-strong);
-    transform: translateY(-2px);
+    backdrop-filter: blur(20px) saturate(180%);
+    background: var(--gradient-glass);
+    border: 1px solid hsl(var(--border) / 0.2);
+    box-shadow: 
+      0 8px 32px hsl(0 0% 0% / 0.08),
+      inset 0 1px 0 hsl(0 0% 100% / 0.5);
   }
   
   .glass-button {
-    background: var(--glass-light);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    background: hsl(var(--surface-1) / 0.6);
+    border: 1px solid hsl(var(--border) / 0.4);
     transition: all 0.3s ease;
   }
   
   .glass-button:hover {
-    background: var(--glass-medium);
-    backdrop-filter: blur(15px);
-    box-shadow: var(--shadow-glass);
-    transform: translateY(-1px);
+    backdrop-filter: blur(16px);
+    background: hsl(var(--surface-1) / 0.8);
+    box-shadow: 0 8px 25px hsl(0 0% 0% / 0.15);
   }
   
-  .glass-nav {
-    background: var(--glass-medium);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
-  }
-  
-  .glass-modal {
-    background: var(--glass-strong);
-    backdrop-filter: blur(25px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass-strong);
-  }
-  
-  /* Premium Blue Glow Effects */
   .glow-blue {
-    box-shadow: var(--shadow-blue-glow);
+    box-shadow: var(--shadow-glow-blue);
   }
   
-  .glow-blue-strong {
-    box-shadow: var(--shadow-blue-glow-strong);
-  }
-  
-  .hover-glow-blue:hover {
-    box-shadow: var(--shadow-blue-glow);
-    transition: all 0.3s ease;
+  .glow-green {
+    box-shadow: var(--shadow-glow-green);
   }
   
   /* Interactive states */

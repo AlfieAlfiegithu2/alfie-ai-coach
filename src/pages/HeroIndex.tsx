@@ -119,7 +119,12 @@ const HeroIndex = () => {
           }, {
             label: "Success Rate",
             value: "95%"
-          }].map((metric, index) => {})}
+          }].map((metric, index) => (
+            <div key={index} className="text-center">
+              <div className="text-2xl font-bold text-zinc-900 mb-2">{metric.value}</div>
+              <div className="text-sm text-zinc-700">{metric.label}</div>
+            </div>
+          ))}
           </div>
         </div>
       </section>

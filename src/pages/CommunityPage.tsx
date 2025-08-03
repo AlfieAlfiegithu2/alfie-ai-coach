@@ -145,7 +145,7 @@ const CommunityPage = () => {
     <div className="min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
       {/* Background Image */}
       <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
-        backgroundImage: "url('/lovable-uploads/6c10bf57-6843-477b-aacf-81f2ba5252ce.png')"
+        backgroundImage: "url('/lovable-uploads/e2289d4e-02bd-49a2-be13-299500e8fa69.png')"
       }} />
       
       {/* Header */}

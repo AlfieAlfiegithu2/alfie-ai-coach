@@ -187,10 +187,8 @@ const Dashboard = () => {
         {/* Header */}
         <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
           <div className="flex items-center gap-3">
-            <span className="text-xl lg:text-2xl font-semibold">✱</span>
-            <span className="text-lg lg:text-xl font-semibold tracking-tight text-slate-800" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>Alfie AI</span>
+            
+            
           </div>
           <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
             <a href="#" className="text-slate-800 hover:text-blue-600 transition" style={{
@@ -310,20 +308,7 @@ const Dashboard = () => {
                   <span className="text-slate-600" style={{
                   fontFamily: 'Inter, sans-serif'
                 }}>Your progress:</span>
-                  <div className="flex -space-x-2">
-                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-blue-500/20 border-2 border-white/50 flex items-center justify-center">
-                      <BookOpen className="w-3 h-3 text-blue-600" />
-                    </div>
-                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-green-500/20 border-2 border-white/50 flex items-center justify-center">
-                      <Volume2 className="w-3 h-3 text-green-600" />
-                    </div>
-                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-purple-500/20 border-2 border-white/50 flex items-center justify-center">
-                      <PenTool className="w-3 h-3 text-purple-600" />
-                    </div>
-                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-white/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-semibold border-2 border-white/50 text-slate-700" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>+1</div>
-                  </div>
+                  
                 </div>
               </div>
 

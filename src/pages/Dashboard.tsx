@@ -194,7 +194,7 @@ const Dashboard = () => {
             <a href="#" className="text-slate-800 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>Dashboard</a>
-            <button onClick={() => navigate('/vocabulary-page')} className="text-slate-600 hover:text-blue-600 transition" style={{
+            <button onClick={() => navigate('/vocabulary')} className="text-slate-600 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>My Vocab</button>
           </nav>

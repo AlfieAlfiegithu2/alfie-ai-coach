@@ -158,20 +158,20 @@ const IELTSPortal = () => {
     console.log(`🧪 Opening IELTS test ${testId}`);
     navigate(`/ielts-test-modules/${testId}`);
   };
-  return <div className="min-h-screen bg-gray-900 relative">
+  return <div className="min-h-screen bg-gray-950 relative">
       <LightRays 
         raysOrigin="top-center"
-        raysColor="#3B82F6"
-        raysSpeed={0.8}
-        lightSpread={1.5}
-        rayLength={1.8}
+        raysColor="#1E40AF"
+        raysSpeed={0.6}
+        lightSpread={2.0}
+        rayLength={1.2}
         pulsating={false}
-        fadeDistance={1.0}
-        saturation={0.7}
+        fadeDistance={0.8}
+        saturation={0.4}
         followMouse={true}
-        mouseInfluence={0.08}
-        noiseAmount={0.05}
-        distortion={0.05}
+        mouseInfluence={0.05}
+        noiseAmount={0.02}
+        distortion={0.02}
         className="absolute inset-0 z-0"
       />
       <div className="relative z-10">

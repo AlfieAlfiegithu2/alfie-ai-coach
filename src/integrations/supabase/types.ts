@@ -761,6 +761,39 @@ export type Database = {
           },
         ]
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          preferred_name: string | null
+          target_deadline: string | null
+          target_score: number | null
+          target_test_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preferred_name?: string | null
+          target_deadline?: string | null
+          target_score?: number | null
+          target_test_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preferred_name?: string | null
+          target_deadline?: string | null
+          target_score?: number | null
+          target_test_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_vocabulary: {
         Row: {
           context: string | null

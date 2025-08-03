@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DailyChallenge from "@/components/DailyChallenge";
 import LightRays from "@/components/animations/LightRays";
+import SettingsModal from "@/components/SettingsModal";
+import TestResultsChart from "@/components/TestResultsChart";
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -22,6 +24,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [savedWords, setSavedWords] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
+  const [userPreferences, setUserPreferences] = useState<any>(null);
   const testTypes = [{
     id: "IELTS",
     name: "IELTS",
@@ -110,6 +113,18 @@ const Dashboard = () => {
         return;
       }
       try {
+        // Fetch user preferences
+        const { data: preferences } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (preferences) {
+          setUserPreferences(preferences);
+          setSelectedTestType(preferences.target_test_type || 'IELTS');
+        }
+
         // Fetch test results
         const {
           data: results
@@ -199,6 +214,9 @@ const Dashboard = () => {
           }}>My Vocab</button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">
+            {/* Settings Button */}
+            <SettingsModal />
+            
             {/* User Avatar */}
             <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
               <User className="w-4 h-4 text-white" />
@@ -216,52 +234,47 @@ const Dashboard = () => {
               <h1 className="text-3xl sm:text-4xl lg:text-5xl text-slate-800 tracking-tight font-semibold" style={{
               fontFamily: 'Bricolage Grotesque, sans-serif'
             }}>
-                Good morning, {user?.email?.split('@')[0] || 'Learner'}!
+                Good morning, {userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'}!
               </h1>
 
-              {/* Progress Summary Card */}
-              <div className="flex lg:px-5 lg:py-4 bg-white/10 border-white/20 rounded-xl pt-3 pr-4 pb-3 pl-4 backdrop-blur-xl items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>English Mastery Platform</p>
-                    <p className="text-xs text-slate-600" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>IELTS • PTE • TOEFL • General</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-500" />
+              {/* Test Type Selection Card */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+                {testTypes.map((type) => {
+                  const Icon = type.icon;
+                  const isSelected = selectedTestType === type.id;
+                  return (
+                    <button
+                      key={type.id}
+                      onClick={() => setSelectedTestType(type.id)}
+                      className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${
+                        isSelected 
+                          ? 'bg-white/20 border-white/40 shadow-lg' 
+                          : 'bg-white/10 border-white/20 hover:bg-white/15'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
+                      <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+                        {type.name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* IELTS Band Score */}
+              {/* Target Score Display */}
               <div className="flex flex-col gap-2">
                 <span className="text-6xl sm:text-7xl lg:text-[90px] leading-none text-slate-800 font-semibold" style={{
                 fontFamily: 'Bricolage Grotesque, sans-serif'
               }}>
-                  {convertToIELTSScore(userStats?.avgScore || 0)}
+                  {userPreferences?.target_score || convertToIELTSScore(userStats?.avgScore || 0)}
                 </span>
                 <p className="text-base lg:text-lg text-slate-600 -mt-2 lg:-mt-4" style={{
                 fontFamily: 'Inter, sans-serif'
-              }}>IELTS Band Score</p>
+              }}>Target {selectedTestType} Score</p>
               </div>
 
-              {/* Skills Distribution */}
-              <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-                <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Skills Overview</h3>
-                <div className="grid grid-cols-2 gap-3 lg:gap-4">
-                  {skills.slice(0, 4).map(skill => <div key={skill.name}>
-                      <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
-                    fontFamily: 'Bricolage Grotesque, sans-serif'
-                  }}>{skill.progress}%</p>
-                      <p className="text-xs text-slate-600" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>{skill.name}</p>
-                    </div>)}
-                </div>
-              </div>
+              {/* Test Results Chart */}
+              <TestResultsChart />
 
               {/* Analytics Card */}
               <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">

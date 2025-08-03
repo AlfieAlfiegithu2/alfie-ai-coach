@@ -183,7 +183,7 @@ const IELTSPortal = () => {
     <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
         {/* Dashboard Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white/80 backdrop-blur-md rounded-xl shadow-lg border border-white/30 p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Welcome back!</h1>
@@ -196,22 +196,22 @@ const IELTSPortal = () => {
           
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
+            <div className="text-center p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/40">
               <TrendingUp className="w-6 h-6 text-green-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-green-700">6.5</div>
               <div className="text-sm text-green-600">Current Band</div>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="text-center p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/40">
               <Calendar className="w-6 h-6 text-blue-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-blue-700">45</div>
               <div className="text-sm text-blue-600">Days Left</div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <div className="text-center p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/40">
               <CheckCircle2 className="w-6 h-6 text-purple-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-purple-700">12</div>
               <div className="text-sm text-purple-600">Tests Completed</div>
             </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
+            <div className="text-center p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/40">
               <BarChart3 className="w-6 h-6 text-orange-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-orange-700">85%</div>
               <div className="text-sm text-orange-600">Progress</div>
@@ -231,7 +231,7 @@ const IELTSPortal = () => {
               return (
                 <Card 
                   key={skill.id} 
-                  className="bg-white border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  className="bg-white/70 backdrop-blur-md border border-white/40 hover:bg-white/80 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl"
                   onClick={() => setSelectedSkill(skill.id)}
                 >
                   <CardHeader className="pb-4">
@@ -298,12 +298,12 @@ const IELTSPortal = () => {
             </Badge>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableTests.slice(0, 6).map((test) => (
-              <Card key={test.test_number || test.id} className="bg-white border border-gray-200 hover:shadow-md transition-all duration-200">
-                <CardHeader>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {availableTests.slice(0, 8).map((test) => (
+              <Card key={test.test_number || test.id} className="bg-white/70 backdrop-blur-md border border-white/40 hover:bg-white/80 transition-all duration-200 shadow-lg hover:shadow-xl aspect-square flex flex-col">
+                <CardHeader className="pb-2 flex-shrink-0">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{test.test_name}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{test.test_name}</CardTitle>
                     <div className="flex items-center gap-2">
                       <Target className="w-5 h-5 text-primary" />
                       {test.status === 'complete' && (
@@ -312,7 +312,7 @@ const IELTSPortal = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-4">
+                <CardContent className="pt-2 flex-grow flex flex-col justify-center">
                    <Button 
                     onClick={() => handleTestClick(test.id)}
                      className="w-full btn-primary"
@@ -335,12 +335,12 @@ const IELTSPortal = () => {
         </section>
 
         {/* Quick Actions */}
-        <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <section className="bg-white/70 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid md:grid-cols-3 gap-4">
             <Button 
               onClick={() => navigate('/tests')}
-              className="flex items-center gap-2 justify-start p-4 h-auto bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+              className="flex items-center gap-2 justify-start p-4 h-auto bg-white/50 backdrop-blur-sm hover:bg-white/70 text-blue-700 border border-white/40 shadow-md hover:shadow-lg"
               variant="outline"
             >
               <Target className="w-5 h-5" />
@@ -351,7 +351,7 @@ const IELTSPortal = () => {
             </Button>
             <Button 
               onClick={() => navigate('/speaking')}
-              className="flex items-center gap-2 justify-start p-4 h-auto bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              className="flex items-center gap-2 justify-start p-4 h-auto bg-white/50 backdrop-blur-sm hover:bg-white/70 text-green-700 border border-white/40 shadow-md hover:shadow-lg"
               variant="outline"
             >
               <MessageSquare className="w-5 h-5" />
@@ -362,7 +362,7 @@ const IELTSPortal = () => {
             </Button>
             <Button 
               onClick={() => navigate('/writing')}
-              className="flex items-center gap-2 justify-start p-4 h-auto bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+              className="flex items-center gap-2 justify-start p-4 h-auto bg-white/50 backdrop-blur-sm hover:bg-white/70 text-purple-700 border border-white/40 shadow-md hover:shadow-lg"
               variant="outline"
             >
               <PenTool className="w-5 h-5" />

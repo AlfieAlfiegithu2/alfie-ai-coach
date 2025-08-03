@@ -53,7 +53,7 @@ const StudentLayout = ({
     path: "/explanations",
     icon: HelpCircle
   }];
-  return <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+  return <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/50" style={{backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.8) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)'}}>
       {/* Header Navigation */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">

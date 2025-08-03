@@ -145,10 +145,10 @@ const HeroIndex = () => {
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-zinc-900">
+            <h2 className="text-4xl md:text-5xl mb-4 text-zinc-900 font-extralight">
               Complete Test Preparation
             </h2>
-            <p className="text-xl max-w-2xl mx-auto text-zinc-900">
+            <p className="max-w-2xl mx-auto text-zinc-900 text-lg">
               Practice all test sections with Cambridge materials and AI-powered feedback
             </p>
           </div>

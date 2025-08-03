@@ -58,17 +58,13 @@ const HeroIndex = () => {
   ];
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background Image - Now Much Brighter */}
+      {/* Background Image - Original Brightness */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-fixed"
         style={{
-          backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)',
-          filter: 'brightness(1.2) contrast(1.1)'
+          backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)'
         }}
       />
-      
-      {/* Very light overlay to preserve text readability */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/15" />
 
       {/* Header */}
       <header className="relative z-10 px-8 py-4">

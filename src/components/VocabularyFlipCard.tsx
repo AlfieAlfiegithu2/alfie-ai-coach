@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Trash2, Languages } from 'lucide-react';
+import { Calendar, Trash2, Languages, Globe } from 'lucide-react';
 
 interface SavedWord {
   id: string;
@@ -14,10 +14,15 @@ interface SavedWord {
 interface VocabularyFlipCardProps {
   word: SavedWord;
   onRemove: (wordId: string) => void;
+  onTranslate?: (wordId: string, word: string) => Promise<void>;
+  selectedLanguage?: string;
+  translating?: string | null;
 }
 
-const VocabularyFlipCard = ({ word, onRemove }: VocabularyFlipCardProps) => {
+const VocabularyFlipCard = ({ word, onRemove, onTranslate, selectedLanguage = 'Spanish', translating }: VocabularyFlipCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
+
+  const needsTranslation = word.translation.includes('Translation coming soon') || word.translation.includes('Auto saved from');
 
   return (
     <div 
@@ -52,17 +57,45 @@ const VocabularyFlipCard = ({ word, onRemove }: VocabularyFlipCardProps) => {
           </div>
         </div>
 
-        {/* Back Side - Translation */}
         <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-xl bg-white/10 border border-white/20 backdrop-blur-xl p-4 flex flex-col justify-between shadow-soft">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white mb-2">
-                {word.translation}
-              </h3>
-              <div className="text-sm text-white/80 bg-white/10 p-2 rounded-lg">
-                <span className="text-xs text-white/60 block mb-1">Context:</span>
-                "{word.context}"
-              </div>
+              {needsTranslation ? (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Not translated yet
+                  </h3>
+                  {onTranslate && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTranslate(word.id, word.word);
+                      }}
+                      disabled={translating === word.id}
+                      className="text-white/70 hover:text-white hover:bg-white/20 border border-white/30"
+                    >
+                      {translating === word.id ? (
+                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      ) : (
+                        <Globe className="w-3 h-3 mr-2" />
+                      )}
+                      Translate to {selectedLanguage}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    {word.translation}
+                  </h3>
+                  <div className="text-sm text-white/80 bg-white/10 p-2 rounded-lg">
+                    <span className="text-xs text-white/60 block mb-1">Context:</span>
+                    "{word.context}"
+                  </div>
+                </>
+              )}
             </div>
             <Button
               variant="ghost"

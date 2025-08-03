@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Search, Trash2, BookOpen, Calendar, Languages } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
+import VocabularyFlipCard from '@/components/VocabularyFlipCard';
 
 interface SavedWord {
   id: string;
@@ -38,11 +39,15 @@ const VocabularyPage = () => {
   }, [searchTerm, savedWords]);
 
   const loadSavedWords = () => {
-    const saved = localStorage.getItem('alfie-saved-vocabulary');
+    // Check both possible storage keys for backward compatibility
+    const saved = localStorage.getItem('alfie-saved-vocabulary') || localStorage.getItem('saved-vocabulary');
     if (saved) {
       try {
         const words = JSON.parse(saved);
         setSavedWords(words);
+        // Unify storage under 'alfie-saved-vocabulary'
+        localStorage.setItem('alfie-saved-vocabulary', JSON.stringify(words));
+        localStorage.removeItem('saved-vocabulary');
       } catch (error) {
         console.error('Error loading saved vocabulary:', error);
       }
@@ -132,52 +137,13 @@ const VocabularyPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredWords.map((word) => (
-              <Card key={word.id} className="card-modern hover-lift">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-primary">
-                          {word.word}
-                        </h3>
-                        <Badge variant="secondary" className="text-xs">
-                          <Languages className="w-3 h-3 mr-1" />
-                          Translation
-                        </Badge>
-                      </div>
-                      
-                      <p className="text-text-primary mb-3 font-medium">
-                        {word.translation}
-                      </p>
-                      
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-sm font-medium text-text-secondary mb-1">Context:</p>
-                          <p className="text-sm text-text-secondary italic bg-surface-3 p-2 rounded-lg">
-                            "{word.context}"
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 text-xs text-text-tertiary">
-                          <Calendar className="w-3 h-3" />
-                          <span>Saved on {new Date(word.savedAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeWord(word.id)}
-                      className="text-text-secondary hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <VocabularyFlipCard
+                key={word.id}
+                word={word}
+                onRemove={removeWord}
+              />
             ))}
           </div>
         )}

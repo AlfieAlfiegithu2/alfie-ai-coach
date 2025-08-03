@@ -103,15 +103,7 @@ const HeroIndex = () => {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button size="lg" onClick={handleAuthAction} className="text-white px-8 py-4 text-lg font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-zinc-500 hover:bg-zinc-400">
-              <Play className="w-5 h-5 mr-2" />
-              Start Your Journey
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/pricing')} className="border-white/30 bg-white/10 hover:bg-white/20 backdrop-blur-sm px-8 py-4 text-lg font-medium rounded-lg transition-all duration-300 hover:scale-105 text-zinc-900">
-              View Pricing
-            </Button>
-          </div>
+          
 
           {/* Social Proof Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">

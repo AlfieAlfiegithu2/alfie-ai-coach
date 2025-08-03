@@ -156,258 +156,224 @@ const Dashboard = () => {
     const route = skillName.toLowerCase();
     navigate(`/${route}`);
   };
-  return <div className="min-h-screen bg-surface-2 relative">
-      <LightRays 
-        raysOrigin="top-center"
-        raysColor="#4F46E5"
-        raysSpeed={0.5}
-        lightSpread={2}
-        rayLength={1.5}
-        pulsating={false}
-        fadeDistance={1.2}
-        saturation={0.8}
-        followMouse={true}
-        mouseInfluence={0.05}
-        noiseAmount={0.1}
-        distortion={0.2}
+  return (
+    <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 pt-6 pr-4 pb-6 pl-4">
+      {/* Background Image */}
+      <div 
+        className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" 
+        style={{
+          backgroundImage: "url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/44dea03b-7cbb-41b6-934f-6482f1fdf2e3_3840w.jpg')"
+        }}
       />
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
-        <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/10 opacity-20"></div>
-        
-        
-      </section>
+      
+      <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
+        {/* Header */}
+        <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
+          <div className="flex items-center gap-3">
+            <span className="text-xl lg:text-2xl font-semibold">✱</span>
+            <span className="text-lg lg:text-xl font-semibold tracking-tight text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Alfie AI</span>
+          </div>
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
+            <a href="#" className="text-slate-800 hover:text-blue-600 transition" style={{fontFamily: 'Inter, sans-serif'}}>Dashboard</a>
+            <a href="#" className="text-slate-600 hover:text-blue-600 transition" style={{fontFamily: 'Inter, sans-serif'}}>Practice</a>
+            <a href="#" className="text-slate-600 hover:text-blue-600 transition" style={{fontFamily: 'Inter, sans-serif'}}>Analytics</a>
+            <a href="#" className="text-slate-600 hover:text-blue-600 transition" style={{fontFamily: 'Inter, sans-serif'}}>AI Assistant</a>
+          </nav>
+          <div className="flex items-center gap-3 lg:gap-4">
+            {/* User Avatar */}
+            <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
+              <User className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </header>
 
-      {/* Skills Dashboard Section */}
-      <section className="space-section">
-        <div className="container mx-auto px-6">
-          <div className="grid lg:grid-cols-3 gap-8">
-            
-            {/* Skills Overview */}
-            <div className="lg:col-span-2">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-heading-2 mb-2">Your Progress</h2>
-                  <p className="text-body">Track your improvement across all English skills</p>
+        {/* Main Content */}
+        <main className="relative sm:px-6 lg:px-12 pr-4 pb-32 pl-4">
+          {/* Greeting / Title Row */}
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 pt-6 lg:pt-8">
+            {/* Left column */}
+            <div className="flex flex-col gap-4 lg:gap-6">
+              {/* Greeting */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl text-slate-800 tracking-tight font-semibold" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                Good morning, {user?.email?.split('@')[0] || 'Learner'}!
+              </h1>
+
+              {/* Progress Summary Card */}
+              <div className="flex lg:px-5 lg:py-4 bg-white/30 border-white/30 border rounded-xl pt-3 pr-4 pb-3 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-sm items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>English Mastery Platform</p>
+                    <p className="text-xs text-slate-600" style={{fontFamily: 'Inter, sans-serif'}}>IELTS • PTE • TOEFL • General</p>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => navigate('/settings')} variant="outline" className="hover-lift">
-                    Settings
-                  </Button>
-                  <Button onClick={() => navigate('/vocabulary')} className="btn-gradient hover-lift">
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    My Word Book
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
+                <ChevronRight className="w-5 h-5 text-slate-500" />
+              </div>
+
+              {/* Productivity Score */}
+              <div className="flex flex-col gap-2">
+                <span className="text-6xl sm:text-7xl lg:text-[90px] leading-none text-slate-800 font-semibold" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                  {userStats?.avgScore || 0}%
+                </span>
+                <p className="text-base lg:text-lg text-slate-600 -mt-2 lg:-mt-4" style={{fontFamily: 'Inter, sans-serif'}}>Average test score</p>
+              </div>
+
+              {/* Skills Distribution */}
+              <div className="relative lg:p-6 bg-white/20 border-white/30 border rounded-2xl pt-4 pr-4 pb-4 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-sm">
+                <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Skills Overview</h3>
+                <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                  {skills.slice(0, 4).map((skill) => (
+                    <div key={skill.name}>
+                      <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>{skill.progress}%</p>
+                      <p className="text-xs text-slate-600" style={{fontFamily: 'Inter, sans-serif'}}>{skill.name}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {skills.map(skill => {
-                const Icon = skill.icon;
-                return <Card key={skill.name} className="card-interactive">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-xl bg-surface-3 ${skill.color}`}>
-                              <Icon className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <CardTitle className="text-lg">{skill.name}</CardTitle>
-                              <CardDescription>{skill.description}</CardDescription>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {skill.level}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-text-secondary">Progress</span>
-                            <span className="font-semibold">{skill.progress}%</span>
-                          </div>
-                          <div className="progress-bar h-2">
-                            <div className="progress-fill" style={{
-                          width: `${skill.progress}%`
-                        }} />
-                          </div>
-                          <Button onClick={() => handleSkillPractice(skill.name)} variant="ghost" size="sm" className="w-full mt-3">
-                            Practice {skill.name}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>;
-              })}
+              {/* Analytics Card */}
+              <div className="relative lg:p-6 bg-white/20 border-white/30 border rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-sm">
+                <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Study Progress</h3>
+                <div className="grid grid-cols-3 gap-3 lg:gap-4">
+                  <div>
+                    <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>{userStats?.totalTests || 0}</p>
+                    <p className="text-xs text-slate-600" style={{fontFamily: 'Inter, sans-serif'}}>Tests Taken</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>{savedWords.length}</p>
+                    <p className="text-xs text-slate-600" style={{fontFamily: 'Inter, sans-serif'}}>Words Saved</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>7</p>
+                    <p className="text-xs text-slate-600" style={{fontFamily: 'Inter, sans-serif'}}>Day Streak</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* My Word Book - Featured Prominently */}
-              <Card className="card-modern border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary" />
-                    My Word Book
-                  </CardTitle>
-                  <CardDescription>
-                    Your personalized vocabulary collection
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center p-4 bg-white/50 rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{savedWords.length}</div>
-                    <div className="text-xs text-text-secondary">Words Saved</div>
-                  </div>
-                  
-                  <Button onClick={() => navigate('/vocabulary')} className="w-full btn-gradient">
-                    <Languages className="w-4 h-4 mr-2" />
-                    View My Vocabulary
-                  </Button>
-                  
-                  <p className="text-xs text-text-secondary text-center">
-                    Words from incorrect answers are automatically added!
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Daily Challenge - Now Functional */}
-              <DailyChallenge />
-
-              {/* User Analytics */}
-              {user && userStats && <Card className="card-modern">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-primary" />
-                      Your Analytics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-surface-3 rounded-lg">
-                        <div className="text-2xl font-bold text-primary">{userStats.totalTests}</div>
-                        <div className="text-xs text-text-secondary">Tests Taken</div>
-                      </div>
-                      <div className="text-center p-3 bg-surface-3 rounded-lg">
-                        <div className="text-2xl font-bold text-brand-green">{userStats.avgScore}%</div>
-                        <div className="text-xs text-text-secondary">Avg Score</div>
-                      </div>
+            {/* Right column */}
+            <div className="flex flex-col gap-4 lg:gap-6">
+              {/* Today's Schedule Heading */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h2 className="text-lg lg:text-xl font-semibold text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Practice Areas</h2>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-slate-600" style={{fontFamily: 'Inter, sans-serif'}}>Your progress:</span>
+                  <div className="flex -space-x-2">
+                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-blue-500/20 border-2 border-white/50 flex items-center justify-center">
+                      <BookOpen className="w-3 h-3 text-blue-600" />
                     </div>
+                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-green-500/20 border-2 border-white/50 flex items-center justify-center">
+                      <Volume2 className="w-3 h-3 text-green-600" />
+                    </div>
+                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-purple-500/20 border-2 border-white/50 flex items-center justify-center">
+                      <PenTool className="w-3 h-3 text-purple-600" />
+                    </div>
+                    <div className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-white/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-semibold border-2 border-white/50 text-slate-700" style={{fontFamily: 'Inter, sans-serif'}}>+1</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid xl:grid-cols-1 gap-4 lg:gap-6">
+                {/* Skill Practice Cards */}
+                <div className="flex flex-col gap-4 lg:gap-6">
+                  {skills.map((skill, index) => {
+                    const Icon = skill.icon;
+                    const tagColors = [
+                      { bg: 'bg-green-500/20', text: 'text-green-700', border: 'border-green-200/30', label: 'Strong' },
+                      { bg: 'bg-blue-500/20', text: 'text-blue-700', border: 'border-blue-200/30', label: 'Improving' },
+                      { bg: 'bg-orange-500/20', text: 'text-orange-700', border: 'border-orange-200/30', label: 'Focus Area' },
+                      { bg: 'bg-purple-500/20', text: 'text-purple-700', border: 'border-purple-200/30', label: 'Practice' }
+                    ];
+                    const tag = tagColors[index] || tagColors[0];
                     
-                    {userStats.recentImprovement !== 0 && <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg">
-                        <TrendingUp className="w-4 h-4 text-primary" />
-                        <span className="text-sm text-primary font-medium">
-                          {userStats.recentImprovement > 0 ? '+' : ''}{userStats.recentImprovement}% improvement
+                    return (
+                      <div key={skill.name} className="relative lg:p-6 bg-white/40 border-white/30 border rounded-xl pt-4 pr-4 pb-4 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-md">
+                        <span className={`absolute top-3 lg:top-4 right-3 lg:right-4 text-xs ${tag.bg} ${tag.text} px-2 lg:px-3 py-1 rounded-full backdrop-blur-sm border ${tag.border}`} style={{fontFamily: 'Inter, sans-serif'}}>
+                          {tag.label}
                         </span>
-                      </div>}
-                  </CardContent>
-                </Card>}
-
-              {/* Achievements */}
-              <Card className="card-modern">
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Achievements</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {achievements.map((achievement, index) => {
-                    const Icon = achievement.icon;
-                    return <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-3 transition-colors">
-                          <div className={`p-2 rounded-lg bg-surface-3 ${achievement.color}`}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <span className="text-sm font-medium">{achievement.label}</span>
-                        </div>;
-                  })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Test Results */}
-              {user && testResults.length > 0 && <Card className="card-modern">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-brand-green" />
-                      Recent Tests
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {testResults.slice(0, 3).map((result, index) => <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-3 transition-colors">
+                        <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold mb-3 lg:mb-4 text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>
+                          <Icon className="w-4 h-4" />
+                          {skill.name} Practice
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600 mb-4 lg:mb-6">
                           <div>
-                            <div className="text-sm font-medium">{result.test_type}</div>
-                            <div className="text-xs text-text-secondary">
-                              {new Date(result.created_at).toLocaleDateString()}
+                            <p className="font-medium text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Level:</p>
+                            <p style={{fontFamily: 'Inter, sans-serif'}}>{skill.level}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Progress:</p>
+                            <p style={{fontFamily: 'Inter, sans-serif'}}>{skill.progress}%</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Type:</p>
+                            <p style={{fontFamily: 'Inter, sans-serif'}}>{skill.description}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex -space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-slate-800/20 border-2 border-white/50 flex items-center justify-center">
+                              <CheckCircle className="w-3 h-3 text-slate-700" />
+                            </div>
+                            <div className="w-6 h-6 rounded-full bg-blue-500/20 border-2 border-white/50 flex items-center justify-center">
+                              <Target className="w-3 h-3 text-blue-600" />
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-primary">
-                              {result.score_percentage}%
-                            </div>
-                            <div className="text-xs text-text-secondary">
-                              {result.correct_answers}/{result.total_questions}
-                            </div>
-                          </div>
-                        </div>)}
+                          <button 
+                            onClick={() => handleSkillPractice(skill.name)}
+                            className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20"
+                            style={{fontFamily: 'Inter, sans-serif'}}
+                          >
+                            Start Practice <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="lg:p-6 flex flex-col gap-4 bg-white/40 border-white/30 border rounded-xl pt-4 pr-4 pb-4 pl-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h4 className="lg:text-base text-sm font-semibold text-slate-800" style={{fontFamily: 'Inter, sans-serif'}}>Quick Actions</h4>
                     </div>
-                  </CardContent>
-                </Card>}
+                    <button 
+                      onClick={() => navigate('/vocabulary')}
+                      className="text-xs font-medium text-slate-600 flex items-center gap-1 hover:text-blue-600 transition"
+                      style={{fontFamily: 'Inter, sans-serif'}}
+                    >
+                      View All
+                    </button>
+                  </div>
+                  <ul className="text-sm text-slate-700 flex flex-col gap-3">
+                    <li 
+                      onClick={() => navigate('/vocabulary')}
+                      className="flex items-start justify-between hover:bg-white/30 p-2 rounded-lg cursor-pointer transition"
+                    >
+                      <span style={{fontFamily: 'Inter, sans-serif'}}>Review vocabulary from incorrect answers</span>
+                      <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" />
+                    </li>
+                    <li 
+                      onClick={() => navigate('/reading')}
+                      className="flex items-start justify-between hover:bg-white/30 p-2 rounded-lg cursor-pointer transition"
+                    >
+                      <span style={{fontFamily: 'Inter, sans-serif'}}>Take a quick reading assessment</span>
+                      <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" />
+                    </li>
+                    <li 
+                      onClick={() => navigate('/speaking')}
+                      className="flex items-start justify-between hover:bg-white/30 p-2 rounded-lg cursor-pointer transition"
+                    >
+                      <span style={{fontFamily: 'Inter, sans-serif'}}>Practice speaking with AI feedback</span>
+                      <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" />
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="space-section bg-surface-1">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-heading-2 mb-4">Why Choose Our Platform</h2>
-            <p className="text-body-large max-w-2xl mx-auto">
-              Advanced AI technology meets proven teaching methods to accelerate your English learning journey
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="card-modern text-center">
-              <CardContent className="pt-8">
-                <div className="w-16 h-16 bg-brand-blue/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="w-8 h-8 text-brand-blue" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Official Content</h3>
-                <p className="text-text-secondary">
-                  Practice with authentic materials from Cambridge, IDP, and other official sources
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-modern text-center">
-              <CardContent className="pt-8">
-                <div className="w-16 h-16 bg-brand-green/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Target className="w-8 h-8 text-brand-green" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">AI-Powered Feedback</h3>
-                <p className="text-text-secondary">
-                  Get instant, detailed analysis of your performance with personalized improvement suggestions
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-modern text-center">
-              <CardContent className="pt-8">
-                <div className="w-16 h-16 bg-brand-purple/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <TrendingUp className="w-8 h-8 text-brand-purple" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Smart Analytics</h3>
-                <p className="text-text-secondary">
-                  Track your progress with detailed insights and adaptive learning recommendations
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-    </div>;
+        </main>
+      </div>
+    </div>
+  );
 };
 export default Dashboard;

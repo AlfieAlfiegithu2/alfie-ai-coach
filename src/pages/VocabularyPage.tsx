@@ -92,17 +92,17 @@ const VocabularyPage = () => {
       const { data, error } = await supabase.functions.invoke('translation-service', {
         body: {
           text: word,
-          targetLanguage: selectedLanguage.toLowerCase(),
-          sourceLanguage: 'en'
+          targetLang: selectedLanguage.toLowerCase(),
+          sourceLang: 'en'
         }
       });
 
       if (error) throw error;
 
-      if (data?.translation) {
+      if (data?.success && data?.result?.translation) {
         const updatedWords = savedWords.map(w => 
           w.id === wordId 
-            ? { ...w, translation: data.translation }
+            ? { ...w, translation: data.result.translation }
             : w
         );
         setSavedWords(updatedWords);

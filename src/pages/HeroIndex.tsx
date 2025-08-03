@@ -86,12 +86,12 @@ const HeroIndex = () => {
 
       {/* Hero Section */}
       <section className="relative z-10 px-8 py-20 text-center">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto my-0">
           {/* Hero Badge */}
           
           
           {/* Headline with Animation */}
-          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light mx-0 my-[117px]">
+          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light mx-0 my-[17px]">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>

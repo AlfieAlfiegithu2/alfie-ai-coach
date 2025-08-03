@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,44 +8,23 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
-import TextType from "@/components/TextType";
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [user, setUser] = useState<any>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
-  const testCardsRef = useRef<HTMLDivElement>(null);
-  
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       setUser(user);
     };
     getUser();
-  }, []);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const cards = entry.target.querySelectorAll('.test-card');
-            cards.forEach((card, index) => {
-              setTimeout(() => {
-                card.classList.add('animate-fade-in', 'animate-scale-in');
-              }, index * 100);
-            });
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (testCardsRef.current) {
-      observer.observe(testCardsRef.current);
-    }
-
-    return () => observer.disconnect();
   }, []);
   const handleAuthAction = () => {
     if (user) {
@@ -106,20 +85,36 @@ const HeroIndex = () => {
         </div>
       </header>
 
-      {/* Hero Section - Moved to Middle */}
+      {/* Test Preparation Section - Moved Up */}
+      <section id="tests" className="relative z-10 px-8 py-20 mt-16">
+        <div className="max-w-6xl mx-auto">
+          {/* Test Cards Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" onClick={() => navigate(test.path)}>
+                <CardHeader>
+                  
+                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-base">
+                    {test.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  
+                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
+                    Start Practice
+                  </Button>
+                </CardContent>
+              </Card>)}
+          </div>
+        </div>
+      </section>
+
+      {/* Hero Section - Moved Down */}
       <section className="relative z-10 px-8 py-32 text-center">
         <div className="max-w-4xl mx-auto bg-white/10 border border-white/20 backdrop-blur-xl rounded-xl p-8">
-          {/* Headline with Typing Animation */}
-          <h1 className="text-5xl mb-8 leading-tight text-zinc-950 md:text-6xl font-semibold my-0 py-0 px-0">
-            <TextType 
-              text={["Unlock Your Potential.", "Master English with AI."]}
-              typingSpeed={100}
-              pauseDuration={1500}
-              startOnVisible={true}
-              showCursor={true}
-              cursorCharacter="|"
-              className="inline"
-            />
+          {/* Headline with Animation */}
+          <h1 className="text-5xl mb-8 leading-tight animate-fade-in text-zinc-950 md:text-6xl font-semibold my-0 py-0 px-0">
+            Unlock Your Potential.<br />
+            Master English with AI.
           </h1>
           
           {/* Subheadline */}
@@ -159,33 +154,6 @@ const HeroIndex = () => {
               </div>
               <div className="text-sm text-zinc-700">Success Rate</div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Test Preparation Section - Moved Below Hero */}
-      <section id="tests" ref={testCardsRef} className="relative z-10 px-8 py-20">
-        <div className="max-w-6xl mx-auto">
-          {/* Test Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testTypes.map((test, index) => (
-              <Card 
-                key={index} 
-                className="test-card bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 opacity-0 transform translate-y-8" 
-                onClick={() => navigate(test.path)}
-              >
-                <CardHeader>
-                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-base">
-                    {test.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
-                    Start Practice
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </section>

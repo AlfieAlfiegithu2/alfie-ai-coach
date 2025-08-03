@@ -20,7 +20,11 @@ interface UserPreferences {
   preferred_name: string;
 }
 
-const SettingsModal = () => {
+interface SettingsModalProps {
+  onSettingsChange?: () => void;
+}
+
+const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -91,6 +95,7 @@ const SettingsModal = () => {
 
       toast.success('Settings saved successfully!');
       setOpen(false);
+      onSettingsChange?.();
     } catch (error) {
       console.error('Error saving preferences:', error);
       toast.error('Failed to save settings');

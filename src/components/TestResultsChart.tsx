@@ -14,7 +14,12 @@ interface TestResult {
   test_data?: any;
 }
 
-const TestResultsChart = () => {
+interface TestResultsChartProps {
+  selectedSkill: string;
+  selectedTestType: string;
+}
+
+const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartProps) => {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState('1week');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
@@ -24,7 +29,7 @@ const TestResultsChart = () => {
     if (user) {
       loadTestResults();
     }
-  }, [user, dateRange]);
+  }, [user, dateRange, selectedSkill, selectedTestType]);
 
   const loadTestResults = async () => {
     if (!user) return;
@@ -47,12 +52,18 @@ const TestResultsChart = () => {
           fromDate = subDays(new Date(), 7);
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('test_results')
         .select('*')
         .eq('user_id', user.id)
-        .gte('created_at', fromDate.toISOString())
-        .order('created_at', { ascending: true });
+        .gte('created_at', fromDate.toISOString());
+
+      // Filter by skill if not overall
+      if (selectedSkill !== 'overall') {
+        query = query.ilike('test_type', `%${selectedSkill}%`);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: true });
 
       if (error) throw error;
 
@@ -83,7 +94,9 @@ const TestResultsChart = () => {
     <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-800">Overall Test Results</CardTitle>
+          <CardTitle className="text-slate-800">
+            {selectedSkill === 'overall' ? 'Overall Test Results' : `${selectedSkill.charAt(0).toUpperCase() + selectedSkill.slice(1)} Test Results`}
+          </CardTitle>
           <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-32 bg-white/50 border-white/30">
               <SelectValue />
@@ -120,7 +133,8 @@ const TestResultsChart = () => {
                   <YAxis 
                     stroke="rgb(71, 85, 105)"
                     fontSize={12}
-                    domain={[0, 100]}
+                    domain={['dataMin - 5', 'dataMax + 5']}
+                    tickFormatter={(value) => `${Math.round(value)}%`}
                   />
                   <Tooltip 
                     contentStyle={{

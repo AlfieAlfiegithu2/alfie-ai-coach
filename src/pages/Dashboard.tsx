@@ -19,12 +19,14 @@ const Dashboard = () => {
     profile
   } = useAuth();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
+  const [selectedSkill, setSelectedSkill] = useState("overall");
   const [userStats, setUserStats] = useState<any>(null);
   const [testResults, setTestResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savedWords, setSavedWords] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const testTypes = [{
     id: "IELTS",
     name: "IELTS",
@@ -58,35 +60,7 @@ const Dashboard = () => {
     bgColor: "bg-gray-500/10",
     borderColor: "border-gray-500/20"
   }];
-  const skills = [{
-    name: "Reading",
-    icon: BookOpen,
-    description: "Comprehension & Analysis",
-    progress: 78,
-    level: "Intermediate",
-    color: "text-blue-500"
-  }, {
-    name: "Listening",
-    icon: Volume2,
-    description: "Audio Understanding",
-    progress: 85,
-    level: "Advanced",
-    color: "text-gray-500"
-  }, {
-    name: "Writing",
-    icon: PenTool,
-    description: "Essay & Task Writing",
-    progress: 62,
-    level: "Intermediate",
-    color: "text-blue-500"
-  }, {
-    name: "Speaking",
-    icon: MessageSquare,
-    description: "Fluency & Pronunciation",
-    progress: 71,
-    level: "Intermediate",
-    color: "text-gray-500"
-  }];
+  const skills = ["Reading", "Listening", "Writing", "Speaking"];
   const achievements = [{
     icon: Trophy,
     label: "7-day streak",
@@ -123,6 +97,7 @@ const Dashboard = () => {
         if (preferences) {
           setUserPreferences(preferences);
           setSelectedTestType(preferences.target_test_type || 'IELTS');
+          setRefreshKey(prev => prev + 1);
         }
 
         // Fetch test results
@@ -152,7 +127,7 @@ const Dashboard = () => {
     };
     fetchUserData();
     loadSavedWords();
-  }, [user]);
+  }, [user, refreshKey]);
   const loadSavedWords = () => {
     const saved = localStorage.getItem('alfie-saved-vocabulary');
     if (saved) {
@@ -215,7 +190,7 @@ const Dashboard = () => {
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Settings Button */}
-            <SettingsModal />
+            <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
             
             {/* User Avatar */}
             <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
@@ -237,15 +212,25 @@ const Dashboard = () => {
                 Good morning, {userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'}!
               </h1>
 
-              {/* Test Type Selection Card */}
+              {/* Skills Selection Card */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
-                {testTypes.map((type) => {
-                  const Icon = type.icon;
-                  const isSelected = selectedTestType === type.id;
+                {skills.map((skill) => {
+                  const isSelected = selectedSkill === skill.toLowerCase();
+                  const getIcon = (skillName: string) => {
+                    switch(skillName) {
+                      case 'Reading': return BookOpen;
+                      case 'Listening': return Volume2;
+                      case 'Writing': return PenTool;
+                      case 'Speaking': return MessageSquare;
+                      default: return BookOpen;
+                    }
+                  };
+                  const Icon = getIcon(skill);
+                  
                   return (
                     <button
-                      key={type.id}
-                      onClick={() => setSelectedTestType(type.id)}
+                      key={skill}
+                      onClick={() => setSelectedSkill(skill.toLowerCase())}
                       className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${
                         isSelected 
                           ? 'bg-white/20 border-white/40 shadow-lg' 
@@ -254,11 +239,24 @@ const Dashboard = () => {
                     >
                       <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
                       <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
-                        {type.name}
+                        {skill}
                       </span>
                     </button>
                   );
                 })}
+                <button
+                  onClick={() => setSelectedSkill('overall')}
+                  className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${
+                    selectedSkill === 'overall'
+                      ? 'bg-white/20 border-white/40 shadow-lg' 
+                      : 'bg-white/10 border-white/20 hover:bg-white/15'
+                  }`}
+                >
+                  <BarChart3 className={`w-5 h-5 lg:w-6 lg:h-6 ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} />
+                  <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Overall
+                  </span>
+                </button>
               </div>
 
               {/* Target Score Display */}
@@ -274,7 +272,7 @@ const Dashboard = () => {
               </div>
 
               {/* Test Results Chart */}
-              <TestResultsChart />
+              <TestResultsChart selectedSkill={selectedSkill} selectedTestType={selectedTestType} />
 
               {/* Analytics Card */}
               <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
@@ -326,76 +324,86 @@ const Dashboard = () => {
               </div>
 
               <div className="grid xl:grid-cols-1 gap-4 lg:gap-6">
-                {/* Skill Practice Cards */}
+                {/* Test Results and Feedback Cards */}
                 <div className="flex flex-col gap-4 lg:gap-6">
-                  {skills.map((skill, index) => {
-                  const Icon = skill.icon;
-                  const tagColors = [{
-                    bg: 'bg-green-500/20',
-                    text: 'text-green-700',
-                    border: 'border-green-200/30',
-                    label: 'Strong'
-                  }, {
-                    bg: 'bg-blue-500/20',
-                    text: 'text-blue-700',
-                    border: 'border-blue-200/30',
-                    label: 'Improving'
-                  }, {
-                    bg: 'bg-orange-500/20',
-                    text: 'text-orange-700',
-                    border: 'border-orange-200/30',
-                    label: 'Focus Area'
-                  }, {
-                    bg: 'bg-purple-500/20',
-                    text: 'text-purple-700',
-                    border: 'border-purple-200/30',
-                    label: 'Practice'
-                  }];
-                  const tag = tagColors[index] || tagColors[0];
-                  return <div key={skill.name} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-                        
+                  {skills.map((skill) => {
+                    const getIcon = (skillName: string) => {
+                      switch(skillName) {
+                        case 'Reading': return BookOpen;
+                        case 'Listening': return Volume2;
+                        case 'Writing': return PenTool;
+                        case 'Speaking': return MessageSquare;
+                        default: return BookOpen;
+                      }
+                    };
+                    const Icon = getIcon(skill);
+                    
+                    // Get recent test results for this skill
+                    const skillResults = testResults.filter(result => 
+                      result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase())
+                    ).slice(0, 3);
+
+                    const averageScore = skillResults.length > 0 
+                      ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length)
+                      : 0;
+
+                    return (
+                      <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                         <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold mb-3 lg:mb-4 text-slate-800" style={{
-                      fontFamily: 'Inter, sans-serif'
-                    }}>
+                          fontFamily: 'Inter, sans-serif'
+                        }}>
                           <Icon className="w-4 h-4" />
-                          {skill.name} Practice
+                          {skill} Results & Feedback
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600 mb-4 lg:mb-6">
-                          <div>
-                            <p className="font-medium text-slate-800" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>Level:</p>
-                            <p style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>{skill.level}</p>
+                        
+                        {skillResults.length > 0 ? (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-3 text-xs text-slate-600 mb-4">
+                              <div>
+                                <p className="font-medium text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                  Tests Taken:
+                                </p>
+                                <p style={{ fontFamily: 'Inter, sans-serif' }}>{skillResults.length}</p>
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                  Average Score:
+                                </p>
+                                <p style={{ fontFamily: 'Inter, sans-serif' }}>{averageScore}%</p>
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                  Latest Score:
+                                </p>
+                                <p style={{ fontFamily: 'Inter, sans-serif' }}>{skillResults[0]?.score_percentage || 0}%</p>
+                              </div>
+                            </div>
+                            
+                            <button 
+                              onClick={() => handleSkillPractice(skill)} 
+                              className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" 
+                              style={{ fontFamily: 'Inter, sans-serif' }}
+                            >
+                              View Detailed Results <ChevronRight className="w-4 h-4" />
+                            </button>
                           </div>
-                          <div>
-                            <p className="font-medium text-slate-800" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>Progress:</p>
-                            <p style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>{skill.progress}%</p>
+                        ) : (
+                          <div className="text-center py-6">
+                            <p className="text-slate-600 mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
+                              No {skill.toLowerCase()} tests taken yet
+                            </p>
+                            <button 
+                              onClick={() => handleSkillPractice(skill)} 
+                              className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" 
+                              style={{ fontFamily: 'Inter, sans-serif' }}
+                            >
+                              Start First Test <ChevronRight className="w-4 h-4" />
+                            </button>
                           </div>
-                          <div>
-                            <p className="font-medium text-slate-800" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>Type:</p>
-                            <p style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>{skill.description}</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          
-                          <button onClick={() => handleSkillPractice(skill.name)} className="text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
-                            Start Practice <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>;
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Quick Actions */}

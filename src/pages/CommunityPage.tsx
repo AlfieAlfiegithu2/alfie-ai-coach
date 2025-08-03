@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Users, MessageSquare, ThumbsUp, Star, Send, Search, Filter, Home } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { BookOpen, Headphones, PenTool, Mic, Target, TrendingUp, Calendar, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,302 +12,219 @@ import { useToast } from '@/hooks/use-toast';
 import { logUserAction, logPageVisit } from '@/utils/analytics';
 const CommunityPage = () => {
   const navigate = useNavigate();
-  const {
-    user
-  } = useAuth();
-  const {
-    toast
-  } = useToast();
-  const [newPost, setNewPost] = useState('');
-  const [posts, setPosts] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Dashboard data
+  const [dashboardData] = useState({
+    overallProgress: 72,
+    targetBand: 7.5,
+    currentBand: 6.5,
+    testsCompleted: 12,
+    studyStreak: 15,
+    nextTest: "Reading Practice Test 3",
+    weakestSkill: "Writing",
+    strongestSkill: "Listening"
+  });
+
+  const skillProgress = [
+    { name: "Reading", score: 7.0, progress: 80, icon: BookOpen, color: "bg-blue-500" },
+    { name: "Listening", score: 7.5, progress: 90, icon: Headphones, color: "bg-green-500" },
+    { name: "Writing", score: 6.0, progress: 60, icon: PenTool, color: "bg-orange-500" },
+    { name: "Speaking", score: 6.5, progress: 70, icon: Mic, color: "bg-purple-500" }
+  ];
 
   // Load analytics on page visit
   useEffect(() => {
-    logPageVisit('community');
+    logPageVisit('ielts-dashboard');
   }, []);
-
-  // Load posts from Supabase
-  useEffect(() => {
-    loadPosts();
-  }, []);
-  const loadPosts = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('community_posts').select('*').order('created_at', {
-        ascending: false
-      });
-      if (error) throw error;
-      setPosts(data || []);
-    } catch (error) {
-      console.error('Error loading posts:', error);
-      // Fallback to mock data
-      setPosts([{
-        id: 1,
-        username: 'Sarah Chen',
-        content: 'Just achieved Band 7 in Reading! The key was practicing with Cambridge 19 daily. Any tips for improving Writing Task 2?',
-        likes_count: 12,
-        comments_count: 5,
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        category: 'reading'
-      }, {
-        id: 2,
-        username: 'Mike Johnson',
-        content: 'Looking for a study group for IELTS preparation. I\'m aiming for Band 7.5 by March. Anyone interested?',
-        likes_count: 8,
-        comments_count: 12,
-        created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        category: 'general'
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleCreatePost = async () => {
-    if (!newPost.trim()) return;
-    if (!user) {
-      toast({
-        title: "Please sign in to post",
-        variant: "destructive"
-      });
-      return;
-    }
-    try {
-      const {
-        error
-      } = await supabase.from('community_posts').insert({
-        user_id: user.id,
-        username: user.email?.split('@')[0] || 'User',
-        title: newPost.substring(0, 100),
-        content: newPost,
-        category: selectedCategory === 'all' ? 'general' : selectedCategory
-      });
-      if (error) throw error;
-      setNewPost('');
-      toast({
-        title: "Post created successfully!"
-      });
-      loadPosts();
-
-      // Log analytics
-      logUserAction('community_post_created', undefined, {
-        content_length: newPost.length,
-        category: selectedCategory
-      });
-    } catch (error) {
-      console.error('Error creating post:', error);
-      toast({
-        title: "Failed to create post",
-        variant: "destructive"
-      });
-    }
-  };
-  const handleLikePost = async (postId: string) => {
-    if (!user) {
-      toast({
-        title: "Please sign in to like posts",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Log analytics
-    logUserAction('community_post_liked', postId.toString());
-
-    // Update local state optimistically
-    setPosts(prev => prev.map(post => post.id === postId ? {
-      ...post,
-      likes_count: (post.likes_count || 0) + 1
-    } : post));
-  };
-  const filteredPosts = posts.filter(post => {
-    if (searchQuery && !post.content.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    if (selectedCategory !== 'all' && post.category !== selectedCategory) {
-      return false;
-    }
-    return true;
-  });
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-    return `${Math.floor(diffInHours / 24)} days ago`;
-  };
-  return <div className="min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
-      {/* Background Image */}
-      <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
-      backgroundImage: "url('/lovable-uploads/e2289d4e-02bd-49a2-be13-299500e8fa69.png')"
-    }} />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Professional Background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-100 via-blue-50 to-slate-50 -z-10" />
       
       {/* Header */}
-      <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
-        <h1 className="text-3xl font-semibold text-slate-800" style={{
-        fontFamily: 'Bricolage Grotesque, sans-serif'
-      }}>
-          Study Community
-        </h1>
-        <Button onClick={() => navigate('/')} variant="ghost" style={{
-        fontFamily: 'Inter, sans-serif'
-      }} className="hover:bg-white/10 flex items-center gap-2 text-slate-950">
-          <Home className="w-4 h-4" />
-          Home
-        </Button>
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">My IELTS Dashboard</h1>
+            <p className="text-sm text-slate-600">Track your progress towards Band {dashboardData.targetBand}</p>
+          </div>
+          <Button onClick={() => navigate('/ielts-portal')} variant="outline" className="bg-white/80">
+            Back to Portal
+          </Button>
+        </div>
       </header>
 
-        {/* Main Content */}
-        <main className="relative sm:px-6 lg:px-12 pr-4 pb-8 pl-4">
-          <div className="max-w-4xl mx-auto space-y-6 pt-6">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Progress Overview */}
+          <div className="lg:col-span-2 space-y-6">
             
-            {/* Header */}
-            <div className="text-center mb-8">
-              <p style={{
-            fontFamily: 'Inter, sans-serif'
-          }} className="text-slate-950 font-light">Connect with fellow students, share tips, and get support on your English learning journey</p>
-            </div>
-
-            {/* Create Post */}
-            <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-              <h3 className="flex items-center gap-2 text-lg font-semibold mb-4 text-slate-800" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>
-                <MessageSquare className="w-5 h-5 text-slate-600" />
-                Share with the Community
-              </h3>
-              <div className="space-y-4">
-                <Textarea value={newPost} onChange={e => setNewPost(e.target.value)} placeholder="Ask a question, share a tip, or start a discussion..." className="min-h-[100px] bg-white/10 border-white/20 text-slate-800 placeholder:text-slate-500" />
-                <div className="flex justify-between items-center">
-                  <div className="flex gap-2">
-                    <Badge variant={selectedCategory === 'general' ? 'default' : 'outline'} className="cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 text-slate-700" onClick={() => setSelectedCategory('general')}>
-                      Question
-                    </Badge>
-                    <Badge variant={selectedCategory === 'tip' ? 'default' : 'outline'} className="cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 text-slate-700" onClick={() => setSelectedCategory('tip')}>
-                      Study Tip
-                    </Badge>
-                    <Badge variant={selectedCategory === 'success' ? 'default' : 'outline'} className="cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 text-slate-700" onClick={() => setSelectedCategory('success')}>
-                      Success Story
-                    </Badge>
+            {/* Overall Progress Card */}
+            <Card className="bg-white/90 backdrop-blur-sm border-slate-200/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-blue-600" />
+                  Overall Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600">Progress to Band {dashboardData.targetBand}</span>
+                    <span className="text-sm font-semibold">{dashboardData.overallProgress}%</span>
                   </div>
-                  <Button onClick={handleCreatePost} disabled={!newPost.trim()} className="bg-slate-800/80 backdrop-blur-sm text-white hover:bg-slate-700/80 border border-white/20">
-                    <Send className="w-4 h-4 mr-2" />
-                    Post
-                  </Button>
+                  <Progress value={dashboardData.overallProgress} className="h-3" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Current: Band {dashboardData.currentBand}</span>
+                    <span className="text-slate-600">Target: Band {dashboardData.targetBand}</span>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Search and Filter Bar */}
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <Input placeholder="Search posts..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-white/10 border-white/20 text-slate-800 placeholder:text-slate-500" />
-              </div>
-              <div className="flex gap-2">
-                <Button variant={selectedCategory === 'all' ? 'default' : 'outline'} onClick={() => setSelectedCategory('all')} size="sm" className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20">
-                  All
-                </Button>
-                <Button variant={selectedCategory === 'general' ? 'default' : 'outline'} onClick={() => setSelectedCategory('general')} size="sm" className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20">
-                  Question
-                </Button>
-                <Button variant={selectedCategory === 'tip' ? 'default' : 'outline'} onClick={() => setSelectedCategory('tip')} size="sm" className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20">
-                  Study Tip
-                </Button>
-                <Button variant={selectedCategory === 'success' ? 'default' : 'outline'} onClick={() => setSelectedCategory('success')} size="sm" className="bg-white/10 border-white/20 text-slate-700 hover:bg-white/20">
-                  Success Story
-                </Button>
-              </div>
-            </div>
-
-            {/* Posts */}
-            <div className="space-y-4">
-              {loading ? <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl text-center">
-                  <p className="text-slate-600">Loading posts...</p>
-                </div> : filteredPosts.length === 0 ? <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl text-center">
-                  <p className="text-slate-600">No posts found. Be the first to start a discussion!</p>
-                </div> : filteredPosts.map(post => <div key={post.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-                  <div className="space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-800/20 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                          <Users className="w-5 h-5 text-slate-600" />
+            {/* Skills Progress */}
+            <Card className="bg-white/90 backdrop-blur-sm border-slate-200/50">
+              <CardHeader>
+                <CardTitle>Skills Progress</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {skillProgress.map((skill) => (
+                    <div key={skill.name} className="p-4 rounded-lg bg-slate-50/80">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <skill.icon className="w-5 h-5 text-slate-600" />
+                          <span className="font-medium">{skill.name}</span>
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }} className="font-semibold text-slate-950">{post.username}</p>
-                          </div>
-                          <p style={{
-                      fontFamily: 'Inter, sans-serif'
-                    }} className="text-sm text-slate-950">{getTimeAgo(post.created_at)}</p>
-                        </div>
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                          Band {skill.score}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="text-xs bg-white/10 border-white/20 text-slate-700">
-                        {post.category}
-                      </Badge>
+                      <Progress value={skill.progress} className="h-2" />
+                      <p className="text-xs text-slate-500 mt-1">{skill.progress}% to target</p>
                     </div>
-                    
-                    <p style={{
-                fontFamily: 'Inter, sans-serif'
-              }} className="leading-relaxed text-slate-950">{post.content}</p>
-                    
-                    <div className="flex items-center gap-4">
-                      <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-white/10" onClick={() => handleLikePost(post.id)}>
-                        <ThumbsUp className="w-4 h-4 mr-1" />
-                        {post.likes_count || 0}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-white/10">
-                        <MessageSquare className="w-4 h-4 mr-1" />
-                        {post.comments_count || 0} replies
-                      </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card className="bg-white/90 backdrop-blur-sm border-slate-200/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-green-600" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50">
+                    <BookOpen className="w-4 h-4 text-green-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Completed Reading Practice Test 2</p>
+                      <p className="text-xs text-slate-500">Score: 7.5 • 2 hours ago</p>
                     </div>
                   </div>
-                </div>)}
-            </div>
-
-            {/* Coming Soon Features */}
-            <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-              <h3 className="text-lg font-semibold mb-4 text-slate-800" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>Coming Soon</h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="text-center p-4">
-                  <Users className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  <h4 className="font-semibold mb-1 text-slate-800" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Study Groups</h4>
-                  <p className="text-sm text-slate-600" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Join or create study groups with students at your level</p>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50">
+                    <Headphones className="w-4 h-4 text-blue-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Listening Exercise Session</p>
+                      <p className="text-xs text-slate-500">Duration: 45 min • Yesterday</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50">
+                    <PenTool className="w-4 h-4 text-orange-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Writing Task 1 Practice</p>
+                      <p className="text-xs text-slate-500">Score: 6.0 • 2 days ago</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-center p-4">
-                  <MessageSquare className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  <h4 className="font-semibold mb-1 text-slate-800" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Live Q&A</h4>
-                  <p className="text-sm text-slate-600" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Weekly live sessions with English teachers and experts</p>
-                </div>
-                <div className="text-center p-4">
-                  <Star className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  <h4 className="font-semibold mb-1 text-slate-800" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Peer Reviews</h4>
-                  <p className="text-sm text-slate-600" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Get feedback on your writing from other students</p>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
-        </main>
-    </div>;
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            
+            {/* Quick Stats */}
+            <Card className="bg-white/90 backdrop-blur-sm border-slate-200/50">
+              <CardHeader>
+                <CardTitle className="text-lg">Quick Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Tests Completed</span>
+                  <span className="font-bold text-lg">{dashboardData.testsCompleted}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Study Streak</span>
+                  <Badge className="bg-orange-100 text-orange-700">
+                    {dashboardData.studyStreak} days
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Strongest Skill</span>
+                  <Badge className="bg-green-100 text-green-700">
+                    {dashboardData.strongestSkill}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Focus Area</span>
+                  <Badge variant="destructive" className="bg-red-100 text-red-700">
+                    {dashboardData.weakestSkill}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Next Recommended */}
+            <Card className="bg-white/90 backdrop-blur-sm border-slate-200/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                  Next Recommended
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+                    <p className="font-medium text-sm">{dashboardData.nextTest}</p>
+                    <p className="text-xs text-slate-500 mt-1">Recommended based on your weak areas</p>
+                    <Button size="sm" className="mt-2 w-full bg-purple-600 hover:bg-purple-700">
+                      Start Test
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Achievement */}
+            <Card className="bg-white/90 backdrop-blur-sm border-slate-200/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-yellow-600" />
+                  Recent Achievement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center p-4">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Award className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <p className="font-medium text-sm">15-Day Streak!</p>
+                  <p className="text-xs text-slate-500">Keep up the great work!</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 };
 export default CommunityPage;

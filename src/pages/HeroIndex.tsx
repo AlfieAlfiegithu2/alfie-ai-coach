@@ -100,7 +100,7 @@ const HeroIndex = () => {
       <section id="tests" className="relative z-10 px-8 py-20">
         <div className="max-w-6xl mx-auto">
           {/* Hero Content Moved Here */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 mt-32">
             <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light">
               Unlock Your Potential.<br />
               Master English with AI.

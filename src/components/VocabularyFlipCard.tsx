@@ -33,28 +33,10 @@ const VocabularyFlipCard = ({ word, onRemove, onTranslate, selectedLanguage = 'S
       <div className={`relative w-full h-full transition-transform duration-500 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
         
         {/* Front Side - English Word */}
-        <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl bg-white/10 border border-white/20 backdrop-blur-xl p-4 flex flex-col justify-between shadow-soft">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white mb-1">
-                {word.word}
-              </h3>
-              <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
-                <Languages className="w-3 h-3 mr-1" />
-                English
-              </Badge>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-xs text-white/70">
-              <Calendar className="w-3 h-3" />
-              <span>{new Date(word.savedAt).toLocaleDateString()}</span>
-            </div>
-            <div className="text-xs text-white/50">
-              Hover to translate
-            </div>
-          </div>
+        <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl bg-white/10 border border-white/20 backdrop-blur-xl flex items-center justify-center shadow-soft">
+          <h3 className="text-2xl font-bold text-black text-center">
+            {word.word}
+          </h3>
         </div>
 
         <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-xl bg-white/10 border border-white/20 backdrop-blur-xl p-4 flex flex-col justify-between shadow-soft">

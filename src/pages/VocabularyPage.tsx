@@ -135,8 +135,8 @@ const VocabularyPage = () => {
                   <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl text-white">My Saved Vocabulary</CardTitle>
-                  <p className="text-white/70">
+                  <CardTitle className="text-2xl text-black">My Saved Vocabulary</CardTitle>
+                  <p className="text-black/70">
                     {savedWords.length} words saved
                   </p>
                 </div>
@@ -155,8 +155,8 @@ const VocabularyPage = () => {
             
             {/* Language Selector */}
             <div className="flex items-center gap-3">
-              <Languages className="w-5 h-5 text-white/70" />
-              <span className="text-sm text-white/70">Translate to:</span>
+              <Languages className="w-5 h-5 text-black/70" />
+              <span className="text-sm text-black/70">Translate to:</span>
               <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
                 <SelectTrigger className="w-40 bg-white/10 border-white/30 text-white">
                   <SelectValue />

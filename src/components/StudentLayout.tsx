@@ -53,9 +53,7 @@ const StudentLayout = ({
     path: "/explanations",
     icon: HelpCircle
   }];
-  return <div className="min-h-screen" style={{
-    background: 'var(--gradient-hero)'
-  }}>
+  return <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       {/* Header Navigation */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">

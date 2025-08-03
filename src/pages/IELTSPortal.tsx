@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock } from 'lucide-react';
+import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, TrendingUp, Calendar, CheckCircle2, BarChart3 } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -180,39 +180,73 @@ const IELTSPortal = () => {
   };
 
   return (
-    <StudentLayout title="IELTS Portal" showBackButton>
+    <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
-        <div className="text-center">
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
-            IELTS ACADEMIC & GENERAL
-          </Badge>
-          <h1 className="text-heading-2 mb-4">IELTS Test Preparation</h1>
-          <p className="text-body-large max-w-3xl mx-auto">
-            Master the International English Language Testing System with comprehensive practice materials, 
-            expert feedback, and realistic mock tests for Academic and General Training.
-          </p>
+        {/* Dashboard Header */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Welcome back!</h1>
+              <p className="text-gray-600">Track your IELTS preparation progress</p>
+            </div>
+            <Badge variant="outline" className="px-3 py-1 text-blue-600 border-blue-200 bg-blue-50">
+              Target: Band 7.5
+            </Badge>
+          </div>
+          
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-green-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-green-700">6.5</div>
+              <div className="text-sm text-green-600">Current Band</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <Calendar className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-blue-700">45</div>
+              <div className="text-sm text-blue-600">Days Left</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <CheckCircle2 className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-purple-700">12</div>
+              <div className="text-sm text-purple-600">Tests Completed</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <BarChart3 className="w-6 h-6 text-orange-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-orange-700">85%</div>
+              <div className="text-sm text-orange-600">Progress</div>
+            </div>
+          </div>
         </div>
 
+        {/* Skills Dashboard */}
         <section>
-          <h2 className="text-heading-3 mb-6">IELTS Skills Practice</h2>
-          <p className="text-text-secondary mb-6">Select a skill to practice specific IELTS question types</p>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Skills Progress</h2>
+            <Button variant="outline" size="sm">View All</Button>
+          </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map((skill) => {
               const Icon = skill.icon;
               return (
                 <Card 
                   key={skill.id} 
-                  className={`card-interactive hover:scale-105 transition-all duration-300 ${
-                    selectedSkill === skill.id ? 'ring-2 ring-primary' : ''
-                  }`}
+                  className="bg-white border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer"
                   onClick={() => setSelectedSkill(skill.id)}
                 >
-                  <CardHeader className="text-center pb-4">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl ${skill.bgColor} flex items-center justify-center mb-4`}>
-                      <Icon className={`w-8 h-8 ${skill.color}`} />
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-12 h-12 rounded-xl ${skill.bgColor} flex items-center justify-center`}>
+                        <Icon className={`w-6 h-6 ${skill.color}`} />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{skill.name}</CardTitle>
+                        <div className="text-sm text-gray-500">Band 6.8</div>
+                      </div>
                     </div>
-                    <CardTitle className="text-xl">{skill.name}</CardTitle>
-                    <p className="text-text-secondary text-sm">{skill.description}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{width: '68%'}}></div>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -255,17 +289,18 @@ const IELTSPortal = () => {
           </div>
         </section>
 
+        {/* Practice Tests Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-heading-3">IELTS Tests</h2>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-              Full Test Experience
+            <h2 className="text-xl font-semibold text-gray-900">Recent Practice Tests</h2>
+            <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+              {availableTests.length} Available
             </Badge>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {availableTests.map((test) => (
-              <Card key={test.test_number || test.id} className="card-modern hover-lift">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableTests.slice(0, 6).map((test) => (
+              <Card key={test.test_number || test.id} className="bg-white border border-gray-200 hover:shadow-md transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{test.test_name}</CardTitle>
@@ -299,28 +334,43 @@ const IELTSPortal = () => {
           </div>
         </section>
 
-        <section className="bg-surface-1 rounded-3xl p-8">
-          <div className="text-center">
-            <h3 className="text-heading-3 mb-4">Ready to Begin?</h3>
-            <p className="text-body mb-6">
-              Start with a diagnostic test or jump into skill-specific practice
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                onClick={() => navigate('/tests')}
-                className="btn-gradient px-8"
-                size="lg"
-              >
-                Take Diagnostic Test
-              </Button>
-              <Button 
-                onClick={() => navigate('/dashboard')}
-                variant="outline"
-                size="lg"
-              >
-                My Dashboard
-              </Button>
-            </div>
+        {/* Quick Actions */}
+        <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Button 
+              onClick={() => navigate('/tests')}
+              className="flex items-center gap-2 justify-start p-4 h-auto bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+              variant="outline"
+            >
+              <Target className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Take Practice Test</div>
+                <div className="text-sm opacity-75">Full IELTS simulation</div>
+              </div>
+            </Button>
+            <Button 
+              onClick={() => navigate('/speaking')}
+              className="flex items-center gap-2 justify-start p-4 h-auto bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              variant="outline"
+            >
+              <MessageSquare className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Speaking Practice</div>
+                <div className="text-sm opacity-75">AI-powered feedback</div>
+              </div>
+            </Button>
+            <Button 
+              onClick={() => navigate('/writing')}
+              className="flex items-center gap-2 justify-start p-4 h-auto bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+              variant="outline"
+            >
+              <PenTool className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-medium">Writing Tasks</div>
+                <div className="text-sm opacity-75">Essay & reports</div>
+              </div>
+            </Button>
           </div>
         </section>
       </div>

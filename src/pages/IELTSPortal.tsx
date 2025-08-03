@@ -223,7 +223,7 @@ const IELTSPortal = () => {
         {/* Practice Tests Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Practice Tests</h2>
+            <h2 className="text-xl font-semibold text-gray-900">IELTS Mock Test</h2>
             <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
               {availableTests.length} Available
             </Badge>

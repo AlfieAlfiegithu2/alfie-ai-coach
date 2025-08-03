@@ -159,21 +159,7 @@ const IELTSPortal = () => {
     navigate(`/ielts-test-modules/${testId}`);
   };
   return <div className="min-h-screen bg-gray-950 relative">
-      <LightRays 
-        raysOrigin="top-center"
-        raysColor="#1E40AF"
-        raysSpeed={0.6}
-        lightSpread={2.0}
-        rayLength={1.2}
-        pulsating={false}
-        fadeDistance={0.8}
-        saturation={0.4}
-        followMouse={true}
-        mouseInfluence={0.05}
-        noiseAmount={0.02}
-        distortion={0.02}
-        className="absolute inset-0 z-0"
-      />
+      <LightRays raysOrigin="top-center" raysColor="#1E40AF" raysSpeed={0.6} lightSpread={2.0} rayLength={1.2} pulsating={false} fadeDistance={0.8} saturation={0.4} followMouse={true} mouseInfluence={0.05} noiseAmount={0.02} distortion={0.02} className="absolute inset-0 z-0" />
       <div className="relative z-10">
       <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
@@ -188,8 +174,8 @@ const IELTSPortal = () => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map(skill => {
-              const Icon = skill.icon;
-              return <Card key={skill.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
+                const Icon = skill.icon;
+                return <Card key={skill.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
                   <CardHeader className="pb-4">
                     <div className="flex items-center gap-3 mb-3 my-[3px]">
                       
@@ -221,14 +207,14 @@ const IELTSPortal = () => {
                     </div>
 
                     <Button onClick={e => {
-                    e.stopPropagation();
-                    handleSkillPractice(skill.id);
-                  }} size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0">
+                      e.stopPropagation();
+                      handleSkillPractice(skill.id);
+                    }} size="sm" className="w-full text-white border-0 bg-gray-700 hover:bg-gray-600">
                       Practice {skill.name}
                     </Button>
                   </CardContent>
                 </Card>;
-            })}
+              })}
           </div>
         </section>
 
@@ -254,11 +240,9 @@ const IELTSPortal = () => {
                         <p className="text-sm text-gray-300">Cambridge IELTS Test</p>
                       </div>
                     </div>
-                    {!test.comingSoon && (
-                      <Badge variant="outline" className="bg-green-900/30 text-green-300 border-green-400/30">
+                    {!test.comingSoon && <Badge variant="outline" className="bg-green-900/30 text-green-300 border-green-400/30">
                         Available
-                      </Badge>
-                    )}
+                      </Badge>}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -286,43 +270,28 @@ const IELTSPortal = () => {
                   </div>
                   
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {test.modules?.includes('reading') && (
-                      <Badge variant="secondary" className="bg-blue-900/40 text-blue-200 border-blue-400/30">
+                    {test.modules?.includes('reading') && <Badge variant="secondary" className="bg-blue-900/40 text-blue-200 border-blue-400/30">
                         <BookOpen className="w-3 h-3 mr-1" />
                         Reading
-                      </Badge>
-                    )}
-                    {test.modules?.includes('writing') && (
-                      <Badge variant="secondary" className="bg-purple-900/40 text-purple-200 border-purple-400/30">
+                      </Badge>}
+                    {test.modules?.includes('writing') && <Badge variant="secondary" className="bg-purple-900/40 text-purple-200 border-purple-400/30">
                         <PenTool className="w-3 h-3 mr-1" />
                         Writing
-                      </Badge>
-                    )}
-                    {test.modules?.includes('speaking') && (
-                      <Badge variant="secondary" className="bg-green-900/40 text-green-200 border-green-400/30">
+                      </Badge>}
+                    {test.modules?.includes('speaking') && <Badge variant="secondary" className="bg-green-900/40 text-green-200 border-green-400/30">
                         <MessageSquare className="w-3 h-3 mr-1" />
                         Speaking
-                      </Badge>
-                    )}
+                      </Badge>}
                   </div>
 
-                  <Button 
-                    onClick={() => handleTestClick(test.id)} 
-                    size="sm" 
-                    disabled={test.comingSoon} 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0 disabled:bg-gray-600 disabled:text-gray-300 mt-4 group-hover:bg-blue-500 transition-colors"
-                  >
-                    {test.comingSoon ? (
-                      <span className="flex items-center gap-2">
+                  <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full text-white border-0 disabled:text-gray-300 mt-4 transition-colors bg-zinc-700 hover:bg-zinc-600">
+                    {test.comingSoon ? <span className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         Coming Soon
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
+                      </span> : <span className="flex items-center gap-2">
                         <Target className="w-4 h-4" />
                         Start Test
-                      </span>
-                    )}
+                      </span>}
                   </Button>
                 </CardContent>
               </Card>)}

@@ -79,10 +79,10 @@ const HeroIndex = () => {
 
           {/* Button Group */}
           <div className="flex items-center gap-4">
-            <Button onClick={() => navigate('/auth')} variant="ghost" className="text-white hover:bg-white/10 transition-all duration-200">
+            <Button onClick={() => navigate('/auth')} variant="ghost" className="text-white transition-all duration-200 bg-zinc-950 hover:bg-zinc-800">
               Log In
             </Button>
-            {user && <Button onClick={() => navigate('/dashboard')} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200">
+            {user && <Button onClick={() => navigate('/dashboard')} className="text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-500 hover:bg-gray-400">
                 My Dashboard
               </Button>}
           </div>

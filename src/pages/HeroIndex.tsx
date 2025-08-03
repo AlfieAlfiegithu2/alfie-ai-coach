@@ -110,7 +110,7 @@ const HeroIndex = () => {
 
       {/* Hero Section - Moved Down */}
       <section className="relative z-10 px-8 py-32 text-center">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto bg-white/10 border border-white/20 backdrop-blur-xl rounded-xl p-8">
           {/* Headline with Animation */}
           <h1 className="text-5xl mb-8 leading-tight animate-fade-in text-zinc-950 md:text-6xl font-semibold my-0 py-0 px-0">
             Unlock Your Potential.<br />

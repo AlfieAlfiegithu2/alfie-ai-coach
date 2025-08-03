@@ -90,19 +90,19 @@ const HeroIndex = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative z-10 px-8 py-32 text-center">
-        <div className="max-w-4xl mx-auto mt-32">
+      <section className="relative z-10 px-8 py-20 text-center">
+        <div className="max-w-4xl mx-auto">
           {/* Hero Badge */}
           
           
           {/* Headline with Animation */}
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight animate-fade-in text-zinc-950">
+          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>
           
           {/* Subheadline */}
-          <p className="text-xl mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900">
+          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900 text-lg">
             Go beyond practice tests. Get personalized coaching, track your progress, 
             and reach your target score with confidence.
           </p>

@@ -171,7 +171,7 @@ const IELTSPortal = () => {
         {/* Skills Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Skills Progress</h2>
+            <h2 className="text-xl font-semibold text-gray-900">IELTS Practice</h2>
             <Button variant="outline" size="sm">View All</Button>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

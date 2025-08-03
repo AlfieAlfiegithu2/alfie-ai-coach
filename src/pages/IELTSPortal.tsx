@@ -211,7 +211,7 @@ const IELTSPortal = () => {
                     <Button onClick={e => {
                     e.stopPropagation();
                     handleSkillPractice(skill.id);
-                  }} size="sm" className="w-full btn-primary bg-rose-400 hover:bg-rose-300">
+                  }} size="sm" className="w-full btn-primary bg-slate-500 hover:bg-slate-400">
                       Practice {skill.name}
                     </Button>
                   </CardContent>
@@ -238,7 +238,7 @@ const IELTSPortal = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2 flex-grow flex flex-col justify-center">
-                   <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full btn-primary bg-rose-400 hover:bg-rose-300">
+                   <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full btn-primary bg-slate-500 hover:bg-slate-400">
                      {test.comingSoon ? <span className="flex items-center gap-2">
                          <Clock className="w-4 h-4" />
                          Coming Soon

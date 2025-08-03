@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock } from 'lucide-react';
+import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, BarChart3 } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
+import LightRays from '@/components/animations/LightRays';
 
 const PTEPortal = () => {
   const navigate = useNavigate();
@@ -77,7 +78,24 @@ const PTEPortal = () => {
   };
 
   return (
-    <StudentLayout title="PTE Academic Portal" showBackButton>
+    <div className="min-h-screen bg-gray-950 relative">
+      <LightRays 
+        raysOrigin="top-center" 
+        raysColor="#1E40AF" 
+        raysSpeed={0.6} 
+        lightSpread={2.0} 
+        rayLength={1.2} 
+        pulsating={false} 
+        fadeDistance={0.8} 
+        saturation={0.4} 
+        followMouse={true} 
+        mouseInfluence={0.05} 
+        noiseAmount={0.02} 
+        distortion={0.02} 
+        className="absolute inset-0 z-0" 
+      />
+      <div className="relative z-10">
+        <StudentLayout title="PTE Academic Portal" showBackButton>
       <div className="space-y-8">
         <div className="text-center">
           <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
@@ -91,46 +109,47 @@ const PTEPortal = () => {
         </div>
 
         <section>
-          <h2 className="text-heading-3 mb-6">PTE Skills Practice</h2>
-          <p className="text-text-secondary mb-6">Select a skill to practice specific PTE question types</p>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-white">PTE Skills Practice</h2>
+            <Button variant="outline" size="sm" className="border-white/30 hover:bg-white/10 text-slate-800">View All</Button>
+          </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map((skill) => {
               const Icon = skill.icon;
               return (
                 <Card 
                   key={skill.id} 
-                  className={`card-interactive hover:scale-105 transition-all duration-300 ${
-                    selectedSkill === skill.id ? 'ring-2 ring-primary' : ''
-                  }`}
+                  className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer"
                   onClick={() => setSelectedSkill(skill.id)}
                 >
-                  <CardHeader className="text-center pb-4">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl ${skill.bgColor} flex items-center justify-center mb-4`}>
-                      <Icon className={`w-8 h-8 ${skill.color}`} />
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3 mb-3 my-[3px]">
+                      <div>
+                        <CardTitle className="text-lg text-white">{skill.name}</CardTitle>
+                        <div className="text-sm text-gray-300">Band 6.8</div>
+                      </div>
                     </div>
-                    <CardTitle className="text-xl">{skill.name}</CardTitle>
-                    <p className="text-text-secondary text-sm">{skill.description}</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Difficulty:</span>
-                        <Badge variant="secondary">{skill.difficulty}</Badge>
+                        <span className="text-gray-300">Difficulty:</span>
+                        <Badge variant="secondary" className="bg-white/10 text-white border-white/20">{skill.difficulty}</Badge>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Duration:</span>
-                        <span className="font-medium">{skill.timeLimit}</span>
+                        <span className="text-gray-300">Duration:</span>
+                        <span className="font-medium text-white">{skill.timeLimit}</span>
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-text-primary">Question Types:</p>
+                      <p className="text-sm font-medium text-white">Question Types:</p>
                       <div className="space-y-1">
                         {skill.sections.slice(0, 2).map((section, index) => (
-                          <p key={index} className="text-xs text-text-secondary">• {section}</p>
+                          <p key={index} className="text-xs text-gray-300">• {section}</p>
                         ))}
                         {skill.sections.length > 2 && (
-                          <p className="text-xs text-text-tertiary">+ {skill.sections.length - 2} more</p>
+                          <p className="text-xs text-gray-400">+ {skill.sections.length - 2} more</p>
                         )}
                       </div>
                     </div>
@@ -140,8 +159,8 @@ const PTEPortal = () => {
                         e.stopPropagation();
                         handleSkillPractice(skill.id);
                       }}
-                      className="w-full btn-primary"
-                      size="sm"
+                      size="sm" 
+                      className="w-full text-white border-0 bg-gray-700 hover:bg-gray-600"
                     >
                       Practice {skill.name}
                     </Button>
@@ -154,44 +173,61 @@ const PTEPortal = () => {
 
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-heading-3">PTE Mock Tests</h2>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+            <h2 className="text-xl font-semibold text-white">PTE Mock Tests</h2>
+            <Badge variant="outline" className="bg-blue-900/50 text-blue-200 border-blue-400/30">
               AI Scoring Available
             </Badge>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mockTests.map((test) => (
-              <Card key={test.id} className="card-modern hover-lift">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{test.title}</CardTitle>
-                    <Target className="w-5 h-5 text-primary" />
+              <Card key={test.id} className="relative bg-white/5 border-white/10 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 group">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-blue-600/20 rounded-lg">
+                        <BarChart3 className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-semibold text-white">{test.title}</CardTitle>
+                        <p className="text-sm text-gray-300">PTE Academic Test</p>
+                      </div>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-text-secondary" />
-                      <span>{test.difficulty}</span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Difficulty:</span>
+                        <span className="text-white font-medium">{test.difficulty}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Sections:</span>
+                        <span className="text-white font-medium">{test.sections}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-text-secondary" />
-                      <span>{test.duration}</span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Duration:</span>
+                        <span className="text-white font-medium">{test.duration}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Type:</span>
+                        <span className="text-white font-medium">Full Test</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm">
-                    <BookOpen className="w-4 h-4 text-text-secondary" />
-                    <span>{test.sections} sections included</span>
                   </div>
 
                   <Button 
                     onClick={() => handleMockTest(test.id)}
-                    className="w-full btn-primary"
-                    size="sm"
+                    size="sm" 
+                    className="w-full text-white border-0 mt-4 transition-colors bg-zinc-700 hover:bg-zinc-600"
                   >
-                    Start Mock Test
+                    <span className="flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Start Mock Test
+                    </span>
                   </Button>
                 </CardContent>
               </Card>
@@ -224,7 +260,9 @@ const PTEPortal = () => {
           </div>
         </section>
       </div>
-    </StudentLayout>
+        </StudentLayout>
+      </div>
+    </div>
   );
 };
 

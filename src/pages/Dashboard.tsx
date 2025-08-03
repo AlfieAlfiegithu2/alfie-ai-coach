@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DailyChallenge from "@/components/DailyChallenge";
 import LightRays from "@/components/animations/LightRays";
+import Threads from "@/components/animations/Threads";
 import SettingsModal from "@/components/SettingsModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
@@ -166,10 +167,15 @@ const Dashboard = () => {
     return "1.0";
   };
   return <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
-      {/* Background Image */}
-      <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
-      backgroundImage: "url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/44dea03b-7cbb-41b6-934f-6482f1fdf2e3_3840w.jpg')"
-    }} />
+      {/* Animated Background */}
+      <div className="fixed top-0 left-0 w-full h-screen -z-10">
+        <Threads 
+          color={[0.2, 0.4, 0.8]} 
+          amplitude={0.8} 
+          distance={0.3} 
+          enableMouseInteraction={true}
+        />
+      </div>
       
       <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
         {/* Header */}

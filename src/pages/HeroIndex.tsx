@@ -53,7 +53,12 @@ const HeroIndex = () => {
     path: "/general-portal",
     icon: <Mic className="w-8 h-8 text-white" />
   }];
-  return <div className="min-h-screen relative overflow-hidden bg-white">
+  return <div className="min-h-screen relative overflow-hidden">
+      {/* Background Image - Original Brightness */}
+      <div className="absolute inset-0 bg-cover bg-center bg-fixed" style={{
+      backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)'
+    }} />
+
       {/* Header */}
       <header className="relative z-10 px-8 py-4">
         <div className="flex items-center justify-between">
@@ -62,17 +67,17 @@ const HeroIndex = () => {
           
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-black hover:text-gray-700 transition-colors font-medium">Features</a>
-            <a href="#tests" className="text-black hover:text-gray-700 transition-colors font-medium">Tests</a>
-            <a href="#community" className="text-black hover:text-gray-700 transition-colors font-medium">Community</a>
+            <a href="#features" className="text-zinc-300 hover:text-white transition-colors font-medium">Features</a>
+            <a href="#tests" className="text-zinc-300 hover:text-white transition-colors font-medium">Tests</a>
+            <a href="#community" className="text-zinc-300 hover:text-white transition-colors font-medium">Community</a>
           </nav>
 
           {/* Button Group */}
           <div className="flex items-center gap-4">
-            <Button onClick={() => navigate('/auth')} variant="ghost" className="text-black transition-all duration-200 bg-gray-100 hover:bg-gray-200">
+            <Button onClick={() => navigate('/auth')} variant="ghost" className="text-white transition-all duration-200 bg-zinc-950 hover:bg-zinc-800">
               Log In
             </Button>
-            {user && <Button onClick={() => navigate('/dashboard')} className="text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-800 hover:bg-gray-700">
+            {user && <Button onClick={() => navigate('/dashboard')} className="text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-500 hover:bg-gray-400">
                 My Dashboard
               </Button>}
           </div>
@@ -80,19 +85,19 @@ const HeroIndex = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative z-10 px-8 py-16 text-center">
+      <section className="relative z-10 px-8 py-20 text-center">
         <div className="max-w-4xl mx-auto">
           {/* Hero Badge */}
           
           
           {/* Headline with Animation */}
-          <h1 className="text-5xl mb-8 leading-tight animate-fade-in text-black md:text-4xl font-light">
+          <h1 className="text-5xl mb-6 leading-tight animate-fade-in text-zinc-950 md:text-4xl font-light">
             Unlock Your Potential.<br />
             Master English with AI.
           </h1>
           
           {/* Subheadline */}
-          <p className="mb-16 max-w-3xl mx-auto leading-relaxed text-gray-700 text-lg">
+          <p className="mb-12 max-w-3xl mx-auto leading-relaxed text-zinc-900 text-lg">
             Go beyond practice tests. Get personalized coaching, track your progress, 
             and reach your target score with confidence.
           </p>
@@ -116,8 +121,8 @@ const HeroIndex = () => {
             value: "95%"
           }].map((metric, index) => (
             <div key={index} className="text-center">
-              <div className="text-2xl font-bold text-black mb-2">{metric.value}</div>
-              <div className="text-sm text-gray-600">{metric.label}</div>
+              <div className="text-2xl font-bold text-zinc-900 mb-2">{metric.value}</div>
+              <div className="text-sm text-zinc-700">{metric.label}</div>
             </div>
           ))}
           </div>
@@ -125,14 +130,14 @@ const HeroIndex = () => {
       </section>
 
       {/* Test Preparation Section */}
-      <section id="tests" className="relative z-10 px-8 py-24">
+      <section id="tests" className="relative z-10 px-8 py-20">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl mb-4 text-black font-extralight">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl mb-4 text-zinc-900 font-extralight">
               Complete Test Preparation
             </h2>
-            <p className="max-w-2xl mx-auto text-gray-700 text-lg">
+            <p className="max-w-2xl mx-auto text-zinc-900 text-lg">
               Practice all test sections with Cambridge materials and AI-powered feedback
             </p>
           </div>

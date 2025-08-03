@@ -142,28 +142,27 @@ const CommunityPage = () => {
   };
 
   return (
-    <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
+    <div className="min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
       {/* Background Image */}
       <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
         backgroundImage: "url('/lovable-uploads/6c10bf57-6843-477b-aacf-81f2ba5252ce.png')"
       }} />
       
-      <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
-        {/* Header */}
-        <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
-          <h1 className="text-3xl font-semibold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-            Study Community
-          </h1>
-          <Button 
-            onClick={() => navigate('/')} 
-            variant="ghost" 
-            className="text-slate-600 hover:text-slate-800 hover:bg-white/10 flex items-center gap-2"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
-            <Home className="w-4 h-4" />
-            Home
-          </Button>
-        </header>
+      {/* Header */}
+      <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
+        <h1 className="text-3xl font-semibold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+          Study Community
+        </h1>
+        <Button 
+          onClick={() => navigate('/')} 
+          variant="ghost" 
+          className="text-slate-600 hover:text-slate-800 hover:bg-white/10 flex items-center gap-2"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          <Home className="w-4 h-4" />
+          Home
+        </Button>
+      </header>
 
         {/* Main Content */}
         <main className="relative sm:px-6 lg:px-12 pr-4 pb-8 pl-4">
@@ -342,7 +341,6 @@ const CommunityPage = () => {
             </div>
           </div>
         </main>
-      </div>
     </div>
   );
 };

@@ -211,7 +211,7 @@ const Dashboard = () => {
               </h1>
 
               {/* Skills Selection Card */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+              <div className="grid grid-cols-5 gap-2 lg:gap-3">
                 {skills.map(skill => {
                 const isSelected = selectedSkill === skill.toLowerCase();
                 const getIcon = (skillName: string) => {

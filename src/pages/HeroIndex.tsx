@@ -176,10 +176,10 @@ const HeroIndex = () => {
       {/* Community Section */}
       <section id="community" className="relative z-10 px-8 py-20 bg-black/20 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-4xl mb-4 md:text-4xl font-extralight text-zinc-950">
             Join Our Learning Community
           </h2>
-          <p className="text-xl text-zinc-300 mb-12 max-w-2xl mx-auto">
+          <p className="mb-12 max-w-2xl mx-auto text-zinc-950 text-base font-light">
             Connect with thousands of learners, share experiences, and achieve your goals together
           </p>
           

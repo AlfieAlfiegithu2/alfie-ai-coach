@@ -324,37 +324,78 @@ const EnhancedReadingTest = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user && testParts[1]?.passage) {
-        const testResult = {
-          user_id: user.id,
-          test_type: 'reading',
-          section_number: 1,
-          total_questions: totalQuestions,
-          correct_answers: score,
-          score_percentage: (score / totalQuestions) * 100,
-          time_taken: (60 * 60) - timeLeft,
-          test_data: {
-            answers,
-            all_questions: allQuestions.map(q => ({
-              id: q.id,
-              question_number: q.question_number,
-              question_type: q.question_type,
-              question_text: q.question_text,
-              correct_answer: q.correct_answer,
-              explanation: q.explanation
-            })),
-            completed_parts: Object.keys(testParts).map(p => parseInt(p))
-          }
-        };
-
-        const { error } = await supabase
+        // Save main test result
+        const { data: testResult, error: testError } = await supabase
           .from('test_results')
-          .insert(testResult);
+          .insert({
+            user_id: user.id,
+            test_type: 'reading',
+            section_number: 1,
+            total_questions: totalQuestions,
+            correct_answers: score,
+            score_percentage: (score / totalQuestions) * 100,
+            time_taken: (60 * 60) - timeLeft,
+            test_data: {
+              answers,
+              all_questions: allQuestions.map(q => ({
+                id: q.id,
+                question_number: q.question_number,
+                question_type: q.question_type,
+                question_text: q.question_text,
+                correct_answer: q.correct_answer,
+                explanation: q.explanation
+              })),
+              completed_parts: Object.keys(testParts).map(p => parseInt(p))
+            }
+          })
+          .select()
+          .single();
 
-        if (error) {
-          console.error('Error saving test result:', error);
-        } else {
-          console.log('✅ Test result saved successfully');
+        if (testError) throw testError;
+
+        // Save detailed reading results for each passage
+        for (const [partNum, testPart] of Object.entries(testParts)) {
+          const partNumber = parseInt(partNum);
+          const partQuestions = testPart.questions;
+          const partAnswers = partQuestions.map(q => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            user_answer: answers[q.id] || '',
+            correct_answer: q.correct_answer,
+            is_correct: answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim(),
+            explanation: q.explanation
+          }));
+
+          // Calculate question type performance
+          const questionTypePerformance: Record<string, {correct: number, total: number}> = {};
+          partQuestions.forEach(q => {
+            const type = q.question_type || 'unknown';
+            if (!questionTypePerformance[type]) {
+              questionTypePerformance[type] = { correct: 0, total: 0 };
+            }
+            questionTypePerformance[type].total++;
+            if (answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()) {
+              questionTypePerformance[type].correct++;
+            }
+          });
+
+          const comprehensionScore = partAnswers.filter(a => a.is_correct).length / partAnswers.length;
+
+          await supabase.from('reading_test_results').insert({
+            user_id: user.id,
+            test_result_id: testResult.id,
+            passage_title: testPart.passage.title,
+            passage_text: testPart.passage.content,
+            questions_data: partAnswers,
+            reading_time_seconds: Math.floor(((60 * 60) - timeLeft) / Object.keys(testParts).length),
+            comprehension_score: comprehensionScore,
+            question_type_performance: questionTypePerformance,
+            detailed_feedback: `Passage ${partNumber}: ${partAnswers.filter(a => a.is_correct).length}/${partAnswers.length} correct (${Math.round(comprehensionScore * 100)}%)`
+          });
         }
+
+        console.log('✅ Reading test results saved successfully');
       }
     } catch (error) {
       console.error('Error saving test result:', error);

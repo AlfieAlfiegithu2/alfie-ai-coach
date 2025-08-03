@@ -373,6 +373,68 @@ const IELTSSpeakingTest = () => {
 
       const uploadedRecordings = await Promise.all(uploadPromises);
 
+      // Save speaking test result with 30-day audio retention
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const audioUrls = uploadedRecordings.map(r => r.audio_url);
+          
+          // Save main test result
+          const { data: testResult, error: testError } = await supabase
+            .from('test_results')
+            .insert({
+              user_id: user.id,
+              test_type: 'speaking',
+              total_questions: uploadedRecordings.length,
+              correct_answers: uploadedRecordings.length, // Speaking is subjectively scored
+              score_percentage: 75, // Placeholder
+              time_taken: 15 * 60, // Approximate speaking test duration
+              audio_urls: audioUrls,
+              audio_retention_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+              test_data: {
+                recordings_count: uploadedRecordings.length,
+                parts_completed: [1, 2, 3]
+              } as any
+            })
+            .select()
+            .single();
+
+          if (testError) throw testError;
+
+          // Save detailed speaking results for each part
+          for (const recording of uploadedRecordings) {
+            const partNumber = parseInt(recording.part.replace('part', '').split('_')[0]);
+            let questionText = '';
+            
+            if (partNumber === 1 && testData.part1_prompts.length > 0) {
+              const questionIndex = parseInt(recording.part.split('_q')[1] || '0');
+              questionText = testData.part1_prompts[questionIndex]?.prompt_text || '';
+            } else if (partNumber === 2 && testData.part2_prompt) {
+              questionText = testData.part2_prompt.prompt_text;
+            } else if (partNumber === 3 && testData.part3_prompts.length > 0) {
+              const questionIndex = parseInt(recording.part.split('_q')[1] || '0');
+              questionText = testData.part3_prompts[questionIndex]?.prompt_text || '';
+            }
+
+            await supabase.from('speaking_test_results').insert({
+              user_id: user.id,
+              test_result_id: testResult.id,
+              part_number: partNumber,
+              question_text: questionText,
+              audio_url: recording.audio_url,
+              transcription: '', // Will be filled by AI analysis
+              band_scores: {},
+              detailed_feedback: '',
+              duration_seconds: 120 // Approximate
+            });
+          }
+
+          console.log('✅ Speaking test results saved successfully');
+        }
+      } catch (saveError) {
+        console.error('Error saving speaking results:', saveError);
+      }
+
       // Navigate to results page with recordings data and test prompts for transcriptions
       navigate('/ielts-speaking-results', { 
         state: { 

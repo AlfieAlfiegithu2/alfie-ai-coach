@@ -295,6 +295,56 @@ export type Database = {
         }
         Relationships: []
       }
+      listening_test_results: {
+        Row: {
+          audio_url: string | null
+          created_at: string | null
+          detailed_feedback: string | null
+          id: string
+          questions_data: Json
+          section_number: number
+          section_score: number
+          section_title: string
+          section_total: number
+          test_result_id: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          id?: string
+          questions_data: Json
+          section_number: number
+          section_score: number
+          section_title: string
+          section_total: number
+          test_result_id?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          id?: string
+          questions_data?: Json
+          section_number?: number
+          section_score?: number
+          section_title?: string
+          section_total?: number
+          test_result_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listening_test_results_test_result_id_fkey"
+            columns: ["test_result_id"]
+            isOneToOne: false
+            referencedRelation: "test_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -477,6 +527,56 @@ export type Database = {
           },
         ]
       }
+      reading_test_results: {
+        Row: {
+          comprehension_score: number | null
+          created_at: string | null
+          detailed_feedback: string | null
+          id: string
+          passage_text: string
+          passage_title: string
+          question_type_performance: Json | null
+          questions_data: Json
+          reading_time_seconds: number | null
+          test_result_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comprehension_score?: number | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          id?: string
+          passage_text: string
+          passage_title: string
+          question_type_performance?: Json | null
+          questions_data: Json
+          reading_time_seconds?: number | null
+          test_result_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comprehension_score?: number | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          id?: string
+          passage_text?: string
+          passage_title?: string
+          question_type_performance?: Json | null
+          questions_data?: Json
+          reading_time_seconds?: number | null
+          test_result_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_test_results_test_result_id_fkey"
+            columns: ["test_result_id"]
+            isOneToOne: false
+            referencedRelation: "test_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speaking_prompts: {
         Row: {
           audio_url: string | null
@@ -531,15 +631,74 @@ export type Database = {
         }
         Relationships: []
       }
+      speaking_test_results: {
+        Row: {
+          audio_expires_at: string | null
+          audio_url: string | null
+          band_scores: Json | null
+          created_at: string | null
+          detailed_feedback: string | null
+          duration_seconds: number | null
+          id: string
+          part_number: number
+          question_text: string
+          test_result_id: string | null
+          transcription: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_expires_at?: string | null
+          audio_url?: string | null
+          band_scores?: Json | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          duration_seconds?: number | null
+          id?: string
+          part_number: number
+          question_text: string
+          test_result_id?: string | null
+          transcription?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_expires_at?: string | null
+          audio_url?: string | null
+          band_scores?: Json | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          duration_seconds?: number | null
+          id?: string
+          part_number?: number
+          question_text?: string
+          test_result_id?: string | null
+          transcription?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaking_test_results_test_result_id_fkey"
+            columns: ["test_result_id"]
+            isOneToOne: false
+            referencedRelation: "test_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_results: {
         Row: {
+          audio_retention_expires_at: string | null
+          audio_urls: string[] | null
           cambridge_book: string | null
           completed_at: string | null
           correct_answers: number | null
           created_at: string
+          detailed_feedback: Json | null
           id: string
+          performance_metrics: Json | null
+          question_analysis: Json | null
           score_percentage: number | null
           section_number: number | null
+          skill_breakdown: Json | null
           test_data: Json | null
           test_type: string
           time_taken: number | null
@@ -547,13 +706,19 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          audio_retention_expires_at?: string | null
+          audio_urls?: string[] | null
           cambridge_book?: string | null
           completed_at?: string | null
           correct_answers?: number | null
           created_at?: string
+          detailed_feedback?: Json | null
           id?: string
+          performance_metrics?: Json | null
+          question_analysis?: Json | null
           score_percentage?: number | null
           section_number?: number | null
+          skill_breakdown?: Json | null
           test_data?: Json | null
           test_type: string
           time_taken?: number | null
@@ -561,13 +726,19 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          audio_retention_expires_at?: string | null
+          audio_urls?: string[] | null
           cambridge_book?: string | null
           completed_at?: string | null
           correct_answers?: number | null
           created_at?: string
+          detailed_feedback?: Json | null
           id?: string
+          performance_metrics?: Json | null
+          question_analysis?: Json | null
           score_percentage?: number | null
           section_number?: number | null
+          skill_breakdown?: Json | null
           test_data?: Json | null
           test_type?: string
           time_taken?: number | null
@@ -910,11 +1081,68 @@ export type Database = {
         }
         Relationships: []
       }
+      writing_test_results: {
+        Row: {
+          band_scores: Json | null
+          created_at: string | null
+          detailed_feedback: string | null
+          id: string
+          improvement_suggestions: string[] | null
+          prompt_text: string
+          task_number: number
+          test_result_id: string | null
+          time_taken_seconds: number | null
+          user_id: string
+          user_response: string
+          word_count: number
+        }
+        Insert: {
+          band_scores?: Json | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          id?: string
+          improvement_suggestions?: string[] | null
+          prompt_text: string
+          task_number: number
+          test_result_id?: string | null
+          time_taken_seconds?: number | null
+          user_id: string
+          user_response: string
+          word_count: number
+        }
+        Update: {
+          band_scores?: Json | null
+          created_at?: string | null
+          detailed_feedback?: string | null
+          id?: string
+          improvement_suggestions?: string[] | null
+          prompt_text?: string
+          task_number?: number
+          test_result_id?: string | null
+          time_taken_seconds?: number | null
+          user_id?: string
+          user_response?: string
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "writing_test_results_test_result_id_fkey"
+            columns: ["test_result_id"]
+            isOneToOne: false
+            referencedRelation: "test_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_audio: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean

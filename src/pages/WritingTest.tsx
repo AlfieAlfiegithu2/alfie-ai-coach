@@ -150,6 +150,53 @@ const WritingTest = () => {
 
       if (data.success) {
         setFeedback(data.feedback);
+        
+        // Save writing test result
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // Save main test result
+            const { data: testResult, error: testError } = await supabase
+              .from('test_results')
+              .insert({
+                user_id: user.id,
+                test_type: 'writing',
+                total_questions: 1,
+                correct_answers: 1, // Writing tasks are marked subjectively
+                score_percentage: 85, // Placeholder - would be extracted from AI feedback
+                time_taken: (currentPrompt?.time_limit || 60) * 60,
+                test_data: {
+                  prompt: currentPrompt,
+                  response: writingText,
+                  word_count: wordCount,
+                  feedback: data.feedback
+                }
+              })
+              .select()
+              .single();
+
+            if (testError) throw testError;
+
+            // Save detailed writing result
+            await supabase.from('writing_test_results').insert({
+              user_id: user.id,
+              test_result_id: testResult.id,
+              task_number: currentPrompt?.task_number || 1,
+              prompt_text: currentPrompt?.prompt_text || '',
+              user_response: writingText,
+              word_count: wordCount,
+              band_scores: {}, // Would extract from AI feedback
+              detailed_feedback: data.feedback,
+              improvement_suggestions: [],
+              time_taken_seconds: (currentPrompt?.time_limit || 60) * 60
+            });
+
+            console.log('✅ Writing test results saved successfully');
+          }
+        } catch (saveError) {
+          console.error('Error saving writing results:', saveError);
+        }
+        
         console.log('✅ AI feedback received successfully');
         toast({
           title: "Writing Analysis Complete",

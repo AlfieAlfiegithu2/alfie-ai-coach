@@ -164,7 +164,7 @@ const ListeningTest = () => {
     console.log(`📝 Sequential Flow: Moving from Part ${currentPart} to Part ${nextPart}`);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isSubmitted) {
       if (audio) {
         audio.pause();
@@ -202,6 +202,64 @@ const ListeningTest = () => {
       setIsSubmitted(true);
       setShowConfirmDialog(false);
       localStorage.removeItem(`listening_test_${testId}_answers`);
+      
+      // Save detailed test results
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Save main test result
+          const { data: testResult, error: testError } = await supabase
+            .from('test_results')
+            .insert({
+              user_id: user.id,
+              test_type: 'listening',
+              total_questions: totalQuestions,
+              correct_answers: totalScore,
+              score_percentage: (totalScore / totalQuestions) * 100,
+              time_taken: (30 * 60) - timeLeft,
+              test_data: {
+                answers,
+                total_score: totalScore,
+                completed_parts: allParts
+              } as any
+            })
+            .select()
+            .single();
+
+          if (testError) throw testError;
+
+          // Save detailed listening results for each section
+          for (const partNum of allParts) {
+            const sectionData = allPartsData[partNum] || { section: currentSection, questions };
+            const sectionQuestions = sectionData.questions;
+            const sectionScore = sectionQuestions.filter(q => answers[q.id] === q.correct_answer).length;
+            
+            const questionsData = sectionQuestions.map(q => ({
+              id: q.id,
+              question_text: q.question_text,
+              user_answer: answers[q.id] || '',
+              correct_answer: q.correct_answer,
+              is_correct: answers[q.id] === q.correct_answer
+            }));
+
+            await supabase.from('listening_test_results').insert({
+              user_id: user.id,
+              test_result_id: testResult.id,
+              section_number: partNum,
+              section_title: sectionData.section?.title || `Section ${partNum}`,
+              audio_url: sectionData.section?.audio_url,
+              questions_data: questionsData,
+              section_score: sectionScore,
+              section_total: sectionQuestions.length,
+              detailed_feedback: `Section ${partNum}: ${sectionScore}/${sectionQuestions.length} correct`
+            });
+          }
+
+          console.log('✅ Listening test results saved successfully');
+        }
+      } catch (error) {
+        console.error('Error saving test results:', error);
+      }
       
       console.log('🎯 Sequential Flow: Listening test completed with all parts. Final score:', totalScore, 'out of', totalQuestions, 'questions');
       

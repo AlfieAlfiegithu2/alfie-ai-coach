@@ -13,11 +13,20 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+interface SectionScores {
+  reading: number;
+  listening: number;
+  writing: number;
+  speaking: number;
+  overall: number;
+}
+
 interface UserPreferences {
   target_test_type: string;
   target_score: number;
   target_deadline: Date | null;
   preferred_name: string;
+  target_scores: SectionScores;
 }
 
 interface SettingsModalProps {
@@ -32,7 +41,14 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     target_test_type: 'IELTS',
     target_score: 7.0,
     target_deadline: null,
-    preferred_name: ''
+    preferred_name: '',
+    target_scores: {
+      reading: 7.0,
+      listening: 7.0,
+      writing: 7.0,
+      speaking: 7.0,
+      overall: 7.0
+    }
   });
 
   const testTypes = [
@@ -41,6 +57,18 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     { value: 'TOEFL', label: 'TOEFL iBT' },
     { value: 'GENERAL', label: 'General English' }
   ];
+
+  const bandScores = [4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0];
+
+  const updateSectionScore = (section: keyof SectionScores, score: number) => {
+    setPreferences(prev => ({
+      ...prev,
+      target_scores: {
+        ...prev.target_scores,
+        [section]: score
+      }
+    }));
+  };
 
   useEffect(() => {
     if (user && open) {
@@ -56,19 +84,28 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
         .from('user_preferences')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error loading preferences:', error);
         return;
       }
 
       if (data) {
+        const defaultScores = {
+          reading: 7.0,
+          listening: 7.0,
+          writing: 7.0,
+          speaking: 7.0,
+          overall: 7.0
+        };
+        
         setPreferences({
           target_test_type: data.target_test_type || 'IELTS',
           target_score: data.target_score || 7.0,
           target_deadline: data.target_deadline ? new Date(data.target_deadline) : null,
-          preferred_name: data.preferred_name || ''
+          preferred_name: data.preferred_name || '',
+          target_scores: (data.target_scores as unknown as SectionScores) || defaultScores
         });
       }
     } catch (error) {
@@ -88,7 +125,8 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           target_test_type: preferences.target_test_type,
           target_score: preferences.target_score,
           target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
-          preferred_name: preferences.preferred_name
+          preferred_name: preferences.preferred_name,
+          target_scores: preferences.target_scores as any
         });
 
       if (error) throw error;
@@ -116,7 +154,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           Settings
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-white/20">
+      <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-slate-800">Study Settings</DialogTitle>
         </DialogHeader>
@@ -191,6 +229,34 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div>
+            <Label className="text-slate-700 text-base font-semibold mb-3 block">Section Target Scores</Label>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              {Object.entries(preferences.target_scores).map(([section, score]) => (
+                <div key={section} className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 capitalize">
+                    {section}
+                  </label>
+                  <Select
+                    value={score.toString()}
+                    onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
+                  >
+                    <SelectTrigger className="bg-white/50 border-white/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
+                      {bandScores.map((bandScore) => (
+                        <SelectItem key={bandScore} value={bandScore.toString()}>
+                          {bandScore}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4">

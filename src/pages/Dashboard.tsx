@@ -13,7 +13,6 @@ import LightRays from "@/components/animations/LightRays";
 import SettingsModal from "@/components/SettingsModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
-import SectionScoreSelector from "@/components/SectionScoreSelector";
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -261,9 +260,6 @@ const Dashboard = () => {
                 
               </div>
 
-              {/* Section Score Selector */}
-              <SectionScoreSelector onScoresUpdate={() => setRefreshKey(prev => prev + 1)} />
-              
               {/* Test Results Chart */}
               <TestResultsChart selectedSkill={selectedSkill} selectedTestType={selectedTestType} />
               

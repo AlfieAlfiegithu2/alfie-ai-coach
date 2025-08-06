@@ -299,11 +299,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   return <StudentLayout title="IELTS Writing Test" showBackButton>
       {/* Background Image */}
       <div className="fixed inset-0 w-full h-full -z-10">
-        <img 
-          src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png"
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <img src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
       </div>
 
       <div className="space-y-6 relative z-10">
@@ -312,11 +308,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-heading-2 mb-2 text-white">{test.test_name}</h1>
-              <p className="text-white/80">IELTS Academic Writing Test</p>
+              <p className="text-slate-950">IELTS Academic Writing Test</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Button variant={currentTask === 1 ? "default" : "secondary"} size="sm" onClick={() => switchToTask(1)} className="relative glass-button">
+                <Button variant={currentTask === 1 ? "default" : "secondary"} size="sm" onClick={() => switchToTask(1)} className="relative glass-button text-slate-950">
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Task 1
                   {task1Answer && <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />}
@@ -334,14 +330,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
-              Current: Task {currentTask} {currentTask === 1 ? "- Data Description" : "- Essay Writing"}
-            </Badge>
-            <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-              {currentTask === 1 ? "150+ words (20 min)" : "250+ words (40 min)"}
-            </Badge>
-          </div>
+          
         </div>
 
         {/* Three-Column Layout */}
@@ -350,39 +339,33 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <div className="lg:col-span-1">
             <Card className="glass-card rounded-3xl h-fit">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
+                <CardTitle className="flex items-center gap-2 text-slate-950">
                   <PenTool className="w-5 h-5" />
                   Task {currentTask} Questions
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* For Task 1, show image first on the left side */}
-                {currentTask === 1 && currentTaskData?.imageUrl && (
-                  <div className="mb-4">
-                    <h3 className="font-semibold mb-2 text-white">Visual Data</h3>
-                    <img 
-                      src={currentTaskData.imageUrl} 
-                      alt="Task 1 visual data" 
-                      className="w-full rounded-lg border border-white/20 shadow-lg" 
-                    />
-                  </div>
-                )}
+                {currentTask === 1 && currentTaskData?.imageUrl && <div className="mb-4">
+                    <h3 className="font-semibold mb-2 text-slate-950">Visual Data</h3>
+                    <img src={currentTaskData.imageUrl} alt="Task 1 visual data" className="w-full rounded-lg border border-white/20 shadow-lg" />
+                  </div>}
 
                 <div>
-                  <h3 className="font-semibold mb-2 text-white">Prompt</h3>
-                  <p className="text-sm text-white/80">{currentTaskData?.title}</p>
+                  <h3 className="font-semibold mb-2 text-slate-950">Prompt</h3>
+                  <p className="text-sm text-slate-950">{currentTaskData?.title}</p>
                 </div>
                 
                 <Separator className="bg-white/20" />
                 
                 <div>
-                  <h3 className="font-semibold mb-2 text-white">Instructions</h3>
-                  <p className="text-sm text-white/80 whitespace-pre-wrap">{currentTaskData?.instructions}</p>
+                  <h3 className="font-semibold mb-2 text-slate-950">Instructions</h3>
+                  <p className="text-sm whitespace-pre-wrap text-slate-950">{currentTaskData?.instructions}</p>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20">
-                  <p className="font-medium text-white mb-1">Tips:</p>
-                  <p className="text-white/80">
+                  <p className="font-medium mb-1 text-slate-950">Tips:</p>
+                  <p className="text-slate-950">
                     {currentTask === 1 ? "Describe the data accurately and identify key trends. Use appropriate vocabulary for data description." : "Present clear arguments with relevant examples. Structure your essay with introduction, body paragraphs, and conclusion."}
                   </p>
                 </div>
@@ -395,7 +378,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             <Card className="glass-card rounded-3xl h-fit">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-white">Your Answer - Task {currentTask}</CardTitle>
+                  <CardTitle className="text-slate-950">Your Answer - Task {currentTask}</CardTitle>
                   <div className="flex items-center gap-4 text-sm text-white/80">
                     <span>Words: {getWordCount(currentAnswer)}</span>
                     <span className={getWordCount(currentAnswer) >= (currentTask === 1 ? 150 : 250) ? "text-green-400" : "text-orange-400"}>
@@ -405,49 +388,27 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
               </CardHeader>
               <CardContent>
-                <Textarea 
-                  value={currentAnswer} 
-                  onChange={e => setCurrentAnswer(e.target.value)} 
-                  placeholder={`Write your Task ${currentTask} answer here...`} 
-                  className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" 
-                />
+                <Textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)} placeholder={`Write your Task ${currentTask} answer here...`} className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
                 
                 <div className="flex justify-between items-center mt-4">
                   <div className="text-sm text-white/80">
-                    {getWordCount(currentAnswer) >= (currentTask === 1 ? 150 : 250) ? 
-                      <span className="text-green-400">✓ Word count requirement met</span> : 
-                      <span className="text-orange-400">
+                    {getWordCount(currentAnswer) >= (currentTask === 1 ? 150 : 250) ? <span className="text-green-400">✓ Word count requirement met</span> : <span className="text-orange-400">
                         {(currentTask === 1 ? 150 : 250) - getWordCount(currentAnswer)} more words needed
-                      </span>
-                    }
+                      </span>}
                   </div>
                   
-                  {currentTask === 1 ? 
-                    <Button 
-                      onClick={proceedToTask2} 
-                      className="glass-button hover:bg-white/20 border-white/30 text-white" 
-                      disabled={!task1Answer.trim()}
-                    >
+                  {currentTask === 1 ? <Button onClick={proceedToTask2} disabled={!task1Answer.trim()} className="glass-button hover:bg-white/20 border-white/30 text-slate-950">
                       <ArrowRight className="w-4 h-4 mr-2" />
                       Continue to Task 2
-                    </Button> : 
-                    <Button 
-                      onClick={submitTest} 
-                      disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
-                      className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm"
-                    >
-                      {isSubmitting ? 
-                        <>
+                    </Button> : <Button onClick={submitTest} disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm">
+                      {isSubmitting ? <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                           Submitting...
-                        </> : 
-                        <>
+                        </> : <>
                           <PenTool className="w-4 h-4 mr-2" />
                           Submit for Feedback
-                        </>
-                      }
-                    </Button>
-                  }
+                        </>}
+                    </Button>}
                 </div>
               </CardContent>
             </Card>
@@ -457,117 +418,65 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <div className="lg:col-span-1">
             <Card className="glass-card rounded-3xl h-fit">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-white">
+                <CardTitle className="flex items-center gap-3 text-slate-950">
                   <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <img 
-                      src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png"
-                      alt="Catbot"
-                      className="w-6 h-6 rounded-full"
-                    />
+                    <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-6 h-6 rounded-full" />
                   </div>
                   <div>
-                    <div className="text-base font-semibold">Catbot</div>
+                    <div className="text-base font-semibold bg-slate-50">Catbot</div>
                     <div className="text-xs text-white/70 font-normal">Your AI Writing Tutor</div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 bg-white/5 backdrop-blur-sm border border-white/10">
-                  {getCurrentChatMessages().map(message => 
-                    <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 backdrop-blur-sm border border-white/10 bg-slate-50">
+                  {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         <div className="flex-shrink-0 mt-1">
-                          {message.type === 'user' ? 
-                            <div className="w-6 h-6 rounded-full bg-blue-500/80 flex items-center justify-center">
+                          {message.type === 'user' ? <div className="w-6 h-6 rounded-full bg-blue-500/80 flex items-center justify-center">
                               <User className="w-4 h-4 text-white" />
-                            </div> : 
-                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                              <img 
-                                src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png"
-                                alt="Catbot"
-                                className="w-5 h-5 rounded-full"
-                              />
-                            </div>
-                          }
+                            </div> : <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                              <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                            </div>}
                         </div>
-                        <div className={`px-3 py-2 rounded-xl text-sm backdrop-blur-sm ${
-                          message.type === 'user' 
-                            ? 'bg-blue-500/80 text-white border border-blue-400/50' 
-                            : 'bg-white/10 text-white border border-white/20'
-                        }`}>
-                          <div 
-                            className="prose prose-sm max-w-none prose-invert" 
-                            dangerouslySetInnerHTML={{
-                              __html: message.content
-                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                .replace(/^• (.*)$/gm, '<li>$1</li>')
-                                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-                                .replace(/\n/g, '<br>')
-                            }} 
-                          />
+                        <div className={`px-3 py-2 rounded-xl text-sm backdrop-blur-sm ${message.type === 'user' ? 'bg-blue-500/80 text-white border border-blue-400/50' : 'bg-white/10 text-white border border-white/20'}`}>
+                          <div dangerouslySetInnerHTML={{
+                        __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/^• (.*)$/gm, '<li>$1</li>').replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>').replace(/\n/g, '<br>')
+                      }} className="prose prose-sm max-w-none prose-invert bg-slate-50" />
                         </div>
                       </div>
-                    </div>
-                  )}
-                  {isChatLoading && 
-                    <div className="flex gap-3 justify-start">
+                    </div>)}
+                  {isChatLoading && <div className="flex gap-3 justify-start">
                       <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
-                        <img 
-                          src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png"
-                          alt="Catbot"
-                          className="w-5 h-5 rounded-full"
-                        />
+                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
                       </div>
                       <div className="bg-white/10 border border-white/20 px-3 py-2 rounded-xl text-sm backdrop-blur-sm">
                         <div className="flex gap-1">
                           <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '0.1s'}} />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{animationDelay: '0.2s'}} />
+                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{
+                        animationDelay: '0.1s'
+                      }} />
+                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{
+                        animationDelay: '0.2s'
+                      }} />
                         </div>
                       </div>
-                    </div>
-                  }
+                    </div>}
                 </div>
                 
                 {/* Enhanced Suggestion Buttons */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleSuggestionClick("Help with Writing Structure")} 
-                    disabled={isChatLoading} 
-                    className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm">
                     📝 Structure
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} 
-                    disabled={isChatLoading} 
-                    className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm">
                     📚 Vocabulary
                   </Button>
                 </div>
 
                 <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    value={newMessage} 
-                    onChange={e => setNewMessage(e.target.value)} 
-                    onKeyPress={e => e.key === 'Enter' && sendChatMessage()} 
-                    placeholder="Ask Catbot for writing help..." 
-                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm" 
-                    disabled={isChatLoading} 
-                  />
-                  <Button 
-                    onClick={() => sendChatMessage()} 
-                    disabled={isChatLoading || !newMessage.trim()} 
-                    size="sm"
-                    className="glass-button hover:bg-white/20 border-white/30 text-white"
-                  >
+                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendChatMessage()} placeholder="Ask Catbot for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm" disabled={isChatLoading} />
+                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="glass-button hover:bg-white/20 border-white/30 text-white">
                     <Send className="w-4 h-4" />
                   </Button>
                 </div>

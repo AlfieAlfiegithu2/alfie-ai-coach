@@ -466,10 +466,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 
                 {/* Enhanced Suggestion Buttons */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm">
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-sm text-slate-950">
                     📝 Structure
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-sm">
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-sm text-slate-950">
                     📚 Vocabulary
                   </Button>
                 </div>

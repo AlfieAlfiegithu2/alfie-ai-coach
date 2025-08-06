@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, TrendingUp, Calendar, CheckCircle2, BarChart3 } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
-import LightRays from '@/components/animations/LightRays';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 const IELTSPortal = () => {
   const navigate = useNavigate();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const skills = [{
     id: 'reading',
     name: 'Reading',
@@ -55,6 +56,11 @@ const IELTSPortal = () => {
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     loadAvailableTests();
+    
+    // Preload the background image
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.src = '/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png';
   }, []);
   const loadAvailableTests = async () => {
     setIsLoading(true);
@@ -158,8 +164,21 @@ const IELTSPortal = () => {
     console.log(`🧪 Opening IELTS test ${testId}`);
     navigate(`/ielts-test-modules/${testId}`);
   };
-  return <div className="min-h-screen bg-gray-950 relative">
-      <LightRays raysOrigin="top-center" raysColor="#1E40AF" raysSpeed={0.6} lightSpread={2.0} rayLength={1.2} pulsating={false} fadeDistance={0.8} saturation={0.4} followMouse={true} mouseInfluence={0.05} noiseAmount={0.02} distortion={0.02} className="absolute inset-0 z-0" />
+  if (!imageLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <LoadingAnimation />
+      </div>
+    );
+  }
+
+  return <div className="min-h-screen relative">
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`
+        }}
+      />
       <div className="relative z-10">
       <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">

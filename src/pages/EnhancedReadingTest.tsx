@@ -100,11 +100,12 @@ const EnhancedReadingTest = () => {
         return;
       }
 
-      // Fetch all questions for this test
+      // Fetch all questions for this test - exclude writing tasks
       const { data: questions, error: questionError } = await supabase
         .from('questions')
         .select('*')
         .eq('test_id', testId)
+        .not('question_type', 'in', '("Task 1","Task 2")')
         .order('part_number', { ascending: true })
         .order('question_number_in_part', { ascending: true });
 

@@ -100,16 +100,26 @@ const EnhancedReadingTest = () => {
         return;
       }
 
-      // Fetch all questions for this test - exclude writing tasks
+      // Fetch all questions for this test - exclude writing tasks and standalone titles
       const { data: questions, error: questionError } = await supabase
         .from('questions')
         .select('*')
         .eq('test_id', testId)
-        .not('question_type', 'in', '("Task 1","Task 2")')
+        .not('question_type', 'in', '("Task 1","Task 2","title")')
         .order('part_number', { ascending: true })
         .order('question_number_in_part', { ascending: true });
 
       if (questionError) throw questionError;
+
+      // Separately fetch title questions and question_number_in_part = 0 questions for passage titles
+      const { data: titleQuestions, error: titleError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('test_id', testId)
+        .or('question_type.eq.title,question_number_in_part.eq.0')
+        .order('part_number', { ascending: true });
+
+      if (titleError) throw titleError;
 
       if (!questions || questions.length === 0) {
         toast({
@@ -127,39 +137,31 @@ const EnhancedReadingTest = () => {
 
       // Group questions by part
       const partsByNumber: {[key: number]: any[]} = {};
+      
+      // First pass: collect all passage texts and titles from title questions
       const partTitles: {[key: number]: string} = {};
       const allPassageTexts: {[key: number]: string} = {};
       
-      // First pass: collect all passage texts and titles
+      // Process title questions first
+      titleQuestions?.forEach(titleQuestion => {
+        if (titleQuestion.question_type === 'title' || titleQuestion.question_number_in_part === 0) {
+          partTitles[titleQuestion.part_number] = titleQuestion.question_text;
+          console.log(`📋 Found title for Part ${titleQuestion.part_number}: "${titleQuestion.question_text}"`);
+        }
+        // Also collect passage text from title questions if available
+        if (titleQuestion.passage_text && titleQuestion.passage_text.trim()) {
+          allPassageTexts[titleQuestion.part_number] = titleQuestion.passage_text;
+        }
+      });
+      
+      // Process regular questions for passage text
       questions.forEach(question => {
         // Collect passage text from any question that has it
         if (question.passage_text && question.passage_text.trim()) {
           allPassageTexts[question.part_number] = question.passage_text;
         }
         
-        // Handle title extraction - check for question_number_in_part = 0 OR if question text looks like a title
-        if (question.question_number_in_part === 0) {
-          if (!partTitles[question.part_number] && question.question_text) {
-            partTitles[question.part_number] = question.question_text;
-            console.log(`📋 Found title for Part ${question.part_number}: "${question.question_text}"`);
-          }
-          return; // Don't include title questions in the actual questions
-        }
-        
-        // Check if this looks like a title question (short text, no question marks, etc.)
-        const isLikelyTitle = question.question_text && 
-                             question.question_text.length < 100 && 
-                             !question.question_text.includes('?') && 
-                             !question.question_text.includes('___') &&
-                             question.question_number_in_part === 1;
-        
-        if (isLikelyTitle && !partTitles[question.part_number]) {
-          partTitles[question.part_number] = question.question_text;
-          console.log(`📋 Found title-like question for Part ${question.part_number}: "${question.question_text}"`);
-          return; // Don't include this as a regular question
-        }
-        
-        // Only include actual questions (not titles)
+        // Only include actual questions (not titles) - all questions here should be valid
         if (!partsByNumber[question.part_number]) {
           partsByNumber[question.part_number] = [];
         }

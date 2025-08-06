@@ -8,6 +8,7 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 
+// IELTS Test Modules Component - Updated with consistent styling
 const IELTSTestModules = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();

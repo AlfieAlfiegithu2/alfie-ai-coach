@@ -180,7 +180,8 @@ const Dashboard = () => {
     );
   }
 
-  return <div className="min-h-screen relative">
+  return (
+    <div className="min-h-screen relative">
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
@@ -190,11 +191,9 @@ const Dashboard = () => {
         }}
       />
       
-      <div className="relative z-10 min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
-      
-      <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
+      <div className="relative z-10 min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
         {/* Header */}
-        <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
+        <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20 bg-white/10 backdrop-blur-xl rounded-2xl mb-6">
           <div className="flex items-center gap-3">
             
             
@@ -225,7 +224,7 @@ const Dashboard = () => {
         </header>
 
         {/* Main Content */}
-        <main className="relative sm:px-6 lg:px-12 pr-4 pb-32 pl-4">
+        <main className="relative sm:px-6 lg:px-12 pr-4 pb-32 pl-4 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
           {/* Greeting / Title Row */}
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 pt-6 lg:pt-8">
             {/* Left column */}
@@ -418,8 +417,10 @@ const Dashboard = () => {
                               Start First Test <ChevronRight className="w-4 h-4" />
                             </button>
                           </div>}
-                      </div>;
-                })}
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
 
                 {/* Quick Actions */}
@@ -429,8 +430,8 @@ const Dashboard = () => {
           </div>
         </main>
       </div>
-      </div>
-    </div>;
+    </div>
+  );
 };
 
 export default Dashboard;

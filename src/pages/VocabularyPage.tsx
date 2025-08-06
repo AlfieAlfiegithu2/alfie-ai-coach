@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 
 interface SavedWord {
   id: string;
@@ -32,6 +33,7 @@ const VocabularyPage = () => {
   const [translating, setTranslating] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState('Spanish');
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const languages = [
     { code: 'es', name: 'Spanish' },
@@ -47,8 +49,13 @@ const VocabularyPage = () => {
     { code: 'ru', name: 'Russian' },
     { code: 'tr', name: 'Turkish' }
   ];
-
+  
   useEffect(() => {
+    // Preload the background image
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
+    
     if (user) {
       loadUserProfile();
       loadSavedWords();
@@ -189,26 +196,28 @@ const VocabularyPage = () => {
     );
   }
 
-  if (loading) {
+  if (loading || !imageLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <CardTitle className="text-2xl mb-4">Loading Vocabulary...</CardTitle>
-        </Card>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <LoadingAnimation />
       </div>
     );
   }
 
   return (
-    <div className="min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
-      {/* Background Image - Same as Dashboard */}
-      <div className="fixed top-0 w-full h-screen bg-cover bg-center -z-10" style={{
-        backgroundImage: "url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/44dea03b-7cbb-41b6-934f-6482f1fdf2e3_3840w.jpg')"
-      }} />
+    <div className="min-h-screen relative">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+          backgroundColor: '#a2d2ff'
+        }}
+      />
       
-      <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
+      <div className="relative z-10 min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
         
-        <div className="max-w-4xl mx-auto space-y-6 p-6">
+        <div className="max-w-4xl mx-auto space-y-6 p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
         
         {/* Header with Language Selector */}
         <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
@@ -216,11 +225,11 @@ const VocabularyPage = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-white/20">
-                  <BookOpen className="w-6 h-6 text-black" />
+                  <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl text-black">My Saved Vocabulary</CardTitle>
-                  <p className="text-black/70">
+                  <CardTitle className="text-2xl text-white">My Saved Vocabulary</CardTitle>
+                  <p className="text-gray-300">
                     {savedWords.length} words saved
                   </p>
                 </div>
@@ -229,7 +238,7 @@ const VocabularyPage = () => {
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/dashboard')}
-                  className="text-black border-black/30 hover:bg-black/20"
+                  className="text-white border-white/30 hover:bg-white/20"
                 >
                   Back to Dashboard
                 </Button>
@@ -237,7 +246,7 @@ const VocabularyPage = () => {
                   <Button 
                     variant="outline" 
                     onClick={clearAll}
-                    className="text-black border-black/30 hover:bg-black/20"
+                    className="text-white border-white/30 hover:bg-white/20"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Clear All
@@ -248,24 +257,24 @@ const VocabularyPage = () => {
              
              {/* User's Native Language Display */}
              {userProfile?.native_language && (
-               <div className="flex items-center gap-3">
-                 <Languages className="w-5 h-5 text-black/70" />
-                 <span className="text-sm text-black/70">
-                   Your vocabulary in: {userProfile.native_language}
-                 </span>
-               </div>
+                <div className="flex items-center gap-3">
+                  <Languages className="w-5 h-5 text-gray-300" />
+                  <span className="text-sm text-gray-300">
+                    Your vocabulary in: {userProfile.native_language}
+                  </span>
+                </div>
              )}
           </CardHeader>
           
           {savedWords.length > 0 && (
             <CardContent>
               <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-black/50" />
+                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Search your vocabulary..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/10 border-white/30 text-black placeholder:text-black/50"
+                  className="pl-10 bg-white/10 border-white/30 text-white placeholder:text-gray-300"
                 />
               </div>
             </CardContent>
@@ -277,13 +286,13 @@ const VocabularyPage = () => {
           <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
             <CardContent className="text-center py-12">
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Languages className="w-8 h-8 text-black" />
+                <Languages className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-black">No vocabulary saved yet</h3>
-              <p className="text-black/70 mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-white">No vocabulary saved yet</h3>
+              <p className="text-gray-300 mb-6">
                 Start reading passages and click on words to save them to your vocabulary list
               </p>
-              <Button onClick={() => navigate('/reading')} className="bg-white/20 hover:bg-white/30 text-black border-black/30">
+              <Button onClick={() => navigate('/reading')} className="bg-gray-700 hover:bg-gray-600 text-white border-white/30">
                 Start Reading Practice
               </Button>
             </CardContent>
@@ -291,7 +300,7 @@ const VocabularyPage = () => {
         ) : filteredWords.length === 0 ? (
           <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
             <CardContent className="text-center py-8">
-              <p className="text-black/70">No words match your search</p>
+              <p className="text-gray-300">No words match your search</p>
             </CardContent>
           </Card>
         ) : (
@@ -313,26 +322,26 @@ const VocabularyPage = () => {
             <CardContent className="pt-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                  <div>
-                   <div className="text-2xl font-bold text-black">{savedWords.length}</div>
-                   <div className="text-sm text-black/70">Total Words</div>
+                   <div className="text-2xl font-bold text-white">{savedWords.length}</div>
+                   <div className="text-sm text-gray-300">Total Words</div>
                  </div>
                  <div>
-                   <div className="text-2xl font-bold text-black">
+                   <div className="text-2xl font-bold text-white">
                      {new Set(savedWords.map(w => w.word.charAt(0).toUpperCase())).size}
                    </div>
-                   <div className="text-sm text-black/70">Starting Letters</div>
+                   <div className="text-sm text-gray-300">Starting Letters</div>
                  </div>
                  <div>
-                   <div className="text-2xl font-bold text-black">
+                   <div className="text-2xl font-bold text-white">
                      {Math.round(savedWords.reduce((acc, word) => acc + word.word.length, 0) / savedWords.length) || 0}
                    </div>
-                   <div className="text-sm text-black/70">Avg. Length</div>
+                   <div className="text-sm text-gray-300">Avg. Length</div>
                  </div>
                  <div>
-                   <div className="text-2xl font-bold text-black">
+                   <div className="text-2xl font-bold text-white">
                      {savedWords.filter(w => new Date(w.savedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
                    </div>
-                   <div className="text-sm text-black/70">This Week</div>
+                   <div className="text-sm text-gray-300">This Week</div>
                  </div>
               </div>
             </CardContent>

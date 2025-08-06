@@ -7,6 +7,7 @@ import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Glo
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
+import VideoBackground from "@/components/animations/VideoBackground";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { TypewriterText } from "@/components/TypewriterText";
 const HeroIndex = () => {
@@ -56,10 +57,12 @@ const HeroIndex = () => {
     icon: <Mic className="w-8 h-8 text-white" />
   }];
   return <div className="min-h-screen relative overflow-hidden">
-      {/* Background Image - Original Brightness */}
-      <div className="absolute inset-0 bg-cover bg-center bg-fixed" style={{
-      backgroundImage: 'url(/lovable-uploads/f9efcff3-b597-4011-99f1-72a49c46815e.png)'
-    }} />
+      {/* Video Background */}
+      <VideoBackground 
+        videoSrc="/lovable-uploads/background-video.mp4" 
+        overlay={true}
+        overlayOpacity={70}
+      />
 
       {/* Header */}
       <header className="relative z-10 px-8 py-4">

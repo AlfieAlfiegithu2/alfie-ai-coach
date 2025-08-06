@@ -64,7 +64,6 @@ const HeroIndex = () => {
           alt="Background"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px]" />
       </div>
 
       {/* Header */}

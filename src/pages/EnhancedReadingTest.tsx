@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, ArrowRight, Plus, Languages } from "lucide-react";
+import { ArrowLeft, Clock, BookOpen, Target, CheckCircle2, ArrowRight, Plus, Languages, ZoomIn, ZoomOut } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +54,7 @@ const EnhancedReadingTest = () => {
   const [allQuestions, setAllQuestions] = useState<ReadingQuestion[]>([]);
   const [selectedWord, setSelectedWord] = useState<string>('');
   const [showDictionary, setShowDictionary] = useState(false);
+  const [passageFontSize, setPassageFontSize] = useState(14); // in pixels
 
   useEffect(() => {
     fetchReadingTest();
@@ -656,6 +657,14 @@ const EnhancedReadingTest = () => {
     return newWords.length;
   };
 
+  const increaseFontSize = () => {
+    setPassageFontSize(prev => Math.min(prev + 2, 20));
+  };
+
+  const decreaseFontSize = () => {
+    setPassageFontSize(prev => Math.max(prev - 2, 10));
+  };
+
   if (loading) {
     return (
     <StudentLayout title="Loading Reading Test">
@@ -759,25 +768,55 @@ const EnhancedReadingTest = () => {
           </div>
         </div>
 
-        {/* Main Content - Maximized Layout */}
-        <div className="container mx-auto px-2 py-2">
-          <div className="flex gap-2 h-[calc(100vh-120px)]">
-            {/* Passage - 45% width */}
-            <Card className="flex flex-col w-[45%]">
-              <CardHeader className="flex-shrink-0 pb-2 px-3 py-2">
-                <CardTitle className="flex items-center gap-1 text-sm font-medium">
-                  <Target className="w-4 h-4" />
-                  {currentTestPart.passage.title}
-                </CardTitle>
-                <Badge variant="outline" className="w-fit text-xs h-5">
-                  Part {currentPart}/{Object.keys(testParts).length}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
-                <div className="prose prose-sm max-w-none relative">
-                  <div className="whitespace-pre-wrap leading-relaxed select-text text-sm" onMouseUp={handleTextSelection}>
-                    {currentTestPart.passage.content}
-                  </div>
+        {/* Main Content - Fixed Height Layout */}
+        <div className="flex gap-2 h-[calc(100vh-120px)] px-2">
+          {/* Passage - Fixed 45% width */}
+          <Card className="flex flex-col w-[45%] h-full">
+            <CardHeader className="flex-shrink-0 pb-2 px-3 py-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-1 text-sm font-medium">
+                    <Target className="w-4 h-4" />
+                    {currentTestPart.passage.title}
+                  </CardTitle>
+                  <Badge variant="outline" className="w-fit text-xs h-5 mt-1">
+                    Part {currentPart}/{Object.keys(testParts).length}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    onClick={decreaseFontSize}
+                    className="h-6 w-6 p-0"
+                    disabled={passageFontSize <= 10}
+                  >
+                    <ZoomOut className="w-3 h-3" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground px-1">
+                    {passageFontSize}px
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm" 
+                    onClick={increaseFontSize}
+                    className="h-6 w-6 p-0"
+                    disabled={passageFontSize >= 20}
+                  >
+                    <ZoomIn className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
+              <div className="prose prose-sm max-w-none relative">
+                <div 
+                  className="whitespace-pre-wrap leading-relaxed select-text" 
+                  style={{ fontSize: `${passageFontSize}px`, lineHeight: '1.6' }}
+                  onMouseUp={handleTextSelection}
+                >
+                  {currentTestPart.passage.content}
+                </div>
                   
                   {/* Dictionary Popup */}
                   {showDictionary && selectedWord && (
@@ -821,15 +860,15 @@ const EnhancedReadingTest = () => {
               </CardContent>
             </Card>
 
-            {/* Questions - 55% width */}
-            <Card className="flex flex-col w-[55%]">
+            {/* Questions - Fixed 55% width with scrollable content */}
+            <Card className="flex flex-col w-[55%] h-full">
               <CardHeader className="flex-shrink-0 pb-2 px-3 py-2">
                 <CardTitle className="text-sm font-medium">Questions {getQuestionRange()}</CardTitle>
                 <Badge variant="secondary" className="text-xs h-5">
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
+              <CardContent className="flex-1 overflow-y-auto min-h-0 p-3 scroll-smooth">
                 <div className="space-y-4 pb-4">
                   {getQuestionGroups().map((group, groupIndex) => (
                     <div key={groupIndex} className="space-y-3">
@@ -1008,9 +1047,8 @@ const EnhancedReadingTest = () => {
             </Card>
           </div>
         </div>
-      </div>
-    </StudentLayout>
-  );
-};
+      </StudentLayout>
+    );
+  };
 
 export default EnhancedReadingTest;

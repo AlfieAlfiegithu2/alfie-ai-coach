@@ -13,6 +13,7 @@ import LoadingAnimation from "@/components/animations/LoadingAnimation";
 import SettingsModal from "@/components/SettingsModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [userPreferences, setUserPreferences] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+
   const testTypes = [{
     id: "IELTS",
     name: "IELTS",
@@ -62,6 +64,7 @@ const Dashboard = () => {
     bgColor: "bg-gray-500/10",
     borderColor: "border-gray-500/20"
   }];
+
   const skills = ["Reading", "Listening", "Writing", "Speaking"];
   const achievements = [{
     icon: Trophy,
@@ -132,6 +135,7 @@ const Dashboard = () => {
     fetchUserData();
     loadSavedWords();
   }, [user, refreshKey]);
+
   const loadSavedWords = () => {
     const saved = localStorage.getItem('alfie-saved-vocabulary');
     if (saved) {
@@ -142,10 +146,12 @@ const Dashboard = () => {
       }
     }
   };
+
   const handleStartPractice = () => {
     // Route to personal page instead of dashboard loop
     navigate('/personal-page');
   };
+
   const handleSkillPractice = (skillName: string) => {
     const route = skillName.toLowerCase();
     navigate(`/${route}`);
@@ -255,14 +261,16 @@ const Dashboard = () => {
                   }
                 };
                 const Icon = getIcon(skill);
-                return <button key={skill} onClick={() => setSelectedSkill(skill.toLowerCase())} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                      <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
-                      <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
+                return (
+                  <button key={skill} onClick={() => setSelectedSkill(skill.toLowerCase())} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
+                    <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
+                    <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
                     fontFamily: 'Inter, sans-serif'
                   }}>
-                        {skill}
-                      </span>
-                    </button>;
+                      {skill}
+                    </span>
+                  </button>
+                );
               })}
                 <button onClick={() => setSelectedSkill('overall')} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${selectedSkill === 'overall' ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
                   <BarChart3 className={`w-5 h-5 lg:w-6 lg:h-6 ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} />
@@ -358,69 +366,73 @@ const Dashboard = () => {
                   // Get recent test results for this skill
                   const skillResults = testResults.filter(result => result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase())).slice(0, 3);
                   const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
-                  return <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-                        <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold mb-3 lg:mb-4 text-slate-800" style={{
+                  return (
+                    <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
+                      <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold mb-3 lg:mb-4 text-slate-800" style={{
                       fontFamily: 'Inter, sans-serif'
                     }}>
-                          <Icon className="w-4 h-4" />
-                          {skill} Results & Feedback
-                        </h3>
-                        
-                        {skillResults.length > 0 ? <div className="space-y-3">
-                            <div className="grid grid-cols-3 gap-3 text-xs text-slate-600 mb-4">
-                              <div>
-                                <p className="font-medium text-slate-800" style={{
+                        <Icon className="w-4 h-4" />
+                        {skill} Results & Feedback
+                      </h3>
+                      
+                      {skillResults.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-3 gap-3 text-xs text-slate-600 mb-4">
+                            <div>
+                              <p className="font-medium text-slate-800" style={{
                             fontFamily: 'Inter, sans-serif'
                           }}>
-                                  Tests Taken:
-                                </p>
-                                <p style={{
+                                Tests Taken:
+                              </p>
+                              <p style={{
                             fontFamily: 'Inter, sans-serif'
                           }}>{skillResults.length}</p>
-                              </div>
-                              <div>
-                                <p className="font-medium text-slate-800" style={{
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-800" style={{
                             fontFamily: 'Inter, sans-serif'
                           }}>
-                                  Average Score:
-                                </p>
-                                <p style={{
+                                Average Score:
+                              </p>
+                              <p style={{
                             fontFamily: 'Inter, sans-serif'
                           }}>{averageScore}%</p>
-                              </div>
-                              <div>
-                                <p className="font-medium text-slate-800" style={{
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-800" style={{
                             fontFamily: 'Inter, sans-serif'
                           }}>
-                                  Latest Score:
-                                </p>
-                                <p style={{
+                                Latest Score:
+                              </p>
+                              <p style={{
                             fontFamily: 'Inter, sans-serif'
                           }}>{skillResults[0]?.score_percentage || 0}%</p>
-                              </div>
                             </div>
-                            
-                            <button onClick={() => handleSkillPractice(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
-                              View Detailed Results <ChevronRight className="w-4 h-4" />
-                            </button>
-                          </div> : <div className="text-center py-6">
-                            <p className="text-slate-600 mb-4" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
-                              No {skill.toLowerCase()} tests taken yet
-                            </p>
-                            <button onClick={() => handleSkillPractice(skill)} className="text-sm font-medium bg-[#FFFFF0] backdrop-blur-sm text-black px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-[#F5F5DC] transition border border-white/20" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
-                              Start First Test <ChevronRight className="w-4 h-4" />
-                            </button>
-                          </div>}
                           </div>
+                          
+                          <button onClick={() => handleSkillPractice(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
+                        fontFamily: 'Inter, sans-serif'
+                      }}>
+                            View Detailed Results <ChevronRight className="w-4 h-4" />
+                          </button>
                         </div>
-                      );
-                    })}
+                      ) : (
+                        <div className="text-center py-6">
+                          <p className="text-sm text-slate-600 mb-4" style={{
+                        fontFamily: 'Inter, sans-serif'
+                      }}>
+                            No recent test results for {skill.toLowerCase()}
+                          </p>
+                          <button onClick={() => handleSkillPractice(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
+                        fontFamily: 'Inter, sans-serif'
+                      }}>
+                            Start First Test <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 </div>
 
                 {/* Quick Actions */}

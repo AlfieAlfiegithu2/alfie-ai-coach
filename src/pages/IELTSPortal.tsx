@@ -175,7 +175,7 @@ const IELTSPortal = () => {
   return (
     <div className="min-h-screen relative">
       <div 
-        className="absolute inset-0 bg-contain bg-center bg-no-repeat"
+        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
           backgroundColor: '#f3f4f6'

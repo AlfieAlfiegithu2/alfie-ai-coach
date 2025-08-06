@@ -705,85 +705,75 @@ const EnhancedReadingTest = () => {
   return (
     <StudentLayout title={`Reading Test ${testId} - Part ${currentPart}`}>
       <div className="min-h-screen bg-background">
-        {/* Header with Timer and Progress */}
+        {/* Compact Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-          <div className="container mx-auto px-4 py-4">
+          <div className="container mx-auto px-3 py-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" onClick={() => navigate('/ielts-portal')}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Portal
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/ielts-portal')}>
+                  <ArrowLeft className="w-3 h-3 mr-1" />
+                  Back
                 </Button>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">IELTS Reading Test</span>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-mono text-sm">{formatTime(timeLeft)}</span>
                 </div>
+                <span className="text-xs text-muted-foreground">
+                  {getTotalAnswered()}/{allQuestions.length}
+                </span>
               </div>
               
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
-                </div>
-                <Badge variant="outline">
-                  {getTotalAnswered()}/{allQuestions.length} answered
-                </Badge>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span>Overall Progress</span>
-                <span>{Math.round((getTotalAnswered() / allQuestions.length) * 100)}%</span>
-              </div>
-              <Progress value={(getTotalAnswered() / allQuestions.length) * 100} className="h-2" />
-            </div>
-
-            {/* Part Navigation */}
-            <div className="flex items-center justify-center gap-4 mt-4">
-              {Object.keys(testParts).map(partNum => {
-                const partNumber = parseInt(partNum);
-                return (
-                  <Button
-                    key={partNumber}
-                    variant={currentPart === partNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePartNavigation(partNumber)}
-                    className="relative"
-                  >
-                    Part {partNumber}
-                    <Badge 
-                      variant="secondary" 
-                      className="ml-2 text-xs"
+              <div className="flex items-center gap-2">
+                {/* Compact Part Navigation */}
+                {Object.keys(testParts).map(partNum => {
+                  const partNumber = parseInt(partNum);
+                  const answeredInPart = getAnsweredQuestionsInPart(partNumber);
+                  const totalInPart = testParts[partNumber].questions.length;
+                  
+                  return (
+                    <Button
+                      key={partNumber}
+                      variant={currentPart === partNumber ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePartNavigation(partNumber)}
+                      className="px-2 h-7 text-xs"
                     >
-                      {getAnsweredQuestionsInPart(partNumber)}/{testParts[partNumber].questions.length}
-                    </Badge>
-                    {getAnsweredQuestionsInPart(partNumber) === testParts[partNumber]?.questions.length && (
-                      <CheckCircle2 className="w-4 h-4 text-green-500 absolute -top-1 -right-1" />
-                    )}
-                  </Button>
-                );
-              })}
+                      P{partNumber} {answeredInPart}/{totalInPart}
+                    </Button>
+                  );
+                })}
+                
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitted}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 h-7 text-xs"
+                >
+                  {isSubmitted ? 'Submitting...' : 'Submit'}
+                </Button>
+              </div>
             </div>
+
+            {/* Minimal Progress bar */}
+            <Progress value={(getTotalAnswered() / allQuestions.length) * 100} className="h-1" />
           </div>
         </div>
 
-        {/* Main Content - Optimized Layout */}
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex gap-4 h-[calc(100vh-280px)]">
+        {/* Main Content - Maximized Layout */}
+        <div className="container mx-auto px-2 py-2">
+          <div className="flex gap-2 h-[calc(100vh-120px)]">
             {/* Passage - 45% width */}
             <Card className="flex flex-col w-[45%]">
-              <CardHeader className="flex-shrink-0 pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Target className="w-5 h-5" />
+              <CardHeader className="flex-shrink-0 pb-2 px-3 py-2">
+                <CardTitle className="flex items-center gap-1 text-sm font-medium">
+                  <Target className="w-4 h-4" />
                   {currentTestPart.passage.title}
                 </CardTitle>
-                <Badge variant="outline" className="w-fit text-xs">
-                  Part {currentPart} of {Object.keys(testParts).length}
+                <Badge variant="outline" className="w-fit text-xs h-5">
+                  Part {currentPart}/{Object.keys(testParts).length}
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto min-h-0 p-4">
+              <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
                 <div className="prose prose-sm max-w-none relative">
                   <div className="whitespace-pre-wrap leading-relaxed select-text text-sm" onMouseUp={handleTextSelection}>
                     {currentTestPart.passage.content}
@@ -833,13 +823,13 @@ const EnhancedReadingTest = () => {
 
             {/* Questions - 55% width */}
             <Card className="flex flex-col w-[55%]">
-              <CardHeader className="flex-shrink-0 pb-3">
-                <CardTitle className="text-lg">Questions {getQuestionRange()}</CardTitle>
-                <Badge variant="secondary" className="text-xs">
+              <CardHeader className="flex-shrink-0 pb-2 px-3 py-2">
+                <CardTitle className="text-sm font-medium">Questions {getQuestionRange()}</CardTitle>
+                <Badge variant="secondary" className="text-xs h-5">
                   {currentTestPart.questions.filter(q => answers[q.id]).length}/{currentTestPart.questions.length} answered
                 </Badge>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto min-h-0 p-4">
+              <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
                 <div className="space-y-4 pb-4">
                   {getQuestionGroups().map((group, groupIndex) => (
                     <div key={groupIndex} className="space-y-3">

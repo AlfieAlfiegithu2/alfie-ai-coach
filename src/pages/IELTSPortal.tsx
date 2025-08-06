@@ -172,7 +172,8 @@ const IELTSPortal = () => {
     );
   }
 
-  return <div className="min-h-screen relative">
+  return (
+    <div className="min-h-screen relative">
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
@@ -180,7 +181,7 @@ const IELTSPortal = () => {
         }}
       />
       <div className="relative z-10">
-      <StudentLayout title="My IELTS Dashboard" showBackButton>
+        <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
         {/* Dashboard Header */}
         
@@ -304,9 +305,11 @@ const IELTSPortal = () => {
 
         {/* Quick Actions */}
         
+        </div>
+        </StudentLayout>
       </div>
-      </StudentLayout>
-      </div>
-    </div>;
+    </div>
+  );
 };
+
 export default IELTSPortal;

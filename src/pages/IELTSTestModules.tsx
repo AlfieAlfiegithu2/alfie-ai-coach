@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Volume2, PenTool, MessageSquare, Clock, ArrowLeft } from 'lucide-react';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
-import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
+import LoadingAnimation from '@/components/animations/LoadingAnimation';
 
 const IELTSTestModules = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
   const [test, setTest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const modules = [
     {
@@ -23,10 +24,10 @@ const IELTSTestModules = () => {
       duration: '60 minutes',
       sections: '3 passages',
       questions: '40 questions',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
-      buttonColor: 'bg-blue-600 hover:bg-blue-700'
+      color: 'text-primary',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+      buttonColor: 'bg-gray-700 hover:bg-gray-600'
     },
     {
       id: 'listening',
@@ -36,10 +37,10 @@ const IELTSTestModules = () => {
       duration: '30 minutes',
       sections: '4 sections',
       questions: '40 questions',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200',
-      buttonColor: 'bg-purple-600 hover:bg-purple-700'
+      color: 'text-primary',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+      buttonColor: 'bg-gray-700 hover:bg-gray-600'
     },
     {
       id: 'writing',
@@ -49,10 +50,10 @@ const IELTSTestModules = () => {
       duration: '60 minutes',
       sections: '2 tasks',
       questions: '2 essays',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      buttonColor: 'bg-green-600 hover:bg-green-700'
+      color: 'text-primary',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+      buttonColor: 'bg-gray-700 hover:bg-gray-600'
     },
     {
       id: 'speaking',
@@ -62,10 +63,10 @@ const IELTSTestModules = () => {
       duration: '11-14 minutes',
       sections: '3 parts',
       questions: '3 sections',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200',
-      buttonColor: 'bg-orange-600 hover:bg-orange-700'
+      color: 'text-primary',
+      bgColor: 'bg-white/5',
+      borderColor: 'border-white/10',
+      buttonColor: 'bg-gray-700 hover:bg-gray-600'
     }
   ];
 
@@ -73,6 +74,11 @@ const IELTSTestModules = () => {
     if (testId) {
       loadTest();
     }
+    
+    // Preload the background image
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.src = '/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png';
   }, [testId]);
 
   const loadTest = async () => {
@@ -172,43 +178,61 @@ const IELTSTestModules = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !imageLoaded) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LottieLoadingAnimation size="lg" message="Loading test..." />
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <LoadingAnimation />
       </div>
     );
   }
 
   if (!test) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-muted-foreground">Test not found</p>
-          <Button onClick={() => navigate('/ielts-portal')} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to IELTS Portal
-          </Button>
+      <div className="min-h-screen relative">
+        <div 
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+          style={{
+            backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+            backgroundColor: '#f3f4f6'
+          }}
+        />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg text-white">Test not found</p>
+            <Button onClick={() => navigate('/ielts-portal')} className="mt-4 bg-gray-700 hover:bg-gray-600 text-white">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to IELTS Portal
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <StudentLayout title={test.test_name} showBackButton backPath="/ielts-portal">
+    <div className="min-h-screen relative">
+      <div 
+        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+          backgroundColor: '#f3f4f6'
+        }}
+      />
+      <div className="relative z-10">
+        <StudentLayout title={test.test_name} showBackButton backPath="/ielts-portal">
       <div className="space-y-8">
         <div className="text-center">
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-white border-white/30 bg-white/10">
             IELTS TEST MODULES
           </Badge>
-          <h1 className="text-heading-2 mb-4">{test.test_name}</h1>
-          <p className="text-body-large max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold mb-4 text-white">{test.test_name}</h1>
+          <p className="text-lg max-w-3xl mx-auto text-gray-300">
             Choose which module you'd like to practice. Each module tests different English language skills.
           </p>
         </div>
 
         <section>
-          <h2 className="text-heading-3 mb-6 text-center">Select a Module</h2>
+          <h2 className="text-xl font-semibold mb-6 text-center text-white">Select a Module</h2>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {modules.map((module) => {
               const Icon = module.icon;
@@ -217,36 +241,36 @@ const IELTSTestModules = () => {
               return (
                 <Card 
                   key={module.id} 
-                  className={`card-interactive hover:scale-105 transition-all duration-300 ${module.borderColor} ${module.bgColor}/50`}
+                  className={`backdrop-blur-xl hover:scale-105 transition-all duration-300 ${module.borderColor} ${module.bgColor} rounded-2xl`}
                 >
                   <CardHeader className="text-center pb-4">
                     <div className={`w-16 h-16 mx-auto rounded-2xl ${module.bgColor} flex items-center justify-center mb-4 border ${module.borderColor}`}>
-                      <Icon className={`w-8 h-8 ${module.color}`} />
+                      <Icon className={`w-8 h-8 text-white`} />
                     </div>
-                    <CardTitle className="text-xl flex items-center justify-center gap-2">
+                    <CardTitle className="text-xl flex items-center justify-center gap-2 text-white">
                       {module.name}
                       {isAvailable && (
-                        <Badge variant="default" className="text-xs bg-green-600">Available</Badge>
+                        <Badge variant="default" className="text-xs bg-green-600 text-white">Available</Badge>
                       )}
                       {!isAvailable && (
-                        <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+                        <Badge variant="secondary" className="text-xs bg-gray-600 text-white">Coming Soon</Badge>
                       )}
                     </CardTitle>
-                    <p className="text-text-secondary text-sm">{module.description}</p>
+                    <p className="text-gray-300 text-sm">{module.description}</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-3 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-text-secondary">Duration:</span>
-                        <span className="font-medium">{module.duration}</span>
+                        <span className="text-gray-300">Duration:</span>
+                        <span className="font-medium text-white">{module.duration}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-text-secondary">Sections:</span>
-                        <span className="font-medium">{module.sections}</span>
+                        <span className="text-gray-300">Sections:</span>
+                        <span className="font-medium text-white">{module.sections}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-text-secondary">Content:</span>
-                        <span className="font-medium">{module.questions}</span>
+                        <span className="text-gray-300">Content:</span>
+                        <span className="font-medium text-white">{module.questions}</span>
                       </div>
                     </div>
 
@@ -265,13 +289,13 @@ const IELTSTestModules = () => {
           </div>
         </section>
 
-        <section className="bg-surface-1 rounded-3xl p-8 max-w-4xl mx-auto">
+        <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 max-w-4xl mx-auto">
           <div className="text-center">
-            <h3 className="text-heading-3 mb-4">Test Information</h3>
+            <h3 className="text-xl font-semibold mb-4 text-white">Test Information</h3>
             <div className="grid md:grid-cols-2 gap-6 text-left">
               <div>
-                <h4 className="font-semibold mb-2">Test Format</h4>
-                <ul className="text-sm text-text-secondary space-y-1">
+                <h4 className="font-semibold mb-2 text-white">Test Format</h4>
+                <ul className="text-sm text-gray-300 space-y-1">
                   <li>• Each module can be taken independently</li>
                   <li>• AI-powered feedback and scoring</li>
                   <li>• Realistic IELTS test conditions</li>
@@ -279,8 +303,8 @@ const IELTSTestModules = () => {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">Preparation Tips</h4>
-                <ul className="text-sm text-text-secondary space-y-1">
+                <h4 className="font-semibold mb-2 text-white">Preparation Tips</h4>
+                <ul className="text-sm text-gray-300 space-y-1">
                   <li>• Review the test format beforehand</li>
                   <li>• Ensure a quiet testing environment</li>
                   <li>• Have writing materials ready</li>
@@ -291,7 +315,9 @@ const IELTSTestModules = () => {
           </div>
         </section>
       </div>
-    </StudentLayout>
+      </StudentLayout>
+      </div>
+    </div>
   );
 };
 

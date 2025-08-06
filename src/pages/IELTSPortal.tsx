@@ -7,7 +7,6 @@ import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, Trendi
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LightRays from '@/components/animations/LightRays';
-import VideoLoadingAnimation from '@/components/animations/VideoLoadingAnimation';
 const IELTSPortal = () => {
   const navigate = useNavigate();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
@@ -54,7 +53,6 @@ const IELTSPortal = () => {
   }];
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [imageLoaded, setImageLoaded] = useState(false);
   useEffect(() => {
     loadAvailableTests();
   }, []);
@@ -160,32 +158,8 @@ const IELTSPortal = () => {
     console.log(`🧪 Opening IELTS test ${testId}`);
     navigate(`/ielts-test-modules/${testId}`);
   };
-  if (!imageLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <VideoLoadingAnimation 
-            videoSrc="/kling_20250806_Image_to_Video_make_this__3088_0.mp4"
-            size="lg"
-            className="mx-auto mb-4"
-          />
-          <p className="text-white text-lg animate-pulse">Loading your IELTS dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <div className="min-h-screen relative">
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <img
-          src="/lovable-uploads/9f24c885-190a-4c72-89a8-91dd8cfc6c8c.png"
-          alt="IELTS Study Background"
-          className="absolute inset-0 w-full h-full object-cover"
-          onLoad={() => setImageLoaded(true)}
-        />
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
-      </div>
+  return <div className="min-h-screen bg-gray-950 relative">
+      <LightRays raysOrigin="top-center" raysColor="#1E40AF" raysSpeed={0.6} lightSpread={2.0} rayLength={1.2} pulsating={false} fadeDistance={0.8} saturation={0.4} followMouse={true} mouseInfluence={0.05} noiseAmount={0.02} distortion={0.02} className="absolute inset-0 z-0" />
       <div className="relative z-10">
       <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">

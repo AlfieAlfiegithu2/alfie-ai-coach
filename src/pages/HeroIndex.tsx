@@ -59,7 +59,7 @@ const HeroIndex = () => {
   return <div className="min-h-screen relative overflow-hidden">
       {/* Video Background */}
       <VideoBackground 
-        videoSrc="/lovable-uploads/background-video.mp4" 
+        videoSrc="/kling_20250806_Image_to_Video_make_this__3088_0.mp4" 
         overlay={true}
         overlayOpacity={70}
       />

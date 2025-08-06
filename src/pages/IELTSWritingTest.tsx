@@ -409,7 +409,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   value={currentAnswer} 
                   onChange={e => setCurrentAnswer(e.target.value)} 
                   placeholder={`Write your Task ${currentTask} answer here...`} 
-                  className="min-h-[400px] text-base leading-relaxed resize-none bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40" 
+                  className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" 
                 />
                 
                 <div className="flex justify-between items-center mt-4">

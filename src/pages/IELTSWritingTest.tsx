@@ -324,8 +324,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </Button>
               </div>
               <div className="flex items-center gap-2 text-sm text-white/80">
-                <Clock className="w-4 h-4" />
-                <span>60 minutes total</span>
+                <Clock className="w-4 h-4 bg-gray-200" />
+                <span className="text-slate-950">60 minutes total</span>
               </div>
             </div>
           </div>
@@ -380,7 +380,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-slate-950">Your Answer - Task {currentTask}</CardTitle>
                   <div className="flex items-center gap-4 text-sm text-white/80">
-                    <span>Words: {getWordCount(currentAnswer)}</span>
+                    <span className="text-slate-950">Words: {getWordCount(currentAnswer)}</span>
                     <span className={getWordCount(currentAnswer) >= (currentTask === 1 ? 150 : 250) ? "text-green-400" : "text-orange-400"}>
                       Min: {currentTask === 1 ? '150' : '250'}
                     </span>

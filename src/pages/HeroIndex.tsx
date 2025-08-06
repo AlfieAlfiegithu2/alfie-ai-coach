@@ -57,12 +57,15 @@ const HeroIndex = () => {
     icon: <Mic className="w-8 h-8 text-white" />
   }];
   return <div className="min-h-screen relative overflow-hidden">
-      {/* Video Background */}
-      <VideoBackground 
-        videoSrc="/kling_20250806_Image_to_Video_make_this__3088_0.mp4" 
-        overlay={true}
-        overlayOpacity={70}
-      />
+      {/* Background Image */}
+      <div className="fixed inset-0 w-full h-full">
+        <img 
+          src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png"
+          alt="Background"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px]" />
+      </div>
 
       {/* Header */}
       <header className="relative z-10 px-8 py-4">

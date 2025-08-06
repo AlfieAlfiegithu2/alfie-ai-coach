@@ -58,22 +58,7 @@ const StudentLayout = ({
   }}>
       {/* Header Navigation */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {showBackButton && <Button variant="ghost" onClick={() => navigate(backPath)} className="hover:bg-gentle-blue/10 rounded-xl">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>}
-              
-            </div>
-            
-            <Button variant="ghost" onClick={() => navigate('/')} className="hover:bg-gentle-blue/10 rounded-xl">
-              <Home className="w-4 h-4 mr-2" />
-              Home
-            </Button>
-          </div>
-        </div>
+        
       </header>
 
       {/* Navigation Bar */}

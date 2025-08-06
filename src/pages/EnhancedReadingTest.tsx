@@ -731,7 +731,7 @@ const EnhancedReadingTest = () => {
                   <span className="font-mono text-sm">{formatTime(timeLeft)}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {getTotalAnswered()}/{allQuestions.length}
+                  Questions: {getTotalAnswered()}/{allQuestions.length}
                 </span>
               </div>
               

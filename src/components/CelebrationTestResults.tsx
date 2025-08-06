@@ -53,7 +53,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   const [hoveredExplanation, setHoveredExplanation] = useState<string | null>(null);
   const [currentPart, setCurrentPart] = useState(1);
   
-  const percentage = Math.round((score / totalQuestions) * 100);
+  const percentage = Math.round((score / questions.length) * 100);
   
   // Use official IELTS band score conversion based on correct answers
   const estimatedBandScore = getBandScore(score, 'academic-reading');
@@ -129,9 +129,9 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
               <div className="text-center">
-                <div className="text-3xl font-bold">{score}/{totalQuestions}</div>
+                <div className="text-3xl font-bold">{score}/{questions.length}</div>
                 <div className="text-sm opacity-80">Questions Correct</div>
-                <div className="text-lg font-semibold">{percentage}%</div>
+                <div className="text-lg font-semibold">{Math.round((score / questions.length) * 100)}%</div>
               </div>
               
               <div className="text-center">
@@ -175,10 +175,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-12 gap-4">
-          {/* Results Sidebar - Now on Left */}
-          <div className="lg:col-span-7 space-y-4">
+        {/* Main Content - Match test page layout */}
+        <div className="flex gap-4 h-[calc(100vh-300px)]">
+          {/* Left Column - Questions and Navigation */}
+          <div className="w-[55%] flex flex-col space-y-4">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Card>
@@ -217,11 +217,11 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
             </div>
 
             {/* Answer Review */}
-            <Card>
+            <Card className="flex-1">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Answer Review - Part {currentPart}</CardTitle>
               </CardHeader>
-              <CardContent className="max-h-[500px] overflow-y-auto">
+              <CardContent className="flex-1 overflow-y-auto">
                 <div className="space-y-4">
                   {(testParts[currentPart]?.questions || []).map((question) => {
                     const userAnswer = answers[question.id] || 'Not answered';
@@ -310,20 +310,20 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
             </Card>
           </div>
 
-          {/* Passage - Now on Right, Wider */}
-          <div className="lg:col-span-5">
-            <Card className="h-[600px]">
+          {/* Right Column - Passage (matches test page layout) */}
+          <div className="w-[45%]">
+            <Card className="h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Target className="w-4 h-4" />
                   {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[calc(100%-60px)] overflow-y-auto p-3">
+              <CardContent className="h-[calc(100%-60px)] overflow-y-auto">
                 <div 
-                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-6 text-sm"
+                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed"
                   id={`passage-content-${currentPart}`}
-                  style={{ fontSize: '13px', lineHeight: '1.5' }}
+                  style={{ fontSize: '14px', lineHeight: '1.6' }}
                 >
                   {testParts[currentPart]?.passage?.content || 'Loading passage...'}
                 </div>

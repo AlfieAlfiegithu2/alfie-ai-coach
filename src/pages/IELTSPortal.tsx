@@ -183,54 +183,55 @@ const IELTSPortal = () => {
       />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
-      <div className="space-y-8">
+      <div className="space-y-8 max-w-7xl mx-auto px-4">
         {/* Dashboard Header */}
         
 
         {/* Skills Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">IELTS Practice</h2>
-            <Button variant="outline" size="sm" className="border-white/30 hover:bg-white/10 text-slate-800">View All</Button>
+            <h2 className="text-2xl font-semibold text-zinc-900">IELTS Practice</h2>
+            <Button variant="outline" size="sm" className="border-zinc-300 hover:bg-zinc-100 text-zinc-900 bg-white/80 backdrop-blur-xl">View All</Button>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {skills.map(skill => {
                 const Icon = skill.icon;
-                return <Card key={skill.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-3 mb-3 my-[3px]">
-                      
+                return <Card key={skill.id} className="relative bg-white/80 border border-white/20 backdrop-blur-xl rounded-xl p-4 hover:bg-white/90 transition-all duration-200 cursor-pointer hover:scale-105 shadow-lg" onClick={() => setSelectedSkill(skill.id)}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-brand-blue/10 rounded-lg">
+                        <Icon className="w-5 h-5 text-brand-blue" />
+                      </div>
                       <div>
-                        <CardTitle className="text-lg text-white">{skill.name}</CardTitle>
-                        <div className="text-sm text-gray-300">Band 6.8</div>
+                        <CardTitle className="text-lg text-zinc-900 font-semibold">{skill.name}</CardTitle>
+                        <div className="text-sm text-zinc-600">Band 6.8</div>
                       </div>
                     </div>
-                    
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3 pt-0">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-300">Difficulty:</span>
-                        <Badge variant="secondary" className="bg-white/10 text-white border-white/20">{skill.difficulty}</Badge>
+                        <span className="text-zinc-600">Difficulty:</span>
+                        <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200 text-xs">{skill.difficulty}</Badge>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-300">Duration:</span>
-                        <span className="font-medium text-white">{skill.timeLimit}</span>
+                        <span className="text-zinc-600">Duration:</span>
+                        <span className="font-medium text-zinc-900">{skill.timeLimit}</span>
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-white">Question Types:</p>
+                      <p className="text-sm font-medium text-zinc-900">Question Types:</p>
                       <div className="space-y-1">
-                        {skill.sections.slice(0, 2).map((section, index) => <p key={index} className="text-xs text-gray-300">• {section}</p>)}
-                        {skill.sections.length > 2 && <p className="text-xs text-gray-400">+ {skill.sections.length - 2} more</p>}
+                        {skill.sections.slice(0, 2).map((section, index) => <p key={index} className="text-xs text-zinc-600">• {section}</p>)}
+                        {skill.sections.length > 2 && <p className="text-xs text-zinc-500">+ {skill.sections.length - 2} more</p>}
                       </div>
                     </div>
 
                     <Button onClick={e => {
                       e.stopPropagation();
                       handleSkillPractice(skill.id);
-                    }} size="sm" className="w-full text-white border-0 bg-gray-700 hover:bg-gray-600">
+                    }} size="sm" className="w-full text-white border-0 bg-brand-blue hover:bg-brand-blue/90 transition-colors">
                       Practice {skill.name}
                     </Button>
                   </CardContent>
@@ -242,55 +243,55 @@ const IELTSPortal = () => {
         {/* Practice Tests Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">IELTS Mock Test</h2>
-            <Badge variant="outline" className="bg-blue-900/50 text-blue-200 border-blue-400/30">
+            <h2 className="text-2xl font-semibold text-zinc-900">IELTS Mock Tests</h2>
+            <Badge variant="outline" className="bg-white/80 text-brand-blue border-brand-blue/30 backdrop-blur-xl">
               {availableTests.length} Available
             </Badge>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative bg-white/5 border-white/10 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 group">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between mb-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative bg-white/80 border border-white/20 backdrop-blur-xl rounded-xl p-4 hover:bg-white/90 transition-all duration-200 group hover:scale-105 shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 bg-blue-600/20 rounded-lg">
-                        <BarChart3 className="w-6 h-6 text-blue-400" />
+                      <div className="p-2 bg-brand-blue/10 rounded-lg">
+                        <BarChart3 className="w-5 h-5 text-brand-blue" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-semibold text-white">{test.test_name}</CardTitle>
-                        <p className="text-sm text-gray-300">Cambridge IELTS Test</p>
+                        <CardTitle className="text-lg font-semibold text-zinc-900">{test.test_name}</CardTitle>
+                        <p className="text-sm text-zinc-600">Cambridge IELTS Test</p>
                       </div>
                     </div>
-                    {!test.comingSoon}
+                    {!test.comingSoon && <Badge className="bg-brand-green/10 text-brand-green border-brand-green/30 text-xs">Ready</Badge>}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-2">
+                <CardContent className="space-y-3 pt-0">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-1">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Questions:</span>
-                        <span className="text-white font-medium">{test.total_questions || 'N/A'}</span>
+                        <span className="text-zinc-600">Questions:</span>
+                        <span className="text-zinc-900 font-medium">{test.total_questions || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Speaking:</span>
-                        <span className="text-white font-medium">{test.speaking_prompts || 'N/A'}</span>
+                        <span className="text-zinc-600">Speaking:</span>
+                        <span className="text-zinc-900 font-medium">{test.speaking_prompts || 'N/A'}</span>
                       </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Duration:</span>
-                        <span className="text-white font-medium">3 hours</span>
+                        <span className="text-zinc-600">Duration:</span>
+                        <span className="text-zinc-900 font-medium">3 hours</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Modules:</span>
-                        <span className="text-white font-medium">{test.modules?.length || 0}</span>
+                        <span className="text-zinc-600">Modules:</span>
+                        <span className="text-zinc-900 font-medium">{test.modules?.length || 0}</span>
                       </div>
                     </div>
                   </div>
                   
                   
 
-                  <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full text-white border-0 disabled:text-gray-300 mt-4 transition-colors bg-zinc-700 hover:bg-zinc-600">
+                  <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full text-white border-0 disabled:text-zinc-500 disabled:bg-zinc-200 mt-3 transition-colors bg-brand-blue hover:bg-brand-blue/90">
                     {test.comingSoon ? <span className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         Coming Soon

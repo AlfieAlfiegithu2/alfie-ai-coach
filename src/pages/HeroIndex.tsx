@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Sparkles, Award, TrendingUp, Shield, Clock } from "lucide-react";
+import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Sparkles, Award, TrendingUp, Shield, Clock, Brain, MessageSquare, ChevronRight, Volume2, BarChart3, FileText, Languages } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
@@ -12,11 +12,11 @@ import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { TypewriterText } from "@/components/TypewriterText";
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [showWritingFeedback, setShowWritingFeedback] = useState(false);
+  const [showSpeakingFeedback, setShowSpeakingFeedback] = useState(false);
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -138,7 +138,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Test Preparation Section - Square Cards */}
-      <section id="tests" className="relative z-10 px-8 py-20 animate-fade-in">
+      <section id="tests" className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:200ms] [animation-fill-mode:forwards]">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
             Choose Your Test Preparation
@@ -171,7 +171,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 px-8 py-20 animate-fade-in">
+      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:400ms] [animation-fill-mode:forwards]">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
             Why Choose Our Platform
@@ -215,7 +215,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Success Stories Section */}
-      <section className="relative z-10 px-8 py-20 animate-fade-in">
+      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:600ms] [animation-fill-mode:forwards]">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
             Success Stories
@@ -252,6 +252,375 @@ const HeroIndex = () => {
         </div>
       </section>
 
+      {/* AI Examiner Showcase Section */}
+      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:800ms] [animation-fill-mode:forwards]">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl mb-4 text-center font-light text-zinc-950">
+            Go Beyond Practice. Get Personal Feedback.
+          </h2>
+          <p className="text-center text-zinc-700 mb-16 max-w-2xl mx-auto">
+            Experience our AI-powered feedback system that provides detailed, personalized insights to help you improve faster.
+          </p>
+          
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Writing Feedback Column */}
+            <div className="space-y-6">
+              <h3 className="text-2xl font-light text-zinc-950 mb-6">Writing Examiner</h3>
+              
+              {/* Essay Snippet */}
+              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
+                <div className="text-sm text-zinc-800 leading-relaxed">
+                  <p className="mb-4">
+                    "Technology has become ubiquitous in modern society, fundamentally transforming how we communicate, work, and learn..."
+                  </p>
+                  <p className="text-zinc-600 italic">
+                    [Sample IELTS Task 2 Essay - 250 words]
+                  </p>
+                </div>
+              </Card>
+              
+              {/* AI Feedback Card */}
+              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-zinc-950">AI Feedback</h4>
+                  <Badge className="bg-green-500/20 text-green-800 border-green-500/30">
+                    Band 7.5
+                  </Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="bg-white/10 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-zinc-900">Lexical Resource</span>
+                      <span className="text-sm text-green-700 font-semibold">8.0</span>
+                    </div>
+                    <p className="text-sm text-zinc-700">• Great use of the word 'ubiquitous'!</p>
+                  </div>
+                  
+                  {!showWritingFeedback && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowWritingFeedback(true)}
+                      className="w-full text-zinc-900 hover:bg-white/20"
+                    >
+                      See More Feedback <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  )}
+                  
+                  {showWritingFeedback && (
+                    <div className="space-y-3 animate-fade-in">
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-zinc-900">Coherence & Cohesion</span>
+                          <span className="text-sm text-blue-700 font-semibold">7.0</span>
+                        </div>
+                        <p className="text-sm text-zinc-700">• Consider using more linking words between paragraphs</p>
+                      </div>
+                      
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-zinc-900">Task Achievement</span>
+                          <span className="text-sm text-green-700 font-semibold">7.5</span>
+                        </div>
+                        <p className="text-sm text-zinc-700">• Strong arguments with relevant examples</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+            
+            {/* Speaking Feedback Column */}
+            <div className="space-y-6">
+              <h3 className="text-2xl font-light text-zinc-950 mb-6">Speaking Examiner</h3>
+              
+              {/* Audio Waveform Simulation */}
+              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-zinc-950">Your Response</h4>
+                  <Button size="sm" variant="ghost" className="text-zinc-900 hover:bg-white/20">
+                    <Play className="w-4 h-4 mr-2" />
+                    Play Sample
+                  </Button>
+                </div>
+                
+                {/* Waveform visualization */}
+                <div className="flex items-center justify-center space-x-1 h-16 bg-white/10 rounded-lg mb-4">
+                  {[...Array(20)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`bg-blue-400 rounded-full ${i % 3 === 0 ? 'h-8' : i % 2 === 0 ? 'h-6' : 'h-4'} w-1`}
+                    />
+                  ))}
+                </div>
+                
+                <p className="text-sm text-zinc-700 italic">
+                  "Well, I think technology has, um, really changed our lives in many ways..."
+                </p>
+              </Card>
+              
+              {/* Speaking AI Feedback */}
+              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-zinc-950">AI Analysis</h4>
+                  <Badge className="bg-blue-500/20 text-blue-800 border-blue-500/30">
+                    Band 7.0
+                  </Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="bg-white/10 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-zinc-900">Fluency & Coherence</span>
+                      <span className="text-sm text-green-700 font-semibold">7.5</span>
+                    </div>
+                    <p className="text-sm text-zinc-700">• Your pace was excellent, but try to reduce filler words like 'um'</p>
+                  </div>
+                  
+                  {!showSpeakingFeedback && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowSpeakingFeedback(true)}
+                      className="w-full text-zinc-900 hover:bg-white/20"
+                    >
+                      See Detailed Analysis <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  )}
+                  
+                  {showSpeakingFeedback && (
+                    <div className="space-y-3 animate-fade-in">
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-zinc-900">Pronunciation</span>
+                          <span className="text-sm text-blue-700 font-semibold">6.5</span>
+                        </div>
+                        <p className="text-sm text-zinc-700">• Work on 'th' sounds for clearer articulation</p>
+                      </div>
+                      
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-zinc-900">Vocabulary</span>
+                          <span className="text-sm text-green-700 font-semibold">7.0</span>
+                        </div>
+                        <p className="text-sm text-zinc-700">• Good range of topic-specific vocabulary</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Vibrant Community Showcase Section */}
+      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:1000ms] [animation-fill-mode:forwards]">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl mb-4 text-center font-light text-zinc-950">
+            Never Study Alone
+          </h2>
+          <p className="text-center text-zinc-700 mb-16 max-w-2xl mx-auto">
+            Join a vibrant community of learners from around the world. Share experiences, get support, and celebrate achievements together.
+          </p>
+          
+          <div className="relative">
+            {/* Community Image Background */}
+            <div className="relative h-96 rounded-2xl overflow-hidden">
+              <img 
+                src="/lovable-uploads/b11f4d55-58d5-47a6-9d52-60e86704d82e.png"
+                alt="Diverse students studying together"
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Overlay Testimonials */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
+                  {/* Testimonial 1 */}
+                  <Card className="bg-white/15 border-white/30 backdrop-blur-xl p-4 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-300">
+                    <CardContent className="p-0">
+                      <div className="flex items-center mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-white text-sm font-bold">SC</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-900">Sarah C.</p>
+                          <p className="text-xs text-zinc-700">IELTS: 6.5 → 7.5</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-zinc-800 italic">
+                        "The AI feedback on my Task 2 essay helped me jump from a 6.5 to a 7.5 in just 2 months!"
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Testimonial 2 */}
+                  <Card className="bg-white/15 border-white/30 backdrop-blur-xl p-4 transform rotate-[1deg] hover:rotate-0 transition-transform duration-300">
+                    <CardContent className="p-0">
+                      <div className="flex items-center mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-white text-sm font-bold">AH</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-900">Ahmed H.</p>
+                          <p className="text-xs text-zinc-700">PTE: 79 → 85</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-zinc-800 italic">
+                        "I finally found a study partner in the community. It made all the difference - I didn't feel alone anymore."
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Testimonial 3 */}
+                  <Card className="bg-white/15 border-white/30 backdrop-blur-xl p-4 transform rotate-[-1deg] hover:rotate-0 transition-transform duration-300">
+                    <CardContent className="p-0">
+                      <div className="flex items-center mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-white text-sm font-bold">MR</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-900">Maria R.</p>
+                          <p className="text-xs text-zinc-700">TOEFL: 95 → 108</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-zinc-800 italic">
+                        "The personalized study plan was a game-changer. It showed me exactly what to focus on each week."
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Personalized Learning Hub Showcase Section */}
+      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:1200ms] [animation-fill-mode:forwards]">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl mb-4 text-center font-light text-zinc-950">
+            Your Personal Path to Success
+          </h2>
+          <p className="text-center text-zinc-700 mb-16 max-w-2xl mx-auto">
+            Every learner is unique. Our AI creates a personalized learning experience tailored to your goals, strengths, and areas for improvement.
+          </p>
+          
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* My Dashboard Card */}
+            <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+              <CardHeader className="text-center">
+                <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
+                  <BarChart3 className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-zinc-950 font-normal text-xl">
+                  My Dashboard
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Progress Chart Preview */}
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-zinc-900">Current Score</span>
+                      <span className="text-lg font-bold text-green-600">7.0</span>
+                    </div>
+                    <div className="w-full bg-white/20 rounded-full h-2">
+                      <div className="bg-green-500 h-2 rounded-full w-3/4"></div>
+                    </div>
+                    <div className="text-xs text-zinc-700 mt-1">Target: 7.5</div>
+                  </div>
+                  
+                  <div className="bg-white/10 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-blue-600 mb-1">6 weeks</div>
+                    <div className="text-sm text-zinc-700">Time to Target</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* My Word Book Card */}
+            <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+              <CardHeader className="text-center">
+                <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
+                  <Languages className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-zinc-950 font-normal text-xl">
+                  My Word Book
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Word Example */}
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-lg font-semibold text-zinc-900">ubiquitous</span>
+                      <Volume2 className="w-4 h-4 text-zinc-600" />
+                    </div>
+                    <p className="text-sm text-zinc-700 mb-2">
+                      /juːˈbɪkwɪtəs/ - existing everywhere
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-600">Spanish:</span>
+                      <span className="text-xs text-zinc-800">ubicuo</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-center text-sm text-zinc-700">
+                    Add any word, anytime. Get instant definitions and translations in your native language.
+                  </p>
+                  
+                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 text-zinc-900">
+                    + Add New Word
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* AI Study Plan Card */}
+            <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+              <CardHeader className="text-center">
+                <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
+                  <Brain className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-zinc-950 font-normal text-xl">
+                  AI Study Plan
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Current Week Focus */}
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-zinc-900 mb-2">This Week's Focus</h4>
+                    <p className="text-sm text-zinc-700 mb-3">Improve Coherence & Cohesion</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center text-xs text-zinc-700">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        Practice linking words (30 min)
+                      </div>
+                      <div className="flex items-center text-xs text-zinc-700">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                        Complete 2 Task 2 essays
+                      </div>
+                      <div className="flex items-center text-xs text-zinc-700">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                        Review paragraph structure
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <Badge className="bg-purple-500/20 text-purple-800 border-purple-500/30">
+                      Personalized for You
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
 
       {/* Community Section */}
       <section id="community" className="relative z-10 px-8 py-20 bg-black/20 backdrop-blur-sm">

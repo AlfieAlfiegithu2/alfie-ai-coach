@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Sparkles } from "lucide-react";
+import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Sparkles, Award, TrendingUp, Shield, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
@@ -137,28 +137,114 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Test Preparation Section - Moved Down */}
-      <section id="tests" className="relative z-10 px-8 py-20">
+      {/* Test Preparation Section - Square Cards */}
+      <section id="tests" className="relative z-10 px-8 py-20 animate-fade-in">
         <div className="max-w-6xl mx-auto">
-          {/* Test Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
+            Choose Your Test Preparation
+          </h2>
+          {/* Test Cards Grid - Square Layout */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {testTypes.map((test, index) => (
               <Card 
                 key={index} 
-                className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300" 
+                className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 aspect-square flex flex-col justify-between" 
                 onClick={() => navigate(test.path)}
               >
-                <CardHeader>
-                  
-                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-base">
+                <CardHeader className="text-center flex-1 flex flex-col justify-center items-center">
+                  <div className="mb-4 p-3 bg-white/10 rounded-full">
+                    {test.icon}
+                  </div>
+                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-lg">
                     {test.title}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  
+                <CardContent className="pb-6">
                   <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
                     Start Practice
                   </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="relative z-10 px-8 py-20 animate-fade-in">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
+            Why Choose Our Platform
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <Target className="w-8 h-8 text-white" />,
+                title: "Personalized Learning",
+                description: "AI-powered adaptive learning paths tailored to your specific needs and skill level"
+              },
+              {
+                icon: <TrendingUp className="w-8 h-8 text-white" />,
+                title: "Real-time Progress",
+                description: "Track your improvement with detailed analytics and performance insights"
+              },
+              {
+                icon: <Award className="w-8 h-8 text-white" />,
+                title: "Expert Content",
+                description: "Practice with authentic test materials created by certified English instructors"
+              }
+            ].map((feature, index) => (
+              <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+                <CardHeader className="text-center">
+                  <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
+                    {feature.icon}
+                  </div>
+                  <CardTitle className="text-zinc-950 font-normal text-xl">
+                    {feature.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-zinc-700 text-center leading-relaxed">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Success Stories Section */}
+      <section className="relative z-10 px-8 py-20 animate-fade-in">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
+            Success Stories
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            {[
+              {
+                score: "8.5",
+                test: "IELTS",
+                name: "Sarah Chen",
+                quote: "The AI feedback helped me improve my speaking score by 2 bands in just 6 weeks!"
+              },
+              {
+                score: "85",
+                test: "PTE",
+                name: "Ahmed Hassan",
+                quote: "Perfect preparation platform. The practice tests were exactly like the real exam."
+              }
+            ].map((story, index) => (
+              <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
+                <CardContent className="p-8">
+                  <div className="flex items-center mb-4">
+                    <div className="text-3xl font-bold text-zinc-950 mr-4">{story.score}</div>
+                    <div>
+                      <div className="font-semibold text-zinc-950">{story.test} Score</div>
+                      <div className="text-sm text-zinc-700">{story.name}</div>
+                    </div>
+                  </div>
+                  <p className="text-zinc-800 italic">"{story.quote}"</p>
                 </CardContent>
               </Card>
             ))}

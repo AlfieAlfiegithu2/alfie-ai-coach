@@ -177,7 +177,7 @@ const HeroIndex = () => {
             {testTypes.map((test, index) => (
               <Card 
                 key={index} 
-                className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 h-32 flex flex-col justify-center" 
+                className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 h-32 flex flex-col justify-center" 
                 onClick={() => navigate(test.path)}
               >
                 <CardContent className="p-4 text-center">
@@ -218,9 +218,9 @@ const HeroIndex = () => {
                 description: "Practice with authentic test materials created by certified English instructors"
               }
             ].map((feature, index) => (
-              <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+              <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
                 <CardHeader className="text-center">
-                  <div className="mb-4 p-3 bg-white/20 rounded-full w-fit mx-auto">
+                  <div className="mb-4 p-3 bg-white/10 border border-white/20 backdrop-blur-xl rounded-full w-fit mx-auto">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-zinc-950 font-normal text-xl">
@@ -259,7 +259,7 @@ const HeroIndex = () => {
                 quote: "Perfect preparation platform. The practice tests were exactly like the real exam."
               }
             ].map((story, index) => (
-              <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
+              <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
                 <CardContent className="p-8">
                   <div className="flex items-center mb-4">
                     <div className="text-3xl font-bold text-zinc-950 mr-4">{story.score}</div>
@@ -292,8 +292,8 @@ const HeroIndex = () => {
               <h3 className="text-2xl font-light text-zinc-950 mb-6">Writing Examiner</h3>
               
               {/* Writing Examiner Photo Placeholder */}
-              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
-                <div className="bg-white/20 rounded-lg p-8 text-center">
+              <Card className="bg-white/10 border border-white/20 backdrop-blur-xl p-6">
+                <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-lg p-8 text-center">
                   <FileText className="w-16 h-16 mx-auto mb-4 text-zinc-600 opacity-50" />
                   <p className="text-zinc-700 text-sm">
                     Writing Examiner screenshot will be displayed here
@@ -307,8 +307,8 @@ const HeroIndex = () => {
               <h3 className="text-2xl font-light text-zinc-950 mb-6">Speaking Examiner</h3>
               
               {/* Speaking Examiner Photo Placeholder */}
-              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
-                <div className="bg-white/20 rounded-lg p-8 text-center">
+              <Card className="bg-white/10 border border-white/20 backdrop-blur-xl p-6">
+                <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-lg p-8 text-center">
                   <Mic className="w-16 h-16 mx-auto mb-4 text-zinc-600 opacity-50" />
                   <p className="text-zinc-700 text-sm">
                     Speaking Examiner screenshot will be displayed here
@@ -332,8 +332,8 @@ const HeroIndex = () => {
           
           <div className="relative">
             {/* Community Image Background - Placeholder */}
-            <div className="relative h-96 rounded-2xl overflow-hidden">
-              <div className="w-full h-full bg-white/20 flex items-center justify-center">
+            <div className="relative h-96 rounded-2xl overflow-hidden bg-white/10 border border-white/20 backdrop-blur-xl">
+              <div className="w-full h-full bg-white/10 border border-white/20 backdrop-blur-xl flex items-center justify-center">
                 <div className="text-center">
                   <Users className="w-24 h-24 mx-auto mb-4 text-zinc-600 opacity-50" />
                   <p className="text-zinc-700 text-lg">
@@ -393,7 +393,7 @@ const HeroIndex = () => {
           
           <div className="grid lg:grid-cols-3 gap-8">
             {/* My Dashboard Card */}
-            <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+            <Card className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
               <CardHeader className="text-center">
                 <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
                   <BarChart3 className="w-8 h-8 text-white" />
@@ -415,9 +415,9 @@ const HeroIndex = () => {
             </Card>
             
             {/* My Word Book Card */}
-            <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+            <Card className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
               <CardHeader className="text-center">
-                <div className="mb-4 p-3 bg-white/20 rounded-full w-fit mx-auto">
+                <div className="mb-4 p-3 bg-white/10 border border-white/20 backdrop-blur-xl rounded-full w-fit mx-auto">
                   <Languages className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="text-zinc-950 font-normal text-xl">
@@ -425,7 +425,7 @@ const HeroIndex = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-white/20 rounded-lg p-6 text-center">
+                <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-lg p-6 text-center">
                   <FileText className="w-12 h-12 mx-auto mb-4 text-zinc-600 opacity-50" />
                   <p className="text-sm text-zinc-700">
                     Word Book screenshot will be displayed here
@@ -435,9 +435,9 @@ const HeroIndex = () => {
             </Card>
             
             {/* AI Study Plan Card */}
-            <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+            <Card className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
               <CardHeader className="text-center">
-                <div className="mb-4 p-3 bg-white/20 rounded-full w-fit mx-auto">
+                <div className="mb-4 p-3 bg-white/10 border border-white/20 backdrop-blur-xl rounded-full w-fit mx-auto">
                   <Brain className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="text-zinc-950 font-normal text-xl">
@@ -447,7 +447,7 @@ const HeroIndex = () => {
               <CardContent>
                 <div className="space-y-4">
                   {/* Current Week Focus */}
-                  <div className="bg-white/20 rounded-lg p-4">
+                  <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-lg p-4">
                     <h4 className="text-sm font-semibold text-zinc-900 mb-2">This Week's Focus</h4>
                     <p className="text-sm text-zinc-700 mb-3">Improve Coherence & Cohesion</p>
                     <div className="space-y-2">
@@ -510,7 +510,7 @@ const HeroIndex = () => {
               </Card>)}
           </div>
 
-          <Button size="lg" onClick={() => navigate('/community')} className="bg-white/10 text-white border border-white/20 hover:bg-white/15 px-8 py-4 text-lg transition-all duration-300">
+          <Button size="lg" onClick={() => navigate('/community')} className="bg-white/10 border border-white/20 backdrop-blur-xl text-white hover:bg-white/15 px-8 py-4 text-lg transition-all duration-300">
             <Users className="w-5 h-5 mr-2" />
             Explore Community
           </Button>

@@ -220,7 +220,7 @@ const HeroIndex = () => {
             ].map((feature, index) => (
               <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
                 <CardHeader className="text-center">
-                  <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
+                  <div className="mb-4 p-3 bg-white/20 rounded-full w-fit mx-auto">
                     {feature.icon}
                   </div>
                   <CardTitle className="text-zinc-950 font-normal text-xl">
@@ -291,66 +291,13 @@ const HeroIndex = () => {
             <div className="space-y-6">
               <h3 className="text-2xl font-light text-zinc-950 mb-6">Writing Examiner</h3>
               
-              {/* Essay Snippet */}
+              {/* Writing Examiner Photo Placeholder */}
               <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
-                <div className="text-sm text-zinc-800 leading-relaxed">
-                  <p className="mb-4">
-                    "Technology has become ubiquitous in modern society, fundamentally transforming how we communicate, work, and learn..."
+                <div className="bg-white/20 rounded-lg p-8 text-center">
+                  <FileText className="w-16 h-16 mx-auto mb-4 text-zinc-600 opacity-50" />
+                  <p className="text-zinc-700 text-sm">
+                    Writing Examiner screenshot will be displayed here
                   </p>
-                  <p className="text-zinc-600 italic">
-                    [Sample IELTS Task 2 Essay - 250 words]
-                  </p>
-                </div>
-              </Card>
-              
-              {/* AI Feedback Card */}
-              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-zinc-950">AI Feedback</h4>
-                  <Badge className="bg-green-500/20 text-green-800 border-green-500/30">
-                    Band 7.5
-                  </Badge>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-zinc-900">Lexical Resource</span>
-                      <span className="text-sm text-green-700 font-semibold">8.0</span>
-                    </div>
-                    <p className="text-sm text-zinc-700">• Great use of the word 'ubiquitous'!</p>
-                  </div>
-                  
-                  {!showWritingFeedback && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setShowWritingFeedback(true)}
-                      className="w-full text-zinc-900 hover:bg-white/20"
-                    >
-                      See More Feedback <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  )}
-                  
-                  {showWritingFeedback && (
-                    <div className="space-y-3 animate-fade-in">
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-zinc-900">Coherence & Cohesion</span>
-                          <span className="text-sm text-blue-700 font-semibold">7.0</span>
-                        </div>
-                        <p className="text-sm text-zinc-700">• Consider using more linking words between paragraphs</p>
-                      </div>
-                      
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-zinc-900">Task Achievement</span>
-                          <span className="text-sm text-green-700 font-semibold">7.5</span>
-                        </div>
-                        <p className="text-sm text-zinc-700">• Strong arguments with relevant examples</p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </Card>
             </div>
@@ -359,79 +306,13 @@ const HeroIndex = () => {
             <div className="space-y-6">
               <h3 className="text-2xl font-light text-zinc-950 mb-6">Speaking Examiner</h3>
               
-              {/* Audio Waveform Simulation */}
+              {/* Speaking Examiner Photo Placeholder */}
               <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-zinc-950">Your Response</h4>
-                  <Button size="sm" variant="ghost" className="text-zinc-900 hover:bg-white/20">
-                    <Play className="w-4 h-4 mr-2" />
-                    Play Sample
-                  </Button>
-                </div>
-                
-                {/* Waveform visualization */}
-                <div className="flex items-center justify-center space-x-1 h-16 bg-white/10 rounded-lg mb-4">
-                  {[...Array(20)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`bg-blue-400 rounded-full ${i % 3 === 0 ? 'h-8' : i % 2 === 0 ? 'h-6' : 'h-4'} w-1`}
-                    />
-                  ))}
-                </div>
-                
-                <p className="text-sm text-zinc-700 italic">
-                  "Well, I think technology has, um, really changed our lives in many ways..."
-                </p>
-              </Card>
-              
-              {/* Speaking AI Feedback */}
-              <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-zinc-950">AI Analysis</h4>
-                  <Badge className="bg-blue-500/20 text-blue-800 border-blue-500/30">
-                    Band 7.0
-                  </Badge>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-zinc-900">Fluency & Coherence</span>
-                      <span className="text-sm text-green-700 font-semibold">7.5</span>
-                    </div>
-                    <p className="text-sm text-zinc-700">• Your pace was excellent, but try to reduce filler words like 'um'</p>
-                  </div>
-                  
-                  {!showSpeakingFeedback && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setShowSpeakingFeedback(true)}
-                      className="w-full text-zinc-900 hover:bg-white/20"
-                    >
-                      See Detailed Analysis <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  )}
-                  
-                  {showSpeakingFeedback && (
-                    <div className="space-y-3 animate-fade-in">
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-zinc-900">Pronunciation</span>
-                          <span className="text-sm text-blue-700 font-semibold">6.5</span>
-                        </div>
-                        <p className="text-sm text-zinc-700">• Work on 'th' sounds for clearer articulation</p>
-                      </div>
-                      
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-zinc-900">Vocabulary</span>
-                          <span className="text-sm text-green-700 font-semibold">7.0</span>
-                        </div>
-                        <p className="text-sm text-zinc-700">• Good range of topic-specific vocabulary</p>
-                      </div>
-                    </div>
-                  )}
+                <div className="bg-white/20 rounded-lg p-8 text-center">
+                  <Mic className="w-16 h-16 mx-auto mb-4 text-zinc-600 opacity-50" />
+                  <p className="text-zinc-700 text-sm">
+                    Speaking Examiner screenshot will be displayed here
+                  </p>
                 </div>
               </Card>
             </div>
@@ -450,13 +331,16 @@ const HeroIndex = () => {
           </p>
           
           <div className="relative">
-            {/* Community Image Background */}
+            {/* Community Image Background - Placeholder */}
             <div className="relative h-96 rounded-2xl overflow-hidden">
-              <img 
-                src="/lovable-uploads/b11f4d55-58d5-47a6-9d52-60e86704d82e.png"
-                alt="Diverse students studying together"
-                className="w-full h-full object-cover"
-              />
+              <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                <div className="text-center">
+                  <Users className="w-24 h-24 mx-auto mb-4 text-zinc-600 opacity-50" />
+                  <p className="text-zinc-700 text-lg">
+                    Community image will be displayed here
+                  </p>
+                </div>
+              </div>
               
               {/* Overlay Testimonials - Auto Carousel */}
               <div className="absolute inset-0 flex items-center justify-center">
@@ -533,7 +417,7 @@ const HeroIndex = () => {
             {/* My Word Book Card */}
             <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
               <CardHeader className="text-center">
-                <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
+                <div className="mb-4 p-3 bg-white/20 rounded-full w-fit mx-auto">
                   <Languages className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="text-zinc-950 font-normal text-xl">
@@ -541,29 +425,11 @@ const HeroIndex = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {/* Word Example */}
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-lg font-semibold text-zinc-900">ubiquitous</span>
-                      <Volume2 className="w-4 h-4 text-zinc-600" />
-                    </div>
-                    <p className="text-sm text-zinc-700 mb-2">
-                      /juːˈbɪkwɪtəs/ - existing everywhere
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-600">Spanish:</span>
-                      <span className="text-xs text-zinc-800">ubicuo</span>
-                    </div>
-                  </div>
-                  
-                  <p className="text-center text-sm text-zinc-700">
-                    Add any word, anytime. Get instant definitions and translations in your native language.
+                <div className="bg-white/20 rounded-lg p-6 text-center">
+                  <FileText className="w-12 h-12 mx-auto mb-4 text-zinc-600 opacity-50" />
+                  <p className="text-sm text-zinc-700">
+                    Word Book screenshot will be displayed here
                   </p>
-                  
-                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 text-zinc-900">
-                    + Add New Word
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -571,7 +437,7 @@ const HeroIndex = () => {
             {/* AI Study Plan Card */}
             <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
               <CardHeader className="text-center">
-                <div className="mb-4 p-3 bg-white/10 rounded-full w-fit mx-auto">
+                <div className="mb-4 p-3 bg-white/20 rounded-full w-fit mx-auto">
                   <Brain className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="text-zinc-950 font-normal text-xl">
@@ -581,7 +447,7 @@ const HeroIndex = () => {
               <CardContent>
                 <div className="space-y-4">
                   {/* Current Week Focus */}
-                  <div className="bg-white/10 rounded-lg p-4">
+                  <div className="bg-white/20 rounded-lg p-4">
                     <h4 className="text-sm font-semibold text-zinc-900 mb-2">This Week's Focus</h4>
                     <p className="text-sm text-zinc-700 mb-3">Improve Coherence & Cohesion</p>
                     <div className="space-y-2">
@@ -635,7 +501,7 @@ const HeroIndex = () => {
           }, {
             title: "General English",
             members: "20K+"
-          }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/20 transition-all duration-300 hover:scale-105">
+          }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
                 <CardContent className="pt-6 text-center">
                   
                   <h3 className="mb-2 text-zinc-950 font-light text-sm">{group.title}</h3>
@@ -644,7 +510,7 @@ const HeroIndex = () => {
               </Card>)}
           </div>
 
-          <Button size="lg" onClick={() => navigate('/community')} className="bg-white/10 text-white border border-white/20 hover:bg-white/20 px-8 py-4 text-lg transition-all duration-300">
+          <Button size="lg" onClick={() => navigate('/community')} className="bg-white/10 text-white border border-white/20 hover:bg-white/15 px-8 py-4 text-lg transition-all duration-300">
             <Users className="w-5 h-5 mr-2" />
             Explore Community
           </Button>

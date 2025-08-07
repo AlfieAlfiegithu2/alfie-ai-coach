@@ -17,6 +17,39 @@ const HeroIndex = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [showWritingFeedback, setShowWritingFeedback] = useState(false);
   const [showSpeakingFeedback, setShowSpeakingFeedback] = useState(false);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  const testimonials = [
+    {
+      name: "Sarah C.",
+      score: "6.5 → 7.5",
+      initials: "SC",
+      gradient: "from-green-400 to-blue-500",
+      quote: "The AI feedback on my Task 2 essay helped me jump from a 6.5 to a 7.5 in just 2 months!"
+    },
+    {
+      name: "Ahmed H.",
+      score: "PTE: 79 → 85",
+      initials: "AH",
+      gradient: "from-purple-400 to-pink-500",
+      quote: "I finally found a study partner in the community. It made all the difference - I didn't feel alone anymore."
+    },
+    {
+      name: "Maria R.",
+      score: "TOEFL: 95 → 108",
+      initials: "MR",
+      gradient: "from-orange-400 to-red-500",
+      quote: "The personalized study plan was a game-changer. It showed me exactly what to focus on each week."
+    }
+  ];
+
+  // Auto-carousel for testimonials
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -37,24 +70,20 @@ const HeroIndex = () => {
   };
   const testTypes = [{
     title: "IELTS",
-    description: "Comprehensive international test practice",
-    path: "/ielts-portal",
-    icon: <BookOpen className="w-8 h-8 text-white" />
+    description: "International English Language Testing System",
+    path: "/ielts-portal"
   }, {
     title: "PTE Academic",
-    description: "Pearson Test of English preparation",
-    path: "/pte-portal",
-    icon: <Headphones className="w-8 h-8 text-white" />
+    description: "Pearson Test of English Academic",
+    path: "/pte-portal"
   }, {
     title: "TOEFL iBT",
     description: "Test of English as a Foreign Language",
-    path: "/toefl-portal",
-    icon: <PenTool className="w-8 h-8 text-white" />
+    path: "/toefl-portal"
   }, {
     title: "General English",
-    description: "Improve your everyday fluency",
-    path: "/general-portal",
-    icon: <Mic className="w-8 h-8 text-white" />
+    description: "Improve your everyday English fluency",
+    path: "/general-portal"
   }];
   return <div className="min-h-screen relative overflow-hidden">
       {/* Background Image */}
@@ -143,26 +172,21 @@ const HeroIndex = () => {
           <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
             Choose Your Test Preparation
           </h2>
-          {/* Test Cards Grid - Square Layout */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Test Cards Grid - Smaller, More Approachable */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {testTypes.map((test, index) => (
               <Card 
                 key={index} 
-                className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 aspect-square flex flex-col justify-between" 
+                className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 h-32 flex flex-col justify-center" 
                 onClick={() => navigate(test.path)}
               >
-                <CardHeader className="text-center flex-1 flex flex-col justify-center items-center">
-                  <div className="mb-4 p-3 bg-white/10 rounded-full">
-                    {test.icon}
-                  </div>
-                  <CardTitle className="text-center transition-colors text-zinc-950 font-normal text-lg">
+                <CardContent className="p-4 text-center">
+                  <h3 className="text-zinc-950 font-medium text-lg mb-1">
                     {test.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pb-6">
-                  <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200 text-zinc-950 font-extralight text-sm">
-                    Start Practice
-                  </Button>
+                  </h3>
+                  <p className="text-zinc-700 text-xs leading-tight">
+                    {test.description}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -434,60 +458,36 @@ const HeroIndex = () => {
                 className="w-full h-full object-cover"
               />
               
-              {/* Overlay Testimonials */}
+              {/* Overlay Testimonials - Auto Carousel */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
-                  {/* Testimonial 1 */}
-                  <Card className="bg-white/15 border-white/30 backdrop-blur-xl p-4 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-300">
+                <div className="w-full max-w-md mx-auto p-8">
+                  <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6 transform transition-all duration-1000 ease-in-out">
                     <CardContent className="p-0">
-                      <div className="flex items-center mb-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-white text-sm font-bold">SC</span>
+                      <div className="flex items-center mb-4">
+                        <div className={`w-12 h-12 bg-gradient-to-br ${testimonials[currentTestimonial].gradient} rounded-full flex items-center justify-center mr-4`}>
+                          <span className="text-white text-lg font-bold">{testimonials[currentTestimonial].initials}</span>
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-zinc-900">Sarah C.</p>
-                          <p className="text-xs text-zinc-700">IELTS: 6.5 → 7.5</p>
+                          <p className="text-lg font-semibold text-zinc-900">{testimonials[currentTestimonial].name}</p>
+                          <p className="text-sm text-zinc-700">{testimonials[currentTestimonial].score}</p>
                         </div>
                       </div>
-                      <p className="text-sm text-zinc-800 italic">
-                        "The AI feedback on my Task 2 essay helped me jump from a 6.5 to a 7.5 in just 2 months!"
+                      <p className="text-zinc-800 italic text-lg leading-relaxed">
+                        "{testimonials[currentTestimonial].quote}"
                       </p>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Testimonial 2 */}
-                  <Card className="bg-white/15 border-white/30 backdrop-blur-xl p-4 transform rotate-[1deg] hover:rotate-0 transition-transform duration-300">
-                    <CardContent className="p-0">
-                      <div className="flex items-center mb-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-white text-sm font-bold">AH</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-zinc-900">Ahmed H.</p>
-                          <p className="text-xs text-zinc-700">PTE: 79 → 85</p>
-                        </div>
+                      
+                      {/* Carousel Indicators */}
+                      <div className="flex justify-center mt-6 space-x-2">
+                        {testimonials.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentTestimonial(index)}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                              index === currentTestimonial ? 'bg-white' : 'bg-white/40'
+                            }`}
+                          />
+                        ))}
                       </div>
-                      <p className="text-sm text-zinc-800 italic">
-                        "I finally found a study partner in the community. It made all the difference - I didn't feel alone anymore."
-                      </p>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Testimonial 3 */}
-                  <Card className="bg-white/15 border-white/30 backdrop-blur-xl p-4 transform rotate-[-1deg] hover:rotate-0 transition-transform duration-300">
-                    <CardContent className="p-0">
-                      <div className="flex items-center mb-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-white text-sm font-bold">MR</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-zinc-900">Maria R.</p>
-                          <p className="text-xs text-zinc-700">TOEFL: 95 → 108</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-zinc-800 italic">
-                        "The personalized study plan was a game-changer. It showed me exactly what to focus on each week."
-                      </p>
                     </CardContent>
                   </Card>
                 </div>
@@ -519,23 +519,13 @@ const HeroIndex = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {/* Progress Chart Preview */}
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-zinc-900">Current Score</span>
-                      <span className="text-lg font-bold text-green-600">7.0</span>
-                    </div>
-                    <div className="w-full bg-white/20 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full w-3/4"></div>
-                    </div>
-                    <div className="text-xs text-zinc-700 mt-1">Target: 7.5</div>
+                <div className="bg-white/10 rounded-lg p-6 text-center">
+                  <div className="text-zinc-700 mb-4">
+                    <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   </div>
-                  
-                  <div className="bg-white/10 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-1">6 weeks</div>
-                    <div className="text-sm text-zinc-700">Time to Target</div>
-                  </div>
+                  <p className="text-sm text-zinc-700">
+                    Dashboard preview will be shown here once you upload the image.
+                  </p>
                 </div>
               </CardContent>
             </Card>

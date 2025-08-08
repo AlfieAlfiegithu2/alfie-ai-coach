@@ -333,8 +333,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <div className="lg:col-span-1">
             <Card className="glass-card rounded-3xl h-fit">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-950">
-                  <PenTool className="w-5 h-5" />
+                <CardTitle className="text-slate-950">
                   Task {currentTask} Questions
                 </CardTitle>
               </CardHeader>
@@ -350,7 +349,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   <p className="text-sm text-slate-950">{currentTaskData?.title}</p>
                 </div>
                 
-                <Separator className="bg-white/20" />
+                <div className="h-px bg-border/50" />
                 
                 <div>
                   <h3 className="font-semibold mb-2 text-slate-950">Instructions</h3>
@@ -392,14 +391,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </div>
                   
                   {currentTask === 1 ? <Button onClick={proceedToTask2} disabled={!task1Answer.trim()} className="glass-button hover:bg-white/20 border-white/30 text-slate-950">
-                      <ArrowRight className="w-4 h-4 mr-2" />
+                      
                       Continue to Task 2
                     </Button> : <Button onClick={submitTest} disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm">
                       {isSubmitting ? <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                           Submitting...
                         </> : <>
-                          <PenTool className="w-4 h-4 mr-2" />
+                          
                           Submit for Feedback
                         </>}
                     </Button>}
@@ -427,11 +426,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         <div className="flex-shrink-0 mt-1">
-                          {message.type === 'user' ? <div className="w-6 h-6 rounded-full bg-blue-500/80 flex items-center justify-center">
-                              <User className="w-4 h-4 text-white" />
-                            </div> : <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                          {message.type === 'user' ? (
+                            <div className="w-6 h-6 rounded-full bg-blue-500/80 flex items-center justify-center text-white text-xs font-semibold">U</div>
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                               <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
-                            </div>}
+                            </div>
+                          )}
                         </div>
                         <div className={`px-3 py-2 rounded-xl text-sm backdrop-blur-sm ${message.type === 'user' ? 'bg-blue-500/80 text-white border border-blue-400/50' : 'bg-white/10 text-white border border-white/20'}`}>
                           <div dangerouslySetInnerHTML={{
@@ -471,7 +472,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <div className="flex gap-2">
                   <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendChatMessage()} placeholder="Ask Catbot for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm" disabled={isChatLoading} />
                   <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="glass-button hover:bg-white/20 border-white/30 text-white">
-                    <Send className="w-4 h-4" />
+                    Send
                   </Button>
                 </div>
               </CardContent>

@@ -7,11 +7,8 @@ import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, Trendi
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
-import { useAuth } from '@/hooks/useAuth';
-
 const IELTSPortal = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const skills = [{
@@ -57,20 +54,14 @@ const IELTSPortal = () => {
   }];
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [skillBands, setSkillBands] = useState<Record<string, string>>({});
   useEffect(() => {
     loadAvailableTests();
-
-    if (user) {
-      loadSkillBands();
-    }
 
     // Preload the background image
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png';
-  }, [user]);
-
+  }, []);
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
@@ -133,7 +124,6 @@ const IELTSPortal = () => {
           testModules.get(matchingTest.id).add('speaking');
         }
       });
-
       const transformedTests = testsData?.map(test => {
         const availableModules = testModules.get(test.id) || new Set();
         const questionCount = questionsData?.filter(q => q.test_id === test.id).length || 0;
@@ -142,6 +132,7 @@ const IELTSPortal = () => {
         return {
           id: test.id,
           test_name: test.test_name,
+          // Use exact test name from admin
           test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
           status: totalContent > 0 ? 'complete' : 'incomplete',
           modules: Array.from(availableModules),
@@ -158,60 +149,10 @@ const IELTSPortal = () => {
       setIsLoading(false);
     }
   };
-
-  const percentageToIELTSBand = (percentage: number): number => {
-    if (percentage >= 95) return 9;
-    if (percentage >= 90) return 8.5;
-    if (percentage >= 85) return 8;
-    if (percentage >= 80) return 7.5;
-    if (percentage >= 75) return 7;
-    if (percentage >= 70) return 6.5;
-    if (percentage >= 65) return 6;
-    if (percentage >= 60) return 5.5;
-    if (percentage >= 55) return 5;
-    if (percentage >= 50) return 4.5;
-    if (percentage >= 45) return 4;
-    if (percentage >= 40) return 3.5;
-    if (percentage >= 35) return 3;
-    if (percentage >= 30) return 2.5;
-    if (percentage >= 25) return 2;
-    if (percentage >= 20) return 1.5;
-    if (percentage >= 15) return 1;
-    if (percentage >= 10) return 0.5;
-    return 0;
-  };
-
-  const loadSkillBands = async () => {
-    if (!user) return;
-    try {
-      const skillsToFetch = ['reading', 'listening', 'writing', 'speaking'];
-      const bands: Record<string, string> = {};
-
-      for (const s of skillsToFetch) {
-        const { data, error } = await supabase
-          .from('test_results')
-          .select('score_percentage, created_at, test_type')
-          .eq('user_id', user.id)
-          .ilike('test_type', `%${s}%`)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!error && data?.score_percentage != null) {
-          const band = percentageToIELTSBand(data.score_percentage);
-          bands[s] = `Band ${band}`;
-        }
-      }
-
-      setSkillBands(bands);
-    } catch (e) {
-      console.error('Error loading skill bands:', e);
-    }
-  };
-
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting IELTS ${skillId} practice`);
     if (skillId === 'writing') {
+      // Show writing tests section instead of generic practice
       document.getElementById('writing-tests')?.scrollIntoView({
         behavior: 'smooth'
       });
@@ -219,142 +160,69 @@ const IELTSPortal = () => {
       navigate(`/${skillId}`);
     }
   };
-
   const handleTestClick = (testId: string) => {
     console.log(`🧪 Opening IELTS test ${testId}`);
     navigate(`/ielts-test-modules/${testId}`);
   };
-
   if (!imageLoaded) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
       </div>;
   }
-
   return <div className="min-h-screen relative">
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" style={{
+      <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
       backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
       backgroundColor: '#f3f4f6'
     }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
+        {/* Dashboard Header */}
+        
+
         {/* Skills Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-black">IELTS Practice</h2>
+            <h2 className="text-xl font-semibold text-white">IELTS Practice</h2>
+            <Button variant="outline" size="sm" className="border-white/30 hover:bg-white/10 text-slate-800">View All</Button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map(skill => {
                 const Icon = skill.icon;
-                  return <Card key={skill.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group" onClick={() => handleSkillPractice(skill.id)}>
-                  <CardHeader className="pb-2 p-0">
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <Icon className="w-10 h-10 text-foreground mb-3 group-hover:scale-110 transition-transform duration-300" />
-                      <CardTitle className="text-sm font-semibold text-foreground text-center">{skill.name.toUpperCase()}</CardTitle>
-                      <p className="mt-2 text-xs text-muted-foreground text-center">{skill.description}</p>
-                      <div className="mt-3 text-xs text-muted-foreground text-center space-y-1">
-                        <div>
-                          Current Band: <span className="font-semibold text-foreground">{skillBands[skill.id] || 'Not Yet Assessed'}</span>
-                        </div>
-                        <div>Duration: {skill.timeLimit}</div>
-                      </div>
+                return <Card key={skill.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3 mb-3 my-[3px]">
+                      
+                      
                     </div>
+                    
                   </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-300">Difficulty:</span>
+                        <Badge variant="secondary" className="bg-white/10 text-white border-white/20">{skill.difficulty}</Badge>
+                      </div>
+                      
+                    </div>
+                    
+                    
+
+                    
+                  </CardContent>
                 </Card>;
               })}
           </div>
         </section>
 
-        {/* Targeted Practice Section */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-black">Sharpen Your Skills</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {[
-              { key: 'reading_vocab', title: 'Vocabulary Builder', subtitle: 'Boost your reading vocabulary', icon: BookOpen, path: '/vocabulary' },
-              { key: 'reading_headings', title: 'Matching Headings', subtitle: 'Target this question type', icon: BookOpen, path: '/reading' },
-              { key: 'reading_skimming', title: 'Timed Skimming', subtitle: 'Improve speed and focus', icon: BookOpen, path: '/reading' },
-              { key: 'speaking_repeat', title: 'Repeat After Me', subtitle: 'Pronunciation practice', icon: MessageSquare, path: '/speaking' },
-              { key: 'speaking_part2', title: 'Practice Part 2', subtitle: 'Topic-based speaking', icon: MessageSquare, path: '/speaking' },
-              { key: 'speaking_fluency', title: 'Fluency Drills', subtitle: 'Speak more naturally', icon: MessageSquare, path: '/speaking' },
-              { key: 'writing_grammar', title: 'Grammar Exercises', subtitle: 'Fix common mistakes', icon: PenTool, path: '/writing' },
-              { key: 'writing_paraphrase', title: 'Practice Paraphrasing', subtitle: 'Rewrite with clarity', icon: PenTool, path: '/writing' },
-              { key: 'writing_task1_vocab', title: 'Task 1 Vocabulary', subtitle: 'Charts and graphs words', icon: PenTool, path: '/writing' },
-              { key: 'listening_numbers', title: 'Number Dictation', subtitle: 'Train number recognition', icon: Volume2, path: '/listening' },
-              { key: 'listening_details', title: 'Specific Details', subtitle: 'Listen for key info', icon: Volume2, path: '/listening' },
-            ].map(item => {
-              const IconComp = item.icon;
-              return (
-                <Card
-                  key={item.key}
-                  className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group"
-                  onClick={() => navigate(item.path)}
-                >
-                  <CardHeader className="pb-2 p-0">
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <IconComp className="w-8 h-8 text-foreground mb-2 group-hover:scale-110 transition-transform duration-300" />
-                      <CardTitle className="text-sm font-semibold text-foreground text-center">{item.title}</CardTitle>
-                      <p className="mt-2 text-xs text-muted-foreground text-center">{item.subtitle}</p>
-                    </div>
-                  </CardHeader>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-
         {/* Practice Tests Dashboard */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-black">IELTS Mock Test</h2>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 group">
-                <CardHeader className="pb-4 p-0">
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-primary/20 rounded-lg">
-                        <BarChart3 className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold text-foreground">{test.test_name}</CardTitle>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="text-sm text-muted-foreground">
-                    Last Score: <span className="font-medium text-foreground">Not Yet Taken</span>
-                  </div>
-                  <Button 
-                    onClick={() => handleTestClick(test.id)} 
-                    size="sm" 
-                    disabled={test.comingSoon} 
-                    className={`w-full mt-4 transition-colors font-semibold ${
-                      test.comingSoon 
-                        ? 'bg-muted text-muted-foreground border-0 hover:bg-muted cursor-not-allowed' 
-                        : 'bg-primary text-primary-foreground border-0 hover:bg-primary/90 hover:scale-105'
-                    }`}
-                  >
-                    {test.comingSoon ? <span className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Coming Soon
-                      </span> : <span className="flex items-center gap-2">
-                        <Target className="w-4 h-4" />
-                        Start Test
-                      </span>}
-                  </Button>
-                </CardContent>
-              </Card>)}
-          </div>
-        </section>
+        
+
+        {/* Quick Actions */}
+        
         </div>
         </StudentLayout>
       </div>
     </div>;
 };
-
 export default IELTSPortal;

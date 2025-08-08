@@ -56,7 +56,7 @@ const IELTSPortal = () => {
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     loadAvailableTests();
-    
+
     // Preload the background image
     const img = new Image();
     img.onload = () => setImageLoaded(true);
@@ -165,39 +165,28 @@ const IELTSPortal = () => {
     navigate(`/ielts-test-modules/${testId}`);
   };
   if (!imageLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen relative">
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-          backgroundColor: '#f3f4f6'
-        }}
-      />
+  return <div className="min-h-screen relative">
+      <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
+      backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+      backgroundColor: '#f3f4f6'
+    }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-8">
         {/* Dashboard Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="text-foreground border-foreground/30 hover:bg-foreground/10">
-            Back
-          </Button>
-        </div>
+        
 
         {/* Skills Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-foreground">IELTS Practice</h2>
-            <Button variant="outline" size="sm" className="text-foreground border-foreground/30 hover:bg-foreground/10">View All</Button>
+            <h2 className="text-xl font-semibold text-white">IELTS Practice</h2>
+            <Button variant="outline" size="sm" className="border-white/30 hover:bg-white/10 text-slate-800">View All</Button>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {skills.map(skill => {
                 const Icon = skill.icon;
                 return <Card key={skill.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer" onClick={() => setSelectedSkill(skill.id)}>
@@ -205,8 +194,8 @@ const IELTSPortal = () => {
                     <div className="flex items-center gap-3 mb-3 my-[3px]">
                       
                       <div>
-                        <CardTitle className="text-lg text-foreground">{skill.name}</CardTitle>
-                        <div className="text-sm text-foreground">Band 6.8</div>
+                        <CardTitle className="text-lg text-white">{skill.name}</CardTitle>
+                        <div className="text-sm text-gray-300">Band 6.8</div>
                       </div>
                     </div>
                     
@@ -214,29 +203,24 @@ const IELTSPortal = () => {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-foreground">Difficulty:</span>
-                        <Badge variant="secondary" className="text-foreground">{skill.difficulty}</Badge>
+                        <span className="text-gray-300">Difficulty:</span>
+                        <Badge variant="secondary" className="bg-white/10 text-white border-white/20">{skill.difficulty}</Badge>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-foreground">Duration:</span>
-                        <span className="font-medium text-foreground">{skill.timeLimit}</span>
+                        
+                        
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-foreground">Question Types:</p>
+                      <p className="text-sm font-medium text-white">Question Types:</p>
                       <div className="space-y-1">
-                        {skill.sections.slice(0, 2).map((section, index) => <p key={index} className="text-xs text-foreground">• {section}</p>)}
-                        {skill.sections.length > 2 && <p className="text-xs text-foreground">+ {skill.sections.length - 2} more</p>}
+                        {skill.sections.slice(0, 2).map((section, index) => <p key={index} className="text-xs text-gray-300">• {section}</p>)}
+                        {skill.sections.length > 2 && <p className="text-xs text-gray-400">+ {skill.sections.length - 2} more</p>}
                       </div>
                     </div>
 
-                    <Button onClick={e => {
-                      e.stopPropagation();
-                      handleSkillPractice(skill.id);
-                    }} size="sm" className="w-full text-foreground border-foreground/30 bg-transparent hover:bg-foreground/10">
-                      Practice {skill.name}
-                    </Button>
+                    
                   </CardContent>
                 </Card>;
               })}
@@ -246,8 +230,8 @@ const IELTSPortal = () => {
         {/* Practice Tests Dashboard */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-foreground">IELTS Mock Test</h2>
-            <Badge variant="outline" className="text-foreground border-foreground/30 bg-transparent">
+            <h2 className="text-xl font-semibold text-white">IELTS Mock Test</h2>
+            <Badge variant="outline" className="bg-blue-900/50 text-blue-200 border-blue-400/30">
               {availableTests.length} Available
             </Badge>
           </div>
@@ -261,8 +245,8 @@ const IELTSPortal = () => {
                         <BarChart3 className="w-6 h-6 text-blue-400" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-semibold text-foreground">{test.test_name}</CardTitle>
-                        <p className="text-sm text-foreground">Cambridge IELTS Test</p>
+                        <CardTitle className="text-lg font-semibold text-white">{test.test_name}</CardTitle>
+                        <p className="text-sm text-gray-300">Cambridge IELTS Test</p>
                       </div>
                     </div>
                     {!test.comingSoon}
@@ -272,29 +256,29 @@ const IELTSPortal = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-foreground">Questions:</span>
-                        <span className="text-foreground font-medium">{test.total_questions || 'N/A'}</span>
+                        <span className="text-gray-400">Questions:</span>
+                        <span className="text-white font-medium">{test.total_questions || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-foreground">Speaking:</span>
-                        <span className="text-foreground font-medium">{test.speaking_prompts || 'N/A'}</span>
+                        <span className="text-gray-400">Speaking:</span>
+                        <span className="text-white font-medium">{test.speaking_prompts || 'N/A'}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-foreground">Duration:</span>
-                        <span className="text-foreground font-medium">3 hours</span>
+                        <span className="text-gray-400">Duration:</span>
+                        <span className="text-white font-medium">3 hours</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-foreground">Modules:</span>
-                        <span className="text-foreground font-medium">{test.modules?.length || 0}</span>
+                        <span className="text-gray-400">Modules:</span>
+                        <span className="text-white font-medium">{test.modules?.length || 0}</span>
                       </div>
                     </div>
                   </div>
                   
                   
 
-                  <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full text-foreground border-foreground/30 bg-transparent hover:bg-foreground/10 disabled:text-muted-foreground mt-4 transition-colors">
+                  <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full text-white border-0 disabled:text-gray-300 mt-4 transition-colors bg-zinc-700 hover:bg-zinc-600">
                     {test.comingSoon ? <span className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         Coming Soon
@@ -313,8 +297,6 @@ const IELTSPortal = () => {
         </div>
         </StudentLayout>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default IELTSPortal;

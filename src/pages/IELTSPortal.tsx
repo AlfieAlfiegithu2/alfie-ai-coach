@@ -7,9 +7,11 @@ import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, Trendi
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import { useAuth } from '@/hooks/useAuth';
 
 const IELTSPortal = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const skills = [{
@@ -55,15 +57,19 @@ const IELTSPortal = () => {
   }];
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [skillBands, setSkillBands] = useState<Record<string, string>>({});
   useEffect(() => {
     loadAvailableTests();
+
+    if (user) {
+      loadSkillBands();
+    }
 
     // Preload the background image
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png';
-  }, []);
+  }, [user]);
 
   const loadAvailableTests = async () => {
     setIsLoading(true);
@@ -153,6 +159,56 @@ const IELTSPortal = () => {
     }
   };
 
+  const percentageToIELTSBand = (percentage: number): number => {
+    if (percentage >= 95) return 9;
+    if (percentage >= 90) return 8.5;
+    if (percentage >= 85) return 8;
+    if (percentage >= 80) return 7.5;
+    if (percentage >= 75) return 7;
+    if (percentage >= 70) return 6.5;
+    if (percentage >= 65) return 6;
+    if (percentage >= 60) return 5.5;
+    if (percentage >= 55) return 5;
+    if (percentage >= 50) return 4.5;
+    if (percentage >= 45) return 4;
+    if (percentage >= 40) return 3.5;
+    if (percentage >= 35) return 3;
+    if (percentage >= 30) return 2.5;
+    if (percentage >= 25) return 2;
+    if (percentage >= 20) return 1.5;
+    if (percentage >= 15) return 1;
+    if (percentage >= 10) return 0.5;
+    return 0;
+  };
+
+  const loadSkillBands = async () => {
+    if (!user) return;
+    try {
+      const skillsToFetch = ['reading', 'listening', 'writing', 'speaking'];
+      const bands: Record<string, string> = {};
+
+      for (const s of skillsToFetch) {
+        const { data, error } = await supabase
+          .from('test_results')
+          .select('score_percentage, created_at, test_type')
+          .eq('user_id', user.id)
+          .ilike('test_type', `%${s}%`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data?.score_percentage != null) {
+          const band = percentageToIELTSBand(data.score_percentage);
+          bands[s] = `Band ${band}`;
+        }
+      }
+
+      setSkillBands(bands);
+    } catch (e) {
+      console.error('Error loading skill bands:', e);
+    }
+  };
+
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting IELTS ${skillId} practice`);
     if (skillId === 'writing') {
@@ -196,10 +252,56 @@ const IELTSPortal = () => {
                     <div className="flex flex-col items-center justify-center h-full">
                       <Icon className="w-10 h-10 text-foreground mb-3 group-hover:scale-110 transition-transform duration-300" />
                       <CardTitle className="text-sm font-semibold text-foreground text-center">{skill.name.toUpperCase()}</CardTitle>
+                      <p className="mt-2 text-xs text-muted-foreground text-center">{skill.description}</p>
+                      <div className="mt-3 text-xs text-muted-foreground text-center space-y-1">
+                        <div>
+                          Current Band: <span className="font-semibold text-foreground">{skillBands[skill.id] || 'Not Yet Assessed'}</span>
+                        </div>
+                        <div>Duration: {skill.timeLimit}</div>
+                      </div>
                     </div>
                   </CardHeader>
                 </Card>;
               })}
+          </div>
+        </section>
+
+        {/* Targeted Practice Section */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-black">Sharpen Your Skills</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {[
+              { key: 'reading_vocab', title: 'Vocabulary Builder', subtitle: 'Boost your reading vocabulary', icon: BookOpen, path: '/vocabulary' },
+              { key: 'reading_headings', title: 'Matching Headings', subtitle: 'Target this question type', icon: BookOpen, path: '/reading' },
+              { key: 'reading_skimming', title: 'Timed Skimming', subtitle: 'Improve speed and focus', icon: BookOpen, path: '/reading' },
+              { key: 'speaking_repeat', title: 'Repeat After Me', subtitle: 'Pronunciation practice', icon: MessageSquare, path: '/speaking' },
+              { key: 'speaking_part2', title: 'Practice Part 2', subtitle: 'Topic-based speaking', icon: MessageSquare, path: '/speaking' },
+              { key: 'speaking_fluency', title: 'Fluency Drills', subtitle: 'Speak more naturally', icon: MessageSquare, path: '/speaking' },
+              { key: 'writing_grammar', title: 'Grammar Exercises', subtitle: 'Fix common mistakes', icon: PenTool, path: '/writing' },
+              { key: 'writing_paraphrase', title: 'Practice Paraphrasing', subtitle: 'Rewrite with clarity', icon: PenTool, path: '/writing' },
+              { key: 'writing_task1_vocab', title: 'Task 1 Vocabulary', subtitle: 'Charts and graphs words', icon: PenTool, path: '/writing' },
+              { key: 'listening_numbers', title: 'Number Dictation', subtitle: 'Train number recognition', icon: Volume2, path: '/listening' },
+              { key: 'listening_details', title: 'Specific Details', subtitle: 'Listen for key info', icon: Volume2, path: '/listening' },
+            ].map(item => {
+              const IconComp = item.icon;
+              return (
+                <Card
+                  key={item.key}
+                  className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group"
+                  onClick={() => navigate(item.path)}
+                >
+                  <CardHeader className="pb-2 p-0">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <IconComp className="w-8 h-8 text-foreground mb-2 group-hover:scale-110 transition-transform duration-300" />
+                      <CardTitle className="text-sm font-semibold text-foreground text-center">{item.title}</CardTitle>
+                      <p className="mt-2 text-xs text-muted-foreground text-center">{item.subtitle}</p>
+                    </div>
+                  </CardHeader>
+                </Card>
+              );
+            })}
           </div>
         </section>
 
@@ -224,6 +326,9 @@ const IELTSPortal = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
+                  <div className="text-sm text-muted-foreground">
+                    Last Score: <span className="font-medium text-foreground">Not Yet Taken</span>
+                  </div>
                   <Button 
                     onClick={() => handleTestClick(test.id)} 
                     size="sm" 

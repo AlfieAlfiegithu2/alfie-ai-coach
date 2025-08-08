@@ -12,41 +12,38 @@ import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { TypewriterText } from "@/components/TypewriterText";
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [user, setUser] = useState<any>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [showWritingFeedback, setShowWritingFeedback] = useState(false);
   const [showSpeakingFeedback, setShowSpeakingFeedback] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-
-  const testimonials = [
-    {
-      name: "Sarah C.",
-      score: "6.5 → 7.5",
-      initials: "SC",
-      gradient: "from-green-400 to-blue-500",
-      quote: "The AI feedback on my Task 2 essay helped me jump from a 6.5 to a 7.5 in just 2 months!"
-    },
-    {
-      name: "Ahmed H.",
-      score: "PTE: 79 → 85",
-      initials: "AH",
-      gradient: "from-purple-400 to-pink-500",
-      quote: "I finally found a study partner in the community. It made all the difference - I didn't feel alone anymore."
-    },
-    {
-      name: "Maria R.",
-      score: "TOEFL: 95 → 108",
-      initials: "MR",
-      gradient: "from-orange-400 to-red-500",
-      quote: "The personalized study plan was a game-changer. It showed me exactly what to focus on each week."
-    }
-  ];
+  const testimonials = [{
+    name: "Sarah C.",
+    score: "6.5 → 7.5",
+    initials: "SC",
+    gradient: "from-green-400 to-blue-500",
+    quote: "The AI feedback on my Task 2 essay helped me jump from a 6.5 to a 7.5 in just 2 months!"
+  }, {
+    name: "Ahmed H.",
+    score: "PTE: 79 → 85",
+    initials: "AH",
+    gradient: "from-purple-400 to-pink-500",
+    quote: "I finally found a study partner in the community. It made all the difference - I didn't feel alone anymore."
+  }, {
+    name: "Maria R.",
+    score: "TOEFL: 95 → 108",
+    initials: "MR",
+    gradient: "from-orange-400 to-red-500",
+    quote: "The personalized study plan was a game-changer. It showed me exactly what to focus on each week."
+  }];
 
   // Auto-carousel for testimonials
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+      setCurrentTestimonial(prev => (prev + 1) % testimonials.length);
     }, 4000);
     return () => clearInterval(interval);
   }, []);
@@ -88,11 +85,7 @@ const HeroIndex = () => {
   return <div className="min-h-screen relative overflow-hidden">
       {/* Background Image */}
       <div className="fixed inset-0 w-full h-full">
-        <img 
-          src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png"
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <img src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
       </div>
 
       {/* Header */}
@@ -174,12 +167,7 @@ const HeroIndex = () => {
           </h2>
           {/* Test Cards Grid - Smaller, More Approachable */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {testTypes.map((test, index) => (
-              <Card 
-                key={index} 
-                className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 h-32 flex flex-col justify-center" 
-                onClick={() => navigate(test.path)}
-              >
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 h-32 flex flex-col justify-center" onClick={() => navigate(test.path)}>
                 <CardContent className="p-4 text-center">
                   <h3 className="text-zinc-950 font-medium text-lg mb-1">
                     {test.title}
@@ -188,8 +176,7 @@ const HeroIndex = () => {
                     {test.description}
                   </p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -201,24 +188,19 @@ const HeroIndex = () => {
             Why Choose Our Platform
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Target className="w-8 h-8 text-white" />,
-                title: "Personalized Learning",
-                description: "AI-powered adaptive learning paths tailored to your specific needs and skill level"
-              },
-              {
-                icon: <TrendingUp className="w-8 h-8 text-white" />,
-                title: "Real-time Progress",
-                description: "Track your improvement with detailed analytics and performance insights"
-              },
-              {
-                icon: <Award className="w-8 h-8 text-white" />,
-                title: "Expert Content",
-                description: "Practice with authentic test materials created by certified English instructors"
-              }
-            ].map((feature, index) => (
-              <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+            {[{
+            icon: <Target className="w-8 h-8 text-white" />,
+            title: "Personalized Learning",
+            description: "AI-powered adaptive learning paths tailored to your specific needs and skill level"
+          }, {
+            icon: <TrendingUp className="w-8 h-8 text-white" />,
+            title: "Real-time Progress",
+            description: "Track your improvement with detailed analytics and performance insights"
+          }, {
+            icon: <Award className="w-8 h-8 text-white" />,
+            title: "Expert Content",
+            description: "Practice with authentic test materials created by certified English instructors"
+          }].map((feature, index) => <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
                 <CardHeader className="text-center">
                   <div className="mb-4 p-3 bg-white/10 border border-white/20 backdrop-blur-xl rounded-full w-fit mx-auto">
                     {feature.icon}
@@ -232,8 +214,7 @@ const HeroIndex = () => {
                     {feature.description}
                   </p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -245,21 +226,17 @@ const HeroIndex = () => {
             Success Stories
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                score: "8.5",
-                test: "IELTS",
-                name: "Sarah Chen",
-                quote: "The AI feedback helped me improve my speaking score by 2 bands in just 6 weeks!"
-              },
-              {
-                score: "85",
-                test: "PTE",
-                name: "Ahmed Hassan",
-                quote: "Perfect preparation platform. The practice tests were exactly like the real exam."
-              }
-            ].map((story, index) => (
-              <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
+            {[{
+            score: "8.5",
+            test: "IELTS",
+            name: "Sarah Chen",
+            quote: "The AI feedback helped me improve my speaking score by 2 bands in just 6 weeks!"
+          }, {
+            score: "85",
+            test: "PTE",
+            name: "Ahmed Hassan",
+            quote: "Perfect preparation platform. The practice tests were exactly like the real exam."
+          }].map((story, index) => <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
                 <CardContent className="p-8">
                   <div className="flex items-center mb-4">
                     <div className="text-3xl font-bold text-zinc-950 mr-4">{story.score}</div>
@@ -270,8 +247,7 @@ const HeroIndex = () => {
                   </div>
                   <p className="text-zinc-800 italic">"{story.quote}"</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -332,51 +308,7 @@ const HeroIndex = () => {
           
           <div className="relative">
             {/* Community Image Background - Placeholder */}
-            <div className="relative h-96 rounded-2xl overflow-hidden bg-white/10 border border-white/20 backdrop-blur-xl">
-              <div className="w-full h-full bg-white/10 border border-white/20 backdrop-blur-xl flex items-center justify-center">
-                <div className="text-center">
-                  <Users className="w-24 h-24 mx-auto mb-4 text-zinc-600 opacity-50" />
-                  <p className="text-zinc-700 text-lg">
-                    Community image will be displayed here
-                  </p>
-                </div>
-              </div>
-              
-              {/* Overlay Testimonials - Auto Carousel */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full max-w-md mx-auto p-8">
-                  <Card className="bg-white/10 border-white/20 backdrop-blur-xl p-6 transform transition-all duration-1000 ease-in-out">
-                    <CardContent className="p-0">
-                      <div className="flex items-center mb-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${testimonials[currentTestimonial].gradient} rounded-full flex items-center justify-center mr-4`}>
-                          <span className="text-white text-lg font-bold">{testimonials[currentTestimonial].initials}</span>
-                        </div>
-                        <div>
-                          <p className="text-lg font-semibold text-zinc-900">{testimonials[currentTestimonial].name}</p>
-                          <p className="text-sm text-zinc-700">{testimonials[currentTestimonial].score}</p>
-                        </div>
-                      </div>
-                      <p className="text-zinc-800 italic text-lg leading-relaxed">
-                        "{testimonials[currentTestimonial].quote}"
-                      </p>
-                      
-                      {/* Carousel Indicators */}
-                      <div className="flex justify-center mt-6 space-x-2">
-                        {testimonials.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentTestimonial(index)}
-                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                              index === currentTestimonial ? 'bg-white' : 'bg-white/40'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </div>
+            
           </div>
         </div>
       </section>

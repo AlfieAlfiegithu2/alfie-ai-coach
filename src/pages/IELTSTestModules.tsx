@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Volume2, PenTool, MessageSquare, Clock, ArrowLeft } from 'lucide-react';
+
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -20,54 +20,34 @@ const IELTSTestModules = () => {
     {
       id: 'reading',
       name: 'Reading',
-      icon: BookOpen,
       description: 'Academic passages with comprehensive questions',
       duration: '60 minutes',
       sections: '3 passages',
-      questions: '40 questions',
-      color: 'text-primary',
-      bgColor: 'bg-white/5',
-      borderColor: 'border-white/10',
-      buttonColor: 'bg-gray-700 hover:bg-gray-600'
+      questions: '40 questions'
     },
     {
       id: 'listening',
       name: 'Listening',
-      icon: Volume2,
       description: 'Audio recordings with various question types',
       duration: '30 minutes',
       sections: '4 sections',
-      questions: '40 questions',
-      color: 'text-primary',
-      bgColor: 'bg-white/5',
-      borderColor: 'border-white/10',
-      buttonColor: 'bg-gray-700 hover:bg-gray-600'
+      questions: '40 questions'
     },
     {
       id: 'writing',
       name: 'Writing',
-      icon: PenTool,
       description: 'Task 1 data description and Task 2 essay',
       duration: '60 minutes',
       sections: '2 tasks',
-      questions: '2 essays',
-      color: 'text-primary',
-      bgColor: 'bg-white/5',
-      borderColor: 'border-white/10',
-      buttonColor: 'bg-gray-700 hover:bg-gray-600'
+      questions: '2 essays'
     },
     {
       id: 'speaking',
       name: 'Speaking',
-      icon: MessageSquare,
       description: 'Interactive speaking assessment with AI examiner',
       duration: '11-14 minutes',
       sections: '3 parts',
-      questions: '3 sections',
-      color: 'text-primary',
-      bgColor: 'bg-white/5',
-      borderColor: 'border-white/10',
-      buttonColor: 'bg-gray-700 hover:bg-gray-600'
+      questions: '3 sections'
     }
   ];
 
@@ -200,8 +180,7 @@ const IELTSTestModules = () => {
         <div className="relative z-10 min-h-screen flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg text-white">Test not found</p>
-            <Button onClick={() => navigate('/ielts-portal')} className="mt-4 bg-gray-700 hover:bg-gray-600 text-white">
-              <ArrowLeft className="w-4 h-4 mr-2" />
+            <Button onClick={() => navigate('/ielts-portal')} className="mt-4 rounded-2xl" style={{ background: 'var(--gradient-button)', border: 'none' }}>
               Back to IELTS Portal
             </Button>
           </div>
@@ -221,65 +200,62 @@ const IELTSTestModules = () => {
       />
       <div className="relative z-10">
         <StudentLayout title={test.test_name} showBackButton backPath="/ielts-portal">
-      <div className="space-y-8">
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="flex items-center mb-2">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="text-text-secondary px-2 py-1 h-8">
+            Go Back
+          </Button>
+        </div>
         <div className="text-center">
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-white border-white/30 bg-white/10">
+          <Badge variant="outline" className="mb-3 px-4 py-1 text-text-secondary border-light-border">
             IELTS TEST MODULES
           </Badge>
-          <h1 className="text-3xl font-bold mb-4 text-white">{test.test_name}</h1>
-          <p className="text-lg max-w-3xl mx-auto text-gray-300">
+          <h1 className="text-3xl font-bold mb-3 text-foreground">{test.test_name}</h1>
+          <p className="text-lg max-w-3xl mx-auto text-warm-gray">
             Choose which module you'd like to practice. Each module tests different English language skills.
           </p>
         </div>
 
         <section>
           <h2 className="text-xl font-semibold mb-6 text-center text-white">Select a Module</h2>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
             {modules.map((module) => {
-              const Icon = module.icon;
               const isAvailable = module.id === 'writing' || module.id === 'reading' || module.id === 'speaking';
               
               return (
                 <Card 
                   key={module.id} 
-                  className={`backdrop-blur-xl hover:scale-105 transition-all duration-300 ${module.borderColor} ${module.bgColor} rounded-2xl`}
+                  className="rounded-2xl border-light-border shadow-soft hover:scale-105 transition-all duration-200"
+                  style={{ background: 'var(--gradient-card)' }}
                 >
-                  <CardHeader className="text-center pb-4">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl ${module.bgColor} flex items-center justify-center mb-4 border ${module.borderColor}`}>
-                      <Icon className={`w-8 h-8 text-white`} />
-                    </div>
-                    <CardTitle className="text-xl flex items-center justify-center gap-2 text-white">
+                  <CardHeader className="text-center pb-3">
+                    <CardTitle className="text-xl text-foreground">
                       {module.name}
-                      {isAvailable && (
-                        <Badge variant="default" className="text-xs bg-green-600 text-white">Available</Badge>
-                      )}
-                      {!isAvailable && (
-                        <Badge variant="secondary" className="text-xs bg-gray-600 text-white">Coming Soon</Badge>
-                      )}
                     </CardTitle>
-                    <p className="text-gray-300 text-sm">{module.description}</p>
+                    <p className="text-sm text-warm-gray">{module.description}</p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-3 text-sm">
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-1 gap-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-300">Duration:</span>
-                        <span className="font-medium text-white">{module.duration}</span>
+                        <span className="text-warm-gray">Duration:</span>
+                        <span className="font-medium text-foreground">{module.duration}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-300">Sections:</span>
-                        <span className="font-medium text-white">{module.sections}</span>
+                        <span className="text-warm-gray">Sections:</span>
+                        <span className="font-medium text-foreground">{module.sections}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-300">Content:</span>
-                        <span className="font-medium text-white">{module.questions}</span>
+                        <span className="text-warm-gray">Content:</span>
+                        <span className="font-medium text-foreground">{module.questions}</span>
                       </div>
                     </div>
 
                     <Button 
                       onClick={() => handleModuleSelect(module.id)}
-                      className={`w-full text-white ${isAvailable ? module.buttonColor : 'bg-gray-400 cursor-not-allowed'}`}
+                      className="w-full rounded-2xl font-semibold"
                       size="sm"
                       disabled={!isAvailable}
+                      style={{ background: isAvailable ? 'var(--gradient-button)' : 'var(--warm-gray)', border: 'none' }}
                     >
                       {isAvailable ? `Start ${module.name}` : 'Coming Soon'}
                     </Button>

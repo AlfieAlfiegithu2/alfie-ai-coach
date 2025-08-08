@@ -2,9 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, TrendingUp, Calendar, CheckCircle2, BarChart3 } from 'lucide-react';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -15,47 +12,6 @@ const IELTSPortal = () => {
   const { user } = useAuth();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const skills = [{
-    id: 'reading',
-    name: 'Reading',
-    icon: BookOpen,
-    description: 'Academic and General Training passages with question types',
-    sections: ['Multiple Choice', 'True/False/Not Given', 'Matching Headings'],
-    difficulty: 'Band 4.0-9.0',
-    timeLimit: '60 minutes',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10'
-  }, {
-    id: 'listening',
-    name: 'Listening',
-    icon: Volume2,
-    description: 'Four sections covering social and academic contexts',
-    sections: ['Multiple Choice', 'Form Completion', 'Map/Plan Labelling'],
-    difficulty: 'Band 4.0-9.0',
-    timeLimit: '30 minutes',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10'
-  }, {
-    id: 'writing',
-    name: 'Writing',
-    icon: PenTool,
-    description: 'Task 1 (charts/graphs) and Task 2 (essay writing)',
-    sections: ['Task 1: Data Description', 'Task 2: Essay Writing'],
-    difficulty: 'Band 4.0-9.0',
-    timeLimit: '60 minutes',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10'
-  }, {
-    id: 'speaking',
-    name: 'Speaking',
-    icon: MessageSquare,
-    description: 'Face-to-face interview with examiner in three parts',
-    sections: ['Personal Questions', 'Individual Presentation', 'Discussion'],
-    difficulty: 'Band 4.0-9.0',
-    timeLimit: '11-14 minutes',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10'
-  }];
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [skillBands, setSkillBands] = useState<Record<string, string>>({});
@@ -239,33 +195,38 @@ const IELTSPortal = () => {
     }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
-      <div className="space-y-4 md:space-y-6 max-w-6xl mx-auto px-3 md:px-4">
-        {/* Practice Tests Dashboard - moved to top */}
+      <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
+        <div className="flex items-center mb-2">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="text-text-secondary px-2 py-1 h-8">
+            Go Back
+          </Button>
+        </div>
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-black">IELTS Mock Test</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-semibold text-foreground">IELTS Mock Test</h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {availableTests.slice(0, 6).map(test => (
-              <Card key={test.test_number || test.id} className="relative bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-200 group">
-                <CardHeader className="pb-3 p-0">
+              <Card
+                key={test.test_number || test.id}
+                className="rounded-2xl border-light-border shadow-soft p-3 transition-all duration-200 hover:scale-105"
+                style={{ background: 'var(--gradient-card)' }}
+              >
+                <CardHeader className="pb-2 p-0">
                   <div className="flex items-center justify-center">
                     <CardTitle className="text-base font-semibold text-foreground">{test.test_name}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-warm-gray text-center">
                     Last Score: <span className="font-medium text-foreground">Not Yet Taken</span>
                   </div>
-                  <Button 
-                    onClick={() => handleTestClick(test.id)} 
-                    size="sm" 
-                    disabled={test.comingSoon} 
-                    className={`w-full mt-3 transition-colors font-semibold ${
-                      test.comingSoon 
-                        ? 'bg-muted text-muted-foreground border-0 hover:bg-muted cursor-not-allowed' 
-                        : 'bg-primary text-primary-foreground border-0 hover:bg-primary/90'
-                    }`}
+                  <Button
+                    onClick={() => handleTestClick(test.id)}
+                    size="sm"
+                    disabled={test.comingSoon}
+                    className="w-full mt-2 font-semibold rounded-2xl"
+                    style={{ background: test.comingSoon ? 'var(--warm-gray)' : 'var(--gradient-button)', border: 'none' }}
                   >
                     {test.comingSoon ? 'Coming Soon' : 'Start Test'}
                   </Button>
@@ -278,41 +239,38 @@ const IELTSPortal = () => {
 
         {/* Targeted Practice - Expandable (icons removed) */}
         <section>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="targeted">
-              <AccordionTrigger className="text-xl font-semibold text-black">Sharpen Your Skills</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-                  {[
-                    { key: 'reading_vocab', title: 'Vocabulary Builder', subtitle: 'Boost your reading vocabulary', path: '/vocabulary' },
-                    { key: 'reading_headings', title: 'Matching Headings', subtitle: 'Target this question type', path: '/reading' },
-                    { key: 'reading_skimming', title: 'Timed Skimming', subtitle: 'Improve speed and focus', path: '/reading' },
-                    { key: 'speaking_repeat', title: 'Repeat After Me', subtitle: 'Pronunciation practice', path: '/speaking' },
-                    { key: 'speaking_part2', title: 'Practice Part 2', subtitle: 'Topic-based speaking', path: '/speaking' },
-                    { key: 'speaking_fluency', title: 'Fluency Drills', subtitle: 'Speak more naturally', path: '/speaking' },
-                    { key: 'writing_grammar', title: 'Grammar Exercises', subtitle: 'Fix common mistakes', path: '/writing' },
-                    { key: 'writing_paraphrase', title: 'Practice Paraphrasing', subtitle: 'Rewrite with clarity', path: '/writing' },
-                    { key: 'writing_task1_vocab', title: 'Task 1 Vocabulary', subtitle: 'Charts and graphs words', path: '/writing' },
-                    { key: 'listening_numbers', title: 'Number Dictation', subtitle: 'Train number recognition', path: '/listening' },
-                    { key: 'listening_details', title: 'Specific Details', subtitle: 'Listen for key info', path: '/listening' },
-                  ].map(item => (
-                    <Card
-                      key={item.key}
-                      className="relative bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-200 cursor-pointer group"
-                      onClick={() => navigate(item.path)}
-                    >
-                      <CardHeader className="pb-2 p-0">
-                        <div className="flex flex-col items-center justify-center h-full">
-                          <CardTitle className="text-sm font-semibold text-foreground text-center">{item.title}</CardTitle>
-                          <p className="mt-1 text-xs text-muted-foreground text-center">{item.subtitle}</p>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-semibold text-foreground">Sharpen Your Skills</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {[
+              { key: 'reading_vocab', title: 'Vocabulary Builder', subtitle: 'Boost your reading vocabulary', path: '/vocabulary' },
+              { key: 'reading_headings', title: 'Matching Headings', subtitle: 'Target this question type', path: '/reading' },
+              { key: 'reading_skimming', title: 'Timed Skimming', subtitle: 'Improve speed and focus', path: '/reading' },
+              { key: 'speaking_repeat', title: 'Repeat After Me', subtitle: 'Pronunciation practice', path: '/speaking' },
+              { key: 'speaking_part2', title: 'Practice Part 2', subtitle: 'Topic-based speaking', path: '/speaking' },
+              { key: 'speaking_fluency', title: 'Fluency Drills', subtitle: 'Speak more naturally', path: '/speaking' },
+              { key: 'writing_grammar', title: 'Grammar Exercises', subtitle: 'Fix common mistakes', path: '/writing' },
+              { key: 'writing_paraphrase', title: 'Practice Paraphrasing', subtitle: 'Rewrite with clarity', path: '/writing' },
+              { key: 'writing_task1_vocab', title: 'Task 1 Vocabulary', subtitle: 'Charts and graphs words', path: '/writing' },
+              { key: 'listening_numbers', title: 'Number Dictation', subtitle: 'Train number recognition', path: '/listening' },
+              { key: 'listening_details', title: 'Specific Details', subtitle: 'Listen for key info', path: '/listening' },
+            ].map(item => (
+              <Card
+                key={item.key}
+                className="cursor-pointer transition-all duration-200 rounded-2xl border-light-border hover:border-gentle-blue/30 hover:scale-105"
+                onClick={() => navigate(item.path)}
+                style={{ background: 'white' }}
+              >
+                <CardHeader className="pb-2 p-4">
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <CardTitle className="text-sm font-semibold text-foreground text-center">{item.title}</CardTitle>
+                    <p className="mt-1 text-xs text-warm-gray text-center">{item.subtitle}</p>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         </section>
         </div>
         </StudentLayout>

@@ -341,7 +341,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 {/* For Task 1, show image first on the left side */}
                 {currentTask === 1 && currentTaskData?.imageUrl && <div className="mb-4">
                     <h3 className="font-semibold mb-2 text-slate-950">Visual Data</h3>
-                    <img src={currentTaskData.imageUrl} alt="Task 1 visual data" className="w-full rounded-lg border border-white/20 shadow-lg" />
+                    <img
+                      src={currentTaskData.imageUrl}
+                      alt="Task 1 visual data"
+                      className="w-full rounded-lg border border-border shadow-sm cursor-zoom-in object-contain"
+                      onClick={() => { setZoomScale(1); setZoomOpen(true); }}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Click image to zoom</p>
                   </div>}
 
                 <div>
@@ -416,13 +422,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-6 h-6 rounded-full" />
                   </div>
                   <div>
-                    <div className="text-base font-semibold bg-slate-50">Catbot</div>
-                    <div className="text-xs text-white/70 font-normal">Your AI Writing Tutor</div>
+                    <div className="text-base font-semibold text-foreground">Catbot</div>
+                    <div className="text-xs text-muted-foreground font-normal">Your AI Writing Tutor</div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 backdrop-blur-sm border border-white/10 bg-slate-50">
+                <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card">
                   {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         <div className="flex-shrink-0 mt-1">
@@ -434,10 +440,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             </div>
                           )}
                         </div>
-                        <div className={`px-3 py-2 rounded-xl text-sm backdrop-blur-sm ${message.type === 'user' ? 'bg-blue-500/80 text-white border border-blue-400/50' : 'bg-white/10 text-white border border-white/20'}`}>
+                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-muted text-foreground border border-border' : 'bg-card text-foreground border border-border'}`}>
                           <div dangerouslySetInnerHTML={{
                         __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/^• (.*)$/gm, '<li>$1</li>').replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>').replace(/\n/g, '<br>')
-                      }} className="prose prose-sm max-w-none prose-invert bg-slate-50" />
+                      }} className="prose prose-sm max-w-none" />
                         </div>
                       </div>
                     </div>)}
@@ -445,13 +451,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
                         <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
                       </div>
-                      <div className="bg-white/10 border border-white/20 px-3 py-2 rounded-xl text-sm backdrop-blur-sm">
+                      <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
                         <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
                         animationDelay: '0.1s'
                       }} />
-                          <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
                         animationDelay: '0.2s'
                       }} />
                         </div>
@@ -461,17 +467,17 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 
                 {/* Enhanced Suggestion Buttons */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-sm text-slate-950">
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
                     📝 Structure
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-sm text-slate-950">
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
                     📚 Vocabulary
                   </Button>
                 </div>
 
                 <div className="flex gap-2">
-                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendChatMessage()} placeholder="Ask Catbot for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 backdrop-blur-sm" disabled={isChatLoading} />
-                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="glass-button hover:bg-white/20 border-white/30 text-white">
+                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendChatMessage()} placeholder="Ask Catbot for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" disabled={isChatLoading} />
+                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="rounded-lg">
                     Send
                   </Button>
                 </div>
@@ -479,6 +485,26 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </Card>
           </div>
         </div>
+        {/* Zoom Modal */}
+        <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+          <DialogContent className="max-w-5xl">
+            <DialogHeader>
+              <DialogTitle>Task 1 Visual</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
+              <div className="flex gap-2 items-center">
+                <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
+                <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
+                <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
+                <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
+              </div>
+            </div>
+            <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-background p-2">
+              <img src={currentTaskData?.imageUrl} alt="Task 1 visual data zoomed" className="mx-auto" style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center top' }} />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </StudentLayout>;
 };

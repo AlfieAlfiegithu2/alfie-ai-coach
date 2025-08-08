@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Volume2, PenTool, MessageSquare, Target, Award, Clock, TrendingUp, Calendar, CheckCircle2, BarChart3 } from 'lucide-react';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -238,81 +239,15 @@ const IELTSPortal = () => {
     }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
-      <div className="space-y-8">
-        {/* Skills Dashboard */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-black">IELTS Practice</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {skills.map(skill => {
-                const Icon = skill.icon;
-                  return <Card key={skill.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group" onClick={() => handleSkillPractice(skill.id)}>
-                  <CardHeader className="pb-2 p-0">
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <Icon className="w-10 h-10 text-foreground mb-3 group-hover:scale-110 transition-transform duration-300" />
-                      <CardTitle className="text-sm font-semibold text-foreground text-center">{skill.name.toUpperCase()}</CardTitle>
-                      <p className="mt-2 text-xs text-muted-foreground text-center">{skill.description}</p>
-                      <div className="mt-3 text-xs text-muted-foreground text-center space-y-1">
-                        <div>
-                          Current Band: <span className="font-semibold text-foreground">{skillBands[skill.id] || 'Not Yet Assessed'}</span>
-                        </div>
-                        <div>Duration: {skill.timeLimit}</div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>;
-              })}
-          </div>
-        </section>
-
-        {/* Targeted Practice Section */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-black">Sharpen Your Skills</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {[
-              { key: 'reading_vocab', title: 'Vocabulary Builder', subtitle: 'Boost your reading vocabulary', icon: BookOpen, path: '/vocabulary' },
-              { key: 'reading_headings', title: 'Matching Headings', subtitle: 'Target this question type', icon: BookOpen, path: '/reading' },
-              { key: 'reading_skimming', title: 'Timed Skimming', subtitle: 'Improve speed and focus', icon: BookOpen, path: '/reading' },
-              { key: 'speaking_repeat', title: 'Repeat After Me', subtitle: 'Pronunciation practice', icon: MessageSquare, path: '/speaking' },
-              { key: 'speaking_part2', title: 'Practice Part 2', subtitle: 'Topic-based speaking', icon: MessageSquare, path: '/speaking' },
-              { key: 'speaking_fluency', title: 'Fluency Drills', subtitle: 'Speak more naturally', icon: MessageSquare, path: '/speaking' },
-              { key: 'writing_grammar', title: 'Grammar Exercises', subtitle: 'Fix common mistakes', icon: PenTool, path: '/writing' },
-              { key: 'writing_paraphrase', title: 'Practice Paraphrasing', subtitle: 'Rewrite with clarity', icon: PenTool, path: '/writing' },
-              { key: 'writing_task1_vocab', title: 'Task 1 Vocabulary', subtitle: 'Charts and graphs words', icon: PenTool, path: '/writing' },
-              { key: 'listening_numbers', title: 'Number Dictation', subtitle: 'Train number recognition', icon: Volume2, path: '/listening' },
-              { key: 'listening_details', title: 'Specific Details', subtitle: 'Listen for key info', icon: Volume2, path: '/listening' },
-            ].map(item => {
-              const IconComp = item.icon;
-              return (
-                <Card
-                  key={item.key}
-                  className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group"
-                  onClick={() => navigate(item.path)}
-                >
-                  <CardHeader className="pb-2 p-0">
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <IconComp className="w-8 h-8 text-foreground mb-2 group-hover:scale-110 transition-transform duration-300" />
-                      <CardTitle className="text-sm font-semibold text-foreground text-center">{item.title}</CardTitle>
-                      <p className="mt-2 text-xs text-muted-foreground text-center">{item.subtitle}</p>
-                    </div>
-                  </CardHeader>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Practice Tests Dashboard */}
+      <div className="space-y-6 md:space-y-8 max-w-6xl mx-auto px-4">
+        {/* Practice Tests Dashboard - moved to top */}
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-black">IELTS Mock Test</h2>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 group">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+            {availableTests.slice(0, 6).map(test => (
+              <Card key={test.test_number || test.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 group">
                 <CardHeader className="pb-4 p-0">
                   <div className="flex items-center justify-center mb-4">
                     <div className="flex items-center gap-3">
@@ -339,17 +274,92 @@ const IELTSPortal = () => {
                         : 'bg-primary text-primary-foreground border-0 hover:bg-primary/90 hover:scale-105'
                     }`}
                   >
-                    {test.comingSoon ? <span className="flex items-center gap-2">
+                    {test.comingSoon ? (
+                      <span className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         Coming Soon
-                      </span> : <span className="flex items-center gap-2">
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
                         <Target className="w-4 h-4" />
                         Start Test
-                      </span>}
+                      </span>
+                    )}
                   </Button>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
+        </section>
+
+        {/* Skills Dashboard - now second */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-black">IELTS Practice</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
+            {skills.map(skill => {
+                const Icon = skill.icon;
+                  return <Card key={skill.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group" onClick={() => handleSkillPractice(skill.id)}>
+                  <CardHeader className="pb-2 p-0">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <Icon className="w-10 h-10 text-foreground mb-3 group-hover:scale-110 transition-transform duration-300" />
+                      <CardTitle className="text-sm font-semibold text-foreground text-center">{skill.name.toUpperCase()}</CardTitle>
+                      <p className="mt-2 text-xs text-muted-foreground text-center">{skill.description}</p>
+                      <div className="mt-3 text-xs text-muted-foreground text-center space-y-1">
+                        <div>
+                          Current Band: <span className="font-semibold text-foreground">{skillBands[skill.id] || 'Not Yet Assessed'}</span>
+                        </div>
+                        <div>Duration: {skill.timeLimit}</div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>;
+              })}
+          </div>
+        </section>
+
+        {/* Targeted Practice - expandable */}
+        <section>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="targeted">
+              <AccordionTrigger className="text-xl font-semibold text-black">Sharpen Your Skills</AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
+                  {[
+                  { key: 'reading_vocab', title: 'Vocabulary Builder', subtitle: 'Boost your reading vocabulary', icon: BookOpen, path: '/vocabulary' },
+                  { key: 'reading_headings', title: 'Matching Headings', subtitle: 'Target this question type', icon: BookOpen, path: '/reading' },
+                  { key: 'reading_skimming', title: 'Timed Skimming', subtitle: 'Improve speed and focus', icon: BookOpen, path: '/reading' },
+                  { key: 'speaking_repeat', title: 'Repeat After Me', subtitle: 'Pronunciation practice', icon: MessageSquare, path: '/speaking' },
+                  { key: 'speaking_part2', title: 'Practice Part 2', subtitle: 'Topic-based speaking', icon: MessageSquare, path: '/speaking' },
+                  { key: 'speaking_fluency', title: 'Fluency Drills', subtitle: 'Speak more naturally', icon: MessageSquare, path: '/speaking' },
+                  { key: 'writing_grammar', title: 'Grammar Exercises', subtitle: 'Fix common mistakes', icon: PenTool, path: '/writing' },
+                  { key: 'writing_paraphrase', title: 'Practice Paraphrasing', subtitle: 'Rewrite with clarity', icon: PenTool, path: '/writing' },
+                  { key: 'writing_task1_vocab', title: 'Task 1 Vocabulary', subtitle: 'Charts and graphs words', icon: PenTool, path: '/writing' },
+                  { key: 'listening_numbers', title: 'Number Dictation', subtitle: 'Train number recognition', icon: Volume2, path: '/listening' },
+                  { key: 'listening_details', title: 'Specific Details', subtitle: 'Listen for key info', icon: Volume2, path: '/listening' },
+                ].map(item => {
+                  const IconComp = item.icon;
+                  return (
+                    <Card
+                      key={item.key}
+                      className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group"
+                      onClick={() => navigate(item.path)}
+                    >
+                      <CardHeader className="pb-2 p-0">
+                        <div className="flex flex-col items-center justify-center h-full">
+                          <IconComp className="w-8 h-8 text-foreground mb-2 group-hover:scale-110 transition-transform duration-300" />
+                          <CardTitle className="text-sm font-semibold text-foreground text-center">{item.title}</CardTitle>
+                          <p className="mt-2 text-xs text-muted-foreground text-center">{item.subtitle}</p>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  );
+                })}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </section>
         </div>
         </StudentLayout>

@@ -193,7 +193,10 @@ const IELTSPortal = () => {
                   <CardHeader className="pb-4">
                     <div className="flex items-center gap-3 mb-3 my-[3px]">
                       
-                      
+                      <div>
+                        <CardTitle className="text-lg text-white">{skill.name}</CardTitle>
+                        
+                      </div>
                     </div>
                     
                   </CardHeader>
@@ -226,13 +229,23 @@ const IELTSPortal = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative bg-white/5 border-white/10 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 group">
-                
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-blue-600/20 rounded-lg">
+                        <BarChart3 className="w-6 h-6 text-blue-400" />
+                      </div>
+                      
+                    </div>
+                    {!test.comingSoon}
+                  </div>
+                </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Questions:</span>
-                        <span className="font-medium text-slate-950 bg-slate-400 hover:bg-slate-300">{test.total_questions || 'N/A'}</span>
+                        <span className="font-medium bg-slate-50 text-slate-950">{test.total_questions || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Speaking:</span>

@@ -3,9 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { PenTool, Clock, MessageCircle, ArrowRight, Send, User, Bot, ChevronLeft, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
@@ -54,6 +52,8 @@ const IELTSWritingTestInterface = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
   useEffect(() => {
     if (testId) {
       loadTestData();
@@ -297,40 +297,34 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   const currentTaskData = getCurrentTask();
   const currentAnswer = getCurrentAnswer();
   return <StudentLayout title="IELTS Writing Test" showBackButton>
-      {/* Background Image */}
-      <div className="fixed inset-0 w-full h-full -z-10">
-        <img src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
-      </div>
 
       <div className="space-y-6 relative z-10">
         {/* Test Header */}
-        <div className="glass-card rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="rounded-2xl border border-light-border p-4" style={{ background: 'var(--gradient-card)' }}>
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-heading-2 mb-2 text-white">{test.test_name}</h1>
-              <p className="text-slate-950">IELTS Academic Writing Test</p>
+              <h1 className="text-heading-2 mb-1 text-foreground">{test.test_name}</h1>
+              <p className="text-warm-gray">IELTS Academic Writing Test</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Button variant={currentTask === 1 ? "default" : "secondary"} size="sm" onClick={() => switchToTask(1)} className="relative glass-button text-slate-950">
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Task 1
-                  {task1Answer && <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />}
-                </Button>
-                <Button variant={currentTask === 2 ? "default" : "secondary"} size="sm" onClick={() => switchToTask(2)} className="relative glass-button">
-                  Task 2
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                  {task2Answer && <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />}
-                </Button>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-white/80">
-                <Clock className="w-4 h-4 bg-gray-200" />
-                <span className="text-slate-950">60 minutes total</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={currentTask === 1 ? "default" : "outline"}
+                size="sm"
+                onClick={() => switchToTask(1)}
+                className="rounded-xl"
+              >
+                Task 1
+              </Button>
+              <Button
+                variant={currentTask === 2 ? "default" : "outline"}
+                size="sm"
+                onClick={() => switchToTask(2)}
+                className="rounded-xl"
+              >
+                Task 2
+              </Button>
             </div>
           </div>
-          
-          
         </div>
 
         {/* Three-Column Layout */}

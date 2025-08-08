@@ -195,7 +195,7 @@ const IELTSPortal = () => {
                       
                       <div>
                         <CardTitle className="text-lg text-white">{skill.name}</CardTitle>
-                        <div className="text-sm text-gray-300">Band 6.8</div>
+                        
                       </div>
                     </div>
                     
@@ -235,10 +235,7 @@ const IELTSPortal = () => {
                       <div className="p-3 bg-blue-600/20 rounded-lg">
                         <BarChart3 className="w-6 h-6 text-blue-400" />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold text-white">{test.test_name}</CardTitle>
-                        <p className="text-sm text-gray-300">Cambridge IELTS Test</p>
-                      </div>
+                      
                     </div>
                     {!test.comingSoon}
                   </div>
@@ -248,7 +245,7 @@ const IELTSPortal = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Questions:</span>
-                        <span className="text-white font-medium">{test.total_questions || 'N/A'}</span>
+                        <span className="font-medium bg-slate-50 text-slate-950">{test.total_questions || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Speaking:</span>

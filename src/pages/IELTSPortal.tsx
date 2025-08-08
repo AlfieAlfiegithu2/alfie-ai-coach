@@ -176,7 +176,7 @@ const IELTSPortal = () => {
   }
 
   return <div className="min-h-screen relative">
-      <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" style={{
       backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
       backgroundColor: '#f3f4f6'
     }} />
@@ -188,20 +188,16 @@ const IELTSPortal = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-black">IELTS Practice</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {skills.map(skill => {
                 const Icon = skill.icon;
-                return <Card key={skill.id} className="relative lg:p-6 bg-white/5 border-white/10 rounded-2xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 cursor-pointer" onClick={() => handleSkillPractice(skill.id)}>
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-3 mb-3 my-[3px]">
-                      <div>
-                        <CardTitle className="text-lg text-black text-center">{skill.name.toUpperCase()}</CardTitle>
-                      </div>
+                return <Card key={skill.id} className="relative aspect-square bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-105 hover:shadow-glow-blue transition-all duration-300 cursor-pointer group" onClick={() => handleSkillPractice(skill.id)}>
+                  <CardHeader className="pb-2 p-0">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <Icon className="w-10 h-10 text-foreground mb-3 group-hover:scale-110 transition-transform duration-300" />
+                      <CardTitle className="text-sm font-semibold text-foreground text-center">{skill.name.toUpperCase()}</CardTitle>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <Icon className="w-8 h-8 text-black mx-auto" />
-                  </CardContent>
                 </Card>;
               })}
           </div>
@@ -213,22 +209,31 @@ const IELTSPortal = () => {
             <h2 className="text-xl font-semibold text-black">IELTS Mock Test</h2>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative bg-white/5 border-white/10 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/10 transition-all duration-200 group">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between mb-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative bg-white/80 border-white/20 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue transition-all duration-300 group">
+                <CardHeader className="pb-4 p-0">
+                  <div className="flex items-center justify-center mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 bg-blue-600/20 rounded-lg">
-                        <BarChart3 className="w-6 h-6 text-blue-400" />
+                      <div className="p-3 bg-primary/20 rounded-lg">
+                        <BarChart3 className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-semibold text-black">{test.test_name}</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-foreground">{test.test_name}</CardTitle>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <Button onClick={() => handleTestClick(test.id)} size="sm" disabled={test.comingSoon} className="w-full text-black border-0 disabled:text-gray-300 mt-4 transition-colors bg-white/80 hover:bg-white">
+                <CardContent className="p-0">
+                  <Button 
+                    onClick={() => handleTestClick(test.id)} 
+                    size="sm" 
+                    disabled={test.comingSoon} 
+                    className={`w-full mt-4 transition-colors font-semibold ${
+                      test.comingSoon 
+                        ? 'bg-muted text-muted-foreground border-0 hover:bg-muted cursor-not-allowed' 
+                        : 'bg-primary text-primary-foreground border-0 hover:bg-primary/90 hover:scale-105'
+                    }`}
+                  >
                     {test.comingSoon ? <span className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         Coming Soon

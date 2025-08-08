@@ -188,10 +188,10 @@ const IELTSPortal = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-black">IELTS Practice</h2>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {skills.map(skill => {
                 const Icon = skill.icon;
-                return <Card key={skill.id} className="relative aspect-square bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-105 hover:shadow-glow-blue transition-all duration-300 cursor-pointer group" onClick={() => handleSkillPractice(skill.id)}>
+                  return <Card key={skill.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-4 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 cursor-pointer group" onClick={() => handleSkillPractice(skill.id)}>
                   <CardHeader className="pb-2 p-0">
                     <div className="flex flex-col items-center justify-center h-full">
                       <Icon className="w-10 h-10 text-foreground mb-3 group-hover:scale-110 transition-transform duration-300" />
@@ -209,8 +209,8 @@ const IELTSPortal = () => {
             <h2 className="text-xl font-semibold text-black">IELTS Mock Test</h2>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative bg-white/80 border-white/20 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue transition-all duration-300 group">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {availableTests.slice(0, 6).map(test => <Card key={test.test_number || test.id} className="relative aspect-[4/5] bg-white/80 border-white/20 rounded-2xl p-6 backdrop-blur-xl hover:bg-white/90 hover:scale-[1.03] hover:shadow-glow-blue hover:ring-2 hover:ring-primary/40 transition-all duration-300 group">
                 <CardHeader className="pb-4 p-0">
                   <div className="flex items-center justify-center mb-4">
                     <div className="flex items-center gap-3">

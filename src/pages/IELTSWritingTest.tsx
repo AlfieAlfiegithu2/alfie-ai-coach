@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
@@ -54,6 +55,28 @@ const IELTSWritingTestInterface = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+
+  // Autosave drafts to localStorage and restore on load
+  useEffect(() => {
+    if (!testId) return;
+    const key1 = `ielts-writing-draft-${testId}-task1`;
+    const key2 = `ielts-writing-draft-${testId}-task2`;
+    const saved1 = localStorage.getItem(key1);
+    const saved2 = localStorage.getItem(key2);
+    if (saved1 && !task1Answer) setTask1Answer(saved1);
+    if (saved2 && !task2Answer) setTask2Answer(saved2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testId]);
+
+  useEffect(() => {
+    if (!testId) return;
+    localStorage.setItem(`ielts-writing-draft-${testId}-task1`, task1Answer);
+  }, [task1Answer, testId]);
+
+  useEffect(() => {
+    if (!testId) return;
+    localStorage.setItem(`ielts-writing-draft-${testId}-task2`, task2Answer);
+  }, [task2Answer, testId]);
   useEffect(() => {
     if (testId) {
       loadTestData();
@@ -219,6 +242,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   };
   const handleSuggestionClick = (suggestion: string) => {
     sendChatMessage(suggestion);
+  };
+
+  // Quick insert helper for writing area
+  const insertSnippet = (snippet: string) => {
+    const prev = getCurrentAnswer();
+    const needsGap = prev && !prev.endsWith("\n");
+    const next = (prev ? prev + (needsGap ? "\n\n" : "\n\n") : "") + snippet;
+    setCurrentAnswer(next);
   };
   const proceedToTask2 = () => {
     if (!task1Answer.trim()) {

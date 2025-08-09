@@ -185,7 +185,7 @@ const WritingTest = () => {
               prompt_text: currentPrompt?.prompt_text || '',
               user_response: writingText,
               word_count: wordCount,
-              band_scores: {}, // Would extract from AI feedback
+              band_scores: data.structured?.criteria || null,
               detailed_feedback: data.feedback,
               improvement_suggestions: [],
               time_taken_seconds: (currentPrompt?.time_limit || 60) * 60

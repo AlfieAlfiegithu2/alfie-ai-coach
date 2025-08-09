@@ -110,11 +110,11 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
-            content: 'You are a senior IELTS Writing examiner with comprehensive knowledge of official band descriptors. Follow the assessment criteria and scoring rules provided in the user prompt exactly. Use the official IELTS 0-9 band scale and apply the precise rounding rules for calculating the overall band score.'
+            content: 'You are a senior IELTS Writing examiner. Return ONLY JSON as specified by the user prompt schema. Use official IELTS 0-9 bands with half increments. Apply the rounding rules exactly. Never output markdown or text outside the JSON.'
           },
           {
             role: 'user',
@@ -130,12 +130,26 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
     }
 
     const result = await response.json();
-    const feedback = result.choices[0].message.content;
+    let content = result.choices?.[0]?.message?.content ?? '';
+
+    let structured: any = null;
+    try {
+      structured = JSON.parse(content);
+    } catch (_e) {
+      // Attempt to extract JSON blob if any wrapping text leaked
+      const match = content.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { structured = JSON.parse(match[0]); } catch (_e2) {}
+      }
+    }
+
+    const feedbackText = structured?.feedback_markdown || content;
 
     return new Response(
       JSON.stringify({
-        feedback,
+        feedback: feedbackText,
         wordCount: writing.trim().split(/\s+/).length,
+        structured,
         success: true
       }),
       {

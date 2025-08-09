@@ -296,6 +296,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           task1Answer,
           task2Answer,
           feedback: examinerResponse.data.feedback,
+          structured: examinerResponse.data.structured,
           task1Data: task1,
           task2Data: task2,
           task1WordCount: examinerResponse.data.task1WordCount,

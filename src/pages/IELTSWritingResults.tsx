@@ -19,7 +19,8 @@ const IELTSWritingResults = () => {
     task1Data,
     task2Data,
     task1WordCount,
-    task2WordCount
+    task2WordCount,
+    structured
   } = location.state || {};
 
   if (!feedback) {
@@ -96,7 +97,35 @@ const IELTSWritingResults = () => {
     return { task1: task1Scores, task2: task2Scores, overall, task1Overall, task2Overall };
   };
 
-  const scores = extractCriteriaScores(feedback);
+  const mapFromStructured = (s: any) => {
+    try {
+      const t1 = s?.task1;
+      const t2 = s?.task2;
+      const toNumber = (v: any) => typeof v === 'number' ? v : parseFloat(v);
+      const t1Arr = t1 ? [
+        toNumber(t1.criteria?.task_achievement?.band),
+        toNumber(t1.criteria?.coherence_and_cohesion?.band),
+        toNumber(t1.criteria?.lexical_resource?.band),
+        toNumber(t1.criteria?.grammatical_range_and_accuracy?.band),
+      ].filter(n => !isNaN(n)) : [];
+      const t2Arr = t2 ? [
+        toNumber(t2.criteria?.task_response?.band),
+        toNumber(t2.criteria?.coherence_and_cohesion?.band),
+        toNumber(t2.criteria?.lexical_resource?.band),
+        toNumber(t2.criteria?.grammatical_range_and_accuracy?.band),
+      ].filter(n => !isNaN(n)) : [];
+      return {
+        task1: t1Arr,
+        task2: t2Arr,
+        task1Overall: toNumber(t1?.overall_band) || (t1Arr.length ? roundToValidBandScore(t1Arr.reduce((a,b)=>a+b,0)/t1Arr.length) : 7.0),
+        task2Overall: toNumber(t2?.overall_band) || (t2Arr.length ? roundToValidBandScore(t2Arr.reduce((a,b)=>a+b,0)/t2Arr.length) : 7.0),
+        overall: toNumber(s?.overall?.band) || 7.0,
+      };
+    } catch { return null; }
+  };
+
+  const structuredScores = structured ? mapFromStructured(structured) : null;
+  const scores = structuredScores || extractCriteriaScores(feedback);
   const overallBand = scores.overall;
 
   const getBandColor = (score: number) => {

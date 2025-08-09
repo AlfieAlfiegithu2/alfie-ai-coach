@@ -109,7 +109,12 @@ export default function IELTSWritingProResults() {
                     {typeof it.value === "number" ? it.value.toFixed(1) : "-"}
                   </Badge>
                 </div>
-                {it.just && <p className="text-sm text-text-secondary">{it.just}</p>}
+                {it.just ? (
+                  <div className="mt-2">
+                    <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Criterion-specific feedback</p>
+                    <p className="text-sm text-text-secondary">{it.just}</p>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -165,19 +170,27 @@ export default function IELTSWritingProResults() {
 
       <div className="container mx-auto px-6 space-section">
         <Card className="card-elevated mb-8 overflow-hidden">
-          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 py-4">
             <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
           </CardHeader>
-          <CardContent className="text-center py-8">
-            <div className="flex items-center justify-center mb-6">
-              <PenguinClapAnimation size="md" />
+          <CardContent className="py-6">
+            <div className="flex flex-col md:flex-row items-center md:items-center justify-center gap-6 md:gap-10">
+              <PenguinClapAnimation size="md" className="shrink-0" />
+              <div className="text-center md:text-left">
+                <p className="text-caption uppercase tracking-wide text-text-secondary mb-1">Overall Band</p>
+                <div className="text-6xl font-bold mb-3 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+                  {overallBand.toFixed(1)}
+                </div>
+                <div className="flex items-center gap-3 justify-center md:justify-start">
+                  <Badge variant="outline" className={`text-base px-3 py-1.5 rounded-2xl ${overallMeta.color}`}>
+                    {overallMeta.label} Performance
+                  </Badge>
+                  {testName ? (
+                    <span className="text-caption text-text-secondary">{testName}</span>
+                  ) : null}
+                </div>
+              </div>
             </div>
-            <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
-              {overallBand.toFixed(1)}
-            </div>
-            <Badge variant="outline" className={`text-lg px-4 py-2 rounded-2xl ${overallMeta.color}`}>
-              {overallMeta.label} Performance
-            </Badge>
           </CardContent>
         </Card>
 

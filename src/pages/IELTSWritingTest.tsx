@@ -290,7 +290,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       if (examinerResponse.error) throw examinerResponse.error;
 
       // Navigate to the enhanced results page
-      navigate('/ielts-writing-results', {
+      navigate('/ielts-writing-results-pro', {
         state: {
           testName: test?.test_name,
           task1Answer,

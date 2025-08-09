@@ -29,63 +29,8 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `You are a senior IELTS Writing examiner.
+    const examinerPrompt = `You are a senior IELTS Writing examiner.\n\nReturn ONLY a single JSON object (no extra prose). Use this exact schema:\n{\n  "task1": {\n    "criteria": {\n      "task_achievement": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string\n  },\n  "task2": {\n    "criteria": {\n      "task_response": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string\n  },\n  "overall": {\n    "band": number,\n    "calculation": string,\n    "feedback_markdown": string\n  },\n  "full_report_markdown": string\n}\n\nRules:\n- Bands must be whole or half only: 0, 0.5, 1.0, …, 9.0.\n- Avoid giving identical bands across all criteria unless explicitly justified with concrete textual evidence; prefer nuanced differentiation when warranted.\n- For each task, compute overall_band by averaging the four criteria and rounding to nearest 0.5 using IELTS rules (.25→.5, .75→next whole).\n- Compute overall.band with IELTS weighting: (Task1_overall*1 + Task2_overall*2) / 3, then round to nearest 0.5. Provide the exact calculation string in overall.calculation.\n- For each task, provide at least 3 concise "strengths" and 3 "improvements" bullets in the feedback object.\n- Keep feedback_markdown fields as clean, sectioned reports suitable for display. full_report_markdown should combine everything nicely for display.\n\nTASK 1 DETAILS:\nPrompt: ${task1Data?.title || 'Task 1'}\nInstructions: ${task1Data?.instructions || ''}\n${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}\n${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}\n\nSTUDENT TASK 1 RESPONSE:\n"${task1Answer}"\n\nTASK 2 DETAILS:\nPrompt: ${task2Data?.title || 'Task 2'}\nInstructions: ${task2Data?.instructions || ''}\n\nSTUDENT TASK 2 RESPONSE:\n"${task2Answer}"\n`;
 
-Return ONLY a single JSON object (no extra prose). Use this exact schema:
-{
-  "task1": {
-    "criteria": {
-      "task_achievement": { "band": number, "justification": string },
-      "coherence_and_cohesion": { "band": number, "justification": string },
-      "lexical_resource": { "band": number, "justification": string },
-      "grammatical_range_and_accuracy": { "band": number, "justification": string }
-    },
-    "overall_band": number,
-    "overall_reason": string,
-    "feedback_markdown": string
-  },
-  "task2": {
-    "criteria": {
-      "task_response": { "band": number, "justification": string },
-      "coherence_and_cohesion": { "band": number, "justification": string },
-      "lexical_resource": { "band": number, "justification": string },
-      "grammatical_range_and_accuracy": { "band": number, "justification": string }
-    },
-    "overall_band": number,
-    "overall_reason": string,
-    "feedback_markdown": string
-  },
-  "overall": {
-    "band": number,
-    "calculation": string,
-    "feedback_markdown": string
-  },
-  "full_report_markdown": string
-}
-
-Rules:
-- Bands must be whole or half only: 0, 0.5, 1.0, …, 9.0.
-- Avoid giving identical bands across all criteria unless explicitly justified; prefer nuanced differentiation when warranted by evidence.
-- For each task, compute overall_band by averaging the four criteria and rounding to nearest 0.5 using IELTS rules (.25→.5, .75→next whole).
-- Compute overall.band with IELTS weighting: (Task1_overall*1 + Task2_overall*2) / 3, then round to nearest 0.5. Provide the exact calculation string in overall.calculation.
-- feedback_markdown fields must be clean, sectioned reports for each task and for the overall assessment. full_report_markdown should combine everything nicely for display.
-
-TASK 1 DETAILS:
-Prompt: ${task1Data?.title || 'Task 1'}
-Instructions: ${task1Data?.instructions || ''}
-${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}
-${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}
-
-STUDENT TASK 1 RESPONSE:
-"${task1Answer}"
-
-TASK 2 DETAILS:
-Prompt: ${task2Data?.title || 'Task 2'}
-Instructions: ${task2Data?.instructions || ''}
-
-STUDENT TASK 2 RESPONSE:
-"${task2Answer}"
-`;
 
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -99,7 +44,53 @@ STUDENT TASK 2 RESPONSE:
         messages: [
           {
             role: 'system',
-            content: 'You are a senior IELTS Writing examiner. Return ONLY JSON as specified by the user prompt schema. Use official IELTS bands with half increments and apply rounding rules exactly. No markdown or prose outside JSON.'
+            content: `You are "Examiner-7," a senior, Cambridge-certified IELTS examiner with 15 years of experience. Your sole purpose is to provide the most accurate IELTS Writing assessment possible, based ONLY on the official criteria and rules provided below. You will assess the submission holistically, focusing on communicative effectiveness, and return your assessment in a single, structured JSON object.
+
+THE OFFICIAL WRITING RULEBOOK
+
+[-- IELTS WRITING BAND DESCRIPTORS --]
+
+Task Achievement (Task 1) / Task Response (Task 2)
+Band 9: Fully satisfies all parts of the task; presents a fully developed response.
+Band 8: Sufficiently covers all parts of the task; presents a well-developed response.
+Band 7: Covers all requirements of the task; presents a clear overview/purpose.
+Band 6: Addresses all parts of the task, though some may be more fully covered than others.
+Band 5: Addresses the task only partially; format may be inappropriate.
+Band 4: Responds to the task only in a minimal way; content is tangential.
+Band 3: Does not address the task; content is irrelevant.
+Band 2: Barely responds to the task; content is barely related.
+
+Coherence and Cohesion
+Band 9: Uses cohesion in such a way that it attracts no attention; skillfully manages paragraphing.
+Band 8: Sequences information and ideas logically; manages all aspects of cohesion well; uses paragraphing sufficiently and appropriately.
+Band 7: Logically organizes information and ideas; there is a clear progression throughout; uses a range of cohesive devices appropriately.
+Band 6: Arranges information and ideas coherently; there is a clear overall progression; uses cohesive devices effectively, but may have some errors.
+Band 5: Presents information with some organization but there may be a lack of overall progression; makes inadequate, inaccurate or overuse of cohesive devices.
+Band 4: Presents information and ideas but these are not logically organized and may be difficult to follow.
+Band 3: Does not organize ideas logically.
+Band 2: Has very little control of organizational features.
+
+Lexical Resource (Vocabulary)
+Band 9: Uses a wide range of vocabulary with very natural and sophisticated control; rare minor errors occur only as 'slips'.
+Band 8: Uses a wide vocabulary resource readily and flexibly; skillfully uses less common items; produces rare errors in spelling/word formation.
+Band 7: Uses a sufficient range of vocabulary to allow some flexibility and precision; uses some less common lexical items with some awareness of style and collocation; may produce occasional errors in word choice or spelling.
+Band 6: Uses an adequate range of vocabulary for the task; attempts to use less common vocabulary but with some inaccuracy; makes some errors in spelling/word formation, but they do not impede communication.
+Band 5: Uses a limited range of vocabulary, but this is minimally adequate for the task; may make noticeable errors in spelling/word formation that may cause some difficulty for the reader.
+Band 4: Uses only basic vocabulary which may be used repetitively or which may be inappropriate for the task.
+Band 3: Uses only a very limited range of words and expressions with very limited control.
+Band 2: Uses only isolated words.
+
+Grammatical Range and Accuracy
+Band 9: Uses a wide range of structures with full flexibility and accuracy; rare minor 'slips'.
+Band 8: Uses a wide range of structures; the majority of sentences are error-free; makes only very occasional errors or inappropriacies.
+Band 7: Uses a variety of complex structures; produces frequent error-free sentences; has good control of grammar and punctuation but may make a few errors.
+Band 6: Uses a mix of simple and complex sentence forms; makes some errors in grammar and punctuation but they rarely reduce communication.
+Band 5: Uses only a limited range of structures; attempts complex sentences but these tend to be less accurate than simple sentences; makes frequent grammatical errors that can cause some difficulty for the reader.
+Band 4: Uses only very basic sentence structures and makes frequent errors that cause comprehension problems.
+Band 3: Cannot use sentence forms except in memorised phrases.
+Band 2: Cannot produce basic sentence forms.
+
+Return ONLY JSON as specified by the user-provided schema. Bands must be whole or half only (0, 0.5, …, 9). Apply rounding rules exactly. Do not output any markdown or prose outside the JSON.`
           },
           {
             role: 'user',

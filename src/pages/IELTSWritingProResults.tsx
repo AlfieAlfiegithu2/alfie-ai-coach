@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
+import { ArrowLeft } from "lucide-react";
+import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 
 interface Criterion {
   band: number;
@@ -37,10 +39,10 @@ interface StructuredResult {
 }
 
 const bandToDesc = (score: number) => {
-  if (score >= 8.5) return { label: "Excellent", color: "text-green-600 bg-green-50 border-green-200" };
-  if (score >= 7.0) return { label: "Good", color: "text-blue-600 bg-blue-50 border-blue-200" };
-  if (score >= 6.0) return { label: "Competent", color: "text-yellow-600 bg-yellow-50 border-yellow-200" };
-  return { label: "Limited", color: "text-red-600 bg-red-50 border-red-200" };
+  if (score >= 8.5) return { label: "Excellent", color: "text-brand-green bg-brand-green/10 border-brand-green/30" };
+  if (score >= 7.0) return { label: "Good", color: "text-brand-blue bg-brand-blue/10 border-brand-blue/30" };
+  if (score >= 6.0) return { label: "Competent", color: "text-brand-orange bg-brand-orange/10 border-brand-orange/30" };
+  return { label: "Limited", color: "text-destructive bg-destructive/10 border-destructive/30" };
 };
 
 export default function IELTSWritingProResults() {
@@ -116,7 +118,7 @@ export default function IELTSWritingProResults() {
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {task.feedback?.strengths?.length ? (
                 <div>
-                  <h4 className="text-heading-4 mb-2">Strengths</h4>
+                  <h4 className="text-heading-4 mb-2">Key strengths</h4>
                   <ul className="list-disc pl-5 space-y-1 text-text-secondary">
                     {task.feedback.strengths.map((s, i) => (
                       <li key={i}>{s}</li>
@@ -126,7 +128,8 @@ export default function IELTSWritingProResults() {
               ) : null}
               {task.feedback?.improvements?.length ? (
                 <div>
-                  <h4 className="text-heading-4 mb-2">Areas for Improvement</h4>
+                  <h4 className="text-heading-4 mb-2">Specific, actionable improvements</h4>
+                  <p className="text-caption text-text-secondary mb-2">Include concrete examples, target structures, and one improved sentence.</p>
                   <ul className="list-disc pl-5 space-y-1 text-text-secondary">
                     {task.feedback.improvements.map((s, i) => (
                       <li key={i}>{s}</li>
@@ -147,11 +150,16 @@ export default function IELTSWritingProResults() {
 
       <div className="bg-surface-1 border-b border-border sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-heading-2">IELTS Writing Results</h1>
-            <p className="text-caption">{testName}</p>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate('/dashboard')} className="hover:bg-surface-3 rounded-xl">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+            <div>
+              <h1 className="text-heading-2">IELTS Writing Results</h1>
+              <p className="text-caption">{testName}</p>
+            </div>
           </div>
-          <Button variant="outline" onClick={() => navigate(-1)} className="rounded-xl">Go Back</Button>
         </div>
       </div>
 
@@ -161,15 +169,15 @@ export default function IELTSWritingProResults() {
             <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
           </CardHeader>
           <CardContent className="text-center py-8">
-            <div className="text-6xl font-bold mb-3 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
-              {overallBand?.toFixed(1)}
+            <div className="flex items-center justify-center mb-6">
+              <PenguinClapAnimation size="md" />
+            </div>
+            <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+              {overallBand.toFixed(1)}
             </div>
             <Badge variant="outline" className={`text-lg px-4 py-2 rounded-2xl ${overallMeta.color}`}>
               {overallMeta.label} Performance
             </Badge>
-            {structured.overall?.calculation && (
-              <p className="text-caption mt-2">{structured.overall.calculation}</p>
-            )}
           </CardContent>
         </Card>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
 import { ArrowLeft } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Criterion {
   band: number;
@@ -88,18 +87,8 @@ export default function IELTSWritingProResults() {
       { label: "Lexical Resource", value: crit.lexical_resource?.band, just: crit.lexical_resource?.justification },
       { label: "Grammar Range & Accuracy", value: crit.grammatical_range_and_accuracy?.band, just: crit.grammatical_range_and_accuracy?.justification },
     ];
-    const abbr = (label: string) =>
-      label.startsWith("Task Achievement") ? "TA" :
-      label.startsWith("Task Response") ? "TR" :
-      label.startsWith("Coherence") ? "C&C" :
-      label.startsWith("Lexical") ? "LR" :
-      "GRA";
-    const [showMoreStrengths, setShowMoreStrengths] = useState(false);
-    const [showMoreImprovements, setShowMoreImprovements] = useState(false);
-    const strengthsList = task.feedback?.strengths ?? [];
-    const improvementsList = task.feedback?.improvements ?? [];
     return (
-      <Card className="card-elevated border-2 border-brand-blue/20 mb-6">
+      <Card className="card-elevated border-2 border-brand-blue/20 mb-8">
         <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
           <CardTitle className="text-heading-3 flex items-center justify-between">
             <span>{title}</span>
@@ -110,60 +99,42 @@ export default function IELTSWritingProResults() {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-2">
-            <TooltipProvider>
-              {items.map((it) => {
-                const val = typeof it.value === "number" ? it.value.toFixed(1) : "-";
-                return (
-                  <Tooltip key={it.label}>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="rounded-full px-3 py-1 bg-surface-3 border-border text-sm">
-                        {abbr(it.label)} {val}
-                      </Badge>
-                    </TooltipTrigger>
-                    {it.just ? (
-                      <TooltipContent className="max-w-sm">
-                        <p className="text-sm text-text-secondary">{it.just}</p>
-                      </TooltipContent>
-                    ) : null}
-                  </Tooltip>
-                );
-              })}
-            </TooltipProvider>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {items.map((it) => (
+              <div key={it.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-text-primary">{it.label}</p>
+                  <Badge variant="outline" className="rounded-xl">
+                    {typeof it.value === "number" ? it.value.toFixed(1) : "-"}
+                  </Badge>
+                </div>
+                {it.just && <p className="text-sm text-text-secondary">{it.just}</p>}
+              </div>
+            ))}
           </div>
 
           {(task.feedback?.strengths?.length || task.feedback?.improvements?.length) && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {strengthsList.length ? (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {task.feedback?.strengths?.length ? (
                 <div>
                   <h4 className="text-heading-4 mb-2">Key strengths</h4>
                   <ul className="list-disc pl-5 space-y-1 text-text-secondary">
-                    {(showMoreStrengths ? strengthsList : strengthsList.slice(0, 3)).map((s, i) => (
+                    {task.feedback.strengths.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}
                   </ul>
-                  {strengthsList.length > 3 && (
-                    <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowMoreStrengths(v => !v)}>
-                      {showMoreStrengths ? "Show less" : "Show more"}
-                    </Button>
-                  )}
                 </div>
               ) : null}
-              {improvementsList.length ? (
+              {task.feedback?.improvements?.length ? (
                 <div>
                   <h4 className="text-heading-4 mb-2">Specific, actionable improvements</h4>
                   <p className="text-caption text-text-secondary mb-2">Include concrete examples, target structures, and one improved sentence.</p>
                   <ul className="list-disc pl-5 space-y-1 text-text-secondary">
-                    {(showMoreImprovements ? improvementsList : improvementsList.slice(0, 3)).map((s, i) => (
+                    {task.feedback.improvements.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}
                   </ul>
-                  {improvementsList.length > 3 && (
-                    <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowMoreImprovements(v => !v)}>
-                      {showMoreImprovements ? "Show less" : "Show more"}
-                    </Button>
-                  )}
                 </div>
               ) : null}
             </div>
@@ -193,22 +164,20 @@ export default function IELTSWritingProResults() {
       </div>
 
       <div className="container mx-auto px-6 space-section">
-        <Card className="card-elevated mb-6 overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+        <Card className="card-elevated mb-8 overflow-hidden">
+          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
             <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
           </CardHeader>
-          <CardContent className="py-6">
-            <div className="flex items-center justify-between gap-6">
-              <div>
-                <div className="text-5xl font-bold mb-2 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
-                  {overallBand.toFixed(1)}
-                </div>
-                <Badge variant="outline" className={`text-base px-3 py-1.5 rounded-2xl ${overallMeta.color}`}>
-                  {overallMeta.label} Performance
-                </Badge>
-              </div>
-              <PenguinClapAnimation size="sm" />
+          <CardContent className="text-center py-8">
+            <div className="flex items-center justify-center mb-6">
+              <PenguinClapAnimation size="md" />
             </div>
+            <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+              {overallBand.toFixed(1)}
+            </div>
+            <Badge variant="outline" className={`text-lg px-4 py-2 rounded-2xl ${overallMeta.color}`}>
+              {overallMeta.label} Performance
+            </Badge>
           </CardContent>
         </Card>
 

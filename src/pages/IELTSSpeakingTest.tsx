@@ -54,6 +54,19 @@ const IELTSSpeakingTest = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
+  // Global audio volume shared across the app (0.0 - 1.0)
+  const initialVol = (() => {
+    try {
+      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('appAudioVolume') : null;
+      const n = stored ? parseInt(stored, 10) : 50;
+      const v = n / 100;
+      return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.5;
+    } catch {
+      return 0.5;
+    }
+  })();
+  const globalVolumeRef = useRef<number>(initialVol);
+
   useEffect(() => {
     loadTestData();
     return () => {
@@ -71,6 +84,20 @@ const IELTSSpeakingTest = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [timeLeft, isRecording]);
+
+  // Listen for global volume changes dispatched by VolumeSlider
+  useEffect(() => {
+    const handler = (e: any) => {
+      const v = e?.detail?.volume;
+      if (typeof v === 'number') {
+        globalVolumeRef.current = v;
+        if (audioRef.current) audioRef.current.volume = v;
+      }
+    };
+    window.addEventListener('app:volume-change', handler as EventListener);
+    return () => window.removeEventListener('app:volume-change', handler as EventListener);
+  }, []);
+
 
   // Auto-play audio when test data loads or question changes
   useEffect(() => {
@@ -162,6 +189,7 @@ const IELTSSpeakingTest = () => {
       }
       
       audioRef.current = new Audio(audioUrl);
+      audioRef.current.volume = globalVolumeRef.current;
       audioRef.current.onended = () => {
         setIsPlaying(false);
         console.log(`✅ Audio playback completed`);
@@ -257,6 +285,7 @@ const IELTSSpeakingTest = () => {
     try {
       const audioUrl = URL.createObjectURL(recording);
       const audio = new Audio(audioUrl);
+      audio.volume = globalVolumeRef.current;
       
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
@@ -596,7 +625,7 @@ const IELTSSpeakingTest = () => {
                 
                 {/* AI Assistant Button */}
                 <Button
-                  onClick={() => setShowAIAssistant(true)}
+                  onClick={() => setShowAIAssistant((v) => !v)}
                   variant="outline"
                   size="sm"
                   className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
@@ -832,14 +861,17 @@ const IELTSSpeakingTest = () => {
           </CardContent>
         </Card>
 
-        {/* Interactive AI Assistant */}
-        <InteractiveSpeakingAssistant
-          isOpen={showAIAssistant}
-          onClose={() => setShowAIAssistant(false)}
-          questionText={currentQuestionText}
-          questionType={questionType}
-          partNumber={currentPart}
-        />
+        {/* Interactive AI Assistant (inline) */}
+        {showAIAssistant && (
+          <InteractiveSpeakingAssistant
+            isOpen={true}
+            onClose={() => setShowAIAssistant(false)}
+            questionText={currentQuestionText}
+            questionType={questionType}
+            partNumber={currentPart}
+            renderInline
+          />
+        )}
       </div>
     </StudentLayout>
   );

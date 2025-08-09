@@ -23,11 +23,20 @@ export default function VolumeSlider({
   className = "",
 }: VolumeSliderProps) {
   const handleVolumeChange = (volume: number) => {
-    // Set global audio volume
+    // Set global audio volume for all <audio> elements in DOM
     const audioElements = document.querySelectorAll('audio');
     audioElements.forEach(audio => {
-      audio.volume = volume / 100;
+      (audio as HTMLAudioElement).volume = volume / 100;
     });
+
+    // Persist and broadcast volume to reach programmatic audio elements
+    try {
+      window.localStorage.setItem('appAudioVolume', String(volume));
+      window.dispatchEvent(new CustomEvent('app:volume-change', { detail: { volume: volume / 100 } }));
+    } catch {
+      // no-op
+    }
+
     onVolumeChange?.(volume);
   };
 

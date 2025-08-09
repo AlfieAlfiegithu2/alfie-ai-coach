@@ -339,6 +339,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </div>
             <div className="flex items-center gap-2">
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="rounded-xl"
+              >
+                Go Back
+              </Button>
+              <Button
                 variant={currentTask === 1 ? "default" : "outline"}
                 size="sm"
                 onClick={() => switchToTask(1)}
@@ -518,23 +526,53 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         </div>
         {/* Zoom Modal */}
         <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
-          <DialogContent className="max-w-5xl">
-            <DialogHeader>
-              <DialogTitle>Task 1 Visual</DialogTitle>
-            </DialogHeader>
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
-              <div className="flex gap-2 items-center">
-                <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
-                <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
-                <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
-                <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
-              </div>
-            </div>
-            <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-background p-2">
-              <img src={currentTaskData?.imageUrl} alt="Task 1 visual data zoomed" className="mx-auto" style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center top' }} />
-            </div>
-          </DialogContent>
+            <DialogContent className="max-w-6xl">
+              <DialogHeader>
+                <DialogTitle>Task 1 Visual & Side Writing Pane</DialogTitle>
+              </DialogHeader>
+
+              <ResizablePanelGroup direction="horizontal" className="gap-3">
+                <ResizablePanel defaultSize={55} minSize={40}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
+                    <div className="flex gap-2 items-center">
+                      <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
+                      <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
+                      <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
+                    </div>
+                  </div>
+                  <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-background p-2">
+                    <img
+                      src={currentTaskData?.imageUrl}
+                      alt="Task 1 visual data zoomed"
+                      className="mx-auto"
+                      style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center top' }}
+                    />
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                <ResizablePanel defaultSize={45} minSize={35}>
+                  <div className="h-full flex flex-col rounded-lg border border-border bg-card/80 backdrop-blur p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-medium text-foreground">Write your Task 1 answer (synced)</div>
+                      <div className="text-xs text-muted-foreground">
+                        Words: {getWordCount(task1Answer)} • Min: 150
+                      </div>
+                    </div>
+                    <Textarea
+                      value={task1Answer}
+                      onChange={e => setTask1Answer(e.target.value)}
+                      placeholder="Write here while viewing the larger image..."
+                      className="min-h-[300px] flex-1 text-base leading-relaxed resize-none bg-background border-border text-foreground placeholder:text-muted-foreground"
+                    />
+                    <div className="mt-2 text-xs text-muted-foreground">Changes here are synced with the main answer box.</div>
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </DialogContent>
         </Dialog>
       </div>
     </StudentLayout>;

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
@@ -51,8 +53,8 @@ const IELTSWritingTestInterface = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [zoomScale, setZoomScale] = useState(1.25);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -370,23 +372,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 {/* For Task 1, show image first on the left side */}
                 {currentTask === 1 && currentTaskData?.imageUrl && <div className="mb-4">
                     <h3 className="font-semibold mb-2 text-slate-950">Visual Data</h3>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs text-muted-foreground">Zoom: {Math.round(zoomScale * 100)}%</div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(0.75, Number((s - 0.25).toFixed(2))))}>-</Button>
-                        <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
-                      </div>
-                    </div>
-                    <div className="rounded-lg border border-border bg-card overflow-auto h-[420px]">
-                      <img
-                        src={currentTaskData.imageUrl}
-                        alt="Task 1 visual data"
-                        className="mx-auto select-none"
-                        draggable={false}
-                        style={{ transform: `scale(${zoomScale})`, transformOrigin: 'top center' }}
-                      />
-                    </div>
+                    <img
+                      src={currentTaskData.imageUrl}
+                      alt="Task 1 visual data"
+                      className="w-full rounded-lg border border-border shadow-sm cursor-zoom-in object-contain"
+                      onClick={() => { setZoomScale(1); setZoomOpen(true); }}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Click image to zoom</p>
                   </div>}
 
                 <div>
@@ -524,6 +516,26 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </Card>
           </div>
         </div>
+        {/* Zoom Modal */}
+        <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+          <DialogContent className="max-w-5xl">
+            <DialogHeader>
+              <DialogTitle>Task 1 Visual</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
+              <div className="flex gap-2 items-center">
+                <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
+                <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
+                <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
+                <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
+              </div>
+            </div>
+            <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-background p-2">
+              <img src={currentTaskData?.imageUrl} alt="Task 1 visual data zoomed" className="mx-auto" style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center top' }} />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </StudentLayout>;
 };

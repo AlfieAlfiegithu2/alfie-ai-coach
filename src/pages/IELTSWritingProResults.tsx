@@ -12,9 +12,17 @@ interface Criterion {
   justification?: string;
 }
 
+interface ImprovementExample {
+  issue: string;
+  sentence_quote: string;
+  improved_version: string;
+  explanation?: string;
+}
+
 interface TaskFeedback {
   strengths?: string[];
   improvements?: string[];
+  improvements_detailed?: ImprovementExample[];
 }
 
 interface TaskAssessment {
@@ -119,7 +127,7 @@ export default function IELTSWritingProResults() {
             ))}
           </div>
 
-          {(task.feedback?.strengths?.length || task.feedback?.improvements?.length) && (
+          {(task.feedback?.strengths?.length || task.feedback?.improvements?.length || task.feedback?.improvements_detailed?.length) && (
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {task.feedback?.strengths?.length ? (
                 <div>
@@ -131,7 +139,30 @@ export default function IELTSWritingProResults() {
                   </ul>
                 </div>
               ) : null}
-              {task.feedback?.improvements?.length ? (
+              {task.feedback?.improvements_detailed?.length ? (
+                <div>
+                  <h4 className="text-heading-4 mb-2">Specific, actionable improvements</h4>
+                  <p className="text-caption text-text-secondary mb-3">Each item includes a direct quote from your writing and a stronger revision.</p>
+                  <div className="space-y-3">
+                    {task.feedback.improvements_detailed.map((ex, i) => (
+                      <div key={i} className="rounded-xl border border-border bg-surface-3 p-3">
+                        {ex.issue ? (
+                          <div className="text-sm font-medium text-text-primary mb-1">{ex.issue}</div>
+                        ) : null}
+                        {ex.sentence_quote ? (
+                          <blockquote className="text-sm text-text-secondary border-l-2 border-brand-blue/40 pl-3 italic mb-2">“{ex.sentence_quote}”</blockquote>
+                        ) : null}
+                        {ex.improved_version ? (
+                          <div className="text-sm"><span className="text-text-tertiary">Better:</span> <span className="font-medium text-text-primary">{ex.improved_version}</span></div>
+                        ) : null}
+                        {ex.explanation ? (
+                          <p className="text-caption text-text-secondary mt-1">{ex.explanation}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : task.feedback?.improvements?.length ? (
                 <div>
                   <h4 className="text-heading-4 mb-2">Specific, actionable improvements</h4>
                   <p className="text-caption text-text-secondary mb-2">Include concrete examples, target structures, and one improved sentence.</p>

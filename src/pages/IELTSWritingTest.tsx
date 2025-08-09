@@ -67,12 +67,10 @@ const IELTSWritingTestInterface = () => {
     if (saved2 && !task2Answer) setTask2Answer(saved2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testId]);
-
   useEffect(() => {
     if (!testId) return;
     localStorage.setItem(`ielts-writing-draft-${testId}-task1`, task1Answer);
   }, [task1Answer, testId]);
-
   useEffect(() => {
     if (!testId) return;
     localStorage.setItem(`ielts-writing-draft-${testId}-task2`, task2Answer);
@@ -331,35 +329,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
       <div className="space-y-6 relative z-10">
         {/* Test Header */}
-        <div className="rounded-2xl border border-light-border p-4" style={{ background: 'var(--gradient-card)' }}>
+        <div className="rounded-2xl border border-light-border p-4" style={{
+        background: 'var(--gradient-card)'
+      }}>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-heading-2 mb-1 text-foreground">{test.test_name}</h1>
               <p className="text-warm-gray">IELTS Academic Writing Test</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(-1)}
-                className="rounded-xl"
-              >
+              <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="rounded-xl">
                 Go Back
               </Button>
-              <Button
-                variant={currentTask === 1 ? "default" : "outline"}
-                size="sm"
-                onClick={() => switchToTask(1)}
-                className="rounded-xl"
-              >
+              <Button variant={currentTask === 1 ? "default" : "outline"} size="sm" onClick={() => switchToTask(1)} className="rounded-xl">
                 Task 1
               </Button>
-              <Button
-                variant={currentTask === 2 ? "default" : "outline"}
-                size="sm"
-                onClick={() => switchToTask(2)}
-                className="rounded-xl"
-              >
+              <Button variant={currentTask === 2 ? "default" : "outline"} size="sm" onClick={() => switchToTask(2)} className="rounded-xl">
                 Task 2
               </Button>
             </div>
@@ -380,12 +365,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 {/* For Task 1, show image first on the left side */}
                 {currentTask === 1 && currentTaskData?.imageUrl && <div className="mb-4">
                     <h3 className="font-semibold mb-2 text-slate-950">Visual Data</h3>
-                    <img
-                      src={currentTaskData.imageUrl}
-                      alt="Task 1 visual data"
-                      className="w-full rounded-lg border border-border shadow-sm cursor-zoom-in object-contain"
-                      onClick={() => { setZoomScale(1); setZoomOpen(true); }}
-                    />
+                    <img src={currentTaskData.imageUrl} alt="Task 1 visual data" className="w-full rounded-lg border border-border shadow-sm cursor-zoom-in object-contain" onClick={() => {
+                  setZoomScale(1);
+                  setZoomOpen(true);
+                }} />
                     <p className="mt-1 text-xs text-muted-foreground">Click image to zoom</p>
                   </div>}
 
@@ -458,7 +441,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-slate-950">
                   <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-6 h-6 rounded-full" />
+                    
                   </div>
                   <div>
                     <div className="text-base font-semibold text-foreground">Catbot</div>
@@ -470,15 +453,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card">
                   {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                        <div className="flex-shrink-0 mt-1">
-                          {message.type === 'user' ? (
-                            <div className="w-6 h-6 rounded-full bg-blue-500/80 flex items-center justify-center text-white text-xs font-semibold">U</div>
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                              <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
-                            </div>
-                          )}
-                        </div>
+                        
                         <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-muted text-foreground border border-border' : 'bg-card text-foreground border border-border'}`}>
                           <div dangerouslySetInnerHTML={{
                         __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/^• (.*)$/gm, '<li>$1</li>').replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>').replace(/\n/g, '<br>')
@@ -543,12 +518,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   </div>
                   <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-background p-2">
-                    <img
-                      src={currentTaskData?.imageUrl}
-                      alt="Task 1 visual data zoomed"
-                      className="mx-auto"
-                      style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center top' }}
-                    />
+                    <img src={currentTaskData?.imageUrl} alt="Task 1 visual data zoomed" className="mx-auto" style={{
+                  transform: `scale(${zoomScale})`,
+                  transformOrigin: 'center top'
+                }} />
                   </div>
                 </ResizablePanel>
 
@@ -562,12 +535,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         Words: {getWordCount(task1Answer)} • Min: 150
                       </div>
                     </div>
-                    <Textarea
-                      value={task1Answer}
-                      onChange={e => setTask1Answer(e.target.value)}
-                      placeholder="Write here while viewing the larger image..."
-                      className="min-h-[300px] flex-1 text-base leading-relaxed resize-none bg-background border-border text-foreground placeholder:text-muted-foreground"
-                    />
+                    <Textarea value={task1Answer} onChange={e => setTask1Answer(e.target.value)} placeholder="Write here while viewing the larger image..." className="min-h-[300px] flex-1 text-base leading-relaxed resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" />
                     <div className="mt-2 text-xs text-muted-foreground">Changes here are synced with the main answer box.</div>
                   </div>
                 </ResizablePanel>

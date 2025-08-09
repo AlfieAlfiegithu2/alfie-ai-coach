@@ -53,6 +53,14 @@ const IELTSWritingTestInterface = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [zoomScale, setZoomScale] = useState(1.25);
+  const [isZoomPaneOpen, setIsZoomPaneOpen] = useState(false);
+
+  // Open side zoom pane automatically when zooming in on Task 1
+  useEffect(() => {
+    if (currentTask === 1 && zoomScale > 1 && !isZoomPaneOpen) {
+      setIsZoomPaneOpen(true);
+    }
+  }, [zoomScale, currentTask, isZoomPaneOpen]);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -337,6 +345,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </div>
             <div className="flex items-center gap-2">
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="rounded-xl"
+              >
+                Go Back
+              </Button>
+              <Button
                 variant={currentTask === 1 ? "default" : "outline"}
                 size="sm"
                 onClick={() => switchToTask(1)}
@@ -374,7 +390,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       <div className="text-xs text-muted-foreground">Zoom: {Math.round(zoomScale * 100)}%</div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(0.75, Number((s - 0.25).toFixed(2))))}>-</Button>
-                        <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2)))) }}>+</Button>
+                        <Button variant="outline" size="sm" onClick={() => setIsZoomPaneOpen(true)}>Open side view</Button>
                         <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
                       </div>
                     </div>
@@ -452,76 +469,110 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </Card>
           </div>
 
-          {/* Section 3: AI Assistance - Enhanced Catbot */}
+          {/* Section 3: Right Column - Zoom Pane or Catbot */}
           <div className="lg:col-span-1">
-            <Card className="glass-card rounded-3xl h-fit">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-slate-950">
-                  <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-6 h-6 rounded-full" />
+            {isZoomPaneOpen && currentTask === 1 && currentTaskData?.imageUrl ? (
+              <Card className="glass-card rounded-3xl h-fit">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center justify-between text-slate-950">
+                    <span>Zoomed Visual</span>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setIsZoomPaneOpen(false)}>
+                        Back to Catbot
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-muted-foreground">Zoom: {Math.round(zoomScale * 100)}%</div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(0.75, Number((s - 0.25).toFixed(2))))}>-</Button>
+                      <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-base font-semibold text-foreground">Catbot</div>
-                    <div className="text-xs text-muted-foreground font-normal">Your AI Writing Tutor</div>
+                  <div className="rounded-lg border border-border bg-card overflow-auto h-[560px]">
+                    <img
+                      src={currentTaskData.imageUrl}
+                      alt="Task 1 visual data zoomed"
+                      className="mx-auto select-none"
+                      draggable={false}
+                      style={{ transform: `scale(${zoomScale})`, transformOrigin: 'top center' }}
+                    />
                   </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card">
-                  {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                        <div className="flex-shrink-0 mt-1">
-                          {message.type === 'user' ? (
-                            <div className="w-6 h-6 rounded-full bg-blue-500/80 flex items-center justify-center text-white text-xs font-semibold">U</div>
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                              <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
-                            </div>
-                          )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="glass-card rounded-3xl h-fit">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-slate-950">
+                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-6 h-6 rounded-full" />
+                    </div>
+                    <div>
+                      <div className="text-base font-semibold text-foreground">Catbot</div>
+                      <div className="text-xs text-muted-foreground font-normal">Your AI Writing Tutor</div>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card">
+                    {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                          <div className="flex-shrink-0 mt-1">
+                            {message.type === 'user' ? (
+                              <div className="w-6 h-6 rounded-full bg-blue-500/80 flex items-center justify-center text-white text-xs font-semibold">U</div>
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                                <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                              </div>
+                            )}
+                          </div>
+                          <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-muted text-foreground border border-border' : 'bg-card text-foreground border border-border'}`}>
+                            <div dangerouslySetInnerHTML={{
+                          __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/^• (.*)$/gm, '<li>$1</li>').replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>').replace(/\n/g, '<br>')
+                        }} className="prose prose-sm max-w-none" />
+                          </div>
                         </div>
-                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-muted text-foreground border border-border' : 'bg-card text-foreground border border-border'}`}>
-                          <div dangerouslySetInnerHTML={{
-                        __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/^• (.*)$/gm, '<li>$1</li>').replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>').replace(/\n/g, '<br>')
-                      }} className="prose prose-sm max-w-none" />
+                      </div>)}
+                    {isChatLoading && <div className="flex gap-3 justify-start">
+                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
+                          <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
                         </div>
-                      </div>
-                    </div>)}
-                  {isChatLoading && <div className="flex gap-3 justify-start">
-                      <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
-                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
-                      </div>
-                      <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
-                        animationDelay: '0.1s'
-                      }} />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
-                        animationDelay: '0.2s'
-                      }} />
+                        <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
+                          animationDelay: '0.1s'
+                        }} />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{
+                          animationDelay: '0.2s'
+                        }} />
+                          </div>
                         </div>
-                      </div>
-                    </div>}
-                </div>
-                
-                {/* Enhanced Suggestion Buttons */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
-                    📝 Structure
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
-                    📚 Vocabulary
-                  </Button>
-                </div>
+                      </div>}
+                  </div>
+                  
+                  {/* Enhanced Suggestion Buttons */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
+                      📝 Structure
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
+                      📚 Vocabulary
+                    </Button>
+                  </div>
 
-                <div className="flex gap-2">
-                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendChatMessage()} placeholder="Ask Catbot for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" disabled={isChatLoading} />
-                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="rounded-lg">
-                    Send
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex gap-2">
+                    <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendChatMessage()} placeholder="Ask Catbot for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring" disabled={isChatLoading} />
+                    <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="rounded-lg">
+                      Send
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

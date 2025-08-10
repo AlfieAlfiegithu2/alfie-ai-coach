@@ -237,35 +237,30 @@ const IELTSPortal = () => {
         </section>
 
 
-        {/* Targeted Practice - Expandable (icons removed) */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-semibold text-foreground">Sharpen Your Skills</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {[
-              { key: 'reading_vocab', title: 'Vocabulary Builder', subtitle: 'Boost your reading vocabulary', path: '/vocabulary' },
-              { key: 'reading_headings', title: 'Matching Headings', subtitle: 'Target this question type', path: '/reading' },
-              { key: 'reading_skimming', title: 'Timed Skimming', subtitle: 'Improve speed and focus', path: '/reading' },
-              { key: 'speaking_repeat', title: 'Repeat After Me', subtitle: 'Pronunciation practice', path: '/speaking' },
-              { key: 'speaking_part2', title: 'Practice Part 2', subtitle: 'Topic-based speaking', path: '/speaking' },
-              { key: 'speaking_fluency', title: 'Fluency Drills', subtitle: 'Speak more naturally', path: '/speaking' },
-              { key: 'writing_grammar', title: 'Grammar Exercises', subtitle: 'Fix common mistakes', path: '/writing' },
-              { key: 'writing_paraphrase', title: 'Practice Paraphrasing', subtitle: 'Rewrite with clarity', path: '/writing' },
-              { key: 'writing_task1_vocab', title: 'Task 1 Vocabulary', subtitle: 'Charts and graphs words', path: '/writing' },
-              { key: 'listening_numbers', title: 'Number Dictation', subtitle: 'Train number recognition', path: '/listening' },
-              { key: 'listening_details', title: 'Specific Details', subtitle: 'Listen for key info', path: '/listening' },
-            ].map(item => (
+              { slug: 'vocabulary-builder', title: 'Vocabulary Builder' },
+              { slug: 'grammar-fix-it', title: 'Grammar Fix-it' },
+              { slug: 'paraphrasing-challenge', title: 'Paraphrasing Challenge' },
+              { slug: 'pronunciation-repeat-after-me', title: 'Pronunciation "Repeat After Me"' },
+              { slug: 'sentence-structure-scramble', title: 'Sentence Structure Scramble' },
+              { slug: 'listening-for-details', title: 'Listening for Details' },
+              { slug: 'synonym-match', title: 'Synonym Match' },
+              { slug: 'collocation-connect', title: 'Collocation Connect' },
+            ].map((item) => (
               <Card
-                key={item.key}
+                key={item.slug}
                 className="cursor-pointer transition-all duration-200 rounded-2xl border-light-border hover:border-gentle-blue/30 hover:scale-105"
-                onClick={() => navigate(item.path)}
+                onClick={() => navigate(`/skills/${item.slug}`)}
                 style={{ background: 'white' }}
               >
                 <CardHeader className="pb-2 p-4">
                   <div className="flex flex-col items-center justify-center h-full">
                     <CardTitle className="text-sm font-semibold text-foreground text-center">{item.title}</CardTitle>
-                    <p className="mt-1 text-xs text-warm-gray text-center">{item.subtitle}</p>
                   </div>
                 </CardHeader>
               </Card>

@@ -53,6 +53,9 @@ import IELTSSpeakingTest from "./pages/IELTSSpeakingTest";
 import IELTSSpeakingResults from "./pages/IELTSSpeakingResults";
 import EnhancedReadingTest from "./pages/EnhancedReadingTest";
 import Pricing from "./pages/Pricing";
+import AdminSkillsPractice from "./pages/AdminSkillsPractice";
+import AdminSkillManager from "./pages/AdminSkillManager";
+import SkillPractice from "./pages/SkillPractice";
 
 const queryClient = new QueryClient();
 
@@ -102,22 +105,25 @@ const App = () => {
             <Route path="/admin/pte" element={<AdminPTE />} />
             <Route path="/admin/toefl" element={<AdminTOEFL />} />
             <Route path="/admin/general" element={<AdminGeneral />} />
-        <Route path="/admin/:testType/tests" element={<AdminTestManagement />} />
-        <Route path="/admin/:testType/test/:testId" element={<AdminTestDetails />} />
-        <Route path="/admin/:testType/test/:testId/:sectionId" element={<AdminSectionManagement />} />
-        <Route path="/admin/ielts/reading" element={<AdminIELTSReadingDashboard />} />
-        <Route path="/admin/:testType/test/:testId/reading" element={<AdminReadingManagement />} />
-        <Route path="/admin/:testType/test/:testId/listening" element={<AdminIELTSListening />} />
-        <Route path="/admin/ielts/test/:testId/writing" element={<AdminIELTSWritingTest />} />
-        <Route path="/admin/ielts/writing" element={<AdminIELTSWriting />} />
-        <Route path="/admin/ielts/writing/test/:testId" element={<AdminIELTSWritingTest />} />
-        <Route path="/admin/ielts/test/:testId/speaking" element={<AdminIELTSSpeaking />} />
-        <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
-        <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
-        <Route path="/ielts-writing-results-pro" element={<IELTSWritingProResults />} />
-        <Route path="/ielts-speaking-test/:testName" element={<IELTSSpeakingTest />} />
-        <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
-        <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
+            <Route path="/admin/:testType/tests" element={<AdminTestManagement />} />
+            <Route path="/admin/:testType/test/:testId" element={<AdminTestDetails />} />
+            <Route path="/admin/:testType/test/:testId/:sectionId" element={<AdminSectionManagement />} />
+            <Route path="/admin/ielts/reading" element={<AdminIELTSReadingDashboard />} />
+            <Route path="/admin/:testType/test/:testId/reading" element={<AdminReadingManagement />} />
+            <Route path="/admin/:testType/test/:testId/listening" element={<AdminIELTSListening />} />
+            <Route path="/admin/ielts/test/:testId/writing" element={<AdminIELTSWritingTest />} />
+            <Route path="/admin/ielts/writing" element={<AdminIELTSWriting />} />
+            <Route path="/admin/ielts/writing/test/:testId" element={<AdminIELTSWritingTest />} />
+            <Route path="/admin/ielts/test/:testId/speaking" element={<AdminIELTSSpeaking />} />
+            {/* Skills Practice Admin */}
+            <Route path="/admin/skills" element={<AdminSkillsPractice />} />
+            <Route path="/admin/skills/:slug" element={<AdminSkillManager />} />
+            <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
+            <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
+            <Route path="/ielts-writing-results-pro" element={<IELTSWritingProResults />} />
+            <Route path="/ielts-speaking-test/:testName" element={<IELTSSpeakingTest />} />
+            <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
+            <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
             {/* PTE Admin Routes */}
             <Route path="/admin/pte/listening" element={<AdminListening />} />
             <Route path="/admin/pte/reading" element={<AdminReading />} />
@@ -149,8 +155,10 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/tests" element={<TestSelection />} />
             <Route path="/community" element={<CommunityPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/vocabulary" element={<VocabularyPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/vocabulary" element={<VocabularyPage />} />
+            {/* Skills Practice (Student) */}
+            <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

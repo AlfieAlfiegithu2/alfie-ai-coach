@@ -29,7 +29,9 @@ interface Props {
   limit?: number;
 }
 
-const VocabularyQuizPreview = ({ skillTestId, questions: providedQuestions, selectedQuestionId, limit = 6 }: Props) => {
+const VocabularyQuizPreview = (props: Props) => {
+  const { skillTestId, selectedQuestionId, limit = 6 } = props;
+  const providedQuestions = props.questions;
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);

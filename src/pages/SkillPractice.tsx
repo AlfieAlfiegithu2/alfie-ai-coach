@@ -24,7 +24,7 @@ const SkillPractice = () => {
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
-      if (slug === "vocabulary-builder") {
+      if (slug === "vocabulary-builder" || slug === "grammar-fix-it") {
         loadTests();
       } else {
         loadQuestions();
@@ -41,7 +41,7 @@ const SkillPractice = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_practice_questions' }, (payload) => {
         const st = (payload as any)?.new?.skill_type ?? (payload as any)?.old?.skill_type;
         if (st === skill.label) {
-          if (slug === "vocabulary-builder") {
+          if (slug === "vocabulary-builder" || slug === "grammar-fix-it") {
             loadTests();
           } else {
             loadQuestions();
@@ -66,10 +66,11 @@ const SkillPractice = () => {
   };
 
   const loadTests = async () => {
+    if (!slug) return;
     const { data, error } = await db
       .from("skill_tests")
       .select("id,title")
-      .eq("skill_slug", "vocabulary-builder")
+      .eq("skill_slug", slug)
       .order("created_at", { ascending: false });
     if (!error) setTests(((data ?? []) as SkillTest[]));
   };
@@ -82,7 +83,7 @@ const SkillPractice = () => {
     );
   }
 
-  if (slug === "vocabulary-builder") {
+  if (slug === "vocabulary-builder" || slug === "grammar-fix-it") {
     return (
       <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
           <section className="max-w-3xl mx-auto">
@@ -96,14 +97,19 @@ const SkillPractice = () => {
               <Card className="border-light-border">
                 <CardContent className="p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {tests.map((t) => (
-                      <Card key={t.id} className="border-light-border h-full">
-                        <CardContent className="p-4 flex flex-col items-start gap-3">
-                          <p className="font-medium whitespace-normal break-words">{t.title}</p>
-                          <Button size="sm" onClick={() => navigate(`/skills/vocabulary-builder/test/${t.id}`)}>Start</Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {tests.map((t) => {
+                      const path = slug === "vocabulary-builder"
+                        ? `/skills/vocabulary-builder/test/${t.id}`
+                        : `/skills/grammar-fix-it/test/${t.id}`;
+                      return (
+                        <Card key={t.id} className="border-light-border h-full">
+                          <CardContent className="p-4 flex flex-col items-start gap-3">
+                            <p className="font-medium whitespace-normal break-words">{t.title}</p>
+                            <Button size="sm" onClick={() => navigate(path)}>Start</Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

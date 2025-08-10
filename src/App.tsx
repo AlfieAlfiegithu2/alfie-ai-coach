@@ -59,6 +59,9 @@ import SkillPractice from "./pages/SkillPractice";
 import AdminVocabularyTests from "./pages/AdminVocabularyTests";
 import AdminVocabularyTestDetail from "./pages/AdminVocabularyTestDetail";
 import VocabularyQuiz from "./pages/VocabularyQuiz";
+import AdminGrammarTests from "./pages/AdminGrammarTests";
+import AdminGrammarTestDetail from "./pages/AdminGrammarTestDetail";
+import GrammarQuiz from "./pages/GrammarQuiz";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +128,11 @@ const App = () => {
             {/* aliases for direct access */}
             <Route path="/admin/skills/vocabulary-builder" element={<AdminVocabularyTests />} />
             <Route path="/admin/skills/vocabulary-builder/tests/:id" element={<AdminVocabularyTestDetail />} />
+            {/* Grammar Fix-it admin routes */}
+            <Route path="/admin/skills/grammar/tests" element={<AdminGrammarTests />} />
+            <Route path="/admin/skills/grammar/tests/:id" element={<AdminGrammarTestDetail />} />
+            <Route path="/admin/skills/grammar-fix-it" element={<AdminGrammarTests />} />
+            <Route path="/admin/skills/grammar-fix-it/tests/:id" element={<AdminGrammarTestDetail />} />
             <Route path="/admin/skills/:slug" element={<AdminSkillManager />} />
             <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
             <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
@@ -168,6 +176,7 @@ const App = () => {
             {/* Skills Practice (Student) */}
             <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
+            <Route path="/skills/grammar-fix-it/test/:testId" element={<GrammarQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

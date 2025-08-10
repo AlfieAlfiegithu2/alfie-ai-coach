@@ -449,6 +449,24 @@ const HeroIndex = () => {
         </div>
       </section>
 
+      {/* Admin Access CTA */}
+      <section className="relative z-10 px-8 py-12 opacity-0 animate-fade-in [animation-delay:1400ms] [animation-fill-mode:forwards]">
+        <div className="max-w-3xl mx-auto">
+          <Card className="bg-white/10 border border-white/20 backdrop-blur-xl">
+            <CardContent className="p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-light text-zinc-950 mb-1">Admin Access</h3>
+                <p className="text-sm text-zinc-700">Manage tests, content, and analytics in the secure admin panel.</p>
+              </div>
+              <Button onClick={() => navigate('/admin/login')} className="bg-white/10 border border-white/20 backdrop-blur-xl text-white hover:bg-white/15">
+                <Shield className="w-4 h-4 mr-2" />
+                Go to Admin
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="relative z-10 px-8 py-12 border-t border-white/20 bg-black/30 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">

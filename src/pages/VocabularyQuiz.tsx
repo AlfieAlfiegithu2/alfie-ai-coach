@@ -125,7 +125,7 @@ const VocabularyQuiz = () => {
             <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
               <div className="relative">
                 <div
-                  className="absolute -top-8 h-8 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
+                  className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
                   style={{ left: `${progress}%` }}
                   aria-label="Progress mascot"
                   title="Keep going!"
@@ -133,11 +133,11 @@ const VocabularyQuiz = () => {
                   <img
                     src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
                     alt="Vocabulary progress turtle mascot"
-                    className="w-10 h-10 object-contain drop-shadow animate-[turtle-walk_1.1s_ease-in-out_infinite]"
+                    className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
                     loading="lazy"
                   />
                 </div>
-                <style>{`@keyframes turtle-walk { 0% { transform: translateX(0) } 35% { transform: translateX(1.5px) } 55% { transform: translateX(0) } 75% { transform: translateX(1px) } 100% { transform: translateX(0) } }`}</style>
+                <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
                 <Progress value={progress} />
               </div>
             </div>

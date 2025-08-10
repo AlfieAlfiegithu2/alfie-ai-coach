@@ -122,6 +122,9 @@ const App = () => {
             <Route path="/admin/skills" element={<AdminSkillsPractice />} />
             <Route path="/admin/skills/vocabulary/tests" element={<AdminVocabularyTests />} />
             <Route path="/admin/skills/vocabulary/tests/:id" element={<AdminVocabularyTestDetail />} />
+            {/* aliases for direct access */}
+            <Route path="/admin/skills/vocabulary-builder" element={<AdminVocabularyTests />} />
+            <Route path="/admin/skills/vocabulary-builder/tests/:id" element={<AdminVocabularyTestDetail />} />
             <Route path="/admin/skills/:slug" element={<AdminSkillManager />} />
             <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
             <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />

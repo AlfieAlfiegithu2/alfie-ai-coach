@@ -23,19 +23,30 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 interface Props {
-  skillTestId: string;
+  skillTestId?: string;
+  questions?: Question[];
+  selectedQuestionId?: string;
   limit?: number;
 }
 
-const VocabularyQuizPreview = ({ skillTestId, limit = 6 }: Props) => {
-  const [questions, setQuestions] = useState<Question[]>([]);
+const VocabularyQuizPreview = ({ skillTestId, questions: providedQuestions, selectedQuestionId, limit = 6 }: Props) => {
+  const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
+useEffect(() => {
+    // Use provided questions if available; otherwise, fetch by skillTestId
+    const init = async () => {
+      if (providedQuestions && providedQuestions.length) {
+        setQuizQuestions(providedQuestions);
+        setIdx(0);
+        setSelected(null);
+        setScore(0);
+        setFinished(false);
+        return;
+      }
       if (!skillTestId) return;
       const { data, error } = await (supabase as any)
         .from("skill_practice_questions")
@@ -44,22 +55,32 @@ const VocabularyQuizPreview = ({ skillTestId, limit = 6 }: Props) => {
       if (!error) {
         const all = (data ?? []) as Question[];
         const picked = shuffle(all).slice(0, limit);
-        setQuestions(picked);
+        setQuizQuestions(picked);
         setIdx(0);
         setSelected(null);
         setScore(0);
         setFinished(false);
       }
     };
-    load();
-  }, [skillTestId, limit]);
+    init();
+  }, [providedQuestions, skillTestId, limit]);
 
-  const current = questions[idx];
+  useEffect(() => {
+    if (!selectedQuestionId || !quizQuestions.length) return;
+    const newIndex = quizQuestions.findIndex((q) => q.id === selectedQuestionId);
+    if (newIndex >= 0) {
+      setIdx(newIndex);
+      setSelected(null);
+      setFinished(false);
+    }
+  }, [selectedQuestionId, quizQuestions]);
+
+  const current = quizQuestions[idx];
   const options = useMemo(
     () => (current ? shuffle([current.correct_answer, ...(current.incorrect_answers || [])]) : []),
     [current]
   );
-  const progress = questions.length ? (idx / questions.length) * 100 : 0;
+  const progress = quizQuestions.length ? (idx / quizQuestions.length) * 100 : 0;
 
   const choose = (opt: string) => {
     if (selected) return;
@@ -68,7 +89,7 @@ const VocabularyQuizPreview = ({ skillTestId, limit = 6 }: Props) => {
   };
 
   const next = () => {
-    if (idx + 1 >= questions.length) {
+    if (idx + 1 >= quizQuestions.length) {
       setFinished(true);
     } else {
       setIdx((i) => i + 1);
@@ -76,7 +97,7 @@ const VocabularyQuizPreview = ({ skillTestId, limit = 6 }: Props) => {
     }
   };
 
-  if (!skillTestId) return null;
+  if (!skillTestId && !(providedQuestions && providedQuestions.length)) return null;
 
   return (
     <div className="space-y-4">
@@ -85,14 +106,14 @@ const VocabularyQuizPreview = ({ skillTestId, limit = 6 }: Props) => {
         <Card>
           <CardContent className="p-6 text-center space-y-3">
             <div className="text-lg font-semibold">Preview complete</div>
-            <div className="text-muted-foreground">Score: {score} / {questions.length}</div>
+            <div className="text-muted-foreground">Score: {score} / {quizQuestions.length}</div>
             <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); }}>Restart preview</Button>
           </CardContent>
         </Card>
       ) : current ? (
         <Card className="border-light-border">
           <CardContent className="p-6 space-y-4">
-            <div className="text-xs text-muted-foreground">Question {idx + 1} of {questions.length}</div>
+            <div className="text-xs text-muted-foreground">Question {idx + 1} of {quizQuestions.length}</div>
             {current.question_format === "DefinitionMatch" ? (
               <div>
                 <div className="text-xl font-semibold mb-4">{current.content}</div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,15 @@ const AdminVocabularyTestDetail = () => {
     incorrect3: "",
     explanation: "",
   });
+
+const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
+  const previewRef = useRef<HTMLDivElement | null>(null);
+  const handlePreview = (qid: string) => {
+    setSelectedQuestionId(qid);
+    requestAnimationFrame(() => {
+      previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const startEdit = (q: Question) => {
     setEditing(q);
@@ -95,14 +104,16 @@ const AdminVocabularyTestDetail = () => {
 
         <Separator />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Student Preview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {id && <VocabularyQuizPreview skillTestId={id} />}
-          </CardContent>
-        </Card>
+<div ref={previewRef}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Student Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VocabularyQuizPreview questions={questions as any} selectedQuestionId={selectedQuestionId || undefined} />
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
           <CardHeader>
@@ -115,7 +126,7 @@ const AdminVocabularyTestDetail = () => {
               questions.map((q) => (
                 <div key={q.id} className="p-3 border rounded-md space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <div>
+<div onClick={() => handlePreview(q.id)} className="cursor-pointer">
                       <div className="text-xs text-muted-foreground">{q.question_format}</div>
                       <div className="whitespace-pre-wrap">{q.content}</div>
                     </div>

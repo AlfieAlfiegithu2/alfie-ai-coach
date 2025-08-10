@@ -13,6 +13,7 @@ import { useAdminContent } from "@/hooks/useAdminContent";
 import CSVImport from "@/components/CSVImport";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SKILLS } from "@/lib/skills";
 
 const AdminIELTS = () => {
   const navigate = useNavigate();
@@ -200,23 +201,7 @@ const AdminIELTS = () => {
           </Badge>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-          {sections.map((section) => (
-            <Card key={section.id} className="cursor-pointer hover:shadow-lg transition-shadow" 
-                  onClick={() => section.id === 'speaking' ? createSpeakingTest() : navigate(section.path)}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">+ Add {section.title}</CardTitle>
-                <section.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  {section.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Quick Actions - removed as requested */}
 
         {/* Quick Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -270,62 +255,25 @@ const AdminIELTS = () => {
           </Card>
         </div>
 
-        {/* Skill Training Sections */}
+        {/* Skill Training Sections - unified with student portal */}
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Skill Training</h3>
-          <p className="text-muted-foreground">Manage pronunciation, fluency, vocabulary, and grammar drills</p>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate('/admin/general/pronunciation')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pronunciation Drills</CardTitle>
-                <Mic className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">Add and manage sound-focused practice</p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate('/admin/general/speaking')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Fluency Drills</CardTitle>
-                <Headphones className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">Create timed repetition and speaking speed tasks</p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate('/admin/general/vocabulary')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Vocabulary Builder</CardTitle>
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">Manage word lists and practice questions</p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate('/admin/general/grammar')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Grammar Practice</CardTitle>
-                <PenTool className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">Add micro-tasks for sentence structure and accuracy</p>
-              </CardContent>
-            </Card>
+          <h3 className="text-xl font-semibold">Sharpen Your Skills</h3>
+          <p className="text-muted-foreground">Manage 8 targeted skill drills. Changes appear instantly for students.</p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+            {SKILLS.map((s) => (
+              <Card
+                key={s.slug}
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigate(`/admin/skills/${s.slug}`)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{s.label}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">Add and manage questions for this skill</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
 

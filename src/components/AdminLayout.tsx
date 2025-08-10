@@ -23,9 +23,14 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
   // Remove management items as requested
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, hsl(0 0% 0%), hsl(240 10% 4%))' }}>
+    <div className="min-h-screen relative" style={{ 
+      backgroundImage: "url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
       {/* Header Navigation */}
-      <header className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-light-border sticky top-0 z-50 relative">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -57,9 +62,8 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
         </div>
       </header>
 
-
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-8 relative z-10">
         {children}
       </main>
     </div>

@@ -41,9 +41,9 @@ const AdminSkillManager = () => {
   const loadQuestions = async () => {
     if (!skill) return;
     const { data, error } = await db
-      .from("skill_practice_questions" as any)
+      .from("skill_practice_questions")
       .select("id, content, skill_type, created_at")
-      .eq("skill_type" as any, skill.label)
+      .eq("skill_type", skill.label)
       .order("created_at", { ascending: false });
     if (error) {
       console.error(error);
@@ -57,7 +57,7 @@ const AdminSkillManager = () => {
     if (!skill || !newContent.trim()) return;
     setLoading(true);
     const { error } = await db
-      .from("skill_practice_questions" as any)
+      .from("skill_practice_questions")
       .insert({ skill_type: skill.label, content: newContent.trim() });
     setLoading(false);
     if (error) {
@@ -78,9 +78,9 @@ const AdminSkillManager = () => {
   const saveEdit = async () => {
     if (!editingId || !editingContent.trim()) return;
     const { error } = await db
-      .from("skill_practice_questions" as any)
+      .from("skill_practice_questions")
       .update({ content: editingContent.trim() })
-      .eq("id" as any, editingId);
+      .eq("id", editingId);
     if (error) {
       console.error(error);
       toast({ title: "Update failed", description: error.message, variant: "destructive" });

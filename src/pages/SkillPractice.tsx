@@ -26,6 +26,24 @@ const SkillPractice = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skill?.label]);
 
+  // Realtime updates so students see admin changes instantly
+  useEffect(() => {
+    if (!skill) return;
+    const channel = supabase
+      .channel('realtime-skill-questions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_practice_questions' }, (payload) => {
+        const st = (payload as any)?.new?.skill_type ?? (payload as any)?.old?.skill_type;
+        if (st === skill.label) {
+          loadQuestions();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [skill?.label]);
+
   const loadQuestions = async () => {
     if (!skill) return;
     const { data, error } = await db

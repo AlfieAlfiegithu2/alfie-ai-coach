@@ -92,12 +92,12 @@ function detectAndNormalizeDelimiter(text: string): string {
   return text;
 }
 
-function closestFormat(value: string): "DefinitionMatch" | "SentenceFillIn" | null {
-  const v = value.replace(/[^a-z]/gi, "").toLowerCase();
-  if (["definitionmatch", "definitionmatching", "defmatch"].includes(v)) return "DefinitionMatch";
-  if (["sentencefillin", "sentencefill", "fillintheblank"].includes(v)) return "SentenceFillIn";
-  return null;
-}
+function closestFormat(value: string): "DefinitionMatch" | "SentenceFillIn" | null { const v = value.replace(/[^a-z]/gi, "").toLowerCase();
+  const def = ["definitionmatch","definitionmatching","defmatch","definition","def"]; 
+  const fill = ["sentencefillin","sentencefill","fillintheblank","fillblanks","fillblank","blank","cloze","clozetest","grammarfixit","grammarfixitquestions","grammarfix"];
+  if (def.includes(v)) return "DefinitionMatch";
+  if (fill.includes(v)) return "SentenceFillIn";
+  return null; }
 
 function ensureBlank(content: string, correct: string, warnings: string[]): { content: string; error?: string } {
   const blanks = (content.match(/_+/g) || []).filter((s) => s.length >= 2);
@@ -260,14 +260,14 @@ export function normalizeGrammarCSV(
       return;
     }
 
-    if (!(QuestionFormat === "DefinitionMatch" || QuestionFormat === "SentenceFillIn")) {
+if (!(QuestionFormat === "DefinitionMatch" || QuestionFormat === "SentenceFillIn")) {
       const guessed = closestFormat(QuestionFormat);
-      if (guessed) {
-        warnings.push({ row: rowNumber, message: `Corrected QuestionFormat to ${guessed}` });
-        QuestionFormat = guessed;
-      } else {
-        errors.push({ row: rowNumber, message: `Unrecognized QuestionFormat: ${QuestionFormat}`, raw: rawObj });
-        return;
+      if (guessed) { warnings.push({ row: rowNumber, message: `Corrected QuestionFormat to ${guessed}` }); QuestionFormat = guessed; }
+      else {
+        const hasBlank = /_{2,}/.test(WordOrSentence); const contentIsWord = isSingleWord(WordOrSentence); const correctLooksDef = CorrectAnswer.split(" ").length >= 3;
+        const heuristic = hasBlank ? "SentenceFillIn" : (contentIsWord && correctLooksDef ? "DefinitionMatch" : "SentenceFillIn");
+        warnings.push({ row: rowNumber, message: `Guessed QuestionFormat as ${heuristic} from data` });
+        QuestionFormat = heuristic;
       }
     }
 

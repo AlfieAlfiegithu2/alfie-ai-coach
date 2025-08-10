@@ -34,6 +34,7 @@ const VocabularyQuiz = () => {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [showCelebrate, setShowCelebrate] = useState(false);
+  const [attempts, setAttempts] = useState<Array<{ id: string; question: string; chosen: string; correct: string; isCorrect: boolean }>>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -84,12 +85,18 @@ const VocabularyQuiz = () => {
   const choose = (opt: string) => {
     if (selected) return;
     setSelected(opt);
-    if (current && opt === current.correct_answer) {
+    if (!current) return;
+    const isCorrect = opt === current.correct_answer;
+    if (isCorrect) {
       setScore((s) => s + 1);
       playCorrectSound();
       setShowCelebrate(true);
       setTimeout(() => setShowCelebrate(false), 1200);
     }
+    setAttempts((prev) => [
+      ...prev,
+      { id: current.id, question: current.content, chosen: opt, correct: current.correct_answer, isCorrect },
+    ]);
   };
 
   const next = () => {
@@ -111,89 +118,119 @@ const VocabularyQuiz = () => {
 
   return (
     <StudentLayout title="Vocabulary Builder" showBackButton>
-      <section className="max-w-xl mx-auto space-y-4">
-        {finished ? (
-          <Card>
-            <CardContent className="p-6 text-center space-y-3">
-              <div className="text-2xl font-semibold">Great job!</div>
-              <div className="text-muted-foreground">Your score: {score} / {questions.length}</div>
-              <div className="flex gap-2 justify-center">
-                <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); }}>Retry</Button>
-                <Button variant="secondary" onClick={() => navigate(-1)}>Back</Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
+      <section className="mx-auto px-4">
+        <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
+          <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
             <Progress value={progress} />
-            {current ? (
-              <Card className="border-light-border">
-                <CardContent className="relative p-6 space-y-4">
-                  {showCelebrate && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <CelebrationLottieAnimation size="sm" speed={1.2} />
-                    </div>
-                  )}
-                  <div className="text-sm text-muted-foreground">Question {idx + 1} of {questions.length}</div>
-                  {current.question_format === "DefinitionMatch" ? (
-                    <div>
-                      <div className="text-xl font-semibold mb-4">{current.content}</div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {options.map((opt) => {
-                          const isCorrect = selected && opt === current.correct_answer;
-                          const isWrong = selected === opt && opt !== current.correct_answer;
-                          return (
-                            <Button
-                              key={opt}
-                              variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
-                               className="justify-start h-auto py-2 text-sm md:text-base"
-                              onClick={() => choose(opt)}
-                            >
-                              {opt}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="text-lg mb-4 whitespace-pre-wrap">{current.content}</div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {options.map((opt) => {
-                          const isCorrect = selected && opt === current.correct_answer;
-                          const isWrong = selected === opt && opt !== current.correct_answer;
-                          return (
-                            <Button
-                              key={opt}
-                              variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
-                              className="justify-start h-auto py-2 text-sm md:text-base"
-                              onClick={() => choose(opt)}
-                            >
-                              {opt}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {selected && (
-                    <div className="pt-2 space-y-3">
-                      {current.explanation && (
-                        <div className="rounded-md border p-3">
-                          <div className="text-sm font-medium">Explanation</div>
-                          <p className="text-sm text-muted-foreground">{current.explanation}</p>
+          </div>
+
+          {finished ? (
+            <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
+              <CardContent className="p-6 space-y-4">
+                <div className="text-center space-y-1">
+                  <div className="text-2xl font-semibold">Great job!</div>
+                  <div className="text-muted-foreground">Your score: {score} / {questions.length}</div>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium mb-2">Review</div>
+                  <div className="max-h-[50vh] overflow-auto space-y-3">
+                    {attempts.map((a, i) => (
+                      <div key={a.id + String(i)} className="rounded-md border p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-sm font-medium">{a.question}</div>
+                          <span className={`text-xs px-2 py-1 rounded-full ${a.isCorrect ? 'bg-soft-green' : 'bg-destructive/10 text-destructive'}`}>
+                            {a.isCorrect ? 'Correct' : 'Incorrect'}
+                          </span>
                         </div>
-                      )}
-                      <Button onClick={next}>Continue</Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <p className="text-sm text-muted-foreground">Loading questions...</p>
-            )}
-          </>
-        )}
+                        {!a.isCorrect && (
+                          <div className="mt-2 text-sm space-y-1">
+                            <div className="text-muted-foreground">Your answer: {a.chosen}</div>
+                            <div className="text-muted-foreground">Correct answer: {a.correct}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); setAttempts([]); }}>Retry</Button>
+                  <Button variant="secondary" onClick={() => navigate(-1)}>Back</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {current ? (
+                <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl border-light-border">
+                  <CardContent className="relative p-6 space-y-4">
+                    {showCelebrate && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <CelebrationLottieAnimation size="sm" speed={1.2} />
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground">Question {idx + 1} of {questions.length}</div>
+                    {current.question_format === "DefinitionMatch" ? (
+                      <div>
+                        <div className="text-2xl font-semibold mb-4">{current.content}</div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {options.map((opt) => {
+                            const isCorrect = selected && opt === current.correct_answer;
+                            const isWrong = selected === opt && opt !== current.correct_answer;
+                            return (
+                              <Button
+                                key={opt}
+                                variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
+                                className="w-full justify-start text-left h-auto py-3 text-sm md:text-base whitespace-normal break-words break-all md:break-words"
+                                onClick={() => choose(opt)}
+                              >
+                                {opt}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-2xl font-semibold mb-4 whitespace-pre-wrap">{current.content}</div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {options.map((opt) => {
+                            const isCorrect = selected && opt === current.correct_answer;
+                            const isWrong = selected === opt && opt !== current.correct_answer;
+                            return (
+                              <Button
+                                key={opt}
+                                variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
+                                className="w-full justify-start text-left h-auto py-3 text-sm md:text-base whitespace-normal break-words break-all md:break-words"
+                                onClick={() => choose(opt)}
+                              >
+                                {opt}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {selected && (
+                      <div className="pt-2 space-y-3">
+                        {current.explanation && (
+                          <div className="rounded-md border p-3">
+                            <div className="text-sm font-medium">Explanation</div>
+                            <p className="text-sm text-muted-foreground">{current.explanation}</p>
+                          </div>
+                        )}
+                        <Button onClick={next}>Continue</Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <p className="text-sm text-muted-foreground">Loading questions...</p>
+              )}
+            </>
+          )}
+        </div>
       </section>
     </StudentLayout>
   );

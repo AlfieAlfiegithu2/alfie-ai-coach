@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getSkillBySlug } from "@/lib/skills";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 const db = supabase as any;
 
 interface Question {
@@ -96,18 +95,16 @@ const SkillPractice = () => {
             ) : (
               <Card className="border-light-border">
                 <CardContent className="p-4">
-                  <ScrollArea className="max-h-[60vh]">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {tests.map((t) => (
-                        <Card key={t.id} className="border-light-border h-full">
-                          <CardContent className="p-4 flex flex-col items-start gap-3">
-                            <p className="font-medium whitespace-normal break-words">{t.title}</p>
-                            <Button size="sm" onClick={() => navigate(`/skills/vocabulary-builder/test/${t.id}`)}>Start</Button>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {tests.map((t) => (
+                      <Card key={t.id} className="border-light-border h-full">
+                        <CardContent className="p-4 flex flex-col items-start gap-3">
+                          <p className="font-medium whitespace-normal break-words">{t.title}</p>
+                          <Button size="sm" onClick={() => navigate(`/skills/vocabulary-builder/test/${t.id}`)}>Start</Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}

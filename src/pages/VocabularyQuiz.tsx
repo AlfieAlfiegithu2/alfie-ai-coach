@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
-import { Snail } from "lucide-react";
+
 
 interface Question {
   id: string;
@@ -127,10 +127,15 @@ const VocabularyQuiz = () => {
                 <div
                   className="absolute -top-6 h-6 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
                   style={{ left: `${progress}%` }}
-                  aria-label="Snail progress"
+                  aria-label="Progress mascot"
                   title="Keep going!"
                 >
-                  <Snail className="text-primary" size={28} />
+                  <img
+                    src="/lovable-uploads/fb07942c-3a56-45da-b55c-1944333545ea.png"
+                    alt="Vocabulary progress turtle mascot"
+                    className="w-7 h-7 object-contain drop-shadow"
+                    loading="lazy"
+                  />
                 </div>
                 <Progress value={progress} />
               </div>

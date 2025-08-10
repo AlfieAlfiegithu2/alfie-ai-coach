@@ -303,25 +303,22 @@ if (!(QuestionFormat === "DefinitionMatch" || QuestionFormat === "SentenceFillIn
         return;
       }
       content = ensure.content;
-      if (!isSingleWord(correct)) {
-        const head = correct.split(/[^A-Za-z\-']/).filter(Boolean)[0] || correct.split(" ")[0];
-        if (head && isSingleWord(head)) {
-          warnings.push({ row: rowNumber, message: `Reduced correct answer to headword '${head}'` });
-          correct = head;
-        } else {
-          errors.push({ row: rowNumber, message: "CorrectAnswer must be a single word", raw: rawObj });
-          return;
-        }
-      }
-      const pos = guessPOS(correct);
-      let pool = incorrects.map((w) => (isSingleWord(w) ? w : ""));
+
+      // Allow multi-word correct answers and preserve spacing
+      correct = collapseWhitespace(correct);
+
+      // Preserve provided incorrect options as-is (including multi-word)
+      let pool = incorrects.map((w) => collapseWhitespace(w || ""));
+
+      // Synthesize missing distractors if any are empty
       const avoid = new Set<string>([correct.toLowerCase(), ...pool.map((x) => x.toLowerCase()).filter(Boolean)]);
       for (let i = 0; i < pool.length; i++) {
         if (!pool[i]) {
-          const rep = makeWrongWord(pos, avoid);
+          // Use POS of the first word as a rough guide when generating a fallback
+          const rep = makeWrongWord(guessPOS((correct.split(" ")[0] || correct)), avoid);
           pool[i] = rep;
           avoid.add(rep.toLowerCase());
-          warnings.push({ row: rowNumber, message: "Replaced non-word distractor with POS-matched alternative" });
+          warnings.push({ row: rowNumber, message: "Filled missing distractor" });
         }
       }
       incorrects = pool;
@@ -341,7 +338,7 @@ if (!(QuestionFormat === "DefinitionMatch" || QuestionFormat === "SentenceFillIn
       const need = 4 - unique.length;
       for (let i = 0; i < need; i++) {
         if (QuestionFormat === "SentenceFillIn") {
-          const rep = makeWrongWord(guessPOS(correct), avoid);
+          const rep = makeWrongWord(guessPOS((correct.split(" ")[0] || correct)), avoid);
           unique.push(rep);
           avoid.add(rep.toLowerCase());
         } else {

@@ -53,17 +53,17 @@ const AdminDashboard = () => {
       <div className="max-w-7xl mx-auto">
         {/* Welcome Section */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-light text-white mb-4">
+          <h1 className="text-5xl font-georgia font-bold text-foreground mb-4">
             Test Administration Center
           </h1>
-          <p className="text-lg text-white/80 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-warm-gray max-w-3xl mx-auto leading-relaxed">
             Manage content for IELTS, PTE, TOEFL, and General English. Independent admin portals for each test type.
           </p>
         </div>
 
         {/* Content Management Grid */}
         <div className="mb-16">
-          <h2 className="text-3xl font-light text-center text-white mb-8">
+          <h2 className="text-3xl font-georgia font-bold text-center text-foreground mb-8">
             Test Type Administration
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -110,30 +110,30 @@ const AdminDashboard = () => {
         {/* Quick Stats Section */}
         <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
           <CardHeader>
-            <CardTitle className="text-3xl font-light text-center text-white">
+            <CardTitle className="text-3xl font-georgia text-center text-foreground">
               Quick Overview
             </CardTitle>
-            <p className="text-white/80 text-center text-base">
+            <p className="text-warm-gray text-center text-lg">
               Manage all your IELTS content efficiently
             </p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-2xl font-semibold text-white">0</div>
-                <div className="text-sm text-white/80">Reading Tests</div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Reading Tests</div>
               </div>
               <div>
-                <div className="text-2xl font-semibold text-white">0</div>
-                <div className="text-sm text-white/80">Listening Tests</div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Listening Tests</div>
               </div>
               <div>
-                <div className="text-2xl font-semibold text-white">0</div>
-                <div className="text-sm text-white/80">Writing Prompts</div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Writing Prompts</div>
               </div>
               <div>
-                <div className="text-2xl font-semibold text-white">0</div>
-                <div className="text-sm text-white/80">Speaking Prompts</div>
+                <div className="text-2xl font-bold text-gentle-blue">0</div>
+                <div className="text-sm text-warm-gray">Speaking Prompts</div>
               </div>
             </div>
           </CardContent>

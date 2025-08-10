@@ -23,18 +23,9 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
   // Remove management items as requested
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Background Image to match student portal */}
-      <div className="fixed inset-0 w-full h-full">
-        <img
-          src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png"
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      </div>
-
+    <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
       {/* Header Navigation */}
-      <header className="relative z-10 bg-white/10 backdrop-blur-xl border-b border-white/20 sticky top-0">
+      <header className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -42,22 +33,22 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
                 <Button 
                   variant="ghost" 
                   onClick={() => navigate(backPath)}
-                  className="rounded-xl bg-white/10 text-white hover:bg-white/15"
+                  className="hover:bg-gentle-blue/10 rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
               )}
               <div className="flex items-center gap-3">
-                <Settings className="w-6 h-6 text-white" />
-                <h1 className="text-2xl font-light text-white">Admin - {title}</h1>
+                <Settings className="w-6 h-6 text-gentle-blue" />
+                <h1 className="text-2xl font-georgia font-bold text-foreground">Admin - {title}</h1>
               </div>
             </div>
             
             <Button 
               variant="ghost" 
               onClick={() => navigate('/')}
-              className="rounded-xl bg-white/10 text-white hover:bg-white/15"
+              className="hover:bg-gentle-blue/10 rounded-xl"
             >
               <Home className="w-4 h-4 mr-2" />
               Student Portal
@@ -66,8 +57,9 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
         </div>
       </header>
 
+
       {/* Main Content */}
-      <main className="relative z-10 container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-8">
         {children}
       </main>
     </div>

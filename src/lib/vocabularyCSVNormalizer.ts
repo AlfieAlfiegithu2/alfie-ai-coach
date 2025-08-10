@@ -5,6 +5,7 @@ export type NormalizedRow = {
   content: string;
   correct_answer: string;
   incorrect_answers: string[];
+  explanation?: string;
 };
 
 export type NormalizedOutput = {
@@ -29,6 +30,7 @@ const REQUIRED_HEADERS = [
   "IncorrectAnswer1",
   "IncorrectAnswer2",
   "IncorrectAnswer3",
+  "Explanation",
 ] as const;
 
 function stripBOM(s: string) {
@@ -243,19 +245,21 @@ export function normalizeVocabularyCSV(
 
     let QuestionFormat = get("QuestionFormat");
     const WordOrSentence = truncate180(get("WordOrSentence"));
-    let CorrectAnswer = truncate180(get("CorrectAnswer"));
-    let IncorrectAnswer1 = truncate180(get("IncorrectAnswer1"));
-    let IncorrectAnswer2 = truncate180(get("IncorrectAnswer2"));
-    let IncorrectAnswer3 = truncate180(get("IncorrectAnswer3"));
+let CorrectAnswer = truncate180(get("CorrectAnswer"));
+let IncorrectAnswer1 = truncate180(get("IncorrectAnswer1"));
+let IncorrectAnswer2 = truncate180(get("IncorrectAnswer2"));
+let IncorrectAnswer3 = truncate180(get("IncorrectAnswer3"));
+let Explanation = truncate180(get("Explanation"));
 
-    const rawObj = {
-      QuestionFormat,
-      WordOrSentence,
-      CorrectAnswer,
-      IncorrectAnswer1,
-      IncorrectAnswer2,
-      IncorrectAnswer3,
-    };
+const rawObj = {
+  QuestionFormat,
+  WordOrSentence,
+  CorrectAnswer,
+  IncorrectAnswer1,
+  IncorrectAnswer2,
+  IncorrectAnswer3,
+  Explanation,
+};
 
     if (!QuestionFormat || !WordOrSentence || !CorrectAnswer) {
       errors.push({ row: rowNumber, message: "Missing critical fields", raw: rawObj });
@@ -376,7 +380,9 @@ export function normalizeVocabularyCSV(
       content: truncate180(content),
       correct_answer: truncate180(finalCorrect),
       incorrect_answers: finalIncorrects.map(truncate180),
+      explanation: truncate180(Explanation || ""),
     });
+
   });
 
   const rows_with_warnings = new Set(warnings.map((w) => w.row)).size;

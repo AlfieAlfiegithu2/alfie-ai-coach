@@ -12,6 +12,7 @@ interface Question {
   question_format: "DefinitionMatch" | "SentenceFillIn" | string;
   correct_answer: string;
   incorrect_answers: string[];
+  explanation?: string;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -37,7 +38,7 @@ const VocabularyQuiz = () => {
       if (!testId) return;
       const { data, error } = await (supabase as any)
         .from("skill_practice_questions")
-        .select("id,content,question_format,correct_answer,incorrect_answers")
+        .select("id,content,question_format,correct_answer,incorrect_answers,explanation")
         .eq("skill_test_id", testId);
       if (!error) {
         const all = (data ?? []) as Question[];
@@ -138,7 +139,13 @@ const VocabularyQuiz = () => {
                     </div>
                   )}
                   {selected && (
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-3">
+                      {current.explanation && (
+                        <div className="rounded-md border p-3">
+                          <div className="text-sm font-medium">Explanation</div>
+                          <p className="text-sm text-muted-foreground">{current.explanation}</p>
+                        </div>
+                      )}
                       <Button onClick={next}>Continue</Button>
                     </div>
                   )}

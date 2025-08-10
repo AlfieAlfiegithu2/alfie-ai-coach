@@ -66,10 +66,10 @@ export default function VocabularyCSVImport({ skillTestId, onImported }: Vocabul
   };
 
   const downloadTemplate = () => {
-    const header = "QuestionFormat,WordOrSentence,CorrectAnswer,IncorrectAnswer1,IncorrectAnswer2,IncorrectAnswer3\n";
+    const header = "QuestionFormat,WordOrSentence,CorrectAnswer,IncorrectAnswer1,IncorrectAnswer2,IncorrectAnswer3,Explanation\n";
     const sample = [
-      'DefinitionMatch,"Ubiquitous","Present, appearing, or found everywhere","Rare","Obscure","Fleeting"',
-      'SentenceFillIn,"The new evidence will _______ the detective\'s theory.","corroborate","refute","ignore","confuse"',
+      'DefinitionMatch,"Ubiquitous","Present, appearing, or found everywhere","Rare","Obscure","Fleeting","Used to describe something that is found everywhere; e.g., smartphones are ubiquitous."',
+      'SentenceFillIn,"The new evidence will _______ the detective\'s theory.","corroborate","refute","ignore","confuse","Corroborate means to confirm or support; the evidence supports the theory."',
     ].join("\n");
     const blob = new Blob([header + sample], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

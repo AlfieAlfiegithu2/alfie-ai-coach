@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
+import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 
 interface Question {
   id: string;
@@ -127,9 +128,12 @@ const VocabularyQuiz = () => {
           {finished ? (
             <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
               <CardContent className="p-6 space-y-4">
-                <div className="text-center space-y-1">
-                  <div className="text-2xl font-semibold">Great job!</div>
-                  <div className="text-muted-foreground">Your score: {score} / {questions.length}</div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="text-2xl font-semibold">Great job!</div>
+                    <PenguinClapAnimation size="sm" speed={1.1} />
+                  </div>
+                  <div className="text-center text-muted-foreground">Your score: {score} / {questions.length}</div>
                 </div>
 
                 <div>
@@ -156,7 +160,7 @@ const VocabularyQuiz = () => {
 
                 <div className="flex gap-2 justify-center">
                   <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); setAttempts([]); }}>Retry</Button>
-                  <Button variant="secondary" onClick={() => navigate(-1)}>Back</Button>
+                  <Button variant="secondary" onClick={() => navigate("/skills/vocabulary-builder")}>Back</Button>
                 </div>
               </CardContent>
             </Card>

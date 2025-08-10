@@ -4,84 +4,58 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
+import { normalizeVocabularyCSV, type NormalizedOutput } from "@/lib/vocabularyCSVNormalizer";
 interface VocabularyCSVImportProps {
   skillTestId: string;
   onImported?: () => void;
 }
 
-// Expected headers: QuestionFormat,WordOrSentence,CorrectAnswer,IncorrectAnswer1,IncorrectAnswer2,IncorrectAnswer3
-function parseCSV(text: string) {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return [] as any[];
-  const header = lines[0].split(",").map((h) => h.trim());
-  const expected = [
-    "QuestionFormat",
-    "WordOrSentence",
-    "CorrectAnswer",
-    "IncorrectAnswer1",
-    "IncorrectAnswer2",
-    "IncorrectAnswer3",
-  ];
-  const ok = expected.every((e, i) => header[i] === e);
-  if (!ok) throw new Error(`Invalid headers. Expected: ${expected.join(", ")}`);
-
-  const rows = lines.slice(1).map((line) => {
-    // naive CSV split; acceptable given simple format; avoids external deps
-    const cols = line
-      .match(/\s*(?:\"([^\"]*)\"|([^,]*))\s*(?:,|$)/g)?.map((c) => c.replace(/^[,\s]*|[,\s]*$/g, "").replace(/^\"|\"$/g, "")) || [];
-    const [QuestionFormat, WordOrSentence, CorrectAnswer, IncorrectAnswer1, IncorrectAnswer2, IncorrectAnswer3] = cols;
-    return {
-      QuestionFormat: QuestionFormat?.trim(),
-      WordOrSentence: WordOrSentence?.trim(),
-      CorrectAnswer: CorrectAnswer?.trim(),
-      Incorrects: [IncorrectAnswer1, IncorrectAnswer2, IncorrectAnswer3].filter(Boolean).map((x) => x.trim()),
-    };
-  });
-  return rows.filter((r) => r.QuestionFormat && r.WordOrSentence && r.CorrectAnswer);
-}
+// Smart CSV normalization handled by normalizeVocabularyCSV in lib
 
 export default function VocabularyCSVImport({ skillTestId, onImported }: VocabularyCSVImportProps) {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<any[]>([]);
+  const [normalized, setNormalized] = useState<NormalizedOutput | null>(null);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = async (file: File) => {
     try {
       setError(null);
+      setPreview([]);
+      setNormalized(null);
       const text = await file.text();
-      const rows = parseCSV(text);
-      if (rows.length === 0) {
-        setError("No valid rows found in CSV");
+      const result = normalizeVocabularyCSV(text, "Vocabulary Builder", skillTestId);
+      setNormalized(result);
+      if (result.insert.length === 0) {
+        const headerErr = result.errors[0]?.message || "No valid rows found in CSV";
+        setError(headerErr);
         return;
       }
-      setPreview(rows);
+      if (result.errors.length > 0) {
+        toast.warning(`${result.errors.length} row(s) have errors and will be skipped`);
+      }
+      if (result.warnings.length > 0) {
+        toast.message(`${result.warnings.length} warning(s) during normalization`);
+      }
+      setPreview(result.insert);
     } catch (e: any) {
       setError(e.message || "Failed to parse CSV");
     }
   };
 
   const handleConfirm = async () => {
-    if (preview.length === 0) return;
+    if (!normalized || normalized.insert.length === 0) return;
     setImporting(true);
     try {
-      const payload = preview.map((r) => ({
-        skill_type: "Vocabulary Builder",
-        content: r.WordOrSentence,
-        question_format: r.QuestionFormat === "SentenceFillIn" ? "SentenceFillIn" : "DefinitionMatch",
-        correct_answer: r.CorrectAnswer,
-        incorrect_answers: r.Incorrects,
-        skill_test_id: skillTestId,
-      }));
-
       const { error } = await (supabase as any)
         .from("skill_practice_questions")
-        .insert(payload);
+        .insert(normalized.insert);
 
       if (error) throw error;
-      toast.success(`Imported ${payload.length} questions`);
+      toast.success(`Imported ${normalized.insert.length} questions`);
       setPreview([]);
+      setNormalized(null);
       onImported?.();
     } catch (e: any) {
       console.error(e);
@@ -133,16 +107,22 @@ export default function VocabularyCSVImport({ skillTestId, onImported }: Vocabul
         )}
         {preview.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Preview: {preview.length} rows parsed. Click Import to save.</p>
+            {normalized && (
+              <p className="text-sm text-muted-foreground">
+                Parsed: {preview.length} valid row(s)
+                {normalized.warnings.length > 0 && ` • ${normalized.warnings.length} warning(s)`}
+                {normalized.errors.length > 0 && ` • ${normalized.errors.length} error row(s) skipped`}
+              </p>
+            )}
             <div className="flex gap-2">
               <Button onClick={handleConfirm} disabled={importing}>{importing ? "Importing..." : "Import"}</Button>
-              <Button variant="secondary" onClick={() => setPreview([])}>Cancel</Button>
+              <Button variant="secondary" onClick={() => { setPreview([]); setNormalized(null); }}>Cancel</Button>
             </div>
             <div className="max-h-60 overflow-auto rounded border p-2 text-xs">
               {preview.slice(0, 10).map((r, i) => (
                 <div key={i} className="py-1 border-b last:border-b-0">
-                  <div className="font-medium">{r.QuestionFormat}</div>
-                  <div className="text-muted-foreground">{r.WordOrSentence}</div>
+                  <div className="font-medium">{r.question_format ?? r.QuestionFormat}</div>
+                  <div className="text-muted-foreground">{r.content ?? r.WordOrSentence}</div>
                 </div>
               ))}
               {preview.length > 10 && (

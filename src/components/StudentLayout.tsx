@@ -11,8 +11,8 @@ interface StudentLayoutProps {
 const StudentLayout = ({
   children,
   title,
-  showBackButton = true,
-  backPath = "/"
+  showBackButton = false,
+  backPath
 }: StudentLayoutProps) => {
   const navigate = useNavigate();
   const navigationItems = [{
@@ -57,7 +57,20 @@ const StudentLayout = ({
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/50" style={{
       backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.8) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)'
     }}>
-      {/* Navigation Bar intentionally minimal */}
+      {/* Header with optional Back button */}
+      <header className="container mx-auto px-6 pt-6 flex items-center gap-3">
+        {showBackButton && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Go back"
+            onClick={() => (backPath ? navigate(backPath) : navigate(-1))}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
+        <h1 className="text-lg md:text-xl font-semibold">{title}</h1>
+      </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">

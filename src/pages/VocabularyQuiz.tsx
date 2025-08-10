@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 
 interface Question {
   id: string;
@@ -32,6 +33,7 @@ const VocabularyQuiz = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [showCelebrate, setShowCelebrate] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -53,10 +55,41 @@ const VocabularyQuiz = () => {
   const options = useMemo(() => current ? shuffle([current.correct_answer, ...(current.incorrect_answers || [])]) : [], [current]);
   const progress = questions.length ? ((idx) / questions.length) * 100 : 0;
 
+  const playCorrectSound = () => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 880;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+      o.start();
+      setTimeout(() => {
+        o.frequency.setValueAtTime(660, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+        setTimeout(() => {
+          o.stop();
+          ctx.close();
+        }, 180);
+      }, 120);
+    } catch (e) {
+      // no-op
+    }
+  };
+
   const choose = (opt: string) => {
     if (selected) return;
     setSelected(opt);
-    if (current && opt === current.correct_answer) setScore((s) => s + 1);
+    if (current && opt === current.correct_answer) {
+      setScore((s) => s + 1);
+      playCorrectSound();
+      setShowCelebrate(true);
+      setTimeout(() => setShowCelebrate(false), 1200);
+    }
   };
 
   const next = () => {
@@ -78,7 +111,7 @@ const VocabularyQuiz = () => {
 
   return (
     <StudentLayout title="Vocabulary Builder" showBackButton>
-      <section className="max-w-3xl mx-auto space-y-4">
+      <section className="max-w-xl mx-auto space-y-4">
         {finished ? (
           <Card>
             <CardContent className="p-6 text-center space-y-3">
@@ -95,7 +128,12 @@ const VocabularyQuiz = () => {
             <Progress value={progress} />
             {current ? (
               <Card className="border-light-border">
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="relative p-6 space-y-4">
+                  {showCelebrate && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <CelebrationLottieAnimation size="sm" speed={1.2} />
+                    </div>
+                  )}
                   <div className="text-sm text-muted-foreground">Question {idx + 1} of {questions.length}</div>
                   {current.question_format === "DefinitionMatch" ? (
                     <div>
@@ -108,7 +146,7 @@ const VocabularyQuiz = () => {
                             <Button
                               key={opt}
                               variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
-                              className="justify-start h-auto py-3"
+                               className="justify-start h-auto py-2 text-sm md:text-base"
                               onClick={() => choose(opt)}
                             >
                               {opt}
@@ -128,7 +166,7 @@ const VocabularyQuiz = () => {
                             <Button
                               key={opt}
                               variant={isCorrect ? "success" : isWrong ? "destructive" : "outline"}
-                              className="justify-start h-auto py-3"
+                              className="justify-start h-auto py-2 text-sm md:text-base"
                               onClick={() => choose(opt)}
                             >
                               {opt}

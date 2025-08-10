@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
+import { Snail } from "lucide-react";
 
 interface Question {
   id: string;
@@ -121,9 +122,19 @@ const VocabularyQuiz = () => {
     <StudentLayout title="Vocabulary Builder" showBackButton>
       <section className="mx-auto px-4">
         <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
-          <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
-            <Progress value={progress} />
-          </div>
+            <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
+              <div className="relative">
+                <div
+                  className="absolute -top-6 h-6 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
+                  style={{ left: `${progress}%` }}
+                  aria-label="Snail progress"
+                  title="Keep going!"
+                >
+                  <Snail className="text-primary" size={28} />
+                </div>
+                <Progress value={progress} />
+              </div>
+            </div>
 
           {finished ? (
             <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">

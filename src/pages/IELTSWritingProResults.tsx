@@ -81,7 +81,7 @@ export default function IELTSWritingProResults() {
     return null;
   }
 
-  const overallBand = structured.overall?.band ?? 7.0;
+  const overallBand = Math.min(9.0, Math.max(0.0, structured.overall?.band ?? 7.0));
   const overallMeta = bandToDesc(overallBand);
 
   const TaskSection = ({ title, task, type }: { title: string; task?: TaskAssessment; type: "task1" | "task2" }) => {
@@ -102,7 +102,7 @@ export default function IELTSWritingProResults() {
             <span>{title}</span>
             {typeof task.overall_band === "number" && (
               <Badge variant="outline" className="rounded-2xl text-sm">
-                Overall: {task.overall_band.toFixed(1)}
+                Overall: {Math.min(9.0, Math.max(0.0, task.overall_band)).toFixed(1)}
               </Badge>
             )}
           </CardTitle>
@@ -114,7 +114,7 @@ export default function IELTSWritingProResults() {
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-medium text-text-primary">{it.label}</p>
                   <Badge variant="outline" className="rounded-xl">
-                    {typeof it.value === "number" ? it.value.toFixed(1) : "-"}
+                    {typeof it.value === "number" ? Math.min(9.0, Math.max(0.0, it.value)).toFixed(1) : "-"}
                   </Badge>
                 </div>
                 {it.just ? (
@@ -150,10 +150,16 @@ export default function IELTSWritingProResults() {
                           <div className="text-sm font-medium text-text-primary mb-1">{ex.issue}</div>
                         ) : null}
                         {ex.sentence_quote ? (
-                          <blockquote className="text-sm text-text-secondary border-l-2 border-brand-blue/40 pl-3 italic mb-2">“{ex.sentence_quote}”</blockquote>
+                          <div className="mb-2">
+                            <div className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Original</div>
+                            <blockquote className="text-sm text-text-secondary border-l-2 border-brand-blue/40 pl-3 italic">“{ex.sentence_quote}”</blockquote>
+                          </div>
                         ) : null}
                         {ex.improved_version ? (
-                          <div className="text-sm"><span className="text-text-tertiary">Better:</span> <span className="font-medium text-text-primary">{ex.improved_version}</span></div>
+                          <div className="text-sm mt-1">
+                            <span className="text-[11px] uppercase tracking-wide text-text-tertiary mr-1">Improved</span>
+                            <span className="font-medium text-text-primary">{ex.improved_version}</span>
+                          </div>
                         ) : null}
                         {ex.explanation ? (
                           <p className="text-caption text-text-secondary mt-1">{ex.explanation}</p>

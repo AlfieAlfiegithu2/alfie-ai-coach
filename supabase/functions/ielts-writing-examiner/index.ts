@@ -182,6 +182,15 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON. Begin yo
       }
     }
 
+    const clampBands = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const k in obj) {
+        const v = (obj as any)[k];
+        if (k === 'band' && typeof v === 'number') (obj as any)[k] = Math.min(9, Math.max(0, v));
+        else if (typeof v === 'object') clampBands(v);
+      }
+    };
+    if (structured) clampBands(structured);
     const feedback = structured?.full_report_markdown || content;
 
     console.log('✅ AI Examiner Response generated successfully');

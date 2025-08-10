@@ -147,6 +147,15 @@ Return ONLY JSON. Use whole or half bands only (0, 0.5, …, 9). Apply IELTS rou
       }
     }
 
+    const clampBands = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const k in obj) {
+        const v = (obj as any)[k];
+        if (k === 'band' && typeof v === 'number') (obj as any)[k] = Math.min(9, Math.max(0, v));
+        else if (typeof v === 'object') clampBands(v);
+      }
+    };
+    if (structured) clampBands(structured);
     const feedbackText = structured?.feedback_markdown || content;
 
     return new Response(

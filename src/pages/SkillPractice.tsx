@@ -23,17 +23,17 @@ const SkillPractice = () => {
       document.title = `${skill.label} | Practice`;
       loadQuestions();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skill?.label]);
 
   const loadQuestions = async () => {
     if (!skill) return;
-    const { data, error } = await supabase
-      .from<any>("skill_practice_questions" as any)
+    const { data, error } = await db
+      .from("skill_practice_questions")
       .select("id, content")
       .eq("skill_type", skill.label)
       .order("created_at", { ascending: false });
-    if (!error) setQuestions(data || []);
+    if (!error) setQuestions(((data ?? []) as Question[]));
   };
 
   if (!skill) {

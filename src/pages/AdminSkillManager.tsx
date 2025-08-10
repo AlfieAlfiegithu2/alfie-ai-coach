@@ -93,8 +93,8 @@ const AdminSkillManager = () => {
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase
-      .from<any>("skill_practice_questions" as any)
+    const { error } = await db
+      .from("skill_practice_questions")
       .delete()
       .eq("id", id);
     if (error) {

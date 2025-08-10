@@ -580,26 +580,73 @@ export type Database = {
       skill_practice_questions: {
         Row: {
           content: string
+          correct_answer: string | null
           created_at: string
           created_by: string
           id: string
+          incorrect_answers: string[] | null
+          question_format: string | null
+          skill_test_id: string | null
           skill_type: string
           updated_at: string
         }
         Insert: {
           content: string
+          correct_answer?: string | null
           created_at?: string
           created_by?: string
           id?: string
+          incorrect_answers?: string[] | null
+          question_format?: string | null
+          skill_test_id?: string | null
           skill_type: string
           updated_at?: string
         }
         Update: {
           content?: string
+          correct_answer?: string | null
           created_at?: string
           created_by?: string
           id?: string
+          incorrect_answers?: string[] | null
+          question_format?: string | null
+          skill_test_id?: string | null
           skill_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_practice_questions_skill_test_id_fkey"
+            columns: ["skill_test_id"]
+            isOneToOne: false
+            referencedRelation: "skill_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_tests: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          skill_slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          skill_slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          skill_slug?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []

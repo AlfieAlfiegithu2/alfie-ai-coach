@@ -56,6 +56,9 @@ import Pricing from "./pages/Pricing";
 import AdminSkillsPractice from "./pages/AdminSkillsPractice";
 import AdminSkillManager from "./pages/AdminSkillManager";
 import SkillPractice from "./pages/SkillPractice";
+import AdminVocabularyTests from "./pages/AdminVocabularyTests";
+import AdminVocabularyTestDetail from "./pages/AdminVocabularyTestDetail";
+import VocabularyQuiz from "./pages/VocabularyQuiz";
 
 const queryClient = new QueryClient();
 
@@ -117,6 +120,8 @@ const App = () => {
             <Route path="/admin/ielts/test/:testId/speaking" element={<AdminIELTSSpeaking />} />
             {/* Skills Practice Admin */}
             <Route path="/admin/skills" element={<AdminSkillsPractice />} />
+            <Route path="/admin/skills/vocabulary/tests" element={<AdminVocabularyTests />} />
+            <Route path="/admin/skills/vocabulary/tests/:id" element={<AdminVocabularyTestDetail />} />
             <Route path="/admin/skills/:slug" element={<AdminSkillManager />} />
             <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
             <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
@@ -159,6 +164,7 @@ const App = () => {
             <Route path="/vocabulary" element={<VocabularyPage />} />
             {/* Skills Practice (Student) */}
             <Route path="/skills/:slug" element={<SkillPractice />} />
+            <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

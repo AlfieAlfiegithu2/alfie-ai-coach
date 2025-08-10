@@ -12,16 +12,23 @@ interface Question {
   content: string;
 }
 
+interface SkillTest { id: string; title: string }
+
 const SkillPractice = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const skill = useMemo(() => (slug ? getSkillBySlug(slug) : undefined), [slug]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [tests, setTests] = useState<SkillTest[]>([]);
 
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
-      loadQuestions();
+      if (slug === "vocabulary-builder") {
+        loadTests();
+      } else {
+        loadQuestions();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skill?.label]);
@@ -34,7 +41,11 @@ const SkillPractice = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_practice_questions' }, (payload) => {
         const st = (payload as any)?.new?.skill_type ?? (payload as any)?.old?.skill_type;
         if (st === skill.label) {
-          loadQuestions();
+          if (slug === "vocabulary-builder") {
+            loadTests();
+          } else {
+            loadQuestions();
+          }
         }
       })
       .subscribe();
@@ -54,11 +65,41 @@ const SkillPractice = () => {
     if (!error) setQuestions(((data ?? []) as Question[]));
   };
 
+  const loadTests = async () => {
+    const { data, error } = await db
+      .from("skill_tests")
+      .select("id,title")
+      .eq("skill_slug", "vocabulary-builder")
+      .order("created_at", { ascending: false });
+    if (!error) setTests(((data ?? []) as SkillTest[]));
+  };
+
   if (!skill) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Button onClick={() => navigate("/ielts-portal")}>Back</Button>
       </div>
+    );
+  }
+
+  if (slug === "vocabulary-builder") {
+    return (
+      <StudentLayout title={skill.label} showBackButton>
+        <section className="space-y-4 max-w-3xl mx-auto">
+          {tests.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No tests yet. Please check back soon.</p>
+          ) : (
+            tests.map((t) => (
+              <Card key={t.id} className="border-light-border">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <p className="font-medium">{t.title}</p>
+                  <Button size="sm" onClick={() => navigate(`/skills/vocabulary-builder/test/${t.id}`)}>Start</Button>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </section>
+      </StudentLayout>
     );
   }
 

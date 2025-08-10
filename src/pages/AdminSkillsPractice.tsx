@@ -23,7 +23,11 @@ const AdminSkillsPractice = () => {
             <Card
               key={s.slug}
               className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate(`/admin/skills/${s.slug}`)}
+              onClick={() =>
+                s.slug === "vocabulary-builder"
+                  ? navigate(`/admin/skills/vocabulary/tests`)
+                  : navigate(`/admin/skills/${s.slug}`)
+              }
             >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">{`Manage: ${s.label}`}</CardTitle>

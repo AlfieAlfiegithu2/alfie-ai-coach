@@ -26,6 +26,17 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function sanitizeExplanation(text: string): string {
+  if (!text) return "";
+  let t = text.trim();
+  t = t.replace(/^[-•]\s*/, "");
+  t = t.replace(/\*\*(.*?)\*\*/g, "$1");
+  t = t.replace(/\*(.*?)\*/g, "$1");
+  t = t.replace(/_(.*?)_/g, "$1");
+  t = t.replace(/`(.*?)`/g, "$1");
+  return t;
+}
+
 const GrammarQuiz = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
@@ -237,7 +248,7 @@ const GrammarQuiz = () => {
                         {current.explanation && (
                           <div className="rounded-md border p-3">
                             <div className="text-sm font-medium">Explanation</div>
-                            <p className="text-sm text-muted-foreground">{current.explanation}</p>
+                            <p className="text-sm text-muted-foreground">{sanitizeExplanation(current.explanation)}</p>
                           </div>
                         )}
                         <Button onClick={next}>Continue</Button>

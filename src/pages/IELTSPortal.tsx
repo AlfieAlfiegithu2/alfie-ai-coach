@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
 import { SKILLS } from '@/lib/skills';
+import { Home } from 'lucide-react';
 
 const IELTSPortal = () => {
   const navigate = useNavigate();
@@ -198,8 +199,8 @@ const IELTSPortal = () => {
         <StudentLayout title="My IELTS Dashboard" showBackButton>
       <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
         <div className="flex items-center mb-2">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="text-text-secondary px-2 py-1 h-8">
-            Go Back
+          <Button variant="ghost" onClick={() => navigate('/')} className="text-text-secondary px-2 py-1 h-8">
+            <Home className="mr-2 h-4 w-4" /> Home
           </Button>
         </div>
         <section>

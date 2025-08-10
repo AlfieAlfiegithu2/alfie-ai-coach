@@ -270,6 +270,65 @@ const AdminIELTS = () => {
           </Card>
         </div>
 
+        {/* Skill Training Sections */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">Skill Training</h3>
+          <p className="text-muted-foreground">Manage pronunciation, fluency, vocabulary, and grammar drills</p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/admin/general/pronunciation')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pronunciation Drills</CardTitle>
+                <Mic className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Add and manage sound-focused practice</p>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/admin/general/speaking')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Fluency Drills</CardTitle>
+                <Headphones className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Create timed repetition and speaking speed tasks</p>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/admin/general/vocabulary')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Vocabulary Builder</CardTitle>
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Manage word lists and practice questions</p>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/admin/general/grammar')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Grammar Practice</CardTitle>
+                <PenTool className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Add micro-tasks for sentence structure and accuracy</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         <Separator />
 
         {/* Main Content Tabs */}

@@ -23,7 +23,7 @@ const AdminLayout = ({ children, title, showBackButton = true, backPath = "/admi
   // Remove management items as requested
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, hsl(0 0% 0%), hsl(240 10% 4%))' }}>
       {/* Header Navigation */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-light-border sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">

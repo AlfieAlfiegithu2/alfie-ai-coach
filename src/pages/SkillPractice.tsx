@@ -84,7 +84,7 @@ const SkillPractice = () => {
 
   if (slug === "vocabulary-builder") {
     return (
-      <StudentLayout title={skill.label} showBackButton>
+      <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
           <section className="max-w-3xl mx-auto">
             {tests.length === 0 ? (
               <Card className="border-light-border">
@@ -114,7 +114,7 @@ const SkillPractice = () => {
   }
 
   return (
-    <StudentLayout title={skill.label} showBackButton>
+    <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
       <section className="space-y-4 max-w-3xl mx-auto">
         {questions.length === 0 ? (
           <p className="text-muted-foreground text-sm">No questions yet. Please check back soon.</p>

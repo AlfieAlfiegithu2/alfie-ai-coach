@@ -138,8 +138,8 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
             {formatTime(recordingTime)}
           </div>
           {isRecording && (
-            <div className="flex items-center justify-center gap-2 text-red-500 mt-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+            <div className="flex items-center justify-center gap-2 text-primary mt-2">
+              <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
               <span className="text-sm">Recording...</span>
             </div>
           )}
@@ -151,10 +151,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
               onClick={startRecording}
               disabled={disabled}
               size="lg"
-              className="bg-red-600 hover:bg-red-700 text-white"
             >
               <Mic className="w-5 h-5 mr-2" />
-              Start Recording
+              Start recording
             </Button>
           )}
 

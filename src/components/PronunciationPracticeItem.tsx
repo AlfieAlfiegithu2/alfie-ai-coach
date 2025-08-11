@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -25,6 +25,8 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
   const [transcription, setTranscription] = useState<string>("");
   const [analysis, setAnalysis] = useState<string>("");
   const [uploadedUrl, setUploadedUrl] = useState<string>("");
+  const audioObjRef = useRef<HTMLAudioElement | null>(null);
+  const [autoplayFailed, setAutoplayFailed] = useState(false);
 
   const onRecordingComplete = (blob: Blob) => {
     setRecordingBlob(blob);
@@ -45,6 +47,36 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
       reader.readAsDataURL(blob);
     });
   };
+
+  const playSample = async () => {
+    try {
+      await audioObjRef.current?.play();
+      setAutoplayFailed(false);
+    } catch (e) {
+      setAutoplayFailed(true);
+    }
+  };
+
+  useEffect(() => {
+    try {
+      if (audioObjRef.current) {
+        audioObjRef.current.pause();
+        audioObjRef.current = null;
+      }
+      const a = new Audio(item.audio_url);
+      a.preload = "auto";
+      (a as any).playsInline = true;
+      audioObjRef.current = a;
+      a.play()
+        .then(() => setAutoplayFailed(false))
+        .catch(() => setAutoplayFailed(true));
+    } catch (e) {
+      setAutoplayFailed(true);
+    }
+    return () => {
+      try { audioObjRef.current?.pause(); } catch {}
+    };
+  }, [item.audio_url]);
 
   const handleAnalyze = async () => {
     try {
@@ -114,11 +146,11 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
 
   return (
     <div className="space-y-2">
-      <p className="text-sm"><span className="font-medium">{item.order_index}.</span> {item.reference_text}</p>
-      <audio controls preload="none" className="w-full">
-        <source src={item.audio_url} />
-        Your browser does not support the audio element.
-      </audio>
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={playSample}>
+          {autoplayFailed ? "Play sample" : "Replay sample"}
+        </Button>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Card className="border-light-border">

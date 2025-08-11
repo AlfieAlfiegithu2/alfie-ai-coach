@@ -94,9 +94,37 @@ export function normalizeListeningCSV(
     };
   }
 
+  // Header handling with flexible aliases (case-insensitive, ignores spaces/underscores/dashes)
+  const canon = (s: string) => s.replace(/[^a-z0-9]/gi, "").toLowerCase();
+  const ALIASES: Partial<Record<(typeof REQUIRED_HEADERS)[number], string[]>> = {
+    QuestionFormat: ["format", "type", "qformat"],
+    audio_url: ["audio", "audiourl", "audiofile", "file", "filename", "audiofilename", "mp3"],
+    original_sentence: ["transcript", "transcription", "original", "sentence", "audiotranscript"],
+    WordOrSentence: ["instruction", "prompt", "question", "questiontext", "stem"],
+    CorrectAnswer: ["answer", "correct", "key"],
+    IncorrectAnswer1: ["incorrect1", "wrong1", "distractor1", "option2", "choiceb", "b"],
+    IncorrectAnswer2: ["incorrect2", "wrong2", "distractor2", "option3", "choicec", "c"],
+    IncorrectAnswer3: ["incorrect3", "wrong3", "distractor3", "option4", "choiced", "d"],
+    Explanation: ["rationale", "why", "notes", "feedback"],
+  };
+
   const rawHeader = csvParseLine(lines[0]).map((h) => h.replace(/^"|"$/g, "").trim());
-  const headerMap: Record<string, number> = {}; rawHeader.forEach((h, idx) => headerMap[h] = idx);
-  const missing = REQUIRED_HEADERS.filter((h) => headerMap[h] === undefined);
+  const headerCanonMap: Record<string, number> = {};
+  rawHeader.forEach((h, idx) => { headerCanonMap[canon(h)] = idx; });
+
+  const findIndexFor = (name: (typeof REQUIRED_HEADERS)[number]): number | undefined => {
+    const primary = canon(name as string);
+    const aliases = [primary, ...(ALIASES[name]?.map(canon) || [])];
+    for (const a of aliases) {
+      if (headerCanonMap[a] !== undefined) return headerCanonMap[a];
+    }
+    return undefined;
+  };
+
+  const missing: string[] = [];
+  (REQUIRED_HEADERS as readonly string[]).forEach((h) => {
+    if (findIndexFor(h as (typeof REQUIRED_HEADERS)[number]) === undefined) missing.push(h);
+  });
   if (missing.length > 0) {
     return {
       ok: false, skill_type, skill_test_id, insert: [], warnings: [],
@@ -109,8 +137,11 @@ export function normalizeListeningCSV(
   rows.forEach((line, idx) => {
     const rowNumber = idx + 1;
     const cols = csvParseLine(line);
-    const get = (name: (typeof REQUIRED_HEADERS)[number]) => truncate(collapseWhitespace(sanitizeHTML(cols[headerMap[name]] || "")));
-
+    const get = (name: (typeof REQUIRED_HEADERS)[number]) => {
+      const idx = findIndexFor(name);
+      const val = idx !== undefined ? cols[idx] : "";
+      return truncate(collapseWhitespace(sanitizeHTML(val || "")));
+    };
     let QuestionFormat = get("QuestionFormat");
     const audioFile = get("audio_url");
     const original_sentence = get("original_sentence");

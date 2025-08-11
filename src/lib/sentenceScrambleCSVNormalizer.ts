@@ -29,9 +29,6 @@ const REQUIRED_HEADERS = [
   "original_sentence",
   "WordOrSentence",
   "CorrectAnswer",
-  "IncorrectAnswer1",
-  "IncorrectAnswer2",
-  "IncorrectAnswer3",
   "Explanation",
 ] as const;
 
@@ -111,17 +108,24 @@ export function normalizeSentenceScrambleCSV(
     const rowNumber = idx + 1;
     const cols = csvParseLine(line);
     const get = (name: (typeof REQUIRED_HEADERS)[number]) => collapseWhitespace(sanitizeHTML(cols[headerMap[name]] || ""));
+    const getAny = (name: string) => collapseWhitespace(sanitizeHTML(cols[headerMap[name]] || ""));
 
     const QuestionFormat = get("QuestionFormat");
     const original_sentence = truncate180(get("original_sentence"));
     let WordOrSentence = truncate180(get("WordOrSentence"));
     const CorrectAnswer = truncate180(get("CorrectAnswer"));
-    const IncorrectAnswer1 = truncate180(get("IncorrectAnswer1"));
-    const IncorrectAnswer2 = truncate180(get("IncorrectAnswer2"));
-    const IncorrectAnswer3 = truncate180(get("IncorrectAnswer3"));
     const Explanation = truncate180(get("Explanation"));
 
-    const rawObj = { QuestionFormat, original_sentence, WordOrSentence, CorrectAnswer, IncorrectAnswer1, IncorrectAnswer2, IncorrectAnswer3, Explanation };
+    // Collect all IncorrectAnswer columns dynamically
+    const incorrectAnswers: string[] = [];
+    for (let i = 1; i <= 20; i++) { // Support up to 20 incorrect answers
+      const incorrectAnswer = truncate180(getAny(`IncorrectAnswer${i}`));
+      if (incorrectAnswer) {
+        incorrectAnswers.push(incorrectAnswer);
+      }
+    }
+
+    const rawObj = { QuestionFormat, original_sentence, WordOrSentence, CorrectAnswer, Explanation, ...incorrectAnswers.reduce((acc, ans, idx) => ({ ...acc, [`IncorrectAnswer${idx + 1}`]: ans }), {}) };
 
     if (!QuestionFormat || !original_sentence || !CorrectAnswer) {
       errors.push({ row: rowNumber, message: "Missing critical fields (QuestionFormat, original_sentence, or CorrectAnswer)", raw: rawObj });
@@ -133,7 +137,7 @@ export function normalizeSentenceScrambleCSV(
       return;
     }
 
-    const chunks = [CorrectAnswer, IncorrectAnswer1, IncorrectAnswer2, IncorrectAnswer3].filter(Boolean);
+    const chunks = [CorrectAnswer, ...incorrectAnswers].filter(Boolean);
     if (chunks.length < 2) {
       warnings.push({ row: rowNumber, message: "Fewer than 2 chunks provided; skipping" });
       return;
@@ -149,7 +153,7 @@ export function normalizeSentenceScrambleCSV(
       question_format: "SentenceScramble",
       content: WordOrSentence,
       correct_answer: chunks[0],
-      incorrect_answers: chunks.slice(1, 4),
+      incorrect_answers: chunks.slice(1), // Take all incorrect answers, not just first 3
       explanation: Explanation || undefined,
       original_sentence,
     });

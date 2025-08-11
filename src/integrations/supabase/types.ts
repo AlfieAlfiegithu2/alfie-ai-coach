@@ -586,6 +586,7 @@ export type Database = {
           explanation: string | null
           id: string
           incorrect_answers: string[] | null
+          original_sentence: string | null
           question_format: string | null
           skill_test_id: string | null
           skill_type: string
@@ -599,6 +600,7 @@ export type Database = {
           explanation?: string | null
           id?: string
           incorrect_answers?: string[] | null
+          original_sentence?: string | null
           question_format?: string | null
           skill_test_id?: string | null
           skill_type: string
@@ -612,6 +614,7 @@ export type Database = {
           explanation?: string | null
           id?: string
           incorrect_answers?: string[] | null
+          original_sentence?: string | null
           question_format?: string | null
           skill_test_id?: string | null
           skill_type?: string

@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.audio-cache]
 verify_jwt = false
+
+[functions.pronunciation-analysis]
+verify_jwt = false

@@ -106,12 +106,10 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
       const base64 = await blobToBase64(recordingBlob);
 
       // 3) Call edge function for analysis
-      const { data: analysisResp, error: fnErr } = await supabase.functions.invoke("speech-analysis", {
+      const { data: analysisResp, error: fnErr } = await supabase.functions.invoke("pronunciation-analysis", {
         body: {
           audio: base64,
-          prompt: item.reference_text,
-          speakingPart: "Pronunciation Repeat After Me",
-          questionTranscription: item.reference_text,
+          referenceText: item.reference_text,
         },
       });
       if (fnErr) throw fnErr;

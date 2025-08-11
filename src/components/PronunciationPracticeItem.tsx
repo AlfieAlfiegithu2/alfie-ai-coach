@@ -24,6 +24,7 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
   const [loading, setLoading] = useState(false);
   const [transcription, setTranscription] = useState<string>("");
   const [analysis, setAnalysis] = useState<string>("");
+  const [analysisJson, setAnalysisJson] = useState<any | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string>("");
   const audioObjRef = useRef<HTMLAudioElement | null>(null);
   const [autoplayFailed, setAutoplayFailed] = useState(false);
@@ -32,6 +33,7 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
     setRecordingBlob(blob);
     setTranscription("");
     setAnalysis("");
+    setAnalysisJson(null);
     setUploadedUrl("");
   };
 
@@ -78,6 +80,17 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
     };
   }, [item.audio_url]);
 
+  useEffect(() => {
+    // Reset UI when moving to a new item
+    setRecordingBlob(null);
+    setLoading(false);
+    setTranscription("");
+    setAnalysis("");
+    setAnalysisJson(null);
+    setUploadedUrl("");
+    setAutoplayFailed(false);
+  }, [item.id]);
+
   const handleAnalyze = async () => {
     try {
       if (!recordingBlob) {
@@ -118,8 +131,14 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
       const anal = analysisResp?.analysis ?? "";
       setTranscription(trans);
       setAnalysis(anal);
+      try {
+        setAnalysisJson(analysisResp?.analysis_json ?? JSON.parse(anal));
+      } catch {
+        setAnalysisJson(null);
+      }
 
       // 4) Save to DB
+      const overallScore = analysisResp?.analysis_json?.overallScore ?? null;
       const { error: insErr } = await (supabase as any)
         .from("pronunciation_results")
         .insert({
@@ -127,8 +146,8 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
           test_id: testId,
           item_id: item.id,
           audio_url,
-          analysis_json: { transcription: trans, analysis: anal },
-          overall_score: null,
+          analysis_json: analysisResp?.analysis_json ?? { transcription: trans, analysis: anal },
+          overall_score: overallScore,
         });
       if (insErr) throw insErr;
 
@@ -154,38 +173,63 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
         <Card className="border-light-border w-full max-w-xl">
           <CardContent className="p-6 space-y-4">
             <div className="flex justify-center">
-              <AudioRecorder onRecordingComplete={onRecordingComplete} autoFocus />
+              <AudioRecorder key={item.id} onRecordingComplete={onRecordingComplete} autoFocus />
             </div>
             <div className="flex justify-center">
               <Button onClick={handleAnalyze} disabled={loading || !recordingBlob}>
                 {loading ? "Analyzing..." : "Get Analysis"}
               </Button>
             </div>
-            {uploadedUrl && (
-              <p className="text-xs text-muted-foreground break-all text-center">Saved: {uploadedUrl}</p>
+            {analysisJson && (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-xs font-medium">Overall Score</p>
+                  <p className="text-3xl font-semibold text-primary">{analysisJson?.overallScore ?? '-'} / 100</p>
+                  {analysisJson?.overallSummary && (
+                    <p className="text-sm text-muted-foreground mt-1">{analysisJson.overallSummary}</p>
+                  )}
+                </div>
+
+                {Array.isArray(analysisJson?.wordAnalysis) && analysisJson.wordAnalysis.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium mb-2">Word Analysis</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {analysisJson.wordAnalysis.slice(0, 8).map((w: any, idx: number) => (
+                        <div key={idx} className="rounded-md border border-light-border p-2 text-sm">
+                          <div className="font-medium">
+                            {w.word}
+                            <span className="ml-2 text-xs text-muted-foreground">{w.status}</span>
+                          </div>
+                          {w.feedback && <div className="text-xs text-muted-foreground">{w.feedback}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {Array.isArray(analysisJson?.detailedFeedback) && analysisJson.detailedFeedback.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium">Detailed Feedback</p>
+                    {analysisJson.detailedFeedback.map((d: any, idx: number) => (
+                      <div key={idx} className="rounded-md border border-light-border p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">{d.area}</p>
+                          {typeof d.score === 'number' && (
+                            <span className="text-xs text-muted-foreground">{d.score}/100</span>
+                          )}
+                        </div>
+                        {d.positive && <p className="text-sm mt-1">+ {d.positive}</p>}
+                        {d.improvement && <p className="text-sm mt-1">→ {d.improvement}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {(transcription || analysis) && (
-        <Card className="border-light-border">
-          <CardContent className="p-4 space-y-2">
-            {transcription && (
-              <div>
-                <p className="text-xs font-medium">Transcription</p>
-                <p className="text-sm whitespace-pre-wrap">{transcription}</p>
-              </div>
-            )}
-            {analysis && (
-              <div>
-                <p className="text-xs font-medium">Feedback</p>
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{analysis}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

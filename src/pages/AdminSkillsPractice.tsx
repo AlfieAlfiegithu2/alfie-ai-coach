@@ -23,12 +23,17 @@ const AdminSkillsPractice = () => {
             <Card
               key={s.slug}
               className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() =>
-                s.slug === "vocabulary-builder"
-                  ? navigate(`/admin/skills/vocabulary/tests`)
-                  : navigate(`/admin/skills/${s.slug}`)
-              }
+              onClick={() => {
+                if (s.slug === "vocabulary-builder") {
+                  navigate(`/admin/skills/vocabulary/tests`);
+                } else if (s.slug === "pronunciation-repeat-after-me") {
+                  navigate(`/admin/skills/pronunciation-repeat-after-me`);
+                } else {
+                  navigate(`/admin/skills/${s.slug}`);
+                }
+              }}
             >
+
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">{`Manage: ${s.label}`}</CardTitle>
               </CardHeader>

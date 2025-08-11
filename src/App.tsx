@@ -65,6 +65,8 @@ import GrammarQuiz from "./pages/GrammarQuiz";
 import AdminParaphrasingTests from "./pages/AdminParaphrasingTests";
 import AdminParaphrasingTestDetail from "./pages/AdminParaphrasingTestDetail";
 import ParaphraseQuiz from "./pages/ParaphraseQuiz";
+import AdminPronunciationTests from "./pages/AdminPronunciationTests";
+import AdminPronunciationTestDetail from "./pages/AdminPronunciationTestDetail";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +141,9 @@ const App = () => {
             {/* Paraphrasing Challenge admin routes */}
             <Route path="/admin/skills/paraphrasing-challenge" element={<AdminParaphrasingTests />} />
             <Route path="/admin/skills/paraphrasing-challenge/:id" element={<AdminParaphrasingTestDetail />} />
+            {/* Pronunciation admin routes */}
+            <Route path="/admin/skills/pronunciation-repeat-after-me" element={<AdminPronunciationTests />} />
+            <Route path="/admin/skills/pronunciation-repeat-after-me/:id" element={<AdminPronunciationTestDetail />} />
             <Route path="/admin/skills/:slug" element={<AdminSkillManager />} />
             <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
             <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />

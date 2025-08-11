@@ -372,6 +372,107 @@ export type Database = {
         }
         Relationships: []
       }
+      pronunciation_items: {
+        Row: {
+          audio_url: string
+          created_at: string
+          id: string
+          order_index: number
+          reference_text: string
+          test_id: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          reference_text: string
+          test_id: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          reference_text?: string
+          test_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pronunciation_items_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "pronunciation_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pronunciation_results: {
+        Row: {
+          analysis_json: Json | null
+          audio_url: string | null
+          created_at: string
+          id: string
+          item_id: string | null
+          overall_score: number | null
+          test_id: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_json?: Json | null
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          overall_score?: number | null
+          test_id?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_json?: Json | null
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          overall_score?: number | null
+          test_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pronunciation_tests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pte_speaking_prompts: {
         Row: {
           band_criteria: Json | null

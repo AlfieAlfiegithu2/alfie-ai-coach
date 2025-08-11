@@ -41,8 +41,8 @@ const AdminPronunciationTests = () => {
     const { data: userResp } = await supabase.auth.getUser();
     const userId = userResp?.user?.id;
     const { data, error } = await (supabase as any)
-      .from("pronunciation_tests")
-      .insert({ title: title.trim(), created_by: userId })
+.from("pronunciation_tests")
+      .insert({ title: title.trim(), created_by: userId, is_published: true })
       .select("id")
       .maybeSingle();
     setLoading(false);

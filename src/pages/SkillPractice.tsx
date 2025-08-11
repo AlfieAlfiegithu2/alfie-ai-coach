@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getSkillBySlug } from "@/lib/skills";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import PronunciationPracticeItem from "@/components/PronunciationPracticeItem";
 const db = supabase as any;
 
 interface Question {
@@ -23,6 +24,7 @@ const [questions, setQuestions] = useState<Question[]>([]);
 const [tests, setTests] = useState<SkillTest[]>([]);
 const [pronItems, setPronItems] = useState<PronItem[]>([]);
 const [pronTitle, setPronTitle] = useState<string>("");
+const [pronTestId, setPronTestId] = useState<string>("");
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
@@ -91,9 +93,11 @@ const [pronTitle, setPronTitle] = useState<string>("");
     if (!test?.id) {
       setPronItems([]);
       setPronTitle("");
+      setPronTestId("");
       return;
     }
     setPronTitle(test.title);
+    setPronTestId(test.id);
     const { data: items, error: itemsErr } = await db
       .from("pronunciation_items")
       .select("id, reference_text, audio_url, order_index")
@@ -126,14 +130,8 @@ const [pronTitle, setPronTitle] = useState<string>("");
                 {pronTitle && (
                   <p className="font-medium">{pronTitle} — 10 items</p>
                 )}
-                {pronItems.slice(0, 10).map((item, idx) => (
-                  <div key={item.id} className="space-y-2">
-                    <p className="text-sm"><span className="font-medium">{idx + 1}.</span> {item.reference_text}</p>
-                    <audio controls preload="none" className="w-full">
-                      <source src={item.audio_url} />
-                      Your browser does not support the audio element.
-                    </audio>
-                  </div>
+                {pronItems.slice(0, 10).map((item) => (
+                  <PronunciationPracticeItem key={item.id} item={item} testId={pronTestId} />
                 ))}
               </CardContent>
             </Card>

@@ -680,6 +680,7 @@ export type Database = {
       }
       skill_practice_questions: {
         Row: {
+          audio_url: string | null
           content: string
           correct_answer: string | null
           created_at: string
@@ -694,6 +695,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audio_url?: string | null
           content: string
           correct_answer?: string | null
           created_at?: string
@@ -708,6 +710,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audio_url?: string | null
           content?: string
           correct_answer?: string | null
           created_at?: string

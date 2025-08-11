@@ -35,7 +35,7 @@ const [overallSummary, setOverallSummary] = useState<string>("");
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
-      if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble") {
+      if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble" || slug === "listening-for-details") {
         loadTests();
       } else if (slug === "pronunciation-repeat-after-me") {
         loadPronunciation();
@@ -242,7 +242,7 @@ const [overallSummary, setOverallSummary] = useState<string>("");
       </StudentLayout>
     );
   }
-  if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble") {
+  if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble" || slug === "listening-for-details") {
     return (
       <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
           <section className="max-w-3xl mx-auto">
@@ -263,7 +263,9 @@ const [overallSummary, setOverallSummary] = useState<string>("");
                           ? `/skills/grammar-fix-it/test/${t.id}`
                           : slug === "paraphrasing-challenge"
                             ? `/skills/paraphrasing-challenge/test/${t.id}`
-                            : `/skills/sentence-structure-scramble/test/${t.id}`;
+                            : slug === "sentence-structure-scramble"
+                              ? `/skills/sentence-structure-scramble/test/${t.id}`
+                              : `/skills/listening-for-details/test/${t.id}`;
                       return (
                         <Card key={t.id} className="border-light-border h-full">
                           <CardContent className="p-4 flex flex-col items-start gap-3">

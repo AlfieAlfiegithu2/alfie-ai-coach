@@ -70,6 +70,9 @@ import AdminPronunciationTestDetail from "./pages/AdminPronunciationTestDetail";
 import AdminSentenceScrambleTests from "./pages/AdminSentenceScrambleTests";
 import AdminSentenceScrambleTestDetail from "./pages/AdminSentenceScrambleTestDetail";
 import SentenceScrambleQuiz from "./pages/SentenceScrambleQuiz";
+import AdminListeningForDetailsTests from "./pages/AdminListeningForDetailsTests";
+import AdminListeningForDetailsTestDetail from "./pages/AdminListeningForDetailsTestDetail";
+import ListeningQuiz from "./pages/ListeningQuiz";
 
 const queryClient = new QueryClient();
 
@@ -150,6 +153,9 @@ const App = () => {
             {/* Sentence Scramble admin routes (alias) */}
             <Route path="/admin/skills/sentence-structure-scramble" element={<AdminSentenceScrambleTests />} />
             <Route path="/admin/skills/sentence-structure-scramble/:id" element={<AdminSentenceScrambleTestDetail />} />
+            {/* Listening for Details admin routes */}
+            <Route path="/admin/skills/listening-for-details" element={<AdminListeningForDetailsTests />} />
+            <Route path="/admin/skills/listening-for-details/:id" element={<AdminListeningForDetailsTestDetail />} />
             {/* Pronunciation admin routes */}
             <Route path="/admin/skills/pronunciation-repeat-after-me" element={<AdminPronunciationTests />} />
             <Route path="/admin/skills/pronunciation-repeat-after-me/:id" element={<AdminPronunciationTestDetail />} />
@@ -199,6 +205,7 @@ const App = () => {
             <Route path="/skills/grammar-fix-it/test/:testId" element={<GrammarQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />
             <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />
+            <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

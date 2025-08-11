@@ -28,6 +28,8 @@ const AdminSkillsPractice = () => {
                   navigate(`/admin/skills/vocabulary/tests`);
                 } else if (s.slug === "pronunciation-repeat-after-me") {
                   navigate(`/admin/skills/pronunciation-repeat-after-me`);
+                } else if (s.slug === "sentence-structure-scramble") {
+                  navigate(`/admin/skills/sentence-scramble`);
                 } else {
                   navigate(`/admin/skills/${s.slug}`);
                 }

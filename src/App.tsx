@@ -67,6 +67,8 @@ import AdminParaphrasingTestDetail from "./pages/AdminParaphrasingTestDetail";
 import ParaphraseQuiz from "./pages/ParaphraseQuiz";
 import AdminPronunciationTests from "./pages/AdminPronunciationTests";
 import AdminPronunciationTestDetail from "./pages/AdminPronunciationTestDetail";
+import AdminSentenceScrambleTests from "./pages/AdminSentenceScrambleTests";
+import AdminSentenceScrambleTestDetail from "./pages/AdminSentenceScrambleTestDetail";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +143,9 @@ const App = () => {
             {/* Paraphrasing Challenge admin routes */}
             <Route path="/admin/skills/paraphrasing-challenge" element={<AdminParaphrasingTests />} />
             <Route path="/admin/skills/paraphrasing-challenge/:id" element={<AdminParaphrasingTestDetail />} />
+            {/* Sentence Scramble admin routes */}
+            <Route path="/admin/skills/sentence-scramble" element={<AdminSentenceScrambleTests />} />
+            <Route path="/admin/skills/sentence-scramble/:id" element={<AdminSentenceScrambleTestDetail />} />
             {/* Pronunciation admin routes */}
             <Route path="/admin/skills/pronunciation-repeat-after-me" element={<AdminPronunciationTests />} />
             <Route path="/admin/skills/pronunciation-repeat-after-me/:id" element={<AdminPronunciationTestDetail />} />

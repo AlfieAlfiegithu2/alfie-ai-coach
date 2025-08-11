@@ -7,6 +7,7 @@ import { getSkillBySlug } from "@/lib/skills";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PronunciationPracticeItem from "@/components/PronunciationPracticeItem";
+import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 const db = supabase as any;
 
 interface Question {
@@ -29,6 +30,8 @@ const [pronTestId, setPronTestId] = useState<string>("");
 const [pronIndex, setPronIndex] = useState(0);
 const [pronAnalyzed, setPronAnalyzed] = useState(false);
 const [pronFinished, setPronFinished] = useState(false);
+const [overallAvg, setOverallAvg] = useState<number | null>(null);
+const [overallSummary, setOverallSummary] = useState<string>("");
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
@@ -117,13 +120,33 @@ const [pronFinished, setPronFinished] = useState(false);
       setPronAnalyzed(false);
     }
   };
-  if (!skill) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Button onClick={() => navigate("/ielts-portal")}>Back</Button>
-      </div>
-    );
-  }
+
+  useEffect(() => {
+    const loadOverall = async () => {
+      if (!pronFinished || !pronTestId) return;
+      const { data: userResp } = await supabase.auth.getUser();
+      const uid = userResp?.user?.id;
+      if (!uid) return;
+      const { data, error } = await (supabase as any)
+        .from('pronunciation_results')
+        .select('overall_score, analysis_json, created_at')
+        .eq('user_id', uid)
+        .eq('test_id', pronTestId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) return;
+      const rows = (data ?? []) as any[];
+      const scores = rows.map(r => r.overall_score).filter((n: any) => typeof n === 'number');
+      if (scores.length) {
+        setOverallAvg(Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length));
+      } else {
+        setOverallAvg(null);
+      }
+      const summary = rows[0]?.analysis_json?.overallSummary;
+      setOverallSummary(typeof summary === 'string' ? summary : '');
+    };
+    loadOverall();
+  }, [pronFinished, pronTestId]);
 
   if (slug === "pronunciation-repeat-after-me") {
     const total = Math.min(10, pronItems.length || 10);
@@ -162,13 +185,23 @@ const [pronFinished, setPronFinished] = useState(false);
               </Card>
             ) : pronFinished ? (
               <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
-                <CardContent className="p-6 space-y-4">
-                  <div className="space-y-2">
-                    <div className="text-2xl font-semibold text-center">Great job!</div>
-                    <div className="text-center text-muted-foreground">You completed {pronTitle || "this set"}.</div>
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex justify-center">
+                    <PenguinClapAnimation />
+                  </div>
+                  <div className="space-y-2 text-center">
+                    <div className="text-2xl font-semibold">Great job!</div>
+                    <div className="text-muted-foreground">You completed {pronTitle || "this set"}.</div>
+                  </div>
+                  <div className="text-center space-y-1 animate-fade-in">
+                    <p className="text-xs font-medium">Overall Pronunciation Score</p>
+                    <p className="text-4xl font-bold text-primary">{overallAvg ?? "-"} / 100</p>
+                    {overallSummary && (
+                      <p className="text-sm text-muted-foreground max-w-2xl mx-auto">{overallSummary}</p>
+                    )}
                   </div>
                   <div className="flex gap-2 justify-center">
-                    <Button onClick={() => { setPronIndex(0); setPronFinished(false); setPronAnalyzed(false); }}>Retry</Button>
+                    <Button onClick={() => { setPronIndex(0); setPronFinished(false); setPronAnalyzed(false); setOverallAvg(null); setOverallSummary(""); }}>Retry</Button>
                     <Button variant="secondary" onClick={() => navigate("/ielts-portal")}>Back</Button>
                   </div>
                 </CardContent>

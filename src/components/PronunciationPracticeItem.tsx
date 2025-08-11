@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -28,6 +29,7 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
   const [uploadedUrl, setUploadedUrl] = useState<string>("");
   const audioObjRef = useRef<HTMLAudioElement | null>(null);
   const [autoplayFailed, setAutoplayFailed] = useState(false);
+  const [hasAutoPlayed, setHasAutoPlayed] = useState(false);
 
   const onRecordingComplete = (blob: Blob) => {
     setRecordingBlob(blob);
@@ -69,16 +71,18 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
       a.preload = "auto";
       (a as any).playsInline = true;
       audioObjRef.current = a;
-      a.play()
-        .then(() => setAutoplayFailed(false))
-        .catch(() => setAutoplayFailed(true));
+      if (!hasAutoPlayed) {
+        a.play()
+          .then(() => { setAutoplayFailed(false); setHasAutoPlayed(true); })
+          .catch(() => setAutoplayFailed(true));
+      }
     } catch (e) {
       setAutoplayFailed(true);
     }
     return () => {
       try { audioObjRef.current?.pause(); } catch {}
     };
-  }, [item.audio_url]);
+  }, [item.audio_url, hasAutoPlayed]);
 
   useEffect(() => {
     // Reset UI when moving to a new item
@@ -89,6 +93,7 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
     setAnalysisJson(null);
     setUploadedUrl("");
     setAutoplayFailed(false);
+    setHasAutoPlayed(false);
   }, [item.id]);
 
   const handleAnalyze = async () => {
@@ -178,6 +183,11 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
             {loading ? "Analyzing..." : "Get Analysis"}
           </Button>
         </div>
+        {loading && (
+          <div className="flex justify-center animate-fade-in">
+            <CatLoadingAnimation />
+          </div>
+        )}
       </div>
 
       {analysisJson && (

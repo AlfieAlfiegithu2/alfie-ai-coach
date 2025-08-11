@@ -21,6 +21,9 @@ const AdminPronunciationTestDetail = () => {
   const [form, setForm] = useState({ reference_text: "" });
   const [audioFile, setAudioFile] = useState<File | null>(null);
 
+  const maxItems = 10;
+  const hasReachedLimit = items.length >= maxItems;
+
   const load = async () => {
     if (!id) return;
     const { data: it, error: ie } = await (supabase as any)
@@ -42,6 +45,10 @@ const AdminPronunciationTestDetail = () => {
 
   const addItem = async () => {
     if (!id) return;
+    if (items.length >= 10) {
+      toast({ title: "Limit reached (10 items max)", variant: "destructive" });
+      return;
+    }
     if (!form.reference_text.trim()) {
       toast({ title: "Reference text required", variant: "destructive" });
       return;
@@ -60,9 +67,10 @@ const AdminPronunciationTestDetail = () => {
       const { data: pub } = supabase.storage.from('audio-files').getPublicUrl(path);
       const audio_url = pub.publicUrl;
 
+      const nextOrder = items.length + 1;
       const { error: insErr } = await (supabase as any)
         .from('pronunciation_items')
-        .insert({ test_id: id, reference_text: form.reference_text.trim(), audio_url });
+        .insert({ test_id: id, reference_text: form.reference_text.trim(), audio_url, order_index: nextOrder });
       if (insErr) throw insErr;
 
       setForm({ reference_text: "" });
@@ -94,20 +102,23 @@ const AdminPronunciationTestDetail = () => {
       <section className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Add Item (Reference Text + Voice-over)</CardTitle>
+            <CardTitle className="text-base">Add Item (Reference Text + Voice-over) — {items.length}/10</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {hasReachedLimit && (
+              <p className="text-sm text-muted-foreground">You have reached the maximum of 10 items. Delete an item to add another.</p>
+            )}
             <div>
               <Label htmlFor="ref">Reference text (what students should say)</Label>
               <Textarea id="ref" rows={3} value={form.reference_text}
-                onChange={(e) => setForm({ reference_text: e.target.value })} />
+                onChange={(e) => setForm({ reference_text: e.target.value })} disabled={hasReachedLimit || saving} />
             </div>
             <div className="space-y-2">
               <Label>Voice-over file (mp3, wav, m4a...)</Label>
-              <Input ref={fileInputRef} type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)} />
+              <Input ref={fileInputRef} type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)} disabled={hasReachedLimit || saving} />
             </div>
             <div className="flex gap-2">
-              <Button onClick={addItem} disabled={saving}>{saving ? 'Uploading...' : 'Add Item'}</Button>
+              <Button onClick={addItem} disabled={saving || hasReachedLimit}>{saving ? 'Uploading...' : 'Add Item'}</Button>
               <Button variant="secondary" onClick={() => { setForm({ reference_text: "" }); setAudioFile(null); if (fileInputRef.current) fileInputRef.current.value=''; }}>Clear</Button>
             </div>
           </CardContent>
@@ -117,7 +128,7 @@ const AdminPronunciationTestDetail = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Items</CardTitle>
+            <CardTitle className="text-base">Items ({items.length}/10)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {items.length === 0 ? (

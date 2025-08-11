@@ -20,6 +20,9 @@ const AdminPronunciationTestDetail = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState({ reference_text: "" });
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [testTitle, setTestTitle] = useState<string>("");
+  const [isPublished, setIsPublished] = useState<boolean>(false);
+  const [publishing, setPublishing] = useState(false);
 
   const maxItems = 10;
   const hasReachedLimit = items.length >= maxItems;
@@ -36,6 +39,18 @@ const AdminPronunciationTestDetail = () => {
       toast({ title: "Failed to load items", description: ie.message, variant: "destructive" });
     }
     setItems((it ?? []) as Item[]);
+
+    const { data: test, error: te } = await (supabase as any)
+      .from("pronunciation_tests")
+      .select("title,is_published")
+      .eq("id", id)
+      .maybeSingle();
+    if (te) {
+      console.error(te);
+    } else if (test) {
+      setTestTitle(test.title);
+      setIsPublished(!!test.is_published);
+    }
   };
 
   useEffect(() => {
@@ -86,6 +101,25 @@ const AdminPronunciationTestDetail = () => {
     }
   };
 
+  const togglePublish = async () => {
+    if (!id) return;
+    try {
+      setPublishing(true);
+      const { error } = await (supabase as any)
+        .from('pronunciation_tests')
+        .update({ is_published: !isPublished })
+        .eq('id', id);
+      if (error) throw error;
+      setIsPublished(!isPublished);
+      toast({ title: !isPublished ? 'Published' : 'Unpublished', description: !isPublished ? 'Students can now see this test.' : 'Test hidden from students.' });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: 'Update failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const deleteItem = async (itemId: string) => {
     if (!confirm('Delete this item?')) return;
     const { error } = await (supabase as any).from('pronunciation_items').delete().eq('id', itemId);
@@ -100,6 +134,20 @@ const AdminPronunciationTestDetail = () => {
   return (
     <AdminLayout title="Pronunciation: Repeat After Me" showBackButton backPath="/admin/skills/pronunciation-repeat-after-me">
       <section className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Test: {testTitle || "Untitled"} — {isPublished ? "Published" : "Unpublished"}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-2">
+            <Button size="sm" onClick={togglePublish} disabled={publishing}>
+              {isPublished ? "Unpublish" : "Publish"}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              {isPublished ? "Visible to students" : "Hidden from students"}
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Add Item (Reference Text + Voice-over) — {items.length}/10</CardTitle>

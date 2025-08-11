@@ -146,6 +146,9 @@ const App = () => {
             {/* Sentence Scramble admin routes */}
             <Route path="/admin/skills/sentence-scramble" element={<AdminSentenceScrambleTests />} />
             <Route path="/admin/skills/sentence-scramble/:id" element={<AdminSentenceScrambleTestDetail />} />
+            {/* Sentence Scramble admin routes (alias) */}
+            <Route path="/admin/skills/sentence-structure-scramble" element={<AdminSentenceScrambleTests />} />
+            <Route path="/admin/skills/sentence-structure-scramble/:id" element={<AdminSentenceScrambleTestDetail />} />
             {/* Pronunciation admin routes */}
             <Route path="/admin/skills/pronunciation-repeat-after-me" element={<AdminPronunciationTests />} />
             <Route path="/admin/skills/pronunciation-repeat-after-me/:id" element={<AdminPronunciationTestDetail />} />

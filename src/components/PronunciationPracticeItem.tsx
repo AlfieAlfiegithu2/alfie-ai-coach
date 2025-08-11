@@ -146,25 +146,25 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-end">
+      <div className="flex justify-center">
         <Button size="sm" variant="outline" onClick={playSample}>
           {autoplayFailed ? "Play sample" : "Replay sample"}
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Card className="border-light-border">
-          <CardContent className="p-4">
-            <AudioRecorder onRecordingComplete={onRecordingComplete} />
-          </CardContent>
-        </Card>
-        <Card className="border-light-border">
-          <CardContent className="p-4 space-y-2">
-            <Button onClick={handleAnalyze} disabled={loading || !recordingBlob}>
-              {loading ? "Analyzing..." : "Get Analysis"}
-            </Button>
+      <div className="flex justify-center">
+        <Card className="border-light-border w-full max-w-xl">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex justify-center">
+              <AudioRecorder onRecordingComplete={onRecordingComplete} autoFocus />
+            </div>
+            <div className="flex justify-center">
+              <Button onClick={handleAnalyze} disabled={loading || !recordingBlob}>
+                {loading ? "Analyzing..." : "Get Analysis"}
+              </Button>
+            </div>
             {uploadedUrl && (
-              <p className="text-xs text-muted-foreground break-all">Saved: {uploadedUrl}</p>
+              <p className="text-xs text-muted-foreground break-all text-center">Saved: {uploadedUrl}</p>
             )}
           </CardContent>
         </Card>

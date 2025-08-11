@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
@@ -7,11 +7,13 @@ import { useToast } from '@/components/ui/use-toast';
 interface AudioRecorderProps {
   onRecordingComplete: (audioBlob: Blob) => void;
   disabled?: boolean;
+  autoFocus?: boolean;
 }
 
 export const AudioRecorder: React.FC<AudioRecorderProps> = ({ 
   onRecordingComplete,
-  disabled = false 
+  disabled = false,
+  autoFocus = false
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -22,8 +24,40 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const startBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [showCountdown, setShowCountdown] = useState(false);
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (autoFocus && !isRecording && !recordedAudio) {
+      startBtnRef.current?.focus();
+    }
+  }, [autoFocus, isRecording, recordedAudio]);
+
+  const beep = useCallback(() => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 880;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01);
+      o.start();
+      setTimeout(() => {
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.12);
+        setTimeout(() => {
+          o.stop();
+          ctx.close();
+        }, 150);
+      }, 100);
+    } catch (e) {}
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
@@ -145,6 +179,13 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
           )}
         </div>
 
+        {showCountdown && (
+          <div className="flex justify-center">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-semibold text-primary">
+              {countdown}
+            </div>
+          </div>
+        )}
         <div className="flex justify-center gap-4">
           {!isRecording && !recordedAudio && (
             <Button

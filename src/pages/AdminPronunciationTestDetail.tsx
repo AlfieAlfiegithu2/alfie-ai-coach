@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -8,17 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 
-interface Test { id: string; title: string; description: string | null; is_published: boolean }
 interface Item { id: string; reference_text: string; audio_url: string; order_index: number }
 
 const AdminPronunciationTestDetail = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [test, setTest] = useState<Test | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -27,16 +23,6 @@ const AdminPronunciationTestDetail = () => {
 
   const load = async () => {
     if (!id) return;
-    const { data: t, error: te } = await (supabase as any)
-      .from("pronunciation_tests")
-      .select("id,title,description,is_published")
-      .eq("id", id)
-      .maybeSingle();
-    if (te) {
-      toast({ title: "Failed to load test", description: te.message, variant: "destructive" });
-    }
-    setTest(t ?? null);
-
     const { data: it, error: ie } = await (supabase as any)
       .from("pronunciation_items")
       .select("id,reference_text,audio_url,order_index")
@@ -49,23 +35,10 @@ const AdminPronunciationTestDetail = () => {
     setItems((it ?? []) as Item[]);
   };
 
-  useEffect(() => { load(); }, [id]);
-
-  const saveTestMeta = async () => {
-    if (!test) return;
-    setSaving(true);
-    const { error } = await (supabase as any)
-      .from("pronunciation_tests")
-      .update({ title: test.title, description: test.description, is_published: test.is_published })
-      .eq("id", test.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: "Save failed", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Saved" });
-    await load();
-  };
+  useEffect(() => {
+    document.title = "Pronunciation Items | Admin";
+    load();
+  }, [id]);
 
   const addItem = async () => {
     if (!id) return;
@@ -117,44 +90,11 @@ const AdminPronunciationTestDetail = () => {
   };
 
   return (
-    <AdminLayout title={test ? `Manage: ${test.title}` : "Manage Pronunciation Test"} showBackButton backPath="/admin/skills/pronunciation-repeat-after-me">
+    <AdminLayout title="Pronunciation: Repeat After Me" showBackButton backPath="/admin/skills/pronunciation-repeat-after-me">
       <section className="space-y-6">
-        {test && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Test Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input id="title" value={test.title}
-                    onChange={(e) => setTest({ ...test, title: e.target.value })} />
-                </div>
-                <div className="flex items-center gap-3 pt-6">
-                  <Switch id="is_published" checked={!!test.is_published}
-                    onCheckedChange={(v) => setTest({ ...test, is_published: v })} />
-                  <Label htmlFor="is_published">Published</Label>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="desc">Description</Label>
-                <Textarea id="desc" rows={3} value={test.description ?? ''}
-                  onChange={(e) => setTest({ ...test, description: e.target.value })} />
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={saveTestMeta} disabled={saving}>{saving ? 'Saving...' : 'Save Settings'}</Button>
-                <Button variant="secondary" onClick={() => navigate('/admin/skills/pronunciation-repeat-after-me')}>Back to Tests</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Separator />
-
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Add Item (Voice-over + Reference Text)</CardTitle>
+            <CardTitle className="text-base">Add Item (Reference Text + Voice-over)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
@@ -185,14 +125,12 @@ const AdminPronunciationTestDetail = () => {
             ) : (
               items.map((it) => (
                 <div key={it.id} className="p-3 border rounded-md space-y-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-2">
-                      <p className="text-sm whitespace-pre-wrap">{it.reference_text}</p>
-                      <audio src={it.audio_url} controls preload="none" />
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button size="sm" variant="destructive" onClick={() => deleteItem(it.id)}>Delete</Button>
-                    </div>
+                  <div className="space-y-2">
+                    <p className="text-sm whitespace-pre-wrap">{it.reference_text}</p>
+                    <audio src={it.audio_url} controls preload="none" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="destructive" onClick={() => deleteItem(it.id)}>Delete</Button>
                   </div>
                 </div>
               ))

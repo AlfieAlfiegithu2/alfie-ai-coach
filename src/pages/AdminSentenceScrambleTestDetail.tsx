@@ -10,9 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SentenceScrambleCSVImport from "@/components/SentenceScrambleCSVImport";
+import SentenceScrambleQuizPreview from "@/components/SentenceScrambleQuizPreview";
 
 interface SkillTest { id: string; title: string }
 interface Question { id: string; content: string; question_format: string; correct_answer?: string; incorrect_answers?: string[]; explanation?: string; original_sentence?: string | null }
+
+const handlePreview = (questionId: string) => {
+  const element = document.getElementById(`question-${questionId}`);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+};
 
 const AdminSentenceScrambleTestDetail = () => {
   const { id } = useParams();
@@ -29,6 +37,7 @@ const AdminSentenceScrambleTestDetail = () => {
     explanation: "",
     original_sentence: "",
   });
+  const [previewQuestionId, setPreviewQuestionId] = useState<string | null>(null);
 
   const startEdit = (q: Question) => {
     setEditing(q);
@@ -95,6 +104,22 @@ const AdminSentenceScrambleTestDetail = () => {
 
         <Separator />
 
+        {questions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Student Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SentenceScrambleQuizPreview 
+                skillTestId={id} 
+                selectedQuestionId={previewQuestionId || undefined}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        <Separator />
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Question Library</CardTitle>
@@ -104,7 +129,7 @@ const AdminSentenceScrambleTestDetail = () => {
               <p className="text-sm text-muted-foreground">No questions yet. Upload a CSV to add questions.</p>
             ) : (
               questions.map((q) => (
-                <div key={q.id} className="p-3 border rounded-md space-y-2">
+                <div key={q.id} id={`question-${q.id}`} className="p-3 border rounded-md space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="text-xs text-muted-foreground">{q.question_format}</div>
@@ -114,6 +139,7 @@ const AdminSentenceScrambleTestDetail = () => {
                       <div className="whitespace-pre-wrap">{q.content}</div>
                     </div>
                     <div className="flex gap-2 shrink-0">
+                      <Button size="sm" variant="outline" onClick={() => setPreviewQuestionId(q.id)}>Preview</Button>
                       <Button size="sm" onClick={() => startEdit(q)}>Edit</Button>
                       <Button size="sm" variant="destructive" onClick={() => deleteQuestion(q.id)}>Delete</Button>
                     </div>

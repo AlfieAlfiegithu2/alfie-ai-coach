@@ -35,7 +35,7 @@ const [overallSummary, setOverallSummary] = useState<string>("");
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
-      if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge") {
+      if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble") {
         loadTests();
       } else if (slug === "pronunciation-repeat-after-me") {
         loadPronunciation();
@@ -54,7 +54,7 @@ const [overallSummary, setOverallSummary] = useState<string>("");
       .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_practice_questions' }, (payload) => {
         const st = (payload as any)?.new?.skill_type ?? (payload as any)?.old?.skill_type;
         if (st === skill.label) {
-          if (slug === "vocabulary-builder" || slug === "grammar-fix-it") {
+          if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble") {
             loadTests();
           } else {
             loadQuestions();
@@ -242,7 +242,7 @@ const [overallSummary, setOverallSummary] = useState<string>("");
       </StudentLayout>
     );
   }
-  if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge") {
+  if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble") {
     return (
       <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
           <section className="max-w-3xl mx-auto">
@@ -261,7 +261,9 @@ const [overallSummary, setOverallSummary] = useState<string>("");
                         ? `/skills/vocabulary-builder/test/${t.id}`
                         : slug === "grammar-fix-it"
                           ? `/skills/grammar-fix-it/test/${t.id}`
-                          : `/skills/paraphrasing-challenge/test/${t.id}`;
+                          : slug === "paraphrasing-challenge"
+                            ? `/skills/paraphrasing-challenge/test/${t.id}`
+                            : `/skills/sentence-structure-scramble/test/${t.id}`;
                       return (
                         <Card key={t.id} className="border-light-border h-full">
                           <CardContent className="p-4 flex flex-col items-start gap-3">

@@ -69,6 +69,7 @@ import AdminPronunciationTests from "./pages/AdminPronunciationTests";
 import AdminPronunciationTestDetail from "./pages/AdminPronunciationTestDetail";
 import AdminSentenceScrambleTests from "./pages/AdminSentenceScrambleTests";
 import AdminSentenceScrambleTestDetail from "./pages/AdminSentenceScrambleTestDetail";
+import SentenceScrambleQuiz from "./pages/SentenceScrambleQuiz";
 
 const queryClient = new QueryClient();
 
@@ -197,6 +198,7 @@ const App = () => {
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/skills/grammar-fix-it/test/:testId" element={<GrammarQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />
+            <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

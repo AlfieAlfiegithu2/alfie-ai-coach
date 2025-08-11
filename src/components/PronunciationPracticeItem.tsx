@@ -15,9 +15,10 @@ export interface PronItem {
 interface Props {
   item: PronItem;
   testId: string;
+  onAnalyzed?: (result: { transcription: string; analysis: string; audioUrl: string }) => void;
 }
 
-const PronunciationPracticeItem: React.FC<Props> = ({ item, testId }) => {
+const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }) => {
   const { toast } = useToast();
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [loading, setLoading] = useState(false);
@@ -102,6 +103,7 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId }) => {
       if (insErr) throw insErr;
 
       toast({ title: "Analysis complete", description: "Your feedback is ready." });
+      onAnalyzed?.({ transcription: trans, analysis: anal, audioUrl: audio_url });
     } catch (e: any) {
       console.error(e);
       toast({ title: "Analysis failed", description: e.message, variant: "destructive" });

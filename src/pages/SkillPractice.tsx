@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { getSkillBySlug } from "@/lib/skills";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,9 @@ const [tests, setTests] = useState<SkillTest[]>([]);
 const [pronItems, setPronItems] = useState<PronItem[]>([]);
 const [pronTitle, setPronTitle] = useState<string>("");
 const [pronTestId, setPronTestId] = useState<string>("");
+const [pronIndex, setPronIndex] = useState(0);
+const [pronAnalyzed, setPronAnalyzed] = useState(false);
+const [pronFinished, setPronFinished] = useState(false);
   useEffect(() => {
     if (skill) {
       document.title = `${skill.label} | Practice`;
@@ -94,6 +98,9 @@ const [pronTestId, setPronTestId] = useState<string>("");
       setPronItems([]);
       setPronTitle("");
       setPronTestId("");
+      setPronIndex(0);
+      setPronFinished(false);
+      setPronAnalyzed(false);
       return;
     }
     setPronTitle(test.title);
@@ -103,9 +110,13 @@ const [pronTestId, setPronTestId] = useState<string>("");
       .select("id, reference_text, audio_url, order_index")
       .eq("test_id", test.id)
       .order("order_index", { ascending: true });
-    if (!itemsErr) setPronItems(((items ?? []) as PronItem[]));
+    if (!itemsErr) {
+      setPronItems(((items ?? []) as PronItem[]));
+      setPronIndex(0);
+      setPronFinished(false);
+      setPronAnalyzed(false);
+    }
   };
-
   if (!skill) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -115,32 +126,89 @@ const [pronTestId, setPronTestId] = useState<string>("");
   }
 
   if (slug === "pronunciation-repeat-after-me") {
+    const total = Math.min(10, pronItems.length || 10);
+    const progress = total ? (pronIndex / total) * 100 : 0;
+    const current = pronItems.slice(0, 10)[pronIndex];
+
     return (
       <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
-        <section className="max-w-3xl mx-auto space-y-4">
-          {pronItems.length === 0 ? (
-            <Card className="border-light-border">
-              <CardContent className="p-4">
-                <p className="text-muted-foreground text-sm">No pronunciation set is available yet. Please check back soon.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-light-border">
-              <CardContent className="p-4 space-y-4">
-                {pronTitle && (
-                  <p className="font-medium">{pronTitle} — 10 items</p>
-                )}
-                {pronItems.slice(0, 10).map((item) => (
-                  <PronunciationPracticeItem key={item.id} item={item} testId={pronTestId} />
-                ))}
-              </CardContent>
-            </Card>
-          )}
+        <section className="mx-auto px-4">
+          <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
+            <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
+              <div className="relative">
+                <div
+                  className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
+                  style={{ left: `${progress}%` }}
+                  aria-label="Progress mascot"
+                  title="Keep going!"
+                >
+                  <img
+                    src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
+                    alt="Pronunciation progress turtle mascot"
+                    className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
+                    loading="lazy"
+                  />
+                </div>
+                <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
+                <Progress value={progress} />
+              </div>
+            </div>
+
+            {pronItems.length === 0 ? (
+              <Card className="border-light-border">
+                <CardContent className="p-4">
+                  <p className="text-muted-foreground text-sm">No pronunciation set is available yet. Please check back soon.</p>
+                </CardContent>
+              </Card>
+            ) : pronFinished ? (
+              <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
+                <CardContent className="p-6 space-y-4">
+                  <div className="space-y-2">
+                    <div className="text-2xl font-semibold text-center">Great job!</div>
+                    <div className="text-center text-muted-foreground">You completed {pronTitle || "this set"}.</div>
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={() => { setPronIndex(0); setPronFinished(false); setPronAnalyzed(false); }}>Retry</Button>
+                    <Button variant="secondary" onClick={() => navigate("/ielts-portal")}>Back</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : current ? (
+              <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl border-light-border">
+                <CardContent className="p-6 space-y-4">
+                  {pronTitle && (
+                    <div className="text-sm text-muted-foreground">{pronTitle} — Question {pronIndex + 1} of {total}</div>
+                  )}
+                  <PronunciationPracticeItem
+                    item={{ ...current, order_index: pronIndex + 1 }}
+                    testId={pronTestId}
+                    onAnalyzed={() => setPronAnalyzed(true)}
+                  />
+                  <div className="pt-2">
+                    <Button
+                      onClick={() => {
+                        if (pronIndex + 1 >= total) {
+                          setPronFinished(true);
+                        } else {
+                          setPronIndex((i) => i + 1);
+                          setPronAnalyzed(false);
+                        }
+                      }}
+                      disabled={!pronAnalyzed}
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            )}
+          </div>
         </section>
       </StudentLayout>
     );
   }
-
   if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge") {
     return (
       <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">

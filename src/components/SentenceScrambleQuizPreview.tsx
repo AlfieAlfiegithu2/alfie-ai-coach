@@ -42,7 +42,7 @@ interface Props {
 }
 
 const SentenceScrambleQuizPreview = (props: Props) => {
-  const { skillTestId, selectedQuestionId, limit = 6 } = props;
+  const { skillTestId, selectedQuestionId, limit = 20 } = props;
   const providedQuestions = props.questions;
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
@@ -97,7 +97,9 @@ const SentenceScrambleQuizPreview = (props: Props) => {
   const allChunks = useMemo(() => {
     if (!current) return [];
     const chunks = [current.correct_answer, ...(current.incorrect_answers || [])].filter(Boolean);
-    return shuffle(chunks);
+    // Make all chunks lowercase to avoid giving away the first word
+    const lowercaseChunks = chunks.map(chunk => chunk.toLowerCase());
+    return shuffle(lowercaseChunks);
   }, [current]);
 
   const progress = quizQuestions.length ? (idx / quizQuestions.length) * 100 : 0;
@@ -116,8 +118,10 @@ const SentenceScrambleQuizPreview = (props: Props) => {
     if (!current || answered) return;
     setAnswered(true);
     const correctOrder = [current.correct_answer, ...(current.incorrect_answers || [])];
-    const isCorrect = userOrder.length === correctOrder.length && 
-      userOrder.every((chunk, index) => chunk === correctOrder[index]);
+    // Compare with lowercase versions
+    const correctOrderLower = correctOrder.map(chunk => chunk.toLowerCase());
+    const isCorrect = userOrder.length === correctOrderLower.length && 
+      userOrder.every((chunk, index) => chunk === correctOrderLower[index]);
     if (isCorrect) {
       setScore(s => s + 1);
     }
@@ -136,8 +140,9 @@ const SentenceScrambleQuizPreview = (props: Props) => {
   const isCorrectOrder = () => {
     if (!current) return false;
     const correctOrder = [current.correct_answer, ...(current.incorrect_answers || [])];
-    return userOrder.length === correctOrder.length && 
-      userOrder.every((chunk, index) => chunk === correctOrder[index]);
+    const correctOrderLower = correctOrder.map(chunk => chunk.toLowerCase());
+    return userOrder.length === correctOrderLower.length && 
+      userOrder.every((chunk, index) => chunk === correctOrderLower[index]);
   };
 
   if (!skillTestId && !(providedQuestions && providedQuestions.length)) return null;

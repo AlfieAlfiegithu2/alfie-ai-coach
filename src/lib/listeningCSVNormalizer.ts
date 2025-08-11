@@ -95,7 +95,7 @@ export function normalizeListeningCSV(
 
   // Header handling with flexible aliases (case-insensitive, ignores spaces/underscores/dashes)
   const canon = (s: string) => s.replace(/[^a-z0-9]/gi, "").toLowerCase();
-  const ALIASES: Partial<Record<(typeof REQUIRED_HEADERS)[number], string[]>> = {
+  const ALIASES: Partial<Record<(typeof REQUIRED_HEADERS)[number] | "audio_url", string[]>> = {
     QuestionFormat: ["format", "type", "qformat"],
     audio_url: ["audio", "audiourl", "audiofile", "file", "filename", "audiofilename", "mp3"],
     original_sentence: ["transcript", "transcription", "original", "sentence", "audiotranscript"],

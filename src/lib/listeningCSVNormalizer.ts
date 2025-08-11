@@ -9,7 +9,7 @@ export type NormalizedRow = {
   incorrect_answers: string[]; // for dictation: acceptable variations; for MC: distractors
   explanation?: string;
   original_sentence?: string | null; // transcript
-  audio_url: string; // path within bucket, e.g., `${testId}/file.mp3`
+  audio_url?: string; // path within bucket, e.g., `${testId}/file.mp3`
 };
 
 export type NormalizedOutput = {
@@ -29,7 +29,6 @@ export type NormalizedOutput = {
 
 const REQUIRED_HEADERS = [
   "QuestionFormat",
-  "audio_url",
   "original_sentence",
   "WordOrSentence",
   "CorrectAnswer",
@@ -137,15 +136,20 @@ export function normalizeListeningCSV(
   rows.forEach((line, idx) => {
     const rowNumber = idx + 1;
     const cols = csvParseLine(line);
-    const get = (name: (typeof REQUIRED_HEADERS)[number]) => {
-      const idx = findIndexFor(name);
+    const get = (name: (typeof REQUIRED_HEADERS)[number] | "audio_url") => {
+      const idx = findIndexFor(name as any);
       const val = idx !== undefined ? cols[idx] : "";
       return truncate(collapseWhitespace(sanitizeHTML(val || "")));
     };
+    const getNoTrunc = (name: (typeof REQUIRED_HEADERS)[number]) => {
+      const idx = findIndexFor(name);
+      const val = idx !== undefined ? cols[idx] : "";
+      return sanitizeHTML(val || "").replace(/\r?\n/g, "\n").trim();
+    };
     let QuestionFormat = get("QuestionFormat");
     const audioFile = get("audio_url");
-    const original_sentence = get("original_sentence");
-    const WordOrSentence = get("WordOrSentence");
+    const original_sentence = getNoTrunc("original_sentence");
+    const WordOrSentence = getNoTrunc("WordOrSentence");
     const CorrectAnswer = get("CorrectAnswer");
     const IncorrectAnswer1 = get("IncorrectAnswer1");
     const IncorrectAnswer2 = get("IncorrectAnswer2");
@@ -153,7 +157,7 @@ export function normalizeListeningCSV(
     const Explanation = get("Explanation");
 
     const rawObj = { QuestionFormat, audio_url: audioFile, original_sentence, WordOrSentence, CorrectAnswer, IncorrectAnswer1, IncorrectAnswer2, IncorrectAnswer3, Explanation };
-    if (!QuestionFormat || !audioFile || !WordOrSentence || !CorrectAnswer) {
+    if (!QuestionFormat || !WordOrSentence || !CorrectAnswer) {
       errors.push({ row: rowNumber, message: "Missing critical fields", raw: rawObj });
       return;
     }
@@ -168,9 +172,12 @@ export function normalizeListeningCSV(
     const correct = CorrectAnswer;
     const incorrects = [IncorrectAnswer1, IncorrectAnswer2, IncorrectAnswer3].filter(Boolean) as string[];
 
-    // Build audio path within bucket by testId folder
-    const filename = audioFile.split("/").pop() || audioFile;
-    const audio_url = `${skill_test_id}/${filename}`; // path inside 'listening-audio' bucket
+    // Build audio path within bucket by testId folder (optional)
+    let audio_url: string | undefined;
+    if (audioFile) {
+      const filename = audioFile.split("/").pop() || audioFile;
+      audio_url = `${skill_test_id}/${filename}`; // path inside 'listening-audio' bucket
+    }
 
     insert.push({
       skill_type,

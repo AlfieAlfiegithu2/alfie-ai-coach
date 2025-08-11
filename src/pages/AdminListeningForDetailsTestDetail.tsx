@@ -153,7 +153,7 @@ const AdminListeningForDetailsTestDetail = () => {
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-xs text-muted-foreground">{q.question_format}</div>
-                      {q.original_sentence && (<div className="text-xs text-muted-foreground"><span className="font-medium">Transcript:</span> {q.original_sentence}</div>)}
+                      {q.original_sentence && (<div className="text-sm text-muted-foreground whitespace-pre-wrap break-words"><span className="font-medium">Transcript:</span> {q.original_sentence}</div>)}}
                       {q.audio_url && (
                         <audio controls className="w-full my-2">
                           <source src={supabase.storage.from('listening-audio').getPublicUrl(q.audio_url).data.publicUrl} />

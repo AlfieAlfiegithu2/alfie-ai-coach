@@ -85,8 +85,8 @@ export default function ListeningCSVImport({ skillTestId, onImported }: Props) {
               {preview.slice(0, 10).map((r: any, i) => (
                 <div key={i} className="py-1 border-b last:border-b-0">
                   <div className="font-medium">{r.question_format}</div>
-                  <div className="text-muted-foreground"><span className="font-medium">Audio:</span> {r.audio_url}</div>
-                  {r.original_sentence && <div className="text-muted-foreground"><span className="font-medium">Transcript:</span> {r.original_sentence}</div>}
+                  <div className="text-muted-foreground"><span className="font-medium">Audio:</span> {r.audio_url || "—"}</div>
+                  {r.original_sentence && <div className="text-muted-foreground whitespace-pre-wrap break-words"><span className="font-medium">Transcript:</span> {r.original_sentence}</div>}
                   <div className="text-muted-foreground">{r.content}</div>
                 </div>
               ))}

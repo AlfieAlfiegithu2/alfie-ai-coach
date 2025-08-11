@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ListeningCSVImport from "@/components/ListeningCSVImport";
+import ListeningQuizPreview from "@/components/ListeningQuizPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,8 @@ const AdminListeningForDetailsTestDetail = () => {
   const [test, setTest] = useState<SkillTest | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [editing, setEditing] = useState<Question | null>(null);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
     content: "",
     question_format: "",
@@ -116,6 +119,19 @@ const AdminListeningForDetailsTestDetail = () => {
 
         <Separator />
 
+        <div ref={previewRef}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Student Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ListeningQuizPreview questions={questions as any} selectedQuestionId={selectedQuestionId || undefined} />
+            </CardContent>
+          </Card>
+        </div>
+
+        <Separator />
+
         <Card>
           <CardHeader><CardTitle className="text-base">Manage Audio Files</CardTitle></CardHeader>
           <CardContent className="space-y-3">
@@ -162,6 +178,7 @@ const AdminListeningForDetailsTestDetail = () => {
                       <div className="whitespace-pre-wrap break-words">{q.content}</div>
                     </div>
                     <div className="flex gap-2 shrink-0">
+                      <Button size="sm" variant="secondary" onClick={() => { setSelectedQuestionId(q.id); previewRef.current?.scrollIntoView({ behavior: "smooth" }); }}>Preview</Button>
                       <Button size="sm" onClick={() => startEdit(q)}>Edit</Button>
                       <Button size="sm" variant="destructive" onClick={() => deleteQuestion(q.id)}>Delete</Button>
                     </div>

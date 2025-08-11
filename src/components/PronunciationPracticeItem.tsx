@@ -169,66 +169,66 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
         </Button>
       </div>
 
-      <div className="flex justify-center">
-        <Card className="border-light-border w-full max-w-xl">
+      <div className="space-y-4 w-full max-w-xl mx-auto">
+        <div className="flex justify-center">
+          <AudioRecorder key={item.id} onRecordingComplete={onRecordingComplete} autoFocus />
+        </div>
+        <div className="flex justify-center">
+          <Button onClick={handleAnalyze} disabled={loading || !recordingBlob}>
+            {loading ? "Analyzing..." : "Get Analysis"}
+          </Button>
+        </div>
+      </div>
+
+      {analysisJson && (
+        <Card className="border-light-border w-full max-w-xl mx-auto">
           <CardContent className="p-6 space-y-4">
-            <div className="flex justify-center">
-              <AudioRecorder key={item.id} onRecordingComplete={onRecordingComplete} autoFocus />
+            <div className="text-center">
+              <p className="text-xs font-medium">Overall Score</p>
+              <p className="text-3xl font-semibold text-primary">{analysisJson?.overallScore ?? '-'} / 100</p>
+              {analysisJson?.overallSummary && (
+                <p className="text-sm text-muted-foreground mt-1">{analysisJson.overallSummary}</p>
+              )}
             </div>
-            <div className="flex justify-center">
-              <Button onClick={handleAnalyze} disabled={loading || !recordingBlob}>
-                {loading ? "Analyzing..." : "Get Analysis"}
-              </Button>
-            </div>
-            {analysisJson && (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-xs font-medium">Overall Score</p>
-                  <p className="text-3xl font-semibold text-primary">{analysisJson?.overallScore ?? '-'} / 100</p>
-                  {analysisJson?.overallSummary && (
-                    <p className="text-sm text-muted-foreground mt-1">{analysisJson.overallSummary}</p>
-                  )}
-                </div>
 
-                {Array.isArray(analysisJson?.wordAnalysis) && analysisJson.wordAnalysis.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium mb-2">Word Analysis</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {analysisJson.wordAnalysis.slice(0, 8).map((w: any, idx: number) => (
-                        <div key={idx} className="rounded-md border border-light-border p-2 text-sm">
-                          <div className="font-medium">
-                            {w.word}
-                            <span className="ml-2 text-xs text-muted-foreground">{w.status}</span>
-                          </div>
-                          {w.feedback && <div className="text-xs text-muted-foreground">{w.feedback}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {Array.isArray(analysisJson?.detailedFeedback) && analysisJson.detailedFeedback.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-xs font-medium">Detailed Feedback</p>
-                    {analysisJson.detailedFeedback.map((d: any, idx: number) => (
-                      <div key={idx} className="rounded-md border border-light-border p-3">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">{d.area}</p>
-                          {typeof d.score === 'number' && (
-                            <span className="text-xs text-muted-foreground">{d.score}/100</span>
-                          )}
-                        </div>
-                        {d.positive && <p className="text-sm mt-1">+ {d.positive}</p>}
-                        {d.improvement && <p className="text-sm mt-1">→ {d.improvement}</p>}
+            {Array.isArray(analysisJson?.wordAnalysis) && analysisJson.wordAnalysis.length > 0 && (
+              <div>
+                <p className="text-xs font-medium mb-2">Word Analysis</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {analysisJson.wordAnalysis.slice(0, 8).map((w: any, idx: number) => (
+                    <div key={idx} className="rounded-md border border-light-border p-2 text-sm">
+                      <div className="font-medium">
+                        {w.word}
+                        <span className="ml-2 text-xs text-muted-foreground">{w.status}</span>
                       </div>
-                    ))}
+                      {w.feedback && <div className="text-xs text-muted-foreground">{w.feedback}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {Array.isArray(analysisJson?.detailedFeedback) && analysisJson.detailedFeedback.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-medium">Detailed Feedback</p>
+                {analysisJson.detailedFeedback.map((d: any, idx: number) => (
+                  <div key={idx} className="rounded-md border border-light-border p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{d.area}</p>
+                      {typeof d.score === 'number' && (
+                        <span className="text-xs text-muted-foreground">{d.score}/100</span>
+                      )}
+                    </div>
+                    {d.positive && <p className="text-sm mt-1">+ {d.positive}</p>}
+                    {d.improvement && <p className="text-sm mt-1">→ {d.improvement}</p>}
                   </div>
-                )}
+                ))}
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
+      )}
+
 
     </div>
   );

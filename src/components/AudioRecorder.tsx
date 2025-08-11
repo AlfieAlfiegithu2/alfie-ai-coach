@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+
 import { Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -165,7 +165,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   };
 
   return (
-    <Card className="p-6">
+    <div className="w-full">
       <div className="space-y-4">
         <div className="text-center">
           <div className="text-2xl font-mono text-primary">
@@ -189,6 +189,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
         <div className="flex justify-center gap-4">
           {!isRecording && !recordedAudio && (
             <Button
+              ref={startBtnRef}
               onClick={startRecording}
               disabled={disabled}
               size="lg"
@@ -247,6 +248,6 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 };

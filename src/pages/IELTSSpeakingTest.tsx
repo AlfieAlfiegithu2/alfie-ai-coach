@@ -667,15 +667,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
     <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-primary border-primary/20">
-            IELTS SPEAKING TEST
-          </Badge>
-          <h1 className="text-heading-2 mb-2">{testData.test_name}</h1>
-          <p className="text-muted-foreground">
-            Part {currentPart} of 3 • {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
-          </p>
-        </div>
 
         {/* Progress */}
         <Card className="card-modern">
@@ -946,6 +937,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </CardHeader>
               <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
                 <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
+                  {/* Current question displayed at the top of chat */}
+                  <div className="rounded-lg p-3 bg-muted/60 border border-border">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
+                    <div className="text-sm font-medium text-foreground">{questionType}</div>
+                    <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{currentQuestionText || 'No question available.'}</div>
+                  </div>
+
                   {chatMessages.map((message) => (
                     <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -956,7 +954,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                                 .replace(/^• (.*)$/gm, '<li>$1</li>')
-                                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                                .replace(/(<li>.*<\/li>)/s, '<ul>$1<\/ul>')
                                 .replace(/\n/g, '<br>'),
                             }}
                             className="prose prose-sm max-w-none dark:prose-invert"

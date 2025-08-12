@@ -54,6 +54,10 @@ serve(async (req) => {
     const blob = new Blob([bytes], { type: 'audio/webm' });
     formData.append('file', blob, 'speech.webm');
     formData.append('model', 'whisper-1');
+    // Force English-only transcription to prevent incorrect language auto-detection
+    formData.append('language', 'en');
+    formData.append('temperature', '0');
+    formData.append('prompt', 'Transcribe strictly in English (en-US). This is an IELTS Speaking/pronunciation task. Ignore non-English words and output the best English interpretation.');
 
     const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -66,7 +70,30 @@ serve(async (req) => {
     }
 
     const transcriptionResult = await transcriptionResponse.json();
-    const userTranscript = transcriptionResult.text || '';
+    let userTranscript = transcriptionResult.text || '';
+
+    // Retry guard: if Hangul characters detected, retry with stronger English bias
+    const hangulRegex = /[\u3131-\u318E\uAC00-\uD7A3]/;
+    if (hangulRegex.test(userTranscript)) {
+      console.warn('⚠️ Hangul detected in transcription; retrying with stronger English bias');
+      const retryForm = new FormData();
+      retryForm.append('file', blob, 'speech.webm');
+      retryForm.append('model', 'whisper-1');
+      retryForm.append('language', 'en');
+      retryForm.append('temperature', '0');
+      retryForm.append('prompt', 'TRANSCRIBE ONLY IN ENGLISH (en-US). This is an IELTS Speaking/pronunciation task; even if audio includes non-English sounds, output the closest English words only.');
+      const retryResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+        body: retryForm,
+      });
+      if (retryResp.ok) {
+        const retryJson = await retryResp.json();
+        if (retryJson?.text) userTranscript = retryJson.text;
+      } else {
+        console.error('Retry transcription failed:', await retryResp.text());
+      }
+    }
 
     // Build Prolo prompt
     const instructions = `Role and Goal:

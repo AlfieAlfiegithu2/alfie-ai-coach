@@ -51,6 +51,10 @@ serve(async (req) => {
       const formData = new FormData();
       formData.append('file', blob, `speech_part${recording.partNum}_q${recording.questionIndex}.webm`);
       formData.append('model', 'whisper-1');
+      // Force English-only transcription to prevent incorrect language auto-detection
+      formData.append('language', 'en');
+      formData.append('temperature', '0');
+      formData.append('prompt', 'Transcribe strictly in English (en-US). This is an IELTS Speaking test answer. Ignore non-English words and output the best English interpretation.');
 
       // Get transcription for this individual question
       const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -68,7 +72,31 @@ serve(async (req) => {
       }
 
       const transcriptionResult = await transcriptionResponse.json();
-      const studentTranscription = transcriptionResult.text;
+      let studentTranscription = transcriptionResult.text || '';
+
+      // Retry guard: if Hangul characters detected, retry with stronger English bias
+      const hangulRegex = /[\u3131-\u318E\uAC00-\uD7A3]/;
+      if (hangulRegex.test(studentTranscription)) {
+        console.warn('⚠️ Hangul detected in transcription; retrying with stronger English bias');
+        const retryForm = new FormData();
+        retryForm.append('file', blob, `speech_part${recording.partNum}_q${recording.questionIndex}.webm`);
+        retryForm.append('model', 'whisper-1');
+        retryForm.append('language', 'en');
+        retryForm.append('temperature', '0');
+        retryForm.append('prompt', 'TRANSCRIBE ONLY IN ENGLISH (en-US). This is an IELTS Speaking test; even if audio includes non-English sounds, output the closest English words only.');
+        const retryResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+          body: retryForm,
+        });
+        if (retryResp.ok) {
+          const retryJson = await retryResp.json();
+          if (retryJson?.text) studentTranscription = retryJson.text;
+        } else {
+          console.error('Retry transcription failed:', await retryResp.text());
+        }
+      }
+
       console.log(`✅ Transcription complete for ${recording.part}:`, studentTranscription.substring(0, 100) + '...');
 
     // Check for empty, silent, or minimal responses and score accordingly

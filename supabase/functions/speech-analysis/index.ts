@@ -34,6 +34,10 @@ serve(async (req) => {
     const blob = new Blob([bytes], { type: 'audio/webm' });
     formData.append('file', blob, 'speech.webm');
     formData.append('model', 'whisper-1');
+    // Force English-only transcription to prevent incorrect language auto-detection
+    formData.append('language', 'en');
+    formData.append('temperature', '0');
+    formData.append('prompt', 'Transcribe strictly in English (en-US). This is an IELTS Speaking test answer. Ignore non-English words and output the best English interpretation.');
 
     const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -48,7 +52,30 @@ serve(async (req) => {
     }
 
     const transcriptionResult = await transcriptionResponse.json();
-    const transcription = transcriptionResult.text;
+    let transcription = transcriptionResult.text || '';
+
+    // Retry guard: if Hangul characters detected, retry with stronger English bias
+    const hangulRegex = /[\u3131-\u318E\uAC00-\uD7A3]/;
+    if (hangulRegex.test(transcription)) {
+      console.warn('⚠️ Hangul detected in transcription; retrying with stronger English bias');
+      const retryForm = new FormData();
+      retryForm.append('file', blob, 'speech.webm');
+      retryForm.append('model', 'whisper-1');
+      retryForm.append('language', 'en');
+      retryForm.append('temperature', '0');
+      retryForm.append('prompt', 'TRANSCRIBE ONLY IN ENGLISH (en-US). This is an IELTS Speaking test; even if audio includes non-English sounds, output the closest English words only.');
+      const retryResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+        body: retryForm,
+      });
+      if (retryResp.ok) {
+        const retryJson = await retryResp.json();
+        if (retryJson?.text) transcription = retryJson.text;
+      } else {
+        console.error('Retry transcription failed:', await retryResp.text());
+      }
+    }
 
     // Analyze the transcription with advanced prompting
     const analysisPrompt = `You are a senior, highly experienced IELTS examiner. Your goal is to provide a holistic and accurate assessment based *only* on the official IELTS band descriptors and scoring rules provided below. Evaluate the student's response against these criteria and justify your feedback by referencing them.

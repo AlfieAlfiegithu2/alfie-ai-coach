@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Sparkles, Bot } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +48,18 @@ const IELTSSpeakingTest = () => {
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  // Catbot chat state for speaking assistant
+  interface ChatMessage { id: string; type: 'user' | 'bot'; content: string; timestamp: Date; }
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      type: 'bot',
+      content: "Hello! I'm Catbot, your IELTS Speaking tutor. I can help with ideas, structure, and vocabulary. What would you like help with?",
+      timestamp: new Date()
+    }
+  ]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -595,6 +607,58 @@ const IELTSSpeakingTest = () => {
     return "Unknown Part";
   };
 
+  // Catbot chat handlers (speaking)
+  const sendChatMessage = async (messageText?: string) => {
+    const message = messageText || newMessage.trim();
+    if (!message || isChatLoading) return;
+
+    const userMessage = {
+      id: Date.now().toString(),
+      type: 'user' as const,
+      content: message,
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, userMessage]);
+    if (!messageText) setNewMessage("");
+    setIsChatLoading(true);
+
+    try {
+      const questionText = getCurrentQuestionText();
+      const contextPrompt = `CONTEXT: The student is practicing IELTS Speaking Part ${currentPart}.
+
+Question: "${questionText}"
+
+Student: "${message}"
+
+Please provide concise, practical speaking guidance (ideas, vocabulary, structure). Do NOT write a full answer.`;
+
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: {
+          message: contextPrompt,
+          context: 'catbot',
+        },
+      });
+      if (error) throw error;
+
+      const botMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot' as const,
+        content: data.response,
+        timestamp: new Date(),
+      };
+      setChatMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      toast({ title: 'Error', description: 'Failed to get response from Catbot', variant: 'destructive' });
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendChatMessage(suggestion);
+  };
+
   const currentPrompt = getCurrentPrompt();
   const currentQuestionText = getCurrentQuestionText();
   const questionType = getQuestionType();
@@ -643,7 +707,7 @@ const IELTSSpeakingTest = () => {
                 Part {currentPart}: {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
               </span>
               <div className="flex items-center gap-3">
-                <VolumeSlider defaultValue={50} className="w-20" />
+                <VolumeSlider defaultValue={50} className="w-64 md:w-72" />
                 
                 {/* AI Assistant moved to floating bottom-right */}
                 
@@ -754,10 +818,6 @@ const IELTSSpeakingTest = () => {
                         )}
                       </Button>
                     </div>
-                    
-                    <p className="text-sm text-muted-foreground">
-                      {currentPart === 1 ? 'Listen carefully and answer the question' : 'Listen to the discussion question'}
-                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -795,7 +855,6 @@ const IELTSSpeakingTest = () => {
                   ) : (
                     <div className="space-y-4">
                       <Mic className="w-8 h-8 mx-auto text-gray-400" />
-                      <p className="text-sm text-gray-500">Ready to record your response</p>
                       <Button
                         onClick={startRecording}
                         className="rounded-xl"
@@ -808,15 +867,6 @@ const IELTSSpeakingTest = () => {
                   )}
                 </div>
 
-                {/* Recording indicator and playback for current question */}
-                {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-center space-x-2 text-green-600">
-                      <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                      <span className="text-sm">Response recorded</span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -874,21 +924,116 @@ const IELTSSpeakingTest = () => {
           </CardContent>
         </Card>
 
-        {/* AI Assistant - Floating Bottom Right */}
+        {/* AI Assistant - Floating Bottom Right (Writing-style) */}
         <div className="fixed bottom-6 right-6 z-50">
           {showAIAssistant ? (
-            <div className="w-96 h-[500px] animate-scale-in shadow-2xl">
-              <InteractiveSpeakingAssistant
-                isOpen={true}
-                onClose={() => setShowAIAssistant(false)}
-                questionText={currentQuestionText}
-                questionType={questionType}
-                partNumber={currentPart}
-                renderInline
-              />
-            </div>
+            <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-3 text-foreground">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold text-foreground">AI Speaking Assistant</div>
+                      <div className="text-sm text-muted-foreground font-normal">Your IELTS Speaking Tutor</div>
+                    </div>
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => setShowAIAssistant(false)} className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground">
+                    ✕
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
+                  {chatMessages.map((message) => (
+                    <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground border border-border'}`}>
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: message.content
+                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                .replace(/^• (.*)$/gm, '<li>$1</li>')
+                                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                                .replace(/\n/g, '<br>'),
+                            }}
+                            className="prose prose-sm max-w-none dark:prose-invert"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {isChatLoading && (
+                    <div className="flex gap-3 justify-start">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1">
+                        <Bot className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuggestionClick('Help with Speaking Structure')}
+                    disabled={isChatLoading}
+                    className="text-xs h-8 border-primary/30 hover:bg-primary/10"
+                  >
+                    <ListTree className="w-3 h-3 mr-2" />
+                    Structure
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
+                    disabled={isChatLoading}
+                    className="text-xs h-8 border-primary/30 hover:bg-primary/10"
+                  >
+                    <BookOpen className="w-3 h-3 mr-2" />
+                    Vocabulary
+                  </Button>
+                </div>
+
+                <div className="flex gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()}
+                    placeholder="Ask for speaking help..."
+                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                    disabled={isChatLoading}
+                  />
+                  <Button
+                    onClick={() => sendChatMessage()}
+                    disabled={isChatLoading || !newMessage.trim()}
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isChatLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
+                    ) : (
+                      'Send'
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
-            <Button onClick={() => setShowAIAssistant(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center">
+            <Button
+              onClick={() => setShowAIAssistant(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center"
+            >
               <Bot className="w-6 h-6" />
             </Button>
           )}

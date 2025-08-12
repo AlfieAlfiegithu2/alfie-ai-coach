@@ -156,10 +156,6 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
     newResponses[currentQuestionIndex] = response;
     setResponses(newResponses);
 
-    toast({
-      title: "Response recorded",
-      description: "Your answer has been saved successfully!",
-    });
   };
 
   const handleNext = () => {
@@ -210,7 +206,7 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
             </Badge>
           </div>
           <div className="flex gap-2 items-center">
-            <VolumeSlider defaultValue={50} className="w-20" />
+            <VolumeSlider defaultValue={50} className="w-64 md:w-80" />
             <Button
               variant="outline"
               size="sm"
@@ -250,11 +246,6 @@ const SpeakingQuestionByQuestion = ({ partNumber, onComplete }: SpeakingQuestion
               onRecordingComplete={handleRecordingComplete}
               disabled={false}
             />
-            {hasResponse && (
-              <div className="mt-3 text-sm text-green-600 flex items-center gap-2">
-                ✅ Response recorded for this question
-              </div>
-            )}
           </div>
 
           {/* Navigation */}

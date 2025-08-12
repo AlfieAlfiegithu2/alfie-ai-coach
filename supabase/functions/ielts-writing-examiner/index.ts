@@ -29,7 +29,7 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `You are a senior IELTS Writing examiner.\n\nReturn ONLY a single JSON object (no extra prose). Use this exact schema:\n{\n  "task1": {\n    "criteria": {\n      "task_achievement": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string\n  },\n  "task2": {\n    "criteria": {\n      "task_response": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string\n  },\n  "overall": {\n    "band": number,\n    "calculation": string,\n    "feedback_markdown": string\n  },\n  "full_report_markdown": string\n}\n\nRules:\n- Bands must be whole or half only: 0, 0.5, 1.0, …, 9.0.\n- Avoid giving identical bands across all criteria unless explicitly justified with concrete textual evidence; prefer nuanced differentiation when warranted.\n- For each task, compute overall_band by averaging the four criteria and rounding to nearest 0.5 using IELTS rules (.25→.5, .75→next whole).\n- Compute overall.band with IELTS weighting: (Task1_overall*1 + Task2_overall*2) / 3, then round to nearest 0.5. Provide the exact calculation string in overall.calculation.\n- For each task, provide at least 3 concise "strengths" and 3 "improvements" bullets in the feedback object.\n- Keep feedback_markdown fields as clean, sectioned reports suitable for display. full_report_markdown should combine everything nicely for display.\n\nTASK 1 DETAILS:\nPrompt: ${task1Data?.title || 'Task 1'}\nInstructions: ${task1Data?.instructions || ''}\n${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}\n${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}\n\nSTUDENT TASK 1 RESPONSE:\n"${task1Answer}"\n\nTASK 2 DETAILS:\nPrompt: ${task2Data?.title || 'Task 2'}\nInstructions: ${task2Data?.instructions || ''}\n\nSTUDENT TASK 2 RESPONSE:\n"${task2Answer}"\n`;
+    const examinerPrompt = `You are a senior IELTS Writing examiner.\n\nReturn ONLY a single JSON object (no extra prose). Use this exact schema:\n{\n  "task1": {\n    "criteria": {\n      "task_achievement": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string,\n    "annotated_original": string,\n    "annotated_corrected": string,\n    "corrections": [\n      {\n        "type": string,\n        "original": string,\n        "corrected": string,\n        "explanation": string,\n        "startIndex": number,\n        "endIndex": number\n      }\n    ]\n  },\n  "task2": {\n    "criteria": {\n      "task_response": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string,\n    "annotated_original": string,\n    "annotated_corrected": string,\n    "corrections": [\n      {\n        "type": string,\n        "original": string,\n        "corrected": string,\n        "explanation": string,\n        "startIndex": number,\n        "endIndex": number\n      }\n    ]\n  },\n  "overall": {\n    "band": number,\n    "calculation": string,\n    "feedback_markdown": string\n  },\n  "full_report_markdown": string\n}\n\nCORRECTION ANNOTATION RULES:\n- For annotated_original: Wrap errors in <span class="error-text" data-error="[type]">[original text]</span>\n- For annotated_corrected: Wrap corrections in <span class="correction-text" data-correction="[type]">[corrected text]</span>\n- corrections array should list each error with exact indices, type, and explanation\n- Common error types: grammar, vocabulary, spelling, punctuation, word-choice, sentence-structure\n\nRules:\n- Bands must be whole or half only: 0, 0.5, 1.0, …, 9.0.\n- Avoid giving identical bands across all criteria unless explicitly justified with concrete textual evidence; prefer nuanced differentiation when warranted.\n- For each task, compute overall_band by averaging the four criteria and rounding to nearest 0.5 using IELTS rules (.25→.5, .75→next whole).\n- Compute overall.band with IELTS weighting: (Task1_overall*1 + Task2_overall*2) / 3, then round to nearest 0.5. Provide the exact calculation string in overall.calculation.\n- For each task, provide at least 3 concise "strengths" and 3 "improvements" bullets in the feedback object.\n- Keep feedback_markdown fields as clean, sectioned reports suitable for display. full_report_markdown should combine everything nicely for display.\n- CRITICAL: Generate inline corrections showing original text with error highlights and corrected version\n\nTASK 1 DETAILS:\nPrompt: ${task1Data?.title || 'Task 1'}\nInstructions: ${task1Data?.instructions || ''}\n${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}\n${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}\n\nSTUDENT TASK 1 RESPONSE:\n"${task1Answer}"\n\nTASK 2 DETAILS:\nPrompt: ${task2Data?.title || 'Task 2'}\nInstructions: ${task2Data?.instructions || ''}\n\nSTUDENT TASK 2 RESPONSE:\n"${task2Answer}"\n`;
 
 
 
@@ -75,7 +75,19 @@ Return ONLY a single JSON object using this exact schema:
         { "issue": string, "sentence_quote": string, "improved_version": string, "explanation": string }
       ]
     },
-    "feedback_markdown": string
+    "feedback_markdown": string,
+    "annotated_original": string,
+    "annotated_corrected": string,
+    "corrections": [
+      {
+        "type": string,
+        "original": string,
+        "corrected": string,
+        "explanation": string,
+        "startIndex": number,
+        "endIndex": number
+      }
+    ]
   },
   "task2": {
     "criteria": {
@@ -93,7 +105,19 @@ Return ONLY a single JSON object using this exact schema:
         { "issue": string, "sentence_quote": string, "improved_version": string, "explanation": string }
       ]
     },
-    "feedback_markdown": string
+    "feedback_markdown": string,
+    "annotated_original": string,
+    "annotated_corrected": string,
+    "corrections": [
+      {
+        "type": string,
+        "original": string,
+        "corrected": string,
+        "explanation": string,
+        "startIndex": number,
+        "endIndex": number
+      }
+    ]
   },
   "overall": {
     "band": number,
@@ -102,6 +126,13 @@ Return ONLY a single JSON object using this exact schema:
   },
   "full_report_markdown": string
 }
+
+CORRECTION ANNOTATION REQUIREMENTS:
+- For annotated_original: Wrap errors in <span class="error-text" data-error="[type]">[original text]</span>
+- For annotated_corrected: Wrap corrections in <span class="correction-text" data-correction="[type]">[corrected text]</span>
+- corrections array should list each error with exact indices, type, and explanation
+- Common error types: grammar, vocabulary, spelling, punctuation, word-choice, sentence-structure
+- CRITICAL: Generate both annotated versions showing side-by-side original errors and corrections
 
 Scoring & Rules:
 - Bands must be whole or half only: 0, 0.5, …, 9.0.

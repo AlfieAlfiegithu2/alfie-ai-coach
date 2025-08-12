@@ -245,7 +245,12 @@ const [overallSummary, setOverallSummary] = useState<string>("");
   if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble" || slug === "listening-for-details") {
     return (
       <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
-          <section className="max-w-3xl mx-auto">
+          <section className="max-w-3xl mx-auto space-y-3">
+            {slug === "vocabulary-builder" && (
+              <div className="flex justify-end">
+                <Button size="sm" variant="secondary" onClick={() => navigate('/skills/vocabulary-builder/map')}>Map Mode</Button>
+              </div>
+            )}
             {tests.length === 0 ? (
               <Card className="border-light-border">
                 <CardContent className="p-4">

@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface Question {
@@ -37,6 +38,8 @@ const VocabularyQuiz = () => {
   const [finished, setFinished] = useState(false);
   const [showCelebrate, setShowCelebrate] = useState(false);
   const [attempts, setAttempts] = useState<Array<{ id: string; question: string; chosen: string; correct: string; isCorrect: boolean }>>([]);
+  const [levelNumber, setLevelNumber] = useState<number | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const load = async () => {
@@ -53,6 +56,48 @@ const VocabularyQuiz = () => {
     };
     load();
   }, [testId]);
+
+  useEffect(() => {
+    if (!testId) return;
+    const resolveLevel = async () => {
+      const { data } = await (supabase as any)
+        .from("skill_tests")
+        .select("id, created_at")
+        .eq("skill_slug", "vocabulary-builder")
+        .order("created_at", { ascending: true });
+      const arr = (data ?? []) as any[];
+      const idx = arr.findIndex((x) => x.id === testId);
+      if (idx >= 0) setLevelNumber(idx + 1);
+    };
+    resolveLevel();
+  }, [testId]);
+
+  useEffect(() => {
+    const maybeUnlock = async () => {
+      if (!finished || !levelNumber) return;
+      const pass = score >= Math.ceil((questions.length || 10) * 0.8);
+      if (!pass) return;
+      const { data: userResp } = await supabase.auth.getUser();
+      const uid = userResp?.user?.id;
+      if (!uid) return;
+      const { data: prog } = await (supabase as any)
+        .from("user_skill_progress")
+        .select("max_unlocked_level")
+        .eq("user_id", uid)
+        .eq("skill_slug", "vocabulary-builder")
+        .maybeSingle();
+      const current = prog?.max_unlocked_level || 1;
+      const next = Math.min(20, Math.max(current, levelNumber + 1));
+      const { error } = await (supabase as any)
+        .from("user_skill_progress")
+        .upsert({ user_id: uid, skill_slug: "vocabulary-builder", max_unlocked_level: next }, { onConflict: "user_id,skill_slug" });
+      if (!error) {
+        toast({ title: "Level up!", description: `Level ${next} unlocked.`, });
+      }
+    };
+    maybeUnlock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   const current = questions[idx];
   const options = useMemo(() => current ? shuffle([current.correct_answer, ...(current.incorrect_answers || [])]) : [], [current]);

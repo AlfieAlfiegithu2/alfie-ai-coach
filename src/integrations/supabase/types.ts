@@ -1184,6 +1184,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_skill_progress: {
+        Row: {
+          created_at: string
+          id: string
+          max_unlocked_level: number
+          skill_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_unlocked_level?: number
+          skill_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_unlocked_level?: number
+          skill_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_vocabulary: {
         Row: {
           context: string | null

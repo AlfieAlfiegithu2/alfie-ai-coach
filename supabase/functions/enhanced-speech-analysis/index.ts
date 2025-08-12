@@ -54,7 +54,7 @@ serve(async (req) => {
       // Force English-only transcription to prevent incorrect language auto-detection
       formData.append('language', 'en');
       formData.append('temperature', '0');
-      formData.append('prompt', 'Transcribe strictly in English (en-US). This is an IELTS Speaking test answer. Ignore non-English words and output the best English interpretation.');
+      formData.append('prompt', "Transcribe strictly in English (en-US). This is an IELTS Speaking test answer. Mark any unintelligible segments as 'inaudible'.");
 
       // Get transcription for this individual question
       const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {

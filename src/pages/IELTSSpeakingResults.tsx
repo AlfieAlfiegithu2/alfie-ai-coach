@@ -8,8 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles, RotateCcw } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
-import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
-import LightRays from "@/components/animations/LightRays";
 import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
 
 interface QuestionAnalysis {
@@ -44,9 +42,7 @@ const IELTSSpeakingResults = () => {
   const [overallFeedback, setOverallFeedback] = useState<OverallFeedback | null>(null);
   const [questionAnalyses, setQuestionAnalyses] = useState<QuestionAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
-  const [playingAISuggestion, setPlayingAISuggestion] = useState<boolean>(false);
   
   const { testData, recordings } = location.state || {};
 
@@ -141,10 +137,19 @@ const IELTSSpeakingResults = () => {
         console.warn('⚠️ No overall analysis received');
       }
 
-      // Generate AI suggestions for each question analysis
+      // Map AI suggestions returned from the edge function to state
       if (result.individualAnalyses && result.individualAnalyses.length > 0) {
-        console.log('🤖 Generating AI suggestions for questions...');
-        await generateAISuggestions(result.individualAnalyses);
+        const suggestions: Record<string, AISuggestion> = {};
+        for (const a of result.individualAnalyses) {
+          const key = `${a.part}_${a.questionIndex}`;
+          if (a.original_spans && a.suggested_spans) {
+            suggestions[key] = {
+              original_spans: a.original_spans,
+              suggested_spans: a.suggested_spans,
+            } as AISuggestion;
+          }
+        }
+        setAiSuggestions(suggestions);
       }
 
     } catch (error) {
@@ -264,94 +269,9 @@ const IELTSSpeakingResults = () => {
     };
   };
 
-  const generateAISuggestions = async (analyses: QuestionAnalysis[]) => {
-    const suggestions: Record<string, AISuggestion> = {};
-    
-    for (const analysis of analyses) {
-      const questionKey = `${analysis.part}_${analysis.questionIndex}`;
-      
-      try {
-        console.log(`🎯 Generating suggestion for ${questionKey}...`);
-        
-        const { data: suggestion, error } = await supabase.functions.invoke('analyze-speaking-suggestion', {
-          body: {
-            questionPrompt: analysis.questionText,
-            studentTranscription: analysis.transcription
-          }
-        });
+  // Suggestions are now provided by the enhanced edge function; no separate invocation needed
 
-        if (error) {
-          console.error(`Error generating suggestion for ${questionKey}:`, error);
-          continue;
-        }
-
-        if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
-          suggestions[questionKey] = {
-            original_spans: suggestion.original_spans,
-            suggested_spans: suggestion.suggested_spans
-          };
-          console.log(`✅ Suggestion generated for ${questionKey}`);
-        }
-      } catch (error) {
-        console.error(`Failed to generate suggestion for ${questionKey}:`, error);
-      }
-    }
-    
-    setAiSuggestions(suggestions);
-    console.log('🎉 All AI suggestions generated:', Object.keys(suggestions).length);
-  };
-
-  const playAISuggestion = async (suggestedSpans: Span[]) => {
-    if (playingAISuggestion) {
-      setPlayingAISuggestion(false);
-      return;
-    }
-
-    try {
-      setPlayingAISuggestion(true);
-      
-      // Convert spans to text for TTS
-      const textToSpeak = suggestedSpans.map(span => span.text).join('');
-      
-      // Call the TTS edge function
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: {
-          text: textToSpeak,
-          voice: 'alloy',
-          speed: 0.9
-        }
-      });
-
-      if (error) throw error;
-
-      if (data && data.audio_url) {
-        const audio = new Audio(data.audio_url);
-        
-        audio.onended = () => {
-          setPlayingAISuggestion(false);
-        };
-        
-        audio.onerror = () => {
-          setPlayingAISuggestion(false);
-          toast({
-            title: "Audio Error",
-            description: "Failed to play AI suggestion audio",
-            variant: "destructive"
-          });
-        };
-        
-        await audio.play();
-      }
-    } catch (error) {
-      console.error('Error playing AI suggestion:', error);
-      setPlayingAISuggestion(false);
-      toast({
-        title: "Audio Error",
-        description: "Failed to generate audio for AI suggestion",
-        variant: "destructive"
-      });
-    }
-  };
+  // Removed AI TTS playback (no AI voiceover for suggestions)
 
   const playAudio = async (audioUrl: string, questionId: string) => {
     if (playingAudio === questionId) {
@@ -427,21 +347,7 @@ const IELTSSpeakingResults = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <LightRays 
-        raysOrigin="bottom-center"
-        raysColor="#8B5CF6"
-        raysSpeed={0.4}
-        lightSpread={1.8}
-        rayLength={1.8}
-        pulsating={false}
-        fadeDistance={1.3}
-        saturation={0.7}
-        followMouse={false}
-        mouseInfluence={0}
-        noiseAmount={0.03}
-        distortion={0.05}
-      />
+    <div className="min-h-screen bg-background">
     <StudentLayout title="IELTS Speaking Results" showBackButton>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
@@ -462,13 +368,6 @@ const IELTSSpeakingResults = () => {
               <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-r ${getOverallBandColor(overallFeedback.overall_band_score)} text-white text-3xl font-bold`}>
                 {overallFeedback.overall_band_score}
               </div>
-              <dotlottie-wc 
-                src="https://lottie.host/0fe81d4c-ce6d-47ce-9f32-cbf478902f97/IONCXdpNpV.lottie" 
-                style={{width: "300px", height: "300px"}} 
-                speed="1" 
-                autoplay 
-                loop
-              />
             </div>
             <h2 className="text-2xl font-bold mb-2 mt-4">Overall Band Score</h2>
             <p className="text-muted-foreground">

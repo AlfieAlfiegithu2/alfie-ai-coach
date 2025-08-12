@@ -34,11 +34,11 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
 
   return (
     <div className="space-y-4">
-      <div className={hideOriginal ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
-        {/* Original transcription (optional) */}
+      <div className="rounded-2xl bg-surface-3 p-4 border border-border space-y-4">
+        {/* Original transcription with red highlights for errors */}
         {!hideOriginal && (
-          <div className="rounded-2xl bg-surface-3 p-4 border border-border">
-            <div className="text-caption mb-2 text-text-tertiary">Your Transcription (areas for improvement highlighted)</div>
+          <div>
+            <div className="text-caption mb-2 text-text-tertiary">Your Transcription (improvements in red)</div>
             <div className="text-sm leading-relaxed text-text-secondary">
               {originalSpans.map((s, i) => (
                 <span key={`o-${i}`} className={spanClass(s.status, "left", dimNeutral)}>{sanitize(s.text)}</span>
@@ -46,9 +46,8 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
             </div>
           </div>
         )}
-        
-        {/* Suggested answer */}
-        <div className="rounded-2xl bg-surface-3 p-4 border border-border">
+        {/* Suggested answer below in same container */}
+        <div>
           <div className="text-caption mb-2 text-text-tertiary">AI Suggested Answer (improvements highlighted)</div>
           <div className="text-sm leading-relaxed text-text-secondary">
             {suggestedSpans.map((s, i) => (

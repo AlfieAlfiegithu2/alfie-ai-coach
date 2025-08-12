@@ -67,12 +67,12 @@ Focus on meaningful improvements that would actually raise the IELTS band score.
         messages: [
           { 
             role: 'system', 
-            content: 'You are an expert IELTS Speaking examiner who provides detailed analysis and improvements. Ensure you only return valid JSON and never include Korean text in transcriptions unless the original text was Korean.' 
+            content: 'You are an expert IELTS Speaking examiner. Only return valid JSON arrays as instructed. Ensure output is English only.' 
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
+        temperature: 0.4,
+        max_tokens: 1200,
       }),
     });
 
@@ -85,24 +85,24 @@ Focus on meaningful improvements that would actually raise the IELTS band score.
 
     console.log('🤖 AI Response received:', aiResponse.substring(0, 200) + '...');
 
-    // Parse the JSON response from AI
-    let parsedResult;
+    // Parse the JSON response from AI (array of sentence pairs)
+    let parsedResult: any[] = [];
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         parsedResult = JSON.parse(jsonMatch[0]);
       } else {
-        throw new Error('No JSON found in AI response');
+        throw new Error('No JSON array found in AI response');
       }
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
-      
-      // Fallback: create basic spans if parsing fails
-      parsedResult = {
-        original_spans: [{ text: studentTranscription, status: "neutral" }],
-        suggested_spans: [{ text: "AI analysis temporarily unavailable. Please try again.", status: "neutral" }]
-      };
+      // Fallback to a single-pair array if parsing fails
+      parsedResult = [
+        {
+          original_sentence: studentTranscription,
+          suggested_sentence: 'AI analysis temporarily unavailable. Please try again.'
+        }
+      ];
     }
 
     console.log('✅ Suggestion analysis complete');

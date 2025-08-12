@@ -34,6 +34,7 @@ serve(async (req) => {
     const blob = new Blob([bytes], { type: 'audio/webm' });
     formData.append('file', blob, 'speech.webm');
     formData.append('model', 'whisper-1');
+    formData.append('language', 'en');
 
     const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',

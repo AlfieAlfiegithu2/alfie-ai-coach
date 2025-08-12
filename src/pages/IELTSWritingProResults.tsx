@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText, Edit } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
+import AnnotatedWritingText from "@/components/AnnotatedWritingText";
 
 interface Criterion {
   band: number;
@@ -44,6 +45,26 @@ interface StructuredResult {
   task2?: TaskAssessment;
   overall?: { band?: number; calculation?: string; feedback_markdown?: string };
   full_report_markdown?: string;
+  task1_annotated_original?: string;
+  task1_annotated_corrected?: string;
+  task1_corrections?: Array<{
+    original_text: string;
+    corrected_text: string;
+    start_index: number;
+    end_index: number;
+    error_type: string;
+    explanation: string;
+  }>;
+  task2_annotated_original?: string;
+  task2_annotated_corrected?: string;
+  task2_corrections?: Array<{
+    original_text: string;
+    corrected_text: string;
+    start_index: number;
+    end_index: number;
+    error_type: string;
+    explanation: string;
+  }>;
 }
 
 const bandToDesc = (score: number) => {
@@ -230,6 +251,37 @@ export default function IELTSWritingProResults() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Writing Samples with Corrections */}
+        {(task1Data?.answer || task2Data?.answer) && (
+          <div className="mb-8 space-y-6">
+            <h2 className="text-heading-2 text-center mb-6">Your Writing with AI Corrections</h2>
+            
+            {task1Data?.answer && (
+              <AnnotatedWritingText
+                taskTitle="Task 1 - Academic Writing"
+                originalText={task1Data.answer}
+                annotatedOriginal={structured.task1_annotated_original}
+                annotatedCorrected={structured.task1_annotated_corrected}
+                corrections={structured.task1_corrections}
+                icon={FileText}
+                colorScheme="text-brand-blue"
+              />
+            )}
+            
+            {task2Data?.answer && (
+              <AnnotatedWritingText
+                taskTitle="Task 2 - Essay Writing"
+                originalText={task2Data.answer}
+                annotatedOriginal={structured.task2_annotated_original}
+                annotatedCorrected={structured.task2_annotated_corrected}
+                corrections={structured.task2_corrections}
+                icon={Edit}
+                colorScheme="text-brand-purple"
+              />
+            )}
+          </div>
+        )}
 
         <TaskSection title="Task 1 Assessment" task={structured.task1} type="task1" />
         <TaskSection title="Task 2 Assessment" task={structured.task2} type="task2" />

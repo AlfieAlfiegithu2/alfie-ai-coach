@@ -67,6 +67,31 @@ const bandToDesc = (score: number) => {
     color: "text-destructive bg-destructive/10 border-destructive/30"
   };
 };
+
+// IELTS rounding helpers
+const roundIELTS = (n: number): number => {
+  if (typeof n !== 'number' || Number.isNaN(n)) return NaN as unknown as number;
+  // Round to nearest 0.5; .25 and .75 round up naturally
+  return Math.min(9, Math.max(0, Math.round(n * 2) / 2));
+};
+
+const computeTaskOverall = (task?: TaskAssessment, type?: 'task1' | 'task2'): number => {
+  if (!task) return NaN as unknown as number;
+  const c = task.criteria || {};
+  const vals: number[] = [];
+  if (type === 'task1') {
+    if (typeof c.task_achievement?.band === 'number') vals.push(c.task_achievement.band);
+  } else {
+    if (typeof c.task_response?.band === 'number') vals.push(c.task_response.band);
+  }
+  if (typeof c.coherence_and_cohesion?.band === 'number') vals.push(c.coherence_and_cohesion.band);
+  if (typeof c.lexical_resource?.band === 'number') vals.push(c.lexical_resource.band);
+  if (typeof c.grammatical_range_and_accuracy?.band === 'number') vals.push(c.grammatical_range_and_accuracy.band);
+  if (vals.length === 0) return typeof task.overall_band === 'number' ? roundIELTS(task.overall_band) : NaN as unknown as number;
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return roundIELTS(avg);
+};
+
 export default function IELTSWritingProResults() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -168,11 +193,14 @@ export default function IELTSWritingProResults() {
     };
     run();
   }, [task1Answer, task2Answer, task1Data, task2Data, t1CorrData, t2CorrData, t1Loading, t2Loading]);
-  const overallBand = Math.min(9.0, Math.max(0.0, structured.overall?.band ?? 7.0));
-  const overallMeta = bandToDesc(overallBand);
-  const {
-    toast
-  } = useToast();
+const t1OverallComputed = computeTaskOverall(structured?.task1, 'task1');
+const t2OverallComputed = computeTaskOverall(structured?.task2, 'task2');
+const denom = (Number.isNaN(t1OverallComputed) ? 0 : 1) + (Number.isNaN(t2OverallComputed) ? 0 : 2);
+const overallBand = denom > 0
+  ? roundIELTS(((Number.isNaN(t1OverallComputed) ? 0 : roundIELTS(t1OverallComputed)) + 2 * (Number.isNaN(t2OverallComputed) ? 0 : roundIELTS(t2OverallComputed))) / denom)
+  : 0;
+const overallMeta = bandToDesc(overallBand);
+const { toast } = useToast();
   const [t1SentenceView, setT1SentenceView] = useState(false);
   const [t2SentenceView, setT2SentenceView] = useState(false);
   const t1Counts = {
@@ -183,97 +211,152 @@ export default function IELTSWritingProResults() {
     errors: t2CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
     improvements: t2CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
   };
-  const TaskSection = ({
+const TaskSection = ({
     title,
     task,
-    type
+    type,
+    computedOverall,
   }: {
     title: string;
     task?: TaskAssessment;
     type: "task1" | "task2";
+    computedOverall?: number;
   }) => {
     if (!task) return null;
     const crit = task.criteria || {};
-    const items = [type === "task1" ? {
-      label: "Task Achievement",
-      value: crit.task_achievement?.band,
-      just: crit.task_achievement?.justification
-    } : {
-      label: "Task Response",
-      value: crit.task_response?.band,
-      just: crit.task_response?.justification
-    }, {
-      label: "Coherence & Cohesion",
-      value: crit.coherence_and_cohesion?.band,
-      just: crit.coherence_and_cohesion?.justification
-    }, {
-      label: "Lexical Resource",
-      value: crit.lexical_resource?.band,
-      just: crit.lexical_resource?.justification
-    }, {
-      label: "Grammar Range & Accuracy",
-      value: crit.grammatical_range_and_accuracy?.band,
-      just: crit.grammatical_range_and_accuracy?.justification
-    }];
-    return <Card className="card-elevated border-2 border-brand-blue/20 mb-8">
+    const items = [
+      type === "task1"
+        ? {
+            label: "Task Achievement",
+            value: crit.task_achievement?.band,
+            just: crit.task_achievement?.justification,
+          }
+        : {
+            label: "Task Response",
+            value: crit.task_response?.band,
+            just: crit.task_response?.justification,
+          },
+      {
+        label: "Coherence & Cohesion",
+        value: crit.coherence_and_cohesion?.band,
+        just: crit.coherence_and_cohesion?.justification,
+      },
+      {
+        label: "Lexical Resource",
+        value: crit.lexical_resource?.band,
+        just: crit.lexical_resource?.justification,
+      },
+      {
+        label: "Grammar Range & Accuracy",
+        value: crit.grammatical_range_and_accuracy?.band,
+        just: crit.grammatical_range_and_accuracy?.justification,
+      },
+    ];
+
+    const overallForTask =
+      typeof computedOverall === "number" && !Number.isNaN(computedOverall)
+        ? roundIELTS(computedOverall)
+        : typeof task.overall_band === "number"
+        ? roundIELTS(task.overall_band)
+        : (NaN as unknown as number);
+
+    return (
+      <Card className="card-elevated border-2 border-brand-blue/20 mb-8">
         <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
           <CardTitle className="text-heading-3 flex items-center justify-between">
             <span>{title}</span>
-            {typeof task.overall_band === "number" && <Badge variant="outline" className="rounded-2xl text-sm">
-                Overall: {Math.min(9.0, Math.max(0.0, task.overall_band)).toFixed(1)}
-              </Badge>}
+            {!Number.isNaN(overallForTask) && (
+              <Badge variant="outline" className="rounded-2xl text-sm">
+                Overall: {overallForTask.toFixed(1)}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {items.map(it => <div key={it.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
+            {items.map((it) => (
+              <div key={it.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-medium text-text-primary">{it.label}</p>
                   <Badge variant="outline" className="rounded-xl">
-                    {typeof it.value === "number" ? Math.min(9.0, Math.max(0.0, it.value)).toFixed(1) : "-"}
+                    {typeof it.value === "number" ? roundIELTS(it.value).toFixed(1) : "-"}
                   </Badge>
                 </div>
-                {it.just ? <div className="mt-2">
-                    <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Criterion-specific feedback</p>
+                {it.just ? (
+                  <div className="mt-2">
+                    <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Criteria-specific feedback</p>
                     <p className="text-sm text-text-secondary">{it.just}</p>
-                  </div> : null}
-              </div>)}
+                  </div>
+                ) : null}
+              </div>
+            ))}
           </div>
 
-          {(task.feedback?.strengths?.length || task.feedback?.improvements?.length || task.feedback?.improvements_detailed?.length) && <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {task.feedback?.strengths?.length ? <div>
+          {(task.feedback?.strengths?.length ||
+            task.feedback?.improvements?.length ||
+            task.feedback?.improvements_detailed?.length) && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {task.feedback?.strengths?.length ? (
+                <div>
                   <h4 className="text-heading-4 mb-2">Key strengths</h4>
                   <ul className="list-disc pl-5 space-y-1 text-text-secondary">
-                    {task.feedback.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                    {task.feedback.strengths.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
                   </ul>
-                </div> : null}
-              {task.feedback?.improvements_detailed?.length ? <div>
+                </div>
+              ) : null}
+              {task.feedback?.improvements_detailed?.length ? (
+                <div>
                   <h4 className="text-heading-4 mb-2">Specific, actionable improvements</h4>
-                  <p className="text-caption text-text-secondary mb-3">Each item includes a direct quote from your writing and a stronger revision.</p>
+                  <p className="text-caption text-text-secondary mb-3">
+                    Each item includes a direct quote from your writing and a stronger revision.
+                  </p>
                   <div className="space-y-3">
-                    {task.feedback.improvements_detailed.map((ex, i) => <div key={i} className="rounded-xl border border-border bg-surface-3 p-3">
-                        {ex.issue ? <div className="text-sm font-medium text-text-primary mb-1">{ex.issue}</div> : null}
-                        {ex.sentence_quote ? <div className="mb-2">
+                    {task.feedback.improvements_detailed.map((ex, i) => (
+                      <div key={i} className="rounded-xl border border-border bg-surface-3 p-3">
+                        {ex.issue ? (
+                          <div className="text-sm font-medium text-text-primary mb-1">{ex.issue}</div>
+                        ) : null}
+                        {ex.sentence_quote ? (
+                          <div className="mb-2">
                             <div className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Original</div>
-                            <blockquote className="text-sm text-text-secondary border-l-2 border-brand-blue/40 pl-3 italic">“{ex.sentence_quote}”</blockquote>
-                          </div> : null}
-                        {ex.improved_version ? <div className="text-sm mt-1">
+                            <blockquote className="text-sm text-text-secondary border-l-2 border-brand-blue/40 pl-3 italic">
+                              “{ex.sentence_quote}”
+                            </blockquote>
+                          </div>
+                        ) : null}
+                        {ex.improved_version ? (
+                          <div className="text-sm mt-1">
                             <span className="text-[11px] uppercase tracking-wide text-text-tertiary mr-1">Improved</span>
                             <span className="font-medium text-text-primary">{ex.improved_version}</span>
-                          </div> : null}
-                        {ex.explanation ? <p className="text-caption text-text-secondary mt-1">{ex.explanation}</p> : null}
-                      </div>)}
+                          </div>
+                        ) : null}
+                        {ex.explanation ? (
+                          <p className="text-caption text-text-secondary mt-1">{ex.explanation}</p>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
-                </div> : task.feedback?.improvements?.length ? <div>
+                </div>
+              ) : task.feedback?.improvements?.length ? (
+                <div>
                   <h4 className="text-heading-4 mb-2">Specific, actionable improvements</h4>
-                  <p className="text-caption text-text-secondary mb-2">Include concrete examples, target structures, and one improved sentence.</p>
+                  <p className="text-caption text-text-secondary mb-2">
+                    Include concrete examples, target structures, and one improved sentence.
+                  </p>
                   <ul className="list-disc pl-5 space-y-1 text-text-secondary">
-                    {task.feedback.improvements.map((s, i) => <li key={i}>{s}</li>)}
+                    {task.feedback.improvements.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
                   </ul>
-                </div> : null}
-            </div>}
+                </div>
+              ) : null}
+            </div>
+          )}
         </CardContent>
-      </Card>;
+      </Card>
+    );
   };
   return <div className="min-h-screen bg-surface-2 relative">
       <LightRays raysOrigin="top-center" raysColor="#4F46E5" raysSpeed={0.5} lightSpread={2} rayLength={1.5} pulsating={false} fadeDistance={1.2} saturation={0.8} followMouse={true} mouseInfluence={0.05} noiseAmount={0.1} distortion={0.2} />
@@ -317,8 +400,8 @@ export default function IELTSWritingProResults() {
           </CardContent>
         </Card>
 
-        <TaskSection title="Task 1 Assessment" task={structured.task1} type="task1" />
-        <TaskSection title="Task 2 Assessment" task={structured.task2} type="task2" />
+        <TaskSection title="Task 1 Assessment" task={structured.task1} type="task1" computedOverall={t1OverallComputed} />
+        <TaskSection title="Task 2 Assessment" task={structured.task2} type="task2" computedOverall={t2OverallComputed} />
 
         {task1Answer ? <Card className="card-elevated mb-8 border-2 border-brand-blue/20">
             <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">

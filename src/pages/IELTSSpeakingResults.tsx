@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles } from "lucide-react";
+import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles, RotateCcw } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
@@ -437,10 +437,10 @@ const IELTSSpeakingResults = () => {
         pulsating={false}
         fadeDistance={1.3}
         saturation={0.7}
-        followMouse={true}
-        mouseInfluence={0.06}
-        noiseAmount={0.08}
-        distortion={0.15}
+        followMouse={false}
+        mouseInfluence={0}
+        noiseAmount={0.03}
+        distortion={0.05}
       />
     <StudentLayout title="IELTS Speaking Results" showBackButton>
       <div className="max-w-4xl mx-auto space-y-6">
@@ -558,7 +558,6 @@ const IELTSSpeakingResults = () => {
           </Card>
         </div>
 
-        {/* Question-by-Question Analysis Section */}
         <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -613,6 +612,17 @@ const IELTSSpeakingResults = () => {
                         </>
                       )}
                     </Button>
+                    {analysis.part === 'Part 2' && (
+                      <Button
+                        onClick={() => { setPlayingAudio(null); setTimeout(() => playAudio(analysis.audio_url, `${analysis.part}_${analysis.questionIndex}`), 0); }}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Replay Your Voice
+                      </Button>
+                    )}
                     <span className="text-sm text-muted-foreground">
                       {playingAudio === `${analysis.part}_${analysis.questionIndex}` ? 
                         'Now playing: Listen to your speech patterns and delivery...' : 
@@ -620,14 +630,51 @@ const IELTSSpeakingResults = () => {
                       }
                     </span>
                   </div>
-                  
-                  {/* Show transcription directly - no toggle needed */}
-                  <div className="mt-4 pt-3 border-t border-border/50">
-                    <h5 className="text-sm font-medium mb-2 text-muted-foreground">Your Speech Transcription:</h5>
-                    <div className="p-3 bg-muted rounded-lg text-sm border">
-                      {analysis.transcription}
-                    </div>
-                  </div>
+
+                  {/* AI Suggested Better Answer - directly under audio response */}
+                  {(() => {
+                    const questionKey = `${analysis.part}_${analysis.questionIndex}`;
+                    const suggestion = aiSuggestions[questionKey];
+                    if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
+                      return (
+                        <div className="bg-muted/50 rounded-lg p-4 mt-4">
+                          <h4 className="font-medium mb-3 flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" />
+                            AI Suggested Better Answer:
+                          </h4>
+                          <div className="flex items-center gap-3 mb-4">
+                            <Button
+                              onClick={() => playAISuggestion(suggestion.suggested_spans)}
+                              variant={playingAISuggestion ? "default" : "outline"}
+                              size="sm"
+                              className="flex items-center gap-2"
+                            >
+                              {playingAISuggestion ? (
+                                <>
+                                  <Pause className="w-4 h-4" />
+                                  Stop AI Audio
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-4 h-4" />
+                                  Play AI Answer
+                                </>
+                              )}
+                            </Button>
+                            <span className="text-sm text-muted-foreground">
+                              {playingAISuggestion ? 'Playing improved version...' : 'Listen to the improved version of your response'}
+                            </span>
+                          </div>
+                          <SuggestionVisualizer
+                            originalSpans={suggestion.original_spans}
+                            suggestedSpans={suggestion.suggested_spans}
+                            dimNeutral={false}
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {/* Advanced AI Feedback */}
@@ -648,52 +695,7 @@ const IELTSSpeakingResults = () => {
                   </div>
                 </div>
 
-                {/* AI Suggested Better Answer - moved under audio response */}
-                {(() => {
-                  const questionKey = `${analysis.part}_${analysis.questionIndex}`;
-                  const suggestion = aiSuggestions[questionKey];
-                  
-                  if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
-                    return (
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <h4 className="font-medium mb-3 flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4" />
-                          AI Suggested Better Answer:
-                        </h4>
-                         <div className="flex items-center gap-3 mb-4">
-                           <Button
-                             onClick={() => playAISuggestion(suggestion.suggested_spans)}
-                             variant={playingAISuggestion ? "default" : "outline"}
-                             size="sm"
-                             className="flex items-center gap-2"
-                           >
-                             {playingAISuggestion ? (
-                               <>
-                                 <Pause className="w-4 h-4" />
-                                 Stop AI Audio
-                               </>
-                             ) : (
-                               <>
-                                 <Play className="w-4 h-4" />
-                                 Play AI Answer
-                               </>
-                             )}
-                           </Button>
-                           <span className="text-sm text-muted-foreground">
-                             {playingAISuggestion ? 'Playing improved version...' : 'Listen to the improved version of your response'}
-                           </span>
-                         </div>
-                        <SuggestionVisualizer
-                          originalSpans={suggestion.original_spans}
-                          suggestedSpans={suggestion.suggested_spans}
-                          dimNeutral={false}
-                        />
-                      </div>
-                    );
-                  }
-                  
-                  return null;
-                })()}
+                
               </div>
             ))}
           </CardContent>

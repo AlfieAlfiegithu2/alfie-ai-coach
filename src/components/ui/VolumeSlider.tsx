@@ -42,15 +42,18 @@ export default function VolumeSlider({
     onVolumeChange?.(volume);
   };
 
+  const [expanded, setExpanded] = useState(false);
   return (
-    <div className={`slider-container ${className}`}>
+    <div className={`slider-container ${className}`} style={{ width: expanded ? undefined : 'auto' }}>
       <Slider
         defaultValue={defaultValue}
         startingValue={0}
         maxValue={100}
         onVolumeChange={handleVolumeChange}
         rightIcon={<Volume2 size={20} />}
-        showValueIndicator={showValueIndicator}
+        showValueIndicator={showValueIndicator && expanded}
+        expanded={expanded}
+        onToggleExpanded={() => setExpanded((v) => !v)}
       />
     </div>
   );
@@ -63,6 +66,8 @@ interface SliderProps {
   onVolumeChange?: (volume: number) => void;
   rightIcon: React.ReactNode;
   showValueIndicator?: boolean;
+  expanded: boolean;
+  onToggleExpanded: () => void;
 }
 
 function Slider({
@@ -72,13 +77,14 @@ function Slider({
   onVolumeChange,
   rightIcon,
   showValueIndicator = true,
+  expanded,
+  onToggleExpanded,
 }: SliderProps) {
   const [value, setValue] = useState(defaultValue);
   const sliderRef = useRef<HTMLDivElement>(null);
   const [region, setRegion] = useState("middle");
   const clientX = useMotionValue(0);
   const overflow = useMotionValue(0);
-  const scale = useMotionValue(1);
 
   useEffect(() => {
     setValue(defaultValue);
@@ -137,67 +143,29 @@ function Slider({
 
   return (
     <>
-      <motion.div
-        onHoverStart={() => animate(scale, 1.2)}
-        onHoverEnd={() => animate(scale, 1)}
-        onTouchStart={() => animate(scale, 1.2)}
-        onTouchEnd={() => animate(scale, 1)}
-        style={{
-          scale,
-          opacity: useTransform(scale, [1, 1.2], [0.7, 1]),
-        }}
-        className="slider-wrapper"
-      >
+      <motion.div className="slider-wrapper">
         <div
           ref={sliderRef}
           className="slider-root"
-          onPointerMove={handlePointerMove}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
+          onPointerMove={expanded ? handlePointerMove : undefined}
+          onPointerDown={expanded ? handlePointerDown : undefined}
+          onPointerUp={expanded ? handlePointerUp : undefined}
         >
-          <motion.div
-            style={{
-              scaleX: useTransform(() => {
-                if (sliderRef.current) {
-                  const { width } = sliderRef.current.getBoundingClientRect();
-                  return 1 + overflow.get() / width;
-                }
-              }),
-              scaleY: useTransform(overflow, [0, MAX_OVERFLOW], [1, 0.8]),
-              transformOrigin: useTransform(() => {
-                if (sliderRef.current) {
-                  const { left, width } = sliderRef.current.getBoundingClientRect();
-                  return clientX.get() < left + width / 2 ? "right" : "left";
-                }
-              }),
-              height: useTransform(scale, [1, 1.2], [6, 12]),
-              marginTop: useTransform(scale, [1, 1.2], [0, -3]),
-              marginBottom: useTransform(scale, [1, 1.2], [0, -3]),
-            }}
-            className="slider-track-wrapper"
-          >
-            <div className="slider-track">
-              <div
-                className="slider-range"
-                style={{ width: `${getRangePercentage()}%` }}
-              />
+          {expanded && (
+            <div className="slider-track-wrapper">
+              <div className="slider-track">
+                <div
+                  className="slider-range"
+                  style={{ width: `${getRangePercentage()}%` }}
+                />
+              </div>
             </div>
-          </motion.div>
+          )}
         </div>
 
-        <motion.div
-          animate={{
-            scale: region === "right" ? [1, 1.4, 1] : 1,
-            transition: { duration: 0.25 },
-          }}
-          style={{
-            x: useTransform(() =>
-              region === "right" ? overflow.get() / scale.get() : 0,
-            ),
-          }}
-        >
+        <div onClick={onToggleExpanded} className="cursor-pointer">
           {rightIcon}
-        </motion.div>
+        </div>
       </motion.div>
       {showValueIndicator && <p className="value-indicator">{Math.round(value)}</p>}
     </>

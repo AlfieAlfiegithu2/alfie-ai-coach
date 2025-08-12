@@ -10,7 +10,7 @@ import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import LightRays from "@/components/animations/LightRays";
-import SentenceComparison, { type SentencePair } from "@/components/SentenceComparison";
+import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
 
 interface QuestionAnalysis {
   part: string;
@@ -22,8 +22,10 @@ interface QuestionAnalysis {
   feedback: string;
 }
 
-interface AISentenceSuggestion extends Array<SentencePair> {}
-
+interface AISuggestion {
+  original_spans: Span[];
+  suggested_spans: Span[];
+}
 
 interface OverallFeedback {
   overall_band_score: number;
@@ -43,7 +45,7 @@ const IELTSSpeakingResults = () => {
   const [questionAnalyses, setQuestionAnalyses] = useState<QuestionAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISentenceSuggestion>>({});
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
   const [playingAISuggestion, setPlayingAISuggestion] = useState<boolean>(false);
   
   const { testData, recordings } = location.state || {};
@@ -263,7 +265,7 @@ const IELTSSpeakingResults = () => {
   };
 
   const generateAISuggestions = async (analyses: QuestionAnalysis[]) => {
-    const suggestions: Record<string, AISentenceSuggestion> = {};
+    const suggestions: Record<string, AISuggestion> = {};
     
     for (const analysis of analyses) {
       const questionKey = `${analysis.part}_${analysis.questionIndex}`;
@@ -283,8 +285,11 @@ const IELTSSpeakingResults = () => {
           continue;
         }
 
-        if (Array.isArray(suggestion)) {
-          suggestions[questionKey] = suggestion as AISentenceSuggestion;
+        if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
+          suggestions[questionKey] = {
+            original_spans: suggestion.original_spans,
+            suggested_spans: suggestion.suggested_spans
+          };
           console.log(`✅ Suggestion generated for ${questionKey}`);
         }
       } catch (error) {
@@ -296,7 +301,7 @@ const IELTSSpeakingResults = () => {
     console.log('🎉 All AI suggestions generated:', Object.keys(suggestions).length);
   };
 
-  const playAISuggestion = async (pairs: SentencePair[]) => {
+  const playAISuggestion = async (suggestedSpans: Span[]) => {
     if (playingAISuggestion) {
       setPlayingAISuggestion(false);
       return;
@@ -305,19 +310,22 @@ const IELTSSpeakingResults = () => {
     try {
       setPlayingAISuggestion(true);
       
-      const textToSpeak = pairs.map(p => p.suggested_sentence).join(' ');
+      // Convert spans to text for TTS
+      const textToSpeak = suggestedSpans.map(span => span.text).join('');
       
+      // Call the TTS edge function
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
           text: textToSpeak,
-          voice: 'alloy'
+          voice: 'alloy',
+          speed: 0.9
         }
       });
 
       if (error) throw error;
 
-      if (data && data.audioContent) {
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+      if (data && data.audio_url) {
+        const audio = new Audio(data.audio_url);
         
         audio.onended = () => {
           setPlayingAISuggestion(false);
@@ -333,8 +341,6 @@ const IELTSSpeakingResults = () => {
         };
         
         await audio.play();
-      } else {
-        throw new Error('No audio content received');
       }
     } catch (error) {
       console.error('Error playing AI suggestion:', error);
@@ -557,10 +563,10 @@ const IELTSSpeakingResults = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Volume2 className="w-5 h-5 text-primary" />
-              Your Audio Responses
+              Audio-First Question Analysis
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Play each answer and see sentence-by-sentence AI suggestions directly below
+              Advanced AI examiner feedback based on your actual speech patterns, fluency, and pronunciation
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -575,7 +581,7 @@ const IELTSSpeakingResults = () => {
                 {/* Official Question Text */}
                 <div>
                   <h4 className="font-medium text-primary mb-2">
-                    Official Question
+                    Official Question:
                   </h4>
                   <div className="p-4 bg-primary/5 rounded-lg text-sm border border-primary/20">
                     {analysis.questionText || "Question text not available"}
@@ -586,7 +592,7 @@ const IELTSSpeakingResults = () => {
                 <div className="bg-muted/50 rounded-lg p-4">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
                     <Volume2 className="w-4 h-4" />
-                    Your Audio Response
+                    Your Audio Response:
                   </h4>
                   <div className="flex items-center gap-3">
                     <Button
@@ -615,50 +621,79 @@ const IELTSSpeakingResults = () => {
                     </span>
                   </div>
                   
-                  {/* AI Suggested Better Answer directly under audio */}
-                  {(() => {
-                    const questionKey = `${analysis.part}_${analysis.questionIndex}`;
-                    const pairs = aiSuggestions[questionKey];
-                    if (pairs && pairs.length) {
-                      return (
-                        <div className="mt-4">
-                          <h4 className="font-medium mb-3 flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4" />
-                            AI Suggested Better Answer:
-                          </h4>
-                          <div className="flex items-center gap-3 mb-4">
-                            <Button
-                              onClick={() => playAISuggestion(pairs)}
-                              variant={playingAISuggestion ? "default" : "outline"}
-                              size="sm"
-                              className="flex items-center gap-2"
-                            >
-                              {playingAISuggestion ? (
-                                <>
-                                  <Pause className="w-4 h-4" />
-                                  Stop AI Audio
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="w-4 h-4" />
-                                  Play AI Answer
-                                </>
-                              )}
-                            </Button>
-                            <span className="text-sm text-muted-foreground">
-                              {playingAISuggestion ? 'Playing improved version...' : 'Listen to the improved version of your response'}
-                            </span>
-                          </div>
-                          <SentenceComparison pairs={pairs} />
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-
+                  {/* Show transcription directly - no toggle needed */}
+                  <div className="mt-4 pt-3 border-t border-border/50">
+                    <h5 className="text-sm font-medium mb-2 text-muted-foreground">Your Speech Transcription:</h5>
+                    <div className="p-3 bg-muted rounded-lg text-sm border">
+                      {analysis.transcription}
+                    </div>
+                  </div>
                 </div>
 
+                {/* Advanced AI Feedback */}
+                <div>
+                  <h4 className="font-medium text-primary mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Advanced AI Examiner Feedback:
+                  </h4>
+                  <div className="bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 rounded-xl p-6 border border-primary/10 shadow-soft">
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-medium">
+                        {analysis.feedback ? 
+                          analysis.feedback.replace(/\*\*/g, '').replace(/###/g, '').replace(/\*/g, '') : 
+                          "Feedback analysis in progress..."
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
+                {/* AI Suggested Better Answer - moved under audio response */}
+                {(() => {
+                  const questionKey = `${analysis.part}_${analysis.questionIndex}`;
+                  const suggestion = aiSuggestions[questionKey];
+                  
+                  if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
+                    return (
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          AI Suggested Better Answer:
+                        </h4>
+                         <div className="flex items-center gap-3 mb-4">
+                           <Button
+                             onClick={() => playAISuggestion(suggestion.suggested_spans)}
+                             variant={playingAISuggestion ? "default" : "outline"}
+                             size="sm"
+                             className="flex items-center gap-2"
+                           >
+                             {playingAISuggestion ? (
+                               <>
+                                 <Pause className="w-4 h-4" />
+                                 Stop AI Audio
+                               </>
+                             ) : (
+                               <>
+                                 <Play className="w-4 h-4" />
+                                 Play AI Answer
+                               </>
+                             )}
+                           </Button>
+                           <span className="text-sm text-muted-foreground">
+                             {playingAISuggestion ? 'Playing improved version...' : 'Listen to the improved version of your response'}
+                           </span>
+                         </div>
+                        <SuggestionVisualizer
+                          originalSpans={suggestion.original_spans}
+                          suggestedSpans={suggestion.suggested_spans}
+                          dimNeutral={false}
+                        />
+                      </div>
+                    );
+                  }
+                  
+                  return null;
+                })()}
               </div>
             ))}
           </CardContent>

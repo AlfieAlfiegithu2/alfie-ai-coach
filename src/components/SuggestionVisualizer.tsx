@@ -70,7 +70,7 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
           {/* Original sentence */}
           <div className="rounded-2xl bg-surface-3 p-4 border border-border">
             {index === 0 && (
-        <div className="text-caption mb-2 text-text-tertiary">Your Transcription (areas for improvement highlighted)</div>
+              <div className="text-caption mb-2 text-text-tertiary">Your Transcription (areas for improvement highlighted)</div>
             )}
             <div className="text-sm leading-relaxed text-text-secondary">
               {originalSentences[index]?.map((s, i) => (
@@ -82,7 +82,7 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
           {/* Suggested sentence */}
           <div className="rounded-2xl bg-surface-3 p-4 border border-border">
             {index === 0 && (
-        <div className="text-caption mb-2 text-text-tertiary">AI Suggested Answer (improvements highlighted)</div>
+              <div className="text-caption mb-2 text-text-tertiary">AI Suggested Answer (improvements highlighted)</div>
             )}
             <div className="text-sm leading-relaxed text-text-secondary">
               {suggestedSentences[index]?.map((s, i) => (

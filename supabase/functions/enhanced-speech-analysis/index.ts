@@ -51,7 +51,6 @@ serve(async (req) => {
       const formData = new FormData();
       formData.append('file', blob, `speech_part${recording.partNum}_q${recording.questionIndex}.webm`);
       formData.append('model', 'whisper-1');
-      formData.append('language', 'en');
 
       // Get transcription for this individual question
       const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -70,7 +69,6 @@ serve(async (req) => {
 
       const transcriptionResult = await transcriptionResponse.json();
       const studentTranscription = transcriptionResult.text;
-      // Force English: if provider returned non-English characters, attempt minimal cleanup (leave as-is mostly)
       console.log(`✅ Transcription complete for ${recording.part}:`, studentTranscription.substring(0, 100) + '...');
 
     // Check for empty, silent, or minimal responses and score accordingly

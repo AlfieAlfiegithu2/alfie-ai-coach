@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
 import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/CorrectionVisualizer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Criterion {
   band: number;
@@ -80,37 +81,66 @@ export default function IELTSWritingProResults() {
     }
   }, [testName]);
 
-  const [corrLoading, setCorrLoading] = useState<boolean>(false);
-  const [corrError, setCorrError] = useState<string | null>(null);
-  const [correctionData, setCorrectionData] = useState<{
+  // Parallel correction analysis for Task 1 and Task 2
+  const [t1Loading, setT1Loading] = useState<boolean>(false);
+  const [t2Loading, setT2Loading] = useState<boolean>(false);
+  const [t1Error, setT1Error] = useState<string | null>(null);
+  const [t2Error, setT2Error] = useState<string | null>(null);
+  const [t1CorrData, setT1CorrData] = useState<{
+    original_spans: CorrectionSpan[];
+    corrected_spans: CorrectionSpan[];
+  } | null>(null);
+  const [t2CorrData, setT2CorrData] = useState<{
     original_spans: CorrectionSpan[];
     corrected_spans: CorrectionSpan[];
   } | null>(null);
 
   useEffect(() => {
     const run = async () => {
-      if (!task2Answer || correctionData || corrLoading) return;
-      try {
-        setCorrLoading(true);
-        setCorrError(null);
-        const prompt = `${task2Data?.title ? `Title: ${task2Data.title}\n` : ''}${task2Data?.instructions ? `Instructions: ${task2Data.instructions}` : ''}`.trim();
-        const { data, error } = await supabase.functions.invoke('analyze-writing-correction', {
-          body: { userSubmission: task2Answer, questionPrompt: prompt }
-        });
-        if (error) throw error;
-        if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
-          setCorrectionData({ original_spans: data.original_spans, corrected_spans: data.corrected_spans });
-        } else {
-          setCorrError('No correction data returned.');
-        }
-      } catch (e: any) {
-        setCorrError(e?.message || 'Failed to analyze corrections');
-      } finally {
-        setCorrLoading(false);
+      const tasks: Promise<any>[] = [];
+
+      if (task1Answer && !t1CorrData && !t1Loading) {
+        setT1Loading(true);
+        setT1Error(null);
+        const prompt1 = `${task1Data?.title ? `Title: ${task1Data.title}\n` : ''}${task1Data?.instructions ? `Instructions: ${task1Data.instructions}` : ''}`.trim();
+        tasks.push(
+          supabase.functions.invoke('analyze-writing-correction', {
+            body: { userSubmission: task1Answer, questionPrompt: prompt1 }
+          }).then(({ data, error }) => {
+            if (error) throw error;
+            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+              setT1CorrData({ original_spans: data.original_spans, corrected_spans: data.corrected_spans });
+            } else {
+              setT1Error('No correction data returned for Task 1.');
+            }
+          }).catch((e: any) => setT1Error(e?.message || 'Failed to analyze Task 1')).finally(() => setT1Loading(false))
+        );
+      }
+
+      if (task2Answer && !t2CorrData && !t2Loading) {
+        setT2Loading(true);
+        setT2Error(null);
+        const prompt2 = `${task2Data?.title ? `Title: ${task2Data.title}\n` : ''}${task2Data?.instructions ? `Instructions: ${task2Data.instructions}` : ''}`.trim();
+        tasks.push(
+          supabase.functions.invoke('analyze-writing-correction', {
+            body: { userSubmission: task2Answer, questionPrompt: prompt2 }
+          }).then(({ data, error }) => {
+            if (error) throw error;
+            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+              setT2CorrData({ original_spans: data.original_spans, corrected_spans: data.corrected_spans });
+            } else {
+              setT2Error('No correction data returned for Task 2.');
+            }
+          }).catch((e: any) => setT2Error(e?.message || 'Failed to analyze Task 2')).finally(() => setT2Loading(false))
+        );
+      }
+
+      if (tasks.length) {
+        await Promise.allSettled(tasks);
       }
     };
     run();
-  }, [task2Answer, task2Data, corrLoading, correctionData]);
+  }, [task1Answer, task2Answer, task1Data, task2Data, t1CorrData, t2CorrData, t1Loading, t2Loading]);
 
   const overallBand = Math.min(9.0, Math.max(0.0, structured.overall?.band ?? 7.0));
   const overallMeta = bandToDesc(overallBand);
@@ -265,30 +295,88 @@ export default function IELTSWritingProResults() {
         <TaskSection title="Task 1 Assessment" task={structured.task1} type="task1" />
         <TaskSection title="Task 2 Assessment" task={structured.task2} type="task2" />
 
-        {task2Answer ? (
-          <Card className="card-elevated mb-8 border-2 border-brand-green/20">
-            <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
-              <CardTitle className="text-heading-3">AI Correction Visualizer (Task 2)</CardTitle>
+        {task1Answer ? (
+          <Card className="card-elevated mb-8 border-2 border-brand-blue/20">
+            <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+              <CardTitle className="text-heading-3">Task 1 – AI Corrections</CardTitle>
+              <div className="text-caption text-text-secondary mt-1">
+                {task1Data?.title ? <div className="font-medium text-text-primary">{task1Data.title}</div> : null}
+                {task1Data?.instructions ? <div>{task1Data.instructions}</div> : null}
+              </div>
             </CardHeader>
             <CardContent className="p-6">
-              {corrLoading && (
-                <div className="status-warning">Analyzing your essay for detailed corrections…</div>
-              )}
-              {corrError && (
-                <div className="status-error">{corrError}</div>
-              )}
-              {correctionData && (
-                <CorrectionVisualizer 
-                  originalSpans={correctionData.original_spans}
-                  correctedSpans={correctionData.corrected_spans}
-                />
-              )}
-              {!corrLoading && !corrError && !correctionData && (
-                <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
-              )}
+              <Tabs defaultValue="correction">
+                <TabsList className="grid grid-cols-2 w-full mb-4">
+                  <TabsTrigger value="correction">Correction</TabsTrigger>
+                  <TabsTrigger value="model">Model Answer</TabsTrigger>
+                </TabsList>
+                <TabsContent value="correction">
+                  {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
+                  {t1Error && <div className="status-error">{t1Error}</div>}
+                  {t1CorrData && (
+                    <CorrectionVisualizer
+                      originalSpans={t1CorrData.original_spans}
+                      correctedSpans={t1CorrData.corrected_spans}
+                    />
+                  )}
+                  {!t1Loading && !t1Error && !t1CorrData && (
+                    <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
+                  )}
+                </TabsContent>
+                <TabsContent value="model">
+                  {structured?.task1?.feedback_markdown ? (
+                    <div className="prose max-w-none text-text-secondary"
+                      dangerouslySetInnerHTML={{ __html: structured.task1.feedback_markdown.replace(/\n/g, '<br>') }} />
+                  ) : (
+                    <div className="text-caption text-text-secondary">Model answer not available.</div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         ) : null}
+
+        {task2Answer ? (
+          <Card className="card-elevated mb-8 border-2 border-brand-green/20">
+            <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
+              <CardTitle className="text-heading-3">Task 2 – AI Corrections</CardTitle>
+              <div className="text-caption text-text-secondary mt-1">
+                {task2Data?.title ? <div className="font-medium text-text-primary">{task2Data.title}</div> : null}
+                {task2Data?.instructions ? <div>{task2Data.instructions}</div> : null}
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <Tabs defaultValue="correction">
+                <TabsList className="grid grid-cols-2 w-full mb-4">
+                  <TabsTrigger value="correction">Correction</TabsTrigger>
+                  <TabsTrigger value="model">Model Answer</TabsTrigger>
+                </TabsList>
+                <TabsContent value="correction">
+                  {t2Loading && <div className="status-warning">Analyzing Task 2…</div>}
+                  {t2Error && <div className="status-error">{t2Error}</div>}
+                  {t2CorrData && (
+                    <CorrectionVisualizer
+                      originalSpans={t2CorrData.original_spans}
+                      correctedSpans={t2CorrData.corrected_spans}
+                    />
+                  )}
+                  {!t2Loading && !t2Error && !t2CorrData && (
+                    <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
+                  )}
+                </TabsContent>
+                <TabsContent value="model">
+                  {structured?.task2?.feedback_markdown ? (
+                    <div className="prose max-w-none text-text-secondary"
+                      dangerouslySetInnerHTML={{ __html: structured.task2.feedback_markdown.replace(/\n/g, '<br>') }} />
+                  ) : (
+                    <div className="text-caption text-text-secondary">Model answer not available.</div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        ) : null}
+
 
 
         <div className="flex justify-center gap-4">

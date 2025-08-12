@@ -34,11 +34,13 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are an expert IELTS writing examiner and editor.
-Return ONLY valid JSON matching the exact schema with two arrays: original_spans and corrected_spans.
-Do not include any extra commentary.`;
+    const system = `You are a strict but helpful IELTS examiner and professional academic editor.
+Your goal is to transform writing to Band 7.5+ quality while preserving intended meaning.
+Be decisive: actively rephrase awkward or informal sentences to formal, natural academic English.
+Focus on: (1) sophisticated lexical resource, (2) varied sentence structures, (3) precise grammar & punctuation, (4) clear cohesion.
+Return ONLY valid JSON as specified. No extra prose.`;
 
-    const user = `Task prompt (context for meaning):\n${questionPrompt || 'N/A'}\n\nStudent submission:\n"""\n${userSubmission}\n"""\n\nInstructions:\n- Identify all spelling, grammar, and vocabulary errors in the student's original text. Split the ORIGINAL text into an ordered sequence of spans so that concatenating all span.text exactly reconstructs the original text (preserve whitespaces and punctuation).\n- For each span in original_spans, set status to:\n  - "error" for segments containing a mistake\n  - "neutral" for unchanged text\n- Create a corrected/improved version of the entire text. Split it into corrected_spans with the same rules, where status is:\n  - "improvement" for added/changed words or phrases that improve the text\n  - "neutral" for unchanged text\n- Keep spans small (a few words) so highlighting is precise.\n- The arrays may differ in length and segmentation; that's fine.\n- IMPORTANT: Output must be strictly JSON in this exact structure:\n{\n  "original_spans": [ {"text": string, "status": "error"|"neutral"}, ... ],\n  "corrected_spans": [ {"text": string, "status": "improvement"|"neutral"}, ... ]\n}`;
+    const user = `Context (IELTS prompt):\n${questionPrompt || 'N/A'}\n\nStudent submission (verbatim):\n"""\n${userSubmission}\n"""\n\nYour tasks:\n1) Create original_spans by splitting the ORIGINAL text into ordered spans whose concatenation exactly reconstructs the input (preserve all spaces and punctuation). Mark status:\n   - "error" for spans that contain grammar/spelling/usage/collocation issues or awkward phrasing\n   - "neutral" for correctly written or acceptable segments\n   Keep spans small (a few words) to localize issues precisely.\n\n2) Produce a fully improved, Band 7.5+ CORRECTED text that uses advanced vocabulary, more natural academic phrasing, and varied sentence structures. Then split it into corrected_spans. Mark status:\n   - "improvement" ONLY for spans that reflect a meaningful change (lexical sophistication, grammar correctness, or sentence restructuring).\n   - "neutral" for unchanged/identical segments.\n   Do NOT mark trivial punctuation-only changes as improvements unless they fix a genuine error.\n\nOutput STRICTLY this JSON (no markdown or commentary):\n{\n  "original_spans": [ {"text": string, "status": "error"|"neutral"}, ... ],\n  "corrected_spans": [ {"text": string, "status": "improvement"|"neutral"}, ... ]\n}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -53,7 +55,7 @@ Do not include any extra commentary.`;
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        max_tokens: 1800,
+        max_tokens: 2200,
       }),
     });
 
@@ -79,7 +81,6 @@ Do not include any extra commentary.`;
       throw new Error('AI did not return the expected JSON structure.');
     }
 
-    // Sanitize spans to ensure types are correct
     const sanitize = (arr: any[], allowed: string[]): Span[] =>
       arr.map((s) => ({
         text: typeof s?.text === 'string' ? s.text : String(s?.text ?? ''),

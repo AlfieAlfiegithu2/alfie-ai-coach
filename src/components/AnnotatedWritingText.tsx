@@ -1,6 +1,9 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 
 interface AnnotatedWritingTextProps {
   taskTitle: string;
@@ -28,6 +31,7 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
   icon: Icon,
   colorScheme
 }) => {
+  const [showCorrections, setShowCorrections] = useState(false);
 
   // Fallback: If no annotated text, create simple version
   const createFallbackAnnotations = () => {
@@ -63,110 +67,97 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
   return (
     <Card className="card-modern">
       <CardHeader>
-        <CardTitle className={`flex items-center gap-2 ${colorScheme}`}>
-          <div className={`p-2 rounded-xl bg-current/10`}>
-            <Icon className="w-4 h-4" />
-          </div>
-          {taskTitle}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className={`flex items-center gap-2 ${colorScheme}`}>
+            <div className={`p-2 rounded-xl bg-current/10`}>
+              <Icon className="w-4 h-4" />
+            </div>
+            {taskTitle}
+          </CardTitle>
+          {hasCorrections && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCorrections(!showCorrections)}
+              className="gap-2"
+            >
+              {showCorrections ? (
+                <>
+                  <EyeOff className="w-4 h-4" />
+                  Hide Corrections
+                </>
+              ) : (
+                <>
+                  <Eye className="w-4 h-4" />
+                  Show Corrections
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {hasCorrections ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left side - Original with errors (red highlights) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-destructive" />
-                <h3 className="text-sm font-semibold text-text-primary">Original Text</h3>
-                <Badge variant="destructive" className="text-xs">
-                  {corrections.length} errors
-                </Badge>
-              </div>
-              <div className="bg-destructive/5 border border-destructive/20 p-4 rounded-2xl text-sm max-h-80 overflow-y-auto leading-relaxed">
+          <Tabs value={showCorrections ? "corrected" : "original"} onValueChange={(value) => setShowCorrections(value === "corrected")}>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="original" className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Original (with errors)
+              </TabsTrigger>
+              <TabsTrigger value="corrected" className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Corrected
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="original">
+              <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
                 <div 
                   dangerouslySetInnerHTML={{ 
                     __html: displayOriginal.replace(/\n/g, '<br>') 
                   }}
-                  className="annotated-text text-text-primary"
+                  className="annotated-text"
                 />
               </div>
-              
-              {/* Error details */}
               {corrections.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-text-primary uppercase tracking-wide">
-                    Error Details ({Math.min(5, corrections.length)} of {corrections.length})
+                <div className="mt-4">
+                  <h4 className="text-sm font-semibold mb-2 text-text-primary">
+                    Corrections Found ({corrections.length})
                   </h4>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {corrections.slice(0, 5).map((correction, index) => (
-                      <div key={index} className="bg-destructive/5 border border-destructive/20 p-3 rounded-xl">
-                        <div className="space-y-2">
-                          <Badge variant="destructive" className="text-xs">
-                            {correction.error_type}
-                          </Badge>
-                          <div>
-                            <span className="text-xs text-text-tertiary uppercase tracking-wide">Error:</span>
-                            <div className="text-sm text-destructive font-medium">{correction.original_text}</div>
-                          </div>
-                          {correction.explanation && (
-                            <div className="text-xs text-text-secondary">{correction.explanation}</div>
-                          )}
+                      <div key={index} className="flex items-start gap-2 p-2 bg-surface-2 rounded-lg text-xs">
+                        <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
+                          {correction.error_type}
+                        </Badge>
+                        <div>
+                          <div className="text-red-600 line-through">{correction.original_text}</div>
+                          <div className="text-green-600 font-medium">{correction.corrected_text}</div>
+                          <div className="text-text-secondary mt-1">{correction.explanation}</div>
                         </div>
                       </div>
                     ))}
                     {corrections.length > 5 && (
-                      <div className="text-xs text-text-secondary text-center p-2">
-                        +{corrections.length - 5} more errors
+                      <div className="text-xs text-text-secondary text-center">
+                        +{corrections.length - 5} more corrections
                       </div>
                     )}
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Right side - Corrected version (green highlights) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-brand-green" />
-                <h3 className="text-sm font-semibold text-text-primary">AI Correction</h3>
-                <Badge className="text-xs bg-brand-green/10 text-brand-green border-brand-green/30">
-                  Revised
-                </Badge>
-              </div>
-              <div className="bg-brand-green/5 border border-brand-green/20 p-4 rounded-2xl text-sm max-h-80 overflow-y-auto leading-relaxed">
+            </TabsContent>
+            
+            <TabsContent value="corrected">
+              <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
                 <div 
                   dangerouslySetInnerHTML={{ 
                     __html: displayCorrected.replace(/\n/g, '<br>') 
                   }}
-                  className="annotated-text text-text-primary"
+                  className="annotated-text"
                 />
               </div>
-              
-              {/* Correction details */}
-              {corrections.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-semibold text-text-primary uppercase tracking-wide">
-                    Applied Corrections
-                  </h4>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {corrections.slice(0, 5).map((correction, index) => (
-                      <div key={index} className="bg-brand-green/5 border border-brand-green/20 p-3 rounded-xl">
-                        <div className="space-y-2">
-                          <Badge className="text-xs bg-brand-green/10 text-brand-green border-brand-green/30">
-                            {correction.error_type}
-                          </Badge>
-                          <div>
-                            <span className="text-xs text-text-tertiary uppercase tracking-wide">Corrected to:</span>
-                            <div className="text-sm text-brand-green font-medium">{correction.corrected_text}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-60 overflow-y-auto text-text-secondary leading-relaxed">
             {originalText}

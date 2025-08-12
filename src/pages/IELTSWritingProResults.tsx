@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
-import { ArrowLeft, FileText, Edit } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
-import AnnotatedWritingText from "@/components/AnnotatedWritingText";
 
 interface Criterion {
   band: number;
@@ -45,26 +44,6 @@ interface StructuredResult {
   task2?: TaskAssessment;
   overall?: { band?: number; calculation?: string; feedback_markdown?: string };
   full_report_markdown?: string;
-  task1_annotated_original?: string;
-  task1_annotated_corrected?: string;
-  task1_corrections?: Array<{
-    original_text: string;
-    corrected_text: string;
-    start_index: number;
-    end_index: number;
-    error_type: string;
-    explanation: string;
-  }>;
-  task2_annotated_original?: string;
-  task2_annotated_corrected?: string;
-  task2_corrections?: Array<{
-    original_text: string;
-    corrected_text: string;
-    start_index: number;
-    end_index: number;
-    error_type: string;
-    explanation: string;
-  }>;
 }
 
 const bandToDesc = (score: number) => {
@@ -77,13 +56,11 @@ const bandToDesc = (score: number) => {
 export default function IELTSWritingProResults() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { structured, testName, task1Data, task2Data, task1Answer, task2Answer } = (location.state || {}) as {
+  const { structured, testName, task1Data, task2Data } = (location.state || {}) as {
     structured?: StructuredResult;
     testName?: string;
     task1Data?: any;
     task2Data?: any;
-    task1Answer?: string;
-    task2Answer?: string;
   };
 
   useEffect(() => {
@@ -99,42 +76,13 @@ export default function IELTSWritingProResults() {
     }
   }, [testName]);
 
-  useEffect(() => {
-    if (!structured) {
-      navigate("/dashboard");
-    }
-  }, [structured, navigate]);
-
   if (!structured) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-text-secondary">Loading results…</p>
-      </div>
-    );
+    navigate("/dashboard");
+    return null;
   }
 
   const overallBand = Math.min(9.0, Math.max(0.0, structured.overall?.band ?? 7.0));
   const overallMeta = bandToDesc(overallBand);
-
-  // Normalize annotated fields from either root-level or nested task objects
-  const task1AnnotatedOriginal = structured.task1_annotated_original ?? structured.task1?.['annotated_original' as keyof typeof structured.task1] as unknown as string | undefined;
-  const task1AnnotatedCorrected = structured.task1_annotated_corrected ?? structured.task1?.['annotated_corrected' as keyof typeof structured.task1] as unknown as string | undefined;
-  const task2AnnotatedOriginal = structured.task2_annotated_original ?? structured.task2?.['annotated_original' as keyof typeof structured.task2] as unknown as string | undefined;
-  const task2AnnotatedCorrected = structured.task2_annotated_corrected ?? structured.task2?.['annotated_corrected' as keyof typeof structured.task2] as unknown as string | undefined;
-
-  // Normalize corrections array if schema differs
-  const normalizeCorrections = (corr?: any[]) =>
-    (corr || []).map((c) => ({
-      original_text: c.original_text ?? c.original ?? '',
-      corrected_text: c.corrected_text ?? c.corrected ?? '',
-      start_index: c.start_index ?? c.startIndex ?? 0,
-      end_index: c.end_index ?? c.endIndex ?? 0,
-      error_type: c.error_type ?? c.type ?? '',
-      explanation: c.explanation ?? ''
-    }));
-
-  const task1Corrections = structured.task1_corrections ?? normalizeCorrections((structured.task1 as any)?.corrections);
-  const task2Corrections = structured.task2_corrections ?? normalizeCorrections((structured.task2 as any)?.corrections);
 
   const TaskSection = ({ title, task, type }: { title: string; task?: TaskAssessment; type: "task1" | "task2" }) => {
     if (!task) return null;
@@ -282,37 +230,6 @@ export default function IELTSWritingProResults() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Writing Samples with Corrections */}
-        {(task1Answer || task2Answer) && (
-          <div className="mb-8 space-y-6">
-            <h2 className="text-heading-2 text-center mb-6">Your Writing with AI Corrections</h2>
-            
-            {task1Answer && (
-              <AnnotatedWritingText
-                taskTitle="Task 1 - Academic Writing"
-                originalText={task1Answer}
-                annotatedOriginal={task1AnnotatedOriginal}
-                annotatedCorrected={task1AnnotatedCorrected}
-                corrections={task1Corrections}
-                icon={FileText}
-                colorScheme="text-brand-blue"
-              />
-            )}
-            
-            {task2Answer && (
-              <AnnotatedWritingText
-                taskTitle="Task 2 - Essay Writing"
-                originalText={task2Answer}
-                annotatedOriginal={task2AnnotatedOriginal}
-                annotatedCorrected={task2AnnotatedCorrected}
-                corrections={task2Corrections}
-                icon={Edit}
-                colorScheme="text-brand-purple"
-              />
-            )}
-          </div>
-        )}
 
         <TaskSection title="Task 1 Assessment" task={structured.task1} type="task1" />
         <TaskSection title="Task 2 Assessment" task={structured.task2} type="task2" />

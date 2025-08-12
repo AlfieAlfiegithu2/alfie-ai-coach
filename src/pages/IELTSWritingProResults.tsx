@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
 import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/CorrectionVisualizer";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 interface Criterion {
   band: number;
@@ -144,6 +145,17 @@ export default function IELTSWritingProResults() {
 
   const overallBand = Math.min(9.0, Math.max(0.0, structured.overall?.band ?? 7.0));
   const overallMeta = bandToDesc(overallBand);
+  const { toast } = useToast();
+  const [t1OnlyImprovements, setT1OnlyImprovements] = useState(false);
+  const [t2OnlyImprovements, setT2OnlyImprovements] = useState(false);
+  const t1Counts = {
+    errors: t1CorrData?.original_spans.filter((s) => s.status === 'error').length ?? 0,
+    improvements: t1CorrData?.corrected_spans.filter((s) => s.status === 'improvement').length ?? 0,
+  };
+  const t2Counts = {
+    errors: t2CorrData?.original_spans.filter((s) => s.status === 'error').length ?? 0,
+    improvements: t2CorrData?.corrected_spans.filter((s) => s.status === 'improvement').length ?? 0,
+  };
 
   const TaskSection = ({ title, task, type }: { title: string; task?: TaskAssessment; type: "task1" | "task2" }) => {
     if (!task) return null;
@@ -305,33 +317,61 @@ export default function IELTSWritingProResults() {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <Tabs defaultValue="correction">
-                <TabsList className="grid grid-cols-2 w-full mb-4">
-                  <TabsTrigger value="correction">Correction</TabsTrigger>
-                  <TabsTrigger value="model">Model Answer</TabsTrigger>
-                </TabsList>
-                <TabsContent value="correction">
+              <div className="mb-4 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-text-primary">Your Answer (AI corrections)</div>
+                    <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
+                      <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand-red/40 border border-brand-red/60" /> Error</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand-green/40 border border-brand-green/60" /> Improvement</span>
+                      <Badge variant="outline" className="rounded-xl">{t1Counts.improvements} improvements</Badge>
+                      <Badge variant="outline" className="rounded-xl">{t1Counts.errors} errors</Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-caption">Show only improvements</span>
+                      <Switch checked={t1OnlyImprovements} onCheckedChange={setT1OnlyImprovements} />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => {
+                        if (!t1CorrData?.corrected_spans) return;
+                        const txt = t1CorrData.corrected_spans.map(s => s.text).join("");
+                        navigator.clipboard.writeText(txt);
+                        toast({ title: "Copied corrected text", description: "The improved version is in your clipboard." });
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" /> Copy corrected text
+                    </Button>
+                  </div>
+                </div>
+                <div>
                   {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
                   {t1Error && <div className="status-error">{t1Error}</div>}
                   {t1CorrData && (
                     <CorrectionVisualizer
                       originalSpans={t1CorrData.original_spans}
                       correctedSpans={t1CorrData.corrected_spans}
+                      dimNeutral={t1OnlyImprovements}
                     />
                   )}
                   {!t1Loading && !t1Error && !t1CorrData && (
                     <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
                   )}
-                </TabsContent>
-                <TabsContent value="model">
+                </div>
+                <div className="mt-6">
+                  <div className="text-sm font-medium text-text-primary mb-2">Model Answer</div>
                   {structured?.task1?.feedback_markdown ? (
                     <div className="prose max-w-none text-text-secondary"
                       dangerouslySetInnerHTML={{ __html: structured.task1.feedback_markdown.replace(/\n/g, '<br>') }} />
                   ) : (
                     <div className="text-caption text-text-secondary">Model answer not available.</div>
                   )}
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : null}
@@ -346,33 +386,61 @@ export default function IELTSWritingProResults() {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <Tabs defaultValue="correction">
-                <TabsList className="grid grid-cols-2 w-full mb-4">
-                  <TabsTrigger value="correction">Correction</TabsTrigger>
-                  <TabsTrigger value="model">Model Answer</TabsTrigger>
-                </TabsList>
-                <TabsContent value="correction">
+              <div className="mb-4 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-text-primary">Your Answer (AI corrections)</div>
+                    <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
+                      <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand-red/40 border border-brand-red/60" /> Error</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand-green/40 border border-brand-green/60" /> Improvement</span>
+                      <Badge variant="outline" className="rounded-xl">{t2Counts.improvements} improvements</Badge>
+                      <Badge variant="outline" className="rounded-xl">{t2Counts.errors} errors</Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-caption">Show only improvements</span>
+                      <Switch checked={t2OnlyImprovements} onCheckedChange={setT2OnlyImprovements} />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => {
+                        if (!t2CorrData?.corrected_spans) return;
+                        const txt = t2CorrData.corrected_spans.map(s => s.text).join("");
+                        navigator.clipboard.writeText(txt);
+                        toast({ title: "Copied corrected text", description: "The improved version is in your clipboard." });
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" /> Copy corrected text
+                    </Button>
+                  </div>
+                </div>
+                <div>
                   {t2Loading && <div className="status-warning">Analyzing Task 2…</div>}
                   {t2Error && <div className="status-error">{t2Error}</div>}
                   {t2CorrData && (
                     <CorrectionVisualizer
                       originalSpans={t2CorrData.original_spans}
                       correctedSpans={t2CorrData.corrected_spans}
+                      dimNeutral={t2OnlyImprovements}
                     />
                   )}
                   {!t2Loading && !t2Error && !t2CorrData && (
                     <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
                   )}
-                </TabsContent>
-                <TabsContent value="model">
+                </div>
+                <div className="mt-6">
+                  <div className="text-sm font-medium text-text-primary mb-2">Model Answer</div>
                   {structured?.task2?.feedback_markdown ? (
                     <div className="prose max-w-none text-text-secondary"
                       dangerouslySetInnerHTML={{ __html: structured.task2.feedback_markdown.replace(/\n/g, '<br>') }} />
                   ) : (
                     <div className="text-caption text-text-secondary">Model answer not available.</div>
                   )}
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : null}

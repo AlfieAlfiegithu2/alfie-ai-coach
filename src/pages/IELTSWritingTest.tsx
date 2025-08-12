@@ -398,15 +398,18 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   </div>
                   <div className="h-[500px] overflow-auto rounded-lg border border-border bg-background p-2">
-                    <img 
-                      src={currentTaskData.imageUrl} 
-                      alt="Task 1 visual data" 
-                      className="mx-auto" 
-                      style={{ 
-                        transform: `scale(${zoomScale})`, 
-                        transformOrigin: 'center top' 
-                      }} 
-                    />
+                    <div className="min-w-fit min-h-fit">
+                      <img 
+                        src={currentTaskData.imageUrl} 
+                        alt="Task 1 visual data" 
+                        className="block mx-auto" 
+                        style={{ 
+                          transform: `scale(${zoomScale})`, 
+                          transformOrigin: 'center top',
+                          maxWidth: 'none'
+                        }} 
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -505,37 +508,42 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           </Card>
         )}
 
-        {/* Floating Catbot in Bottom Right */}
+        {/* AI Assistant Button and Chat */}
         <div className="fixed bottom-6 right-6 z-50">
           {isCatbotOpen ? (
-            <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in">
-              <CardHeader className="pb-4">
+            <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border-2 border-primary/20">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-3xl">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-3 text-slate-950">
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                  <CardTitle className="flex items-center gap-3 text-foreground">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center border-2 border-primary/30">
+                      <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI Assistant" className="w-6 h-6 rounded-full" />
                     </div>
                     <div>
-                      <div className="text-base font-semibold text-foreground">Catbot</div>
-                      <div className="text-xs text-muted-foreground font-normal">Your AI Writing Tutor</div>
+                      <div className="text-base font-semibold text-foreground">AI Assistant</div>
+                      <div className="text-xs text-muted-foreground font-normal">Your IELTS Writing Tutor</div>
                     </div>
                   </CardTitle>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => setIsCatbotOpen(false)}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground"
                   >
                     ✕
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card">
+              <CardContent className="h-full flex flex-col p-4">
+                <div className="flex-1 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm max-h-[300px]">
                   {getCurrentChatMessages().map(message => (
                     <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-muted text-foreground border border-border' : 'bg-card text-foreground border border-border'}`}>
+                        {message.type === 'bot' && (
+                          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1 shrink-0">
+                            <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI" className="w-4 h-4 rounded-full" />
+                          </div>
+                        )}
+                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground border border-border'}`}>
                           <div
                             dangerouslySetInnerHTML={{
                               __html: message.content
@@ -545,7 +553,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                 .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
                                 .replace(/\n/g, '<br>')
                             }}
-                            className="prose prose-sm max-w-none"
+                            className="prose prose-sm max-w-none dark:prose-invert"
                           />
                         </div>
                       </div>
@@ -553,24 +561,24 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   ))}
                   {isChatLoading && (
                     <div className="flex gap-3 justify-start">
-                      <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
-                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1">
+                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI" className="w-4 h-4 rounded-full" />
                       </div>
                       <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
                         <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8">
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 border-primary/30 hover:bg-primary/10">
                     📝 Structure
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8">
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 border-primary/30 hover:bg-primary/10">
                     📚 Vocabulary
                   </Button>
                 </div>
@@ -579,13 +587,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     type="text"
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
-                    onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
-                    placeholder="Ask Catbot for writing help..."
-                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    onKeyPress={e => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()}
+                    placeholder="Ask for writing help..."
+                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                     disabled={isChatLoading}
                   />
-                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm">
-                    Send
+                  <Button 
+                    onClick={() => sendChatMessage()} 
+                    disabled={isChatLoading || !newMessage.trim()} 
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isChatLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
+                    ) : (
+                      'Send'
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -593,10 +610,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           ) : (
             <Button
               onClick={() => setIsCatbotOpen(true)}
-              size="lg"
-              className="rounded-full w-16 h-16 shadow-xl bg-primary hover:bg-primary/90 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border-2 border-primary/30 px-6 py-3 h-auto rounded-full flex items-center gap-3 font-semibold transition-all duration-300 hover:scale-105"
             >
-              <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-8 h-8 rounded-full" />
+              <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI Assistant" className="w-5 h-5 rounded-full" />
+              </div>
+              <span className="text-sm">AI Assistant</span>
             </Button>
           )}
         </div>

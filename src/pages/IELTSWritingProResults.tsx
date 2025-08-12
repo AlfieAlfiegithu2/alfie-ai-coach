@@ -8,6 +8,7 @@ import { ArrowLeft, Copy } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
 import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/CorrectionVisualizer";
+import SentenceCompare from "@/components/SentenceCompare";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
@@ -148,6 +149,8 @@ export default function IELTSWritingProResults() {
   const { toast } = useToast();
   const [t1OnlyImprovements, setT1OnlyImprovements] = useState(false);
   const [t2OnlyImprovements, setT2OnlyImprovements] = useState(false);
+  const [t1SentenceView, setT1SentenceView] = useState(false);
+  const [t2SentenceView, setT2SentenceView] = useState(false);
   const t1Counts = {
     errors: t1CorrData?.original_spans.filter((s) => s.status === 'error').length ?? 0,
     improvements: t1CorrData?.corrected_spans.filter((s) => s.status === 'improvement').length ?? 0,
@@ -156,7 +159,6 @@ export default function IELTSWritingProResults() {
     errors: t2CorrData?.original_spans.filter((s) => s.status === 'error').length ?? 0,
     improvements: t2CorrData?.corrected_spans.filter((s) => s.status === 'improvement').length ?? 0,
   };
-
   const TaskSection = ({ title, task, type }: { title: string; task?: TaskAssessment; type: "task1" | "task2" }) => {
     if (!task) return null;
     const crit = task.criteria || {};
@@ -333,6 +335,10 @@ export default function IELTSWritingProResults() {
                       <span className="text-caption">Show only improvements</span>
                       <Switch checked={t1OnlyImprovements} onCheckedChange={setT1OnlyImprovements} />
                     </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-caption">Sentence-by-sentence view</span>
+                      <Switch checked={t1SentenceView} onCheckedChange={setT1SentenceView} />
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -352,23 +358,22 @@ export default function IELTSWritingProResults() {
                   {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
                   {t1Error && <div className="status-error">{t1Error}</div>}
                   {t1CorrData && (
-                    <CorrectionVisualizer
-                      originalSpans={t1CorrData.original_spans}
-                      correctedSpans={t1CorrData.corrected_spans}
-                      dimNeutral={t1OnlyImprovements}
-                    />
+                    t1SentenceView ? (
+                      <SentenceCompare
+                        originalSpans={t1CorrData.original_spans}
+                        correctedSpans={t1CorrData.corrected_spans}
+                        dimNeutral={t1OnlyImprovements}
+                      />
+                    ) : (
+                      <CorrectionVisualizer
+                        originalSpans={t1CorrData.original_spans}
+                        correctedSpans={t1CorrData.corrected_spans}
+                        dimNeutral={t1OnlyImprovements}
+                      />
+                    )
                   )}
                   {!t1Loading && !t1Error && !t1CorrData && (
                     <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
-                  )}
-                </div>
-                <div className="mt-6">
-                  <div className="text-sm font-medium text-text-primary mb-2">Model Answer</div>
-                  {structured?.task1?.feedback_markdown ? (
-                    <div className="prose max-w-none text-text-secondary"
-                      dangerouslySetInnerHTML={{ __html: structured.task1.feedback_markdown.replace(/\n/g, '<br>') }} />
-                  ) : (
-                    <div className="text-caption text-text-secondary">Model answer not available.</div>
                   )}
                 </div>
               </div>
@@ -402,6 +407,10 @@ export default function IELTSWritingProResults() {
                       <span className="text-caption">Show only improvements</span>
                       <Switch checked={t2OnlyImprovements} onCheckedChange={setT2OnlyImprovements} />
                     </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-caption">Sentence-by-sentence view</span>
+                      <Switch checked={t2SentenceView} onCheckedChange={setT2SentenceView} />
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -421,23 +430,22 @@ export default function IELTSWritingProResults() {
                   {t2Loading && <div className="status-warning">Analyzing Task 2…</div>}
                   {t2Error && <div className="status-error">{t2Error}</div>}
                   {t2CorrData && (
-                    <CorrectionVisualizer
-                      originalSpans={t2CorrData.original_spans}
-                      correctedSpans={t2CorrData.corrected_spans}
-                      dimNeutral={t2OnlyImprovements}
-                    />
+                    t2SentenceView ? (
+                      <SentenceCompare
+                        originalSpans={t2CorrData.original_spans}
+                        correctedSpans={t2CorrData.corrected_spans}
+                        dimNeutral={t2OnlyImprovements}
+                      />
+                    ) : (
+                      <CorrectionVisualizer
+                        originalSpans={t2CorrData.original_spans}
+                        correctedSpans={t2CorrData.corrected_spans}
+                        dimNeutral={t2OnlyImprovements}
+                      />
+                    )
                   )}
                   {!t2Loading && !t2Error && !t2CorrData && (
                     <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
-                  )}
-                </div>
-                <div className="mt-6">
-                  <div className="text-sm font-medium text-text-primary mb-2">Model Answer</div>
-                  {structured?.task2?.feedback_markdown ? (
-                    <div className="prose max-w-none text-text-secondary"
-                      dangerouslySetInnerHTML={{ __html: structured.task2.feedback_markdown.replace(/\n/g, '<br>') }} />
-                  ) : (
-                    <div className="text-caption text-text-secondary">Model answer not available.</div>
                   )}
                 </div>
               </div>

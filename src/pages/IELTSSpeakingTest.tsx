@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Sparkles } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Sparkles, Bot } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
 import { supabase } from "@/integrations/supabase/client";
@@ -225,8 +225,29 @@ const IELTSSpeakingTest = () => {
     }
   };
 
+  const beep = () => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 880;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01);
+      o.start();
+      setTimeout(() => {
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.12);
+        setTimeout(() => { o.stop(); ctx.close(); }, 150);
+      }, 100);
+    } catch {}
+  };
+
   const startRecording = async () => {
     try {
+      beep();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
@@ -271,6 +292,7 @@ const IELTSSpeakingTest = () => {
   };
 
   const stopRecording = () => {
+    beep();
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -623,16 +645,7 @@ const IELTSSpeakingTest = () => {
               <div className="flex items-center gap-3">
                 <VolumeSlider defaultValue={50} className="w-20" />
                 
-                {/* AI Assistant Button */}
-                <Button
-                  onClick={() => setShowAIAssistant((v) => !v)}
-                  variant="outline"
-                  size="sm"
-                  className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  AI Assistant
-                </Button>
+                {/* AI Assistant moved to floating bottom-right */}
                 
                 {timeLeft > 0 && (
                   <Badge variant="outline" className="flex items-center gap-2">
@@ -647,10 +660,10 @@ const IELTSSpeakingTest = () => {
             {/* Part 2 Preparation Timer with Note-taking */}
             {currentPart === 2 && preparationTime > 0 && (
               <div className="space-y-4">
-                <div className="text-center p-6 bg-blue-50 rounded-lg">
-                  <Clock className="w-8 h-8 mx-auto mb-3 text-blue-600" />
+                <div className="text-center p-6 bg-primary/5 rounded-lg border border-primary/10">
+                  <Clock className="w-8 h-8 mx-auto mb-3 text-primary" />
                   <h3 className="text-lg font-semibold mb-2">Preparation Time</h3>
-                  <p className="text-2xl font-bold text-blue-600">{formatTime(preparationTime)}</p>
+                  <p className="text-2xl font-bold text-primary">{formatTime(preparationTime)}</p>
                   <p className="text-sm text-muted-foreground mt-2">
                     Use this time to prepare your response and take notes
                   </p>
@@ -667,7 +680,7 @@ const IELTSSpeakingTest = () => {
                         variant="outline"
                         size="sm"
                         onClick={getNoteTakingTips}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        className="text-primary border-primary/30 hover:bg-primary/10"
                       >
                         💡 Need help with note-taking?
                       </Button>
@@ -678,13 +691,13 @@ const IELTSSpeakingTest = () => {
                       placeholder="Write your preparation notes here..."
                       value={part2Notes}
                       onChange={(e) => setPart2Notes(e.target.value)}
-                      className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     
                     {showNoteTips && noteTips && (
-                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h4 className="font-semibold text-blue-800 mb-2">💡 Note-taking Tips:</h4>
-                        <p className="text-sm text-blue-700">{noteTips}</p>
+                      <div className="mt-3 p-3 bg-muted/50 border border-border rounded-lg">
+                        <h4 className="font-semibold text-foreground mb-2">💡 Note-taking Tips:</h4>
+                        <p className="text-sm text-muted-foreground">{noteTips}</p>
                       </div>
                     )}
                   </CardContent>
@@ -710,12 +723,12 @@ const IELTSSpeakingTest = () => {
 
             {/* Audio Prompt with Auto-play and Repeat */}
             {currentPrompt?.audio_url && currentPart !== 2 && (
-              <Card className="bg-blue-50 border-blue-200">
+              <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-6">
                   <div className="text-center space-y-4">
                     <div className="flex items-center justify-center space-x-2 mb-3">
-                      <Volume2 className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium text-blue-900">
+                      <Volume2 className="w-5 h-5 text-primary" />
+                      <span className="font-medium text-foreground">
                         {isPlaying ? 'Playing Question Audio...' : 'Question Audio Ready'}
                       </span>
                     </div>
@@ -725,7 +738,7 @@ const IELTSSpeakingTest = () => {
                         onClick={repeatAudio}
                         disabled={isPlaying}
                         variant="outline"
-                        className="rounded-xl border-blue-300 text-blue-700 hover:bg-blue-100"
+                        className="rounded-xl border-primary/30 text-primary hover:bg-primary/10"
                         size="lg"
                       >
                         {isPlaying ? (
@@ -742,7 +755,7 @@ const IELTSSpeakingTest = () => {
                       </Button>
                     </div>
                     
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-muted-foreground">
                       {currentPart === 1 ? 'Listen carefully and answer the question' : 'Listen to the discussion question'}
                     </p>
                   </div>
@@ -861,17 +874,25 @@ const IELTSSpeakingTest = () => {
           </CardContent>
         </Card>
 
-        {/* Interactive AI Assistant (inline) */}
-        {showAIAssistant && (
-          <InteractiveSpeakingAssistant
-            isOpen={true}
-            onClose={() => setShowAIAssistant(false)}
-            questionText={currentQuestionText}
-            questionType={questionType}
-            partNumber={currentPart}
-            renderInline
-          />
-        )}
+        {/* AI Assistant - Floating Bottom Right */}
+        <div className="fixed bottom-6 right-6 z-50">
+          {showAIAssistant ? (
+            <div className="w-96 h-[500px] animate-scale-in shadow-2xl">
+              <InteractiveSpeakingAssistant
+                isOpen={true}
+                onClose={() => setShowAIAssistant(false)}
+                questionText={currentQuestionText}
+                questionType={questionType}
+                partNumber={currentPart}
+                renderInline
+              />
+            </div>
+          ) : (
+            <Button onClick={() => setShowAIAssistant(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center">
+              <Bot className="w-6 h-6" />
+            </Button>
+          )}
+        </div>
       </div>
     </StudentLayout>
   );

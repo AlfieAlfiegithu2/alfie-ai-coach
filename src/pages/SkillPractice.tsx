@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PronunciationPracticeItem from "@/components/PronunciationPracticeItem";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
+import VocabularyMapGrid from "@/components/VocabularyMapGrid";
 const db = supabase as any;
 
 interface Question {
@@ -243,14 +244,18 @@ const [overallSummary, setOverallSummary] = useState<string>("");
     );
   }
   if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble" || slug === "listening-for-details") {
+    if (slug === "vocabulary-builder") {
+      return (
+        <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
+          <section className="max-w-4xl mx-auto space-y-3">
+            <VocabularyMapGrid />
+          </section>
+        </StudentLayout>
+      );
+    }
     return (
       <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
-          <section className="max-w-3xl mx-auto space-y-3">
-            {slug === "vocabulary-builder" && (
-              <div className="flex justify-end">
-                <Button size="sm" variant="secondary" onClick={() => navigate('/skills/vocabulary-builder/map')}>Map Mode</Button>
-              </div>
-            )}
+          <section className="max-w-3xl mx-auto">
             {tests.length === 0 ? (
               <Card className="border-light-border">
                 <CardContent className="p-4">
@@ -262,15 +267,13 @@ const [overallSummary, setOverallSummary] = useState<string>("");
                 <CardContent className="p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
                     {tests.map((t) => {
-                      const path = slug === "vocabulary-builder"
-                        ? `/skills/vocabulary-builder/test/${t.id}`
-                        : slug === "grammar-fix-it"
-                          ? `/skills/grammar-fix-it/test/${t.id}`
-                          : slug === "paraphrasing-challenge"
-                            ? `/skills/paraphrasing-challenge/test/${t.id}`
-                            : slug === "sentence-structure-scramble"
-                              ? `/skills/sentence-structure-scramble/test/${t.id}`
-                              : `/skills/listening-for-details/test/${t.id}`;
+                      const path = slug === "grammar-fix-it"
+                        ? `/skills/grammar-fix-it/test/${t.id}`
+                        : slug === "paraphrasing-challenge"
+                          ? `/skills/paraphrasing-challenge/test/${t.id}`
+                          : slug === "sentence-structure-scramble"
+                            ? `/skills/sentence-structure-scramble/test/${t.id}`
+                            : `/skills/listening-for-details/test/${t.id}`;
                       return (
                         <Card key={t.id} className="border-light-border h-full">
                           <CardContent className="p-4 flex flex-col items-start gap-3">

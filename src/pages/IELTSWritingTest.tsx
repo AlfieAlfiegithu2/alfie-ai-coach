@@ -7,7 +7,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-
+import { Bot, BookOpen, ListTree, Clock } from "lucide-react";
 interface Task {
   id: string;
   title: string;
@@ -39,14 +39,14 @@ const IELTSWritingTestInterface = () => {
   const [task1ChatMessages, setTask1ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
-    content: "Hello! I'm **Catbot**, your friendly IELTS Writing tutor! 🐱 I'm here to help you with **Task 1 - Data Description**. I'll guide you through analyzing charts, graphs, or diagrams and structuring your description. What would you like help with?",
+    content: "Hello! I'm Catbot, your IELTS Writing tutor. I'm here to help you with Task 1 - Data Description. I'll guide you through analyzing charts, graphs, or diagrams and structuring your description. What would you like help with?",
     timestamp: new Date()
   }]);
   
   const [task2ChatMessages, setTask2ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
-    content: "Hello! I'm **Catbot**, your friendly IELTS Writing tutor! 🐱 I'm here to help you with **Task 2 - Essay Writing**. I'll guide you through structuring arguments, developing ideas, and presenting your opinion clearly. What would you like help with?",
+    content: "Hello! I'm Catbot, your IELTS Writing tutor. I'm here to help you with Task 2 - Essay Writing. I'll guide you through structuring arguments, developing ideas, and presenting your opinion clearly. What would you like help with?",
     timestamp: new Date()
   }]);
   

@@ -65,7 +65,10 @@ Focus on meaningful improvements that would actually raise the IELTS band score.
       body: JSON.stringify({
         model: 'gpt-4.1-2025-04-14',
         messages: [
-          { role: 'system', content: 'You are an expert IELTS Speaking examiner who provides detailed analysis and improvements.' },
+          { 
+            role: 'system', 
+            content: 'You are an expert IELTS Speaking examiner who provides detailed analysis and improvements. Ensure you only return valid JSON and never include Korean text in transcriptions unless the original text was Korean.' 
+          },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,

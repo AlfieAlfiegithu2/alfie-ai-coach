@@ -46,7 +46,7 @@ const IELTSSpeakingResults = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
-  const [expandedTranscriptions, setExpandedTranscriptions] = useState<Record<string, boolean>>({});
+  const [playingAISuggestion, setPlayingAISuggestion] = useState<boolean>(false);
   
   const { testData, recordings } = location.state || {};
 
@@ -301,11 +301,56 @@ const IELTSSpeakingResults = () => {
     console.log('🎉 All AI suggestions generated:', Object.keys(suggestions).length);
   };
 
-  const toggleTranscription = (questionKey: string) => {
-    setExpandedTranscriptions(prev => ({
-      ...prev,
-      [questionKey]: !prev[questionKey]
-    }));
+  const playAISuggestion = async (suggestedSpans: Span[]) => {
+    if (playingAISuggestion) {
+      setPlayingAISuggestion(false);
+      return;
+    }
+
+    try {
+      setPlayingAISuggestion(true);
+      
+      // Convert spans to text for TTS
+      const textToSpeak = suggestedSpans.map(span => span.text).join('');
+      
+      // Call the TTS edge function
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: {
+          text: textToSpeak,
+          voice: 'alloy',
+          speed: 0.9
+        }
+      });
+
+      if (error) throw error;
+
+      if (data && data.audio_url) {
+        const audio = new Audio(data.audio_url);
+        
+        audio.onended = () => {
+          setPlayingAISuggestion(false);
+        };
+        
+        audio.onerror = () => {
+          setPlayingAISuggestion(false);
+          toast({
+            title: "Audio Error",
+            description: "Failed to play AI suggestion audio",
+            variant: "destructive"
+          });
+        };
+        
+        await audio.play();
+      }
+    } catch (error) {
+      console.error('Error playing AI suggestion:', error);
+      setPlayingAISuggestion(false);
+      toast({
+        title: "Audio Error",
+        description: "Failed to generate audio for AI suggestion",
+        variant: "destructive"
+      });
+    }
   };
 
   const playAudio = async (audioUrl: string, questionId: string) => {
@@ -576,22 +621,12 @@ const IELTSSpeakingResults = () => {
                     </span>
                   </div>
                   
-                  {/* Transcription toggle directly under audio */}
+                  {/* Show transcription directly - no toggle needed */}
                   <div className="mt-4 pt-3 border-t border-border/50">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleTranscription(`${analysis.part}_${analysis.questionIndex}`)}
-                      className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      {expandedTranscriptions[`${analysis.part}_${analysis.questionIndex}`] ? 'Hide' : 'Show'} speech transcription
-                    </Button>
-                    {expandedTranscriptions[`${analysis.part}_${analysis.questionIndex}`] && (
-                      <div className="mt-3 p-3 bg-muted rounded-lg text-sm max-h-32 overflow-y-auto border">
-                        {analysis.transcription}
-                      </div>
-                    )}
+                    <h5 className="text-sm font-medium mb-2 text-muted-foreground">Your Speech Transcription:</h5>
+                    <div className="p-3 bg-muted rounded-lg text-sm border">
+                      {analysis.transcription}
+                    </div>
                   </div>
                 </div>
 
@@ -613,18 +648,41 @@ const IELTSSpeakingResults = () => {
                   </div>
                 </div>
 
-                {/* AI Suggestion Visualizer */}
+                {/* AI Suggested Better Answer - moved under audio response */}
                 {(() => {
                   const questionKey = `${analysis.part}_${analysis.questionIndex}`;
                   const suggestion = aiSuggestions[questionKey];
                   
                   if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
                     return (
-                      <div>
-                        <h4 className="font-medium text-primary mb-3 flex items-center gap-2">
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
                           <TrendingUp className="w-4 h-4" />
                           AI Suggested Better Answer:
                         </h4>
+                         <div className="flex items-center gap-3 mb-4">
+                           <Button
+                             onClick={() => playAISuggestion(suggestion.suggested_spans)}
+                             variant={playingAISuggestion ? "default" : "outline"}
+                             size="sm"
+                             className="flex items-center gap-2"
+                           >
+                             {playingAISuggestion ? (
+                               <>
+                                 <Pause className="w-4 h-4" />
+                                 Stop AI Audio
+                               </>
+                             ) : (
+                               <>
+                                 <Play className="w-4 h-4" />
+                                 Play AI Answer
+                               </>
+                             )}
+                           </Button>
+                           <span className="text-sm text-muted-foreground">
+                             {playingAISuggestion ? 'Playing improved version...' : 'Listen to the improved version of your response'}
+                           </span>
+                         </div>
                         <SuggestionVisualizer
                           originalSpans={suggestion.original_spans}
                           suggestedSpans={suggestion.suggested_spans}

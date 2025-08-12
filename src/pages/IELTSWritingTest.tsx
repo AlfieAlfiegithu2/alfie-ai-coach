@@ -454,62 +454,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </Card>
             </ResizablePanel>
           </ResizablePanelGroup>
-        ) : currentTask === 2 ? (
-          <Card className="glass-card rounded-3xl">
-            <CardHeader>
-              <CardTitle className="text-slate-950">{currentTaskData?.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Instructions above the writing area */}
-              {currentTaskData?.instructions && (
-                <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{currentTaskData.instructions}</p>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-foreground">Your answer</h3>
-                  <div className="text-sm text-muted-foreground">
-                    Words: {getWordCount(task2Answer)} • Min: 250
-                  </div>
-                </div>
-                
-                <Textarea 
-                  value={task2Answer} 
-                  onChange={e => setTask2Answer(e.target.value)} 
-                  placeholder="Write your Task 2 essay here..." 
-                  className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" 
-                />
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-white/80">
-                  {getWordCount(task2Answer) >= 250 ? (
-                    <span className="text-green-400">✓ Word count requirement met</span>
-                  ) : (
-                    <span className="text-orange-400">
-                      {250 - getWordCount(task2Answer)} more words needed
-                    </span>
-                  )}
-                </div>
-                <Button 
-                  onClick={submitTest} 
-                  disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
-                  className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit for Feedback'
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         ) : (
           <Card className="glass-card rounded-3xl">
             <CardHeader>
@@ -540,158 +484,122 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </span>
                   )}
                 </div>
+                {currentTask === 2 && (
+                  <Button 
+                    onClick={submitTest} 
+                    disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
+                    className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Submitting...
+                      </>
+                    ) : (
+                      'Submit for Feedback'
+                    )}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* AI Assistant Button */}
+        {/* Floating Catbot in Bottom Right */}
         <div className="fixed bottom-6 right-6 z-50">
-          <Button
-            onClick={() => setIsCatbotOpen(!isCatbotOpen)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg"
-          >
-            AI Assistant
-          </Button>
-        </div>
-
-        {/* Inline AI Assistant */}
-        {isCatbotOpen && (
-          <Card className="glass-card rounded-3xl animate-fade-in">
-            <div className="p-6 pb-0 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
-                  <h3 className="text-lg font-semibold text-slate-950">AI Writing Assistant - Task {currentTask}</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">Get personalized help from Catbot for your IELTS Writing task</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsCatbotOpen(false)} aria-label="Close">
-                ✕
-              </Button>
-            </div>
-
-            {/* Current Task Context */}
-            <div className="px-6 py-2 flex-shrink-0">
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-primary mb-2">Current Task:</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {currentTaskData?.title || "Task not available"}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Messages Area */}
-            <div className="mx-6 bg-muted/30 rounded-lg p-4 h-80 overflow-y-auto space-y-4">
-              {getCurrentChatMessages().map(message => (
-                <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {message.type === 'bot' && (
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
-                      </div>
-                    </div>
-                  )}
-                  <div className={`max-w-[80%] p-4 rounded-2xl text-sm shadow-sm ${
-                    message.type === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-card border border-border'
-                  }`}>
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: message.content
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          .replace(/^• (.*)$/gm, '<li>$1</li>')
-                          .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-                          .replace(/\n/g, '<br>')
-                      }}
-                      className="prose prose-sm max-w-none leading-relaxed whitespace-pre-wrap"
-                    />
-                  </div>
-                  {message.type === 'user' && (
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                        <div className="w-4 h-4 text-muted-foreground">👤</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {isChatLoading && (
-                <div className="flex gap-3 justify-start">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          {isCatbotOpen ? (
+            <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-3 text-slate-950">
+                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                       <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
                     </div>
-                  </div>
-                  <div className="bg-card border border-border p-4 rounded-2xl shadow-sm">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-100"></div>
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-200"></div>
+                    <div>
+                      <div className="text-base font-semibold text-foreground">Catbot</div>
+                      <div className="text-xs text-muted-foreground font-normal">Your AI Writing Tutor</div>
                     </div>
-                  </div>
+                  </CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsCatbotOpen(false)}
+                    className="h-8 w-8 p-0"
+                  >
+                    ✕
+                  </Button>
                 </div>
-              )}
-            </div>
-
-            {/* Quick Help Buttons */}
-            <div className="flex-shrink-0 p-6 pt-2 space-y-3">
-              <div className="flex flex-wrap gap-2 justify-center">
-                <Button
-                  onClick={() => handleSuggestionClick("Help with Writing Structure")}
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full text-primary border-primary/20 hover:bg-primary/5"
-                  disabled={isChatLoading}
-                >
-                  📝 Structure
-                </Button>
-                <Button
-                  onClick={() => handleSuggestionClick("Suggest Some Vocabulary")}
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full text-primary border-primary/20 hover:bg-primary/5"
-                  disabled={isChatLoading}
-                >
-                  📚 Vocabulary
-                </Button>
-                <Button
-                  onClick={() => handleSuggestionClick("Grammar Tips")}
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full text-primary border-primary/20 hover:bg-primary/5"
-                  disabled={isChatLoading}
-                >
-                  ⚡ Grammar
-                </Button>
-              </div>
-
-              {/* Input Area */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
-                  placeholder="Ask me anything about this writing task..."
-                  className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                  disabled={isChatLoading}
-                />
-                <Button
-                  onClick={() => sendChatMessage()}
-                  disabled={isChatLoading || !newMessage.trim()}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  Send
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
+              </CardHeader>
+              <CardContent className="h-full flex flex-col">
+                <div className="flex-1 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card">
+                  {getCurrentChatMessages().map(message => (
+                    <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-muted text-foreground border border-border' : 'bg-card text-foreground border border-border'}`}>
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: message.content
+                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                .replace(/^• (.*)$/gm, '<li>$1</li>')
+                                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                                .replace(/\n/g, '<br>')
+                            }}
+                            className="prose prose-sm max-w-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {isChatLoading && (
+                    <div className="flex gap-3 justify-start">
+                      <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
+                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                      </div>
+                      <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8">
+                    📝 Structure
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8">
+                    📚 Vocabulary
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
+                    placeholder="Ask Catbot for writing help..."
+                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    disabled={isChatLoading}
+                  />
+                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm">
+                    Send
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Button
+              onClick={() => setIsCatbotOpen(true)}
+              size="lg"
+              className="rounded-full w-16 h-16 shadow-xl bg-primary hover:bg-primary/90 text-white"
+            >
+              <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-8 h-8 rounded-full" />
+            </Button>
+          )}
+        </div>
       </div>
     </StudentLayout>
   );

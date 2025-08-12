@@ -370,10 +370,7 @@ export default function IELTSWritingProResults() {
         {task2Answer ? <Card className="card-elevated mb-8 border-2 border-brand-green/20">
             <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
               <CardTitle className="text-heading-3">Task 2 – AI Corrections</CardTitle>
-              <div className="text-caption text-text-secondary mt-1">
-                {task2Data?.title ? <div className="font-medium text-text-primary">{task2Data.title}</div> : null}
-                {task2Data?.instructions ? <div>{task2Data.instructions}</div> : null}
-              </div>
+              
             </CardHeader>
             <CardContent className="p-6">
               <div className="mb-4 flex flex-col gap-4">

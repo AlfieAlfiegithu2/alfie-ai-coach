@@ -16,26 +16,49 @@ interface UseAdminAuthReturn {
 }
 
 export function useAdminAuth(): UseAdminAuthReturn {
-  // Temporarily bypassing authentication - admin access is open
-  const [admin, setAdmin] = useState<Admin | null>({ id: 'temp', email: 'admin@temp.com', name: 'Admin' });
+  const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Set a temporary admin token for content operations
+  // Check for existing admin session on mount
   useEffect(() => {
-    if (admin && !localStorage.getItem('admin_token')) {
-      localStorage.setItem('admin_token', 'temp-admin-token-' + Date.now());
-      console.log('Admin token set for content operations');
+    const storedAdmin = localStorage.getItem('admin_user');
+    const storedToken = localStorage.getItem('admin_token');
+    
+    if (storedAdmin && storedToken) {
+      try {
+        const adminData = JSON.parse(storedAdmin);
+        setAdmin(adminData);
+      } catch (error) {
+        console.error('Failed to parse stored admin data:', error);
+        localStorage.removeItem('admin_user');
+        localStorage.removeItem('admin_token');
+      }
     }
-  }, [admin]);
+  }, []);
 
   const login = async (email: string, password: string) => {
-    // Temporarily bypassing authentication
-    const tempAdmin = { id: 'temp', email: email, name: 'Admin' };
-    setAdmin(tempAdmin);
-    localStorage.setItem('admin_token', 'temp-admin-token-' + Date.now());
-    localStorage.setItem('admin_user', JSON.stringify(tempAdmin));
-    console.log('Admin logged in with temporary token');
-    return { success: true };
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { action: 'login', email, password }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.admin && data.token) {
+        const adminData = data.admin;
+        setAdmin(adminData);
+        localStorage.setItem('admin_token', data.token);
+        localStorage.setItem('admin_user', JSON.stringify(adminData));
+        return { success: true };
+      } else {
+        return { error: data.error || 'Login failed' };
+      }
+    } catch (error: any) {
+      return { error: error.message || 'Login failed' };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {

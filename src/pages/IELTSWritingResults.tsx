@@ -230,17 +230,14 @@ const IELTSWritingResults = () => {
               <CardTitle className="text-heading-3">Your IELTS Writing Band Score</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="text-center py-6">
-            <div className="flex items-center justify-center mb-4">
-              <CelebrationLottieAnimation size="md" />
-            </div>
+          <CardContent className="text-center py-4">
             <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
               {overallBand.toFixed(1)}
             </div>
-            <Badge variant="outline" className={`${getBandColor(overallBand)} text-lg px-4 py-2 rounded-2xl`}>
+            <Badge variant="outline" className={`${getBandColor(overallBand)} text-lg px-4 py-2 rounded-2xl mb-2`}>
               {getBandDescription(overallBand)} Performance
             </Badge>
-            <p className="text-caption mt-4">
+            <p className="text-caption">
               Based on official IELTS assessment criteria
             </p>
           </CardContent>

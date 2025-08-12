@@ -9,7 +9,7 @@ import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
 import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/CorrectionVisualizer";
 import SentenceCompare from "@/components/SentenceCompare";
-import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
 
 interface Criterion {
@@ -147,8 +147,6 @@ export default function IELTSWritingProResults() {
   const overallBand = Math.min(9.0, Math.max(0.0, structured.overall?.band ?? 7.0));
   const overallMeta = bandToDesc(overallBand);
   const { toast } = useToast();
-  const [t1OnlyImprovements, setT1OnlyImprovements] = useState(false);
-  const [t2OnlyImprovements, setT2OnlyImprovements] = useState(false);
   const [t1SentenceView, setT1SentenceView] = useState(false);
   const [t2SentenceView, setT2SentenceView] = useState(false);
   const t1Counts = {
@@ -331,14 +329,14 @@ export default function IELTSWritingProResults() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-caption">Show only improvements</span>
-                      <Switch checked={t1OnlyImprovements} onCheckedChange={setT1OnlyImprovements} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-caption">Sentence-by-sentence view</span>
-                      <Switch checked={t1SentenceView} onCheckedChange={setT1SentenceView} />
-                    </div>
+                    <Toggle
+                      pressed={t1SentenceView}
+                      onPressedChange={setT1SentenceView}
+                      className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue"
+                      aria-label="Toggle sentence-by-sentence view"
+                    >
+                      Sentence-by-sentence view
+                    </Toggle>
                     <Button
                       variant="outline"
                       size="sm"
@@ -362,13 +360,11 @@ export default function IELTSWritingProResults() {
                       <SentenceCompare
                         originalSpans={t1CorrData.original_spans}
                         correctedSpans={t1CorrData.corrected_spans}
-                        dimNeutral={t1OnlyImprovements}
                       />
                     ) : (
                       <CorrectionVisualizer
                         originalSpans={t1CorrData.original_spans}
                         correctedSpans={t1CorrData.corrected_spans}
-                        dimNeutral={t1OnlyImprovements}
                       />
                     )
                   )}
@@ -403,14 +399,14 @@ export default function IELTSWritingProResults() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-caption">Show only improvements</span>
-                      <Switch checked={t2OnlyImprovements} onCheckedChange={setT2OnlyImprovements} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-caption">Sentence-by-sentence view</span>
-                      <Switch checked={t2SentenceView} onCheckedChange={setT2SentenceView} />
-                    </div>
+                    <Toggle
+                      pressed={t2SentenceView}
+                      onPressedChange={setT2SentenceView}
+                      className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue"
+                      aria-label="Toggle sentence-by-sentence view"
+                    >
+                      Sentence-by-sentence view
+                    </Toggle>
                     <Button
                       variant="outline"
                       size="sm"
@@ -434,13 +430,11 @@ export default function IELTSWritingProResults() {
                       <SentenceCompare
                         originalSpans={t2CorrData.original_spans}
                         correctedSpans={t2CorrData.corrected_spans}
-                        dimNeutral={t2OnlyImprovements}
                       />
                     ) : (
                       <CorrectionVisualizer
                         originalSpans={t2CorrData.original_spans}
                         correctedSpans={t2CorrData.corrected_spans}
-                        dimNeutral={t2OnlyImprovements}
                       />
                     )
                   )}

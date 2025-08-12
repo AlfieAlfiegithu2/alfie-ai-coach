@@ -548,79 +548,149 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {/* AI Assistant Button */}
         <div className="fixed bottom-6 right-6 z-50">
           <Button
-            onClick={() => setIsCatbotOpen(true)}
+            onClick={() => setIsCatbotOpen(!isCatbotOpen)}
             className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg"
           >
             AI Assistant
           </Button>
         </div>
 
-        {/* Bottom Chat Interface */}
+        {/* Inline AI Assistant */}
         {isCatbotOpen && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t animate-slide-up">
-            <div className="max-w-6xl mx-auto p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium">AI Assistant - Task {currentTask}</h3>
+          <Card className="glass-card rounded-3xl animate-fade-in">
+            <div className="p-6 pb-0 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                  <h3 className="text-lg font-semibold text-slate-950">AI Writing Assistant - Task {currentTask}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">Get personalized help from Catbot for your IELTS Writing task</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsCatbotOpen(false)} aria-label="Close">
+                ✕
+              </Button>
+            </div>
+
+            {/* Current Task Context */}
+            <div className="px-6 py-2 flex-shrink-0">
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4">
+                  <h4 className="font-semibold text-primary mb-2">Current Task:</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {currentTaskData?.title || "Task not available"}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Messages Area */}
+            <div className="mx-6 bg-muted/30 rounded-lg p-4 h-80 overflow-y-auto space-y-4">
+              {getCurrentChatMessages().map(message => (
+                <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {message.type === 'bot' && (
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                      </div>
+                    </div>
+                  )}
+                  <div className={`max-w-[80%] p-4 rounded-2xl text-sm shadow-sm ${
+                    message.type === 'user' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-card border border-border'
+                  }`}>
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: message.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                          .replace(/^• (.*)$/gm, '<li>$1</li>')
+                          .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                          .replace(/\n/g, '<br>')
+                      }}
+                      className="prose prose-sm max-w-none leading-relaxed whitespace-pre-wrap"
+                    />
+                  </div>
+                  {message.type === 'user' && (
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <div className="w-4 h-4 text-muted-foreground">👤</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isChatLoading && (
+                <div className="flex gap-3 justify-start">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                    </div>
+                  </div>
+                  <div className="bg-card border border-border p-4 rounded-2xl shadow-sm">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-200"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Help Buttons */}
+            <div className="flex-shrink-0 p-6 pt-2 space-y-3">
+              <div className="flex flex-wrap gap-2 justify-center">
                 <Button
-                  variant="ghost"
+                  onClick={() => handleSuggestionClick("Help with Writing Structure")}
+                  variant="outline"
                   size="sm"
-                  onClick={() => setIsCatbotOpen(false)}
-                  className="h-8 w-8 p-0"
+                  className="rounded-full text-primary border-primary/20 hover:bg-primary/5"
+                  disabled={isChatLoading}
                 >
-                  ✕
+                  📝 Structure
+                </Button>
+                <Button
+                  onClick={() => handleSuggestionClick("Suggest Some Vocabulary")}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full text-primary border-primary/20 hover:bg-primary/5"
+                  disabled={isChatLoading}
+                >
+                  📚 Vocabulary
+                </Button>
+                <Button
+                  onClick={() => handleSuggestionClick("Grammar Tips")}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full text-primary border-primary/20 hover:bg-primary/5"
+                  disabled={isChatLoading}
+                >
+                  ⚡ Grammar
                 </Button>
               </div>
-              
-              {/* Chat Messages */}
-              <div className="h-48 overflow-y-auto space-y-2 p-3 border rounded-lg bg-background/50 mb-3">
-                {getCurrentChatMessages().map(message => (
-                  <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: message.content
-                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                              .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                              .replace(/^• (.*)$/gm, '<li>$1</li>')
-                              .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-                              .replace(/\n/g, '<br>')
-                          }}
-                          className="prose prose-sm max-w-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {isChatLoading && (
-                  <div className="flex gap-3 justify-start">
-                    <div className="bg-muted px-3 py-2 rounded-xl text-sm">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
 
-              {/* Message Input */}
+              {/* Input Area */}
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={e => setNewMessage(e.target.value)}
                   onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
-                  placeholder="Ask for help with your writing..."
-                  className="flex-1 px-3 py-2 border rounded-md bg-background"
+                  placeholder="Ask me anything about this writing task..."
+                  className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  disabled={isChatLoading}
                 />
-                <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()}>
+                <Button
+                  onClick={() => sendChatMessage()}
+                  disabled={isChatLoading || !newMessage.trim()}
+                  className="bg-primary hover:bg-primary/90"
+                >
                   Send
                 </Button>
               </div>
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </StudentLayout>

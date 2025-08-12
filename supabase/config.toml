@@ -1,5 +1,8 @@
 project_id = "cuumxmfzhwljylbdlflj"
 
+[functions.analyze-speaking-suggestion]
+verify_jwt = false
+
 [functions.gemini-chat]
 verify_jwt = false
 

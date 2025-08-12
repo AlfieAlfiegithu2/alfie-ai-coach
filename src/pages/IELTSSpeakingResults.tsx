@@ -10,6 +10,7 @@ import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import LightRays from "@/components/animations/LightRays";
+import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
 
 interface QuestionAnalysis {
   part: string;
@@ -19,6 +20,11 @@ interface QuestionAnalysis {
   transcription: string;
   audio_url: string;
   feedback: string;
+}
+
+interface AISuggestion {
+  original_spans: Span[];
+  suggested_spans: Span[];
 }
 
 interface OverallFeedback {
@@ -39,6 +45,8 @@ const IELTSSpeakingResults = () => {
   const [questionAnalyses, setQuestionAnalyses] = useState<QuestionAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
+  const [expandedTranscriptions, setExpandedTranscriptions] = useState<Record<string, boolean>>({});
   
   const { testData, recordings } = location.state || {};
 
@@ -131,6 +139,12 @@ const IELTSSpeakingResults = () => {
         setOverallFeedback(overallData);
       } else {
         console.warn('⚠️ No overall analysis received');
+      }
+
+      // Generate AI suggestions for each question analysis
+      if (result.individualAnalyses && result.individualAnalyses.length > 0) {
+        console.log('🤖 Generating AI suggestions for questions...');
+        await generateAISuggestions(result.individualAnalyses);
       }
 
     } catch (error) {
@@ -248,6 +262,50 @@ const IELTSSpeakingResults = () => {
           "Work on developing complete thoughts and explanations for each question"
         ]
     };
+  };
+
+  const generateAISuggestions = async (analyses: QuestionAnalysis[]) => {
+    const suggestions: Record<string, AISuggestion> = {};
+    
+    for (const analysis of analyses) {
+      const questionKey = `${analysis.part}_${analysis.questionIndex}`;
+      
+      try {
+        console.log(`🎯 Generating suggestion for ${questionKey}...`);
+        
+        const { data: suggestion, error } = await supabase.functions.invoke('analyze-speaking-suggestion', {
+          body: {
+            questionPrompt: analysis.questionText,
+            studentTranscription: analysis.transcription
+          }
+        });
+
+        if (error) {
+          console.error(`Error generating suggestion for ${questionKey}:`, error);
+          continue;
+        }
+
+        if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
+          suggestions[questionKey] = {
+            original_spans: suggestion.original_spans,
+            suggested_spans: suggestion.suggested_spans
+          };
+          console.log(`✅ Suggestion generated for ${questionKey}`);
+        }
+      } catch (error) {
+        console.error(`Failed to generate suggestion for ${questionKey}:`, error);
+      }
+    }
+    
+    setAiSuggestions(suggestions);
+    console.log('🎉 All AI suggestions generated:', Object.keys(suggestions).length);
+  };
+
+  const toggleTranscription = (questionKey: string) => {
+    setExpandedTranscriptions(prev => ({
+      ...prev,
+      [questionKey]: !prev[questionKey]
+    }));
   };
 
   const playAudio = async (audioUrl: string, questionId: string) => {
@@ -477,8 +535,7 @@ const IELTSSpeakingResults = () => {
                 
                 {/* Official Question Text */}
                 <div>
-                  <h4 className="font-medium text-primary mb-2 flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
+                  <h4 className="font-medium text-primary mb-2">
                     Official Question:
                   </h4>
                   <div className="p-4 bg-primary/5 rounded-lg text-sm border border-primary/20">
@@ -518,6 +575,24 @@ const IELTSSpeakingResults = () => {
                       }
                     </span>
                   </div>
+                  
+                  {/* Transcription toggle directly under audio */}
+                  <div className="mt-4 pt-3 border-t border-border/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleTranscription(`${analysis.part}_${analysis.questionIndex}`)}
+                      className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      {expandedTranscriptions[`${analysis.part}_${analysis.questionIndex}`] ? 'Hide' : 'Show'} speech transcription
+                    </Button>
+                    {expandedTranscriptions[`${analysis.part}_${analysis.questionIndex}`] && (
+                      <div className="mt-3 p-3 bg-muted rounded-lg text-sm max-h-32 overflow-y-auto border">
+                        {analysis.transcription}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Advanced AI Feedback */}
@@ -538,16 +613,29 @@ const IELTSSpeakingResults = () => {
                   </div>
                 </div>
 
-                {/* Transcription in collapsible section */}
-                <details className="group">
-                  <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
-                    <span>View Speech Transcription</span>
-                    <span className="text-xs opacity-70">(Click to expand)</span>
-                  </summary>
-                  <div className="mt-3 p-3 bg-muted rounded-lg text-sm max-h-32 overflow-y-auto border">
-                    {analysis.transcription}
-                  </div>
-                </details>
+                {/* AI Suggestion Visualizer */}
+                {(() => {
+                  const questionKey = `${analysis.part}_${analysis.questionIndex}`;
+                  const suggestion = aiSuggestions[questionKey];
+                  
+                  if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
+                    return (
+                      <div>
+                        <h4 className="font-medium text-primary mb-3 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          AI Suggested Better Answer:
+                        </h4>
+                        <SuggestionVisualizer
+                          originalSpans={suggestion.original_spans}
+                          suggestedSpans={suggestion.suggested_spans}
+                          dimNeutral={false}
+                        />
+                      </div>
+                    );
+                  }
+                  
+                  return null;
+                })()}
               </div>
             ))}
           </CardContent>

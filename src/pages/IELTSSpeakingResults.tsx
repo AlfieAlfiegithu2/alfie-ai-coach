@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles, RotateCcw } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
 
 interface QuestionAnalysis {
@@ -42,6 +43,7 @@ const IELTSSpeakingResults = () => {
   const [overallFeedback, setOverallFeedback] = useState<OverallFeedback | null>(null);
   const [questionAnalyses, setQuestionAnalyses] = useState<QuestionAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
   
   const { testData, recordings } = location.state || {};

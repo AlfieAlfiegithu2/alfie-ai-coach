@@ -31,6 +31,19 @@ serve(async (req) => {
       throw new Error('No recording data provided');
     }
 
+    // Helper to safely extract JSON
+    const extractJson = (text: string): any | null => {
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}$/);
+        return jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
+      } catch (_) {
+        try {
+          const fenced = text.replace(/```(json)?/g, '').trim();
+          return JSON.parse(fenced);
+        } catch (_) { return null; }
+      }
+    };
+
     // Process individual question analyses first (direct audio analysis)
     console.log('🎯 Starting individual question analyses...');
     const individualAnalyses = await Promise.all(allRecordings.map(async (recording: any, index: number) => {
@@ -99,51 +112,42 @@ serve(async (req) => {
 
       console.log(`✅ Transcription complete for ${recording.part}:`, studentTranscription.substring(0, 100) + '...');
 
-    // Check for empty, silent, or minimal responses and score accordingly
-    const isMinimalResponse = !studentTranscription || 
-                            studentTranscription.trim().length < 5 ||
-                            /^(silence|\.{3,}|bye\.?|mm|uh|um|er)$/i.test(studentTranscription.trim()) ||
-                            studentTranscription.toLowerCase().includes('silence');
+      // Enhanced minimal/quality checks
+      const normalize = (t: string) => t
+        .toLowerCase()
+        .replace(/\b(uh|um|er|mm|like|you know|ah|uh-huh|hmm)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const cleaned = normalize(studentTranscription || '');
+      const wordCount = cleaned ? cleaned.split(/\s+/).filter(Boolean).length : 0;
 
-    let feedback;
-    if (isMinimalResponse) {
-      feedback = `This response shows no substantive content. For IELTS Speaking, candidates must provide extended responses that address the question. A complete absence of meaningful speech results in the lowest possible scores across all criteria. To improve, practice speaking for the full allocated time with relevant content, clear pronunciation, and appropriate vocabulary.`;
-    } else {
-      // Individual question analysis prompt for detailed feedback
-      const questionPrompt = `You are a senior, highly experienced IELTS examiner. You will analyze the following audio recording of a student's answer to an IELTS Speaking question. The question asked was: "${recording.questionTranscription || recording.prompt}"
+      const isMinimalResponse = !studentTranscription || 
+                                wordCount < 8 ||
+                                /^(silence|\.{3,}|bye\.?|mm|uh|um|er)$/i.test(studentTranscription.trim()) ||
+                                studentTranscription.toLowerCase().includes('silence') ||
+                                studentTranscription.toLowerCase().includes('inaudible');
 
-Listen to the student's audio response. Then, provide a detailed, holistic assessment focusing on the key speaking criteria. Your feedback must go beyond the words used. Analyze the following:
+      let feedback = '';
+      let original_spans: any[] = [];
+      let suggested_spans: any[] = [];
 
-Student's Transcribed Response: ${studentTranscription}
+      if (isMinimalResponse) {
+        feedback = `This response shows no substantive content. For IELTS Speaking, candidates must provide extended responses that address the question. A complete absence of meaningful speech results in the lowest possible scores across all criteria. To improve, practice speaking for the full allocated time with relevant content, clear pronunciation, and appropriate vocabulary.`;
+      } else {
+        // Ask for BOTH feedback bullets and suggestion spans in one call
+        const prompt = {
+          role: 'user' as const,
+          content: `You are a senior IELTS examiner. Analyze the student's answer to the question: "${recording.questionTranscription || recording.prompt}"\n\nStudent transcription (may include 'inaudible' where sound is unclear):\n${studentTranscription}\n\nReturn STRICT JSON with this shape only:{\n  "feedback_bullets": string[2..3],\n  "original_spans": {"text": string, "status": "error"|"neutral"}[],\n  "suggested_spans": {"text": string, "status": "improvement"|"neutral"}[]\n}\nRules:\n- feedback_bullets: 2-3 short, actionable points about fluency/pronunciation/intonation (audio-focused).\n- original_spans: segment the student's text; mark weak or incorrect segments as status "error"; others "neutral".\n- suggested_spans: rewrite as a higher-band answer; mark improved parts as status "improvement"; others "neutral".\n- Do NOT include explanations outside JSON.`,
+        };
 
-Fluency and Coherence: How was the flow and pace? Were there unnatural pauses or hesitation? Did they use filler words?
-
-Pronunciation: How clear was their speech? Were there any specific words or sounds that were difficult to understand?
-
-Intonation and Delivery: Did their voice sound natural and engaging, or was it monotonous? Did they use stress and intonation to convey meaning effectively?
-
-Lexical Resource and Grammatical Accuracy: Briefly comment on their vocabulary and grammar in this specific answer.
-
-Return your feedback as a concise, bulleted list of 2-3 key points.`;
-
-      if (!isMinimalResponse) {
         const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'gpt-4o',
             messages: [
-              {
-                role: 'system',
-                content: 'You are a senior IELTS Speaking examiner. Provide specific, actionable feedback focusing on audio-based criteria like fluency, pronunciation, and intonation.'
-              },
-              {
-                role: 'user',
-                content: questionPrompt
-              }
+              { role: 'system', content: 'You are a precise IELTS examiner. Output STRICT JSON only, no prose.' },
+              prompt
             ],
             temperature: 0.2,
           }),
@@ -155,20 +159,33 @@ Return your feedback as a concise, bulleted list of 2-3 key points.`;
           throw new Error(`Individual analysis failed: ${errorText}`);
         }
 
-        const analysisResult = await analysisResponse.json();
-        feedback = analysisResult.choices[0].message.content;
+        const analysisJson = await analysisResponse.json();
+        const content = analysisJson.choices?.[0]?.message?.content || '';
+        const parsed = extractJson(content);
+
+        if (parsed && Array.isArray(parsed.feedback_bullets)) {
+          feedback = parsed.feedback_bullets.map((b: string) => `• ${b}`).join('\n');
+          original_spans = Array.isArray(parsed.original_spans) ? parsed.original_spans : [];
+          suggested_spans = Array.isArray(parsed.suggested_spans) ? parsed.suggested_spans : [];
+        } else {
+          // Fallback: use raw content as feedback
+          feedback = content || 'Analysis unavailable.';
+        }
       }
-    }
-      console.log(`✅ Individual analysis complete for ${recording.part}:`, feedback.substring(0, 100) + '...');
-      
+
+      console.log(`✅ Individual analysis complete for ${recording.part}:`, (feedback || '').substring(0, 100) + '...');
+        
       return {
         part: recording.part,
         partNumber: recording.partNum,
         questionIndex: recording.questionIndex,
         questionText: recording.questionTranscription || recording.prompt,
         transcription: studentTranscription,
-        feedback: feedback,
-        audio_url: recording.audio_url
+        feedback,
+        audio_url: recording.audio_url,
+        original_spans,
+        suggested_spans,
+        metrics: { word_count: wordCount, minimal: isMinimalResponse }
       };
     }));
 
@@ -180,21 +197,21 @@ Return your feedback as a concise, bulleted list of 2-3 key points.`;
       question: analysis.questionText,
       transcription: analysis.transcription,
       partNum: analysis.partNumber,
-      questionIndex: analysis.questionIndex
+      questionIndex: analysis.questionIndex,
+      metrics: analysis.metrics
     }));
 
-    // Check if most responses are minimal/silent
-    const minimalResponses = allTranscriptions.filter(t => 
-      !t.transcription || 
-      t.transcription.trim().length < 5 ||
-      /^(silence|\.{3,}|bye\.?|mm|uh|um|er)$/i.test(t.transcription.trim()) ||
-      t.transcription.toLowerCase().includes('silence')
-    );
+    // Enhanced scoring with caps based on response quality
+    const minimalResponses = allTranscriptions.filter(t => t.metrics?.minimal);
+    const totalWordCount = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.word_count || 0), 0);
+    const avgWordsPerResponse = totalWordCount / allTranscriptions.length;
+    const coverageRatio = (allTranscriptions.length - minimalResponses.length) / allTranscriptions.length;
 
     let comprehensivePrompt;
     
-    // If more than half the responses are minimal, give very low scores
+    // Apply stricter caps based on response quality metrics
     if (minimalResponses.length > allTranscriptions.length / 2) {
+      // More than half responses are minimal - very low scores
       comprehensivePrompt = `You are a senior IELTS examiner. The student provided mostly silent or extremely minimal responses throughout the test. Most responses were either silence, single words like "bye", or no substantive content.
 
 FULL TEST TRANSCRIPT:
@@ -213,8 +230,39 @@ GRAMMATICAL RANGE & ACCURACY: [0-2] - [Explanation of lack of grammatical demons
 PRONUNCIATION: [0-2] - [Explanation of minimal speech for assessment]
 OVERALL BAND SCORE: [0-2]
 COMPREHENSIVE FEEDBACK: [Brief explanation that substantive responses are required for IELTS Speaking assessment]`;
+    } else if (avgWordsPerResponse < 15 || coverageRatio < 0.7) {
+      // Low word count or many minimal responses - cap at 3.0-4.5
+      comprehensivePrompt = `You are a senior IELTS examiner. The student provided very short responses with limited content throughout the test.
+
+RESPONSE QUALITY METRICS:
+- Average words per response: ${Math.round(avgWordsPerResponse)}
+- Coverage ratio: ${Math.round(coverageRatio * 100)}% of questions had substantive answers
+- Total word count: ${totalWordCount}
+
+FULL TEST TRANSCRIPT:
+${allTranscriptions.map(t => `
+${t.part} Question: ${t.question}
+Student Response: ${t.transcription}
+`).join('\n')}
+
+CRITICAL SCORING CONSTRAINT: Due to very short responses and limited content, all criterion scores must be capped at 4.5 maximum. Short responses cannot demonstrate higher-level speaking abilities regardless of accuracy.
+
+Please return your assessment with scores between 3.0-4.5:
+
+FLUENCY & COHERENCE: [3.0-4.5] - [Explanation considering limited content]
+LEXICAL RESOURCE: [3.0-4.5] - [Explanation considering limited vocabulary range]
+GRAMMATICAL RANGE & ACCURACY: [3.0-4.5] - [Explanation considering limited complexity]
+PRONUNCIATION: [3.0-4.5] - [Explanation based on available speech]
+OVERALL BAND SCORE: [Calculate average and apply IELTS rounding]
+COMPREHENSIVE FEEDBACK: [Analysis acknowledging the limitations of short responses]`;
     } else {
+      // Standard comprehensive analysis with some quality considerations
       comprehensivePrompt = `You are a senior, highly experienced IELTS examiner conducting a COMPREHENSIVE FULL-TEST ANALYSIS. Your goal is to provide a holistic and accurate assessment based on the student's COMPLETE performance across ALL parts of the IELTS Speaking test.
+
+RESPONSE QUALITY METRICS:
+- Average words per response: ${Math.round(avgWordsPerResponse)}
+- Coverage ratio: ${Math.round(coverageRatio * 100)}% substantive responses
+- Total responses: ${allTranscriptions.length}
 
 IMPORTANT: Base your assessment on the ENTIRE test performance, not just individual questions. Look for patterns, development, and overall communicative effectiveness across all parts.
 
@@ -227,22 +275,25 @@ Student Response: ${t.transcription}
 
 COMPREHENSIVE ANALYSIS INSTRUCTIONS:
 
-Evaluate the student's OVERALL performance across the complete test using these criteria:
+Evaluate the student's OVERALL performance across the complete test using these criteria with appropriate caps based on response length and coverage:
 
 Fluency and Coherence (0-9):
 - How well did they maintain speech flow throughout ALL parts?
 - Did they show improvement or decline across parts?
 - Overall coherence and logical development across different question types
+- Cap at 5.5 if responses are consistently very short (under 20 words average)
 
 Lexical Resource (0-9):
 - Range of vocabulary demonstrated across ALL topics and parts
 - Flexibility in vocabulary use between different speaking tasks
 - Appropriateness of language for different contexts (interview, long turn, discussion)
+- Cap at 5.5 if limited vocabulary range due to short responses
 
 Grammatical Range and Accuracy (0-9):
 - Variety of structures used throughout the complete test
 - Accuracy patterns across all responses
 - Ability to handle different grammatical demands of each part
+- Cap at 5.5 if limited structural complexity due to brevity
 
 Pronunciation (0-9):
 - Consistency of pronunciation throughout the entire test
@@ -254,6 +305,7 @@ CRITICAL REQUIREMENTS:
 2. Show how performance varied or remained consistent across parts
 3. Give a truly holistic assessment, not just based on one question
 4. Reference patterns observed across the complete test
+5. Apply appropriate caps based on response length and substance
 
 Final Score Calculation Rules:
 1. Calculate the average of the four criteria scores
@@ -283,7 +335,7 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, sp
         messages: [
           {
             role: 'system',
-            content: 'You are a senior IELTS Speaking examiner with comprehensive knowledge of official band descriptors. You must analyze the COMPLETE speaking test performance holistically, providing examples from different parts to support your assessment. Follow the assessment criteria and scoring rules exactly.'
+            content: 'You are a senior IELTS Speaking examiner with comprehensive knowledge of official band descriptors. You must analyze the COMPLETE speaking test performance holistically, providing examples from different parts to support your assessment. Follow the assessment criteria and scoring rules exactly, including any caps specified based on response quality.'
           },
           {
             role: 'user',
@@ -305,6 +357,7 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, sp
       transcriptionsCount: allTranscriptions.length,
       individualAnalysesCount: individualAnalyses.length,
       hasOverallAnalysis: !!analysis,
+      qualityMetrics: { avgWordsPerResponse, coverageRatio, minimalCount: minimalResponses.length },
       analysisType: "comprehensive_full_test"
     });
 

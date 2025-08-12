@@ -601,9 +601,9 @@ const IELTSSpeakingTest = () => {
   };
 
   const getQuestionType = (): string => {
-    if (currentPart === 1) return "Part 1 (Interview)";
-    if (currentPart === 2) return "Part 2 (Long Turn)"; 
-    if (currentPart === 3) return "Part 3 (Discussion)";
+    if (currentPart === 1) return "Part 1";
+    if (currentPart === 2) return "Part 2"; 
+    if (currentPart === 3) return "Part 3";
     return "Unknown Part";
   };
 
@@ -671,14 +671,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         {/* Progress */}
         <Card className="card-modern">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">Test Progress</span>
-              <span className="text-sm text-muted-foreground">
-                {currentPart === 1 && `Question ${currentQuestion + 1} of ${testData.part1_prompts.length}`}
-                {currentPart === 2 && 'Cue Card Response'}
-                {currentPart === 3 && `Question ${currentQuestion + 1} of ${testData.part3_prompts.length}`}
-              </span>
-            </div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium">Test Progress</span>
+              </div>
             <Progress 
               value={
                 currentPart === 1 ? ((currentQuestion + 1) / testData.part1_prompts.length) * 33.33 :
@@ -695,10 +690,10 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>
-                Part {currentPart}: {currentPart === 1 ? 'Interview' : currentPart === 2 ? 'Long Turn' : 'Discussion'}
+                Part {currentPart}
               </span>
               <div className="flex items-center gap-3">
-                <VolumeSlider defaultValue={50} className="w-64 md:w-72" />
+                <VolumeSlider defaultValue={50} className="w-64 md:w-72" showValueIndicator={false} />
                 
                 {/* AI Assistant moved to floating bottom-right */}
                 
@@ -781,12 +776,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-6">
                   <div className="text-center space-y-4">
-                    <div className="flex items-center justify-center space-x-2 mb-3">
-                      <Volume2 className="w-5 h-5 text-primary" />
-                      <span className="font-medium text-foreground">
-                        {isPlaying ? 'Playing Question Audio...' : 'Question Audio Ready'}
-                      </span>
-                    </div>
                     
                     <div className="flex justify-center space-x-3">
                       <Button
@@ -845,7 +834,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <Mic className="w-8 h-8 mx-auto text-gray-400" />
+                      
                       <Button
                         onClick={startRecording}
                         className="rounded-xl"

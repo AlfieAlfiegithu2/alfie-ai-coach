@@ -15,12 +15,14 @@ interface VolumeSliderProps {
   defaultValue?: number;
   onVolumeChange?: (volume: number) => void;
   className?: string;
+  showValueIndicator?: boolean;
 }
 
 export default function VolumeSlider({
   defaultValue = 50,
   onVolumeChange,
   className = "",
+  showValueIndicator = true,
 }: VolumeSliderProps) {
   const handleVolumeChange = (volume: number) => {
     // Set global audio volume for all <audio> elements in DOM
@@ -48,6 +50,7 @@ export default function VolumeSlider({
         maxValue={100}
         onVolumeChange={handleVolumeChange}
         rightIcon={<Volume2 size={20} />}
+        showValueIndicator={showValueIndicator}
       />
     </div>
   );
@@ -59,6 +62,7 @@ interface SliderProps {
   maxValue: number;
   onVolumeChange?: (volume: number) => void;
   rightIcon: React.ReactNode;
+  showValueIndicator?: boolean;
 }
 
 function Slider({
@@ -67,6 +71,7 @@ function Slider({
   maxValue,
   onVolumeChange,
   rightIcon,
+  showValueIndicator = true,
 }: SliderProps) {
   const [value, setValue] = useState(defaultValue);
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -194,7 +199,7 @@ function Slider({
           {rightIcon}
         </motion.div>
       </motion.div>
-      <p className="value-indicator">{Math.round(value)}</p>
+      {showValueIndicator && <p className="value-indicator">{Math.round(value)}</p>}
     </>
   );
 }

@@ -29,6 +29,8 @@ Focus on overall communicative effectiveness. Do not just count errors; explain 
 
 You will first provide a whole number band score (0-9) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
 
+ADDITIONALLY, provide detailed inline corrections by identifying specific errors in the text and marking them for display with corrections.
+
 Now, please assess the following submission against the relevant band descriptors:
 
 TASK PROMPT: ${prompt}
@@ -117,6 +119,11 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
             content: `You are "Examiner-7," a senior, Cambridge-certified IELTS examiner. Be decisive and strictly follow the official band descriptors. New Guiding Principle: if the response fully meets Band 9, award Band 9—do not invent minor flaws.
 
 CRITICAL feedback requirement: For each area for improvement, include a direct quote from the student's writing and a stronger improved version, plus a brief explanation. Provide these in feedback.improvements_detailed as an array of objects with keys: issue, sentence_quote, improved_version, explanation.
+
+ADDITIONAL REQUIREMENT: Provide inline corrections for display. Create two versions of the text:
+1. "annotated_original": Original text with <error data-type="[error_type]" data-explanation="[brief explanation]">error text</error> tags around errors
+2. "annotated_corrected": Corrected text with <correction data-type="[error_type]">corrected text</correction> tags around fixes
+3. "corrections": Array of correction objects with: original_text, corrected_text, start_index, end_index, error_type, explanation
 
 Return ONLY JSON. Use whole or half bands only (0, 0.5, …, 9). Apply IELTS rounding rules where averages are used.`
           },

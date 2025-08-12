@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Star, ArrowLeft, Download, Share2, Trophy, Target, Book, MessageSquare, Edit3 } from "lucide-react";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import LightRays from "@/components/animations/LightRays";
+import AnnotatedWritingText from "@/components/AnnotatedWritingText";
 
 const IELTSWritingResults = () => {
   const location = useLocation();
@@ -431,41 +432,27 @@ const IELTSWritingResults = () => {
           </CardContent>
         </Card>
 
-        {/* Your Answers */}
+        {/* Your Answers with Corrections */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-brand-blue">
-                <div className="p-2 rounded-xl bg-brand-blue/10">
-                  <Target className="w-4 h-4" />
-                </div>
-                Your Task 1 Answer
-              </CardTitle>
-              <p className="text-caption">{task1Data?.title}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-60 overflow-y-auto text-text-secondary leading-relaxed">
-                {task1Answer}
-              </div>
-            </CardContent>
-          </Card>
+          <AnnotatedWritingText
+            taskTitle="Your Task 1 Answer"
+            originalText={task1Answer || ""}
+            annotatedOriginal={structured?.task1?.annotated_original}
+            annotatedCorrected={structured?.task1?.annotated_corrected}
+            corrections={structured?.task1?.corrections}
+            icon={Target}
+            colorScheme="text-brand-blue"
+          />
 
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-brand-purple">
-                <div className="p-2 rounded-xl bg-brand-purple/10">
-                  <Edit3 className="w-4 h-4" />
-                </div>
-                Your Task 2 Answer
-              </CardTitle>
-              <p className="text-caption">{task2Data?.title}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-60 overflow-y-auto text-text-secondary leading-relaxed">
-                {task2Answer}
-              </div>
-            </CardContent>
-          </Card>
+          <AnnotatedWritingText
+            taskTitle="Your Task 2 Answer"
+            originalText={task2Answer || ""}
+            annotatedOriginal={structured?.task2?.annotated_original}
+            annotatedCorrected={structured?.task2?.annotated_corrected}
+            corrections={structured?.task2?.corrections}
+            icon={Edit3}
+            colorScheme="text-brand-purple"
+          />
         </div>
 
         {/* Action Buttons */}

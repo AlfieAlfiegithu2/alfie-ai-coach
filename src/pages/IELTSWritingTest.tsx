@@ -510,7 +510,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         
         {/* AI Assistant - Floating Bottom Right */}
         <div className="fixed bottom-6 right-6 z-50">
-          {isCatbotOpen ? <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20">
+          {isCatbotOpen ? <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
               <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-3 text-foreground">
@@ -527,8 +527,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="h-full flex flex-col p-4">
-                <div className="flex-1 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm max-h-[300px]">
+              <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
                   {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {message.type === 'bot'}

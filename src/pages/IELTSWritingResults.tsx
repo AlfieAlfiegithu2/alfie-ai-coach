@@ -221,9 +221,9 @@ const IELTSWritingResults = () => {
         </Card>
 
         {/* Overall Score */}
-        <Card className="card-elevated mb-8 overflow-hidden">
-          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
-            <div className="flex items-center justify-center gap-2 mb-2">
+        <Card className="card-elevated mb-6 overflow-hidden">
+          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 py-3">
+            <div className="flex items-center justify-center gap-2">
               <div className="p-2 rounded-xl bg-brand-blue/10">
                 <Trophy className="w-6 h-6 text-brand-blue" />
               </div>

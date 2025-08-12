@@ -55,6 +55,10 @@ const IELTSWritingTestInterface = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [isCatbotOpen, setIsCatbotOpen] = useState(false);
+  
+  // Timer states
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [timerStarted, setTimerStarted] = useState(false);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -76,6 +80,27 @@ const IELTSWritingTestInterface = () => {
     if (!testId) return;
     localStorage.setItem(`ielts-writing-draft-${testId}-task2`, task2Answer);
   }, [task2Answer, testId]);
+  
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (timerStarted && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            setTimerStarted(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timerStarted, timeRemaining]);
   
   useEffect(() => {
     if (testId) {
@@ -287,6 +312,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   // Handle task switching with proper context isolation
   const switchToTask = (taskNumber: 1 | 2) => {
     setCurrentTask(taskNumber);
+    // Reset and start timer for the new task
+    const taskTime = taskNumber === 1 ? 20 * 60 : 40 * 60; // 20 min for Task 1, 40 min for Task 2
+    setTimeRemaining(taskTime);
+    setTimerStarted(true);
   };
 
   const submitTest = async () => {
@@ -338,6 +367,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       setIsSubmitting(false);
     }
   };
+  
+  // Helper functions
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+  
+  // Initialize timer on component mount
+  useEffect(() => {
+    if (!timerStarted && currentTask) {
+      const taskTime = currentTask === 1 ? 20 * 60 : 40 * 60;
+      setTimeRemaining(taskTime);
+      setTimerStarted(true);
+    }
+  }, [currentTask, timerStarted]);
 
   if (!test || !task1 || !task2) {
     return (
@@ -365,16 +410,26 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <h1 className="text-heading-2 mb-1 text-foreground">{test.test_name}</h1>
               <p className="text-warm-gray">IELTS Academic Writing Test</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="rounded-xl">
-                Go Back
-              </Button>
-              <Button variant={currentTask === 1 ? "default" : "outline"} size="sm" onClick={() => switchToTask(1)} className="rounded-xl">
-                Task 1
-              </Button>
-              <Button variant={currentTask === 2 ? "default" : "outline"} size="sm" onClick={() => switchToTask(2)} className="rounded-xl">
-                Task 2
-              </Button>
+            <div className="flex items-center gap-4">
+              {/* Timer */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg">
+                <Clock className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  Task {currentTask}: {formatTime(timeRemaining)}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="rounded-xl">
+                  Go Back
+                </Button>
+                <Button variant={currentTask === 1 ? "default" : "outline"} size="sm" onClick={() => switchToTask(1)} className="rounded-xl">
+                  Task 1
+                </Button>
+                <Button variant={currentTask === 2 ? "default" : "outline"} size="sm" onClick={() => switchToTask(2)} className="rounded-xl">
+                  Task 2
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -458,7 +513,35 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
-          <Card className="glass-card rounded-3xl">
+          <div className="space-y-6">
+            {/* Task 2 Question/Instructions - Show above answer */}
+            {currentTask === 2 && currentTaskData && (
+              <Card className="glass-card rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="text-slate-950 flex items-center gap-2">
+                    <ListTree className="w-5 h-5" />
+                    Task 2 Question
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                      <h3 className="font-semibold text-primary mb-2">Essay Question:</h3>
+                      <p className="text-foreground leading-relaxed">{currentTaskData.title}</p>
+                    </div>
+                    {currentTaskData.instructions && (
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <h4 className="font-medium text-muted-foreground mb-2">Instructions:</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{currentTaskData.instructions}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Answer Section */}
+            <Card className="glass-card rounded-3xl">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-950">Your Answer - Task {currentTask}</CardTitle>
@@ -505,42 +588,44 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 )}
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         )}
 
-        {/* AI Assistant Button and Chat */}
-        <div className="fixed bottom-6 right-6 z-50">
-          {isCatbotOpen ? (
-            <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border-2 border-primary/20">
-              <CardHeader className="pb-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-3xl">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-3 text-foreground">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center border-2 border-primary/30">
-                      <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI Assistant" className="w-6 h-6 rounded-full" />
-                    </div>
-                    <div>
-                      <div className="text-base font-semibold text-foreground">AI Assistant</div>
-                      <div className="text-xs text-muted-foreground font-normal">Your IELTS Writing Tutor</div>
-                    </div>
-                  </CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setIsCatbotOpen(false)}
-                    className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground"
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="h-full flex flex-col p-4">
-                <div className="flex-1 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm max-h-[300px]">
+        {/* AI Assistant */}
+        {isCatbotOpen ? (
+          <Card className="mt-6 glass-card rounded-3xl animate-scale-in shadow-xl border border-primary/20">
+            <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-3 text-foreground">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-foreground">AI Writing Assistant</div>
+                    <div className="text-sm text-muted-foreground font-normal">Get help with Task {currentTask}</div>
+                  </div>
+                </CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsCatbotOpen(false)}
+                  className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground"
+                >
+                  ✕
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {/* Messages */}
+                <div className="max-h-64 overflow-y-auto space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
                   {getCurrentChatMessages().map(message => (
                     <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {message.type === 'bot' && (
                           <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1 shrink-0">
-                            <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI" className="w-4 h-4 rounded-full" />
+                            <Bot className="w-4 h-4 text-primary" />
                           </div>
                         )}
                         <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground border border-border'}`}>
@@ -562,7 +647,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   {isChatLoading && (
                     <div className="flex gap-3 justify-start">
                       <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1">
-                        <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI" className="w-4 h-4 rounded-full" />
+                        <Bot className="w-4 h-4 text-primary" />
                       </div>
                       <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
                         <div className="flex gap-1">
@@ -574,14 +659,20 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
+                
+                {/* Quick Help Buttons */}
+                <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 border-primary/30 hover:bg-primary/10">
-                    📝 Structure
+                    <ListTree className="w-3 h-3 mr-2" />
+                    Structure
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 border-primary/30 hover:bg-primary/10">
-                    📚 Vocabulary
+                    <BookOpen className="w-3 h-3 mr-2" />
+                    Vocabulary
                   </Button>
                 </div>
+                
+                {/* Chat Input */}
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -605,20 +696,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     )}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="mt-6 flex justify-center">
             <Button
               onClick={() => setIsCatbotOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border-2 border-primary/30 px-6 py-3 h-auto rounded-full flex items-center gap-3 font-semibold transition-all duration-300 hover:scale-105"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg border border-primary/30 px-6 py-3 h-auto rounded-xl flex items-center gap-3 font-medium transition-all duration-300 hover:scale-105"
             >
-              <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="AI Assistant" className="w-5 h-5 rounded-full" />
+              <div className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                <Bot className="w-4 h-4" />
               </div>
-              <span className="text-sm">AI Assistant</span>
+              <span>AI Assistant – Get Help</span>
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </StudentLayout>
   );

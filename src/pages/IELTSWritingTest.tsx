@@ -403,12 +403,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </CardHeader>
                 <CardContent className="h-full">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
+                    
                     <div className="flex gap-2 items-center">
                       <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
                       <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
                       <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
+                      
                     </div>
                   </div>
                   <div className="h-[500px] overflow-auto rounded-lg border border-border bg-background p-2">
@@ -430,7 +430,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <Card className="glass-card rounded-3xl h-full">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-slate-950">Write your Task 1 answer (synced)</CardTitle>
+                    <CardTitle className="text-slate-950">Write your answer </CardTitle>
                     <div className="text-xs text-muted-foreground">
                       Words: {getWordCount(task1Answer)} • Min: 150
                     </div>
@@ -448,7 +448,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       Continue to Task 2
                     </Button>
                   </div>
-                  <div className="mt-2 text-xs text-muted-foreground">Changes here are synced with the main answer box.</div>
+                  
                 </CardContent>
               </Card>
             </ResizablePanel>
@@ -510,7 +510,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         
         {/* AI Assistant - Floating Bottom Right */}
         <div className="fixed bottom-6 right-6 z-50">
-          {isCatbotOpen ? <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
+          {isCatbotOpen ? <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20">
               <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-3 text-foreground">
@@ -527,8 +527,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
-                <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
+              <CardContent className="h-full flex flex-col p-4">
+                <div className="flex-1 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm max-h-[300px]">
                   {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {message.type === 'bot'}
@@ -570,22 +570,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
                 
                 {/* Chat Input */}
-                <div className="flex gap-2 mt-2">
-                  <input 
-                    type="text" 
-                    value={newMessage} 
-                    onChange={e => setNewMessage(e.target.value)} 
-                    onKeyPress={e => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()} 
-                    placeholder="Ask for writing help..." 
-                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none" 
-                    disabled={isChatLoading} 
-                  />
-                  <Button 
-                    onClick={() => sendChatMessage()} 
-                    disabled={isChatLoading || !newMessage.trim()} 
-                    size="sm" 
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
+                <div className="flex gap-2">
+                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()} placeholder="Ask for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" disabled={isChatLoading} />
+                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     {isChatLoading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" /> : 'Send'}
                   </Button>
                 </div>

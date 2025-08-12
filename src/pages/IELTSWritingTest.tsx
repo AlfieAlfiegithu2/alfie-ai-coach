@@ -55,6 +55,7 @@ const IELTSWritingTestInterface = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [isCatbotOpen, setIsCatbotOpen] = useState(false);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -348,44 +349,36 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <Button variant={currentTask === 2 ? "default" : "outline"} size="sm" onClick={() => switchToTask(2)} className="rounded-xl">
                 Task 2
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsCatbotOpen(v => !v)} className="rounded-xl">
+                {isCatbotOpen ? 'Hide Catbot' : 'Show Catbot'}
+              </Button>
             </div>
           </div>
         </div>
 
         {/* Three-Column Layout */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Section 1: Questions */}
-          <div className="lg:col-span-1">
-            <Card className="glass-card rounded-3xl h-fit">
-              <CardHeader>
-                <CardTitle className="text-slate-950">
-                  Task {currentTask} Questions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Visual presented below in the main view for Task 1 */}
-
-                <div>
-                  <h3 className="font-semibold mb-2 text-slate-950">Prompt</h3>
-                  <p className="text-sm text-slate-950">{currentTaskData?.title}</p>
-                </div>
-                
-                <div className="h-px bg-border/50" />
-                
-                <div>
-                  <h3 className="font-semibold mb-2 text-slate-950">Instructions</h3>
-                  <p className="text-sm whitespace-pre-wrap text-slate-950">{currentTaskData?.instructions}</p>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-sm border border-white/20">
-                  <p className="font-medium mb-1 text-slate-950">Tips:</p>
-                  <p className="text-slate-950">
-                    {currentTask === 1 ? "Describe the data accurately and identify key trends. Use appropriate vocabulary for data description." : "Present clear arguments with relevant examples. Structure your essay with introduction, body paragraphs, and conclusion."}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <div className={`grid ${currentTask === 1 && currentTaskData?.imageUrl ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
+          {currentTask === 1 && currentTaskData?.imageUrl && (
+            <div className="lg:col-span-1">
+              <Card className="glass-card rounded-3xl h-fit">
+                <CardHeader>
+                  <CardTitle className="text-slate-950">Task 1 Visual</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <img
+                    src={currentTaskData.imageUrl}
+                    alt="IELTS Task 1 visual data"
+                    className="w-full rounded-lg border border-border shadow-sm cursor-zoom-in object-contain"
+                    onClick={() => {
+                      setZoomScale(1);
+                      setZoomOpen(true);
+                    }}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">Click image to zoom</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Section 2: Student's Writing Area */}
           <div className="lg:col-span-1">
@@ -402,39 +395,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
               </CardHeader>
               <CardContent>
-                {currentTask === 1 && currentTaskData?.imageUrl ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
-                      <div className="flex gap-2 items-center">
-                        <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
-                        <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
-                        <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
-                      </div>
-                    </div>
-                    <ResizablePanelGroup direction="horizontal" className="gap-3">
-                      <ResizablePanel defaultSize={55} minSize={40}>
-                        <div className="max-h-[60vh] overflow-auto rounded-lg border border-border bg-background p-2">
-                          <img src={currentTaskData?.imageUrl} alt="Task 1 visual data" className="mx-auto" style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center top' }} />
-                        </div>
-                      </ResizablePanel>
-                      <ResizableHandle withHandle />
-                      <ResizablePanel defaultSize={45} minSize={35}>
-                        <div className="h-full flex flex-col rounded-lg border border-border bg-card/80 backdrop-blur p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-sm font-medium text-foreground">Write your Task 1 answer (synced)</div>
-                            <div className="text-xs text-muted-foreground">Words: {getWordCount(task1Answer)} • Min: 150</div>
-                          </div>
-                          <Textarea value={task1Answer} onChange={e => setTask1Answer(e.target.value)} placeholder="Write here while viewing the larger image..." className="min-h-[300px] flex-1 text-base leading-relaxed resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" />
-                          <div className="mt-2 text-xs text-muted-foreground">Changes here are synced with the main answer box.</div>
-                        </div>
-                      </ResizablePanel>
-                    </ResizablePanelGroup>
-                  </div>
-                ) : (
-                  <Textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)} placeholder={`Write your Task ${currentTask} answer here...`} className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
-                )}
+                <Textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)} placeholder={`Write your Task ${currentTask} answer here...`} className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
                 
                 <div className="flex justify-between items-center mt-4">
                   <div className="text-sm text-white/80">
@@ -525,6 +486,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           </div>
         </div>
         {/* Bottom Catbot */}
+        {isCatbotOpen && (
         <div className="mt-6">
           <Card className="glass-card rounded-3xl">
             <CardHeader className="pb-4">
@@ -597,6 +559,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </CardContent>
           </Card>
         </div>
+        )}
         {/* Zoom Modal */}
         <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
             <DialogContent className="max-w-6xl">

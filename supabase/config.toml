@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.pronunciation-analysis]
 verify_jwt = false
+
+[functions.analyze-writing-correction]
+verify_jwt = false

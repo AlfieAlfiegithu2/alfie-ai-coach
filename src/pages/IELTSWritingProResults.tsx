@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
 import { ArrowLeft } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
+import { supabase } from "@/integrations/supabase/client";
+import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/CorrectionVisualizer";
 
 interface Criterion {
   band: number;
@@ -56,11 +58,13 @@ const bandToDesc = (score: number) => {
 export default function IELTSWritingProResults() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { structured, testName, task1Data, task2Data } = (location.state || {}) as {
+  const { structured, testName, task1Data, task2Data, task1Answer, task2Answer } = (location.state || {}) as {
     structured?: StructuredResult;
     testName?: string;
     task1Data?: any;
     task2Data?: any;
+    task1Answer?: string;
+    task2Answer?: string;
   };
 
   useEffect(() => {
@@ -76,10 +80,37 @@ export default function IELTSWritingProResults() {
     }
   }, [testName]);
 
-  if (!structured) {
-    navigate("/dashboard");
-    return null;
-  }
+  const [corrLoading, setCorrLoading] = useState<boolean>(false);
+  const [corrError, setCorrError] = useState<string | null>(null);
+  const [correctionData, setCorrectionData] = useState<{
+    original_spans: CorrectionSpan[];
+    corrected_spans: CorrectionSpan[];
+  } | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!task2Answer || correctionData || corrLoading) return;
+      try {
+        setCorrLoading(true);
+        setCorrError(null);
+        const prompt = `${task2Data?.title ? `Title: ${task2Data.title}\n` : ''}${task2Data?.instructions ? `Instructions: ${task2Data.instructions}` : ''}`.trim();
+        const { data, error } = await supabase.functions.invoke('analyze-writing-correction', {
+          body: { userSubmission: task2Answer, questionPrompt: prompt }
+        });
+        if (error) throw error;
+        if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+          setCorrectionData({ original_spans: data.original_spans, corrected_spans: data.corrected_spans });
+        } else {
+          setCorrError('No correction data returned.');
+        }
+      } catch (e: any) {
+        setCorrError(e?.message || 'Failed to analyze corrections');
+      } finally {
+        setCorrLoading(false);
+      }
+    };
+    run();
+  }, [task2Answer, task2Data, corrLoading, correctionData]);
 
   const overallBand = Math.min(9.0, Math.max(0.0, structured.overall?.band ?? 7.0));
   const overallMeta = bandToDesc(overallBand);
@@ -233,6 +264,32 @@ export default function IELTSWritingProResults() {
 
         <TaskSection title="Task 1 Assessment" task={structured.task1} type="task1" />
         <TaskSection title="Task 2 Assessment" task={structured.task2} type="task2" />
+
+        {task2Answer ? (
+          <Card className="card-elevated mb-8 border-2 border-brand-green/20">
+            <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
+              <CardTitle className="text-heading-3">AI Correction Visualizer (Task 2)</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {corrLoading && (
+                <div className="status-warning">Analyzing your essay for detailed corrections…</div>
+              )}
+              {corrError && (
+                <div className="status-error">{corrError}</div>
+              )}
+              {correctionData && (
+                <CorrectionVisualizer 
+                  originalSpans={correctionData.original_spans}
+                  correctedSpans={correctionData.corrected_spans}
+                />
+              )}
+              {!corrLoading && !corrError && !correctionData && (
+                <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+
 
         <div className="flex justify-center gap-4">
           <Button onClick={() => navigate("/ielts-portal")} className="btn-primary rounded-xl">Take Another Test</Button>

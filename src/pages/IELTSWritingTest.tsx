@@ -571,7 +571,15 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 
                 {/* Chat Input */}
                 <div className="flex gap-2">
-                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()} placeholder="Ask for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" disabled={isChatLoading} />
+                  <input 
+                    type="text" 
+                    value={newMessage} 
+                    onChange={e => setNewMessage(e.target.value)} 
+                    onKeyPress={e => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()} 
+                    placeholder="Ask for writing help..." 
+                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" 
+                    disabled={isChatLoading} 
+                  />
                   <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     {isChatLoading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" /> : 'Send'}
                   </Button>

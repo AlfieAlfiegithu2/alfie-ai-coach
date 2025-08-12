@@ -230,8 +230,8 @@ const IELTSWritingResults = () => {
               <CardTitle className="text-heading-3">Your IELTS Writing Band Score</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="text-center py-8">
-            <div className="flex items-center justify-center mb-6">
+          <CardContent className="text-center py-6">
+            <div className="flex items-center justify-center mb-4">
               <CelebrationLottieAnimation size="md" />
             </div>
             <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">

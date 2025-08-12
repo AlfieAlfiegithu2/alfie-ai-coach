@@ -592,34 +592,34 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           </div>
         )}
 
-        {/* AI Assistant */}
-        {isCatbotOpen ? (
-          <Card className="mt-6 glass-card rounded-3xl animate-scale-in shadow-xl border border-primary/20">
-            <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-3 text-foreground">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-foreground">AI Writing Assistant</div>
-                    <div className="text-sm text-muted-foreground font-normal">Get help with Task {currentTask}</div>
-                  </div>
-                </CardTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setIsCatbotOpen(false)}
-                  className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground"
-                >
-                  ✕
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {/* Messages */}
-                <div className="max-h-64 overflow-y-auto space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
+        
+        {/* AI Assistant - Floating Bottom Right */}
+        <div className="fixed bottom-6 right-6 z-50">
+          {isCatbotOpen ? (
+            <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-3 text-foreground">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold text-foreground">AI Writing Assistant</div>
+                      <div className="text-sm text-muted-foreground font-normal">Your IELTS Writing Tutor</div>
+                    </div>
+                  </CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsCatbotOpen(false)}
+                    className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="h-full flex flex-col p-4">
+                <div className="flex-1 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm max-h-[300px]">
                   {getCurrentChatMessages().map(message => (
                     <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -661,7 +661,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
                 
                 {/* Quick Help Buttons */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mb-4">
                   <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 border-primary/30 hover:bg-primary/10">
                     <ListTree className="w-3 h-3 mr-2" />
                     Structure
@@ -696,22 +696,17 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     )}
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="mt-6 flex justify-center">
+              </CardContent>
+            </Card>
+          ) : (
             <Button
               onClick={() => setIsCatbotOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg border border-primary/30 px-6 py-3 h-auto rounded-xl flex items-center gap-3 font-medium transition-all duration-300 hover:scale-105"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center font-medium transition-all duration-300 hover:scale-105"
             >
-              <div className="w-7 h-7 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                <Bot className="w-4 h-4" />
-              </div>
-              <span>AI Assistant – Get Help</span>
+              <Bot className="w-6 h-6" />
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </StudentLayout>
   );

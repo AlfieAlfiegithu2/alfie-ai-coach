@@ -9,6 +9,7 @@ interface SuggestionVisualizerProps {
   originalSpans: Span[];
   suggestedSpans: Span[];
   dimNeutral?: boolean;
+  hideOriginal?: boolean;
 }
 
 const spanClass = (status: Span["status"], side: "left" | "right", dimNeutral = false) => {
@@ -26,7 +27,7 @@ const spanClass = (status: Span["status"], side: "left" | "right", dimNeutral = 
   return dimNeutral ? "text-text-primary opacity-50" : "text-text-primary";
 };
 
-export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ originalSpans, suggestedSpans, dimNeutral = false }) => {
+export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ originalSpans, suggestedSpans, dimNeutral = false, hideOriginal = false }) => {
   // Split spans into sentences for sentence-by-sentence comparison
   const createSentenceGroups = (spans: Span[]) => {
     const sentences: Span[][] = [];
@@ -59,6 +60,10 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
     return sentences;
   };
 
+  const sanitize = (t: string) =>
+    t
+      .replace(/Ignore non[- ]English words and output the best English interpretation/gi, 'inaudible');
+
   const originalSentences = createSentenceGroups(originalSpans);
   const suggestedSentences = createSentenceGroups(suggestedSpans);
   const maxSentences = Math.max(originalSentences.length, suggestedSentences.length);
@@ -66,18 +71,20 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
   return (
     <div className="space-y-4">
       {Array.from({ length: maxSentences }, (_, index) => (
-        <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Original sentence */}
-          <div className="rounded-2xl bg-surface-3 p-4 border border-border">
-            {index === 0 && (
-              <div className="text-caption mb-2 text-text-tertiary">Your Transcription (areas for improvement highlighted)</div>
-            )}
-            <div className="text-sm leading-relaxed text-text-secondary">
-              {originalSentences[index]?.map((s, i) => (
-                <span key={`o-${index}-${i}`} className={spanClass(s.status, "left", dimNeutral)}>{s.text}</span>
-              )) || <span className="text-text-tertiary italic">No corresponding sentence</span>}
+        <div key={index} className={hideOriginal ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
+          {/* Original sentence (optional) */}
+          {!hideOriginal && (
+            <div className="rounded-2xl bg-surface-3 p-4 border border-border">
+              {index === 0 && (
+                <div className="text-caption mb-2 text-text-tertiary">Your Transcription (areas for improvement highlighted)</div>
+              )}
+              <div className="text-sm leading-relaxed text-text-secondary">
+                {originalSentences[index]?.map((s, i) => (
+                  <span key={`o-${index}-${i}`} className={spanClass(s.status, "left", dimNeutral)}>{sanitize(s.text)}</span>
+                )) || <span className="text-text-tertiary italic">No corresponding sentence</span>}
+              </div>
             </div>
-          </div>
+          )}
           
           {/* Suggested sentence */}
           <div className="rounded-2xl bg-surface-3 p-4 border border-border">
@@ -86,7 +93,7 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
             )}
             <div className="text-sm leading-relaxed text-text-secondary">
               {suggestedSentences[index]?.map((s, i) => (
-                <span key={`c-${index}-${i}`} className={spanClass(s.status, "right", dimNeutral)}>{s.text}</span>
+                <span key={`c-${index}-${i}`} className={spanClass(s.status, "right", dimNeutral)}>{sanitize(s.text)}</span>
               )) || <span className="text-text-tertiary italic">No corresponding sentence</span>}
             </div>
           </div>

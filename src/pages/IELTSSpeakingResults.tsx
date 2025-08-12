@@ -558,7 +558,7 @@ const IELTSSpeakingResults = () => {
           </Card>
         </div>
 
-        <Card className="card-modern">
+          <Card className="card-modern hover:shadow-none transition-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Volume2 className="w-5 h-5 text-primary" />
@@ -568,7 +568,7 @@ const IELTSSpeakingResults = () => {
               Advanced AI examiner feedback based on your actual speech patterns, fluency, and pronunciation
             </p>
           </CardHeader>
-          <CardContent className="space-y-6">
+           <CardContent className="space-y-6">
             {questionAnalyses.map((analysis, index) => (
               <div key={index} className="border border-border rounded-lg p-6 space-y-4 bg-card">
                 <div className="flex items-center justify-between">
@@ -669,6 +669,7 @@ const IELTSSpeakingResults = () => {
                             originalSpans={suggestion.original_spans}
                             suggestedSpans={suggestion.suggested_spans}
                             dimNeutral={false}
+                            hideOriginal
                           />
                         </div>
                       );

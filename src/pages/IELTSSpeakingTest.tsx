@@ -662,6 +662,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
   const currentPrompt = getCurrentPrompt();
   const currentQuestionText = getCurrentQuestionText();
   const questionType = getQuestionType();
+  const progressValue = (
+    currentPart === 1
+      ? ((currentQuestion + 1) / Math.max(1, testData.part1_prompts.length)) * 33.33
+      : currentPart === 2
+      ? 66.66
+      : 66.66 + ((currentQuestion + 1) / Math.max(1, testData.part3_prompts.length)) * 33.33
+  );
 
   return (
     <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
@@ -674,14 +681,23 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium">Test Progress</span>
               </div>
-            <Progress 
-              value={
-                currentPart === 1 ? ((currentQuestion + 1) / testData.part1_prompts.length) * 33.33 :
-                currentPart === 2 ? 66.66 :
-                66.66 + ((currentQuestion + 1) / testData.part3_prompts.length) * 33.33
-              } 
-              className="h-2"
-            />
+            <div className="relative">
+              <div
+                className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
+                style={{ left: `${progressValue}%` }}
+                aria-label="Progress mascot"
+                title="Keep going!"
+              >
+                <img
+                  src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
+                  alt="Speaking progress turtle mascot"
+                  className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
+                  loading="lazy"
+                />
+              </div>
+              <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
+              <Progress value={progressValue} className="h-2" />
+            </div>
           </CardContent>
         </Card>
 
@@ -773,34 +789,27 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Audio Prompt with Auto-play and Repeat */}
             {currentPrompt?.audio_url && currentPart !== 2 && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-6">
-                  <div className="text-center space-y-4">
-                    
-                    <div className="flex justify-center space-x-3">
-                      <Button
-                        onClick={repeatAudio}
-                        disabled={isPlaying}
-                        variant="outline"
-                        className="rounded-xl border-primary/30 text-primary hover:bg-primary/10"
-                        size="lg"
-                      >
-                        {isPlaying ? (
-                          <>
-                            <Pause className="w-5 h-5 mr-2" />
-                            Playing...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-5 h-5 mr-2" />
-                            Repeat Audio
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="flex justify-center">
+                <Button
+                  onClick={repeatAudio}
+                  disabled={isPlaying}
+                  variant="outline"
+                  className="rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                  size="lg"
+                >
+                  {isPlaying ? (
+                    <>
+                      <Pause className="w-5 h-5 mr-2" />
+                      Playing...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2" />
+                      Repeat Audio
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
 
             {/* Cue Card Display */}
@@ -816,37 +825,33 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             {/* Recording Interface */}
             {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
               <div className="text-center space-y-4">
-                <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg">
-                  {isRecording ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center space-x-2 text-red-600">
-                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                        <span className="font-medium">Recording...</span>
-                      </div>
-                      <Button
-                        onClick={stopRecording}
-                        variant="outline"
-                        className="rounded-xl"
-                      >
-                        <Mic className="w-4 h-4 mr-2" />
-                        Stop Recording
-                      </Button>
+                {isRecording ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center space-x-2 text-red-600">
+                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                      <span className="font-medium">Recording...</span>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      
-                      <Button
-                        onClick={startRecording}
-                        className="rounded-xl"
-                        size="lg"
-                      >
-                        <Mic className="w-4 h-4 mr-2" />
-                        Start Recording
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
+                    <Button
+                      onClick={stopRecording}
+                      variant="outline"
+                      className="rounded-xl"
+                    >
+                      <Mic className="w-4 h-4 mr-2" />
+                      Stop Recording
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Button
+                      onClick={startRecording}
+                      className="rounded-xl"
+                      size="lg"
+                    >
+                      <Mic className="w-4 h-4 mr-2" />
+                      Start Recording
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 

@@ -558,7 +558,7 @@ const IELTSSpeakingResults = () => {
           </Card>
         </div>
 
-          <Card className="card-modern hover:shadow-none transition-none">
+          <Card className="card-modern">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Volume2 className="w-5 h-5 text-primary" />
@@ -642,34 +642,11 @@ const IELTSSpeakingResults = () => {
                             <TrendingUp className="w-4 h-4" />
                             AI Suggested Better Answer:
                           </h4>
-                          <div className="flex items-center gap-3 mb-4">
-                            <Button
-                              onClick={() => playAISuggestion(suggestion.suggested_spans)}
-                              variant={playingAISuggestion ? "default" : "outline"}
-                              size="sm"
-                              className="flex items-center gap-2"
-                            >
-                              {playingAISuggestion ? (
-                                <>
-                                  <Pause className="w-4 h-4" />
-                                  Stop AI Audio
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="w-4 h-4" />
-                                  Play AI Answer
-                                </>
-                              )}
-                            </Button>
-                            <span className="text-sm text-muted-foreground">
-                              {playingAISuggestion ? 'Playing improved version...' : 'Listen to the improved version of your response'}
-                            </span>
-                          </div>
                           <SuggestionVisualizer
                             originalSpans={suggestion.original_spans}
                             suggestedSpans={suggestion.suggested_spans}
                             dimNeutral={false}
-                            hideOriginal
+                            hideOriginal={false}
                           />
                         </div>
                       );

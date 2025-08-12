@@ -353,7 +353,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         </div>
 
         {/* Three-Column Layout */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* Section 1: Questions */}
           <div className="lg:col-span-1">
             <Card className="glass-card rounded-3xl h-fit">
@@ -363,15 +363,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* For Task 1, show image first on the left side */}
-                {currentTask === 1 && currentTaskData?.imageUrl && <div className="mb-4">
-                    <h3 className="font-semibold mb-2 text-slate-950">Visual Data</h3>
-                    <img src={currentTaskData.imageUrl} alt="Task 1 visual data" className="w-full rounded-lg border border-border shadow-sm cursor-zoom-in object-contain" onClick={() => {
-                  setZoomScale(1);
-                  setZoomOpen(true);
-                }} />
-                    <p className="mt-1 text-xs text-muted-foreground">Click image to zoom</p>
-                  </div>}
+                {/* Visual presented below in the main view for Task 1 */}
 
                 <div>
                   <h3 className="font-semibold mb-2 text-slate-950">Prompt</h3>
@@ -410,7 +402,39 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
               </CardHeader>
               <CardContent>
-                <Textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)} placeholder={`Write your Task ${currentTask} answer here...`} className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
+                {currentTask === 1 && currentTaskData?.imageUrl ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
+                      <div className="flex gap-2 items-center">
+                        <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
+                        <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
+                        <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setZoomScale(1)}>Reset</Button>
+                      </div>
+                    </div>
+                    <ResizablePanelGroup direction="horizontal" className="gap-3">
+                      <ResizablePanel defaultSize={55} minSize={40}>
+                        <div className="max-h-[60vh] overflow-auto rounded-lg border border-border bg-background p-2">
+                          <img src={currentTaskData?.imageUrl} alt="Task 1 visual data" className="mx-auto" style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center top' }} />
+                        </div>
+                      </ResizablePanel>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel defaultSize={45} minSize={35}>
+                        <div className="h-full flex flex-col rounded-lg border border-border bg-card/80 backdrop-blur p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-medium text-foreground">Write your Task 1 answer (synced)</div>
+                            <div className="text-xs text-muted-foreground">Words: {getWordCount(task1Answer)} • Min: 150</div>
+                          </div>
+                          <Textarea value={task1Answer} onChange={e => setTask1Answer(e.target.value)} placeholder="Write here while viewing the larger image..." className="min-h-[300px] flex-1 text-base leading-relaxed resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" />
+                          <div className="mt-2 text-xs text-muted-foreground">Changes here are synced with the main answer box.</div>
+                        </div>
+                      </ResizablePanel>
+                    </ResizablePanelGroup>
+                  </div>
+                ) : (
+                  <Textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)} placeholder={`Write your Task ${currentTask} answer here...`} className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
+                )}
                 
                 <div className="flex justify-between items-center mt-4">
                   <div className="text-sm text-white/80">
@@ -499,6 +523,79 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </CardContent>
             </Card>
           </div>
+        </div>
+        {/* Bottom Catbot */}
+        <div className="mt-6">
+          <Card className="glass-card rounded-3xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-slate-950">
+                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"></div>
+                <div>
+                  <div className="text-base font-semibold text-foreground">Catbot</div>
+                  <div className="text-xs text-muted-foreground font-normal">Your AI Writing Tutor</div>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card">
+                {getCurrentChatMessages().map(message => (
+                  <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-muted text-foreground border border-border' : 'bg-card text-foreground border border-border'}`}>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: message.content
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1<\/strong>')
+                              .replace(/\*(.*?)\*/g, '<em>$1<\/em>')
+                              .replace(/^• (.*)$/gm, '<li>$1<\/li>')
+                              .replace(/(<li>.*<\/li>)/s, '<ul>$1<\/ul>')
+                              .replace(/\n/g, '<br>')
+                          }}
+                          className="prose prose-sm max-w-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {isChatLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-1">
+                      <img src="/lovable-uploads/c1ab595f-8894-4f83-8bed-f87c5e7bb066.png" alt="Catbot" className="w-5 h-5 rounded-full" />
+                    </div>
+                    <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
+                  📝 Structure
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 bg-background hover:bg-muted border-border text-foreground">
+                  📚 Vocabulary
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={e => setNewMessage(e.target.value)}
+                  onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
+                  placeholder="Ask Catbot for writing help..."
+                  className="flex-1 px-3 py-2 rounded-lg text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  disabled={isChatLoading}
+                />
+                <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="rounded-lg">
+                  Send
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         {/* Zoom Modal */}
         <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>

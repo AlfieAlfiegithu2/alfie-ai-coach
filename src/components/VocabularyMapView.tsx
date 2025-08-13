@@ -264,9 +264,7 @@ const VocabularyMapView = () => {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
             Vocabulary Journey
           </h1>
-          <p className="text-gray-600 mb-4">
-            Master vocabulary step by step on your learning adventure!
-          </p>
+          
           
           {/* Progress Bar */}
           <Card className="max-w-md mx-auto bg-white/80 backdrop-blur-sm">

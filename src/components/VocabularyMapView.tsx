@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Lock, Star, CheckCircle, Play, ArrowRight } from 'lucide-react';
+import { Lock, Star, CheckCircle, Play, ArrowRight, HelpCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -65,6 +65,29 @@ const VocabularyMapView = () => {
     }
     // For levels beyond our array, cycle through or use the last one
     return animalProgression[animalProgression.length - 1];
+  };
+
+  const getStarsFromScore = (score: number) => {
+    if (score >= 90) return 3;
+    if (score >= 70) return 2;
+    return 1;
+  };
+
+  const renderStars = (starCount: number) => {
+    return (
+      <div className="flex space-x-0.5">
+        {[1, 2, 3].map((star) => (
+          <Star
+            key={star}
+            className={`w-3 h-3 ${
+              star <= starCount 
+                ? 'text-yellow-400 fill-current' 
+                : 'text-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+    );
   };
   useEffect(() => {
     if (user) {
@@ -277,13 +300,9 @@ const VocabularyMapView = () => {
                             loading="lazy"
                           />
                           
-                          {/* Jail bars overlay */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="flex space-x-1">
-                              {[...Array(4)].map((_, i) => (
-                                <div key={i} className="w-1 h-16 bg-gray-600 rounded-full opacity-80"></div>
-                              ))}
-                            </div>
+                          {/* Question mark overlay for locked levels */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                            <HelpCircle className="w-8 h-8 text-white" />
                           </div>
                         </div>
                       </TooltipTrigger>
@@ -317,13 +336,12 @@ const VocabularyMapView = () => {
                          )}
                        </div>
 
-                      {node.progress.status === 'completed' && node.progress.completed_score && (
-                        <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
-                          <div className="bg-yellow-400 text-black text-xs px-2 py-1 rounded-full font-bold">
-                            {node.progress.completed_score}%
-                          </div>
-                        </div>
-                      )}
+                       {/* Stars on top of animal head for completed levels */}
+                       {node.progress.status === 'completed' && node.progress.completed_score && (
+                         <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                           {renderStars(getStarsFromScore(node.progress.completed_score))}
+                         </div>
+                       )}
                     </div>
                   )}
                   

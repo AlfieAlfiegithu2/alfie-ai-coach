@@ -40,10 +40,10 @@ const VocabularyMapView = () => {
   const animalProgression = [
     { name: "Mouse", image: "/moouse emoji.png" },
     { name: "Hamster", image: "/Hamster.png" },
-    { name: "Chick", emoji: "🐥" }, // No PNG available
-    { name: "Rabbit", emoji: "🐰" }, // No PNG available
+    { name: "Chick", image: "/chick.png" },
+    { name: "Rabbit", image: "/rabbit.png" },
     { name: "Kitten", image: "/cat.png" },
-    { name: "Puppy", emoji: "🐶" }, // No PNG available
+    { name: "Puppy", image: "/puppy.png" },
     { name: "Duck", image: "/duck.png" },
     { name: "Hedgehog", image: "/hedgehog.png" },
     { name: "Squirrel", image: "/squerrel.png" },
@@ -223,7 +223,7 @@ const VocabularyMapView = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             Vocabulary Journey
           </h1>
           
@@ -270,21 +270,22 @@ const VocabularyMapView = () => {
                           `}
                           onClick={() => handleNodeClick(node)}
                         >
-                          {getAnimalForLevel(index).image ? (
-                            <img
-                              src={getAnimalForLevel(index).image}
-                              alt={`${getAnimalForLevel(index).name} level icon`}
-                              className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <span className="text-2xl leading-none">
-                              {getAnimalForLevel(index).emoji}
-                            </span>
-                          )}
-                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
-                            {getAnimalForLevel(index).name}
-                          </span>
+                          <img
+                            src={getAnimalForLevel(index).image}
+                            alt={`${getAnimalForLevel(index).name} level icon`}
+                            className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90 grayscale"
+                            loading="lazy"
+                          />
+                          
+                          {/* Jail bars overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="flex space-x-1">
+                              {[...Array(4)].map((_, i) => (
+                                <div key={i} className="w-1 h-16 bg-gray-600 rounded-full opacity-80"></div>
+                              ))}
+                            </div>
+                          </div>
+                          
                           <div className="absolute bottom-1 right-1">
                             <Lock className="w-3 h-3 text-muted-foreground" />
                           </div>
@@ -305,21 +306,13 @@ const VocabularyMapView = () => {
                       `}
                       onClick={() => handleNodeClick(node)}
                     >
-                       {getAnimalForLevel(index).image ? (
-                          <img
-                            src={getAnimalForLevel(index).image}
-                            alt={`${getAnimalForLevel(index).name} level icon`}
-                            className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="text-2xl leading-none">
-                            {getAnimalForLevel(index).emoji}
-                          </span>
-                        )}
-                       <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
-                         {getAnimalForLevel(index).name}
-                       </span>
+                       <img
+                         src={getAnimalForLevel(index).image}
+                         alt={`${getAnimalForLevel(index).name} level icon`}
+                         className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
+                         loading="lazy"
+                       />
+                       
                        <div className="absolute bottom-1 right-1">
                          {node.progress.status === 'completed' ? (
                            <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
@@ -341,7 +334,7 @@ const VocabularyMapView = () => {
                   {/* Level Title */}
                   <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 w-32 text-center">
                     <p className="text-[10px] font-medium text-muted-foreground truncate">
-                      {node.test.title}
+                      {getAnimalForLevel(index).name} Level
                     </p>
                   </div>
                 </div>)}
@@ -356,7 +349,7 @@ const VocabularyMapView = () => {
             Back to Dashboard
           </Button>
           
-          <Button onClick={() => navigate('/vocabulary')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+          <Button onClick={() => navigate('/vocabulary')} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <CheckCircle className="w-4 h-4 mr-2" />
             View Saved Vocabulary
           </Button>

@@ -198,10 +198,6 @@ const VocabularyMapView = () => {
     setMapNodes(nodes);
   };
   const handleNodeClick = (node: MapNode) => {
-    if (node.progress.status === 'locked') {
-      toast.error('This level is still locked! Complete previous levels to unlock.');
-      return;
-    }
     navigate(`/skills/vocabulary-builder/test/${node.test.id}`);
   };
 

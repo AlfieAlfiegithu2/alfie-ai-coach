@@ -79,13 +79,13 @@ const VocabularyMapView = () => {
         {[1, 2, 3].map((star) => (
           <Star
             key={star}
-            className={`w-5 h-5 ${
+            className={`w-6 h-6 ${
               star <= starCount 
                 ? 'text-yellow-400 fill-current' 
                 : 'text-gray-300'
             }`}
             style={{
-              transform: `rotate(${(star - 2) * 15}deg) translateY(${Math.abs(star - 2) * -2}px)`,
+              transform: `rotate(${(star - 2) * 15}deg) translateY(${star === 2 ? '0px' : '4px'})`,
               margin: '0 2px'
             }}
           />
@@ -100,6 +100,18 @@ const VocabularyMapView = () => {
       // If no user after auth loading is complete, stop loading
       setLoading(false);
     }
+  }, [user]);
+
+  // Reload map data when returning from test (on focus)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        loadMapData();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
   const loadMapData = async () => {
     if (!user) return;

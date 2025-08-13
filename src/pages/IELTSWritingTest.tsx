@@ -380,8 +380,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </div>
               
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="rounded-xl">
-                  Go Back
+                <Button variant="outline" size="sm" onClick={() => navigate('/ielts-test-modules')} className="rounded-xl">
+                  Exit
                 </Button>
                 <Button variant={currentTask === 1 ? "default" : "outline"} size="sm" onClick={() => switchToTask(1)} className="rounded-xl">
                   Task 1

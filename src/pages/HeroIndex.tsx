@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Sparkles, Award, TrendingUp, Shield, Clock, Brain, MessageSquare, ChevronRight, Volume2, BarChart3, FileText, Languages } from "lucide-react";
+import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Sparkles, Award, TrendingUp, Shield, Clock, Brain, MessageSquare, ChevronRight, Volume2, BarChart3, FileText, Languages, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import VideoBackground from "@/components/animations/VideoBackground";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { TypewriterText } from "@/components/TypewriterText";
+import LiveTime from "@/components/LiveTime";
 const HeroIndex = () => {
   const navigate = useNavigate();
   const {
@@ -88,28 +89,40 @@ const HeroIndex = () => {
         <img src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 px-8 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          
-          
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-zinc-300 hover:text-white transition-colors font-medium">Features</a>
-            <a href="#tests" className="text-zinc-300 hover:text-white transition-colors font-medium">Tests</a>
-            <a href="#community" className="text-zinc-300 hover:text-white transition-colors font-medium">Community</a>
-          </nav>
+      {/* Background layers */}
+      <div className="fixed inset-0 -z-10">
+        {/* subtle dots */}
+        <div className="absolute inset-0 opacity-[0.35] bg-[radial-gradient(#101010_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        {/* grid lines */}
+        <div className="absolute inset-0 opacity-[0.22] bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:120px_1px,1px_120px]"></div>
+        {/* vignette */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60"></div>
+      </div>
 
-          {/* Button Group */}
-          <div className="flex items-center gap-4">
-            <Button onClick={() => navigate('/auth')} variant="ghost" className="text-white transition-all duration-200 bg-zinc-950 hover:bg-zinc-800">
-              Log In
-            </Button>
-            {user && <Button onClick={() => navigate('/dashboard')} className="text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-500 hover:bg-gray-400">
-                My Dashboard
-              </Button>}
+      {/* Header */}
+      <header className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 relative z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-xs sm:text-sm tracking-tight text-neutral-300">ONLINE/ <LiveTime /></span>
           </div>
+          <div className="hidden sm:flex items-center gap-2 text-neutral-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <circle cx="12" cy="9" r="1"></circle>
+              <circle cx="19" cy="9" r="1"></circle>
+              <circle cx="5" cy="9" r="1"></circle>
+              <circle cx="12" cy="15" r="1"></circle>
+              <circle cx="19" cy="15" r="1"></circle>
+              <circle cx="5" cy="15" r="1"></circle>
+            </svg>
+          </div>
+          <button onClick={() => navigate('/auth')} className="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/5 hover:bg-white/10 ring-1 ring-white/10">
+            <span>Get Started</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 transition-transform group-hover:translate-x-0.5">
+              <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path>
+              <path d="m21.854 2.147-10.94 10.939"></path>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -181,116 +194,363 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:400ms] [animation-fill-mode:forwards]">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
-            Why Choose Our Platform
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[{
-            icon: <Target className="w-8 h-8 text-white" />,
-            title: "Personalized Learning",
-            description: "AI-powered adaptive learning paths tailored to your specific needs and skill level"
-          }, {
-            icon: <TrendingUp className="w-8 h-8 text-white" />,
-            title: "Real-time Progress",
-            description: "Track your improvement with detailed analytics and performance insights"
-          }, {
-            icon: <Award className="w-8 h-8 text-white" />,
-            title: "Expert Content",
-            description: "Practice with authentic test materials created by certified English instructors"
-          }].map((feature, index) => <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
-                <CardHeader className="text-center">
-                  <div className="mb-4 p-3 bg-white/10 border border-white/20 backdrop-blur-xl rounded-full w-fit mx-auto">
-                    {feature.icon}
+      {/* About Section */}
+      <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
+        <div className="rounded-2xl ring-1 ring-white/10 overflow-hidden bg-white/5">
+          <div className="flex items-end justify-between p-6 border-b border-white/10">
+            <h2 className="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Platform Overview</h2>
+            <p className="hidden sm:block text-xs text-neutral-400">Features, stats, achievements</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12">
+            {/* Service Info */}
+            <div className="p-6 md:col-span-3 border-b md:border-b-0 md:border-r border-white/10">
+              <p className="text-sm text-neutral-400">AI-Powered Learning</p>
+              <p className="mt-1 text-lg font-medium tracking-tight text-white">IELTS Master AI</p>
+              <div className="mt-4 flex items-center gap-2 text-xs text-neutral-400">
+                <Globe className="w-4 h-4" />
+                <span>Global Access • 24/7 Available</span>
+              </div>
+            </div>
+
+            {/* Feature Image */}
+            <div className="relative md:col-span-6 md:row-span-2 border-b md:border-b-0 md:border-r border-white/10">
+              <div className="relative aspect-[16/10] md:aspect-[9/10] lg:aspect-[16/10]">
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 mx-auto bg-white/10 rounded-full flex items-center justify-center">
+                      <Brain className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-white font-semibold text-xl">AI Learning Engine</h3>
+                    <p className="text-neutral-300 text-sm px-4">Personalized feedback and adaptive learning paths</p>
                   </div>
-                  <CardTitle className="text-zinc-950 font-normal text-xl">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-zinc-700 text-center leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>)}
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
+
+                {/* Overlay stats */}
+                <div className="hidden md:block absolute inset-0 pointer-events-none">
+                  <div className="absolute top-5 right-5 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
+                    <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-white">50K+</div>
+                    <p className="text-[11px] text-neutral-300 mt-0.5">Active Students</p>
+                  </div>
+                  <div className="absolute bottom-5 left-5 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
+                    <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-white">95%</div>
+                    <p className="text-[11px] text-neutral-300 mt-0.5">Success Rate</p>
+                  </div>
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
+                    <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-white">4</div>
+                    <p className="text-[11px] text-neutral-300 mt-0.5">Test Types</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right stat (top) */}
+            <div className="p-6 md:col-span-3 border-b md:border-b-0">
+              <div className="text-3xl font-semibold tracking-tight text-white">1000+</div>
+              <p className="text-xs text-neutral-400 mt-1">Practice Tests</p>
+            </div>
+
+            {/* Bio (bottom-left) */}
+            <div className="p-6 md:col-span-3 border-t md:border-t border-white/10 md:border-r">
+              <p className="text-sm text-neutral-300 leading-relaxed">
+                Master IELTS, PTE, TOEFL, and General English with our AI-powered platform. Get personalized feedback, track progress, and achieve your target scores faster.
+              </p>
+              <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white bg-white/10 hover:bg-white/20 rounded-full px-3 py-1.5 ring-1 ring-white/10 cursor-pointer" onClick={() => navigate('/auth')}>
+                <FileText className="w-4 h-4" />
+                <span>Start Free Trial</span>
+              </div>
+            </div>
+
+            {/* Right stat (bottom) */}
+            <div className="p-6 md:col-span-3 border-t border-white/10">
+              <div className="text-3xl font-semibold tracking-tight text-white">24/7</div>
+              <p className="text-xs text-neutral-400 mt-1">AI Support</p>
+            </div>
+          </div>
+
+          {/* Mobile stats */}
+          <div className="md:hidden border-t border-white/10 grid grid-cols-3">
+            <div className="p-4 text-center border-r border-white/10">
+              <div className="text-xl font-semibold tracking-tight text-white">50K+</div>
+              <p className="text-[11px] text-neutral-400 mt-0.5">Students</p>
+            </div>
+            <div className="p-4 text-center border-r border-white/10">
+              <div className="text-xl font-semibold tracking-tight text-white">95%</div>
+              <p className="text-[11px] text-neutral-400 mt-0.5">Success</p>
+            </div>
+            <div className="p-4 text-center">
+              <div className="text-xl font-semibold tracking-tight text-white">4</div>
+              <p className="text-[11px] text-neutral-400 mt-0.5">Tests</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Success Stories Section */}
-      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:600ms] [animation-fill-mode:forwards]">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
-            Success Stories
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            {[{
-            score: "8.5",
-            test: "IELTS",
-            name: "Sarah Chen",
-            quote: "The AI feedback helped me improve my speaking score by 2 bands in just 6 weeks!"
-          }, {
-            score: "85",
-            test: "PTE",
-            name: "Ahmed Hassan",
-            quote: "Perfect preparation platform. The practice tests were exactly like the real exam."
-          }].map((story, index) => <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
-                <CardContent className="p-8">
-                  <div className="flex items-center mb-4">
-                    <div className="text-3xl font-bold text-zinc-950 mr-4">{story.score}</div>
-                    <div>
-                      <div className="font-semibold text-zinc-950">{story.test} Score</div>
-                      <div className="text-sm text-zinc-700">{story.name}</div>
+      {/* Success Showcase */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl sm:text-2xl tracking-tight font-semibold text-white">Student Achievements</h2>
+          <a href="/community" className="text-sm text-neutral-300 hover:text-white inline-flex items-center gap-2">
+            <span>View all</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M7 7h10v10"></path>
+              <path d="M7 17 17 7"></path>
+            </svg>
+          </a>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Achievement Card 1 */}
+          <article className="group rounded-xl overflow-hidden ring-1 ring-white/10 bg-white/5">
+            <div className="relative aspect-[16/10]">
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white mb-2">8.5</div>
+                  <div className="text-sm text-neutral-300">IELTS Overall</div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-2 text-xs text-neutral-400">
+                <Trophy className="w-4 h-4" />
+                <span>IELTS Success</span>
+              </div>
+              <h3 className="mt-2 text-base font-semibold tracking-tight text-white">Sarah C. Achievement</h3>
+              <p className="mt-1 text-sm text-neutral-400">"AI feedback helped me improve by 2 bands in writing!"</p>
+            </div>
+          </article>
+
+          {/* Achievement Card 2 */}
+          <article className="group rounded-xl overflow-hidden ring-1 ring-white/10 bg-white/5">
+            <div className="relative aspect-[16/10]">
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white mb-2">85</div>
+                  <div className="text-sm text-neutral-300">PTE Overall</div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-2 text-xs text-neutral-400">
+                <Star className="w-4 h-4" />
+                <span>PTE Excellence</span>
+              </div>
+              <h3 className="mt-2 text-base font-semibold tracking-tight text-white">Ahmed H. Success</h3>
+              <p className="mt-1 text-sm text-neutral-400">"Practice tests were exactly like the real exam!"</p>
+            </div>
+          </article>
+
+          {/* Achievement Card 3 */}
+          <article className="group rounded-xl overflow-hidden ring-1 ring-white/10 bg-white/5">
+            <div className="relative aspect-[16/10]">
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white mb-2">108</div>
+                  <div className="text-sm text-neutral-300">TOEFL Total</div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-2 text-xs text-neutral-400">
+                <Award className="w-4 h-4" />
+                <span>TOEFL Mastery</span>
+              </div>
+              <h3 className="mt-2 text-base font-semibold tracking-tight text-white">Maria R. Excellence</h3>
+              <p className="mt-1 text-sm text-neutral-400">"Personalized study plan was a game-changer!"</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section id="services" className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
+        <div className="ring-1 ring-white/10 overflow-hidden bg-white/5 rounded-2xl">
+          <div className="flex items-end justify-between p-6 border-b border-white/10">
+            <h2 className="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Our Services</h2>
+            <div className="hidden sm:flex items-center gap-2">
+              <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium tracking-tight text-white bg-white/10 hover:bg-white/20 ring-1 ring-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7,10 12,15 17,10"></polyline>
+                  <line x1="12" x2="12" y1="15" y2="3"></line>
+                </svg>
+                <span>Get Started</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Service 1 - AI Practice Tests */}
+          <div className="p-6 sm:p-8 border-b border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="md:col-span-1">
+                <div className="text-3xl sm:text-4xl font-medium tracking-tight text-white/70 tabular-nums">1</div>
+              </div>
+              <div className="md:col-span-8">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>IELTS, PTE, TOEFL Practice Tests</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Real-time Scoring & Analytics</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Authentic Test Materials</span>
+                  </li>
+                </ul>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="aspect-[4/3] w-24 sm:w-28 rounded-md overflow-hidden ring-1 ring-white/10">
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                      <BookOpen className="w-8 h-8 text-white" />
                     </div>
                   </div>
-                  <p className="text-zinc-800 italic">"{story.quote}"</p>
-                </CardContent>
-              </Card>)}
-          </div>
-        </div>
-      </section>
-
-      {/* AI Examiner Showcase Section */}
-      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:800ms] [animation-fill-mode:forwards]">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl mb-4 text-center font-light text-zinc-950">
-            Go Beyond Practice. Get Personal Feedback.
-          </h2>
-          <p className="text-center text-zinc-700 mb-16 max-w-2xl mx-auto">
-            Experience our AI-powered feedback system that provides detailed, personalized insights to help you improve faster.
-          </p>
-          
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Writing Feedback Column */}
-            <div className="space-y-6">
-              <h3 className="text-2xl font-light text-zinc-950 mb-6">Writing Examiner</h3>
-              
-              {/* Writing Examiner Photo Placeholder */}
-              <Card className="bg-white/10 border border-white/20 backdrop-blur-xl p-6">
-                <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-lg p-8 text-center">
-                  <FileText className="w-16 h-16 mx-auto mb-4 text-zinc-600 opacity-50" />
-                  <p className="text-zinc-700 text-sm">
-                    Writing Examiner screenshot will be displayed here
-                  </p>
+                  <div className="aspect-[4/3] w-24 sm:w-28 rounded-md overflow-hidden ring-1 ring-white/10">
+                    <div className="w-full h-full bg-gradient-to-br from-green-500/20 to-blue-500/20 flex items-center justify-center">
+                      <BarChart3 className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="aspect-[4/3] w-24 sm:w-28 rounded-md overflow-hidden ring-1 ring-white/10">
+                    <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                      <Target className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
                 </div>
-              </Card>
+              </div>
+              <div className="md:col-span-3 md:text-right">
+                <h3 className="text-lg sm:text-xl tracking-tight font-semibold text-white">AI Practice Tests</h3>
+                <p className="text-xs text-neutral-400 mt-1">Comprehensive test preparation</p>
+              </div>
             </div>
-            
-            {/* Speaking Feedback Column */}
-            <div className="space-y-6">
-              <h3 className="text-2xl font-light text-zinc-950 mb-6">Speaking Examiner</h3>
-              
-              {/* Speaking Examiner Photo Placeholder */}
-              <Card className="bg-white/10 border border-white/20 backdrop-blur-xl p-6">
-                <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-lg p-8 text-center">
-                  <Mic className="w-16 h-16 mx-auto mb-4 text-zinc-600 opacity-50" />
-                  <p className="text-zinc-700 text-sm">
-                    Speaking Examiner screenshot will be displayed here
-                  </p>
+          </div>
+
+          {/* Service 2 - AI Feedback */}
+          <div className="p-6 sm:p-8 border-b border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="md:col-span-1">
+                <div className="text-3xl sm:text-4xl font-medium tracking-tight text-white/70 tabular-nums">2</div>
+              </div>
+              <div className="md:col-span-8">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Writing & Speaking Analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Personalized Improvement Tips</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Band Score Predictions</span>
+                  </li>
+                </ul>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="aspect-[16/10] w-28 sm:w-32 rounded-md overflow-hidden ring-1 ring-white/10">
+                    <div className="w-full h-full bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="aspect-[16/10] w-28 sm:w-32 rounded-md overflow-hidden ring-1 ring-white/10">
+                    <div className="w-full h-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+                      <Mic className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
                 </div>
-              </Card>
+              </div>
+              <div className="md:col-span-3 md:text-right">
+                <h3 className="text-lg sm:text-xl tracking-tight font-semibold text-white">AI Feedback System</h3>
+                <p className="text-xs text-neutral-400 mt-1">Instant detailed analysis</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Service 3 - Study Platform */}
+          <div className="p-6 sm:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="md:col-span-1">
+                <div className="text-3xl sm:text-4xl font-medium tracking-tight text-white/70 tabular-nums">3</div>
+              </div>
+              <div className="md:col-span-8">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Personalized Study Plans</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Progress Tracking Dashboard</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>Community Support & Forums</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-neutral-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <span>24/7 AI Chat Support</span>
+                  </li>
+                </ul>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="aspect-[16/10] w-32 sm:w-40 rounded-md overflow-hidden ring-1 ring-white/10">
+                    <div className="w-full h-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
+                      <Brain className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="aspect-[16/10] w-32 sm:w-40 rounded-md overflow-hidden ring-1 ring-white/10">
+                    <div className="w-full h-full bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                      <Users className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="md:col-span-3 md:text-right">
+                <h3 className="text-lg sm:text-xl tracking-tight font-semibold text-white">Study Platform</h3>
+                <p className="text-xs text-neutral-400 mt-1">Complete learning ecosystem</p>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-8 border-t border-white/10">
+            <p className="text-sm text-neutral-300">Ready to achieve your target score? Start your free trial today.</p>
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-emerald-500/90 hover:bg-emerald-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <path d="M8 2v4"></path>
+                  <path d="M16 2v4"></path>
+                  <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                  <path d="M3 10h18"></path>
+                </svg>
+                <span>Start Free Trial</span>
+              </button>
+              <button onClick={() => navigate('/community')} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/10 hover:bg-white/20 ring-1 ring-white/10">
+                <MessageSquare className="w-4 h-4" />
+                <span>Join Community</span>
+              </button>
             </div>
           </div>
         </div>

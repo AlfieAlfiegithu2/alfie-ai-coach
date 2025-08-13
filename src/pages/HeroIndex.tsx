@@ -800,12 +800,8 @@ const HeroIndex = () => {
       {/* Community Section */}
       <section id="community" className="relative z-10 px-8 py-20 bg-black/20 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-4xl mb-4 md:text-4xl font-extralight text-zinc-950">
-            Join Our Learning Community
-          </h2>
-          <p className="mb-12 max-w-2xl mx-auto text-zinc-950 text-base font-light">
-            Connect with thousands of learners, share experiences, and achieve your goals together
-          </p>
+          
+          
           
             <div className="grid md:grid-cols-2 gap-6 mb-12">
               {[{
@@ -815,11 +811,7 @@ const HeroIndex = () => {
             title: "General English",
             members: "15K+"
           }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
-                  <CardContent className="pt-6 text-center">
-                    
-                    <h3 className="mb-2 text-zinc-950 font-light text-sm">{group.title}</h3>
-                    <p className="text-sm text-zinc-950 font-extralight">{group.members} members</p>
-                  </CardContent>
+                  
                 </Card>)}
             </div>
 

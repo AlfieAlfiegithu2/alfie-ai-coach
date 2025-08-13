@@ -255,7 +255,7 @@ const VocabularyQuiz = () => {
 
                 <div className="flex gap-2 justify-center">
                   <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); setAttempts([]); }}>Retry</Button>
-                  <Button variant="secondary" onClick={() => navigate("/skills/vocabulary-builder/map")}>Back to Map</Button>
+                  <Button variant="secondary" onClick={() => navigate("/vocabulary/map")}>Back to Map</Button>
                 </div>
               </CardContent>
             </Card>

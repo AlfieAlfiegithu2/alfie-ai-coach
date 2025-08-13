@@ -34,6 +34,38 @@ const VocabularyMapView = () => {
   const [loading, setLoading] = useState(true);
   const [mapNodes, setMapNodes] = useState<MapNode[]>([]);
 
+  // Animal progression from weakest to strongest with emojis
+  const animalProgression = [
+    { name: "Mouse", emoji: "🐭" },
+    { name: "Bird", emoji: "🐦" },
+    { name: "Cat", emoji: "🐱" },
+    { name: "Dog", emoji: "🐶" },
+    { name: "Fox", emoji: "🦊" },
+    { name: "Wolf", emoji: "🐺" },
+    { name: "Horse", emoji: "🐎" },
+    { name: "Bear", emoji: "🐻" },
+    { name: "Lion", emoji: "🦁" },
+    { name: "Tiger", emoji: "🐅" },
+    { name: "Rhino", emoji: "🦏" },
+    { name: "Hippo", emoji: "🦛" },
+    { name: "Elephant", emoji: "🐘" },
+    { name: "Whale", emoji: "🐋" },
+    { name: "Dragon", emoji: "🐉" },
+    { name: "Phoenix", emoji: "🔥" },
+    { name: "Kraken", emoji: "🐙" },
+    { name: "Titan", emoji: "⚡" },
+    { name: "Legend", emoji: "👑" },
+    { name: "Master", emoji: "🌟" }
+  ];
+
+  const getAnimalForLevel = (levelIndex: number) => {
+    if (levelIndex < animalProgression.length) {
+      return animalProgression[levelIndex];
+    }
+    // For levels beyond our array, cycle through or use the last one
+    return animalProgression[animalProgression.length - 1];
+  };
+
   useEffect(() => {
     if (user) {
       loadMapData();
@@ -281,9 +313,10 @@ const VocabularyMapView = () => {
                     `}
                     onClick={() => handleNodeClick(node)}
                   >
-                    {/* Level Number */}
-                    <div className="text-xs font-bold mb-1">
-                      Level {index + 1}
+                    {/* Animal Level */}
+                    <div className="text-xs font-bold mb-1 flex flex-col items-center">
+                      <span className="text-lg">{getAnimalForLevel(index).emoji}</span>
+                      <span className="text-[10px]">{getAnimalForLevel(index).name}</span>
                     </div>
                     
                     {/* Icon */}

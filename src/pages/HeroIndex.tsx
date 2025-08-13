@@ -595,10 +595,7 @@ const HeroIndex = () => {
                 <span>Community Access</span>
               </li>
             </ul>
-            <button 
-              onClick={() => navigate('/auth')}
-              className="mt-auto w-full py-3 rounded-xl bg-cyan-400/80 hover:bg-cyan-400 text-slate-900 font-semibold text-sm transition-all duration-200"
-            >
+            <button onClick={() => navigate('/auth')} className="mt-auto w-full py-3 rounded-xl bg-cyan-400/80 hover:bg-cyan-400 text-slate-900 font-semibold text-sm transition-all duration-200">
               Start Free Trial
             </button>
           </div>
@@ -647,10 +644,7 @@ const HeroIndex = () => {
                 <span>Priority Support</span>
               </li>
             </ul>
-            <button 
-              onClick={() => navigate('/auth')}
-              className="mt-auto w-full py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold text-sm transition-all duration-200"
-            >
+            <button onClick={() => navigate('/auth')} className="mt-auto w-full py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold text-sm transition-all duration-200">
               Try Pro
             </button>
           </div>
@@ -696,10 +690,7 @@ const HeroIndex = () => {
                 <span>24/7 Support</span>
               </li>
             </ul>
-            <button 
-              onClick={() => navigate('/auth')}
-              className="mt-auto w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 transition-all duration-200"
-            >
+            <button onClick={() => navigate('/auth')} className="mt-auto w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 transition-all duration-200">
               Contact Sales
             </button>
           </div>
@@ -707,21 +698,7 @@ const HeroIndex = () => {
       </section>
 
       {/* Vibrant Community Showcase Section */}
-      <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:1000ms] [animation-fill-mode:forwards]">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl mb-4 text-center font-light text-zinc-950">
-            Never Study Alone
-          </h2>
-          <p className="text-center text-zinc-700 mb-16 max-w-2xl mx-auto">
-            Join a vibrant community of learners from around the world. Share experiences, get support, and celebrate achievements together.
-          </p>
-          
-          <div className="relative">
-            {/* Community Image Background - Placeholder */}
-            
-          </div>
-        </div>
-      </section>
+      
 
       {/* Personalized Learning Hub Showcase Section */}
       <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:1200ms] [animation-fill-mode:forwards]">
@@ -832,12 +809,12 @@ const HeroIndex = () => {
           
             <div className="grid md:grid-cols-2 gap-6 mb-12">
               {[{
-              title: "IELTS Preparation",
-              members: "25K+"
-            }, {
-              title: "General English",
-              members: "15K+"
-            }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+            title: "IELTS Preparation",
+            members: "25K+"
+          }, {
+            title: "General English",
+            members: "15K+"
+          }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
                   <CardContent className="pt-6 text-center">
                     
                     <h3 className="mb-2 text-zinc-950 font-light text-sm">{group.title}</h3>

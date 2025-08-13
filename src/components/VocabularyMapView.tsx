@@ -273,7 +273,7 @@ const VocabularyMapView = () => {
                           <img
                             src={getAnimalForLevel(index).image}
                             alt={`${getAnimalForLevel(index).name} level icon`}
-                            className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90 grayscale"
+                            className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
                             loading="lazy"
                           />
                           
@@ -284,10 +284,6 @@ const VocabularyMapView = () => {
                                 <div key={i} className="w-1 h-16 bg-gray-600 rounded-full opacity-80"></div>
                               ))}
                             </div>
-                          </div>
-                          
-                          <div className="absolute bottom-1 right-1">
-                            <Lock className="w-3 h-3 text-muted-foreground" />
                           </div>
                         </div>
                       </TooltipTrigger>
@@ -332,7 +328,7 @@ const VocabularyMapView = () => {
                   )}
                   
                   {/* Level Title */}
-                  <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 w-32 text-center">
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 w-32 text-center">
                     <p className="text-[10px] font-medium text-muted-foreground truncate">
                       {getAnimalForLevel(index).name} Level
                     </p>

@@ -399,11 +399,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             <ResizablePanel defaultSize={55} minSize={40}>
               <Card className="glass-card rounded-3xl h-full">
                 <CardHeader>
-                  <CardTitle className="text-slate-950">Task 1 Visual</CardTitle>
                 </CardHeader>
                 <CardContent className="h-full">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm text-muted-foreground">Use controls to zoom and pan</div>
                     <div className="flex gap-2 items-center">
                       <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
                       <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
@@ -430,7 +428,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <Card className="glass-card rounded-3xl h-full">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-slate-950">Write your Task 1 answer (synced)</CardTitle>
                     <div className="text-xs text-muted-foreground">
                       Words: {getWordCount(task1Answer)} • Min: 150
                     </div>
@@ -448,7 +445,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       Continue to Task 2
                     </Button>
                   </div>
-                  <div className="mt-2 text-xs text-muted-foreground">Changes here are synced with the main answer box.</div>
                 </CardContent>
               </Card>
             </ResizablePanel>

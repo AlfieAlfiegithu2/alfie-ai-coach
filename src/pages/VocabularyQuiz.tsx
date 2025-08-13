@@ -73,29 +73,62 @@ const VocabularyQuiz = () => {
   }, [testId]);
 
   useEffect(() => {
-    const maybeUnlock = async () => {
-      if (!finished || !levelNumber) return;
-      const pass = score >= Math.ceil((questions.length || 10) * 0.8);
-      if (!pass) return;
+    const updateProgress = async () => {
+      if (!finished || !testId) return;
+      
       const { data: userResp } = await supabase.auth.getUser();
       const uid = userResp?.user?.id;
       if (!uid) return;
-      const { data: prog } = await (supabase as any)
-        .from("user_skill_progress")
-        .select("max_unlocked_level")
-        .eq("user_id", uid)
-        .eq("skill_slug", "vocabulary-builder")
-        .maybeSingle();
-      const current = prog?.max_unlocked_level || 1;
-      const next = Math.min(20, Math.max(current, levelNumber + 1));
-      const { error } = await (supabase as any)
-        .from("user_skill_progress")
-        .upsert({ user_id: uid, skill_slug: "vocabulary-builder", max_unlocked_level: next }, { onConflict: "user_id,skill_slug" });
-      if (!error) {
-        toast({ title: "Level up!", description: `Level ${next} unlocked.`, });
+
+      const finalScore = Math.round((score / questions.length) * 100);
+      const passed = score >= Math.ceil((questions.length || 10) * 0.8);
+
+      try {
+        // Update current test progress to completed
+        await supabase
+          .from('user_test_progress')
+          .upsert({
+            user_id: uid,
+            test_id: testId,
+            status: 'completed',
+            completed_score: finalScore
+          }, { onConflict: 'user_id,test_id' });
+
+        if (passed) {
+          // Find the next test to unlock
+          const { data: allTests } = await supabase
+            .from('skill_tests')
+            .select('id, test_order')
+            .eq('skill_slug', 'vocabulary-builder')
+            .order('test_order', { ascending: true });
+
+          if (allTests) {
+            const currentTest = allTests.find(t => t.id === testId);
+            const nextTest = allTests.find(t => t.test_order === (currentTest?.test_order || 0) + 1);
+            
+            if (nextTest) {
+              // Unlock the next test
+              await supabase
+                .from('user_test_progress')
+                .upsert({
+                  user_id: uid,
+                  test_id: nextTest.id,
+                  status: 'unlocked'
+                }, { onConflict: 'user_id,test_id' });
+
+              toast({ 
+                title: "Level up!", 
+                description: `Next level unlocked! Great job!`, 
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error updating progress:', error);
       }
     };
-    maybeUnlock();
+    
+    updateProgress();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 
@@ -222,7 +255,7 @@ const VocabularyQuiz = () => {
 
                 <div className="flex gap-2 justify-center">
                   <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); setAttempts([]); }}>Retry</Button>
-                  <Button variant="secondary" onClick={() => navigate("/skills/vocabulary-builder")}>Back</Button>
+                  <Button variant="secondary" onClick={() => navigate("/skills/vocabulary-builder/map")}>Back to Map</Button>
                 </div>
               </CardContent>
             </Card>

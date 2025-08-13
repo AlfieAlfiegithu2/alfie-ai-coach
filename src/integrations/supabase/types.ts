@@ -772,6 +772,7 @@ export type Database = {
           created_by: string
           id: string
           skill_slug: string
+          test_order: number | null
           title: string
           updated_at: string
         }
@@ -780,6 +781,7 @@ export type Database = {
           created_by?: string
           id?: string
           skill_slug: string
+          test_order?: number | null
           title: string
           updated_at?: string
         }
@@ -788,6 +790,7 @@ export type Database = {
           created_by?: string
           id?: string
           skill_slug?: string
+          test_order?: number | null
           title?: string
           updated_at?: string
         }
@@ -1210,6 +1213,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_test_progress: {
+        Row: {
+          completed_score: number | null
+          created_at: string
+          id: string
+          status: string
+          test_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_score?: number | null
+          created_at?: string
+          id?: string
+          status?: string
+          test_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_score?: number | null
+          created_at?: string
+          id?: string
+          status?: string
+          test_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_test_progress_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "skill_tests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_vocabulary: {
         Row: {

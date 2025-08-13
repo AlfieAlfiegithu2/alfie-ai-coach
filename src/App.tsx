@@ -74,6 +74,7 @@ import AdminListeningForDetailsTests from "./pages/AdminListeningForDetailsTests
 import AdminListeningForDetailsTestDetail from "./pages/AdminListeningForDetailsTestDetail";
 import ListeningQuiz from "./pages/ListeningQuiz";
 import VocabularyMap from "./pages/VocabularyMap";
+import VocabularyMapView from "./components/VocabularyMapView";
 
 const queryClient = new QueryClient();
 
@@ -203,6 +204,7 @@ const App = () => {
             {/* Skills Practice (Student) */}
             <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />
+            <Route path="/skills/vocabulary-builder" element={<VocabularyMapView />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/skills/grammar-fix-it/test/:testId" element={<GrammarQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />

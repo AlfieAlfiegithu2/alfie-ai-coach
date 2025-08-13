@@ -37,67 +37,28 @@ const VocabularyMapView = () => {
   const [mapNodes, setMapNodes] = useState<MapNode[]>([]);
 
   // Animal progression from weakest to strongest with emojis
-  const animalProgression = [{
-    name: "Mouse",
-    emoji: "🐭"
-  }, {
-    name: "Rabbit",
-    emoji: "🐰"
-  }, {
-    name: "Hamster",
-    emoji: "🐹"
-  }, {
-    name: "Kitten",
-    emoji: "🐱"
-  }, {
-    name: "Puppy",
-    emoji: "🐶"
-  }, {
-    name: "Duck",
-    emoji: "🦆"
-  }, {
-    name: "Panda",
-    emoji: "🐼"
-  }, {
-    name: "Koala",
-    emoji: "🐨"
-  }, {
-    name: "Penguin",
-    emoji: "🐧"
-  }, {
-    name: "Fox",
-    emoji: "🦊"
-  }, {
-    name: "Raccoon",
-    emoji: "🦝"
-  }, {
-    name: "Hedgehog",
-    emoji: "🦔"
-  }, {
-    name: "Otter",
-    emoji: "🦦"
-  }, {
-    name: "Seal",
-    emoji: "🦭"
-  }, {
-    name: "Deer",
-    emoji: "🦌"
-  }, {
-    name: "Squirrel",
-    emoji: "🐿️"
-  }, {
-    name: "Llama",
-    emoji: "🦙"
-  }, {
-    name: "Sloth",
-    emoji: "🦥"
-  }, {
-    name: "Polar Bear",
-    emoji: "🐻‍❄️"
-  }, {
-    name: "Bear",
-    emoji: "🐻"
-  }];
+  const animalProgression = [
+    { name: "Mouse", emoji: "🐭" },
+    { name: "Hamster", emoji: "🐹" },
+    { name: "Chick", emoji: "🐥" },
+    { name: "Rabbit", emoji: "🐰" },
+    { name: "Kitten", emoji: "🐱" },
+    { name: "Puppy", emoji: "🐶" },
+    { name: "Duck", emoji: "🦆" },
+    { name: "Hedgehog", emoji: "🦔" },
+    { name: "Squirrel", emoji: "🐿️" },
+    { name: "Penguin", emoji: "🐧" },
+    { name: "Otter", emoji: "🦦" },
+    { name: "Koala", emoji: "🐨" },
+    { name: "Piglet", emoji: "🐷" },
+    { name: "Monkey", emoji: "🐒" },
+    { name: "Fox", emoji: "🦊" },
+    { name: "Deer", emoji: "🦌" },
+    { name: "Seal", emoji: "🦭" },
+    { name: "Panda", emoji: "🐼" },
+    { name: "Bear", emoji: "🐻" },
+    { name: "Polar Bear", emoji: "🐻‍❄️" },
+  ];
   const getAnimalForLevel = (levelIndex: number) => {
     if (levelIndex < animalProgression.length) {
       return animalProgression[levelIndex];

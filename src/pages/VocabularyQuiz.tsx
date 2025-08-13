@@ -220,6 +220,12 @@ const VocabularyQuiz = () => {
               </div>
             </div>
 
+          {!finished && (
+            <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl flex justify-end -mt-2">
+              <Button variant="outline" onClick={() => navigate('/vocabulary/map')}>Quit to Map</Button>
+            </div>
+          )}
+
           {finished ? (
             <Card className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl">
               <CardContent className="p-6 space-y-4">

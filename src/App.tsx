@@ -201,12 +201,12 @@ const App = () => {
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/vocabulary" element={<VocabularyPage />} />
+            <Route path="/vocabulary/map" element={<VocabularyMapView />} />
             {/* Skills Practice (Student) */}
             <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />
             <Route path="/skills/vocabulary-builder" element={<VocabularyMapView />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
-            <Route path="/skills/grammar-fix-it/test/:testId" element={<GrammarQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />
             <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />
             <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />

@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Lock, Star, CheckCircle, Play, ArrowRight, HelpCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -203,6 +204,26 @@ const VocabularyMapView = () => {
     }
     navigate(`/skills/vocabulary-builder/test/${node.test.id}`);
   };
+
+  const handleUnlockLevel = async (node: MapNode) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('user_test_progress')
+        .upsert({
+          user_id: user.id,
+          test_id: node.test.id,
+          status: 'unlocked'
+        }, { onConflict: 'user_id,test_id' });
+      
+      toast.success(`${getAnimalForLevel(mapNodes.indexOf(node)).name} Level unlocked!`);
+      loadMapData(); // Refresh the map
+    } catch (error) {
+      console.error('Error unlocking level:', error);
+      toast.error('Failed to unlock level');
+    }
+  };
   const getNodeIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -318,35 +339,57 @@ const VocabularyMapView = () => {
               zIndex: 10
             }}>
                   {node.progress.status === 'locked' ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={`
-                            relative w-24 h-24 rounded-full border-4 flex items-center justify-center
-                            transition-all duration-300 ease-in-out
-                            ${getNodeStyle(node.progress.status)}
-                          `}
-                          onClick={() => handleNodeClick(node)}
-                        >
-                          <img
-                            src={getAnimalForLevel(index).image}
-                            alt={`${getAnimalForLevel(index).name} level icon`}
-                            className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
-                            loading="lazy"
-                          />
-                          
-                          {/* Question mark overlay for locked levels */}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                            <HelpCircle className="w-8 h-8 text-white" />
-                          </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {index > 0
-                          ? `Complete the ${getAnimalForLevel(index - 1).name} Level to unlock!`
-                          : 'This is the first level.'}
-                      </TooltipContent>
-                    </Tooltip>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={`
+                                relative w-24 h-24 rounded-full border-4 flex items-center justify-center
+                                transition-all duration-300 ease-in-out
+                                ${getNodeStyle(node.progress.status)} hover:cursor-pointer
+                              `}
+                              onClick={() => handleNodeClick(node)}
+                              onDoubleClick={(e) => {
+                                e.stopPropagation();
+                                // The dialog will open on double click
+                              }}
+                            >
+                              <img
+                                src={getAnimalForLevel(index).image}
+                                alt={`${getAnimalForLevel(index).name} level icon`}
+                                className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
+                                loading="lazy"
+                              />
+                              
+                              {/* Question mark overlay for locked levels */}
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                                <HelpCircle className="w-8 h-8 text-white" />
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            {index > 0
+                              ? `Complete the ${getAnimalForLevel(index - 1).name} Level to unlock! Or double-click to unlock manually.`
+                              : 'This is the first level.'}
+                          </TooltipContent>
+                        </Tooltip>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Unlock {getAnimalForLevel(index).name} Level?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Do you want to unlock this level? This will allow you to start the {getAnimalForLevel(index).name} vocabulary test.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleUnlockLevel(node)}>
+                            Yes, Unlock Level
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   ) : (
                     <div
                       className={`

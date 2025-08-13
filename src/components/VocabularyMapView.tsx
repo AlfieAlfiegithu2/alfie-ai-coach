@@ -75,11 +75,11 @@ const VocabularyMapView = () => {
 
   const renderStars = (starCount: number) => {
     return (
-      <div className="flex space-x-0.5">
+      <div className="flex space-x-1">
         {[1, 2, 3].map((star) => (
           <Star
             key={star}
-            className={`w-3 h-3 ${
+            className={`w-5 h-5 ${
               star <= starCount 
                 ? 'text-yellow-400 fill-current' 
                 : 'text-gray-300'
@@ -347,13 +347,11 @@ const VocabularyMapView = () => {
                          loading="lazy"
                        />
                        
-                       <div className="absolute bottom-1 right-1">
-                         {node.progress.status === 'completed' ? (
-                           <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
-                         ) : (
+                       {node.progress.status === 'unlocked' && (
+                         <div className="absolute bottom-1 right-1">
                            <Play className="w-4 h-4 text-green-500" />
-                         )}
-                       </div>
+                         </div>
+                       )}
 
                        {/* Stars on top of animal head for completed levels */}
                        {node.progress.status === 'completed' && node.progress.completed_score && (

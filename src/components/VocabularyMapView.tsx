@@ -309,9 +309,18 @@ const VocabularyMapView = () => {
                           `}
                           onClick={() => handleNodeClick(node)}
                         >
-                          <span className="text-2xl leading-none">
-                            {getAnimalForLevel(index).emoji}
-                          </span>
+                          {getAnimalForLevel(index).name === 'Mouse' ? (
+                            <img
+                              src="/moouse emoji.png"
+                              alt="Mouse level icon"
+                              className="absolute inset-0 w-full h-full rounded-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span className="text-2xl leading-none">
+                              {getAnimalForLevel(index).emoji}
+                            </span>
+                          )}
                           <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
                             {getAnimalForLevel(index).name}
                           </span>
@@ -335,19 +344,28 @@ const VocabularyMapView = () => {
                       `}
                       onClick={() => handleNodeClick(node)}
                     >
-                      <span className="text-2xl leading-none">
-                        {getAnimalForLevel(index).emoji}
-                      </span>
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
-                        {getAnimalForLevel(index).name}
-                      </span>
-                      <div className="absolute bottom-1 right-1">
-                        {node.progress.status === 'completed' ? (
-                          <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
-                        ) : (
-                          <Play className="w-4 h-4 text-green-500" />
-                        )}
-                      </div>
+                       {getAnimalForLevel(index).name === 'Mouse' ? (
+                         <img
+                           src="/moouse emoji.png"
+                           alt="Mouse level icon"
+                           className="absolute inset-0 w-full h-full rounded-full object-cover"
+                           loading="lazy"
+                         />
+                       ) : (
+                         <span className="text-2xl leading-none">
+                           {getAnimalForLevel(index).emoji}
+                         </span>
+                       )}
+                       <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
+                         {getAnimalForLevel(index).name}
+                       </span>
+                       <div className="absolute bottom-1 right-1">
+                         {node.progress.status === 'completed' ? (
+                           <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                         ) : (
+                           <Play className="w-4 h-4 text-green-500" />
+                         )}
+                       </div>
 
                       {node.progress.status === 'completed' && node.progress.completed_score && (
                         <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">

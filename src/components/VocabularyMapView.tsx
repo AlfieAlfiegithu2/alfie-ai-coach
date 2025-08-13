@@ -173,7 +173,7 @@ const VocabularyMapView = () => {
       const isEvenRow = row % 2 === 0;
       const actualCol = isEvenRow ? col : 4 - col;
       const x = actualCol * horizontalSpacing + 50;
-      const y = row * verticalSpacing + 100;
+      const y = row * verticalSpacing + 40;
       const progress = progressData.find(p => p.test_id === test.id) || {
         test_id: test.id,
         status: 'locked' as const
@@ -260,7 +260,7 @@ const VocabularyMapView = () => {
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
             Vocabulary Journey
           </h1>
@@ -284,7 +284,7 @@ const VocabularyMapView = () => {
 
         {/* Map Container */}
         <Card className="relative bg-white/60 backdrop-blur-sm border-2 border-white/80 shadow-xl">
-          <CardContent className="p-8">
+          <CardContent className="pt-4 pb-8 px-8">
             <div className="relative mx-auto" style={{
             width: '900px',
             height: '700px',

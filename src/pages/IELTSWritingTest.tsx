@@ -400,21 +400,19 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <Card className="glass-card rounded-3xl h-full">
                 
                 <CardContent className="h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex gap-2 items-center">
+                  <div className="relative">
+                    <div className="absolute top-2 left-2 flex gap-2 items-center z-10">
                       <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
-                      
                       <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
-                      
                     </div>
-                  </div>
-                  <div className="h-[500px] overflow-auto rounded-lg border border-border bg-background p-2">
-                    <div className="min-w-fit min-h-fit">
-                      <img src={currentTaskData.imageUrl} alt="Task 1 visual data" className="block mx-auto" style={{
-                    transform: `scale(${zoomScale})`,
-                    transformOrigin: 'center top',
-                    maxWidth: 'none'
-                  }} />
+                    <div className="h-[500px] overflow-auto rounded-lg border border-border">
+                      <div className="min-w-fit min-h-fit h-full flex items-center justify-center">
+                        <img src={currentTaskData.imageUrl} alt="Task 1 visual data" className="block" style={{
+                      transform: `scale(${zoomScale})`,
+                      transformOrigin: 'center',
+                      maxWidth: 'none'
+                    }} />
+                      </div>
                     </div>
                   </div>
                 </CardContent>

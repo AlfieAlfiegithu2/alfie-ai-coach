@@ -75,7 +75,7 @@ const VocabularyMapView = () => {
 
   const renderStars = (starCount: number) => {
     return (
-      <div className="flex space-x-1">
+      <div className="flex items-center justify-center">
         {[1, 2, 3].map((star) => (
           <Star
             key={star}
@@ -84,6 +84,10 @@ const VocabularyMapView = () => {
                 ? 'text-yellow-400 fill-current' 
                 : 'text-gray-300'
             }`}
+            style={{
+              transform: `rotate(${(star - 2) * 15}deg) translateY(${Math.abs(star - 2) * -2}px)`,
+              margin: '0 2px'
+            }}
           />
         ))}
       </div>
@@ -353,9 +357,9 @@ const VocabularyMapView = () => {
                          </div>
                        )}
 
-                       {/* Stars on top of animal head for completed levels */}
+                       {/* Stars above animal head for completed levels */}
                        {node.progress.status === 'completed' && node.progress.completed_score && (
-                         <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
                            {renderStars(getStarsFromScore(node.progress.completed_score))}
                          </div>
                        )}

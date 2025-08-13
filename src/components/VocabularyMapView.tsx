@@ -98,44 +98,47 @@ const VocabularyMapView = () => {
     if (!user) return;
     setLoading(true);
     try {
-      // Load all vocabulary tests ordered by test_order
-      const {
-        data: testsData,
-        error: testsError
-      } = await supabase.from('skill_tests').select('id, title, test_order').eq('skill_slug', 'vocabulary-builder').order('test_order', {
-        ascending: true
-      });
-      if (testsError) throw testsError;
+      // Load tests and progress in parallel for better performance
+      const [testsResponse, progressResponse] = await Promise.all([
+        supabase
+          .from('skill_tests')
+          .select('id, title, test_order')
+          .eq('skill_slug', 'vocabulary-builder')
+          .order('test_order', { ascending: true }),
+        supabase
+          .from('user_test_progress')
+          .select('test_id, status, completed_score')
+          .eq('user_id', user.id)
+      ]);
 
-      // Load user's progress for these tests
-      const {
-        data: progressData,
-        error: progressError
-      } = await supabase.from('user_test_progress').select('test_id, status, completed_score').eq('user_id', user.id).in('test_id', testsData?.map(t => t.id) || []);
-      if (progressError) throw progressError;
+      if (testsResponse.error) throw testsResponse.error;
+      if (progressResponse.error) throw progressResponse.error;
+
+      const testsData = testsResponse.data || [];
+      let progressData = progressResponse.data || [];
+
+      // Filter progress to only include vocabulary tests
+      const testIds = testsData.map(t => t.id);
+      progressData = progressData.filter(p => testIds.includes(p.test_id));
 
       // If no progress exists and there are tests, unlock the first one
-      if (testsData && testsData.length > 0 && (!progressData || progressData.length === 0)) {
+      if (testsData.length > 0 && progressData.length === 0) {
         const firstTest = testsData.find(t => t.test_order === 1) || testsData[0];
         if (firstTest) {
-          await supabase.from('user_test_progress').insert({
+          const newProgress = {
             user_id: user.id,
             test_id: firstTest.id,
-            status: 'unlocked'
-          });
-
-          // Reload progress data
-          const {
-            data: updatedProgressData
-          } = await supabase.from('user_test_progress').select('test_id, status, completed_score').eq('user_id', user.id).in('test_id', testsData.map(t => t.id));
-          setUserProgress((updatedProgressData || []) as UserProgress[]);
-          generateMapNodes(testsData, (updatedProgressData || []) as UserProgress[]);
+            status: 'unlocked' as const
+          };
+          
+          await supabase.from('user_test_progress').insert(newProgress);
+          progressData = [{ test_id: firstTest.id, status: 'unlocked', completed_score: null }];
         }
-      } else {
-        setUserProgress((progressData || []) as UserProgress[]);
-        generateMapNodes(testsData || [], (progressData || []) as UserProgress[]);
       }
-      setTests(testsData || []);
+
+      setTests(testsData);
+      setUserProgress(progressData as UserProgress[]);
+      generateMapNodes(testsData, progressData as UserProgress[]);
     } catch (error) {
       console.error('Error loading map data:', error);
       toast.error('Failed to load vocabulary map');

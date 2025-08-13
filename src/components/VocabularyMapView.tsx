@@ -36,28 +36,28 @@ const VocabularyMapView = () => {
   const [loading, setLoading] = useState(true);
   const [mapNodes, setMapNodes] = useState<MapNode[]>([]);
 
-  // Animal progression from weakest to strongest with emojis
+  // Animal progression from weakest to strongest with images
   const animalProgression = [
-    { name: "Mouse", emoji: "🐭" },
-    { name: "Hamster", emoji: "🐹" },
-    { name: "Chick", emoji: "🐥" },
-    { name: "Rabbit", emoji: "🐰" },
-    { name: "Kitten", emoji: "🐱" },
-    { name: "Puppy", emoji: "🐶" },
-    { name: "Duck", emoji: "🦆" },
-    { name: "Hedgehog", emoji: "🦔" },
-    { name: "Squirrel", emoji: "🐿️" },
-    { name: "Penguin", emoji: "🐧" },
-    { name: "Otter", emoji: "🦦" },
-    { name: "Koala", emoji: "🐨" },
-    { name: "Piglet", emoji: "🐷" },
-    { name: "Monkey", emoji: "🐒" },
-    { name: "Fox", emoji: "🦊" },
-    { name: "Deer", emoji: "🦌" },
-    { name: "Seal", emoji: "🦭" },
-    { name: "Panda", emoji: "🐼" },
-    { name: "Bear", emoji: "🐻" },
-    { name: "Polar Bear", emoji: "🐻‍❄️" },
+    { name: "Mouse", image: "/moouse emoji.png" },
+    { name: "Hamster", image: "/Hamster.png" },
+    { name: "Chick", emoji: "🐥" }, // No PNG available
+    { name: "Rabbit", emoji: "🐰" }, // No PNG available
+    { name: "Kitten", image: "/cat.png" },
+    { name: "Puppy", emoji: "🐶" }, // No PNG available
+    { name: "Duck", image: "/duck.png" },
+    { name: "Hedgehog", image: "/hedgehog.png" },
+    { name: "Squirrel", image: "/squerrel.png" },
+    { name: "Penguin", image: "/Penguine.png" },
+    { name: "Otter", image: "/otter.png" },
+    { name: "Koala", image: "/koala.png" },
+    { name: "Piglet", image: "/piglet.png" },
+    { name: "Monkey", image: "/Monkey.png" },
+    { name: "Fox", image: "/fox.png" },
+    { name: "Deer", image: "/dear.png" },
+    { name: "Seal", image: "/seal.png" },
+    { name: "Panda", image: "/panda.png" },
+    { name: "Bear", image: "/bear.png" },
+    { name: "Polar Bear", image: "/polar bear.png" },
   ];
   const getAnimalForLevel = (levelIndex: number) => {
     if (levelIndex < animalProgression.length) {
@@ -270,10 +270,10 @@ const VocabularyMapView = () => {
                           `}
                           onClick={() => handleNodeClick(node)}
                         >
-                          {getAnimalForLevel(index).name === 'Mouse' ? (
+                          {getAnimalForLevel(index).image ? (
                             <img
-                              src="/moouse emoji.png"
-                              alt="Mouse level icon"
+                              src={getAnimalForLevel(index).image}
+                              alt={`${getAnimalForLevel(index).name} level icon`}
                               className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
                               loading="lazy"
                             />
@@ -305,18 +305,18 @@ const VocabularyMapView = () => {
                       `}
                       onClick={() => handleNodeClick(node)}
                     >
-                       {getAnimalForLevel(index).name === 'Mouse' ? (
-                         <img
-                           src="/moouse emoji.png"
-                           alt="Mouse level icon"
-                           className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
-                           loading="lazy"
-                         />
-                       ) : (
-                         <span className="text-2xl leading-none">
-                           {getAnimalForLevel(index).emoji}
-                         </span>
-                       )}
+                       {getAnimalForLevel(index).image ? (
+                          <img
+                            src={getAnimalForLevel(index).image}
+                            alt={`${getAnimalForLevel(index).name} level icon`}
+                            className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="text-2xl leading-none">
+                            {getAnimalForLevel(index).emoji}
+                          </span>
+                        )}
                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
                          {getAnimalForLevel(index).name}
                        </span>

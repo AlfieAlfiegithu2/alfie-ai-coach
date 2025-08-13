@@ -92,6 +92,9 @@ const VocabularyMapView = () => {
   useEffect(() => {
     if (user) {
       loadMapData();
+    } else {
+      // If no user after auth loading is complete, stop loading
+      setLoading(false);
     }
   }, [user]);
   const loadMapData = async () => {
@@ -241,6 +244,19 @@ const VocabularyMapView = () => {
           <CardContent>
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-lg">Loading your vocabulary journey...</p>
+          </CardContent>
+        </Card>
+      </div>;
+  }
+
+  if (!user) {
+    return <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <CardContent>
+            <p className="text-lg mb-4">Please sign in to access your vocabulary journey.</p>
+            <Button onClick={() => navigate('/auth')} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>;

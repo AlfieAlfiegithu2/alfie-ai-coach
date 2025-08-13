@@ -7,27 +7,28 @@ import { Lock, Star, CheckCircle, Play, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-
 interface SkillTest {
   id: string;
   title: string;
   test_order: number;
 }
-
 interface UserProgress {
   test_id: string;
   status: 'locked' | 'unlocked' | 'completed';
   completed_score?: number;
 }
-
 interface MapNode {
   test: SkillTest;
   progress: UserProgress;
-  position: { x: number; y: number };
+  position: {
+    x: number;
+    y: number;
+  };
 }
-
 const VocabularyMapView = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
   const [tests, setTests] = useState<SkillTest[]>([]);
   const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
@@ -35,29 +36,67 @@ const VocabularyMapView = () => {
   const [mapNodes, setMapNodes] = useState<MapNode[]>([]);
 
   // Animal progression from weakest to strongest with emojis
-  const animalProgression = [
-    { name: "Mouse", emoji: "🐭" },
-    { name: "Bird", emoji: "🐦" },
-    { name: "Cat", emoji: "🐱" },
-    { name: "Dog", emoji: "🐶" },
-    { name: "Fox", emoji: "🦊" },
-    { name: "Wolf", emoji: "🐺" },
-    { name: "Horse", emoji: "🐎" },
-    { name: "Bear", emoji: "🐻" },
-    { name: "Lion", emoji: "🦁" },
-    { name: "Tiger", emoji: "🐅" },
-    { name: "Rhino", emoji: "🦏" },
-    { name: "Hippo", emoji: "🦛" },
-    { name: "Elephant", emoji: "🐘" },
-    { name: "Whale", emoji: "🐋" },
-    { name: "Dragon", emoji: "🐉" },
-    { name: "Phoenix", emoji: "🔥" },
-    { name: "Kraken", emoji: "🐙" },
-    { name: "Titan", emoji: "⚡" },
-    { name: "Legend", emoji: "👑" },
-    { name: "Master", emoji: "🌟" }
-  ];
-
+  const animalProgression = [{
+    name: "Mouse",
+    emoji: "🐭"
+  }, {
+    name: "Bird",
+    emoji: "🐦"
+  }, {
+    name: "Cat",
+    emoji: "🐱"
+  }, {
+    name: "Dog",
+    emoji: "🐶"
+  }, {
+    name: "Fox",
+    emoji: "🦊"
+  }, {
+    name: "Wolf",
+    emoji: "🐺"
+  }, {
+    name: "Horse",
+    emoji: "🐎"
+  }, {
+    name: "Bear",
+    emoji: "🐻"
+  }, {
+    name: "Lion",
+    emoji: "🦁"
+  }, {
+    name: "Tiger",
+    emoji: "🐅"
+  }, {
+    name: "Rhino",
+    emoji: "🦏"
+  }, {
+    name: "Hippo",
+    emoji: "🦛"
+  }, {
+    name: "Elephant",
+    emoji: "🐘"
+  }, {
+    name: "Whale",
+    emoji: "🐋"
+  }, {
+    name: "Dragon",
+    emoji: "🐉"
+  }, {
+    name: "Phoenix",
+    emoji: "🔥"
+  }, {
+    name: "Kraken",
+    emoji: "🐙"
+  }, {
+    name: "Titan",
+    emoji: "⚡"
+  }, {
+    name: "Legend",
+    emoji: "👑"
+  }, {
+    name: "Master",
+    emoji: "🌟"
+  }];
   const getAnimalForLevel = (levelIndex: number) => {
     if (levelIndex < animalProgression.length) {
       return animalProgression[levelIndex];
@@ -65,55 +104,45 @@ const VocabularyMapView = () => {
     // For levels beyond our array, cycle through or use the last one
     return animalProgression[animalProgression.length - 1];
   };
-
   useEffect(() => {
     if (user) {
       loadMapData();
     }
   }, [user]);
-
   const loadMapData = async () => {
     if (!user) return;
-    
     setLoading(true);
     try {
       // Load all vocabulary tests ordered by test_order
-      const { data: testsData, error: testsError } = await supabase
-        .from('skill_tests')
-        .select('id, title, test_order')
-        .eq('skill_slug', 'vocabulary-builder')
-        .order('test_order', { ascending: true });
-
+      const {
+        data: testsData,
+        error: testsError
+      } = await supabase.from('skill_tests').select('id, title, test_order').eq('skill_slug', 'vocabulary-builder').order('test_order', {
+        ascending: true
+      });
       if (testsError) throw testsError;
 
       // Load user's progress for these tests
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_test_progress')
-        .select('test_id, status, completed_score')
-        .eq('user_id', user.id)
-        .in('test_id', testsData?.map(t => t.id) || []);
-
+      const {
+        data: progressData,
+        error: progressError
+      } = await supabase.from('user_test_progress').select('test_id, status, completed_score').eq('user_id', user.id).in('test_id', testsData?.map(t => t.id) || []);
       if (progressError) throw progressError;
 
       // If no progress exists and there are tests, unlock the first one
       if (testsData && testsData.length > 0 && (!progressData || progressData.length === 0)) {
         const firstTest = testsData.find(t => t.test_order === 1) || testsData[0];
         if (firstTest) {
-          await supabase
-            .from('user_test_progress')
-            .insert({
-              user_id: user.id,
-              test_id: firstTest.id,
-              status: 'unlocked'
-            });
+          await supabase.from('user_test_progress').insert({
+            user_id: user.id,
+            test_id: firstTest.id,
+            status: 'unlocked'
+          });
 
           // Reload progress data
-          const { data: updatedProgressData } = await supabase
-            .from('user_test_progress')
-            .select('test_id, status, completed_score')
-            .eq('user_id', user.id)
-            .in('test_id', testsData.map(t => t.id));
-
+          const {
+            data: updatedProgressData
+          } = await supabase.from('user_test_progress').select('test_id, status, completed_score').eq('user_id', user.id).in('test_id', testsData.map(t => t.id));
           setUserProgress((updatedProgressData || []) as UserProgress[]);
           generateMapNodes(testsData, (updatedProgressData || []) as UserProgress[]);
         }
@@ -121,7 +150,6 @@ const VocabularyMapView = () => {
         setUserProgress((progressData || []) as UserProgress[]);
         generateMapNodes(testsData || [], (progressData || []) as UserProgress[]);
       }
-
       setTests(testsData || []);
     } catch (error) {
       console.error('Error loading map data:', error);
@@ -130,7 +158,6 @@ const VocabularyMapView = () => {
       setLoading(false);
     }
   };
-
   const generateMapNodes = (testsData: SkillTest[], progressData: UserProgress[]) => {
     const nodes: MapNode[] = [];
     const pathWidth = 800;
@@ -141,38 +168,34 @@ const VocabularyMapView = () => {
     testsData.forEach((test, index) => {
       const row = Math.floor(index / 5);
       const col = index % 5;
-      
+
       // Create a winding path effect
       const isEvenRow = row % 2 === 0;
       const actualCol = isEvenRow ? col : 4 - col;
-      
       const x = actualCol * horizontalSpacing + 50;
       const y = row * verticalSpacing + 100;
-      
       const progress = progressData.find(p => p.test_id === test.id) || {
         test_id: test.id,
-        status: 'locked' as const,
+        status: 'locked' as const
       };
-
       nodes.push({
         test,
         progress,
-        position: { x, y },
+        position: {
+          x,
+          y
+        }
       });
     });
-
     setMapNodes(nodes);
   };
-
   const handleNodeClick = (node: MapNode) => {
     if (node.progress.status === 'locked') {
       toast.error('This level is still locked! Complete previous levels to unlock.');
       return;
     }
-    
     navigate(`/skills/vocabulary-builder/test/${node.test.id}`);
   };
-
   const getNodeIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -183,7 +206,6 @@ const VocabularyMapView = () => {
         return <Lock className="w-5 h-5 text-gray-400" />;
     }
   };
-
   const getNodeStyle = (status: string) => {
     switch (status) {
       case 'completed':
@@ -194,42 +216,28 @@ const VocabularyMapView = () => {
         return 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed';
     }
   };
-
   const calculateProgress = () => {
     const completedCount = userProgress.filter(p => p.status === 'completed').length;
-    return tests.length > 0 ? (completedCount / tests.length) * 100 : 0;
+    return tests.length > 0 ? completedCount / tests.length * 100 : 0;
   };
-
   const renderPath = () => {
     if (mapNodes.length < 2) return null;
-
     let pathData = `M ${mapNodes[0].position.x + 50} ${mapNodes[0].position.y + 50}`;
-    
     for (let i = 1; i < mapNodes.length; i++) {
       const prev = mapNodes[i - 1];
       const curr = mapNodes[i];
-      
+
       // Create curved connections between nodes
       const midX = (prev.position.x + curr.position.x) / 2 + 50;
       const midY = (prev.position.y + curr.position.y) / 2 + 50;
-      const controlY = midY + (Math.sin(i * 0.5) * 30); // Add some wave effect
-      
+      const controlY = midY + Math.sin(i * 0.5) * 30; // Add some wave effect
+
       pathData += ` Q ${midX} ${controlY} ${curr.position.x + 50} ${curr.position.y + 50}`;
     }
-
-    return (
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ zIndex: 1 }}
-      >
-        <path
-          d={pathData}
-          stroke="url(#pathGradient)"
-          strokeWidth="4"
-          fill="none"
-          strokeDasharray="8,4"
-          className="animate-pulse"
-        />
+    return <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{
+      zIndex: 1
+    }}>
+        <path d={pathData} stroke="url(#pathGradient)" strokeWidth="4" fill="none" strokeDasharray="8,4" className="animate-pulse" />
         <defs>
           <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#3B82F6" />
@@ -237,25 +245,19 @@ const VocabularyMapView = () => {
             <stop offset="100%" stopColor="#EC4899" />
           </linearGradient>
         </defs>
-      </svg>
-    );
+      </svg>;
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <Card className="p-8 text-center">
           <CardContent>
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-lg">Loading your vocabulary journey...</p>
           </CardContent>
         </Card>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -283,36 +285,25 @@ const VocabularyMapView = () => {
         {/* Map Container */}
         <Card className="relative bg-white/60 backdrop-blur-sm border-2 border-white/80 shadow-xl">
           <CardContent className="p-8">
-            <div 
-              className="relative mx-auto"
-              style={{ 
-                width: '900px', 
-                height: '700px',
-                minHeight: '600px'
-              }}
-            >
+            <div className="relative mx-auto" style={{
+            width: '900px',
+            height: '700px',
+            minHeight: '600px'
+          }}>
               {/* Path */}
               {renderPath()}
               
               {/* Nodes */}
-              {mapNodes.map((node, index) => (
-                <div
-                  key={node.test.id}
-                  className="absolute"
-                  style={{
-                    left: `${node.position.x}px`,
-                    top: `${node.position.y}px`,
-                    zIndex: 10,
-                  }}
-                >
-                  <div
-                    className={`
+              {mapNodes.map((node, index) => <div key={node.test.id} className="absolute" style={{
+              left: `${node.position.x}px`,
+              top: `${node.position.y}px`,
+              zIndex: 10
+            }}>
+                  <div className={`
                       relative w-24 h-24 rounded-full border-4 flex flex-col items-center justify-center
                       transition-all duration-300 ease-in-out
                       ${getNodeStyle(node.progress.status)}
-                    `}
-                    onClick={() => handleNodeClick(node)}
-                  >
+                    `} onClick={() => handleNodeClick(node)}>
                     {/* Animal Level */}
                     <div className="text-xs font-bold mb-1 flex flex-col items-center">
                       <span className="text-lg">{getAnimalForLevel(index).emoji}</span>
@@ -323,13 +314,11 @@ const VocabularyMapView = () => {
                     {getNodeIcon(node.progress.status)}
                     
                     {/* Completion Score */}
-                    {node.progress.status === 'completed' && node.progress.completed_score && (
-                      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
+                    {node.progress.status === 'completed' && node.progress.completed_score && <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
                         <div className="bg-yellow-400 text-black text-xs px-2 py-1 rounded-full font-bold">
                           {node.progress.completed_score}%
                         </div>
-                      </div>
-                    )}
+                      </div>}
                   </div>
                   
                   {/* Level Title */}
@@ -338,27 +327,19 @@ const VocabularyMapView = () => {
                       {node.test.title}
                     </p>
                   </div>
-                </div>
-              ))}
+                </div>)}
             </div>
           </CardContent>
         </Card>
 
         {/* Action Buttons */}
         <div className="text-center mt-8 space-x-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/dashboard')}
-            className="bg-white/80 backdrop-blur-sm hover:bg-white"
-          >
+          <Button variant="outline" onClick={() => navigate('/dashboard')} className="bg-white/80 backdrop-blur-sm hover:bg-white">
             <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
             Back to Dashboard
           </Button>
           
-          <Button 
-            onClick={() => navigate('/vocabulary')}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          >
+          <Button onClick={() => navigate('/vocabulary')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
             <CheckCircle className="w-4 h-4 mr-2" />
             View Saved Vocabulary
           </Button>
@@ -366,33 +347,9 @@ const VocabularyMapView = () => {
 
         {/* Legend */}
         <Card className="mt-8 bg-white/60 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-4 text-center">Legend</h3>
-            <div className="flex justify-center space-x-8">
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-gray-300 flex items-center justify-center">
-                  <Lock className="w-3 h-3 text-gray-500" />
-                </div>
-                <span className="text-sm">Locked</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-blue-500 border-2 border-green-300 flex items-center justify-center">
-                  <Play className="w-3 h-3 text-white" />
-                </div>
-                <span className="text-sm">Available</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-yellow-300 flex items-center justify-center">
-                  <Star className="w-3 h-3 text-white" fill="currentColor" />
-                </div>
-                <span className="text-sm">Completed</span>
-              </div>
-            </div>
-          </CardContent>
+          
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default VocabularyMapView;

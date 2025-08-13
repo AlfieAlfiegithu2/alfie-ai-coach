@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Lock, Star, CheckCircle, Play, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -173,7 +174,7 @@ const VocabularyMapView = () => {
       const isEvenRow = row % 2 === 0;
       const actualCol = isEvenRow ? col : 4 - col;
       const x = actualCol * horizontalSpacing + 50;
-      const y = row * verticalSpacing + 40;
+      const y = row * verticalSpacing + 20;
       const progress = progressData.find(p => p.test_id === test.id) || {
         test_id: test.id,
         status: 'locked' as const
@@ -297,31 +298,70 @@ const VocabularyMapView = () => {
               top: `${node.position.y}px`,
               zIndex: 10
             }}>
-                  <div className={`
-                      relative w-24 h-24 rounded-full border-4 flex flex-col items-center justify-center
-                      transition-all duration-300 ease-in-out
-                      ${getNodeStyle(node.progress.status)}
-                    `} onClick={() => handleNodeClick(node)}>
-                    {/* Animal Level */}
-                    <div className="text-xs font-bold mb-1 flex flex-col items-center">
-                      <span className="text-lg">{getAnimalForLevel(index).emoji}</span>
-                      <span className="text-[10px]">{getAnimalForLevel(index).name}</span>
-                    </div>
-                    
-                    {/* Icon */}
-                    {getNodeIcon(node.progress.status)}
-                    
-                    {/* Completion Score */}
-                    {node.progress.status === 'completed' && node.progress.completed_score && <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
-                        <div className="bg-yellow-400 text-black text-xs px-2 py-1 rounded-full font-bold">
-                          {node.progress.completed_score}%
+                  {node.progress.status === 'locked' ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={`
+                            relative w-24 h-24 rounded-full border-4 flex items-center justify-center
+                            transition-all duration-300 ease-in-out
+                            ${getNodeStyle(node.progress.status)}
+                          `}
+                          onClick={() => handleNodeClick(node)}
+                        >
+                          <span className="text-2xl leading-none">
+                            {getAnimalForLevel(index).emoji}
+                          </span>
+                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
+                            {getAnimalForLevel(index).name}
+                          </span>
+                          <div className="absolute bottom-1 right-1">
+                            <Lock className="w-3 h-3 text-muted-foreground" />
+                          </div>
                         </div>
-                      </div>}
-                  </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {index > 0
+                          ? `Complete the ${getAnimalForLevel(index - 1).name} Level to unlock!`
+                          : 'This is the first level.'}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div
+                      className={`
+                        relative w-24 h-24 rounded-full border-4 flex items-center justify-center
+                        transition-all duration-300 ease-in-out
+                        ${getNodeStyle(node.progress.status)}
+                      `}
+                      onClick={() => handleNodeClick(node)}
+                    >
+                      <span className="text-2xl leading-none">
+                        {getAnimalForLevel(index).emoji}
+                      </span>
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-medium">
+                        {getAnimalForLevel(index).name}
+                      </span>
+                      <div className="absolute bottom-1 right-1">
+                        {node.progress.status === 'completed' ? (
+                          <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                        ) : (
+                          <Play className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+
+                      {node.progress.status === 'completed' && node.progress.completed_score && (
+                        <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
+                          <div className="bg-yellow-400 text-black text-xs px-2 py-1 rounded-full font-bold">
+                            {node.progress.completed_score}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Level Title */}
                   <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 w-32 text-center">
-                    <p className="text-xs font-medium text-gray-700 truncate">
+                    <p className="text-[10px] font-medium text-muted-foreground truncate">
                       {node.test.title}
                     </p>
                   </div>

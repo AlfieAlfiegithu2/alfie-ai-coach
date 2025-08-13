@@ -120,14 +120,14 @@ const HeroIndex = () => {
 
       {/* Hero Section - Centered */}
       <section className="relative z-10 px-8 min-h-screen flex items-center justify-center">
-        <div className="max-w-4xl mx-auto bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-xl p-8 shadow-xl">
+        <div className="max-w-4xl mx-auto bg-white/[0.1] border border-white/[0.15] backdrop-blur-[24px] backdrop-brightness-[0.85] rounded-xl p-8 shadow-xl">
           {/* Headline with Animation */}
-          <h1 className="text-5xl mb-8 leading-tight text-zinc-950 md:text-6xl font-light my-0 py-0 px-0">
+          <h1 className="text-5xl mb-8 leading-tight text-black md:text-6xl font-light my-0 py-0 px-0">
             <TypewriterText text="Master English with AI" speed={80} />
           </h1>
           
           {/* Subheadline */}
-          <div className="mb-12 max-w-2xl mx-auto leading-relaxed text-lg text-sky-950">
+          <div className="mb-12 max-w-2xl mx-auto leading-relaxed text-lg text-black">
             <TypewriterText text="Go beyond practice tests. Get personalized coaching, track your progress, and reach your target score with confidence." speed={30} />
           </div>
 
@@ -139,26 +139,26 @@ const HeroIndex = () => {
           {/* Social Proof Metrics with Animated Counters */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-2xl font-light text-zinc-900 mb-2">
+              <div className="text-2xl font-light text-black mb-2">
                 <AnimatedCounter endValue={50} suffix="K+" />
               </div>
-              <div className="text-sm text-zinc-700">Active Learners</div>
+              <div className="text-sm text-gray-700">Active Learners</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-light text-zinc-900 mb-2">
+              <div className="text-2xl font-light text-black mb-2">
                 <AnimatedCounter endValue={1000} suffix="+" />
               </div>
-              <div className="text-sm text-zinc-700">Practice Tests</div>
+              <div className="text-sm text-gray-700">Practice Tests</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-light text-zinc-900 mb-2">Real-time</div>
-              <div className="text-sm text-zinc-700">AI Feedback</div>
+              <div className="text-2xl font-light text-black mb-2">Real-time</div>
+              <div className="text-sm text-gray-700">AI Feedback</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-light text-zinc-900 mb-2">
+              <div className="text-2xl font-light text-black mb-2">
                 <AnimatedCounter endValue={95} suffix="%" />
               </div>
-              <div className="text-sm text-zinc-700">Success Rate</div>
+              <div className="text-sm text-gray-700">Success Rate</div>
             </div>
           </div>
         </div>
@@ -167,17 +167,17 @@ const HeroIndex = () => {
       {/* Test Preparation Section - Square Cards */}
       <section id="tests" className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:200ms] [animation-fill-mode:forwards]">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl mb-12 text-center font-light text-zinc-950">
+          <h2 className="text-4xl mb-12 text-center font-light text-black">
             Choose Your Test Preparation
           </h2>
           {/* Test Cards Grid - Smaller, More Approachable */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            {testTypes.map((test, index) => <Card key={index} className="bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] hover:bg-white/[0.08] transition-all cursor-pointer group shadow-xl hover:shadow-2xl hover:scale-105 duration-300 h-40 flex flex-col justify-center" onClick={() => navigate(test.path)}>
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/[0.1] border border-white/[0.15] backdrop-blur-[24px] backdrop-brightness-[0.85] hover:bg-white/[0.15] transition-all cursor-pointer group shadow-xl hover:shadow-2xl hover:scale-105 duration-300 h-40 flex flex-col justify-center" onClick={() => navigate(test.path)}>
                 <CardContent className="p-6 text-center">
-                  <h3 className="text-zinc-950 font-medium text-xl mb-2">
+                  <h3 className="text-black font-medium text-xl mb-2">
                     {test.title}
                   </h3>
-                  <p className="text-zinc-700 text-sm leading-relaxed">
+                  <p className="text-gray-700 text-sm leading-relaxed">
                     {test.description}
                   </p>
                 </CardContent>
@@ -188,18 +188,18 @@ const HeroIndex = () => {
 
       {/* About Section */}
       <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
-        <div className="rounded-2xl ring-1 ring-white/[0.1] overflow-hidden bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
+        <div className="rounded-2xl ring-1 ring-white/[0.15] overflow-hidden bg-white/[0.1] backdrop-blur-[24px] backdrop-brightness-[0.85] shadow-xl">
           <div className="flex items-end justify-between p-6 border-b border-white/10">
-            <h2 className="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Platform Overview</h2>
-            <p className="hidden sm:block text-xs text-neutral-400">Features, stats, achievements</p>
+            <h2 className="text-2xl sm:text-3xl tracking-tight font-semibold text-black">Platform Overview</h2>
+            <p className="hidden sm:block text-xs text-gray-600">Features, stats, achievements</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12">
             {/* Service Info */}
             <div className="p-6 md:col-span-3 border-b md:border-b-0 md:border-r border-white/10">
-              <p className="text-sm text-neutral-400">AI-Powered Learning</p>
-              <p className="mt-1 text-lg font-medium tracking-tight text-white">IELTS Master AI</p>
-              <div className="mt-4 flex items-center gap-2 text-xs text-neutral-400">
+              <p className="text-sm text-gray-600">AI-Powered Learning</p>
+              <p className="mt-1 text-lg font-medium tracking-tight text-black">IELTS Master AI</p>
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-600">
                 <Globe className="w-4 h-4" />
                 <span>Global Access • 24/7 Available</span>
               </div>
@@ -213,8 +213,8 @@ const HeroIndex = () => {
                     <div className="w-20 h-20 mx-auto bg-white/10 rounded-full flex items-center justify-center">
                       <Brain className="w-10 h-10 text-white" />
                     </div>
-                    <h3 className="text-white font-semibold text-xl">AI Learning Engine</h3>
-                    <p className="text-neutral-300 text-sm px-4">Personalized feedback and adaptive learning paths</p>
+                    <h3 className="text-black font-semibold text-xl">AI Learning Engine</h3>
+                    <p className="text-gray-700 text-sm px-4">Personalized feedback and adaptive learning paths</p>
                   </div>
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-transparent pointer-events-none"></div>
@@ -222,12 +222,12 @@ const HeroIndex = () => {
                 {/* Overlay stats */}
                 <div className="hidden md:block absolute inset-0 pointer-events-none">
                   <div className="absolute top-5 right-5 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
-                    <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-white">50K+</div>
-                    <p className="text-[11px] text-neutral-300 mt-0.5">Active Students</p>
+                    <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-black">50K+</div>
+                    <p className="text-[11px] text-gray-700 mt-0.5">Active Students</p>
                   </div>
                   <div className="absolute bottom-5 left-5 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
-                    <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-white">95%</div>
-                    <p className="text-[11px] text-neutral-300 mt-0.5">Success Rate</p>
+                    <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-black">95%</div>
+                    <p className="text-[11px] text-gray-700 mt-0.5">Success Rate</p>
                   </div>
                   <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-xl bg-black/45 ring-1 ring-white/10 backdrop-blur-sm p-4">
                     <div className="text-2xl lg:text-3xl font-semibold tracking-tight text-white">4</div>
@@ -239,16 +239,16 @@ const HeroIndex = () => {
 
             {/* Right stat (top) */}
             <div className="p-6 md:col-span-3 border-b md:border-b-0">
-              <div className="text-3xl font-semibold tracking-tight text-white">1000+</div>
-              <p className="text-xs text-neutral-400 mt-1">Practice Tests</p>
+              <div className="text-3xl font-semibold tracking-tight text-black">1000+</div>
+              <p className="text-xs text-gray-600 mt-1">Practice Tests</p>
             </div>
 
             {/* Bio (bottom-left) */}
             <div className="p-6 md:col-span-3 border-t md:border-t border-white/10 md:border-r">
-              <p className="text-sm text-neutral-300 leading-relaxed">
+              <p className="text-sm text-gray-700 leading-relaxed">
                 Master IELTS and General English with our AI-powered platform. Get personalized feedback, track progress, and achieve your target scores faster.
               </p>
-              <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white bg-white/10 hover:bg-white/20 rounded-full px-3 py-1.5 ring-1 ring-white/10 cursor-pointer" onClick={() => navigate('/auth')}>
+              <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white bg-black/80 hover:bg-black rounded-full px-3 py-1.5 ring-1 ring-black/50 cursor-pointer" onClick={() => navigate('/auth')}>
                 <FileText className="w-4 h-4" />
                 <span>Start Free Trial</span>
               </div>
@@ -256,24 +256,24 @@ const HeroIndex = () => {
 
             {/* Right stat (bottom) */}
             <div className="p-6 md:col-span-3 border-t border-white/10">
-              <div className="text-3xl font-semibold tracking-tight text-white">24/7</div>
-              <p className="text-xs text-neutral-400 mt-1">AI Support</p>
+              <div className="text-3xl font-semibold tracking-tight text-black">24/7</div>
+              <p className="text-xs text-gray-600 mt-1">AI Support</p>
             </div>
           </div>
 
           {/* Mobile stats */}
           <div className="md:hidden border-t border-white/10 grid grid-cols-3">
             <div className="p-4 text-center border-r border-white/10">
-              <div className="text-xl font-semibold tracking-tight text-white">50K+</div>
-              <p className="text-[11px] text-neutral-400 mt-0.5">Students</p>
+              <div className="text-xl font-semibold tracking-tight text-black">50K+</div>
+              <p className="text-[11px] text-gray-600 mt-0.5">Students</p>
             </div>
             <div className="p-4 text-center border-r border-white/10">
-              <div className="text-xl font-semibold tracking-tight text-white">95%</div>
-              <p className="text-[11px] text-neutral-400 mt-0.5">Success</p>
+              <div className="text-xl font-semibold tracking-tight text-black">95%</div>
+              <p className="text-[11px] text-gray-600 mt-0.5">Success</p>
             </div>
             <div className="p-4 text-center">
-              <div className="text-xl font-semibold tracking-tight text-white">2</div>
-              <p className="text-[11px] text-neutral-400 mt-0.5">Tests</p>
+              <div className="text-xl font-semibold tracking-tight text-black">2</div>
+              <p className="text-[11px] text-gray-600 mt-0.5">Tests</p>
             </div>
           </div>
         </div>
@@ -293,7 +293,7 @@ const HeroIndex = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Achievement Card 1 */}
-        <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.1] bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
+        <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.15] bg-white/[0.1] backdrop-blur-[24px] backdrop-brightness-[0.85] shadow-xl">
             <div className="relative aspect-[16/10]">
               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center">
                 <div className="text-center">
@@ -313,7 +313,7 @@ const HeroIndex = () => {
           </article>
 
           {/* Achievement Card 2 */}
-          <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.1] bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
+          <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.15] bg-white/[0.1] backdrop-blur-[24px] backdrop-brightness-[0.85] shadow-xl">
             <div className="relative aspect-[16/10]">
               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
                 <div className="text-center">
@@ -333,7 +333,7 @@ const HeroIndex = () => {
           </article>
 
           {/* Achievement Card 3 */}
-          <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.1] bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
+          <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.15] bg-white/[0.1] backdrop-blur-[24px] backdrop-brightness-[0.85] shadow-xl">
             <div className="relative aspect-[16/10]">
               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
                 <div className="text-center">
@@ -356,7 +356,7 @@ const HeroIndex = () => {
 
       {/* Services Section */}
       <section id="services" className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
-        <div className="ring-1 ring-white/[0.1] overflow-hidden bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-xl">
+        <div className="ring-1 ring-white/[0.15] overflow-hidden bg-white/[0.1] backdrop-blur-[24px] backdrop-brightness-[0.85] rounded-2xl shadow-xl">
           <div className="flex items-end justify-between p-6 border-b border-white/10">
             <h2 className="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Our Services</h2>
             <div className="hidden sm:flex items-center gap-2">
@@ -561,7 +561,7 @@ const HeroIndex = () => {
         
         <div className="flex flex-col md:flex-row gap-8 md:gap-6 justify-center items-center w-full max-w-4xl mx-auto">
           {/* Basic Plan */}
-          <div className="bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-xl flex-1 max-w-xs px-7 py-8 flex flex-col">
+          <div className="bg-white/[0.1] border border-white/[0.15] backdrop-blur-[24px] backdrop-brightness-[0.85] rounded-2xl shadow-xl flex-1 max-w-xs px-7 py-8 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:bg-white/[0.15] hover:border-white/[0.2]">
             <div className="mb-3">
               <h3 className="text-4xl font-extralight tracking-tight text-white mb-2">
                 Basic
@@ -604,7 +604,7 @@ const HeroIndex = () => {
           </div>
 
           {/* Pro Plan - Most Popular */}
-          <div className="bg-white/[0.1] border border-cyan-400/30 backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-2xl flex-1 max-w-xs px-7 py-8 flex flex-col scale-105 relative ring-2 ring-cyan-400/20">
+          <div className="bg-white/[0.15] border border-cyan-400/30 backdrop-blur-[24px] backdrop-brightness-[0.85] rounded-2xl shadow-2xl flex-1 max-w-xs px-7 py-8 flex flex-col scale-105 relative ring-2 ring-cyan-400/20 transition-all duration-300 hover:scale-110 hover:shadow-3xl hover:bg-white/[0.2] hover:border-cyan-400/40">
             <div className="absolute -top-4 right-4 px-3 py-1 text-xs font-semibold rounded-full bg-cyan-400 text-slate-900 shadow-lg">
               Most Popular
             </div>
@@ -656,7 +656,7 @@ const HeroIndex = () => {
           </div>
 
           {/* Premium Plan */}
-          <div className="bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-xl flex-1 max-w-xs px-7 py-8 flex flex-col">
+          <div className="bg-white/[0.1] border border-white/[0.15] backdrop-blur-[24px] backdrop-brightness-[0.85] rounded-2xl shadow-xl flex-1 max-w-xs px-7 py-8 flex flex-col transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:bg-white/[0.15] hover:border-white/[0.2]">
             <div className="mb-3">
               <h3 className="text-4xl font-extralight tracking-tight text-white mb-2">
                 Premium

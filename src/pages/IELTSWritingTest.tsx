@@ -457,16 +457,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-                      <h3 className="font-semibold text-primary mb-2">Essay Question:</h3>
-                      <p className="text-foreground leading-relaxed">{currentTaskData.title}</p>
-                    </div>
-                    {currentTaskData.instructions && <div className="p-4 bg-muted/50 rounded-lg">
-                        <h4 className="font-medium text-muted-foreground mb-2">Instructions:</h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{currentTaskData.instructions}</p>
-                      </div>}
-                  </div>
+                  
                 </CardContent>
               </Card>}
             

@@ -29,13 +29,13 @@ const HeroIndex = () => {
     quote: "The AI feedback on my Task 2 essay helped me jump from a 6.5 to a 7.5 in just 2 months!"
   }, {
     name: "Ahmed H.",
-    score: "PTE: 79 → 85",
+    score: "IELTS: 6.0 → 7.0",
     initials: "AH",
     gradient: "from-purple-400 to-pink-500",
     quote: "I finally found a study partner in the community. It made all the difference - I didn't feel alone anymore."
   }, {
     name: "Maria R.",
-    score: "TOEFL: 95 → 108",
+    score: "IELTS: 7.0 → 8.0",
     initials: "MR",
     gradient: "from-orange-400 to-red-500",
     quote: "The personalized study plan was a game-changer. It showed me exactly what to focus on each week."
@@ -70,14 +70,6 @@ const HeroIndex = () => {
     title: "IELTS",
     description: "International English Language Testing System",
     path: "/ielts-portal"
-  }, {
-    title: "PTE Academic",
-    description: "Pearson Test of English Academic",
-    path: "/pte-portal"
-  }, {
-    title: "TOEFL iBT",
-    description: "Test of English as a Foreign Language",
-    path: "/toefl-portal"
   }, {
     title: "General English",
     description: "Improve your everyday English fluency",
@@ -128,7 +120,7 @@ const HeroIndex = () => {
 
       {/* Hero Section - Centered */}
       <section className="relative z-10 px-8 min-h-screen flex items-center justify-center">
-        <div className="max-w-4xl mx-auto bg-white/10 border border-white/20 backdrop-blur-xl rounded-xl p-8">
+        <div className="max-w-4xl mx-auto bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-xl p-8 shadow-xl">
           {/* Headline with Animation */}
           <h1 className="text-5xl mb-8 leading-tight text-zinc-950 md:text-6xl font-light my-0 py-0 px-0">
             <TypewriterText text="Master English with AI" speed={80} />
@@ -179,13 +171,13 @@ const HeroIndex = () => {
             Choose Your Test Preparation
           </h2>
           {/* Test Cards Grid - Smaller, More Approachable */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {testTypes.map((test, index) => <Card key={index} className="bg-white/10 border border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:scale-105 duration-300 h-32 flex flex-col justify-center" onClick={() => navigate(test.path)}>
-                <CardContent className="p-4 text-center">
-                  <h3 className="text-zinc-950 font-medium text-lg mb-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            {testTypes.map((test, index) => <Card key={index} className="bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] hover:bg-white/[0.08] transition-all cursor-pointer group shadow-xl hover:shadow-2xl hover:scale-105 duration-300 h-40 flex flex-col justify-center" onClick={() => navigate(test.path)}>
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-zinc-950 font-medium text-xl mb-2">
                     {test.title}
                   </h3>
-                  <p className="text-zinc-700 text-xs leading-tight">
+                  <p className="text-zinc-700 text-sm leading-relaxed">
                     {test.description}
                   </p>
                 </CardContent>
@@ -196,7 +188,7 @@ const HeroIndex = () => {
 
       {/* About Section */}
       <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
-        <div className="rounded-2xl ring-1 ring-white/10 overflow-hidden bg-white/5">
+        <div className="rounded-2xl ring-1 ring-white/[0.1] overflow-hidden bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
           <div className="flex items-end justify-between p-6 border-b border-white/10">
             <h2 className="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Platform Overview</h2>
             <p className="hidden sm:block text-xs text-neutral-400">Features, stats, achievements</p>
@@ -254,7 +246,7 @@ const HeroIndex = () => {
             {/* Bio (bottom-left) */}
             <div className="p-6 md:col-span-3 border-t md:border-t border-white/10 md:border-r">
               <p className="text-sm text-neutral-300 leading-relaxed">
-                Master IELTS, PTE, TOEFL, and General English with our AI-powered platform. Get personalized feedback, track progress, and achieve your target scores faster.
+                Master IELTS and General English with our AI-powered platform. Get personalized feedback, track progress, and achieve your target scores faster.
               </p>
               <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white bg-white/10 hover:bg-white/20 rounded-full px-3 py-1.5 ring-1 ring-white/10 cursor-pointer" onClick={() => navigate('/auth')}>
                 <FileText className="w-4 h-4" />
@@ -280,7 +272,7 @@ const HeroIndex = () => {
               <p className="text-[11px] text-neutral-400 mt-0.5">Success</p>
             </div>
             <div className="p-4 text-center">
-              <div className="text-xl font-semibold tracking-tight text-white">4</div>
+              <div className="text-xl font-semibold tracking-tight text-white">2</div>
               <p className="text-[11px] text-neutral-400 mt-0.5">Tests</p>
             </div>
           </div>
@@ -300,8 +292,8 @@ const HeroIndex = () => {
           </a>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Achievement Card 1 */}
-          <article className="group rounded-xl overflow-hidden ring-1 ring-white/10 bg-white/5">
+        {/* Achievement Card 1 */}
+        <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.1] bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
             <div className="relative aspect-[16/10]">
               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center">
                 <div className="text-center">
@@ -321,39 +313,39 @@ const HeroIndex = () => {
           </article>
 
           {/* Achievement Card 2 */}
-          <article className="group rounded-xl overflow-hidden ring-1 ring-white/10 bg-white/5">
+          <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.1] bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
             <div className="relative aspect-[16/10]">
               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">85</div>
-                  <div className="text-sm text-neutral-300">PTE Overall</div>
+                  <div className="text-4xl font-bold text-white mb-2">7.5</div>
+                  <div className="text-sm text-neutral-300">IELTS Overall</div>
                 </div>
               </div>
             </div>
             <div className="p-4">
               <div className="flex items-center gap-2 text-xs text-neutral-400">
                 <Star className="w-4 h-4" />
-                <span>PTE Excellence</span>
+                <span>IELTS Excellence</span>
               </div>
               <h3 className="mt-2 text-base font-semibold tracking-tight text-white">Ahmed H. Success</h3>
-              <p className="mt-1 text-sm text-neutral-400">"Practice tests were exactly like the real exam!"</p>
+              <p className="mt-1 text-sm text-neutral-400">"Community support made all the difference in my preparation!"</p>
             </div>
           </article>
 
           {/* Achievement Card 3 */}
-          <article className="group rounded-xl overflow-hidden ring-1 ring-white/10 bg-white/5">
+          <article className="group rounded-xl overflow-hidden ring-1 ring-white/[0.1] bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] shadow-xl">
             <div className="relative aspect-[16/10]">
               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">108</div>
-                  <div className="text-sm text-neutral-300">TOEFL Total</div>
+                  <div className="text-4xl font-bold text-white mb-2">8.0</div>
+                  <div className="text-sm text-neutral-300">IELTS Overall</div>
                 </div>
               </div>
             </div>
             <div className="p-4">
               <div className="flex items-center gap-2 text-xs text-neutral-400">
                 <Award className="w-4 h-4" />
-                <span>TOEFL Mastery</span>
+                <span>IELTS Mastery</span>
               </div>
               <h3 className="mt-2 text-base font-semibold tracking-tight text-white">Maria R. Excellence</h3>
               <p className="mt-1 text-sm text-neutral-400">"Personalized study plan was a game-changer!"</p>
@@ -364,7 +356,7 @@ const HeroIndex = () => {
 
       {/* Services Section */}
       <section id="services" className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
-        <div className="ring-1 ring-white/10 overflow-hidden bg-white/5 rounded-2xl">
+        <div className="ring-1 ring-white/[0.1] overflow-hidden bg-white/[0.05] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-xl">
           <div className="flex items-end justify-between p-6 border-b border-white/10">
             <h2 className="text-2xl sm:text-3xl tracking-tight font-semibold text-white">Our Services</h2>
             <div className="hidden sm:flex items-center gap-2">
@@ -391,7 +383,7 @@ const HeroIndex = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
                       <polyline points="20,6 9,17 4,12"></polyline>
                     </svg>
-                    <span>IELTS, PTE, TOEFL Practice Tests</span>
+                    <span>IELTS & General English Practice Tests</span>
                   </li>
                   <li className="flex items-start gap-2 text-sm text-neutral-300">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 mt-0.5 text-emerald-400">
@@ -556,6 +548,164 @@ const HeroIndex = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20 relative z-10">
+        <div className="w-full text-center mb-14">
+          <h2 className="text-4xl md:text-5xl font-extralight leading-tight tracking-tight text-white mb-4">
+            Simple, transparent pricing
+          </h2>
+          <p className="text-base md:text-lg text-neutral-300 max-w-2xl mx-auto">
+            Choose a plan that fits your learning goals. Upgrade or downgrade anytime. No hidden fees, ever.
+          </p>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-8 md:gap-6 justify-center items-center w-full max-w-4xl mx-auto">
+          {/* Basic Plan */}
+          <div className="bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-xl flex-1 max-w-xs px-7 py-8 flex flex-col">
+            <div className="mb-3">
+              <h3 className="text-4xl font-extralight tracking-tight text-white mb-2">
+                Basic
+              </h3>
+              <p className="text-sm text-neutral-400">
+                Essential tools for IELTS preparation
+              </p>
+            </div>
+            <div className="my-6 flex items-baseline gap-2">
+              <span className="text-4xl font-extralight text-white">$19</span>
+              <span className="text-sm text-neutral-400">/mo</span>
+            </div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.22] to-transparent mb-5"></div>
+            <ul className="flex flex-col gap-3 text-sm text-neutral-200 mb-6">
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>50 Practice Tests</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Basic AI Feedback</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Community Access</span>
+              </li>
+            </ul>
+            <button 
+              onClick={() => navigate('/auth')}
+              className="mt-auto w-full py-3 rounded-xl bg-cyan-400/80 hover:bg-cyan-400 text-slate-900 font-semibold text-sm transition-all duration-200"
+            >
+              Start Free Trial
+            </button>
+          </div>
+
+          {/* Pro Plan - Most Popular */}
+          <div className="bg-white/[0.1] border border-cyan-400/30 backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-2xl flex-1 max-w-xs px-7 py-8 flex flex-col scale-105 relative ring-2 ring-cyan-400/20">
+            <div className="absolute -top-4 right-4 px-3 py-1 text-xs font-semibold rounded-full bg-cyan-400 text-slate-900 shadow-lg">
+              Most Popular
+            </div>
+            <div className="mb-3">
+              <h3 className="text-4xl font-extralight tracking-tight text-white mb-2">
+                Pro
+              </h3>
+              <p className="text-sm text-neutral-400">
+                Complete IELTS mastery with AI coaching
+              </p>
+            </div>
+            <div className="my-6 flex items-baseline gap-2">
+              <span className="text-4xl font-extralight text-white">$39</span>
+              <span className="text-sm text-neutral-400">/mo</span>
+            </div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.22] to-transparent mb-5"></div>
+            <ul className="flex flex-col gap-3 text-sm text-neutral-200 mb-6">
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Unlimited Practice Tests</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Advanced AI Feedback</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Personalized Study Plans</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Priority Support</span>
+              </li>
+            </ul>
+            <button 
+              onClick={() => navigate('/auth')}
+              className="mt-auto w-full py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold text-sm transition-all duration-200"
+            >
+              Try Pro
+            </button>
+          </div>
+
+          {/* Premium Plan */}
+          <div className="bg-white/[0.05] border border-white/[0.1] backdrop-blur-[14px] backdrop-brightness-[0.91] rounded-2xl shadow-xl flex-1 max-w-xs px-7 py-8 flex flex-col">
+            <div className="mb-3">
+              <h3 className="text-4xl font-extralight tracking-tight text-white mb-2">
+                Premium
+              </h3>
+              <p className="text-sm text-neutral-400">
+                Complete English mastery with 1-on-1 coaching
+              </p>
+            </div>
+            <div className="my-6 flex items-baseline gap-2">
+              <span className="text-4xl font-extralight text-white">$79</span>
+              <span className="text-sm text-neutral-400">/mo</span>
+            </div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.22] to-transparent mb-5"></div>
+            <ul className="flex flex-col gap-3 text-sm text-neutral-200 mb-6">
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Everything in Pro</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>1-on-1 Tutor Sessions</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>Speaking Practice Sessions</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400 flex-shrink-0">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                <span>24/7 Support</span>
+              </li>
+            </ul>
+            <button 
+              onClick={() => navigate('/auth')}
+              className="mt-auto w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 transition-all duration-200"
+            >
+              Contact Sales
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Vibrant Community Showcase Section */}
       <section className="relative z-10 px-8 py-20 opacity-0 animate-fade-in [animation-delay:1000ms] [animation-fill-mode:forwards]">
         <div className="max-w-6xl mx-auto">
@@ -680,27 +830,21 @@ const HeroIndex = () => {
             Connect with thousands of learners, share experiences, and achieve your goals together
           </p>
           
-          <div className="grid md:grid-cols-4 gap-6 mb-12">
-            {[{
-            title: "IELTS Preparation",
-            members: "15K+"
-          }, {
-            title: "PTE Practice",
-            members: "8K+"
-          }, {
-            title: "TOEFL Study Group",
-            members: "12K+"
-          }, {
-            title: "General English",
-            members: "20K+"
-          }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
-                <CardContent className="pt-6 text-center">
-                  
-                  <h3 className="mb-2 text-zinc-950 font-light text-sm">{group.title}</h3>
-                  <p className="text-sm text-zinc-950 font-extralight">{group.members} members</p>
-                </CardContent>
-              </Card>)}
-          </div>
+            <div className="grid md:grid-cols-2 gap-6 mb-12">
+              {[{
+              title: "IELTS Preparation",
+              members: "25K+"
+            }, {
+              title: "General English",
+              members: "15K+"
+            }].map((group, index) => <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 hover:scale-105">
+                  <CardContent className="pt-6 text-center">
+                    
+                    <h3 className="mb-2 text-zinc-950 font-light text-sm">{group.title}</h3>
+                    <p className="text-sm text-zinc-950 font-extralight">{group.members} members</p>
+                  </CardContent>
+                </Card>)}
+            </div>
 
           <Button size="lg" onClick={() => navigate('/community')} className="bg-white/10 border border-white/20 backdrop-blur-xl text-white hover:bg-white/15 px-8 py-4 text-lg transition-all duration-300">
             <Users className="w-5 h-5 mr-2" />
@@ -740,7 +884,7 @@ const HeroIndex = () => {
                 <span className="text-lg font-bold text-white">EnglishAI</span>
               </div>
               <p className="text-sm text-zinc-950">
-                AI-powered English learning platform for IELTS, PTE, and TOEFL preparation.
+                AI-powered English learning platform for IELTS and General English preparation.
               </p>
             </div>
             
@@ -749,8 +893,6 @@ const HeroIndex = () => {
               <h4 className="text-white font-semibold mb-3">Tests</h4>
               <div className="space-y-2 text-sm text-zinc-400">
                 <button onClick={() => navigate('/ielts-portal')} className="block hover:text-white transition-colors">IELTS Academic</button>
-                <button onClick={() => navigate('/pte-portal')} className="block hover:text-white transition-colors">PTE Academic</button>
-                <button onClick={() => navigate('/toefl-portal')} className="block hover:text-white transition-colors">TOEFL iBT</button>
                 <button onClick={() => navigate('/general-portal')} className="block hover:text-white transition-colors">General English</button>
               </div>
             </div>

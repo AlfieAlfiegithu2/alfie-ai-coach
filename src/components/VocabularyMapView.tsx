@@ -41,62 +41,62 @@ const VocabularyMapView = () => {
     name: "Mouse",
     emoji: "🐭"
   }, {
-    name: "Bird",
-    emoji: "🐦"
+    name: "Rabbit",
+    emoji: "🐰"
   }, {
-    name: "Cat",
+    name: "Hamster",
+    emoji: "🐹"
+  }, {
+    name: "Kitten",
     emoji: "🐱"
   }, {
-    name: "Dog",
+    name: "Puppy",
     emoji: "🐶"
+  }, {
+    name: "Duck",
+    emoji: "🦆"
+  }, {
+    name: "Panda",
+    emoji: "🐼"
+  }, {
+    name: "Koala",
+    emoji: "🐨"
+  }, {
+    name: "Penguin",
+    emoji: "🐧"
   }, {
     name: "Fox",
     emoji: "🦊"
   }, {
-    name: "Wolf",
-    emoji: "🐺"
+    name: "Raccoon",
+    emoji: "🦝"
   }, {
-    name: "Horse",
-    emoji: "🐎"
+    name: "Hedgehog",
+    emoji: "🦔"
+  }, {
+    name: "Otter",
+    emoji: "🦦"
+  }, {
+    name: "Seal",
+    emoji: "🦭"
+  }, {
+    name: "Deer",
+    emoji: "🦌"
+  }, {
+    name: "Squirrel",
+    emoji: "🐿️"
+  }, {
+    name: "Llama",
+    emoji: "🦙"
+  }, {
+    name: "Sloth",
+    emoji: "🦥"
+  }, {
+    name: "Polar Bear",
+    emoji: "🐻‍❄️"
   }, {
     name: "Bear",
     emoji: "🐻"
-  }, {
-    name: "Lion",
-    emoji: "🦁"
-  }, {
-    name: "Tiger",
-    emoji: "🐅"
-  }, {
-    name: "Rhino",
-    emoji: "🦏"
-  }, {
-    name: "Hippo",
-    emoji: "🦛"
-  }, {
-    name: "Elephant",
-    emoji: "🐘"
-  }, {
-    name: "Whale",
-    emoji: "🐋"
-  }, {
-    name: "Dragon",
-    emoji: "🐉"
-  }, {
-    name: "Phoenix",
-    emoji: "🔥"
-  }, {
-    name: "Kraken",
-    emoji: "🐙"
-  }, {
-    name: "Titan",
-    emoji: "⚡"
-  }, {
-    name: "Legend",
-    emoji: "👑"
-  }, {
-    name: "Master",
-    emoji: "🌟"
   }];
   const getAnimalForLevel = (levelIndex: number) => {
     if (levelIndex < animalProgression.length) {
@@ -313,7 +313,7 @@ const VocabularyMapView = () => {
                             <img
                               src="/moouse emoji.png"
                               alt="Mouse level icon"
-                              className="absolute inset-0 w-full h-full rounded-full object-cover"
+                              className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
                               loading="lazy"
                             />
                           ) : (
@@ -348,7 +348,7 @@ const VocabularyMapView = () => {
                          <img
                            src="/moouse emoji.png"
                            alt="Mouse level icon"
-                           className="absolute inset-0 w-full h-full rounded-full object-cover"
+                           className="absolute inset-0 w-full h-full rounded-full object-cover transform scale-90"
                            loading="lazy"
                          />
                        ) : (

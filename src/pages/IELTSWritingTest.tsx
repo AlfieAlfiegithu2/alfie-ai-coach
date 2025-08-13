@@ -398,13 +398,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {currentTask === 1 && currentTaskData?.imageUrl ? <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
             <ResizablePanel defaultSize={55} minSize={40}>
               <Card className="glass-card rounded-3xl h-full">
-                <CardHeader>
-                </CardHeader>
+                
                 <CardContent className="h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex gap-2 items-center">
                       <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
-                      <div className="px-2 py-1 text-sm">{Math.round(zoomScale * 100)}%</div>
+                      
                       <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
                       
                     </div>

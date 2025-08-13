@@ -171,7 +171,7 @@ const IELTSTestModules = () => {
     return (
       <div className="min-h-screen relative">
         <div 
-          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
           style={{
             backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
             backgroundColor: '#f3f4f6'
@@ -192,7 +192,7 @@ const IELTSTestModules = () => {
   return (
     <div className="min-h-screen relative">
       <div 
-        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{
           backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
           backgroundColor: '#f3f4f6'
@@ -252,7 +252,7 @@ const IELTSTestModules = () => {
 
                     <Button 
                       onClick={() => handleModuleSelect(module.id)}
-                      className="w-full rounded-2xl font-semibold"
+                      className="w-full rounded-2xl font-semibold text-black"
                       size="sm"
                       disabled={!isAvailable}
                       style={{ background: isAvailable ? 'var(--gradient-button)' : 'var(--warm-gray)', border: 'none' }}

@@ -147,9 +147,9 @@ const Dashboard = () => {
     // Route to IELTS portal for quick start
     navigate('/ielts-portal');
   };
-  const handleSkillPractice = (skillName: string) => {
-    const route = skillName.toLowerCase();
-    navigate(`/${route}`);
+  const handleViewResults = (skillName: string) => {
+    // Navigate to personal page to view test results for this skill
+    navigate('/personal');
   };
 
   // Convert percentage to IELTS band score
@@ -204,7 +204,7 @@ const Dashboard = () => {
             <a href="#" className="text-slate-800 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>Dashboard</a>
-            <button onClick={() => navigate('/')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
+            <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
             fontFamily: 'Inter, sans-serif'
           }}>
               <Home className="w-4 h-4" />
@@ -394,7 +394,7 @@ const Dashboard = () => {
                                 </p>
                                 <p style={{
                             fontFamily: 'Inter, sans-serif'
-                          }}>{averageScore}%</p>
+                          }}>{convertToIELTSScore(averageScore)}</p>
                               </div>
                               <div>
                                 <p className="font-medium text-slate-800" style={{
@@ -404,11 +404,11 @@ const Dashboard = () => {
                                 </p>
                                 <p style={{
                             fontFamily: 'Inter, sans-serif'
-                          }}>{skillResults[0]?.score_percentage || 0}%</p>
+                          }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
                               </div>
                             </div>
                             
-                            <button onClick={() => handleSkillPractice(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
+                            <button onClick={() => handleViewResults(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
                         fontFamily: 'Inter, sans-serif'
                       }}>
                               View Detailed Results <ChevronRight className="w-4 h-4" />

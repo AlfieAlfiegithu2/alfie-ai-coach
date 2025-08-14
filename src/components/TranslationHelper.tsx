@@ -128,7 +128,9 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     }
   }, [selectedText]);
 
-  const saveToVocabulary = async () => {
+  const saveToVocabulary = async (retryCount = 0) => {
+    console.log(`🔄 Attempting to save word: "${selectedText}" (attempt ${retryCount + 1})`);
+    
     try {
       // Import supabase client
       const { supabase } = await import('@/integrations/supabase/client');
@@ -137,6 +139,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
+        console.log('❌ No authenticated user found');
         toast({
           title: "Please Sign In",
           description: "You need to be signed in to save vocabulary.",
@@ -144,49 +147,83 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         return;
       }
 
+      console.log('✅ User authenticated:', user.id.substring(0, 8) + '...');
+
       // Get user's native language for translation
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('native_language')
         .eq('id', user.id)
         .single();
 
+      if (profileError) {
+        console.log('⚠️  Profile error:', profileError);
+      }
+
       const targetLanguage = profile?.native_language || 'Spanish';
+      console.log('🌐 Target language:', targetLanguage);
+
+      const requestPayload = {
+        action: 'saveWord',
+        word: selectedText.trim(),
+        context: window.location.pathname,
+        userId: user.id,
+        nativeLanguage: targetLanguage
+      };
+
+      console.log('📤 Sending request to smart-vocabulary function:', requestPayload);
 
       const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
-        body: {
-          action: 'saveWord',
-          word: selectedText.trim(),
-          context: window.location.pathname,
-          userId: user.id,
-          nativeLanguage: targetLanguage
-        }
+        body: requestPayload
       });
 
+      console.log('📥 Response from smart-vocabulary function:', { data, error });
+
       if (error) {
-        console.error('Vocabulary save error:', error);
+        console.error('❌ Vocabulary save error:', error);
         throw error;
       }
 
-      if (data.success) {
+      if (data?.success) {
+        console.log('✅ Word saved successfully');
+        
         // Success - update UI state
         setIsWordSaved(true);
 
-        toast({
-          title: "Word Saved",
-          description: `"${selectedText}" added to your vocabulary collection.`,
-        });
+        if (data.alreadySaved) {
+          toast({
+            title: "Already Saved",
+            description: `"${selectedText}" is already in your vocabulary.`,
+          });
+        } else {
+          toast({
+            title: "Word Saved!",
+            description: `"${selectedText}" added to your vocabulary collection.`,
+          });
+        }
 
-        // Trigger a refresh of vocabulary data by dispatching a custom event
-        window.dispatchEvent(new CustomEvent('vocabulary-updated'));
+        // Dispatch event ONLY after successful save
+        console.log('📡 Dispatching vocabulary-updated event');
+        window.dispatchEvent(new CustomEvent('vocabulary-updated', {
+          detail: { word: selectedText, translation: data.translation }
+        }));
       } else {
-        throw new Error('Failed to save word');
+        throw new Error(data?.error || 'Failed to save word');
       }
     } catch (error) {
-      console.error('Error saving word:', error);
+      console.error('❌ Error saving word:', error);
+      
+      // Retry logic - retry up to 2 times for network/server errors
+      if (retryCount < 2 && (error as any)?.status >= 500) {
+        console.log(`🔄 Retrying save operation (attempt ${retryCount + 2})`);
+        setTimeout(() => saveToVocabulary(retryCount + 1), 1000 * (retryCount + 1));
+        return;
+      }
+
       toast({
         title: "Save Failed",
-        description: "Could not save word to vocabulary. Please try again.",
+        description: `Could not save "${selectedText}" to vocabulary. ${error instanceof Error ? error.message : 'Please try again.'}`,
+        variant: "destructive"
       });
     }
   };
@@ -301,7 +338,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
 
             {!isWordSaved && translationResult && !isLoading && (
               <Button 
-                onClick={saveToVocabulary}
+                onClick={() => saveToVocabulary()}
                 size="sm" 
                 className="w-full btn-primary relative"
               >

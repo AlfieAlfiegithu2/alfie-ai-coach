@@ -47,12 +47,37 @@ async function saveWordToVocabulary(supabase: any, word: string, context: string
   console.log('💾 Saving word to vocabulary:', { word, nativeLanguage, userId: userId.substring(0, 8) + '...' });
   
   try {
+    // Validate inputs
+    if (!word || !userId) {
+      throw new Error('Missing required parameters: word or userId');
+    }
+
+    // Normalize language code - convert full names to codes for database storage
+    const languageMap: { [key: string]: string } = {
+      'English': 'en',
+      'Spanish': 'es', 
+      'French': 'fr',
+      'German': 'de',
+      'Italian': 'it',
+      'Portuguese': 'pt',
+      'Chinese': 'zh',
+      'Japanese': 'ja',
+      'Korean': 'ko',
+      'Arabic': 'ar',
+      'Hindi': 'hi',
+      'Russian': 'ru',
+      'Turkish': 'tr'
+    };
+
+    const languageCode = languageMap[nativeLanguage] || nativeLanguage.toLowerCase();
+    console.log('🌐 Language mapping:', { original: nativeLanguage, mapped: languageCode });
+
     // Check if translation already exists in vocabulary_words
     const { data: existingWord } = await supabase
       .from('vocabulary_words')
       .select('*')
       .eq('word', word.toLowerCase())
-      .eq('language_code', nativeLanguage)
+      .eq('language_code', languageCode)
       .maybeSingle();
 
     let vocabularyWordId;
@@ -79,7 +104,7 @@ async function saveWordToVocabulary(supabase: any, word: string, context: string
         .from('vocabulary_words')
         .insert({
           word: word.toLowerCase(),
-          language_code: nativeLanguage,
+          language_code: languageCode,
           translation: translation,
           usage_count: 1
         })
@@ -93,16 +118,37 @@ async function saveWordToVocabulary(supabase: any, word: string, context: string
       vocabularyWordId = newWord.id;
     }
 
-    // Save to user's personal vocabulary (with conflict handling)
-    const { error: userVocabError } = await supabase
+    // Check if user already has this word saved
+    const { data: existingUserWord } = await supabase
       .from('user_vocabulary')
-      .upsert({
+      .select('id')
+      .eq('user_id', userId)
+      .eq('vocabulary_word_id', vocabularyWordId)
+      .maybeSingle();
+
+    if (existingUserWord) {
+      console.log('ℹ️  Word already saved by user');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        word: word,
+        translation: translation,
+        cached: true,
+        alreadySaved: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Save to user's personal vocabulary
+    const { data: userVocabData, error: userVocabError } = await supabase
+      .from('user_vocabulary')
+      .insert({
         user_id: userId,
         vocabulary_word_id: vocabularyWordId,
-        context: context
-      }, {
-        onConflict: 'user_id,vocabulary_word_id'
-      });
+        context: context || 'Unknown context'
+      })
+      .select()
+      .single();
 
     if (userVocabError) {
       console.error('❌ Error saving to user vocabulary:', userVocabError);

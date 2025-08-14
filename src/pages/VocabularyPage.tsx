@@ -55,7 +55,9 @@ const VocabularyPage = () => {
     }
 
     // Listen for vocabulary updates from the translation helper
-    const handleVocabularyUpdate = () => {
+    const handleVocabularyUpdate = (event: any) => {
+      console.log('📡 Received vocabulary-updated event:', event.detail);
+      console.log('🔄 Refreshing vocabulary data...');
       loadSavedWords();
     };
 
@@ -94,6 +96,7 @@ const VocabularyPage = () => {
   const loadSavedWords = async () => {
     if (!user) return;
     
+    console.log('📚 Loading saved words for user:', user.id.substring(0, 8) + '...');
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
@@ -103,13 +106,19 @@ const VocabularyPage = () => {
         }
       });
 
+      console.log('📥 Vocabulary data response:', { data, error });
+
       if (error) throw error;
       
-      if (data.vocabulary) {
+      if (data?.vocabulary) {
+        console.log('✅ Loaded vocabulary words:', data.vocabulary.length);
         setSavedWords(data.vocabulary);
+      } else {
+        console.log('ℹ️  No vocabulary data found');
+        setSavedWords([]);
       }
     } catch (error) {
-      console.error('Error loading vocabulary:', error);
+      console.error('❌ Error loading vocabulary:', error);
       toast.error('Failed to load vocabulary');
     } finally {
       setLoading(false);

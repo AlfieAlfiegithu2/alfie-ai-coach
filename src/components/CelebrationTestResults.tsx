@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trophy, Target, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
-
 interface CelebrationTestResultsProps {
   score: number;
   timeTaken: number;
@@ -20,25 +19,26 @@ interface CelebrationTestResultsProps {
     question_type: string;
   }>;
   onRetake: () => void;
-  testParts: {[key: number]: {
-    passage: {
-      id: string;
-      title: string;
-      content: string;
-      part_number: number;
+  testParts: {
+    [key: number]: {
+      passage: {
+        id: string;
+        title: string;
+        content: string;
+        part_number: number;
+      };
+      questions: Array<{
+        id: string;
+        question_text: string;
+        question_number: number;
+        correct_answer: string;
+        explanation: string;
+        question_type: string;
+        part_number: number;
+      }>;
     };
-    questions: Array<{
-      id: string;
-      question_text: string;
-      question_number: number;
-      correct_answer: string;
-      explanation: string;
-      question_type: string;
-      part_number: number;
-    }>;
-  }};
+  };
 }
-
 const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   score,
   timeTaken,
@@ -49,52 +49,52 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 }) => {
   const navigate = useNavigate();
   const [currentPart, setCurrentPart] = useState(1);
-  
+
   // IELTS Reading has exactly 40 questions
   const totalQuestions = 40;
-  const percentage = Math.round((score / totalQuestions) * 100);
-  
+  const percentage = Math.round(score / totalQuestions * 100);
+
   // Use official IELTS band score conversion based on correct answers
   const estimatedBandScore = getBandScore(score, 'academic-reading');
-  
   const getPerformanceLevel = () => {
-    if (percentage >= 85) return { level: "Excellent", color: "text-primary" };
-    if (percentage >= 70) return { level: "Good", color: "text-primary" };
-    if (percentage >= 50) return { level: "Average", color: "text-primary" };
-    return { level: "Needs Improvement", color: "text-muted-foreground" };
+    if (percentage >= 85) return {
+      level: "Excellent",
+      color: "text-primary"
+    };
+    if (percentage >= 70) return {
+      level: "Good",
+      color: "text-primary"
+    };
+    if (percentage >= 50) return {
+      level: "Average",
+      color: "text-primary"
+    };
+    return {
+      level: "Needs Improvement",
+      color: "text-muted-foreground"
+    };
   };
-
   const performance = getPerformanceLevel();
-
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const minutes = Math.floor(seconds % 3600 / 60);
     const secs = seconds % 60;
     if (hours > 0) {
       return `${hours}h ${minutes}m ${secs}s`;
     }
     return `${minutes}m ${secs}s`;
   };
-
-  const correctCount = questions.filter(q => 
-    answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()
-  ).length;
-  
+  const correctCount = questions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length;
   const incorrectCount = questions.filter(q => {
     const userAnswer = answers[q.id];
     return userAnswer && userAnswer.toLowerCase().trim() !== q.correct_answer.toLowerCase().trim();
   }).length;
-  
   const skippedCount = questions.filter(q => !answers[q.id]).length;
-
   const questionTypes = questions.reduce((acc, q) => {
     acc[q.question_type] = (acc[q.question_type] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-
-
-  return (
-    <div className="min-h-screen bg-gray-50">
+  return <div className="min-h-screen bg-gray-50">
       <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 pointer-events-none" />
       
       {/* Header */}
@@ -102,11 +102,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/ielts-portal')}
-                className="hover:bg-slate-100 text-slate-700"
-              >
+              <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="hover:bg-slate-100 text-slate-700">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Portal
               </Button>
@@ -175,32 +171,17 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           <CardContent className="py-6">
             <div className="flex justify-center">
               <div className="flex bg-slate-50 rounded-xl p-2 gap-2">
-                {Object.keys(testParts).map((partNum) => {
-                  const partNumber = parseInt(partNum);
-                  const partQuestions = testParts[partNumber]?.questions || [];
-                  const partCorrect = partQuestions.filter(q => 
-                    answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()
-                  ).length;
-                  
-                  return (
-                    <Button
-                      key={partNumber}
-                      variant={currentPart === partNumber ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setCurrentPart(partNumber)}
-                      className={`min-w-[120px] rounded-lg font-semibold ${
-                        currentPart === partNumber 
-                          ? 'bg-slate-800 hover:bg-slate-700 text-white' 
-                          : 'hover:bg-slate-100 text-slate-700'
-                      }`}
-                    >
+                {Object.keys(testParts).map(partNum => {
+                const partNumber = parseInt(partNum);
+                const partQuestions = testParts[partNumber]?.questions || [];
+                const partCorrect = partQuestions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length;
+                return <Button key={partNumber} variant={currentPart === partNumber ? "default" : "ghost"} size="sm" onClick={() => setCurrentPart(partNumber)} className={`min-w-[120px] rounded-lg font-semibold ${currentPart === partNumber ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'hover:bg-slate-100 text-slate-700'}`}>
                       Part {partNumber}
                       <Badge variant="secondary" className="ml-2 text-xs rounded-full bg-white/20 text-current">
                         {partCorrect}/{partQuestions.length}
                       </Badge>
-                    </Button>
-                  );
-                })}
+                    </Button>;
+              })}
               </div>
             </div>
           </CardContent>
@@ -211,7 +192,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           <Card className="shadow-sm border border-slate-200 bg-white">
             <CardHeader className="text-center pb-3">
               <CardTitle className="flex items-center justify-center gap-2 text-slate-800">
-                <Target className="w-5 h-5 text-slate-600" />
+                
                 Summary
               </CardTitle>
             </CardHeader>
@@ -249,19 +230,17 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           <Card className="shadow-sm border border-slate-200 bg-white">
             <CardHeader className="text-center pb-3">
               <CardTitle className="flex items-center justify-center gap-2 text-slate-800">
-                <Target className="w-5 h-5 text-slate-600" />
+                
                 Question Types
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {Object.entries(questionTypes).map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
+              {Object.entries(questionTypes).map(([type, count]) => <div key={type} className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                   <span className="text-sm capitalize font-medium text-slate-700">{type.replace('_', ' ')}</span>
                   <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
                     {count}
                   </Badge>
-                </div>
-              ))}
+                </div>)}
             </CardContent>
           </Card>
         </div>
@@ -272,7 +251,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           <Card className="flex flex-col w-[50%] h-full shadow-sm border border-slate-200 bg-white">
             <CardHeader className="flex-shrink-0 pb-3 px-4 py-3 bg-slate-50 border-b">
               <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-800">
-                <Target className="w-5 h-5 text-slate-600" />
+                
                 {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
               </CardTitle>
               <Badge variant="outline" className="w-fit text-xs border-slate-300 text-slate-600">
@@ -281,11 +260,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto min-h-0 p-6">
               <div className="prose prose-sm max-w-none">
-                <div 
-                  className="whitespace-pre-wrap leading-relaxed select-text text-slate-700"
-                  id={`passage-content-${currentPart}`}
-                  style={{ fontSize: '16px', lineHeight: '1.8' }}
-                >
+                <div className="whitespace-pre-wrap leading-relaxed select-text text-slate-700" id={`passage-content-${currentPart}`} style={{
+                fontSize: '16px',
+                lineHeight: '1.8'
+              }}>
                   {testParts[currentPart]?.passage?.content || 'Loading passage...'}
                 </div>
               </div>
@@ -296,32 +274,22 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           <Card className="flex flex-col w-[50%] h-full shadow-sm border border-slate-200 bg-white">
             <CardHeader className="flex-shrink-0 pb-3 px-4 py-3 bg-slate-50 border-b">
               <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                <Target className="w-5 h-5 text-slate-600" />
+                
                 Answer Review - Part {currentPart}
               </CardTitle>
               <Badge variant="outline" className="w-fit text-xs border-slate-300 text-slate-600">
-                {(testParts[currentPart]?.questions || []).filter(q => 
-                  answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()
-                ).length}/{(testParts[currentPart]?.questions || []).length} correct
+                {(testParts[currentPart]?.questions || []).filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length}/{(testParts[currentPart]?.questions || []).length} correct
               </Badge>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto min-h-0 p-4 scroll-smooth">
               <div className="space-y-4 pb-4">
-                {(testParts[currentPart]?.questions || []).map((question) => {
-                  const userAnswer = answers[question.id] || 'Not answered';
-                  const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-                  const isSkipped = !answers[question.id];
-                  
-                  return (
-                    <div key={question.id} className={`p-4 rounded-lg border ${
-                      isCorrect 
-                        ? 'border-green-200 bg-green-50' 
-                        : 'border-slate-200 bg-slate-50'
-                    } opacity-100 visible`}>
+                {(testParts[currentPart]?.questions || []).map(question => {
+                const userAnswer = answers[question.id] || 'Not answered';
+                const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+                const isSkipped = !answers[question.id];
+                return <div key={question.id} className={`p-4 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50'} opacity-100 visible`}>
                       <div className="flex items-start gap-3">
-                        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-                          isCorrect ? 'bg-green-500 text-white' : 'bg-slate-400 text-white'
-                        }`}>
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${isCorrect ? 'bg-green-500 text-white' : 'bg-slate-400 text-white'}`}>
                           {question.question_number}
                         </div>
                         <div className="flex-1 space-y-3">
@@ -332,12 +300,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-semibold text-slate-600">Your answer:</span>
-                              <Badge 
-                                variant="outline" 
-                                className={`text-xs rounded-full font-semibold ${
-                                  isCorrect ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-100 text-red-700 border-red-300'
-                                }`}
-                              >
+                              <Badge variant="outline" className={`text-xs rounded-full font-semibold ${isCorrect ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-100 text-red-700 border-red-300'}`}>
                                 {userAnswer}
                               </Badge>
                             </div>
@@ -350,29 +313,24 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                               </Badge>
                             </div>
                             
-                            {question.explanation && (
-                              <div className="bg-slate-50 p-3 rounded-lg border-l-4 border-slate-400">
+                            {question.explanation && <div className="bg-slate-50 p-3 rounded-lg border-l-4 border-slate-400">
                                 <p className="text-xs font-semibold mb-2 text-slate-700">
                                   💡 Explanation:
                                 </p>
                                 <p className="text-xs leading-relaxed text-slate-600">
                                   {question.explanation}
                                 </p>
-                              </div>
-                            )}
+                              </div>}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    </div>;
+              })}
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CelebrationTestResults;

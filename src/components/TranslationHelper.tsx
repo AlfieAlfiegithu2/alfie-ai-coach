@@ -12,6 +12,14 @@ interface TranslationHelperProps {
   language: string;
 }
 
+interface TranslationResult {
+  translation: string;
+  context?: string;
+  alternatives?: string[];
+  grammar_notes?: string;
+  simple?: boolean;
+}
+
 interface SavedWord {
   id: string;
   word: string;
@@ -21,7 +29,7 @@ interface SavedWord {
 }
 
 const TranslationHelper = ({ selectedText, position, onClose, language }: TranslationHelperProps) => {
-  const [translation, setTranslation] = useState<string>('');
+  const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const { toast } = useToast();
@@ -47,49 +55,33 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
   const fetchTranslation = async (text: string) => {
     setIsLoading(true);
     try {
-      // Use translation service
-      const { translatedText, error } = await import('@/components/TranslationService').then(
-        module => module.translationService.translateText({
+      // Use translation service with context for multiple meanings
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('translation-service', {
+        body: {
           text: text,
-          targetLanguage: language
-        })
-      );
+          targetLang: language,
+          sourceLang: 'auto',
+          includeContext: true // Request multiple meanings and context
+        }
+      });
 
-      if (error) {
+      if (error || !data.success) {
         console.warn('Translation service error:', error);
-        // Fallback to mock translations
-        const mockTranslations: Record<string, Record<string, string>> = {
-          'es': {
-            'the': 'el/la', 'house': 'casa', 'water': 'agua', 'book': 'libro',
-            'time': 'tiempo', 'people': 'gente', 'way': 'manera', 'day': 'día',
-            'man': 'hombre', 'new': 'nuevo', 'first': 'primero', 'last': 'último',
-            'long': 'largo', 'great': 'grande', 'little': 'pequeño', 'own': 'propio',
-            'other': 'otro', 'old': 'viejo', 'right': 'correcto/derecho', 'big': 'grande'
-          },
-          'fr': {
-            'the': 'le/la/les', 'house': 'maison', 'water': 'eau', 'book': 'livre',
-            'time': 'temps', 'people': 'gens', 'way': 'façon', 'day': 'jour',
-            'man': 'homme', 'new': 'nouveau', 'first': 'premier', 'last': 'dernier',
-            'long': 'long', 'great': 'grand', 'little': 'petit', 'own': 'propre',
-            'other': 'autre', 'old': 'vieux', 'right': 'droit/correct', 'big': 'grand'
-          },
-          'de': {
-            'the': 'der/die/das', 'house': 'Haus', 'water': 'Wasser', 'book': 'Buch',
-            'time': 'Zeit', 'people': 'Leute', 'way': 'Weg', 'day': 'Tag',
-            'man': 'Mann', 'new': 'neu', 'first': 'erste', 'last': 'letzte',
-            'long': 'lang', 'great': 'groß', 'little': 'klein', 'own': 'eigen',
-            'other': 'andere', 'old': 'alt', 'right': 'richtig/rechts', 'big': 'groß'
-          }
-        };
-
-        const lowerText = text.toLowerCase();
-        setTranslation(mockTranslations[language]?.[lowerText] || `Translation for "${text}" (${language})`);
+        // Fallback to simple translation
+        setTranslationResult({
+          translation: `Translation for "${text}" (${language})`,
+          simple: true
+        });
       } else {
-        setTranslation(translatedText);
+        setTranslationResult(data.result);
       }
     } catch (error) {
       console.error('Translation error:', error);
-      setTranslation('Translation unavailable');
+      setTranslationResult({
+        translation: 'Translation unavailable',
+        simple: true
+      });
     } finally {
       setIsLoading(false);
     }
@@ -176,13 +168,20 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         throw error;
       }
 
-      // Success - update UI state
-      setIsWordSaved(true);
+      if (data.success) {
+        // Success - update UI state
+        setIsWordSaved(true);
 
-      toast({
-        title: "Word Saved",
-        description: `"${selectedText}" added to your vocabulary collection.`,
-      });
+        toast({
+          title: "Word Saved",
+          description: `"${selectedText}" added to your vocabulary collection.`,
+        });
+
+        // Trigger a refresh of vocabulary data by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('vocabulary-updated'));
+      } else {
+        throw new Error('Failed to save word');
+      }
     } catch (error) {
       console.error('Error saving word:', error);
       toast({
@@ -225,14 +224,43 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
                   <div className="w-3 h-3 border border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                   <span className="text-xs text-text-secondary">Translating...</span>
                 </div>
-              ) : (
-                <p className="text-sm text-brand-blue font-medium">
-                  {translation}
-                </p>
-              )}
+              ) : translationResult ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-brand-blue font-medium">
+                    {translationResult.translation}
+                  </p>
+                  
+                  {translationResult.alternatives && translationResult.alternatives.length > 0 && (
+                    <div className="text-xs space-y-1">
+                      <p className="text-text-secondary font-medium">Alternative meanings:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {translationResult.alternatives.map((alt, index) => (
+                          <Badge key={index} variant="outline" className="text-xs px-2 py-0.5">
+                            {alt}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {translationResult.context && (
+                    <div className="text-xs">
+                      <p className="text-text-secondary font-medium mb-1">Context:</p>
+                      <p className="text-text-secondary">{translationResult.context}</p>
+                    </div>
+                  )}
+                  
+                  {translationResult.grammar_notes && (
+                    <div className="text-xs">
+                      <p className="text-text-secondary font-medium mb-1">Grammar notes:</p>
+                      <p className="text-text-secondary">{translationResult.grammar_notes}</p>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
 
-            {!isWordSaved && translation && !isLoading && (
+            {!isWordSaved && translationResult && !isLoading && (
               <Button 
                 onClick={saveToVocabulary}
                 size="sm" 

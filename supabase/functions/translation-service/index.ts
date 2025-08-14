@@ -28,19 +28,23 @@ serve(async (req) => {
     console.log('🌐 Translation request:', { text: text.substring(0, 50) + '...', sourceLang, targetLang });
 
     const systemPrompt = includeContext ? 
-      `You are a professional translator. Provide accurate translations and include:
-       1. The translation
-       2. Context or cultural notes if relevant
-       3. Alternative translations if applicable
-       4. Grammar explanations if helpful for learning
+      `You are a professional translator. When translating words or phrases, provide comprehensive information including multiple meanings when applicable.
        
-       Format as JSON: {
-         "translation": "translated text",
-         "context": "cultural or linguistic context",
-         "alternatives": ["alt1", "alt2"],
-         "grammar_notes": "helpful grammar explanation"
-       }` :
-      `You are a professional translator. Provide only the accurate translation of the given text. Respond with just the translated text, no additional formatting.`;
+       Always respond with valid JSON in this exact format:
+       {
+         "translation": "primary translation",
+         "alternatives": ["alternative1", "alternative2", "alternative3"],
+         "context": "cultural or linguistic context if relevant",
+         "grammar_notes": "brief grammar explanation if helpful"
+       }
+       
+       Rules:
+       - "translation" should be the most common/primary translation
+       - "alternatives" should include 2-4 different meanings/contexts if they exist, or empty array if none
+       - "context" should explain when/how to use different meanings, or null if not needed
+       - "grammar_notes" should be brief and helpful, or null if not needed
+       - Always respond with valid JSON, no additional text` :
+      `You are a professional translator. Provide only the accurate translation of the given text. If the word has multiple common meanings, separate them with " / " (e.g., "right: correcto / derecho"). Respond with just the translated text, no additional formatting.`;
 
     const userPrompt = sourceLang === "auto" ? 
       `Translate this text to ${targetLang}: "${text}"` :
@@ -74,8 +78,27 @@ serve(async (req) => {
     let result;
     if (includeContext) {
       try {
-        result = JSON.parse(translationResult);
-      } catch {
+        // Clean the response to ensure it's valid JSON
+        let cleanedResult = translationResult.trim();
+        
+        // Remove any markdown code block formatting if present
+        if (cleanedResult.startsWith('```json')) {
+          cleanedResult = cleanedResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanedResult.startsWith('```')) {
+          cleanedResult = cleanedResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        result = JSON.parse(cleanedResult);
+        
+        // Ensure alternatives is an array and filter out empty values
+        if (result.alternatives && Array.isArray(result.alternatives)) {
+          result.alternatives = result.alternatives.filter((alt: string) => alt && alt.trim().length > 0);
+        } else {
+          result.alternatives = [];
+        }
+        
+      } catch (parseError) {
+        console.warn('JSON parsing failed, treating as simple translation:', parseError);
         // If JSON parsing fails, treat as simple translation
         result = {
           translation: translationResult,

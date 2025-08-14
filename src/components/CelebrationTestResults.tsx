@@ -110,8 +110,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 Back to Portal
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">Reading Test Results</h1>
-                <p className="text-sm text-slate-600">IELTS Academic Reading</p>
+                <h1 className="text-2xl font-bold text-slate-800 font-bricolage">Reading Test Results</h1>
+                <p className="text-sm text-slate-600 font-inter">IELTS Academic Reading</p>
               </div>
             </div>
             <Button onClick={onRetake} variant="outline" className="border-slate-300 hover:bg-slate-50">
@@ -129,8 +129,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
             <div className="flex items-center gap-6">
               <PenguinClapAnimation size="sm" className="flex-shrink-0" />
               <div>
-                <h2 className="text-2xl font-bold text-slate-800">Test Completed Successfully! 🎉</h2>
-                <p className="text-slate-600">Your IELTS Academic Reading test has been evaluated.</p>
+                <h2 className="text-2xl font-bold text-slate-800 font-bricolage">Test Completed Successfully! 🎉</h2>
+                <p className="text-slate-600 font-inter">Your IELTS Academic Reading test has been evaluated.</p>
               </div>
             </div>
           </CardContent>
@@ -143,27 +143,27 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
               <div className="p-3 rounded-full bg-slate-800">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
-              <CardTitle className="text-2xl font-bold text-slate-800">Your IELTS Reading Band Score</CardTitle>
+              <CardTitle className="text-2xl font-bold text-slate-800 font-bricolage">Your IELTS Reading Band Score</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="text-center py-8">
-            <div className="text-7xl font-bold mb-6 text-slate-800 opacity-100">
+            <div className="text-7xl font-bold mb-6 text-slate-800 font-bricolage">
               {estimatedBandScore}
             </div>
-            <div className="flex items-center justify-center gap-8 mb-6 opacity-100">
+            <div className="flex items-center justify-center gap-8 mb-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-slate-800 opacity-100">{score}/{totalQuestions}</div>
-                <p className="text-sm text-slate-600 font-medium opacity-100">Questions Correct</p>
+                <div className="text-3xl font-bold text-slate-800 font-bricolage">{score}/{totalQuestions}</div>
+                <p className="text-sm text-slate-600 font-medium font-inter">Questions Correct</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-slate-800 opacity-100">{percentage}%</div>
-                <p className="text-sm text-slate-600 font-medium opacity-100">Accuracy</p>
+                <div className="text-3xl font-bold text-slate-800 font-bricolage">{percentage}%</div>
+                <p className="text-sm text-slate-600 font-medium font-inter">Accuracy</p>
               </div>
             </div>
-            <div className="inline-flex items-center px-6 py-3 rounded-full bg-slate-800 text-white font-semibold text-lg shadow-sm opacity-100">
+            <div className="inline-flex items-center px-6 py-3 rounded-full bg-slate-800 text-white font-semibold text-lg shadow-sm font-inter">
               {performance.level} Performance
             </div>
-            <p className="text-sm text-slate-600 mt-4 opacity-100">
+            <p className="text-sm text-slate-600 mt-4 font-inter">
               Based on official IELTS assessment criteria
             </p>
           </CardContent>
@@ -178,11 +178,11 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 const partNumber = parseInt(partNum);
                 const partQuestions = testParts[partNumber]?.questions || [];
                 const partCorrect = partQuestions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length;
-                return <Button key={partNumber} variant={currentPart === partNumber ? "default" : "ghost"} size="sm" onClick={() => setCurrentPart(partNumber)} className={`min-w-[120px] rounded-lg font-semibold ${currentPart === partNumber ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'hover:bg-slate-100 text-slate-700'}`}>
+                return <Button key={partNumber} variant={currentPart === partNumber ? "default" : "ghost"} size="sm" onClick={() => setCurrentPart(partNumber)} className={`min-w-[120px] rounded-lg font-semibold font-inter ${currentPart === partNumber ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'hover:bg-slate-100 text-slate-700'}`}>
                       Part {partNumber}
-                      <Badge variant="secondary" className="ml-2 text-xs rounded-full bg-white/20 text-current">
+                      <span className="ml-2 text-xs font-medium">
                         {partCorrect}/{partQuestions.length}
-                      </Badge>
+                      </span>
                     </Button>;
               })}
               </div>
@@ -194,7 +194,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <Card className="shadow-sm border border-slate-200 bg-white">
             <CardHeader className="text-center pb-3">
-              <CardTitle className="flex items-center justify-center gap-2 text-slate-800">
+              <CardTitle className="flex items-center justify-center gap-2 text-slate-800 font-bricolage">
                 
                 Summary
               </CardTitle>
@@ -203,46 +203,46 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
               <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                  <span className="font-medium text-slate-700">Correct</span>
+                  <span className="font-medium text-slate-700 font-inter">Correct</span>
                 </div>
-                <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                <span className="text-lg font-bold text-slate-800 font-bricolage">
                   {correctCount}
-                </Badge>
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                  <span className="font-medium text-slate-700">Incorrect</span>
+                  <span className="font-medium text-slate-700 font-inter">Incorrect</span>
                 </div>
-                <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                <span className="text-lg font-bold text-slate-800 font-bricolage">
                   {incorrectCount}
-                </Badge>
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-slate-400"></div>
-                  <span className="font-medium text-slate-700">Skipped</span>
+                  <span className="font-medium text-slate-700 font-inter">Skipped</span>
                 </div>
-                <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                <span className="text-lg font-bold text-slate-800 font-bricolage">
                   {skippedCount}
-                </Badge>
+                </span>
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-sm border border-slate-200 bg-white">
             <CardHeader className="text-center pb-3">
-              <CardTitle className="flex items-center justify-center gap-2 text-slate-800">
+              <CardTitle className="flex items-center justify-center gap-2 text-slate-800 font-bricolage">
                 
                 Question Types
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {Object.entries(questionTypes).map(([type, count]) => <div key={type} className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
-                  <span className="text-sm capitalize font-medium text-slate-700">{type.replace('_', ' ')}</span>
-                  <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                  <span className="text-sm capitalize font-medium text-slate-700 font-inter">{type.replace('_', ' ')}</span>
+                  <span className="text-lg font-bold text-slate-800 font-bricolage">
                     {count}
-                  </Badge>
+                  </span>
                 </div>)}
             </CardContent>
           </Card>

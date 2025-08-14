@@ -87,6 +87,20 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   // Get all questions from all test parts to ensure we count all 40 questions
   const allQuestions = Object.values(testParts).flatMap(part => part.questions);
   
+  // Debug logging to understand the data structure
+  console.log('=== QUESTION COUNT DEBUG ===');
+  console.log('testParts:', testParts);
+  console.log('allQuestions length:', allQuestions.length);
+  console.log('questions prop length:', questions.length);
+  Object.keys(testParts).forEach(partNum => {
+    const partNumber = parseInt(partNum);
+    const partQuestions = testParts[partNumber]?.questions || [];
+    console.log(`Part ${partNumber} questions:`, partQuestions.length);
+    console.log(`Part ${partNumber} questions data:`, partQuestions.map(q => ({ id: q.id, number: q.question_number })));
+  });
+  console.log('answers keys:', Object.keys(answers));
+  console.log('=== END DEBUG ===');
+  
   const correctCount = allQuestions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length;
   const incorrectCount = allQuestions.filter(q => {
     const userAnswer = answers[q.id];

@@ -128,8 +128,8 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     }
   }, [selectedText]);
 
-  const saveToVocabulary = async (retryCount = 0) => {
-    console.log(`🔄 Attempting to save word: "${selectedText}" (attempt ${retryCount + 1})`);
+  const saveToVocabulary = async () => {
+    console.log('🔄 Save button clicked! Starting save process...');
     
     try {
       // Import supabase client
@@ -139,7 +139,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.log('❌ No authenticated user found');
+        console.log('❌ No user found');
         toast({
           title: "Please Sign In",
           description: "You need to be signed in to save vocabulary.",
@@ -147,7 +147,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         return;
       }
 
-      console.log('✅ User authenticated:', user.id.substring(0, 8) + '...');
+      console.log('✅ User found:', user.id.substring(0, 8) + '...');
 
       // Get user's native language for translation
       const { data: profile, error: profileError } = await supabase
@@ -156,12 +156,10 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         .eq('id', user.id)
         .single();
 
-      if (profileError) {
-        console.log('⚠️  Profile error:', profileError);
-      }
+      console.log('📋 Profile data:', profile, 'Error:', profileError);
 
-      const targetLanguage = profile?.native_language || 'Spanish';
-      console.log('🌐 Target language:', targetLanguage);
+      const targetLanguage = profile?.native_language || 'Vietnamese';
+      console.log('🌐 Using target language:', targetLanguage);
 
       const requestPayload = {
         action: 'saveWord',
@@ -171,58 +169,43 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         nativeLanguage: targetLanguage
       };
 
-      console.log('📤 Sending request to smart-vocabulary function:', requestPayload);
+      console.log('📤 Sending request to smart-vocabulary:', requestPayload);
 
       const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
         body: requestPayload
       });
 
-      console.log('📥 Response from smart-vocabulary function:', { data, error });
+      console.log('📥 Smart-vocabulary response:', { data, error });
 
       if (error) {
-        console.error('❌ Vocabulary save error:', error);
+        console.error('❌ API Error:', error);
         throw error;
       }
 
       if (data?.success) {
-        console.log('✅ Word saved successfully');
+        console.log('✅ Word saved successfully!');
         
-        // Success - update UI state
+        // Update UI state
         setIsWordSaved(true);
 
-        if (data.alreadySaved) {
-          toast({
-            title: "Already Saved",
-            description: `"${selectedText}" is already in your vocabulary.`,
-          });
-        } else {
-          toast({
-            title: "Word Saved!",
-            description: `"${selectedText}" added to your vocabulary collection.`,
-          });
-        }
+        toast({
+          title: "Success!",
+          description: `"${selectedText}" has been saved to your vocabulary.`,
+        });
 
-        // Dispatch event ONLY after successful save
+        // Dispatch event to update vocabulary dashboard
         console.log('📡 Dispatching vocabulary-updated event');
         window.dispatchEvent(new CustomEvent('vocabulary-updated', {
           detail: { word: selectedText, translation: data.translation }
         }));
       } else {
-        throw new Error(data?.error || 'Failed to save word');
+        throw new Error(data?.error || 'Unknown error occurred');
       }
     } catch (error) {
-      console.error('❌ Error saving word:', error);
-      
-      // Retry logic - retry up to 2 times for network/server errors
-      if (retryCount < 2 && (error as any)?.status >= 500) {
-        console.log(`🔄 Retrying save operation (attempt ${retryCount + 2})`);
-        setTimeout(() => saveToVocabulary(retryCount + 1), 1000 * (retryCount + 1));
-        return;
-      }
-
+      console.error('❌ Save failed:', error);
       toast({
         title: "Save Failed",
-        description: `Could not save "${selectedText}" to vocabulary. ${error instanceof Error ? error.message : 'Please try again.'}`,
+        description: `Could not save "${selectedText}". Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -338,9 +321,9 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
 
             {!isWordSaved && translationResult && !isLoading && (
               <Button 
-                onClick={() => saveToVocabulary()}
+                onClick={saveToVocabulary}
                 size="sm" 
-                className="w-full btn-primary relative"
+                className="w-full bg-green-600 hover:bg-green-700 text-white border-0 font-medium"
               >
                 <Plus className="w-3 h-3 mr-2" />
                 Save to Vocabulary
@@ -348,12 +331,12 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
             )}
 
             {isWordSaved && (
-              <div className="flex items-center justify-center gap-2 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                <div className="flex items-center gap-2 text-green-600">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+              <div className="flex items-center justify-center gap-2 p-3 bg-green-100 rounded-lg border border-green-300">
+                <div className="flex items-center gap-2 text-green-700">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                     <BookOpen className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-xs font-medium">Added to vocabulary!</span>
+                  <span className="text-sm font-medium">Saved to vocabulary!</span>
                 </div>
               </div>
             )}

@@ -184,7 +184,9 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 {Object.keys(testParts).map((partNum) => {
                   const partNumber = parseInt(partNum);
                   const partQuestions = testParts[partNumber]?.questions || [];
-                  const partAnswered = partQuestions.filter(q => answers[q.id]).length;
+                  const partCorrect = partQuestions.filter(q => 
+                    answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()
+                  ).length;
                   
                   return (
                     <Button
@@ -200,7 +202,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                     >
                       Part {partNumber}
                       <Badge variant="secondary" className="ml-2 text-xs rounded-full bg-white/20 text-current">
-                        {partAnswered}/{partQuestions.length}
+                        {partCorrect}/{partQuestions.length}
                       </Badge>
                     </Button>
                   );

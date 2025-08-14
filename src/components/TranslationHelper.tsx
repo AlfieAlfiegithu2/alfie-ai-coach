@@ -138,11 +138,10 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
 
   const saveToVocabulary = async () => {
     try {
-      // Import supabase client and auth hook
+      // Import supabase client
       const { supabase } = await import('@/integrations/supabase/client');
-      const { useAuth } = await import('@/hooks/useAuth');
       
-      // Get current user (this is a workaround since we can't use hooks in event handlers)
+      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -184,20 +183,13 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Vocabulary save error:', error);
+        throw error;
+      }
 
-      // Update local state to reflect the saved word
-      const newWord: SavedWord = {
-        id: data.wordId || Date.now().toString(),
-        word: selectedText.trim(),
-        translation: translation,
-        context: window.location.pathname,
-        savedAt: new Date()
-      };
-
-      const updated = [newWord, ...savedWords.slice(0, 99)];
-      setSavedWords(updated);
-      setIsWordSaved(true); // Update the saved status
+      // Success - update UI state
+      setIsWordSaved(true);
 
       toast({
         title: "Word Saved",

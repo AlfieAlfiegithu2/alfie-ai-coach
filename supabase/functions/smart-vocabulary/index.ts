@@ -26,7 +26,8 @@ serve(async (req) => {
     } else if (action === 'getUserVocabulary') {
       return await getUserVocabulary(supabase, userId);
     } else if (action === 'removeWord') {
-      return await removeWordFromVocabulary(supabase, word, userId);
+      const { wordId } = await req.json();
+      return await removeWordFromVocabulary(supabase, wordId, userId);
     }
 
     throw new Error('Invalid action');

@@ -51,6 +51,21 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     }
   });
 
+  const [nativeLanguage, setNativeLanguage] = useState('Spanish');
+
+  const languages = [
+    { value: 'Spanish', label: 'Spanish (Español)' },
+    { value: 'French', label: 'French (Français)' },
+    { value: 'German', label: 'German (Deutsch)' },
+    { value: 'Italian', label: 'Italian (Italiano)' },
+    { value: 'Portuguese', label: 'Portuguese (Português)' },
+    { value: 'Chinese', label: 'Chinese (中文)' },
+    { value: 'Japanese', label: 'Japanese (日本語)' },
+    { value: 'Korean', label: 'Korean (한국어)' },
+    { value: 'Arabic', label: 'Arabic (العربية)' },
+    { value: 'Hindi', label: 'Hindi (हिन्दी)' }
+  ];
+
   const testTypes = [
     { value: 'IELTS', label: 'IELTS' },
     { value: 'PTE', label: 'PTE Academic' },
@@ -80,6 +95,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     if (!user) return;
 
     try {
+      // Load preferences
       const { data, error } = await supabase
         .from('user_preferences')
         .select('*')
@@ -89,6 +105,17 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
       if (error) {
         console.error('Error loading preferences:', error);
         return;
+      }
+
+      // Load profile for native language
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('native_language')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.native_language) {
+        setNativeLanguage(profile.native_language);
       }
 
       if (data) {
@@ -118,7 +145,8 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Save preferences with proper upsert
+      const { error: preferencesError } = await supabase
         .from('user_preferences')
         .upsert({
           user_id: user.id,
@@ -127,9 +155,19 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
           preferred_name: preferences.preferred_name,
           target_scores: preferences.target_scores as any
+        }, {
+          onConflict: 'user_id'
         });
 
-      if (error) throw error;
+      if (preferencesError) throw preferencesError;
+
+      // Update native language in profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ native_language: nativeLanguage })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
 
       toast.success('Settings saved successfully!');
       setOpen(false);
@@ -168,6 +206,25 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               placeholder="Enter your preferred name"
               className="bg-white/50 border-white/30"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="native_language" className="text-slate-700">Translation Language</Label>
+            <Select 
+              value={nativeLanguage} 
+              onValueChange={setNativeLanguage}
+            >
+              <SelectTrigger className="bg-white/50 border-white/30">
+                <SelectValue placeholder="Select your language" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
+                {languages.map(lang => (
+                  <SelectItem key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

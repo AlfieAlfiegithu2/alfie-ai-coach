@@ -200,13 +200,10 @@ const Dashboard = () => {
             
             
           </div>
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2">
             <a href="#" className="text-slate-800 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>Dashboard</a>
-            <button onClick={() => navigate('/vocabulary')} className="text-slate-600 hover:text-blue-600 transition" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>My Vocab</button>
             <button onClick={() => navigate('/')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
             fontFamily: 'Inter, sans-serif'
           }}>

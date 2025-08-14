@@ -12,6 +12,7 @@ import VideoBackground from "@/components/animations/VideoBackground";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { TypewriterText } from "@/components/TypewriterText";
 import LiveTime from "@/components/LiveTime";
+
 const HeroIndex = () => {
   const navigate = useNavigate();
   const { toast } = useToast();

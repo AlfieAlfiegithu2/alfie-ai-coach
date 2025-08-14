@@ -53,6 +53,17 @@ const VocabularyPage = () => {
       loadUserProfile();
       loadSavedWords();
     }
+
+    // Listen for vocabulary updates from the translation helper
+    const handleVocabularyUpdate = () => {
+      loadSavedWords();
+    };
+
+    window.addEventListener('vocabulary-updated', handleVocabularyUpdate);
+
+    return () => {
+      window.removeEventListener('vocabulary-updated', handleVocabularyUpdate);
+    };
   }, [user]);
 
   useEffect(() => {

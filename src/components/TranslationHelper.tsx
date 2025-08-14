@@ -191,12 +191,51 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     }
   };
 
+  // Calculate dynamic positioning to keep popup on screen
+  const getPopupPosition = () => {
+    const popupWidth = 400; // max-w-sm is about 400px
+    const popupHeight = 250; // estimated popup height
+    const margin = 20; // margin from screen edges
+
+    let left = position.x;
+    let top = position.y;
+
+    // Check right edge
+    if (left + popupWidth > window.innerWidth - margin) {
+      left = window.innerWidth - popupWidth - margin;
+    }
+
+    // Check left edge
+    if (left < margin) {
+      left = margin;
+    }
+
+    // Check bottom edge - if popup would go off-screen, position above the selection
+    if (top + popupHeight > window.innerHeight - margin) {
+      top = position.y - popupHeight - 20; // Position above with some spacing
+    }
+
+    // Check top edge - if still off-screen, position below
+    if (top < margin) {
+      top = position.y + 20; // Position below the selection
+    }
+
+    // Final check - if still off-screen, center it
+    if (top + popupHeight > window.innerHeight - margin) {
+      top = Math.max(margin, (window.innerHeight - popupHeight) / 2);
+    }
+
+    return { left, top };
+  };
+
+  const dynamicPosition = getPopupPosition();
+
   return (
     <div 
       className="fixed z-50 max-w-sm"
       style={{
-        left: Math.min(position.x, window.innerWidth - 400),
-        top: Math.min(position.y, window.innerHeight - 200),
+        left: dynamicPosition.left,
+        top: dynamicPosition.top,
       }}
     >
       <Card className="glass-effect shadow-lg border-border/20">

@@ -62,8 +62,8 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
 
         const text = selection.toString().trim();
         
-        // Only show for meaningful text selections (not too short, not too long)
-        if (text.length >= 2 && text.length <= 100 && !text.includes('\n')) {
+        // Show for meaningful text selections - allow longer text for sentences
+        if (text.length >= 2 && text.length <= 500 && !text.includes('\n')) {
           // Check if the selected text is clickable or part of UI elements
           const range = selection.getRangeAt(0);
           const container = range.commonAncestorContainer;

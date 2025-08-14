@@ -3,9 +3,9 @@ import { getBandScore } from '@/lib/ielts-scoring';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trophy, Target, RotateCcw, Star } from "lucide-react";
+import { ArrowLeft, Trophy, Target, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
+import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 
 interface CelebrationTestResultsProps {
   score: number;
@@ -59,10 +59,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   const estimatedBandScore = getBandScore(score, 'academic-reading');
   
   const getPerformanceLevel = () => {
-    if (percentage >= 85) return { level: "Excellent", color: "text-green-600" };
-    if (percentage >= 70) return { level: "Good", color: "text-blue-600" };
-    if (percentage >= 50) return { level: "Average", color: "text-yellow-600" };
-    return { level: "Needs Improvement", color: "text-red-600" };
+    if (percentage >= 85) return { level: "Excellent", color: "text-primary" };
+    if (percentage >= 70) return { level: "Good", color: "text-primary" };
+    if (percentage >= 50) return { level: "Average", color: "text-primary" };
+    return { level: "Needs Improvement", color: "text-muted-foreground" };
   };
 
   const performance = getPerformanceLevel();
@@ -101,7 +101,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
   return (
     <div className="min-h-screen bg-surface-2 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 via-brand-purple/5 to-brand-green/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/10 pointer-events-none" />
       
       {/* Header */}
       <div className="bg-surface-1 border-b border-border sticky top-0 z-10">
@@ -131,14 +131,12 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
       <div className="container mx-auto px-6 space-section">
         {/* Success Message */}
-        <Card className="mb-8 card-modern border-2 border-brand-green/20 bg-gradient-to-br from-brand-green/5 to-brand-green/10">
+        <Card className="mb-8 card-modern border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-2xl bg-brand-green/10">
-                <Trophy className="w-8 h-8 text-brand-green" />
-              </div>
+            <div className="flex items-center gap-6">
+              <PenguinClapAnimation size="sm" className="flex-shrink-0" />
               <div>
-                <h2 className="text-heading-3 text-brand-green">Test Completed Successfully!</h2>
+                <h2 className="text-heading-3 text-primary">Test Completed Successfully!</h2>
                 <p className="text-body">Your IELTS Academic Reading test has been evaluated.</p>
               </div>
             </div>
@@ -147,16 +145,14 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
         {/* Overall Score */}
         <Card className="card-elevated mb-6 overflow-hidden">
-          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 py-3">
+          <CardHeader className="text-center bg-gradient-to-r from-primary/10 to-primary/20 py-3">
             <div className="flex items-center justify-center gap-2">
-              <div className="p-2 rounded-xl bg-brand-blue/10">
-                <Trophy className="w-6 h-6 text-brand-blue" />
-              </div>
+              <Trophy className="w-6 h-6 text-primary" />
               <CardTitle className="text-heading-3">Your IELTS Reading Band Score</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="text-center py-4">
-            <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+            <div className="text-6xl font-bold mb-4 text-primary">
               {estimatedBandScore}
             </div>
             <div className="flex items-center justify-center gap-6 mb-4">
@@ -169,7 +165,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 <p className="text-caption">Accuracy</p>
               </div>
             </div>
-            <Badge variant="outline" className={`${performance.color === "text-green-600" ? "text-brand-green bg-brand-green/10 border-brand-green/30" : performance.color === "text-blue-600" ? "text-brand-blue bg-brand-blue/10 border-brand-blue/30" : performance.color === "text-yellow-600" ? "text-brand-orange bg-brand-orange/10 border-brand-orange/30" : "text-destructive bg-destructive/10 border-destructive/30"} text-lg px-4 py-2 rounded-2xl mb-2`}>
+            <Badge variant="outline" className="text-primary bg-primary/10 border-primary/30 text-lg px-4 py-2 rounded-2xl mb-2">
               {performance.level} Performance
             </Badge>
             <p className="text-caption">
@@ -210,52 +206,48 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
         {/* Performance Summary */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="card-modern border-2 border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-brand-blue/10">
+          <Card className="card-modern border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2 text-brand-blue">
-                <div className="p-2 rounded-xl bg-brand-blue/10">
-                  <Target className="w-5 h-5" />
-                </div>
+              <CardTitle className="flex items-center justify-center gap-2 text-primary">
+                <Target className="w-5 h-5" />
                 Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-brand-green"></div>
+                  <div className="w-3 h-3 rounded-full bg-primary"></div>
                   <span className="text-text-primary">Correct</span>
                 </div>
-                <Badge variant="outline" className="text-brand-green border-brand-green/30 rounded-full">
+                <Badge variant="outline" className="text-primary border-primary/30 rounded-full">
                   {correctCount}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                  <div className="w-3 h-3 rounded-full bg-muted-foreground"></div>
                   <span className="text-text-primary">Incorrect</span>
                 </div>
-                <Badge variant="outline" className="text-destructive border-destructive/30 rounded-full">
+                <Badge variant="outline" className="text-muted-foreground border-border rounded-full">
                   {incorrectCount}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-text-tertiary"></div>
+                  <div className="w-3 h-3 rounded-full bg-muted-foreground"></div>
                   <span className="text-text-primary">Skipped</span>
                 </div>
-                <Badge variant="outline" className="text-text-tertiary border-border rounded-full">
+                <Badge variant="outline" className="text-muted-foreground border-border rounded-full">
                   {skippedCount}
                 </Badge>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="card-modern border-2 border-brand-purple/20 bg-gradient-to-br from-brand-purple/5 to-brand-purple/10">
+          <Card className="card-modern border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2 text-brand-purple">
-                <div className="p-2 rounded-xl bg-brand-purple/10">
-                  <Star className="w-5 h-5" />
-                </div>
+              <CardTitle className="flex items-center justify-center gap-2 text-primary">
+                <Target className="w-5 h-5" />
                 Question Types
               </CardTitle>
             </CardHeader>
@@ -263,7 +255,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
               {Object.entries(questionTypes).map(([type, count]) => (
                 <div key={type} className="flex justify-between items-center">
                   <span className="text-sm capitalize text-text-primary">{type.replace('_', ' ')}</span>
-                  <Badge variant="outline" className="text-brand-purple border-brand-purple/30 rounded-full">
+                  <Badge variant="outline" className="text-primary border-primary/30 rounded-full">
                     {count}
                   </Badge>
                 </div>
@@ -272,76 +264,90 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           </Card>
         </div>
 
-        {/* Main Content - Symmetrical Layout */}
+        {/* Main Content - Passage Focused Layout */}
         <div className="flex gap-6 h-[calc(100vh-400px)]">
-          {/* Left Column - Answer Review */}
-          <div className="w-1/2 flex flex-col">
+          {/* Left Column - Passage (Main Focus) */}
+          <div className="w-3/5">
+            <Card className="h-full card-elevated">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20">
+                <CardTitle className="flex items-center gap-2 text-heading-4">
+                  <Target className="w-5 h-5 text-primary" />
+                  {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[calc(100%-80px)] overflow-y-auto p-6">
+                <div 
+                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed text-text-primary"
+                  id={`passage-content-${currentPart}`}
+                  style={{ fontSize: '15px', lineHeight: '1.7' }}
+                >
+                  {testParts[currentPart]?.passage?.content || 'Loading passage...'}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Answer Review */}
+          <div className="w-2/5 flex flex-col">
             <Card className="flex-1 card-elevated">
-              <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20">
                 <CardTitle className="text-heading-4 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-brand-blue" />
+                  <Target className="w-5 h-5 text-primary" />
                   Answer Review - Part {currentPart}
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-4">
+              <CardContent className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-3">
                   {(testParts[currentPart]?.questions || []).map((question) => {
                     const userAnswer = answers[question.id] || 'Not answered';
                     const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
                     const isSkipped = !answers[question.id];
                     
                     return (
-                      <div key={question.id} className={`p-4 rounded-2xl border-2 ${
+                      <div key={question.id} className={`p-3 rounded-xl border ${
                         isCorrect 
-                          ? 'border-brand-green/20 bg-brand-green/5' 
-                          : isSkipped 
-                          ? 'border-border bg-surface-3'
-                          : 'border-destructive/20 bg-destructive/5'
+                          ? 'border-primary/20 bg-primary/5' 
+                          : 'border-border bg-surface-3'
                       }`}>
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-2">
                           <Badge 
                             variant="outline"
-                            className={`mt-1 min-w-[24px] justify-center text-xs rounded-full ${
-                              isCorrect ? 'text-brand-green border-brand-green/30' :
-                              isSkipped ? 'text-text-tertiary border-border' : 
-                              'text-destructive border-destructive/30'
+                            className={`mt-1 min-w-[20px] justify-center text-xs rounded-full ${
+                              isCorrect ? 'text-primary border-primary/30' : 'text-muted-foreground border-border'
                             }`}
                           >
                             {question.question_number}
                           </Badge>
                           <div className="flex-1 space-y-2">
-                            <p className="font-medium leading-relaxed text-text-primary">
+                            <p className="text-sm leading-relaxed text-text-primary">
                               {question.question_text}
                             </p>
                             
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-caption font-medium">Your answer:</span>
+                                <span className="text-xs font-medium text-muted-foreground">Your:</span>
                                 <Badge 
                                   variant="outline" 
                                   className={`text-xs rounded-full ${
-                                    isCorrect ? 'text-brand-green border-brand-green/30' :
-                                    isSkipped ? 'text-text-tertiary border-border' : 
-                                    'text-destructive border-destructive/30'
+                                    isCorrect ? 'text-primary border-primary/30' : 'text-muted-foreground border-border'
                                   }`}
                                 >
                                   {userAnswer}
                                 </Badge>
                               </div>
                               
-                              {!isCorrect && !isSkipped && (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-caption font-medium">Correct answer:</span>
-                                  <Badge variant="outline" className="text-xs rounded-full text-brand-green border-brand-green/30">
-                                    {question.correct_answer}
-                                  </Badge>
-                                </div>
-                              )}
+                              {/* Always show correct answer */}
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-muted-foreground">Correct:</span>
+                                <Badge variant="outline" className="text-xs rounded-full text-primary border-primary/30">
+                                  {question.correct_answer}
+                                </Badge>
+                              </div>
                               
                               {question.explanation && (
                                 <div 
-                                  className="bg-surface-3 p-3 rounded-xl cursor-pointer hover:bg-surface-3/80 transition-colors border-l-4 border-brand-blue"
+                                  className="bg-surface-2 p-2 rounded-lg cursor-pointer hover:bg-surface-2/80 transition-colors border-l-2 border-primary/50"
                                   onMouseEnter={() => {
                                     setHoveredExplanation(question.id);
                                     // Highlight relevant text in passage
@@ -356,7 +362,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                                       let highlightedContent = passageElement.dataset.original;
                                       keyPhrases.forEach(phrase => {
                                         const regex = new RegExp(`(${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                        highlightedContent = highlightedContent.replace(regex, '<mark class="bg-brand-orange/30 px-1 py-0.5 rounded">$1</mark>');
+                                        highlightedContent = highlightedContent.replace(regex, '<mark class="bg-primary/30 px-1 py-0.5 rounded">$1</mark>');
                                       });
                                       passageElement.innerHTML = highlightedContent;
                                     }
@@ -370,11 +376,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                                     }
                                   }}
                                 >
-                                  <p className="text-caption font-medium mb-1 flex items-center gap-2 text-brand-blue">
-                                    <Star className="w-3 h-3" />
+                                  <p className="text-xs font-medium mb-1 text-primary">
                                     Explanation:
                                   </p>
-                                  <p className="text-caption leading-relaxed text-text-secondary">
+                                  <p className="text-xs leading-relaxed text-text-secondary">
                                     {question.explanation}
                                   </p>
                                 </div>
@@ -385,29 +390,6 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                       </div>
                     );
                   })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Passage (Symmetrical Layout) */}
-          <div className="w-1/2">
-            <Card className="h-full card-elevated">
-              <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-blue/10">
-                <CardTitle className="flex items-center gap-2 text-heading-4">
-                  <div className="p-2 rounded-xl bg-brand-purple/10">
-                    <Target className="w-5 h-5 text-brand-purple" />
-                  </div>
-                  {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-80px)] overflow-y-auto p-6">
-                <div 
-                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed text-text-primary"
-                  id={`passage-content-${currentPart}`}
-                  style={{ fontSize: '14px', lineHeight: '1.6' }}
-                >
-                  {testParts[currentPart]?.passage?.content || 'Loading passage...'}
                 </div>
               </CardContent>
             </Card>

@@ -47,10 +47,12 @@ import AdminIELTSWriting from "./pages/AdminIELTSWriting";
 import AdminIELTSWritingTest from "./pages/AdminIELTSWritingTest";
 import AdminIELTSSpeaking from "./pages/AdminIELTSSpeaking";
 import IELTSWritingTest from "./pages/IELTSWritingTest";
-import IELTSWritingResults from "./pages/IELTSWritingResults";
 import IELTSWritingProResults from "./pages/IELTSWritingProResults";
-import IELTSSpeakingTest from "./pages/IELTSSpeakingTest";
+import IELTSWritingResults from "./pages/IELTSWritingResults";
+import ReadingResults from "./pages/ReadingResults";
+import ListeningResults from "./pages/ListeningResults";
 import IELTSSpeakingResults from "./pages/IELTSSpeakingResults";
+import IELTSSpeakingTest from "./pages/IELTSSpeakingTest";
 import EnhancedReadingTest from "./pages/EnhancedReadingTest";
 import Pricing from "./pages/Pricing";
 import AdminSkillsPractice from "./pages/AdminSkillsPractice";
@@ -188,6 +190,11 @@ const App = () => {
             <Route path="/admin/general/vocabulary" element={<AdminGeneral />} />
             <Route path="/admin/general/pronunciation" element={<AdminGeneral />} />
             {/* Missing portal routes that were causing 404s */}
+            <Route path="/reading-results" element={<ReadingResults />} />
+            <Route path="/listening-results" element={<ListeningResults />} />
+            <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
+            <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
+            <Route path="/ielts-writing-pro-results" element={<IELTSWritingProResults />} />
             <Route path="/ielts-portal" element={<IELTSPortal />} />
             <Route path="/ielts-test-modules/:testId" element={<IELTSTestModules />} />
             <Route path="/pte-portal" element={<PTEPortal />} />

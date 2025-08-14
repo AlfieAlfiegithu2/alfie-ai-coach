@@ -148,8 +148,21 @@ const Dashboard = () => {
     navigate('/ielts-portal');
   };
   const handleViewResults = (skillName: string) => {
-    // Navigate to personal page to view test results for this skill
-    navigate('/personal');
+    // Navigate to skill-specific detailed results page
+    const skillRoutes = {
+      'Reading': '/reading-results',
+      'Writing': '/ielts-writing-results',
+      'Speaking': '/ielts-speaking-results', 
+      'Listening': '/listening-results'
+    };
+    
+    const route = skillRoutes[skillName as keyof typeof skillRoutes];
+    if (route) {
+      navigate(route);
+    } else {
+      // Fallback to personal page
+      navigate('/personal');
+    }
   };
 
   // Convert percentage to IELTS band score

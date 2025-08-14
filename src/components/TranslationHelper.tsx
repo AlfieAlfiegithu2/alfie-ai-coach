@@ -160,18 +160,6 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         .single();
 
       const targetLanguage = profile?.native_language || 'Spanish';
-      const languageCodeMap: Record<string, string> = {
-        'Spanish': 'es',
-        'French': 'fr', 
-        'German': 'de',
-        'Italian': 'it',
-        'Portuguese': 'pt',
-        'Chinese': 'zh',
-        'Japanese': 'ja',
-        'Korean': 'ko',
-        'Arabic': 'ar',
-        'Hindi': 'hi'
-      };
 
       const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
         body: {
@@ -179,7 +167,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
           word: selectedText.trim(),
           context: window.location.pathname,
           userId: user.id,
-          nativeLanguage: languageCodeMap[targetLanguage] || 'es'
+          nativeLanguage: targetLanguage
         }
       });
 

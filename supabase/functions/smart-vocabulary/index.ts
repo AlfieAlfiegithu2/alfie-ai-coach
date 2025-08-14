@@ -163,11 +163,11 @@ async function getTranslationFromAPI(word: string, targetLanguage: string): Prom
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini-2025-04-14',
       messages: [
         {
           role: 'system',
-          content: `You are a professional translator. Translate the given English word to ${targetLanguage}. Return ONLY the translation, no explanations.`
+          content: `You are a professional translator. Translate the given English word to ${targetLanguage} language. Return ONLY the translation, no explanations, no additional text.`
         },
         {
           role: 'user',

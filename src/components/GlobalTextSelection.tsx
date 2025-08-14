@@ -26,19 +26,8 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
           .single();
 
         if (profile?.native_language) {
-          const languageCodeMap: Record<string, string> = {
-            'Spanish': 'es',
-            'French': 'fr', 
-            'German': 'de',
-            'Italian': 'it',
-            'Portuguese': 'pt',
-            'Chinese': 'zh',
-            'Japanese': 'ja',
-            'Korean': 'ko',
-            'Arabic': 'ar',
-            'Hindi': 'hi'
-          };
-          setTargetLanguage(languageCodeMap[profile.native_language] || 'es');
+          // Use full language names for better OpenAI translation quality
+          setTargetLanguage(profile.native_language);
         }
       }
     };

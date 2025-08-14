@@ -169,6 +169,9 @@ export function useAuth(): UseAuthReturn {
         title: "Signed out",
         description: "You have been signed out successfully."
       });
+
+      // Redirect to home page after successful sign out
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
     }

@@ -31,7 +31,11 @@ const Index = () => {
     );
   }
 
-  // Always show hero page first
+  // Show dashboard if user is authenticated, otherwise show hero page
+  if (user) {
+    return <Dashboard />;
+  }
+  
   return <HeroIndex />;
 };
 

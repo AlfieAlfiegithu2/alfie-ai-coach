@@ -12,11 +12,15 @@ import VideoBackground from "@/components/animations/VideoBackground";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { TypewriterText } from "@/components/TypewriterText";
 import LiveTime from "@/components/LiveTime";
-
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    user,
+    loading
+  } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [showWritingFeedback, setShowWritingFeedback] = useState(false);
   const [showSpeakingFeedback, setShowSpeakingFeedback] = useState(false);
@@ -50,7 +54,7 @@ const HeroIndex = () => {
   }, []);
   const handleAuthAction = () => {
     if (loading) return; // Prevent navigation during loading
-    
+
     if (user) {
       navigate('/dashboard');
     } else {
@@ -86,18 +90,11 @@ const HeroIndex = () => {
       <header className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-xs sm:text-sm tracking-tight text-neutral-300">ONLINE/ <LiveTime /></span>
+            
+            
           </div>
           <div className="hidden sm:flex items-center gap-2 text-neutral-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <circle cx="12" cy="9" r="1"></circle>
-              <circle cx="19" cy="9" r="1"></circle>
-              <circle cx="5" cy="9" r="1"></circle>
-              <circle cx="12" cy="15" r="1"></circle>
-              <circle cx="19" cy="15" r="1"></circle>
-              <circle cx="5" cy="15" r="1"></circle>
-            </svg>
+            
           </div>
           <button onClick={() => navigate('/auth')} className="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/5 hover:bg-white/10 ring-1 ring-white/10">
             <span>Get Started</span>

@@ -147,23 +147,23 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
             </div>
           </CardHeader>
           <CardContent className="text-center py-8">
-            <div className="text-7xl font-bold mb-6 text-slate-800">
+            <div className="text-7xl font-bold mb-6 text-slate-800 opacity-100">
               {estimatedBandScore}
             </div>
-            <div className="flex items-center justify-center gap-8 mb-6">
+            <div className="flex items-center justify-center gap-8 mb-6 opacity-100">
               <div className="text-center">
-                <div className="text-3xl font-bold text-slate-800">{score}/{totalQuestions}</div>
-                <p className="text-sm text-slate-600 font-medium">Questions Correct</p>
+                <div className="text-3xl font-bold text-slate-800 opacity-100">{score}/{totalQuestions}</div>
+                <p className="text-sm text-slate-600 font-medium opacity-100">Questions Correct</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-slate-800">{percentage}%</div>
-                <p className="text-sm text-slate-600 font-medium">Accuracy</p>
+                <div className="text-3xl font-bold text-slate-800 opacity-100">{percentage}%</div>
+                <p className="text-sm text-slate-600 font-medium opacity-100">Accuracy</p>
               </div>
             </div>
-            <div className="inline-flex items-center px-6 py-3 rounded-full bg-slate-800 text-white font-semibold text-lg shadow-sm">
+            <div className="inline-flex items-center px-6 py-3 rounded-full bg-slate-800 text-white font-semibold text-lg shadow-sm opacity-100">
               {performance.level} Performance
             </div>
-            <p className="text-sm text-slate-600 mt-4">
+            <p className="text-sm text-slate-600 mt-4 opacity-100">
               Based on official IELTS assessment criteria
             </p>
           </CardContent>

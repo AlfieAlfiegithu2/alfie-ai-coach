@@ -131,6 +131,11 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
   const saveToVocabulary = async () => {
     console.log('🔄 Save button clicked! Starting save process...');
     
+    if (!translationResult) {
+      console.log('❌ No translation result available');
+      return;
+    }
+    
     try {
       // Import supabase client
       const { supabase } = await import('@/integrations/supabase/client');
@@ -158,7 +163,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
 
       console.log('📋 Profile data:', profile, 'Error:', profileError);
 
-      const targetLanguage = profile?.native_language || 'Vietnamese';
+      const targetLanguage = profile?.native_language || 'Korean';
       console.log('🌐 Using target language:', targetLanguage);
 
       const requestPayload = {
@@ -193,11 +198,20 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
           description: `"${selectedText}" has been saved to your vocabulary.`,
         });
 
-        // Dispatch event to update vocabulary dashboard
+        // Force refresh vocabulary page if it's open
         console.log('📡 Dispatching vocabulary-updated event');
         window.dispatchEvent(new CustomEvent('vocabulary-updated', {
-          detail: { word: selectedText, translation: data.translation }
+          detail: { 
+            word: selectedText, 
+            translation: data.translation || translationResult.translation,
+            refresh: true
+          }
         }));
+        
+        // Close the popup after successful save
+        setTimeout(() => {
+          onClose();
+        }, 1000);
       } else {
         throw new Error(data?.error || 'Unknown error occurred');
       }

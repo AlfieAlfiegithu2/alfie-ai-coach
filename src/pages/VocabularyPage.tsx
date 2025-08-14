@@ -112,7 +112,11 @@ const VocabularyPage = () => {
       
       if (data?.vocabulary) {
         console.log('✅ Loaded vocabulary words:', data.vocabulary.length);
-        setSavedWords(data.vocabulary);
+        const formattedWords = data.vocabulary.map((word: any) => ({
+          ...word,
+          savedAt: word.savedAt || word.created_at || new Date().toISOString()
+        }));
+        setSavedWords(formattedWords);
       } else {
         console.log('ℹ️  No vocabulary data found');
         setSavedWords([]);
@@ -120,6 +124,7 @@ const VocabularyPage = () => {
     } catch (error) {
       console.error('❌ Error loading vocabulary:', error);
       toast.error('Failed to load vocabulary');
+      setSavedWords([]); // Set empty array on error
     } finally {
       setLoading(false);
     }

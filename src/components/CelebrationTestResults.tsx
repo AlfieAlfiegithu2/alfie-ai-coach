@@ -264,136 +264,139 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           </Card>
         </div>
 
-        {/* Main Content - Passage Focused Layout */}
-        <div className="flex gap-6 h-[calc(100vh-400px)]">
-          {/* Left Column - Passage (Main Focus) */}
-          <div className="w-3/5">
-            <Card className="h-full card-elevated">
-              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20">
-                <CardTitle className="flex items-center gap-2 text-heading-4">
-                  <Target className="w-5 h-5 text-primary" />
-                  {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-80px)] overflow-y-auto p-6">
+        {/* Main Content - Fixed Height Layout matching test page */}
+        <div className="flex gap-2 h-[calc(100vh-400px)] px-2">
+          {/* Passage - Fixed 45% width (main focus like test page) */}
+          <Card className="flex flex-col w-[45%] h-full">
+            <CardHeader className="flex-shrink-0 pb-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/20">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                <Target className="w-4 h-4 text-primary" />
+                {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
+              </CardTitle>
+              <Badge variant="outline" className="w-fit text-xs h-5">
+                Part {currentPart}/{Object.keys(testParts).length}
+              </Badge>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto min-h-0 p-3">
+              <div className="prose prose-sm max-w-none">
                 <div 
-                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed text-text-primary"
+                  className="whitespace-pre-wrap leading-relaxed select-text text-text-primary"
                   id={`passage-content-${currentPart}`}
-                  style={{ fontSize: '15px', lineHeight: '1.7' }}
+                  style={{ fontSize: '15px', lineHeight: '1.6' }}
                 >
                   {testParts[currentPart]?.passage?.content || 'Loading passage...'}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Right Column - Answer Review */}
-          <div className="w-2/5 flex flex-col">
-            <Card className="flex-1 card-elevated">
-              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20">
-                <CardTitle className="text-heading-4 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
-                  Answer Review - Part {currentPart}
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-3">
-                  {(testParts[currentPart]?.questions || []).map((question) => {
-                    const userAnswer = answers[question.id] || 'Not answered';
-                    const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-                    const isSkipped = !answers[question.id];
-                    
-                    return (
-                      <div key={question.id} className={`p-3 rounded-xl border ${
-                        isCorrect 
-                          ? 'border-primary/20 bg-primary/5' 
-                          : 'border-border bg-surface-3'
-                      }`}>
-                        <div className="flex items-start gap-2">
-                          <Badge 
-                            variant="outline"
-                            className={`mt-1 min-w-[20px] justify-center text-xs rounded-full ${
-                              isCorrect ? 'text-primary border-primary/30' : 'text-muted-foreground border-border'
-                            }`}
-                          >
-                            {question.question_number}
-                          </Badge>
-                          <div className="flex-1 space-y-2">
-                            <p className="text-sm leading-relaxed text-text-primary">
-                              {question.question_text}
-                            </p>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-muted-foreground">Your:</span>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs rounded-full ${
-                                    isCorrect ? 'text-primary border-primary/30' : 'text-muted-foreground border-border'
-                                  }`}
-                                >
-                                  {userAnswer}
-                                </Badge>
-                              </div>
-                              
-                              {/* Always show correct answer */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-muted-foreground">Correct:</span>
-                                <Badge variant="outline" className="text-xs rounded-full text-primary border-primary/30">
-                                  {question.correct_answer}
-                                </Badge>
-                              </div>
-                              
-                              {question.explanation && (
-                                <div 
-                                  className="bg-surface-2 p-2 rounded-lg cursor-pointer hover:bg-surface-2/80 transition-colors border-l-2 border-primary/50"
-                                  onMouseEnter={() => {
-                                    setHoveredExplanation(question.id);
-                                    // Highlight relevant text in passage
-                                    const keyPhrases = highlightTextInPassage(question.explanation);
-                                    const passageElement = document.getElementById(`passage-content-${currentPart}`);
-                                    if (passageElement) {
-                                      // Store original content
-                                      if (!passageElement.dataset.original) {
-                                        passageElement.dataset.original = passageElement.innerHTML;
-                                      }
-                                      
-                                      let highlightedContent = passageElement.dataset.original;
-                                      keyPhrases.forEach(phrase => {
-                                        const regex = new RegExp(`(${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                        highlightedContent = highlightedContent.replace(regex, '<mark class="bg-primary/30 px-1 py-0.5 rounded">$1</mark>');
-                                      });
-                                      passageElement.innerHTML = highlightedContent;
-                                    }
-                                  }}
-                                  onMouseLeave={() => {
-                                    setHoveredExplanation(null);
-                                    // Remove highlights
-                                    const passageElement = document.getElementById(`passage-content-${currentPart}`);
-                                    if (passageElement && passageElement.dataset.original) {
-                                      passageElement.innerHTML = passageElement.dataset.original;
-                                    }
-                                  }}
-                                >
-                                  <p className="text-xs font-medium mb-1 text-primary">
-                                    Explanation:
-                                  </p>
-                                  <p className="text-xs leading-relaxed text-text-secondary">
-                                    {question.explanation}
-                                  </p>
-                                </div>
-                              )}
+          {/* Questions - Fixed 55% width with scrollable content */}
+          <Card className="flex flex-col w-[55%] h-full">
+            <CardHeader className="flex-shrink-0 pb-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/20">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Target className="w-4 h-4 text-primary" />
+                Answer Review - Part {currentPart}
+              </CardTitle>
+              <Badge variant="secondary" className="text-xs h-5">
+                {(testParts[currentPart]?.questions || []).filter(q => answers[q.id]).length}/{(testParts[currentPart]?.questions || []).length} answered
+              </Badge>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto min-h-0 p-3 scroll-smooth">
+              <div className="space-y-3 pb-4">
+                {(testParts[currentPart]?.questions || []).map((question) => {
+                  const userAnswer = answers[question.id] || 'Not answered';
+                  const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+                  const isSkipped = !answers[question.id];
+                  
+                  return (
+                    <div key={question.id} className={`p-3 rounded-xl border ${
+                      isCorrect 
+                        ? 'border-primary/20 bg-primary/5' 
+                        : 'border-border bg-surface-3'
+                    }`}>
+                      <div className="flex items-start gap-2">
+                        <Badge 
+                          variant="outline"
+                          className={`mt-1 min-w-[20px] justify-center text-xs rounded-full ${
+                            isCorrect ? 'text-primary border-primary/30' : 'text-muted-foreground border-border'
+                          }`}
+                        >
+                          {question.question_number}
+                        </Badge>
+                        <div className="flex-1 space-y-2">
+                          <p className="text-sm leading-relaxed text-text-primary">
+                            {question.question_text}
+                          </p>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-muted-foreground">Your:</span>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs rounded-full ${
+                                  isCorrect ? 'text-primary border-primary/30' : 'text-muted-foreground border-border'
+                                }`}
+                              >
+                                {userAnswer}
+                              </Badge>
                             </div>
+                            
+                            {/* Always show correct answer */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-muted-foreground">Correct:</span>
+                              <Badge variant="outline" className="text-xs rounded-full text-primary border-primary/30">
+                                {question.correct_answer}
+                              </Badge>
+                            </div>
+                            
+                            {question.explanation && (
+                              <div 
+                                className="bg-surface-2 p-2 rounded-lg cursor-pointer hover:bg-surface-2/80 transition-colors border-l-2 border-primary/50"
+                                onMouseEnter={() => {
+                                  setHoveredExplanation(question.id);
+                                  // Highlight relevant text in passage
+                                  const keyPhrases = highlightTextInPassage(question.explanation);
+                                  const passageElement = document.getElementById(`passage-content-${currentPart}`);
+                                  if (passageElement) {
+                                    // Store original content
+                                    if (!passageElement.dataset.original) {
+                                      passageElement.dataset.original = passageElement.innerHTML;
+                                    }
+                                    
+                                    let highlightedContent = passageElement.dataset.original;
+                                    keyPhrases.forEach(phrase => {
+                                      const regex = new RegExp(`(${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                                      highlightedContent = highlightedContent.replace(regex, '<mark class="bg-primary/30 px-1 py-0.5 rounded">$1</mark>');
+                                    });
+                                    passageElement.innerHTML = highlightedContent;
+                                  }
+                                }}
+                                onMouseLeave={() => {
+                                  setHoveredExplanation(null);
+                                  // Remove highlights
+                                  const passageElement = document.getElementById(`passage-content-${currentPart}`);
+                                  if (passageElement && passageElement.dataset.original) {
+                                    passageElement.innerHTML = passageElement.dataset.original;
+                                  }
+                                }}
+                              >
+                                <p className="text-xs font-medium mb-1 text-primary">
+                                  Explanation:
+                                </p>
+                                <p className="text-xs leading-relaxed text-text-secondary">
+                                  {question.explanation}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

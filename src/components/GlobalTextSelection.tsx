@@ -159,7 +159,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   return (
     <>
       {children}
-      {showHelper && user && selectedText && (
+      {showHelper && selectedText && (
         <TranslationHelper
           selectedText={selectedText}
           position={position}

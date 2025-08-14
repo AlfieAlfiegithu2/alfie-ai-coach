@@ -100,8 +100,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 pointer-events-none" />
+    <div className="min-h-screen bg-gray-50">
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 pointer-events-none" />
       
       {/* Header */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
@@ -131,30 +131,30 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
       <div className="container mx-auto px-6 space-section">
         {/* Success Message */}
-        <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+        <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
           <CardContent className="pt-6">
             <div className="flex items-center gap-6">
               <PenguinClapAnimation size="sm" className="flex-shrink-0" />
               <div>
-                <h2 className="text-2xl font-bold text-white">Test Completed Successfully! 🎉</h2>
-                <p className="text-blue-100">Your IELTS Academic Reading test has been evaluated.</p>
+                <h2 className="text-2xl font-bold text-slate-800">Test Completed Successfully! 🎉</h2>
+                <p className="text-slate-600">Your IELTS Academic Reading test has been evaluated.</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Overall Score */}
-        <Card className="shadow-xl mb-8 overflow-hidden border-0 bg-white">
-          <CardHeader className="text-center bg-gradient-to-r from-slate-100 to-slate-200 py-6">
+        <Card className="shadow-sm mb-8 overflow-hidden border border-slate-200 bg-white">
+          <CardHeader className="text-center bg-slate-50 py-6">
             <div className="flex items-center justify-center gap-3">
-              <div className="p-3 rounded-full bg-blue-500">
+              <div className="p-3 rounded-full bg-slate-800">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-slate-800">Your IELTS Reading Band Score</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="text-center py-8">
-            <div className="text-7xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <div className="text-7xl font-bold mb-6 text-slate-800">
               {estimatedBandScore}
             </div>
             <div className="flex items-center justify-center gap-8 mb-6">
@@ -167,7 +167,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 <p className="text-sm text-slate-600 font-medium">Accuracy</p>
               </div>
             </div>
-            <div className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-lg shadow-lg">
+            <div className="inline-flex items-center px-6 py-3 rounded-full bg-slate-800 text-white font-semibold text-lg shadow-sm">
               {performance.level} Performance
             </div>
             <p className="text-sm text-slate-600 mt-4">
@@ -177,10 +177,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         </Card>
 
         {/* Part Navigation */}
-        <Card className="mb-6 shadow-lg border-0 bg-white">
+        <Card className="mb-6 shadow-sm border border-slate-200 bg-white">
           <CardContent className="py-6">
             <div className="flex justify-center">
-              <div className="flex bg-slate-100 rounded-xl p-2 gap-2">
+              <div className="flex bg-slate-50 rounded-xl p-2 gap-2">
                 {Object.keys(testParts).map((partNum) => {
                   const partNumber = parseInt(partNum);
                   const partQuestions = testParts[partNumber]?.questions || [];
@@ -194,8 +194,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                       onClick={() => setCurrentPart(partNumber)}
                       className={`min-w-[120px] rounded-lg font-semibold ${
                         currentPart === partNumber 
-                          ? 'bg-blue-500 hover:bg-blue-600 text-white' 
-                          : 'hover:bg-slate-200 text-slate-700'
+                          ? 'bg-slate-800 hover:bg-slate-700 text-white' 
+                          : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
                       Part {partNumber}
@@ -212,60 +212,56 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
         {/* Performance Summary */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <Card className="shadow-sm border border-slate-200 bg-white">
             <CardHeader className="text-center pb-3">
               <CardTitle className="flex items-center justify-center gap-2 text-slate-800">
-                <div className="p-2 rounded-lg bg-blue-500">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
+                <Target className="w-5 h-5 text-slate-600" />
                 Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-green-500"></div>
                   <span className="font-medium text-slate-700">Correct</span>
                 </div>
-                <Badge className="bg-green-500 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
                   {correctCount}
                 </Badge>
               </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-red-500"></div>
                   <span className="font-medium text-slate-700">Incorrect</span>
                 </div>
-                <Badge className="bg-red-500 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
                   {incorrectCount}
                 </Badge>
               </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-slate-400"></div>
                   <span className="font-medium text-slate-700">Skipped</span>
                 </div>
-                <Badge className="bg-slate-400 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
                   {skippedCount}
                 </Badge>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-indigo-50 to-purple-50">
+          <Card className="shadow-sm border border-slate-200 bg-white">
             <CardHeader className="text-center pb-3">
               <CardTitle className="flex items-center justify-center gap-2 text-slate-800">
-                <div className="p-2 rounded-lg bg-indigo-500">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
+                <Target className="w-5 h-5 text-slate-600" />
                 Question Types
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {Object.entries(questionTypes).map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center p-3 rounded-lg bg-white/70">
+                <div key={type} className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border">
                   <span className="text-sm capitalize font-medium text-slate-700">{type.replace('_', ' ')}</span>
-                  <Badge className="bg-indigo-500 text-white border-0 px-3 py-1 rounded-full font-semibold">
+                  <Badge className="bg-slate-800 text-white border-0 px-3 py-1 rounded-full font-semibold">
                     {count}
                   </Badge>
                 </div>
@@ -275,14 +271,12 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         </div>
 
         {/* Main Content - Taller and Better Layout */}
-        <div className="flex gap-6 h-[calc(100vh-280px)]">
+        <div className="flex gap-6 h-[calc(100vh-200px)]">
           {/* Passage - Wider and Taller */}
-          <Card className="flex flex-col w-[50%] h-full shadow-xl border-0 bg-white">
-            <CardHeader className="flex-shrink-0 pb-3 px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200">
+          <Card className="flex flex-col w-[50%] h-full shadow-sm border border-slate-200 bg-white">
+            <CardHeader className="flex-shrink-0 pb-3 px-4 py-3 bg-slate-50 border-b">
               <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-800">
-                <div className="p-2 rounded-lg bg-blue-500">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
+                <Target className="w-5 h-5 text-slate-600" />
                 {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
               </CardTitle>
               <Badge variant="outline" className="w-fit text-xs border-slate-300 text-slate-600">
@@ -303,15 +297,13 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
           </Card>
 
           {/* Answer Review - Cleaner Design */}
-          <Card className="flex flex-col w-[50%] h-full shadow-xl border-0 bg-white">
-            <CardHeader className="flex-shrink-0 pb-3 px-4 py-3 bg-gradient-to-r from-indigo-100 to-purple-100">
+          <Card className="flex flex-col w-[50%] h-full shadow-sm border border-slate-200 bg-white">
+            <CardHeader className="flex-shrink-0 pb-3 px-4 py-3 bg-slate-50 border-b">
               <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                <div className="p-2 rounded-lg bg-indigo-500">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
+                <Target className="w-5 h-5 text-slate-600" />
                 Answer Review - Part {currentPart}
               </CardTitle>
-              <Badge variant="outline" className="w-fit text-xs border-indigo-300 text-indigo-600">
+              <Badge variant="outline" className="w-fit text-xs border-slate-300 text-slate-600">
                 {(testParts[currentPart]?.questions || []).filter(q => answers[q.id]).length}/{(testParts[currentPart]?.questions || []).length} answered
               </Badge>
             </CardHeader>
@@ -323,11 +315,11 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                   const isSkipped = !answers[question.id];
                   
                   return (
-                    <div key={question.id} className={`p-4 rounded-xl border shadow-sm ${
+                    <div key={question.id} className={`p-4 rounded-lg border ${
                       isCorrect 
                         ? 'border-green-200 bg-green-50' 
                         : 'border-slate-200 bg-slate-50'
-                    }`}>
+                    } opacity-100 visible`}>
                       <div className="flex items-start gap-3">
                         <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
                           isCorrect ? 'bg-green-500 text-white' : 'bg-slate-400 text-white'
@@ -355,14 +347,14 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                             {/* Always show correct answer with better styling */}
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-semibold text-slate-600">Correct answer:</span>
-                              <Badge className="text-xs rounded-full bg-blue-500 text-white border-0 font-semibold">
+                              <Badge className="text-xs rounded-full bg-slate-800 text-white border-0 font-semibold">
                                 {question.correct_answer}
                               </Badge>
                             </div>
                             
                             {question.explanation && (
                               <div 
-                                className="bg-blue-50 p-3 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors border-l-4 border-blue-400"
+                                className="bg-slate-50 p-3 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors border-l-4 border-slate-400"
                                 onMouseEnter={() => {
                                   setHoveredExplanation(question.id);
                                   // Highlight relevant text in passage
@@ -377,7 +369,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                                     let highlightedContent = passageElement.dataset.original;
                                     keyPhrases.forEach(phrase => {
                                       const regex = new RegExp(`(${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                      highlightedContent = highlightedContent.replace(regex, '<mark class="bg-yellow-300 px-1 py-0.5 rounded">$1</mark>');
+                                      highlightedContent = highlightedContent.replace(regex, '<mark class="bg-yellow-200 px-1 py-0.5 rounded">$1</mark>');
                                     });
                                     passageElement.innerHTML = highlightedContent;
                                   }
@@ -391,10 +383,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                                   }
                                 }}
                               >
-                                <p className="text-xs font-semibold mb-2 text-blue-700">
+                                <p className="text-xs font-semibold mb-2 text-slate-700">
                                   💡 Explanation:
                                 </p>
-                                <p className="text-xs leading-relaxed text-slate-700">
+                                <p className="text-xs leading-relaxed text-slate-600">
                                   {question.explanation}
                                 </p>
                               </div>

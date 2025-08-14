@@ -74,8 +74,6 @@ const HeroIndex = () => {
       {/* Background Image */}
       <div className="fixed inset-0 w-full h-full">
         <img src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
-        {/* Darker overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/50"></div>
       </div>
 
       {/* Background layers */}
@@ -110,60 +108,45 @@ const HeroIndex = () => {
 
       {/* Hero Section - Centered */}
       <section className="relative z-10 px-8 min-h-screen flex items-center justify-center">
-        <div className="max-w-5xl mx-auto text-center animate-fade-in">
-          {/* Main Headline */}
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-8 leading-tight" style={{ textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)' }}>
-            Achieve Your Target IELTS Score in 30 Days with AI-Powered Practice Tests
+        <div className="max-w-4xl mx-auto bg-white/[0.1] border border-white/[0.15] backdrop-blur-[24px] backdrop-brightness-[0.85] rounded-xl p-8 shadow-xl">
+          {/* Headline with Animation */}
+          <h1 className="text-5xl mb-8 leading-tight text-black md:text-6xl font-light my-0 py-0 px-0">
+            <TypewriterText text="Master English with AI" speed={80} />
           </h1>
           
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-white mb-8 max-w-3xl mx-auto leading-relaxed" style={{ textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)' }}>
-            Get real-time feedback from AI that thinks like IELTS examiners. Join 25,000+ students who improved their band scores.
-          </p>
+          <div className="mb-12 max-w-2xl mx-auto leading-relaxed text-lg text-black">
+            <TypewriterText text="Go beyond practice tests. Get personalized coaching, track your progress, and reach your target score with confidence." speed={30} />
+          </div>
 
-          {/* Social Proof */}
-          <div className="mb-8 space-y-4">
-            <div className="flex items-center justify-center gap-2 text-white text-lg" style={{ textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)' }}>
-              <div className="flex text-yellow-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-6 h-6 fill-current" />
-                ))}
-              </div>
-              <span className="ml-2">4.8/5 from 2,000+ reviews</span>
-            </div>
+          {/* Action Button */}
+          <div className="mb-16">
             
-            <div className="flex flex-wrap items-center justify-center gap-6 text-white/90 text-sm" style={{ textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)' }}>
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                <span>Join <AnimatedCounter endValue={25000} suffix="+" /> successful students worldwide</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                <span>Trusted in 120+ countries</span>
-              </div>
-            </div>
           </div>
 
-          {/* Single Primary CTA */}
-          <div className="mb-8">
-            <Button 
-              onClick={handleAuthAction}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 py-6 text-xl rounded-lg transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl"
-              style={{ height: '60px' }}
-            >
-              Start Your Free 7-Day Trial
-            </Button>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="space-y-2 text-white/80 text-sm" style={{ textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)' }}>
-            <div className="flex items-center justify-center gap-2">
-              <Shield className="w-4 h-4" />
-              <span>No Credit Card Required</span>
+          {/* Social Proof Metrics with Animated Counters */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="text-2xl font-light text-black mb-2">
+                <AnimatedCounter endValue={50} suffix="K+" />
+              </div>
+              <div className="text-sm text-gray-700">Active Learners</div>
             </div>
-            <div className="flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span>Cancel Anytime</span>
+            <div className="text-center">
+              <div className="text-2xl font-light text-black mb-2">
+                <AnimatedCounter endValue={1000} suffix="+" />
+              </div>
+              <div className="text-sm text-gray-700">Practice Tests</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-light text-black mb-2">Real-time</div>
+              <div className="text-sm text-gray-700">AI Feedback</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-light text-black mb-2">
+                <AnimatedCounter endValue={95} suffix="%" />
+              </div>
+              <div className="text-sm text-gray-700">Success Rate</div>
             </div>
           </div>
         </div>

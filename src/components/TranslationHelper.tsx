@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, Globe, BookOpen } from 'lucide-react';
+import { X, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TranslationHelperProps {
@@ -20,37 +20,16 @@ interface TranslationResult {
   simple?: boolean;
 }
 
-interface SavedWord {
-  id: string;
-  word: string;
-  translation: string;
-  context: string;
-  savedAt: Date;
-}
-
 const TranslationHelper = ({ selectedText, position, onClose, language }: TranslationHelperProps) => {
   const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     if (selectedText.trim()) {
       fetchTranslation(selectedText.trim());
     }
-    loadSavedWords();
   }, [selectedText, language]);
-
-  const loadSavedWords = () => {
-    const saved = localStorage.getItem('saved-vocabulary');
-    if (saved) {
-      try {
-        setSavedWords(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading saved words:', error);
-      }
-    }
-  };
 
   const fetchTranslation = async (text: string) => {
     setIsLoading(true);
@@ -84,144 +63,6 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Check if word is already saved by checking backend data instead of localStorage
-  const isWordSavedBackend = async (word: string): Promise<boolean> => {
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return false;
-
-      const { data } = await supabase.functions.invoke('smart-vocabulary', {
-        body: {
-          action: 'getUserVocabulary',
-          userId: user.id
-        }
-      });
-
-      if (data?.vocabulary) {
-        return data.vocabulary.some((savedWord: any) => 
-          savedWord.word.toLowerCase() === word.toLowerCase().trim()
-        );
-      }
-      return false;
-    } catch (error) {
-      console.error('Error checking saved words:', error);
-      return false;
-    }
-  };
-
-  // Update the local check to use backend data
-  const [isWordSaved, setIsWordSaved] = useState(false);
-  
-  useEffect(() => {
-    const checkWordSaved = async () => {
-      const saved = await isWordSavedBackend(selectedText);
-      setIsWordSaved(saved);
-    };
-    
-    if (selectedText) {
-      checkWordSaved();
-    }
-  }, [selectedText]);
-
-  const saveToVocabulary = async () => {
-    console.log('🔄 Save button clicked! Starting save process...');
-    
-    if (!translationResult) {
-      console.log('❌ No translation result available');
-      return;
-    }
-    
-    try {
-      // Import supabase client
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.log('❌ No user found');
-        toast({
-          title: "Please Sign In",
-          description: "You need to be signed in to save vocabulary.",
-        });
-        return;
-      }
-
-      console.log('✅ User found:', user.id.substring(0, 8) + '...');
-
-      // Get user's native language for translation
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('native_language')
-        .eq('id', user.id)
-        .single();
-
-      console.log('📋 Profile data:', profile, 'Error:', profileError);
-
-      const targetLanguage = profile?.native_language || 'Korean';
-      console.log('🌐 Using target language:', targetLanguage);
-
-      const requestPayload = {
-        action: 'saveWord',
-        word: selectedText.trim(),
-        context: window.location.pathname,
-        userId: user.id,
-        nativeLanguage: targetLanguage
-      };
-
-      console.log('📤 Sending request to smart-vocabulary:', requestPayload);
-
-      const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
-        body: requestPayload
-      });
-
-      console.log('📥 Smart-vocabulary response:', { data, error });
-
-      if (error) {
-        console.error('❌ API Error:', error);
-        throw error;
-      }
-
-      if (data?.success) {
-        console.log('✅ Word saved successfully!');
-        
-        // Update UI state
-        setIsWordSaved(true);
-
-        toast({
-          title: "Success!",
-          description: `"${selectedText}" has been saved to your vocabulary.`,
-        });
-
-        // Force refresh vocabulary page if it's open
-        console.log('📡 Dispatching vocabulary-updated event');
-        window.dispatchEvent(new CustomEvent('vocabulary-updated', {
-          detail: { 
-            word: selectedText, 
-            translation: data.translation || translationResult.translation,
-            refresh: true
-          }
-        }));
-        
-        // Close the popup after successful save
-        setTimeout(() => {
-          onClose();
-        }, 1000);
-      } else {
-        throw new Error(data?.error || 'Unknown error occurred');
-      }
-    } catch (error) {
-      console.error('❌ Save failed:', error);
-      toast({
-        title: "Save Failed",
-        description: `Could not save "${selectedText}". Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
     }
   };
 
@@ -332,28 +173,6 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
                 </div>
               ) : null}
             </div>
-
-            {!isWordSaved && translationResult && !isLoading && (
-              <Button 
-                onClick={saveToVocabulary}
-                size="sm" 
-                className="w-full bg-green-600 hover:bg-green-700 text-white border-0 font-medium"
-              >
-                <Plus className="w-3 h-3 mr-2" />
-                Save to Vocabulary
-              </Button>
-            )}
-
-            {isWordSaved && (
-              <div className="flex items-center justify-center gap-2 p-3 bg-green-100 rounded-lg border border-green-300">
-                <div className="flex items-center gap-2 text-green-700">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                    <BookOpen className="w-3 h-3 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">Saved to vocabulary!</span>
-                </div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

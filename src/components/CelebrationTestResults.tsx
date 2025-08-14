@@ -48,7 +48,6 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   testParts
 }) => {
   const navigate = useNavigate();
-  const [hoveredExplanation, setHoveredExplanation] = useState<string | null>(null);
   const [currentPart, setCurrentPart] = useState(1);
   
   // IELTS Reading has exactly 40 questions
@@ -93,11 +92,6 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
     return acc;
   }, {} as Record<string, number>);
 
-  const highlightTextInPassage = (explanationText: string) => {
-    // Extract key phrases from explanation to highlight in passage
-    const keyPhrases = explanationText.match(/"([^"]+)"/g)?.map(phrase => phrase.replace(/"/g, '')) || [];
-    return keyPhrases;
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -306,7 +300,9 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 Answer Review - Part {currentPart}
               </CardTitle>
               <Badge variant="outline" className="w-fit text-xs border-slate-300 text-slate-600">
-                {(testParts[currentPart]?.questions || []).filter(q => answers[q.id]).length}/{(testParts[currentPart]?.questions || []).length} answered
+                {(testParts[currentPart]?.questions || []).filter(q => 
+                  answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()
+                ).length}/{(testParts[currentPart]?.questions || []).length} correct
               </Badge>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto min-h-0 p-4 scroll-smooth">
@@ -355,36 +351,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                             </div>
                             
                             {question.explanation && (
-                              <div 
-                                className="bg-slate-50 p-3 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors border-l-4 border-slate-400"
-                                onMouseEnter={() => {
-                                  setHoveredExplanation(question.id);
-                                  // Highlight relevant text in passage
-                                  const keyPhrases = highlightTextInPassage(question.explanation);
-                                  const passageElement = document.getElementById(`passage-content-${currentPart}`);
-                                  if (passageElement) {
-                                    // Store original content
-                                    if (!passageElement.dataset.original) {
-                                      passageElement.dataset.original = passageElement.innerHTML;
-                                    }
-                                    
-                                    let highlightedContent = passageElement.dataset.original;
-                                    keyPhrases.forEach(phrase => {
-                                      const regex = new RegExp(`(${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                      highlightedContent = highlightedContent.replace(regex, '<mark class="bg-yellow-200 px-1 py-0.5 rounded">$1</mark>');
-                                    });
-                                    passageElement.innerHTML = highlightedContent;
-                                  }
-                                }}
-                                onMouseLeave={() => {
-                                  setHoveredExplanation(null);
-                                  // Remove highlights
-                                  const passageElement = document.getElementById(`passage-content-${currentPart}`);
-                                  if (passageElement && passageElement.dataset.original) {
-                                    passageElement.innerHTML = passageElement.dataset.original;
-                                  }
-                                }}
-                              >
+                              <div className="bg-slate-50 p-3 rounded-lg border-l-4 border-slate-400">
                                 <p className="text-xs font-semibold mb-2 text-slate-700">
                                   💡 Explanation:
                                 </p>

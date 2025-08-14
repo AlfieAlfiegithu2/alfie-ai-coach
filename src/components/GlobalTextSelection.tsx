@@ -50,11 +50,6 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
 
   useEffect(() => {
     const handleMouseUp = (e: MouseEvent) => {
-      // Skip if on reading test pages
-      if (window.location.pathname.includes('/enhanced-reading-test') || 
-          window.location.pathname.includes('/reading-test')) {
-        return;
-      }
 
       // Clear any existing timeout
       if (selectionTimeoutRef.current) {

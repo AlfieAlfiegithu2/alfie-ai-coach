@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home } from "lucide-react";
+import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const {
     user,
-    profile
+    profile,
+    signOut
   } = useAuth();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
   const [selectedSkill, setSelectedSkill] = useState("overall");
@@ -216,6 +217,15 @@ const Dashboard = () => {
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Settings Button */}
             <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
+            
+            {/* Logout Button */}
+            <button 
+              onClick={signOut}
+              className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-red-500/20 backdrop-blur-sm flex items-center justify-center border border-red-500/30 hover:bg-red-500/30 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4 text-red-500" />
+            </button>
             
             {/* User Avatar */}
             <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">

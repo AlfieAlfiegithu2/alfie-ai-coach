@@ -96,7 +96,7 @@ const HeroIndex = () => {
           <div className="hidden sm:flex items-center gap-2 text-neutral-400">
             
           </div>
-          <button onClick={() => navigate('/auth')} className="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/5 hover:bg-white/10 ring-1 ring-white/10">
+          <button onClick={handleAuthAction} className="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-tight text-white bg-white/5 hover:bg-white/10 ring-1 ring-white/10">
             <span>Get Started</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 transition-transform group-hover:translate-x-0.5">
               <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path>
@@ -236,7 +236,7 @@ const HeroIndex = () => {
               <p className="text-sm text-gray-700 leading-relaxed">
                 Master IELTS and General English with our AI-powered platform. Get personalized feedback, track progress, and achieve your target scores faster.
               </p>
-              <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white bg-black/80 hover:bg-black rounded-full px-3 py-1.5 ring-1 ring-black/50 cursor-pointer" onClick={() => navigate('/auth')}>
+              <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white bg-black/80 hover:bg-black rounded-full px-3 py-1.5 ring-1 ring-black/50 cursor-pointer" onClick={handleAuthAction}>
                 <FileText className="w-4 h-4" />
                 <span>Start Free Trial</span>
               </div>

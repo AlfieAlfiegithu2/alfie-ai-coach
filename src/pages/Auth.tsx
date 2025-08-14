@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Mail, Lock, User, Chrome, Sparkles, Shield, Zap, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Chrome, Sparkles, Shield, Eye, EyeOff } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -129,11 +124,11 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20 flex items-center justify-center">
-        <div className="glass-card rounded-2xl p-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8">
           <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="text-gray-700 font-medium">Loading...</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            <span className="text-white font-medium">Loading...</span>
           </div>
         </div>
       </div>
@@ -141,421 +136,431 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Glassmorphism Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20">
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, white 1px, transparent 1px)`,
-          backgroundSize: '50px 50px'
-        }}></div>
-        <div className="absolute inset-0 backdrop-blur-3xl"></div>
-      </div>
-
-      {/* Floating Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-xl animate-float"></div>
-        <div className="absolute top-3/4 right-1/4 w-24 h-24 bg-purple-500/10 rounded-full blur-xl animate-float" style={{animationDelay: '2s'}}></div>
-        <div className="absolute top-1/2 left-3/4 w-20 h-20 bg-pink-500/10 rounded-full blur-xl animate-float" style={{animationDelay: '4s'}}></div>
-      </div>
-
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-md w-full space-y-8">
-          {/* Back to Home Button */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-            className="glass-button flex items-center gap-2 text-gray-700 hover:text-gray-900 border-white/20 hover:border-white/40"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-
-          {/* Main Auth Card */}
-          <div className="glass-card rounded-3xl p-8 shadow-2xl animate-fade-in">
-            {showResetForm ? (
-              /* Password Reset Form */
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+    <div className="min-h-screen relative overflow-hidden" style={{
+      backgroundImage: "url('/public/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }}>
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=60 height=60 viewBox=0 0 60 xmlns=http://www.w3.org/2000/svg%3E%3Cg fill=none fill-rule=evenodd fill-opacity=0.03%3E%3Ccircle cx=30 cy=30 r=1/%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+      
+      {/* Main Login Container */}
+      <div className="relative w-full max-w-5xl mx-auto p-4 min-h-screen flex items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        {/* Glass Card */}
+        <div className="relative backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden w-full">
+          {/* Specular Highlight */}
+          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/20 via-transparent to-transparent pointer-events-none"></div>
+          
+          {/* Split Layout */}
+          <div className="flex flex-col lg:flex-row min-h-[600px]">
+            {/* Left Side - Login Form */}
+            <div className="flex-1 p-8 space-y-6">
+              {showResetForm ? (
+                /* Password Reset Form */
+                <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-700 delay-300">
+                  <div className="text-center space-y-2">
+                    <div className="w-16 h-16 bg-gradient-to-r from-slate-900 to-slate-700 rounded-2xl mx-auto shadow-lg flex items-center justify-center">
                       <Shield className="w-8 h-8 text-white" />
                     </div>
-                  </div>
-                  <h1 className="text-2xl font-display font-bold text-gray-900 mb-2">
-                    Reset Password
-                  </h1>
-                  <p className="text-gray-600">
-                    Enter your email to receive a password reset link
-                  </p>
-                </div>
-
-                <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="resetEmail" className="text-gray-700 font-medium">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <Input
-                        id="resetEmail"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
-                        className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                        required
-                      />
-                    </div>
+                    <h1 className="text-4xl font-light text-white tracking-tight uppercase">Reset Password</h1>
+                    <p className="text-white/70 text-sm">Enter your email to receive a password reset link</p>
                   </div>
 
-                  {errors.reset && (
-                    <Alert className="border-red-200 bg-red-50/80 backdrop-blur-sm rounded-xl">
-                      <AlertDescription className="text-red-800">{errors.reset}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="flex gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowResetForm(false)}
-                      className="flex-1 h-12 rounded-xl border-gray-300 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="flex-1 h-12 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          Sending...
+                  <form onSubmit={handleResetPassword} className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white/90 block">Email address</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Mail className="w-5 h-5 text-white/50" />
                         </div>
-                      ) : (
-                        "Send Reset Link"
+                        <input
+                          type="email"
+                          className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                          placeholder="Enter your email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      {errors.reset && (
+                        <p className="text-sm text-red-400 mt-1">{errors.reset}</p>
                       )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            ) : (
-              /* Main Auth Forms */
-              <>
-                {/* Header */}
-                <div className="text-center mb-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowResetForm(false)}
+                        className="flex-1 py-3 px-4 bg-white/10 border border-white/20 rounded-xl text-white font-medium hover:bg-white/20 transition-all duration-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex-1 py-3 px-4 bg-gradient-to-r from-slate-900 to-slate-700 rounded-xl text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300"
+                      >
+                        {isSubmitting ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            Sending...
+                          </div>
+                        ) : (
+                          "Send Reset Link"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <>
+                  {/* Header */}
+                  <div className="text-center space-y-2 animate-in fade-in slide-in-from-top-4 duration-700 delay-300">
+                    <div className="w-16 h-16 bg-gradient-to-r from-slate-900 to-slate-700 rounded-2xl mx-auto shadow-lg flex items-center justify-center">
                       <Sparkles className="w-8 h-8 text-white" />
                     </div>
+                    <h1 className="text-4xl font-light text-white tracking-tight uppercase">Welcome back</h1>
+                    <p className="text-white/70 text-sm">Sign in to your IELTS learning account</p>
                   </div>
-                  <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
-                    Welcome to EnglishAI
-                  </h1>
-                  <p className="text-gray-600">
-                    Your AI-powered English learning journey starts here
-                  </p>
-                </div>
 
-                {/* Google Sign In - Primary CTA */}
-                <Button
-                  onClick={handleGoogleSignIn}
-                  disabled={isSubmitting}
-                  className="w-full mb-6 bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-12 rounded-xl flex items-center justify-center gap-3 font-medium hover-lift"
-                >
-                  <Chrome className="w-5 h-5 text-blue-500" />
-                  Continue with Google
-                </Button>
+                  <Tabs defaultValue="signin" className="w-full">
+                    <TabsList className="flex bg-white/10 p-1 rounded-xl mb-6">
+                      <TabsTrigger 
+                        value="signin" 
+                        className="flex-1 py-2 text-center text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg transition-all duration-300"
+                      >
+                        Sign In
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="signup" 
+                        className="flex-1 py-2 text-center text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg transition-all duration-300"
+                      >
+                        Sign Up
+                      </TabsTrigger>
+                    </TabsList>
 
-                {/* Divider */}
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white/80 text-gray-500 rounded-full">Or continue with email</span>
-                  </div>
-                </div>
-
-                <Tabs defaultValue="signin" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-xl">
-                    <TabsTrigger value="signin" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Sign Up</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="signin" className="space-y-6 mt-6">
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            id="email"
-                            type="email"
-                            placeholder="Enter your email"
-                            value={formData.email}
-                            onChange={(e) => updateFormData('email', e.target.value)}
-                            className={`pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${errors.email ? "border-red-500" : ""}`}
-                            required
-                          />
+                    <TabsContent value="signin" className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+                      <form onSubmit={handleSignIn} className="space-y-5">
+                        {/* Email Input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-white/90 block">Email address</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Mail className="w-5 h-5 text-white/50" />
+                            </div>
+                            <input
+                              type="email"
+                              className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                              placeholder="Enter your email"
+                              value={formData.email}
+                              onChange={(e) => updateFormData('email', e.target.value)}
+                              required
+                            />
+                          </div>
+                          {errors.email && (
+                            <p className="text-sm text-red-400 mt-1">{errors.email}</p>
+                          )}
                         </div>
-                        {errors.email && (
-                          <p className="text-sm text-red-500 flex items-center gap-2">
-                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                            {errors.email}
-                          </p>
-                        )}
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            id="password"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            value={formData.password}
-                            onChange={(e) => updateFormData('password', e.target.value)}
-                            className={`pl-10 pr-12 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${errors.password ? "border-red-500" : ""}`}
-                            required
-                          />
-                          <Button
+                        {/* Password Input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-white/90 block">Password</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Lock className="w-5 h-5 text-white/50" />
+                            </div>
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                              placeholder="Enter your password"
+                              value={formData.password}
+                              onChange={(e) => updateFormData('password', e.target.value)}
+                              required
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/50 hover:text-white/80 transition-colors"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
+                          </div>
+                          {errors.password && (
+                            <p className="text-sm text-red-400 mt-1">{errors.password}</p>
+                          )}
+                        </div>
+
+                        {/* Remember Me & Forgot Password */}
+                        <div className="flex items-center justify-between text-sm">
+                          <label className="flex items-center space-x-2 text-white/80 cursor-pointer">
+                            <input type="checkbox" className="sr-only" />
+                            <div className="w-4 h-4 bg-white/20 border border-white/30 rounded flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            </div>
+                            <span>Remember me</span>
+                          </label>
+                          <button
                             type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-gray-100"
-                            onClick={() => setShowPassword(!showPassword)}
+                            onClick={() => setShowResetForm(true)}
+                            className="text-blue-400 hover:text-blue-300 transition-colors"
                           >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-400" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-400" />
-                            )}
-                          </Button>
+                            Forgot password?
+                          </button>
                         </div>
-                        {errors.password && (
-                          <p className="text-sm text-red-500 flex items-center gap-2">
-                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                            {errors.password}
-                          </p>
-                        )}
-                      </div>
 
-                      <div className="text-right">
-                        <Button
-                          type="button"
-                          variant="link"
-                          onClick={() => setShowResetForm(true)}
-                          className="text-sm text-gray-600 hover:text-gray-900 p-0 h-auto"
+                        {errors.general && (
+                          <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                            {errors.general}
+                          </div>
+                        )}
+
+                        {/* Login Button */}
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-full hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 flex font-medium text-white bg-gradient-to-r from-slate-900 to-slate-700 rounded-xl py-3 px-4 shadow-lg space-x-2 items-center justify-center"
                         >
-                          Forgot your password?
-                        </Button>
-                      </div>
+                          <span>{isSubmitting ? "Signing in..." : "Sign in"}</span>
+                          {!isSubmitting && <ArrowLeft className="w-4 h-4 rotate-180" />}
+                        </button>
+                      </form>
+                    </TabsContent>
 
-                      {errors.general && (
-                        <Alert className="border-red-200 bg-red-50/80 backdrop-blur-sm rounded-xl">
-                          <AlertDescription className="text-red-800">{errors.general}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover-lift press-down"
-                      >
-                        {isSubmitting ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            Signing in...
+                    <TabsContent value="signup" className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+                      <form onSubmit={handleSignUp} className="space-y-5">
+                        {/* Full Name Input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-white/90 block">Full Name</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <User className="w-5 h-5 text-white/50" />
+                            </div>
+                            <input
+                              type="text"
+                              className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                              placeholder="Enter your full name"
+                              value={formData.fullName}
+                              onChange={(e) => updateFormData('fullName', e.target.value)}
+                              required
+                            />
                           </div>
-                        ) : (
-                          "Sign In"
-                        )}
-                      </Button>
-                    </form>
-                  </TabsContent>
-
-                  <TabsContent value="signup" className="space-y-6 mt-6">
-                    <form onSubmit={handleSignUp} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="fullName" className="text-gray-700 font-medium">Full Name</Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            id="fullName"
-                            type="text"
-                            placeholder="Enter your full name"
-                            value={formData.fullName}
-                            onChange={(e) => updateFormData('fullName', e.target.value)}
-                            className={`pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${errors.fullName ? "border-red-500" : ""}`}
-                            required
-                          />
+                          {errors.fullName && (
+                            <p className="text-sm text-red-400 mt-1">{errors.fullName}</p>
+                          )}
                         </div>
-                        {errors.fullName && (
-                          <p className="text-sm text-red-500 flex items-center gap-2">
-                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                            {errors.fullName}
-                          </p>
-                        )}
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="signupEmail" className="text-gray-700 font-medium">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            id="signupEmail"
-                            type="email"
-                            placeholder="Enter your email"
-                            value={formData.email}
-                            onChange={(e) => updateFormData('email', e.target.value)}
-                            className={`pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${errors.email ? "border-red-500" : ""}`}
-                            required
-                          />
-                        </div>
-                        {errors.email && (
-                          <p className="text-sm text-red-500 flex items-center gap-2">
-                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                            {errors.email}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="signupPassword" className="text-gray-700 font-medium">Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            id="signupPassword"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Create a secure password"
-                            value={formData.password}
-                            onChange={(e) => updateFormData('password', e.target.value)}
-                            className={`pl-10 pr-12 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${errors.password ? "border-red-500" : ""}`}
-                            required
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-gray-100"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-400" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-400" />
-                            )}
-                          </Button>
-                        </div>
-                        {errors.password && (
-                          <p className="text-sm text-red-500 flex items-center gap-2">
-                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                            {errors.password}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">Confirm Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                          <Input
-                            id="confirmPassword"
-                            type="password"
-                            placeholder="Confirm your password"
-                            value={formData.confirmPassword}
-                            onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-                            className={`pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${errors.confirmPassword ? "border-red-500" : ""}`}
-                            required
-                          />
-                        </div>
-                        {errors.confirmPassword && (
-                          <p className="text-sm text-red-500 flex items-center gap-2">
-                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                            {errors.confirmPassword}
-                          </p>
-                        )}
-                      </div>
-
-                      {errors.general && (
-                        <Alert className="border-red-200 bg-red-50/80 backdrop-blur-sm rounded-xl">
-                          <AlertDescription className="text-red-800">{errors.general}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover-lift press-down"
-                      >
-                        {isSubmitting ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            Creating account...
+                        {/* Email Input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-white/90 block">Email address</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Mail className="w-5 h-5 text-white/50" />
+                            </div>
+                            <input
+                              type="email"
+                              className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                              placeholder="Enter your email"
+                              value={formData.email}
+                              onChange={(e) => updateFormData('email', e.target.value)}
+                              required
+                            />
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4" />
-                            Create Account
+                          {errors.email && (
+                            <p className="text-sm text-red-400 mt-1">{errors.email}</p>
+                          )}
+                        </div>
+
+                        {/* Password Input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-white/90 block">Password</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Lock className="w-5 h-5 text-white/50" />
+                            </div>
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                              placeholder="Enter your password"
+                              value={formData.password}
+                              onChange={(e) => updateFormData('password', e.target.value)}
+                              required
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/50 hover:text-white/80 transition-colors"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
+                          </div>
+                          {errors.password && (
+                            <p className="text-sm text-red-400 mt-1">{errors.password}</p>
+                          )}
+                        </div>
+
+                        {/* Confirm Password Input */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-white/90 block">Confirm Password</label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Lock className="w-5 h-5 text-white/50" />
+                            </div>
+                            <input
+                              type="password"
+                              className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                              placeholder="Confirm your password"
+                              value={formData.confirmPassword}
+                              onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+                              required
+                            />
+                          </div>
+                          {errors.confirmPassword && (
+                            <p className="text-sm text-red-400 mt-1">{errors.confirmPassword}</p>
+                          )}
+                        </div>
+
+                        {errors.general && (
+                          <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                            {errors.general}
                           </div>
                         )}
-                      </Button>
-                    </form>
-                  </TabsContent>
-                </Tabs>
 
-                {/* Features Preview */}
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <p className="text-center text-sm text-gray-600 mb-4 font-medium">
-                    What you'll get with EnglishAI:
-                  </p>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="space-y-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto">
-                        <Zap className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <p className="text-xs text-gray-600">AI Feedback</p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto">
-                        <Shield className="w-4 h-4 text-green-600" />
-                      </div>
-                      <p className="text-xs text-gray-600">Secure Platform</p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto">
-                        <Sparkles className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <p className="text-xs text-gray-600">Smart Learning</p>
-                    </div>
+                        {/* Sign Up Button */}
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-full hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 flex font-medium text-white bg-gradient-to-r from-slate-900 to-slate-700 rounded-xl py-3 px-4 shadow-lg space-x-2 items-center justify-center"
+                        >
+                          <span>{isSubmitting ? "Creating account..." : "Create Account"}</span>
+                          {!isSubmitting && <ArrowLeft className="w-4 h-4 rotate-180" />}
+                        </button>
+                      </form>
+                    </TabsContent>
+                  </Tabs>
+
+                  {/* Divider */}
+                  <div className="relative flex items-center animate-in fade-in duration-700 delay-700">
+                    <div className="flex-1 border-t border-white/20"></div>
+                    <span className="px-3 text-white/60 text-sm">or</span>
+                    <div className="flex-1 border-t border-white/20"></div>
+                  </div>
+
+                  {/* Social Login */}
+                  <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-900">
+                    <button 
+                      onClick={handleGoogleSignIn}
+                      disabled={isSubmitting}
+                      className="w-full py-3 px-4 bg-white/10 border border-white/20 rounded-xl text-white font-medium hover:bg-white/20 transition-all duration-300 flex items-center justify-center space-x-2"
+                    >
+                      <Chrome className="w-5 h-5" />
+                      <span>Continue with Google</span>
+                    </button>
+                  </div>
+
+                  {/* Back to Home Link */}
+                  <div className="text-center text-sm text-white/70 animate-in fade-in duration-700 delay-1100">
+                    <button
+                      onClick={() => navigate('/')}
+                      className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                    >
+                      Back to Home
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Vertical Divider */}
+            <div className="hidden lg:block w-px bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
+
+            {/* Right Side - Welcome Content */}
+            <div className="flex-1 p-8 flex flex-col justify-center space-y-6 animate-in fade-in slide-in-from-right-8 duration-1000 delay-300 bg-neutral-950/10">
+              {/* Welcome Message */}
+              <div className="space-y-4">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                  <Sparkles className="w-[40px] h-[40px] text-slate-200" />
+                </div>
+                <h2 className="text-4xl font-light text-white tracking-tight">Master IELTS with AI</h2>
+                <p className="text-white/70 text-lg leading-relaxed">Join thousands of students who have achieved their target IELTS scores with our AI-powered learning platform.</p>
+              </div>
+
+              {/* Features List */}
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3 animate-in fade-in slide-in-from-right-4 duration-700 delay-500">
+                  <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">AI-Powered Feedback</h3>
+                    <p className="text-white/60 text-sm">Get instant, personalized feedback on your writing and speaking</p>
                   </div>
                 </div>
-
-                {/* Terms */}
-                <div className="mt-6 text-center">
-                  <p className="text-xs text-gray-500">
-                    By signing up, you agree to our{' '}
-                    <button className="text-blue-600 hover:text-blue-700 underline">
-                      Terms of Service
-                    </button>{' '}
-                    and{' '}
-                    <button className="text-blue-600 hover:text-blue-700 underline">
-                      Privacy Policy
-                    </button>
-                  </p>
+                
+                <div className="flex items-start space-x-3 animate-in fade-in slide-in-from-right-4 duration-700 delay-700">
+                  <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">Unlimited Practice Tests</h3>
+                    <p className="text-white/60 text-sm">Access hundreds of practice tests for all four IELTS skills</p>
+                  </div>
                 </div>
-
-                {/* Google Auth Configuration Note */}
-                <div className="mt-6 p-4 bg-blue-50/80 backdrop-blur-sm rounded-xl border border-blue-200">
-                  <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> To enable Google sign-in, configure Google OAuth in your Supabase dashboard under Authentication → Providers.
-                  </p>
+                
+                <div className="flex items-start space-x-3 animate-in fade-in slide-in-from-right-4 duration-700 delay-900">
+                  <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">Personalized Study Plans</h3>
+                    <p className="text-white/60 text-sm">Customized learning paths based on your strengths and weaknesses</p>
+                  </div>
                 </div>
-              </>
-            )}
+              </div>
+
+              {/* Testimonial */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-1100">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    A
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium text-sm">Ahmad Rahman</h4>
+                    <p className="text-white/60 text-xs">IELTS 8.0 Achiever</p>
+                  </div>
+                </div>
+                <p className="text-sm font-light text-white/80">"This platform helped me achieve my target IELTS score of 8.0. The AI feedback was incredibly detailed and helped me improve my writing significantly."</p>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-1300">
+                <div className="text-center">
+                  <div className="text-2xl font-semibold text-white">15K+</div>
+                  <div className="text-white/60 text-xs">Students</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-semibold text-white">7.5+</div>
+                  <div className="text-white/60 text-xs">Avg Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-semibold text-white">95%</div>
+                  <div className="text-white/60 text-xs">Success Rate</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Glow Effect */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-3xl"></div>
       </div>
     </div>
   );

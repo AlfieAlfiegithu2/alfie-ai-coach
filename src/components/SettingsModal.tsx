@@ -204,6 +204,11 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
       if (profileError) throw profileError;
 
       toast.success('Settings saved successfully!');
+      
+      // Trigger language update in GlobalTextSelection
+      localStorage.setItem('language-updated', Date.now().toString());
+      window.dispatchEvent(new StorageEvent('storage', { key: 'language-updated' }));
+      
       setOpen(false);
       onSettingsChange?.();
     } catch (error) {

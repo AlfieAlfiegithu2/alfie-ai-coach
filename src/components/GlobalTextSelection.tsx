@@ -14,7 +14,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const selectionTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
 
-  // Load user's preferred language
+  // Load and refresh user's preferred language
   useEffect(() => {
     const loadUserLanguage = async () => {
       if (user) {
@@ -26,12 +26,26 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
           .single();
 
         if (profile?.native_language) {
-          // Use full language names for better OpenAI translation quality
           setTargetLanguage(profile.native_language);
         }
       }
     };
+    
     loadUserLanguage();
+    
+    // Listen for storage events to detect language changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'language-updated') {
+        loadUserLanguage();
+        localStorage.removeItem('language-updated');
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [user]);
 
   useEffect(() => {
@@ -78,11 +92,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
       setShowHelper(false);
     };
 
-    // Load user's preferred language from localStorage or profile
-    const savedLanguage = localStorage.getItem('translation-language');
-    if (savedLanguage) {
-      setTargetLanguage(savedLanguage);
-    }
+    // No longer using localStorage for language preferences
 
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousedown', handleMouseDown);

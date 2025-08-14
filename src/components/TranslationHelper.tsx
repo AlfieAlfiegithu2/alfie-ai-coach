@@ -303,7 +303,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
               <Button 
                 onClick={saveToVocabulary}
                 size="sm" 
-                className="w-full btn-primary"
+                className="w-full btn-primary relative"
               >
                 <Plus className="w-3 h-3 mr-2" />
                 Save to Vocabulary
@@ -311,9 +311,13 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
             )}
 
             {isWordSaved && (
-              <div className="flex items-center justify-center gap-2 text-xs text-brand-green">
-                <BookOpen className="w-3 h-3" />
-                Already in vocabulary
+              <div className="flex items-center justify-center gap-2 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                <div className="flex items-center gap-2 text-green-600">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+                    <BookOpen className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-xs font-medium">Added to vocabulary!</span>
+                </div>
               </div>
             )}
           </div>

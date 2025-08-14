@@ -17,7 +17,10 @@ serve(async (req) => {
   }
 
   try {
-    const { action, word, context, userId, nativeLanguage } = await req.json();
+    const requestBody = await req.json();
+    const { action, word, context, userId, nativeLanguage, wordId } = requestBody;
+
+    console.log('📝 Smart vocabulary request:', { action, word: word?.substring(0, 20) + '...', userId: userId?.substring(0, 8) + '...', nativeLanguage });
 
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
@@ -26,14 +29,13 @@ serve(async (req) => {
     } else if (action === 'getUserVocabulary') {
       return await getUserVocabulary(supabase, userId);
     } else if (action === 'removeWord') {
-      const { wordId } = await req.json();
       return await removeWordFromVocabulary(supabase, wordId, userId);
     }
 
     throw new Error('Invalid action');
 
   } catch (error) {
-    console.error('Error in smart-vocabulary function:', error);
+    console.error('❌ Error in smart-vocabulary function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -42,67 +44,85 @@ serve(async (req) => {
 });
 
 async function saveWordToVocabulary(supabase: any, word: string, context: string, userId: string, nativeLanguage: string) {
-  // Check if translation already exists in vocabulary_words
-  const { data: existingWord } = await supabase
-    .from('vocabulary_words')
-    .select('*')
-    .eq('word', word.toLowerCase())
-    .eq('language_code', nativeLanguage)
-    .single();
-
-  let vocabularyWordId;
-  let translation;
-
-  if (existingWord) {
-    // Use existing translation and increment usage count
-    vocabularyWordId = existingWord.id;
-    translation = existingWord.translation;
-    
-    await supabase
+  console.log('💾 Saving word to vocabulary:', { word, nativeLanguage, userId: userId.substring(0, 8) + '...' });
+  
+  try {
+    // Check if translation already exists in vocabulary_words
+    const { data: existingWord } = await supabase
       .from('vocabulary_words')
-      .update({ usage_count: existingWord.usage_count + 1 })
-      .eq('id', existingWord.id);
-  } else {
-    // Get translation from OpenAI and save new vocabulary word
-    const translationResult = await getTranslationFromAPI(word, nativeLanguage);
-    translation = translationResult;
+      .select('*')
+      .eq('word', word.toLowerCase())
+      .eq('language_code', nativeLanguage)
+      .maybeSingle();
 
-    const { data: newWord, error: insertError } = await supabase
-      .from('vocabulary_words')
-      .insert({
-        word: word.toLowerCase(),
-        language_code: nativeLanguage,
-        translation: translation,
-        usage_count: 1
-      })
-      .select()
-      .single();
+    let vocabularyWordId;
+    let translation;
 
-    if (insertError) throw insertError;
-    vocabularyWordId = newWord.id;
-  }
+    if (existingWord) {
+      console.log('✅ Found existing translation:', existingWord.translation);
+      // Use existing translation and increment usage count
+      vocabularyWordId = existingWord.id;
+      translation = existingWord.translation;
+      
+      await supabase
+        .from('vocabulary_words')
+        .update({ usage_count: existingWord.usage_count + 1 })
+        .eq('id', existingWord.id);
+    } else {
+      console.log('🔄 Getting new translation from API...');
+      // Get translation from OpenAI and save new vocabulary word
+      const translationResult = await getTranslationFromAPI(word, nativeLanguage);
+      translation = translationResult;
+      console.log('✅ Got translation:', translation);
 
-  // Save to user's personal vocabulary (with conflict handling)
-  const { error: userVocabError } = await supabase
-    .from('user_vocabulary')
-    .upsert({
-      user_id: userId,
-      vocabulary_word_id: vocabularyWordId,
-      context: context
-    }, {
-      onConflict: 'user_id,vocabulary_word_id'
+      const { data: newWord, error: insertError } = await supabase
+        .from('vocabulary_words')
+        .insert({
+          word: word.toLowerCase(),
+          language_code: nativeLanguage,
+          translation: translation,
+          usage_count: 1
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('❌ Error inserting vocabulary word:', insertError);
+        throw insertError;
+      }
+      vocabularyWordId = newWord.id;
+    }
+
+    // Save to user's personal vocabulary (with conflict handling)
+    const { error: userVocabError } = await supabase
+      .from('user_vocabulary')
+      .upsert({
+        user_id: userId,
+        vocabulary_word_id: vocabularyWordId,
+        context: context
+      }, {
+        onConflict: 'user_id,vocabulary_word_id'
+      });
+
+    if (userVocabError) {
+      console.error('❌ Error saving to user vocabulary:', userVocabError);
+      throw userVocabError;
+    }
+
+    console.log('✅ Successfully saved word to vocabulary');
+    return new Response(JSON.stringify({ 
+      success: true, 
+      word: word,
+      translation: translation,
+      cached: !!existingWord 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
-  if (userVocabError) throw userVocabError;
-
-  return new Response(JSON.stringify({ 
-    success: true, 
-    word: word,
-    translation: translation,
-    cached: !!existingWord 
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+    
+  } catch (error) {
+    console.error('❌ Error in saveWordToVocabulary:', error);
+    throw error;
+  }
 }
 
 async function getUserVocabulary(supabase: any, userId: string) {

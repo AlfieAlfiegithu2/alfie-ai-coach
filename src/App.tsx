@@ -193,7 +193,6 @@ const App = () => {
             <Route path="/reading-results" element={<ReadingResults />} />
             <Route path="/listening-results" element={<ListeningResults />} />
             <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
-            <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
             <Route path="/ielts-writing-pro-results" element={<IELTSWritingProResults />} />
             <Route path="/ielts-portal" element={<IELTSPortal />} />
             <Route path="/ielts-test-modules/:testId" element={<IELTSTestModules />} />

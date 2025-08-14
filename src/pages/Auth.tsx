@@ -22,7 +22,7 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (user && !loading) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const validateForm = (isSignUp = false) => {
@@ -61,12 +61,20 @@ const Auth = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    const { error } = await signIn(formData.email, formData.password);
-    
-    if (error) {
-      setErrors({ general: error });
+    setErrors({});
+
+    try {
+      const { error } = await signIn(formData.email, formData.password);
+
+      if (error) {
+        console.error('Sign-in error:', error);
+        setErrors({ general: error });
+      }
+    } catch (err) {
+      console.error('Sign-in unexpected error:', err);
+      setErrors({ general: 'An unexpected error occurred. Please try again.' });
     }
-    
+
     setIsSubmitting(false);
   };
 
@@ -86,12 +94,20 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    const { error } = await signInWithGoogle();
-    
-    if (error) {
-      setErrors({ general: error });
+    setErrors({});
+
+    try {
+      const { error } = await signInWithGoogle();
+
+      if (error) {
+        console.error('Google sign-in error:', error);
+        setErrors({ general: error });
+      }
+    } catch (err) {
+      console.error('Google sign-in unexpected error:', err);
+      setErrors({ general: 'Failed to sign in with Google. Please try again.' });
     }
-    
+
     setIsSubmitting(false);
   };
 

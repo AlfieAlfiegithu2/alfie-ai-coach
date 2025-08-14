@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, BookOpen, Headphones, PenTool, Mic, Users, Target, Zap, Star, Globe, Sparkles, Award, TrendingUp, Shield, Clock, Brain, MessageSquare, ChevronRight, Volume2, BarChart3, FileText, Languages, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import VideoBackground from "@/components/animations/VideoBackground";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
@@ -13,10 +14,8 @@ import { TypewriterText } from "@/components/TypewriterText";
 import LiveTime from "@/components/LiveTime";
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
-  const [user, setUser] = useState<any>(null);
+  const { toast } = useToast();
+  const { user, loading } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [showWritingFeedback, setShowWritingFeedback] = useState(false);
   const [showSpeakingFeedback, setShowSpeakingFeedback] = useState(false);
@@ -48,18 +47,9 @@ const HeroIndex = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, []);
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, []);
   const handleAuthAction = () => {
+    if (loading) return; // Prevent navigation during loading
+    
     if (user) {
       navigate('/dashboard');
     } else {

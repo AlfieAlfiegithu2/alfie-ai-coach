@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
+import GlobalTextSelection from "./components/GlobalTextSelection";
 import Index from "./pages/Index";
 import Reading from "./pages/Reading";
 import ReadingTest from "./pages/ReadingTest";
@@ -83,9 +84,10 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
+          <GlobalTextSelection>
+            <Toaster />
+            <Sonner />
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/reading" element={<ContentSelection />} />
             <Route path="/reading/:testId" element={<ReadingTest />} />
@@ -212,8 +214,9 @@ const App = () => {
             <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-          <MinimalisticChatbot />
+            </Routes>
+            <MinimalisticChatbot />
+          </GlobalTextSelection>
         </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>

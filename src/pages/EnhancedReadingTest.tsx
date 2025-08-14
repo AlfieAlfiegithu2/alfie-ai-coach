@@ -53,6 +53,8 @@ const EnhancedReadingTest = () => {
   const [allQuestions, setAllQuestions] = useState<ReadingQuestion[]>([]);
   const [passageFontSize, setPassageFontSize] = useState(14); // in pixels
 
+  console.log('🚀 EnhancedReadingTest component initialized');
+
   useEffect(() => {
     fetchReadingTest();
   }, [testId]);

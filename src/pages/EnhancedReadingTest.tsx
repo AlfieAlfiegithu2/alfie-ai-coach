@@ -690,7 +690,6 @@ const EnhancedReadingTest = () => {
     return (
       <CelebrationTestResults
         score={score}
-        totalQuestions={totalQuestions}
         timeTaken={(60 * 60) - timeLeft}
         answers={answers}
         questions={allQuestions}

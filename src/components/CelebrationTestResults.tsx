@@ -9,7 +9,6 @@ import CelebrationLottieAnimation from "@/components/animations/CelebrationLotti
 
 interface CelebrationTestResultsProps {
   score: number;
-  totalQuestions: number;
   timeTaken: number;
   answers: Record<string, string>;
   questions: Array<{
@@ -42,7 +41,6 @@ interface CelebrationTestResultsProps {
 
 const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   score,
-  totalQuestions,
   timeTaken,
   answers,
   questions,
@@ -53,7 +51,9 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   const [hoveredExplanation, setHoveredExplanation] = useState<string | null>(null);
   const [currentPart, setCurrentPart] = useState(1);
   
-  const percentage = Math.round((score / questions.length) * 100);
+  // IELTS Reading has exactly 40 questions
+  const totalQuestions = 40;
+  const percentage = Math.round((score / totalQuestions) * 100);
   
   // Use official IELTS band score conversion based on correct answers
   const estimatedBandScore = getBandScore(score, 'academic-reading');
@@ -100,15 +100,27 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950">
+    <div className="min-h-screen bg-surface-2 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 via-brand-purple/5 to-brand-green/5 pointer-events-none" />
+      
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-        <div className="container mx-auto px-4 py-4">
+      <div className="bg-surface-1 border-b border-border sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={() => navigate('/ielts-portal')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Portal
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/ielts-portal')}
+                className="hover:bg-surface-3"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Portal
+              </Button>
+              <div>
+                <h1 className="text-heading-2">Reading Test Results</h1>
+                <p className="text-caption">IELTS Academic Reading</p>
+              </div>
+            </div>
             <Button onClick={onRetake} variant="outline">
               <RotateCcw className="w-4 h-4 mr-2" />
               Retake Test
@@ -117,111 +129,162 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Celebration Header */}
-        <Card className="mb-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
-          <CardContent className="text-center py-12">
-            <div className="flex items-center justify-center mb-6">
-              <CelebrationLottieAnimation size="md" />
-            </div>
-            <h1 className="text-4xl font-bold mb-2">Test Completed! 🎉</h1>
-            <p className="text-xl opacity-90 mb-6">Reading Test - Cambridge IELTS Academic</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
-              <div className="text-center">
-                <div className="text-3xl font-bold">{score}/{questions.length}</div>
-                <div className="text-sm opacity-80">Questions Correct</div>
-                <div className="text-lg font-semibold">{Math.round((score / questions.length) * 100)}%</div>
+      <div className="container mx-auto px-6 space-section">
+        {/* Success Message */}
+        <Card className="mb-8 card-modern border-2 border-brand-green/20 bg-gradient-to-br from-brand-green/5 to-brand-green/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-brand-green/10">
+                <Trophy className="w-8 h-8 text-brand-green" />
               </div>
-              
-              <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-300">{estimatedBandScore}</div>
-                <div className="text-sm opacity-80">Estimated Band Score</div>
-              </div>
-              
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${performance.level === "Excellent" ? "text-green-300" : performance.level === "Good" ? "text-blue-300" : performance.level === "Average" ? "text-yellow-300" : "text-red-300"}`}>
-                  {performance.level}
-                </div>
-                <div className="text-sm opacity-80">Performance</div>
+              <div>
+                <h2 className="text-heading-3 text-brand-green">Test Completed Successfully!</h2>
+                <p className="text-body">Your IELTS Academic Reading test has been evaluated.</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Overall Score */}
+        <Card className="card-elevated mb-6 overflow-hidden">
+          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 py-3">
+            <div className="flex items-center justify-center gap-2">
+              <div className="p-2 rounded-xl bg-brand-blue/10">
+                <Trophy className="w-6 h-6 text-brand-blue" />
+              </div>
+              <CardTitle className="text-heading-3">Your IELTS Reading Band Score</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="text-center py-4">
+            <div className="text-6xl font-bold mb-4 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+              {estimatedBandScore}
+            </div>
+            <div className="flex items-center justify-center gap-6 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-text-primary">{score}/{totalQuestions}</div>
+                <p className="text-caption">Questions Correct</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-text-primary">{percentage}%</div>
+                <p className="text-caption">Accuracy</p>
+              </div>
+            </div>
+            <Badge variant="outline" className={`${performance.color === "text-green-600" ? "text-brand-green bg-brand-green/10 border-brand-green/30" : performance.color === "text-blue-600" ? "text-brand-blue bg-brand-blue/10 border-brand-blue/30" : performance.color === "text-yellow-600" ? "text-brand-orange bg-brand-orange/10 border-brand-orange/30" : "text-destructive bg-destructive/10 border-destructive/30"} text-lg px-4 py-2 rounded-2xl mb-2`}>
+              {performance.level} Performance
+            </Badge>
+            <p className="text-caption">
+              Based on official IELTS assessment criteria
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Part Navigation */}
-        <div className="flex justify-center mb-6">
-          <div className="flex bg-muted rounded-lg p-1">
-            {Object.keys(testParts).map((partNum) => {
-              const partNumber = parseInt(partNum);
-              const partQuestions = testParts[partNumber]?.questions || [];
-              const partAnswered = partQuestions.filter(q => answers[q.id]).length;
-              
-              return (
-                <Button
-                  key={partNumber}
-                  variant={currentPart === partNumber ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setCurrentPart(partNumber)}
-                  className="min-w-[100px]"
-                >
-                  Part {partNumber}
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {partAnswered}/{partQuestions.length}
+        <Card className="mb-6 card-modern">
+          <CardContent className="py-4">
+            <div className="flex justify-center">
+              <div className="flex bg-surface-3 rounded-2xl p-1 gap-1">
+                {Object.keys(testParts).map((partNum) => {
+                  const partNumber = parseInt(partNum);
+                  const partQuestions = testParts[partNumber]?.questions || [];
+                  const partAnswered = partQuestions.filter(q => answers[q.id]).length;
+                  
+                  return (
+                    <Button
+                      key={partNumber}
+                      variant={currentPart === partNumber ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentPart(partNumber)}
+                      className="min-w-[100px] rounded-xl"
+                    >
+                      Part {partNumber}
+                      <Badge variant="secondary" className="ml-2 text-xs rounded-full">
+                        {partAnswered}/{partQuestions.length}
+                      </Badge>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Performance Summary */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <Card className="card-modern border-2 border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-brand-blue/10">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-brand-blue">
+                <div className="p-2 rounded-xl bg-brand-blue/10">
+                  <Target className="w-5 h-5" />
+                </div>
+                Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-brand-green"></div>
+                  <span className="text-text-primary">Correct</span>
+                </div>
+                <Badge variant="outline" className="text-brand-green border-brand-green/30 rounded-full">
+                  {correctCount}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                  <span className="text-text-primary">Incorrect</span>
+                </div>
+                <Badge variant="outline" className="text-destructive border-destructive/30 rounded-full">
+                  {incorrectCount}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-text-tertiary"></div>
+                  <span className="text-text-primary">Skipped</span>
+                </div>
+                <Badge variant="outline" className="text-text-tertiary border-border rounded-full">
+                  {skippedCount}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="card-modern border-2 border-brand-purple/20 bg-gradient-to-br from-brand-purple/5 to-brand-purple/10">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-brand-purple">
+                <div className="p-2 rounded-xl bg-brand-purple/10">
+                  <Star className="w-5 h-5" />
+                </div>
+                Question Types
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {Object.entries(questionTypes).map(([type, count]) => (
+                <div key={type} className="flex justify-between items-center">
+                  <span className="text-sm capitalize text-text-primary">{type.replace('_', ' ')}</span>
+                  <Badge variant="outline" className="text-brand-purple border-brand-purple/30 rounded-full">
+                    {count}
                   </Badge>
-                </Button>
-              );
-            })}
-          </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Main Content - Match test page layout */}
-        <div className="flex gap-4 h-[calc(100vh-300px)]">
-          {/* Left Column - Questions and Navigation */}
-          <div className="w-[55%] flex flex-col space-y-4">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Correct</span>
-                    <Badge variant="default">{correctCount}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Incorrect</span>
-                    <Badge variant="destructive">{incorrectCount}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Skipped</span>
-                    <Badge variant="secondary">{skippedCount}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Question Types</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {Object.entries(questionTypes).map(([type, count]) => (
-                    <div key={type} className="flex justify-between items-center">
-                      <span className="text-sm capitalize">{type.replace('_', ' ')}</span>
-                      <Badge variant="outline">{count}</Badge>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Answer Review */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Answer Review - Part {currentPart}</CardTitle>
+        {/* Main Content - Symmetrical Layout */}
+        <div className="flex gap-6 h-[calc(100vh-400px)]">
+          {/* Left Column - Answer Review */}
+          <div className="w-1/2 flex flex-col">
+            <Card className="flex-1 card-elevated">
+              <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+                <CardTitle className="text-heading-4 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-brand-blue" />
+                  Answer Review - Part {currentPart}
+                </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto">
+
+              <CardContent className="flex-1 overflow-y-auto p-6">
                 <div className="space-y-4">
                   {(testParts[currentPart]?.questions || []).map((question) => {
                     const userAnswer = answers[question.id] || 'Not answered';
@@ -229,31 +292,48 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                     const isSkipped = !answers[question.id];
                     
                     return (
-                      <div key={question.id} className="border-b pb-3 last:border-b-0">
-                        <div className="flex items-start gap-2">
+                      <div key={question.id} className={`p-4 rounded-2xl border-2 ${
+                        isCorrect 
+                          ? 'border-brand-green/20 bg-brand-green/5' 
+                          : isSkipped 
+                          ? 'border-border bg-surface-3'
+                          : 'border-destructive/20 bg-destructive/5'
+                      }`}>
+                        <div className="flex items-start gap-3">
                           <Badge 
-                            variant={isCorrect ? "default" : isSkipped ? "secondary" : "destructive"} 
-                            className="mt-1 min-w-[20px] justify-center text-xs"
+                            variant="outline"
+                            className={`mt-1 min-w-[24px] justify-center text-xs rounded-full ${
+                              isCorrect ? 'text-brand-green border-brand-green/30' :
+                              isSkipped ? 'text-text-tertiary border-border' : 
+                              'text-destructive border-destructive/30'
+                            }`}
                           >
                             {question.question_number}
                           </Badge>
                           <div className="flex-1 space-y-2">
-                            <p className="font-medium leading-relaxed text-sm">
+                            <p className="font-medium leading-relaxed text-text-primary">
                               {question.question_text}
                             </p>
                             
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium">Your answer:</span>
-                                <Badge variant={isCorrect ? "default" : isSkipped ? "secondary" : "destructive"} className="text-xs">
+                                <span className="text-caption font-medium">Your answer:</span>
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-xs rounded-full ${
+                                    isCorrect ? 'text-brand-green border-brand-green/30' :
+                                    isSkipped ? 'text-text-tertiary border-border' : 
+                                    'text-destructive border-destructive/30'
+                                  }`}
+                                >
                                   {userAnswer}
                                 </Badge>
                               </div>
                               
                               {!isCorrect && !isSkipped && (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-medium">Correct answer:</span>
-                                  <Badge variant="default" className="text-xs">
+                                  <span className="text-caption font-medium">Correct answer:</span>
+                                  <Badge variant="outline" className="text-xs rounded-full text-brand-green border-brand-green/30">
                                     {question.correct_answer}
                                   </Badge>
                                 </div>
@@ -261,7 +341,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                               
                               {question.explanation && (
                                 <div 
-                                  className="bg-muted p-3 rounded-md cursor-pointer hover:bg-muted/80 transition-colors border-l-4 border-primary"
+                                  className="bg-surface-3 p-3 rounded-xl cursor-pointer hover:bg-surface-3/80 transition-colors border-l-4 border-brand-blue"
                                   onMouseEnter={() => {
                                     setHoveredExplanation(question.id);
                                     // Highlight relevant text in passage
@@ -276,7 +356,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                                       let highlightedContent = passageElement.dataset.original;
                                       keyPhrases.forEach(phrase => {
                                         const regex = new RegExp(`(${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                                        highlightedContent = highlightedContent.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 py-0.5 rounded">$1</mark>');
+                                        highlightedContent = highlightedContent.replace(regex, '<mark class="bg-brand-orange/30 px-1 py-0.5 rounded">$1</mark>');
                                       });
                                       passageElement.innerHTML = highlightedContent;
                                     }
@@ -290,11 +370,11 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                                     }
                                   }}
                                 >
-                                  <p className="text-xs font-medium mb-1 flex items-center gap-2">
+                                  <p className="text-caption font-medium mb-1 flex items-center gap-2 text-brand-blue">
                                     <Star className="w-3 h-3" />
                                     Explanation:
                                   </p>
-                                  <p className="text-xs leading-relaxed">
+                                  <p className="text-caption leading-relaxed text-text-secondary">
                                     {question.explanation}
                                   </p>
                                 </div>
@@ -310,18 +390,20 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
             </Card>
           </div>
 
-          {/* Right Column - Passage (matches test page layout) */}
-          <div className="w-[45%]">
-            <Card className="h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Target className="w-4 h-4" />
+          {/* Right Column - Passage (Symmetrical Layout) */}
+          <div className="w-1/2">
+            <Card className="h-full card-elevated">
+              <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-blue/10">
+                <CardTitle className="flex items-center gap-2 text-heading-4">
+                  <div className="p-2 rounded-xl bg-brand-purple/10">
+                    <Target className="w-5 h-5 text-brand-purple" />
+                  </div>
                   {testParts[currentPart]?.passage?.title || `Reading Passage ${currentPart}`}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[calc(100%-60px)] overflow-y-auto">
+              <CardContent className="h-[calc(100%-80px)] overflow-y-auto p-6">
                 <div 
-                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed"
+                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed text-text-primary"
                   id={`passage-content-${currentPart}`}
                   style={{ fontSize: '14px', lineHeight: '1.6' }}
                 >

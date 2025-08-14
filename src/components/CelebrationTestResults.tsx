@@ -125,11 +125,11 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
       <div className="container mx-auto px-6 space-section">
         {/* Success Message */}
-        <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-6">
-              <PenguinClapAnimation size="sm" className="flex-shrink-0" />
-              <div>
+        <Card className="mb-8 border border-slate-200 shadow-sm bg-white opacity-100 visible">
+          <CardContent className="pt-6 opacity-100 visible">
+            <div className="flex items-center gap-6 opacity-100 visible">
+              <PenguinClapAnimation size="sm" className="flex-shrink-0 opacity-100 visible" />
+              <div className="opacity-100 visible">
                 <h2 className="text-2xl font-bold text-slate-800">Test Completed Successfully! 🎉</h2>
                 <p className="text-slate-600">Your IELTS Academic Reading test has been evaluated.</p>
               </div>
@@ -138,7 +138,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         </Card>
 
         {/* Overall Score */}
-        <Card className="shadow-sm mb-8 overflow-hidden border border-slate-200 bg-white">
+        <Card className="shadow-sm mb-8 overflow-hidden border border-slate-200 bg-white opacity-100 visible">
           <CardHeader className="text-center bg-slate-50 py-6">
             <div className="flex items-center justify-center gap-3">
               <div className="p-3 rounded-full bg-slate-800">

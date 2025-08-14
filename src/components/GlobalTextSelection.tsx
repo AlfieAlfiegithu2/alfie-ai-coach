@@ -50,7 +50,6 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
 
   useEffect(() => {
     const handleMouseUp = (e: MouseEvent) => {
-
       // Clear any existing timeout
       if (selectionTimeoutRef.current) {
         clearTimeout(selectionTimeoutRef.current);

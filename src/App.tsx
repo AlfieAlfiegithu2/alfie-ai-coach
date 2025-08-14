@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
-import TextSelection from "./components/TextSelection";
+import GlobalTextSelection from "./components/GlobalTextSelection";
 import Index from "./pages/Index";
 import Reading from "./pages/Reading";
 import ReadingTest from "./pages/ReadingTest";
@@ -31,7 +31,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CommunityPage from "./pages/CommunityPage";
 import SettingsPage from "./pages/SettingsPage";
-import VocabularyDashboard from "./pages/VocabularyDashboard";
+import VocabularyPage from "./pages/VocabularyPage";
 import PTEPortal from "./pages/PTEPortal";
 import TOEFLPortal from "./pages/TOEFLPortal";
 import GeneralPortal from "./pages/GeneralPortal";
@@ -84,7 +84,7 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <TooltipProvider>
-          <TextSelection>
+          <GlobalTextSelection>
             <Toaster />
             <Sonner />
             <Routes>
@@ -202,7 +202,7 @@ const App = () => {
             <Route path="/tests" element={<TestSelection />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/vocabulary" element={<VocabularyDashboard />} />
+            <Route path="/vocabulary" element={<VocabularyPage />} />
             <Route path="/vocabulary/map" element={<VocabularyMapView />} />
             {/* Skills Practice (Student) */}
             <Route path="/skills/:slug" element={<SkillPractice />} />
@@ -216,7 +216,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
             </Routes>
             <MinimalisticChatbot />
-          </TextSelection>
+          </GlobalTextSelection>
         </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>

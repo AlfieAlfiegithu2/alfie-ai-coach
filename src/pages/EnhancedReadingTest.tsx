@@ -53,7 +53,12 @@ const EnhancedReadingTest = () => {
   const [allQuestions, setAllQuestions] = useState<ReadingQuestion[]>([]);
   const [passageFontSize, setPassageFontSize] = useState(14); // in pixels
 
-  console.log('🚀 EnhancedReadingTest component initialized');
+  console.log('🚀 EnhancedReadingTest component initialized, passageFontSize:', passageFontSize);
+
+  // Add useEffect to track font size changes
+  useEffect(() => {
+    console.log('📝 Font size changed to:', passageFontSize);
+  }, [passageFontSize]);
 
   useEffect(() => {
     fetchReadingTest();
@@ -581,10 +586,12 @@ const EnhancedReadingTest = () => {
 
 
   const increaseFontSize = () => {
+    console.log('Increasing font size from:', passageFontSize);
     setPassageFontSize(prev => Math.min(prev + 2, 20));
   };
 
   const decreaseFontSize = () => {
+    console.log('Decreasing font size from:', passageFontSize);
     setPassageFontSize(prev => Math.max(prev - 2, 10));
   };
 

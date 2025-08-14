@@ -84,13 +84,16 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
     }
     return `${minutes}m ${secs}s`;
   };
-  const correctCount = questions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length;
-  const incorrectCount = questions.filter(q => {
+  // Get all questions from all test parts to ensure we count all 40 questions
+  const allQuestions = Object.values(testParts).flatMap(part => part.questions);
+  
+  const correctCount = allQuestions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length;
+  const incorrectCount = allQuestions.filter(q => {
     const userAnswer = answers[q.id];
     return userAnswer && userAnswer.toLowerCase().trim() !== q.correct_answer.toLowerCase().trim();
   }).length;
-  const skippedCount = questions.filter(q => !answers[q.id]).length;
-  const questionTypes = questions.reduce((acc, q) => {
+  const skippedCount = allQuestions.filter(q => !answers[q.id]).length;
+  const questionTypes = allQuestions.reduce((acc, q) => {
     acc[q.question_type] = (acc[q.question_type] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -121,11 +124,11 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
 
       <div className="container mx-auto px-6 space-section">
         {/* Success Message */}
-        <Card className="mb-8 border border-slate-200 shadow-sm bg-white opacity-100 visible">
-          <CardContent className="pt-6 opacity-100 visible">
-            <div className="flex items-center gap-6 opacity-100 visible">
-              <PenguinClapAnimation size="sm" className="flex-shrink-0 opacity-100 visible" />
-              <div className="opacity-100 visible">
+        <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-6">
+              <PenguinClapAnimation size="sm" className="flex-shrink-0" />
+              <div>
                 <h2 className="text-2xl font-bold text-slate-800">Test Completed Successfully! 🎉</h2>
                 <p className="text-slate-600">Your IELTS Academic Reading test has been evaluated.</p>
               </div>
@@ -134,7 +137,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         </Card>
 
         {/* Overall Score */}
-        <Card className="shadow-sm mb-8 overflow-hidden border border-slate-200 bg-white opacity-100 visible">
+        <Card className="shadow-sm mb-8 overflow-hidden border border-slate-200 bg-white">
           <CardHeader className="text-center bg-slate-50 py-6">
             <div className="flex items-center justify-center gap-3">
               <div className="p-3 rounded-full bg-slate-800">
@@ -287,7 +290,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 const userAnswer = answers[question.id] || 'Not answered';
                 const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
                 const isSkipped = !answers[question.id];
-                return <div key={question.id} className={`p-4 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50'} opacity-100 visible`}>
+                return <div key={question.id} className={`p-4 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50'}`}>
                       <div className="flex items-start gap-3">
                         <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${isCorrect ? 'bg-green-500 text-white' : 'bg-slate-400 text-white'}`}>
                           {question.question_number}

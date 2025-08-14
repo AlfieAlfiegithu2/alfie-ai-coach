@@ -14,6 +14,37 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const selectionTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
 
+  // Load user's preferred language
+  useEffect(() => {
+    const loadUserLanguage = async () => {
+      if (user) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('native_language')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.native_language) {
+          const languageCodeMap: Record<string, string> = {
+            'Spanish': 'es',
+            'French': 'fr', 
+            'German': 'de',
+            'Italian': 'it',
+            'Portuguese': 'pt',
+            'Chinese': 'zh',
+            'Japanese': 'ja',
+            'Korean': 'ko',
+            'Arabic': 'ar',
+            'Hindi': 'hi'
+          };
+          setTargetLanguage(languageCodeMap[profile.native_language] || 'es');
+        }
+      }
+    };
+    loadUserLanguage();
+  }, [user]);
+
   useEffect(() => {
     const handleMouseUp = (e: MouseEvent) => {
       // Clear any existing timeout

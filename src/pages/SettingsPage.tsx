@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,29 +10,116 @@ import { Settings, User, Bell, Globe, Target, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StudentLayout from '@/components/StudentLayout';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   
+  const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
-    name: 'Student Name',
-    email: 'student@example.com',
+    name: '',
+    email: '',
     targetBand: '7.5',
-    testDate: '2024-08-15',
-    translationLanguage: 'es',
+    testDate: '',
+    translationLanguage: 'Spanish',
     notifications: true,
     emailUpdates: false,
     reminderTime: '09:00',
     studyGoal: '30'
   });
 
-  const handleSave = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  // Load user settings on component mount
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Load profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, native_language')
+          .eq('id', user.id)
+          .single();
+
+        // Load user preferences  
+        const { data: preferences } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        setSettings({
+          name: profile?.full_name || user.email || '',
+          email: user.email || '',
+          targetBand: preferences?.target_score?.toString() || '7.5',
+          testDate: preferences?.target_deadline || '',
+          translationLanguage: profile?.native_language || 'Spanish',
+          notifications: true,
+          emailUpdates: false,
+          reminderTime: '09:00',
+          studyGoal: '30'
+        });
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserSettings();
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
+      // Update profile
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: settings.name,
+          native_language: settings.translationLanguage
+        })
+        .eq('id', user.id);
+
+      // Update or insert user preferences
+      await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          target_score: parseFloat(settings.targetBand),
+          target_deadline: settings.testDate || null,
+          preferred_name: settings.name
+        });
+
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <CardTitle className="text-2xl mb-4">Loading Settings...</CardTitle>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <StudentLayout title="Settings" showBackButton={true}>
@@ -144,18 +231,18 @@ const SettingsPage = () => {
                 <SelectTrigger className="glass-button">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="es">Spanish (Español)</SelectItem>
-                  <SelectItem value="fr">French (Français)</SelectItem>
-                  <SelectItem value="de">German (Deutsch)</SelectItem>
-                  <SelectItem value="it">Italian (Italiano)</SelectItem>
-                  <SelectItem value="pt">Portuguese (Português)</SelectItem>
-                  <SelectItem value="zh">Chinese (中文)</SelectItem>
-                  <SelectItem value="ja">Japanese (日本語)</SelectItem>
-                  <SelectItem value="ko">Korean (한국어)</SelectItem>
-                  <SelectItem value="ar">Arabic (العربية)</SelectItem>
-                  <SelectItem value="hi">Hindi (हिन्दी)</SelectItem>
-                </SelectContent>
+                 <SelectContent>
+                   <SelectItem value="Spanish">Spanish (Español)</SelectItem>
+                   <SelectItem value="French">French (Français)</SelectItem>
+                   <SelectItem value="German">German (Deutsch)</SelectItem>
+                   <SelectItem value="Italian">Italian (Italiano)</SelectItem>
+                   <SelectItem value="Portuguese">Portuguese (Português)</SelectItem>
+                   <SelectItem value="Chinese">Chinese (中文)</SelectItem>
+                   <SelectItem value="Japanese">Japanese (日本語)</SelectItem>
+                   <SelectItem value="Korean">Korean (한국어)</SelectItem>
+                   <SelectItem value="Arabic">Arabic (العربية)</SelectItem>
+                   <SelectItem value="Hindi">Hindi (हिन्दी)</SelectItem>
+                 </SelectContent>
               </Select>
               <p className="text-sm text-text-secondary mt-1">
                 Choose your preferred language for word translations during reading practice

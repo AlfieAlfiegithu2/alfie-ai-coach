@@ -95,28 +95,122 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     }
   };
 
-  const saveToVocabulary = () => {
-    const newWord: SavedWord = {
-      id: Date.now().toString(),
-      word: selectedText.trim(),
-      translation: translation,
-      context: window.location.pathname,
-      savedAt: new Date()
-    };
+  // Check if word is already saved by checking backend data instead of localStorage
+  const isWordSavedBackend = async (word: string): Promise<boolean> => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return false;
 
-    const updated = [newWord, ...savedWords.slice(0, 99)]; // Keep last 100 words
-    setSavedWords(updated);
-    localStorage.setItem('saved-vocabulary', JSON.stringify(updated));
+      const { data } = await supabase.functions.invoke('smart-vocabulary', {
+        body: {
+          action: 'getUserVocabulary',
+          userId: user.id
+        }
+      });
 
-    toast({
-      title: "Word Saved",
-      description: `"${selectedText}" added to your vocabulary collection.`,
-    });
+      if (data?.vocabulary) {
+        return data.vocabulary.some((savedWord: any) => 
+          savedWord.word.toLowerCase() === word.toLowerCase().trim()
+        );
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking saved words:', error);
+      return false;
+    }
   };
 
-  const isWordSaved = savedWords.some(word => 
-    word.word.toLowerCase() === selectedText.toLowerCase().trim()
-  );
+  // Update the local check to use backend data
+  const [isWordSaved, setIsWordSaved] = useState(false);
+  
+  useEffect(() => {
+    const checkWordSaved = async () => {
+      const saved = await isWordSavedBackend(selectedText);
+      setIsWordSaved(saved);
+    };
+    
+    if (selectedText) {
+      checkWordSaved();
+    }
+  }, [selectedText]);
+
+  const saveToVocabulary = async () => {
+    try {
+      // Import supabase client and auth hook
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { useAuth } = await import('@/hooks/useAuth');
+      
+      // Get current user (this is a workaround since we can't use hooks in event handlers)
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Please Sign In",
+          description: "You need to be signed in to save vocabulary.",
+        });
+        return;
+      }
+
+      // Get user's native language for translation
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('native_language')
+        .eq('id', user.id)
+        .single();
+
+      const targetLanguage = profile?.native_language || 'Spanish';
+      const languageCodeMap: Record<string, string> = {
+        'Spanish': 'es',
+        'French': 'fr', 
+        'German': 'de',
+        'Italian': 'it',
+        'Portuguese': 'pt',
+        'Chinese': 'zh',
+        'Japanese': 'ja',
+        'Korean': 'ko',
+        'Arabic': 'ar',
+        'Hindi': 'hi'
+      };
+
+      const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
+        body: {
+          action: 'saveWord',
+          word: selectedText.trim(),
+          context: window.location.pathname,
+          userId: user.id,
+          nativeLanguage: languageCodeMap[targetLanguage] || 'es'
+        }
+      });
+
+      if (error) throw error;
+
+      // Update local state to reflect the saved word
+      const newWord: SavedWord = {
+        id: data.wordId || Date.now().toString(),
+        word: selectedText.trim(),
+        translation: translation,
+        context: window.location.pathname,
+        savedAt: new Date()
+      };
+
+      const updated = [newWord, ...savedWords.slice(0, 99)];
+      setSavedWords(updated);
+      setIsWordSaved(true); // Update the saved status
+
+      toast({
+        title: "Word Saved",
+        description: `"${selectedText}" added to your vocabulary collection.`,
+      });
+    } catch (error) {
+      console.error('Error saving word:', error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save word to vocabulary. Please try again.",
+      });
+    }
+  };
 
   return (
     <div 

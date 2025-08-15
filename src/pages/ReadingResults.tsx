@@ -241,11 +241,17 @@ const ReadingResults = () => {
         <div className="space-y-8">
           {results.length > 0 ? (
             results.map((result) => {
-              const questions = processedResultsMap[result.id] || []; // Use processed questions from state
+              const questions = processedResultsMap[result.id];
+              
+              // Add debugging and safety checks
+              console.log('Processing result:', result.id, 'Questions from map:', questions);
+              
+              // Ensure questions is always an array
+              const safeQuestions = Array.isArray(questions) ? questions : [];
               const allQuestions = result.questions_data.questions || result.questions_data || [];
               const totalQuestions = Array.isArray(allQuestions) ? allQuestions.length : 0;
-              const incorrectCount = questions.length;
-              const visibleQuestions = questions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
+              const incorrectCount = safeQuestions.length;
+              const visibleQuestions = safeQuestions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
               
               return (
                 <Card key={result.id} className="bg-gradient-to-br from-card to-card/80 border-0 shadow-lg">

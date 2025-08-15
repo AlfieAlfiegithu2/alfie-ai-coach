@@ -3,7 +3,7 @@ import { getBandScore } from '@/lib/ielts-scoring';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trophy, Target, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trophy, Target, RotateCcw, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 interface CelebrationTestResultsProps {
@@ -104,6 +104,10 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={() => navigate('/dashboard')} className="hover:bg-muted text-foreground">
+                <Home className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
               <Button variant="ghost" onClick={() => navigate('/ielts-portal')} className="hover:bg-muted text-foreground">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Portal

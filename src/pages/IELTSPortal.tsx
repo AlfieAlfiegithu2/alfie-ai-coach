@@ -227,7 +227,7 @@ const IELTSPortal = () => {
                     onClick={() => handleTestClick(test.id)}
                     size="sm"
                     disabled={test.comingSoon}
-                    className="w-full mt-2 font-semibold rounded-2xl"
+                    className="w-full mt-2 font-semibold rounded-2xl text-black"
                     style={{ background: test.comingSoon ? 'var(--warm-gray)' : 'var(--gradient-button)', border: 'none' }}
                   >
                     {test.comingSoon ? 'Coming Soon' : 'Start Test'}
@@ -247,11 +247,11 @@ const IELTSPortal = () => {
             {SKILLS.map((item) => (
               <Card
                 key={item.slug}
-                className="cursor-pointer transition-all duration-200 rounded-2xl border-light-border hover:border-gentle-blue/30 hover:scale-105"
+                className="cursor-pointer transition-all duration-200 rounded-2xl border-light-border hover:border-gentle-blue/30 hover:scale-105 h-20"
                 onClick={() => navigate(`/skills/${item.slug}`)}
                 style={{ background: 'white' }}
               >
-                <CardHeader className="pb-2 p-4">
+                <CardHeader className="pb-2 p-4 h-full">
                   <div className="flex flex-col items-center justify-center h-full">
                     <CardTitle className="text-sm font-semibold text-foreground text-center">{item.label}</CardTitle>
                   </div>

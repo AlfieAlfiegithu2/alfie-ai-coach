@@ -15,6 +15,7 @@ interface QuestionReviewModalProps {
     explanation?: string;
     options?: string[];
     type?: string;
+    isCorrect: boolean;
   } | null;
   passage: string;
 }
@@ -46,7 +47,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
     return highlightedText;
   };
 
-  const isCorrect = question.userAnswer === question.correctAnswer;
+  const isCorrect = question.isCorrect;
   const highlightedPassage = highlightAnswerInPassage(passage, question.explanation);
 
   return (

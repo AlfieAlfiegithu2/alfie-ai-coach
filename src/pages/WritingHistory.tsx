@@ -159,43 +159,14 @@ const WritingHistory = () => {
 
   const handleViewSubmission = async (submission: WritingSubmission) => {
     try {
-      // Reconstruct the state object for the results page
-      const task1Data = submission.task1_results?.[0];
-      const task2Data = submission.task2_results?.[0];
+      // Navigate with submissionId in URL parameter
+      const submissionId = submission.id.startsWith('standalone-') 
+        ? submission.id.replace('standalone-', '') 
+        : submission.id;
       
-      if (!task1Data || !task2Data) {
-        toast({
-          title: "Error",
-          description: "Incomplete test data found",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Navigate to results page with historical data
-      navigate('/ielts-writing-results', {
+      navigate(`/results/writing/${submissionId}`, {
         state: {
-          testName: submission.test_name,
-          task1Answer: task1Data.user_response,
-          task2Answer: task2Data.user_response,
-          feedback: task1Data.detailed_feedback + '\n\n' + task2Data.detailed_feedback,
-          task1Data: {
-            title: 'Task 1',
-            prompt_text: task1Data.prompt_text,
-            instructions: task1Data.prompt_text
-          },
-          task2Data: {
-            title: 'Task 2', 
-            prompt_text: task2Data.prompt_text,
-            instructions: task2Data.prompt_text
-          },
-          task1WordCount: task1Data.word_count,
-          task2WordCount: task2Data.word_count,
-          structured: {
-            task1: { overall_band: extractBandFromResult(task1Data) },
-            task2: { overall_band: extractBandFromResult(task2Data) },
-            overall: { band: submission.overall_band }
-          }
+          submissionData: submission
         }
       });
     } catch (error) {

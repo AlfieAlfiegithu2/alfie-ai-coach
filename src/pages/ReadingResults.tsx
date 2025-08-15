@@ -87,28 +87,32 @@ const ReadingResults = () => {
   };
 
   const processQuestions = (result: ReadingResult): ProcessedQuestion[] => {
-    if (!result.questions_data || !result.user_answers) return [];
+    if (!result.questions_data) return [];
     
     const processedQuestions: ProcessedQuestion[] = [];
     const questions = result.questions_data.questions || result.questions_data;
-    const userAnswers = result.user_answers;
     
     if (Array.isArray(questions)) {
       questions.forEach((question: any, index: number) => {
-        const userAnswer = userAnswers[index] || userAnswers[question.id];
-        const correctAnswer = question.correct_answer || question.answer;
+        // Extract data from the question object itself
+        const userAnswer = question.user_answer || '';
+        const correctAnswer = question.correct_answer || question.answer || '';
+        const isCorrect = question.is_correct !== undefined ? question.is_correct : (userAnswer === correctAnswer);
         
-        processedQuestions.push({
-          questionNumber: index + 1,
-          question: question.question || question.text || '',
-          text: question.text,
-          userAnswer: userAnswer || '',
-          correctAnswer: correctAnswer || '',
-          explanation: question.explanation,
-          options: question.options,
-          type: question.type || question.question_type,
-          isCorrect: userAnswer === correctAnswer
-        });
+        // Only include incorrect answers for this "Incorrect Answer Notes" page
+        if (!isCorrect) {
+          processedQuestions.push({
+            questionNumber: index + 1,
+            question: question.question_text || question.question || question.text || '',
+            text: question.question_text || question.text,
+            userAnswer: userAnswer,
+            correctAnswer: correctAnswer,
+            explanation: question.explanation || '',
+            options: question.options || [],
+            type: question.type || question.question_type || '',
+            isCorrect: isCorrect
+          });
+        }
       });
     }
     
@@ -179,10 +183,11 @@ const ReadingResults = () => {
         <div className="space-y-8">
           {results.length > 0 ? (
             results.map((result) => {
-              const questions = processQuestions(result);
-              const correctCount = questions.filter(q => q.isCorrect).length;
+              const questions = processQuestions(result); // Only incorrect questions
+              const allQuestions = result.questions_data.questions || result.questions_data || [];
+              const totalQuestions = Array.isArray(allQuestions) ? allQuestions.length : 0;
+              const incorrectCount = questions.length;
               const visibleQuestions = questions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
-              const incorrectQuestions = visibleQuestions.filter(q => !q.isCorrect);
               
               return (
                 <Card key={result.id} className="bg-gradient-to-br from-card to-card/80 border-0 shadow-lg">
@@ -199,7 +204,7 @@ const ReadingResults = () => {
                           </span>
                           <span>{new Date(result.created_at).toLocaleDateString()}</span>
                           <span className="text-foreground font-medium">
-                            {correctCount}/{questions.length} correct
+                            {totalQuestions - incorrectCount}/{totalQuestions} correct
                           </span>
                         </div>
                       </div>
@@ -209,9 +214,9 @@ const ReadingResults = () => {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-foreground">
-                        Incorrect Answer Notes ({incorrectQuestions.length} remaining)
+                        Incorrect Answer Notes ({visibleQuestions.length} remaining)
                       </h3>
-                      {incorrectQuestions.length > 0 && (
+                      {visibleQuestions.length > 0 && (
                         <Button
                           variant="outline"
                           size="sm"

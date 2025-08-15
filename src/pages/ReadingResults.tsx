@@ -137,6 +137,34 @@ const ReadingResults = () => {
               return acc;
             }, {});
           }
+
+          // Also try to match by question text for questions that might have different IDs
+          const questionTexts = questions
+            .map((q: any) => q.question_text || q.question || q.text)
+            .filter(Boolean);
+          
+          if (questionTexts.length > 0) {
+            console.log('Trying to match by question text:', questionTexts);
+            
+            for (const questionText of questionTexts) {
+              if (!questionText) continue;
+              
+              const { data: textMatches, error: textError } = await supabase
+                .from('questions')
+                .select('id, choices, question_type, question_text')
+                .ilike('question_text', `%${questionText.substring(0, 50)}%`);
+              
+              if (textMatches && textMatches.length > 0) {
+                console.log(`Text match found for "${questionText.substring(0, 50)}":`, textMatches);
+                textMatches.forEach((match: any) => {
+                  // Use text-based key for mapping
+                  const textKey = `text:${questionText}`;
+                  questionDetailsMap[textKey] = match;
+                });
+              }
+            }
+          }
+
         } catch (error) {
           console.error('Error fetching question details:', error);
         }
@@ -151,11 +179,23 @@ const ReadingResults = () => {
         // Only include incorrect answers for this "Incorrect Answer Notes" page
         if (!isCorrect) {
           const questionId = question.id || question.question_id;
-          const questionDetails = questionDetailsMap[questionId];
+          const questionText = question.question_text || question.question || question.text || '';
+          
+          // Try to find question details by ID first, then by text
+          let questionDetails = questionDetailsMap[questionId];
+          
+          // If no details found by ID, try text-based lookup
+          if (!questionDetails && questionText) {
+            const textKey = `text:${questionText}`;
+            questionDetails = questionDetailsMap[textKey];
+            console.log(`Using text-based lookup for question: "${questionText.substring(0, 50)}"`, questionDetails);
+          }
+          
           let options: string[] = [];
           
           console.log(`Processing question ${index + 1}:`, {
             questionId,
+            questionText: questionText.substring(0, 50),
             questionDetails,
             correctAnswer,
             userAnswer,

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -598,6 +598,60 @@ export type Database = {
           title?: string
           updated_at?: string
           word_limit?: number | null
+        }
+        Relationships: []
+      }
+      question_bookmarks: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          explanation: string | null
+          id: string
+          notes: string | null
+          options: Json | null
+          passage_text: string | null
+          passage_title: string | null
+          question_id: string
+          question_text: string
+          question_type: string | null
+          test_result_id: string | null
+          updated_at: string
+          user_answer: string | null
+          user_id: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          notes?: string | null
+          options?: Json | null
+          passage_text?: string | null
+          passage_title?: string | null
+          question_id: string
+          question_text: string
+          question_type?: string | null
+          test_result_id?: string | null
+          updated_at?: string
+          user_answer?: string | null
+          user_id: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          notes?: string | null
+          options?: Json | null
+          passage_text?: string | null
+          passage_title?: string | null
+          question_id?: string
+          question_text?: string
+          question_type?: string | null
+          test_result_id?: string | null
+          updated_at?: string
+          user_answer?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1254,65 +1308,27 @@ export type Database = {
       }
       user_vocabulary: {
         Row: {
-          context: string | null
-          id: string
-          saved_at: string
-          user_id: string
-          vocabulary_word_id: string
-        }
-        Insert: {
-          context?: string | null
-          id?: string
-          saved_at?: string
-          user_id: string
-          vocabulary_word_id: string
-        }
-        Update: {
-          context?: string | null
-          id?: string
-          saved_at?: string
-          user_id?: string
-          vocabulary_word_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_vocabulary_vocabulary_word_id_fkey"
-            columns: ["vocabulary_word_id"]
-            isOneToOne: false
-            referencedRelation: "vocabulary_words"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vocabulary_words: {
-        Row: {
           created_at: string
           id: string
-          language_code: string
-          translation: string
-          updated_at: string
-          usage_count: number | null
-          verified: boolean | null
+          part_of_speech: string | null
+          translations: string[] | null
+          user_id: string | null
           word: string
         }
         Insert: {
           created_at?: string
           id?: string
-          language_code: string
-          translation: string
-          updated_at?: string
-          usage_count?: number | null
-          verified?: boolean | null
+          part_of_speech?: string | null
+          translations?: string[] | null
+          user_id?: string | null
           word: string
         }
         Update: {
           created_at?: string
           id?: string
-          language_code?: string
-          translation?: string
-          updated_at?: string
-          usage_count?: number | null
-          verified?: boolean | null
+          part_of_speech?: string | null
+          translations?: string[] | null
+          user_id?: string | null
           word?: string
         }
         Relationships: []

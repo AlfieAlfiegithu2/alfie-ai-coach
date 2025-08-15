@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useToast } from "@/hooks/use-toast";
 import { 
   BookOpen, 
   ArrowLeft,
@@ -19,7 +20,9 @@ import {
   ChevronRight,
   Search,
   Filter,
-  TrendingDown
+  TrendingDown,
+  Bookmark,
+  BookmarkCheck
 } from "lucide-react";
 import Header from '@/components/Header';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -62,10 +65,13 @@ const ReadingResults = () => {
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
       loadReadingResults();
+      loadBookmarks();
     }
   }, [user]);
 
@@ -112,6 +118,98 @@ const ReadingResults = () => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const loadBookmarks = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data: bookmarks, error } = await supabase
+        .from('question_bookmarks')
+        .select('question_id, test_result_id')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching bookmarks:', error);
+        return;
+      }
+
+      const bookmarkKeys = new Set(
+        bookmarks?.map(b => `${b.test_result_id}-${b.question_id}`) || []
+      );
+      setBookmarkedQuestions(bookmarkKeys);
+    } catch (error) {
+      console.error('Error loading bookmarks:', error);
+    }
+  };
+
+  const isQuestionBookmarked = (resultId: string, question: ProcessedQuestion) => {
+    return bookmarkedQuestions.has(`${resultId}-${question.questionNumber}`);
+  };
+
+  const toggleBookmark = async (result: ReadingResult, question: ProcessedQuestion) => {
+    if (!user?.id) return;
+
+    const bookmarkKey = `${result.id}-${question.questionNumber}`;
+    const isCurrentlyBookmarked = bookmarkedQuestions.has(bookmarkKey);
+
+    try {
+      if (isCurrentlyBookmarked) {
+        // Remove bookmark
+        const { error } = await supabase
+          .from('question_bookmarks')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('question_id', question.questionNumber.toString())
+          .eq('test_result_id', result.id);
+
+        if (error) throw error;
+
+        setBookmarkedQuestions(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(bookmarkKey);
+          return newSet;
+        });
+
+        toast({
+          title: "Bookmark removed",
+          description: "Question removed from your bookmarks",
+        });
+      } else {
+        // Add bookmark
+        const { error } = await supabase
+          .from('question_bookmarks')
+          .insert({
+            user_id: user.id,
+            question_id: question.questionNumber.toString(),
+            question_text: question.question,
+            question_type: question.type || '',
+            user_answer: question.userAnswer,
+            correct_answer: question.correctAnswer,
+            explanation: question.explanation || '',
+            options: question.options || [],
+            passage_title: result.passage_title,
+            passage_text: result.passage_text || '',
+            test_result_id: result.id
+          });
+
+        if (error) throw error;
+
+        setBookmarkedQuestions(prev => new Set([...prev, bookmarkKey]));
+
+        toast({
+          title: "Question bookmarked",
+          description: "Added to your bookmarks for later review",
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update bookmark",
+        variant: "destructive",
+      });
+    }
   };
 
   const processQuestions = async (result: ReadingResult): Promise<ProcessedQuestion[]> => {
@@ -220,10 +318,19 @@ const ReadingResults = () => {
     
     // Type filter
     if (filterType !== 'all') {
-      const hasFilterType = visibleQuestions.some(q => 
-        q.type?.toLowerCase().includes(filterType.toLowerCase())
-      );
-      if (!hasFilterType) return false;
+      if (filterType === 'bookmarked') {
+        // Show only questions that are bookmarked
+        const hasBookmarkedQuestion = visibleQuestions.some(q => 
+          isQuestionBookmarked(result.id, q)
+        );
+        if (!hasBookmarkedQuestion) return false;
+      } else {
+        // Filter by question type
+        const hasFilterType = visibleQuestions.some(q => 
+          q.type?.toLowerCase().includes(filterType.toLowerCase())
+        );
+        if (!hasFilterType) return false;
+      }
     }
     
     return true;
@@ -294,7 +401,8 @@ const ReadingResults = () => {
                   onChange={(e) => setFilterType(e.target.value)}
                   className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 >
-                  <option value="all">All Question Types</option>
+                  <option value="all">All Questions</option>
+                  <option value="bookmarked">Bookmarked Only</option>
                   {getUniqueQuestionTypes().map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
@@ -326,7 +434,13 @@ const ReadingResults = () => {
               const allQuestions = result.questions_data.questions || result.questions_data || [];
               const totalQuestions = Array.isArray(allQuestions) ? allQuestions.length : 0;
               const incorrectCount = safeQuestions.length;
-              const visibleQuestions = safeQuestions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
+              let visibleQuestions = safeQuestions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
+              
+              // If filtering by bookmarked, only show bookmarked questions
+              if (filterType === 'bookmarked') {
+                visibleQuestions = visibleQuestions.filter(q => isQuestionBookmarked(result.id, q));
+              }
+              
               const isExpanded = expandedResults.has(result.id);
               
               // Skip if no visible questions
@@ -455,6 +569,26 @@ const ReadingResults = () => {
                                   </div>
                                   
                                   <div className="flex gap-1 flex-shrink-0 ml-3">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleBookmark(result, question);
+                                      }}
+                                      className={`${
+                                        isQuestionBookmarked(result.id, question)
+                                          ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'
+                                          : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'
+                                      }`}
+                                      title={isQuestionBookmarked(result.id, question) ? 'Remove bookmark' : 'Bookmark for later review'}
+                                    >
+                                      {isQuestionBookmarked(result.id, question) ? (
+                                        <BookmarkCheck className="w-4 h-4" />
+                                      ) : (
+                                        <Bookmark className="w-4 h-4" />
+                                      )}
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"

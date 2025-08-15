@@ -185,6 +185,13 @@ const ReadingResults = () => {
               }
             }
           } else {
+            // Check if this appears to be a multiple choice question based on the answer format
+            const answerPattern = /^[A-Z]$/;
+            if (answerPattern.test(correctAnswer) || answerPattern.test(userAnswer)) {
+              console.log('Question appears to be multiple choice but has no stored options:', question.id);
+              // This is likely a multiple choice question missing its options
+              options = [`Missing option data - this appears to be a multiple choice question with answer: ${correctAnswer}`];
+            }
             console.log('No choices found for question:', question.id, 'Question details:', questionDetails);
           }
           

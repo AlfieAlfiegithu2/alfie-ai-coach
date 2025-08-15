@@ -113,41 +113,56 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
               {question.options && question.options.length > 0 ? (
                 <div>
                   <h4 className="text-md font-semibold mb-3 text-foreground">Answer Options</h4>
-                  <div className="space-y-2">
-                    {question.options.map((option: string, index: number) => {
-                      const optionLetter = String.fromCharCode(65 + index);
-                      const correctAnswers = question.correctAnswer.split(/[,\s]+/).map(a => a.trim());
-                      const userAnswers = question.userAnswer ? question.userAnswer.split(/[,\s]+/).map(a => a.trim()) : [];
-                      
-                      const isCorrectAnswer = correctAnswers.includes(optionLetter);
-                      const isUserAnswer = userAnswers.includes(optionLetter);
-                      
-                      let bgClass = 'bg-background border-border';
-                      let textClass = 'text-foreground';
-                      
-                      if (isCorrectAnswer) {
-                        bgClass = 'bg-green-50 border-green-200';
-                        textClass = 'text-green-700';
-                      } else if (isUserAnswer && !isCorrect) {
-                        bgClass = 'bg-red-50 border-red-200';
-                        textClass = 'text-red-700';
-                      }
-                      
-                      return (
-                        <div
-                          key={index}
-                          className={`p-3 rounded border text-sm flex items-center gap-2 ${bgClass} ${textClass}`}
-                        >
-                          <span className="font-medium min-w-[24px]">
-                            {optionLetter}.
-                          </span>
-                          <span className="flex-1">{option}</span>
-                          {isCorrectAnswer && <CheckCircle className="w-4 h-4 text-green-600" />}
-                          {isUserAnswer && !isCorrect && <XCircle className="w-4 h-4 text-red-600" />}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {question.options[0]?.includes('Missing option data') ? (
+                    // Show missing data message for incomplete questions
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <h4 className="text-md font-semibold mb-2 text-amber-800">Answer Options Missing</h4>
+                      <p className="text-sm text-amber-700">
+                        This question's answer options were not properly stored in the database. 
+                        The correct answer is <strong>{question.correctAnswer}</strong>, but the original multiple choice options are missing.
+                      </p>
+                      <p className="text-sm text-amber-700 mt-2">
+                        <strong>Note:</strong> Please refer to the original test material to see all answer options.
+                      </p>
+                    </div>
+                  ) : (
+                    // Show normal options
+                    <div className="space-y-2">
+                      {question.options.map((option: string, index: number) => {
+                        const optionLetter = String.fromCharCode(65 + index);
+                        const correctAnswers = question.correctAnswer.split(/[,\s]+/).map(a => a.trim());
+                        const userAnswers = question.userAnswer ? question.userAnswer.split(/[,\s]+/).map(a => a.trim()) : [];
+                        
+                        const isCorrectAnswer = correctAnswers.includes(optionLetter);
+                        const isUserAnswer = userAnswers.includes(optionLetter);
+                        
+                        let bgClass = 'bg-background border-border';
+                        let textClass = 'text-foreground';
+                        
+                        if (isCorrectAnswer) {
+                          bgClass = 'bg-green-50 border-green-200';
+                          textClass = 'text-green-700';
+                        } else if (isUserAnswer && !isCorrect) {
+                          bgClass = 'bg-red-50 border-red-200';
+                          textClass = 'text-red-700';
+                        }
+                        
+                        return (
+                          <div
+                            key={index}
+                            className={`p-3 rounded border text-sm flex items-center gap-2 ${bgClass} ${textClass}`}
+                          >
+                            <span className="font-medium min-w-[24px]">
+                              {optionLetter}.
+                            </span>
+                            <span className="flex-1">{option.replace(/^[A-Z]\.\s*/, '')}</span>
+                            {isCorrectAnswer && <CheckCircle className="w-4 h-4 text-green-600" />}
+                            {isUserAnswer && !isCorrect && <XCircle className="w-4 h-4 text-red-600" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ) : (
                 // Only show "not available" message for question types that should have options

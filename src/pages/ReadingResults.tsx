@@ -112,17 +112,24 @@ const ReadingResults = () => {
     
     if (Array.isArray(questions)) {
       // Extract question IDs to fetch full question data with options
-      const questionIds = questions.map((q: any) => q.id).filter(Boolean);
+      const questionIds = questions
+        .map((q: any) => q.id || q.question_id)
+        .filter(Boolean);
+      
+      console.log('Extracted question IDs:', questionIds);
       
       let questionDetailsMap: { [key: string]: any } = {};
       
       if (questionIds.length > 0) {
         try {
           // Fetch question details including choices from the questions table
-          const { data: questionDetails } = await supabase
+          const { data: questionDetails, error } = await supabase
             .from('questions')
-            .select('id, choices, question_type')
+            .select('id, choices, question_type, question_text')
             .in('id', questionIds);
+          
+          console.log('Fetched question details:', questionDetails);
+          console.log('Query error:', error);
           
           if (questionDetails) {
             questionDetailsMap = questionDetails.reduce((acc: any, q: any) => {
@@ -143,12 +150,21 @@ const ReadingResults = () => {
         
         // Only include incorrect answers for this "Incorrect Answer Notes" page
         if (!isCorrect) {
-          const questionDetails = questionDetailsMap[question.id];
+          const questionId = question.id || question.question_id;
+          const questionDetails = questionDetailsMap[questionId];
           let options: string[] = [];
           
+          console.log(`Processing question ${index + 1}:`, {
+            questionId,
+            questionDetails,
+            correctAnswer,
+            userAnswer,
+            rawChoices: questionDetails?.choices
+          });
+          
           // Parse choices if available
-          if (questionDetails?.choices) {
-            console.log('Parsing choices for question:', question.id, 'Raw choices:', questionDetails.choices);
+          if (questionDetails?.choices && questionDetails.choices.trim() !== '') {
+            console.log('Parsing choices for question:', questionId, 'Raw choices:', questionDetails.choices);
             
             // Split choices by semicolon and clean up
             const rawChoices = questionDetails.choices
@@ -188,11 +204,11 @@ const ReadingResults = () => {
             // Check if this appears to be a multiple choice question based on the answer format
             const answerPattern = /^[A-Z]$/;
             if (answerPattern.test(correctAnswer) || answerPattern.test(userAnswer)) {
-              console.log('Question appears to be multiple choice but has no stored options:', question.id);
+              console.log('Question appears to be multiple choice but has no stored options:', questionId);
               // This is likely a multiple choice question missing its options
               options = [`Missing option data - this appears to be a multiple choice question with answer: ${correctAnswer}`];
             }
-            console.log('No choices found for question:', question.id, 'Question details:', questionDetails);
+            console.log('No choices found for question:', questionId, 'Question details:', questionDetails);
           }
           
           processedQuestions.push({

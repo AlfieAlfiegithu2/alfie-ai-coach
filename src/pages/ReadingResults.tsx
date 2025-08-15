@@ -148,15 +148,44 @@ const ReadingResults = () => {
           
           // Parse choices if available
           if (questionDetails?.choices) {
+            console.log('Parsing choices for question:', question.id, 'Raw choices:', questionDetails.choices);
+            
             // Split choices by semicolon and clean up
-            options = questionDetails.choices
+            const rawChoices = questionDetails.choices
               .split(';')
               .map((choice: string) => choice.trim())
-              .filter((choice: string) => choice.length > 0)
-              .map((choice: string) => {
-                // Remove the roman numeral prefix (i., ii., iii., etc.) to get clean option text
-                return choice.replace(/^[ivxlc]+\.\s*/i, '').trim();
-              });
+              .filter((choice: string) => choice.length > 0);
+            
+            // Determine the format and parse accordingly
+            if (rawChoices.length > 0) {
+              const firstChoice = rawChoices[0];
+              
+              if (firstChoice.match(/^[ivxlc]+\.\s*/i)) {
+                // Roman numeral format (i., ii., iii.) - convert to A, B, C format
+                options = rawChoices.map((choice: string, index: number) => {
+                  const cleanText = choice.replace(/^[ivxlc]+\.\s*/i, '').trim();
+                  const letter = String.fromCharCode(65 + index); // A, B, C, etc.
+                  return `${letter}. ${cleanText}`;
+                });
+                console.log('Parsed roman numeral format to:', options);
+              } else if (firstChoice.match(/^[A-Z]\)\s*/)) {
+                // Letter format with parentheses (A), B), C)) - keep as is but standardize
+                options = rawChoices.map((choice: string) => {
+                  // Convert A) format to A. format for consistency
+                  return choice.replace(/^([A-Z])\)\s*/, '$1. ');
+                });
+                console.log('Parsed letter format to:', options);
+              } else {
+                // Fallback - add letters if no format detected
+                options = rawChoices.map((choice: string, index: number) => {
+                  const letter = String.fromCharCode(65 + index);
+                  return `${letter}. ${choice}`;
+                });
+                console.log('Used fallback format to:', options);
+              }
+            }
+          } else {
+            console.log('No choices found for question:', question.id, 'Question details:', questionDetails);
           }
           
           processedQuestions.push({

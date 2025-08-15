@@ -77,6 +77,7 @@ import AdminListeningForDetailsTestDetail from "./pages/AdminListeningForDetails
 import ListeningQuiz from "./pages/ListeningQuiz";
 import VocabularyMap from "./pages/VocabularyMap";
 import VocabularyMapView from "./components/VocabularyMapView";
+import WritingHistory from "./pages/WritingHistory";
 
 const queryClient = new QueryClient();
 
@@ -200,6 +201,7 @@ const App = () => {
             <Route path="/toefl-portal" element={<TOEFLPortal />} />
             <Route path="/general-portal" element={<GeneralPortal />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/writing-history" element={<WritingHistory />} />
             <Route path="/user-dashboard" element={<PersonalPage />} />
             <Route path="/practice" element={<TestSelection />} />
             <Route path="/personal-page" element={<PersonalPage />} />

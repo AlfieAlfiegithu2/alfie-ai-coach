@@ -341,6 +341,28 @@ const IELTSWritingResults = () => {
           </CardContent>
         </Card>
 
+        {/* Task 2 Question */}
+        {task2Data && (
+          <Card className="mb-6 card-elevated border-2 border-brand-purple/20">
+            <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-purple/5">
+              <CardTitle className="flex items-center gap-2 text-brand-purple">
+                <div className="p-2 rounded-xl bg-brand-purple/10">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                Task 2 Question
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="bg-surface-1 rounded-xl p-6 border border-border">
+                <h4 className="font-semibold text-text-primary mb-3">{task2Data.title}</h4>
+                <div className="text-text-secondary leading-relaxed whitespace-pre-wrap">
+                  {task2Data.prompt_text || task2Data.instructions}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Criteria Breakdown - Task 2 */}
         <Card className="mb-8 card-elevated border-2 border-brand-purple/20">
           <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-purple/5">

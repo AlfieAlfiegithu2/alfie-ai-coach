@@ -380,12 +380,27 @@ const Dashboard = () => {
                   const skillResults = testResults.filter(result => result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase())).slice(0, 3);
                   const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
                   return <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-                        <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold mb-3 lg:mb-4 text-slate-800" style={{
-                      fontFamily: 'Inter, sans-serif'
-                    }}>
-                          <Icon className="w-4 h-4" />
-                          {skill} Results & Feedback
-                        </h3>
+                        <div className="flex items-center justify-between mb-3 lg:mb-4">
+                          <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold text-slate-800" style={{
+                        fontFamily: 'Inter, sans-serif'
+                      }}>
+                            <Icon className="w-4 h-4" />
+                            {skill} Results & Feedback
+                          </h3>
+                          {skill === 'Writing' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/dashboard/writing-history');
+                              }}
+                              className="text-xs text-slate-600 hover:text-slate-800"
+                            >
+                              View History
+                            </Button>
+                          )}
+                        </div>
                         
                         {skillResults.length > 0 ? <div className="space-y-3">
                             <div className="grid grid-cols-3 gap-3 text-xs text-slate-600 mb-4">

@@ -111,65 +111,6 @@ const ReadingResults = () => {
     const questions = result.questions_data.questions || result.questions_data;
     
     if (Array.isArray(questions)) {
-      // Extract question IDs to fetch full question data with options
-      const questionIds = questions
-        .map((q: any) => q.id || q.question_id)
-        .filter(Boolean);
-      
-      console.log('Extracted question IDs:', questionIds);
-      
-      let questionDetailsMap: { [key: string]: any } = {};
-      
-      if (questionIds.length > 0) {
-        try {
-          // Fetch question details including choices from the questions table
-          const { data: questionDetails, error } = await supabase
-            .from('questions')
-            .select('id, choices, question_type, question_text')
-            .in('id', questionIds);
-          
-          console.log('Fetched question details:', questionDetails);
-          console.log('Query error:', error);
-          
-          if (questionDetails) {
-            questionDetailsMap = questionDetails.reduce((acc: any, q: any) => {
-              acc[q.id] = q;
-              return acc;
-            }, {});
-          }
-
-          // Also try to match by question text for questions that might have different IDs
-          const questionTexts = questions
-            .map((q: any) => q.question_text || q.question || q.text)
-            .filter(Boolean);
-          
-          if (questionTexts.length > 0) {
-            console.log('Trying to match by question text:', questionTexts);
-            
-            for (const questionText of questionTexts) {
-              if (!questionText) continue;
-              
-              const { data: textMatches, error: textError } = await supabase
-                .from('questions')
-                .select('id, choices, question_type, question_text')
-                .ilike('question_text', `%${questionText.substring(0, 50)}%`);
-              
-              if (textMatches && textMatches.length > 0) {
-                console.log(`Text match found for "${questionText.substring(0, 50)}":`, textMatches);
-                textMatches.forEach((match: any) => {
-                  // Use text-based key for mapping
-                  const textKey = `text:${questionText}`;
-                  questionDetailsMap[textKey] = match;
-                });
-              }
-            }
-          }
-
-        } catch (error) {
-          console.error('Error fetching question details:', error);
-        }
-      }
-      
       questions.forEach((question: any, index: number) => {
         // Extract data from the question object itself
         const userAnswer = question.user_answer || '';
@@ -178,77 +119,19 @@ const ReadingResults = () => {
         
         // Only include incorrect answers for this "Incorrect Answer Notes" page
         if (!isCorrect) {
-          const questionId = question.id || question.question_id;
-          const questionText = question.question_text || question.question || question.text || '';
-          
-          // Try to find question details by ID first, then by text
-          let questionDetails = questionDetailsMap[questionId];
-          
-          // If no details found by ID, try text-based lookup
-          if (!questionDetails && questionText) {
-            const textKey = `text:${questionText}`;
-            questionDetails = questionDetailsMap[textKey];
-            console.log(`Using text-based lookup for question: "${questionText.substring(0, 50)}"`, questionDetails);
-          }
-          
           let options: string[] = [];
           
-          console.log(`Processing question ${index + 1}:`, {
-            questionId,
-            questionText: questionText.substring(0, 50),
-            questionDetails,
-            correctAnswer,
-            userAnswer,
-            rawChoices: questionDetails?.choices
-          });
-          
-          // Parse choices if available
-          if (questionDetails?.choices && questionDetails.choices.trim() !== '') {
-            console.log('Parsing choices for question:', questionId, 'Raw choices:', questionDetails.choices);
-            
-            // Split choices by semicolon and clean up
-            const rawChoices = questionDetails.choices
-              .split(';')
-              .map((choice: string) => choice.trim())
-              .filter((choice: string) => choice.length > 0);
-            
-            // Determine the format and parse accordingly
-            if (rawChoices.length > 0) {
-              const firstChoice = rawChoices[0];
-              
-              if (firstChoice.match(/^[ivxlc]+\.\s*/i)) {
-                // Roman numeral format (i., ii., iii.) - convert to A, B, C format
-                options = rawChoices.map((choice: string, index: number) => {
-                  const cleanText = choice.replace(/^[ivxlc]+\.\s*/i, '').trim();
-                  const letter = String.fromCharCode(65 + index); // A, B, C, etc.
-                  return `${letter}. ${cleanText}`;
-                });
-                console.log('Parsed roman numeral format to:', options);
-              } else if (firstChoice.match(/^[A-Z]\)\s*/)) {
-                // Letter format with parentheses (A), B), C)) - keep as is but standardize
-                options = rawChoices.map((choice: string) => {
-                  // Convert A) format to A. format for consistency
-                  return choice.replace(/^([A-Z])\)\s*/, '$1. ');
-                });
-                console.log('Parsed letter format to:', options);
-              } else {
-                // Fallback - add letters if no format detected
-                options = rawChoices.map((choice: string, index: number) => {
-                  const letter = String.fromCharCode(65 + index);
-                  return `${letter}. ${choice}`;
-                });
-                console.log('Used fallback format to:', options);
-              }
-            }
+          // Use stored options directly if available
+          if (question.options && Array.isArray(question.options) && question.options.length > 0) {
+            options = question.options;
+            console.log('Using stored options for question:', question.id, options);
           } else {
             // Check if this appears to be a multiple choice question based on the answer format
             const answerPattern = /^[A-Z]$/;
             if (answerPattern.test(correctAnswer) || answerPattern.test(userAnswer)) {
-              console.log('Question appears to be multiple choice but has no stored options:', questionId);
-              // This is likely a multiple choice question missing its options
+              console.log('Question appears to be multiple choice but has no stored options:', question.id);
               options = [`Missing option data - this appears to be a multiple choice question with answer: ${correctAnswer}`];
             }
-            console.log('No choices found for question:', questionId, 'Question details:', questionDetails);
           }
           
           processedQuestions.push({
@@ -259,7 +142,7 @@ const ReadingResults = () => {
             correctAnswer: correctAnswer,
             explanation: question.explanation || '',
             options: options,
-            type: question.type || question.question_type || questionDetails?.question_type || '',
+            type: question.type || question.question_type || '',
             isCorrect: isCorrect
           });
         }

@@ -363,7 +363,8 @@ const EnhancedReadingTest = () => {
             user_answer: answers[q.id] || '',
             correct_answer: q.correct_answer,
             is_correct: answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim(),
-            explanation: q.explanation
+            explanation: q.explanation,
+            options: q.options || [] // Include the options array
           }));
 
           // Calculate question type performance

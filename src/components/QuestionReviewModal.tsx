@@ -1,7 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { X, CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface QuestionReviewModalProps {
   isOpen: boolean;
@@ -54,19 +53,14 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden z-50">
         <DialogHeader className="border-b border-border pb-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold text-foreground flex items-center gap-3">
-              Question {question.questionNumber} Review
-              {isCorrect ? (
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              ) : (
-                <XCircle className="w-6 h-6 text-red-600" />
-              )}
-            </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-2xl font-bold text-foreground flex items-center gap-3">
+            Question {question.questionNumber} Review
+            {isCorrect ? (
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            ) : (
+              <XCircle className="w-6 h-6 text-red-600" />
+            )}
+          </DialogTitle>
         </DialogHeader>
         
         <div className="flex gap-6 h-[calc(95vh-120px)] overflow-hidden">

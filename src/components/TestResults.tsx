@@ -1,10 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getBandScore } from '@/lib/ielts-scoring';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, XCircle, TrendingUp, RotateCcw, ArrowRight } from "lucide-react";
+import { CheckCircle, XCircle, TrendingUp, RotateCcw, ArrowRight, Home } from "lucide-react";
 import LightRays from '@/components/animations/LightRays';
 
 interface TestResultsProps {
@@ -28,6 +29,7 @@ const TestResults = ({
   onContinue, 
   testTitle 
 }: TestResultsProps) => {
+  const navigate = useNavigate();
   const percentage = Math.round((score / totalQuestions) * 100);
   
   // Use official IELTS band score conversion based on correct answers
@@ -102,7 +104,15 @@ const TestResults = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+              className="rounded-xl px-6"
+            >
+              <Home className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
             <Button 
               variant="outline" 
               onClick={onRetake}

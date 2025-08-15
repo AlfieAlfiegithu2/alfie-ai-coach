@@ -141,17 +141,19 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                   </div>
                 </div>
               ) : (
-                // Show notice when options are not available
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <h4 className="text-md font-semibold mb-2 text-amber-800">Answer Options Not Available</h4>
-                  <p className="text-sm text-amber-700">
-                    The original answer options for this question are not stored in the database. 
-                    This appears to be a multiple choice or fill-in-the-blank question where the correct answer is "{question.correctAnswer}".
-                  </p>
-                  <p className="text-sm text-amber-700 mt-2">
-                    <strong>Note:</strong> To see the complete answer options, please refer to the original test material or contact support to have the question data updated.
-                  </p>
-                </div>
+                // Only show "not available" message for question types that should have options
+                ['multiple_choice', 'matching', 'multiple_select'].includes(question.type || '') && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <h4 className="text-md font-semibold mb-2 text-amber-800">Answer Options Not Available</h4>
+                    <p className="text-sm text-amber-700">
+                      The original answer options for this question are not stored in the database. 
+                      This appears to be a multiple choice question where the correct answer is "{question.correctAnswer}".
+                    </p>
+                    <p className="text-sm text-amber-700 mt-2">
+                      <strong>Note:</strong> To see the complete answer options, please refer to the original test material.
+                    </p>
+                  </div>
+                )
               )}
               
               {/* Answer Comparison */}

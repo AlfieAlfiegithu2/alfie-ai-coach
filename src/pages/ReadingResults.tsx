@@ -252,7 +252,11 @@ const ReadingResults = () => {
               const totalQuestions = Array.isArray(allQuestions) ? allQuestions.length : 0;
               const incorrectCount = safeQuestions.length;
               const visibleQuestions = safeQuestions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
-              
+              // Only show result if there are visible questions remaining
+              if (visibleQuestions.length === 0) {
+                return null; // Hide the entire result card when no questions remain
+              }
+
               return (
                 <Card key={result.id} className="bg-gradient-to-br from-card to-card/80 border-0 shadow-lg">
                   <CardHeader className="border-b border-border/50">

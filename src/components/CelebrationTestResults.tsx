@@ -86,6 +86,7 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
   };
   // Get all questions from all test parts to ensure we count all 40 questions
   const allQuestions = Object.values(testParts).flatMap(part => part.questions);
+  
   const correctCount = allQuestions.filter(q => answers[q.id]?.toLowerCase().trim() === q.correct_answer.toLowerCase().trim()).length;
   const incorrectCount = allQuestions.filter(q => {
     const userAnswer = answers[q.id];
@@ -154,8 +155,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 <p className="text-sm text-muted-foreground font-inter">Questions Correct</p>
               </div>
               <div className="text-center">
-                
-                
+                <div className="text-3xl font-semibold text-foreground font-inter">{percentage}%</div>
+                <p className="text-sm text-muted-foreground font-inter">Accuracy</p>
               </div>
             </div>
             <div className="inline-flex items-center px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium text-lg font-inter">
@@ -189,7 +190,60 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
         </Card>
 
         {/* Performance Summary */}
-        
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader className="text-center pb-3">
+              <CardTitle className="text-lg font-medium text-foreground font-inter">
+                Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="font-medium text-foreground font-inter">Correct</span>
+                </div>
+                <span className="text-xl font-semibold text-foreground font-inter">
+                  {correctCount}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span className="font-medium text-foreground font-inter">Incorrect</span>
+                </div>
+                <span className="text-xl font-semibold text-foreground font-inter">
+                  {incorrectCount}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-muted-foreground"></div>
+                  <span className="font-medium text-foreground font-inter">Skipped</span>
+                </div>
+                <span className="text-xl font-semibold text-foreground font-inter">
+                  {skippedCount}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="text-center pb-3">
+              <CardTitle className="text-lg font-medium text-foreground font-inter">
+                Question Types
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {Object.entries(questionTypes).map(([type, count]) => <div key={type} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
+                  <span className="text-sm capitalize font-medium text-foreground font-inter">{type.replace('_', ' ')}</span>
+                  <span className="text-xl font-semibold text-foreground font-inter">
+                    {count}
+                  </span>
+                </div>)}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Main Content - Taller and Better Layout */}
         <div className="flex gap-6 h-[calc(100vh-200px)]">

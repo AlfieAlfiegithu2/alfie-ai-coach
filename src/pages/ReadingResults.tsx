@@ -5,17 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { 
   BookOpen, 
+  TrendingUp, 
   Clock, 
   CheckCircle, 
   XCircle, 
   ArrowLeft,
   Trophy,
   Target,
-  BarChart3,
-  Eye
+  BarChart3
 } from "lucide-react";
 import { getBandScore } from '@/lib/ielts-scoring';
 import Header from '@/components/Header';
@@ -25,7 +25,6 @@ interface ReadingResult {
   id: string;
   created_at: string;
   passage_title: string;
-  passage_text: string;
   questions_data: any;
   reading_time_seconds: number;
   comprehension_score: number;
@@ -33,27 +32,18 @@ interface ReadingResult {
   detailed_feedback: string;
 }
 
-interface QuestionDetail {
-  question: string;
-  userAnswer: string;
-  correctAnswer: string;
-  explanation?: string;
-  isCorrect: boolean;
-  questionType: string;
-}
-
 const ReadingResults = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [results, setResults] = useState<ReadingResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedQuestion, setSelectedQuestion] = useState<QuestionDetail | null>(null);
-  const [selectedPassage, setSelectedPassage] = useState<string>('');
   const [stats, setStats] = useState({
     totalTests: 0,
     averageScore: 0,
     averageBandScore: 0,
-    totalTimeSpent: 0
+    totalTimeSpent: 0,
+    strongestSkills: [] as string[],
+    weakestSkills: [] as string[]
   });
 
   useEffect(() => {
@@ -89,11 +79,39 @@ const ReadingResults = () => {
         const totalTime = readingResults.reduce((sum, result) => 
           sum + (result.reading_time_seconds || 0), 0);
 
+        // Analyze question type performance
+        const questionTypeStats: { [key: string]: { correct: number, total: number } } = {};
+        
+        readingResults.forEach(result => {
+          if (result.question_type_performance) {
+            Object.entries(result.question_type_performance).forEach(([type, performance]: [string, any]) => {
+              if (!questionTypeStats[type]) {
+                questionTypeStats[type] = { correct: 0, total: 0 };
+              }
+              questionTypeStats[type].correct += performance.correct || 0;
+              questionTypeStats[type].total += performance.total || 0;
+            });
+          }
+        });
+
+        // Find strongest and weakest skills
+        const skillPerformances = Object.entries(questionTypeStats)
+          .map(([type, stats]) => ({
+            type,
+            percentage: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0
+          }))
+          .sort((a, b) => b.percentage - a.percentage);
+
+        const strongestSkills = skillPerformances.slice(0, 2).map(s => s.type);
+        const weakestSkills = skillPerformances.slice(-2).map(s => s.type);
+
         setStats({
           totalTests,
           averageScore: Math.round(averageScore),
           averageBandScore,
-          totalTimeSpent: Math.round(totalTime / 60) // Convert to minutes
+          totalTimeSpent: Math.round(totalTime / 60), // Convert to minutes
+          strongestSkills,
+          weakestSkills
         });
       }
     } catch (error) {
@@ -107,24 +125,6 @@ const ReadingResults = () => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const parseQuestions = (questionsData: any): QuestionDetail[] => {
-    if (!questionsData || !Array.isArray(questionsData)) return [];
-    
-    return questionsData.map((q: any) => ({
-      question: q.question || q.question_text || '',
-      userAnswer: q.userAnswer || q.user_answer || '',
-      correctAnswer: q.correctAnswer || q.correct_answer || '',
-      explanation: q.explanation || '',
-      isCorrect: q.isCorrect !== undefined ? q.isCorrect : (q.userAnswer === q.correctAnswer),
-      questionType: q.questionType || q.question_type || 'Unknown'
-    }));
-  };
-
-  const handleQuestionClick = (question: QuestionDetail, passageText: string) => {
-    setSelectedQuestion(question);
-    setSelectedPassage(passageText);
   };
 
   if (loading) {
@@ -212,6 +212,50 @@ const ReadingResults = () => {
           </Card>
         </div>
 
+        {/* Skills Analysis */}
+        {stats.strongestSkills.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  Strongest Skills
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {stats.strongestSkills.map((skill, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-green-50 text-green-700">
+                        {skill.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <XCircle className="w-5 h-5 text-red-600" />
+                  Areas for Improvement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {stats.weakestSkills.map((skill, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-red-50 text-red-700">
+                        {skill.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Recent Tests */}
         <Card>
@@ -221,154 +265,61 @@ const ReadingResults = () => {
           <CardContent>
             {results.length > 0 ? (
               <div className="space-y-4">
-                {results.map((result) => {
-                  const questions = parseQuestions(result.questions_data);
-                  const incorrectQuestions = questions.filter(q => !q.isCorrect);
-                  
-                  return (
-                    <div key={result.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">{result.passage_title || 'Reading Test'}</h3>
-                        <Badge variant="outline">
-                          Band {getBandScore(result.comprehension_score || 0, 'academic-reading')}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                        <div>
-                          <span className="text-muted-foreground">Score:</span>
-                          <span className="ml-2 font-medium">{result.comprehension_score || 0}/40</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Time:</span>
-                          <span className="ml-2 font-medium">
-                            {formatTime(result.reading_time_seconds || 0)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Date:</span>
-                          <span className="ml-2 font-medium">
-                            {new Date(result.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Accuracy:</span>
-                          <span className="ml-2 font-medium">
-                            {Math.round(((result.comprehension_score || 0) / 40) * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Wrong Questions Section */}
-                      {incorrectQuestions.length > 0 && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
-                          <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-2 flex items-center gap-2">
-                            <XCircle className="w-4 h-4" />
-                            Incorrect Answers ({incorrectQuestions.length})
-                          </h4>
-                          <div className="space-y-2">
-                            {incorrectQuestions.map((question, index) => (
-                              <button
-                                key={index}
-                                onClick={() => handleQuestionClick(question, result.passage_text || '')}
-                                className="w-full text-left p-2 rounded bg-white dark:bg-gray-800 border border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                                    Question {index + 1}: {question.question.substring(0, 50)}...
-                                  </span>
-                                  <Eye className="w-4 h-4 text-red-600 dark:text-red-400" />
-                                </div>
-                                <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                                  Your answer: {question.userAnswer} • Correct: {question.correctAnswer}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {result.detailed_feedback && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded">
-                          <p className="text-sm text-muted-foreground">{result.detailed_feedback}</p>
-                        </div>
-                      )}
+                {results.map((result) => (
+                  <div key={result.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">{result.passage_title || 'Reading Test'}</h3>
+                      <Badge variant="outline">
+                        Band {getBandScore(result.comprehension_score || 0, 'academic-reading')}
+                      </Badge>
                     </div>
-                  );
-                })}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Score:</span>
+                        <span className="ml-2 font-medium">{result.comprehension_score || 0}/40</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Time:</span>
+                        <span className="ml-2 font-medium">
+                          {formatTime(result.reading_time_seconds || 0)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Date:</span>
+                        <span className="ml-2 font-medium">
+                          {new Date(result.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Accuracy:</span>
+                        <span className="ml-2 font-medium">
+                          {Math.round(((result.comprehension_score || 0) / 40) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                    {result.detailed_feedback && (
+                      <div className="mt-3 p-3 bg-muted/50 rounded">
+                        <p className="text-sm text-muted-foreground">{result.detailed_feedback}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No reading test results yet</p>
                 <p className="text-sm">Start practicing to see your progress here</p>
+                <Button 
+                  onClick={() => navigate('/ielts-portal')} 
+                  className="mt-4"
+                >
+                  Take a Reading Test
+                </Button>
               </div>
             )}
           </CardContent>
         </Card>
-
-        {/* Question Detail Modal */}
-        <Dialog open={!!selectedQuestion} onOpenChange={() => setSelectedQuestion(null)}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-600" />
-                Question Review
-              </DialogTitle>
-            </DialogHeader>
-            
-            {selectedQuestion && (
-              <div className="space-y-6">
-                {/* Passage */}
-                {selectedPassage && (
-                  <div className="space-y-2">
-                    <h3 className="font-medium text-lg">Reading Passage</h3>
-                    <div className="p-4 bg-muted/50 rounded-lg max-h-64 overflow-y-auto">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedPassage}</p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Question */}
-                <div className="space-y-2">
-                  <h3 className="font-medium text-lg">Question</h3>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm">{selectedQuestion.question}</p>
-                    <Badge variant="secondary" className="mt-2">
-                      {selectedQuestion.questionType}
-                    </Badge>
-                  </div>
-                </div>
-                
-                {/* Answers */}
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-red-600 dark:text-red-400">Your Answer</h4>
-                    <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
-                      <p className="text-sm">{selectedQuestion.userAnswer || 'No answer provided'}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-green-600 dark:text-green-400">Correct Answer</h4>
-                    <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
-                      <p className="text-sm">{selectedQuestion.correctAnswer}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Explanation */}
-                {selectedQuestion.explanation && (
-                  <div className="space-y-2">
-                    <h3 className="font-medium text-lg">Explanation</h3>
-                    <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                      <p className="text-sm leading-relaxed">{selectedQuestion.explanation}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

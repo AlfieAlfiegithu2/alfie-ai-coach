@@ -227,20 +227,8 @@ const ReadingResults = () => {
         
         // Only include incorrect answers for this "Incorrect Answer Notes" page
         if (!isCorrect) {
-          let options: string[] = [];
-          
           // Use stored options directly if available
-          if (question.options && Array.isArray(question.options) && question.options.length > 0) {
-            options = question.options;
-            console.log('Using stored options for question:', question.id, options);
-          } else {
-            // Check if this appears to be a multiple choice question based on the answer format
-            const answerPattern = /^[A-Z]$/;
-            if (answerPattern.test(correctAnswer) || answerPattern.test(userAnswer)) {
-              console.log('Question appears to be multiple choice but has no stored options:', question.id);
-              options = [`Missing option data - this appears to be a multiple choice question with answer: ${correctAnswer}`];
-            }
-          }
+          const options = question.options && Array.isArray(question.options) ? question.options : [];
           
           processedQuestions.push({
             questionNumber: index + 1,
@@ -402,7 +390,12 @@ const ReadingResults = () => {
                   className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 >
                   <option value="all">All Questions</option>
-                  <option value="bookmarked">Bookmarked Only</option>
+                  <option value="bookmarked">🔖 Bookmarked Only ({
+                    results.reduce((count, result) => {
+                      const questions = processedResultsMap[result.id] || [];
+                      return count + questions.filter(q => isQuestionBookmarked(result.id, q)).length;
+                    }, 0)
+                  })</option>
                   {getUniqueQuestionTypes().map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
@@ -411,16 +404,30 @@ const ReadingResults = () => {
             </div>
             
             {/* Stats Summary */}
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>Total Tests: {results.length}</span>
-              <span>Filtered Results: {filteredResults.length}</span>
-              <span>Total Incorrect Notes: {
-                filteredResults.reduce((acc, result) => {
-                  const questions = processedResultsMap[result.id] || [];
-                  const visibleQuestions = questions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
-                  return acc + visibleQuestions.length;
-                }, 0)
-              }</span>
+            <div className="flex gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <span className="text-muted-foreground">Tests: <span className="text-foreground font-medium">{results.length}</span></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                <span className="text-muted-foreground">Incorrect Notes: <span className="text-foreground font-medium">{
+                  filteredResults.reduce((acc, result) => {
+                    const questions = processedResultsMap[result.id] || [];
+                    const visibleQuestions = questions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
+                    return acc + visibleQuestions.length;
+                  }, 0)
+                }</span></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                <span className="text-muted-foreground">Bookmarked: <span className="text-foreground font-medium">{
+                  results.reduce((count, result) => {
+                    const questions = processedResultsMap[result.id] || [];
+                    return count + questions.filter(q => isQuestionBookmarked(result.id, q)).length;
+                  }, 0)
+                }</span></span>
+              </div>
             </div>
           </div>
         )}
@@ -460,14 +467,15 @@ const ReadingResults = () => {
                               <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
                                 {result.passage_title || 'Reading Test'}
                                 <Badge variant="destructive" className="text-xs">
-                                  {visibleQuestions.length} incorrect
+                                  {visibleQuestions.length} to review
                                 </Badge>
+                                {visibleQuestions.some(q => isQuestionBookmarked(result.id, q)) && (
+                                  <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-200">
+                                    🔖 {visibleQuestions.filter(q => isQuestionBookmarked(result.id, q)).length} bookmarked
+                                  </Badge>
+                                )}
                               </CardTitle>
-                              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  {formatTime(result.reading_time_seconds || 0)}
-                                </span>
+                              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                                 <span>{new Date(result.created_at).toLocaleDateString()}</span>
                                 <span className="text-foreground font-medium">
                                   {totalQuestions - incorrectCount}/{totalQuestions} correct
@@ -504,108 +512,102 @@ const ReadingResults = () => {
                       <CardContent className="pt-0 px-6 pb-6">
                         <div className="space-y-4">
                           {visibleQuestions.map((question, index) => (
-                            <div
+                             <div
                               key={index}
-                              className="p-4 border rounded-lg bg-red-50 border-red-200 hover:shadow-sm transition-shadow"
+                              className={`p-4 border rounded-lg hover:shadow-sm transition-all ${
+                                isQuestionBookmarked(result.id, question) 
+                                  ? 'bg-yellow-50 border-yellow-200' 
+                                  : 'bg-red-50 border-red-200'
+                              }`}
                             >
-                              <div className="space-y-3">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex items-start gap-3 flex-1">
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                      <span className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-xs font-medium text-red-700">
-                                        Q{question.questionNumber}
-                                      </span>
-                                      <XCircle className="w-5 h-5 text-red-600" />
-                                    </div>
-                                    
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-foreground mb-1">
-                                        {question.question}
-                                      </p>
-                                      {question.type && (
-                                        <Badge variant="outline" className="text-xs mb-2">
-                                          {question.type.replace('_', ' ')}
-                                        </Badge>
-                                      )}
-                                      
-                                      {/* Answer Options Display */}
-                                      {question.options && question.options.length > 0 && (
-                                        <div className="mt-3 p-3 bg-background rounded-md border">
-                                          <p className="text-xs text-muted-foreground mb-2">Answer Options:</p>
-                                          <div className="space-y-1">
-                                            {question.options.map((option, optIndex) => (
-                                              <div key={optIndex} className="text-xs text-foreground">
-                                                {option}
-                                              </div>
-                                            ))}
+                              <div className="flex items-start gap-3">
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-xs font-semibold text-red-700">
+                                    {question.questionNumber}
+                                  </span>
+                                  {isQuestionBookmarked(result.id, question) && (
+                                    <BookmarkCheck className="w-4 h-4 text-yellow-600" />
+                                  )}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground mb-2 leading-relaxed">
+                                    {question.question}
+                                  </p>
+                                  
+                                  {/* Answer Options Display */}
+                                  {question.options && question.options.length > 0 && (
+                                    <div className="mb-3 p-2 bg-background/60 rounded border border-border/50">
+                                      <div className="grid grid-cols-1 gap-1">
+                                        {question.options.map((option, optIndex) => (
+                                          <div key={optIndex} className="text-xs text-foreground/80">
+                                            {option}
                                           </div>
-                                        </div>
-                                      )}
-                                      
-                                      <div className="grid grid-cols-2 gap-4 mt-3">
-                                        <div>
-                                          <div className="text-xs text-muted-foreground mb-1">Your Answer</div>
-                                          <div className="text-sm font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
-                                            {question.userAnswer || 'No answer'}
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <div className="text-xs text-muted-foreground mb-1">Correct Answer</div>
-                                          <div className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                                            {question.correctAnswer}
-                                          </div>
-                                        </div>
+                                        ))}
                                       </div>
-                                      
-                                      {question.explanation && (
-                                        <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
-                                          <p className="text-xs font-medium text-blue-800 mb-1">💡 Explanation:</p>
-                                          <p className="text-xs text-blue-700 leading-relaxed">
-                                            {question.explanation}
-                                          </p>
-                                        </div>
-                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex gap-3 mb-2">
+                                    <div className="flex-1">
+                                      <span className="text-xs text-muted-foreground">Your Answer:</span>
+                                      <div className="text-sm font-medium text-red-600 mt-1">
+                                        {question.userAnswer || 'No answer'}
+                                      </div>
+                                    </div>
+                                    <div className="flex-1">
+                                      <span className="text-xs text-muted-foreground">Correct:</span>
+                                      <div className="text-sm font-medium text-green-600 mt-1">
+                                        {question.correctAnswer}
+                                      </div>
                                     </div>
                                   </div>
                                   
-                                  <div className="flex gap-1 flex-shrink-0 ml-3">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleBookmark(result, question);
-                                      }}
-                                      className={`${
-                                        isQuestionBookmarked(result.id, question)
-                                          ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'
-                                          : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'
-                                      }`}
-                                      title={isQuestionBookmarked(result.id, question) ? 'Remove bookmark' : 'Bookmark for later review'}
-                                    >
-                                      {isQuestionBookmarked(result.id, question) ? (
-                                        <BookmarkCheck className="w-4 h-4" />
-                                      ) : (
-                                        <Bookmark className="w-4 h-4" />
-                                      )}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleQuestionClick(question, result.passage_text || '')}
-                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                    >
-                                      <Eye className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeQuestion(result.id, question.questionNumber)}
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
+                                  {question.explanation && (
+                                    <div className="mt-2 p-2 bg-blue-50/80 rounded border border-blue-200/50">
+                                      <p className="text-xs text-blue-700 leading-relaxed">
+                                        {question.explanation}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleBookmark(result, question);
+                                    }}
+                                    className={`h-8 w-8 p-0 ${
+                                      isQuestionBookmarked(result.id, question)
+                                        ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-100'
+                                        : 'text-gray-400 hover:text-yellow-600 hover:bg-yellow-50'
+                                    }`}
+                                  >
+                                    {isQuestionBookmarked(result.id, question) ? (
+                                      <BookmarkCheck className="w-4 h-4" />
+                                    ) : (
+                                      <Bookmark className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleQuestionClick(question, result.passage_text || '')}
+                                    className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeQuestion(result.id, question.questionNumber)}
+                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </div>
                               </div>
                             </div>

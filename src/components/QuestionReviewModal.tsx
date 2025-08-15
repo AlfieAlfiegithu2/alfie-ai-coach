@@ -71,7 +71,16 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
             </h3>
             <div className="flex-1 bg-muted/30 p-6 rounded-lg text-sm text-foreground leading-relaxed overflow-y-auto">
               {passage ? (
-                <div dangerouslySetInnerHTML={{ __html: highlightedPassage }} />
+                <div 
+                  className="whitespace-pre-line"
+                  dangerouslySetInnerHTML={{ 
+                    __html: highlightedPassage
+                      .replace(/\n\n/g, '</p><p class="mb-4">')
+                      .replace(/\n/g, '<br>')
+                      .replace(/^/, '<p class="mb-4">')
+                      .replace(/$/, '</p>')
+                  }} 
+                />
               ) : (
                 <div className="text-muted-foreground italic">
                   No passage text available for this question.

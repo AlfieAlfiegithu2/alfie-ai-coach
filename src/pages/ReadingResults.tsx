@@ -10,7 +10,9 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Trash2,
+  Eye
 } from "lucide-react";
 import Header from '@/components/Header';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -48,6 +50,7 @@ const ReadingResults = () => {
   const [loading, setLoading] = useState(true);
   const [selectedQuestion, setSelectedQuestion] = useState<ProcessedQuestion | null>(null);
   const [selectedPassage, setSelectedPassage] = useState<string>('');
+  const [removedQuestions, setRemovedQuestions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -117,6 +120,27 @@ const ReadingResults = () => {
     setSelectedPassage(passage);
   };
 
+  const removeQuestion = (resultId: string, questionNumber: number) => {
+    const questionKey = `${resultId}-${questionNumber}`;
+    setRemovedQuestions(prev => new Set([...prev, questionKey]));
+  };
+
+  const removeAllIncorrectAnswers = (resultId: string, questions: ProcessedQuestion[]) => {
+    const incorrectQuestionKeys = questions
+      .filter(q => !q.isCorrect)
+      .map(q => `${resultId}-${q.questionNumber}`);
+    
+    setRemovedQuestions(prev => {
+      const newSet = new Set(prev);
+      incorrectQuestionKeys.forEach(key => newSet.add(key));
+      return newSet;
+    });
+  };
+
+  const isQuestionRemoved = (resultId: string, questionNumber: number) => {
+    return removedQuestions.has(`${resultId}-${questionNumber}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -143,8 +167,8 @@ const ReadingResults = () => {
               <BookOpen className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Reading Test Results</h1>
-              <p className="text-muted-foreground">Detailed analysis of your reading performance</p>
+              <h1 className="text-3xl font-bold text-foreground">Incorrect Answer Notes</h1>
+              <p className="text-muted-foreground">Review and manage your incorrect answers to improve learning</p>
             </div>
           </div>
         </div>
@@ -157,6 +181,8 @@ const ReadingResults = () => {
             results.map((result) => {
               const questions = processQuestions(result);
               const correctCount = questions.filter(q => q.isCorrect).length;
+              const visibleQuestions = questions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
+              const incorrectQuestions = visibleQuestions.filter(q => !q.isCorrect);
               
               return (
                 <Card key={result.id} className="bg-gradient-to-br from-card to-card/80 border-0 shadow-lg">
@@ -181,64 +207,108 @@ const ReadingResults = () => {
                   </CardHeader>
                   
                   <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">
-                      Question Breakdown
-                    </h3>
-                    
-                    <div className="space-y-3">
-                      {questions.map((question, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleQuestionClick(question, result.passage_text || '')}
-                          className="w-full text-left p-4 bg-background/50 border border-border/50 rounded-lg hover:bg-background/80 transition-all group"
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Incorrect Answer Notes ({incorrectQuestions.length} remaining)
+                      </h3>
+                      {incorrectQuestions.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeAllIncorrectAnswers(result.id, visibleQuestions)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-muted-foreground">
-                                  Q{question.questionNumber}
-                                </span>
-                                {question.isCorrect ? (
-                                  <CheckCircle className="w-5 h-5 text-green-600" />
-                                ) : (
-                                  <XCircle className="w-5 h-5 text-red-600" />
-                                )}
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Clear All Incorrect
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {visibleQuestions.length > 0 ? (
+                      <div className="space-y-3">
+                        {visibleQuestions.map((question, index) => (
+                          <div
+                            key={index}
+                            className={`p-4 border rounded-lg transition-all ${
+                              question.isCorrect 
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-red-50 border-red-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-muted-foreground">
+                                    Q{question.questionNumber}
+                                  </span>
+                                  {question.isCorrect ? (
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                  ) : (
+                                    <XCircle className="w-5 h-5 text-red-600" />
+                                  )}
+                                </div>
+                                
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-foreground line-clamp-1">
+                                    {question.question}
+                                  </p>
+                                  {question.type && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {question.type}
+                                    </span>  
+                                  )}
+                                </div>
                               </div>
                               
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground line-clamp-1">
-                                  {question.question}
-                                </p>
-                                {question.type && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {question.type}
-                                  </span>  
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                <div className="text-xs text-muted-foreground">Your answer</div>
-                                <div className={`text-sm font-medium ${
-                                  question.isCorrect ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {question.userAnswer}
-                                </div>
-                              </div>
-                              {!question.isCorrect && (
+                              <div className="flex items-center gap-3">
                                 <div className="text-right">
-                                  <div className="text-xs text-muted-foreground">Correct</div>
-                                  <div className="text-sm font-medium text-green-600">
-                                    {question.correctAnswer}
+                                  <div className="text-xs text-muted-foreground">Your answer</div>
+                                  <div className={`text-sm font-medium ${
+                                    question.isCorrect ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    {question.userAnswer}
                                   </div>
                                 </div>
-                              )}
+                                {!question.isCorrect && (
+                                  <div className="text-right">
+                                    <div className="text-xs text-muted-foreground">Correct</div>
+                                    <div className="text-sm font-medium text-green-600">
+                                      {question.correctAnswer}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleQuestionClick(question, result.passage_text || '')}
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  {!question.isCorrect && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeQuestion(result.id, question.questionNumber)}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </button>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-600" />
+                        <p>All incorrect answers have been noted and removed!</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );

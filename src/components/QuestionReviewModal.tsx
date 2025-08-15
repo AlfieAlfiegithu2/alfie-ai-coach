@@ -106,8 +106,12 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                   <h4 className="text-md font-semibold mb-3 text-foreground">Answer Options</h4>
                   <div className="space-y-2">
                     {question.options.map((option: string, index: number) => {
-                      const isUserAnswer = option === question.userAnswer;
-                      const isCorrectAnswer = option === question.correctAnswer;
+                      const optionLetter = String.fromCharCode(65 + index);
+                      const correctAnswers = question.correctAnswer.split(/[,\s]+/).map(a => a.trim());
+                      const userAnswers = question.userAnswer ? question.userAnswer.split(/[,\s]+/).map(a => a.trim()) : [];
+                      
+                      const isCorrectAnswer = correctAnswers.includes(optionLetter);
+                      const isUserAnswer = userAnswers.includes(optionLetter);
                       
                       let bgClass = 'bg-background border-border';
                       let textClass = 'text-foreground';
@@ -125,8 +129,8 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                           key={index}
                           className={`p-3 rounded border text-sm flex items-center gap-2 ${bgClass} ${textClass}`}
                         >
-                          <span className="font-medium">
-                            {String.fromCharCode(65 + index)}.
+                          <span className="font-medium min-w-[24px]">
+                            {optionLetter}.
                           </span>
                           <span className="flex-1">{option}</span>
                           {isCorrectAnswer && <CheckCircle className="w-4 h-4 text-green-600" />}

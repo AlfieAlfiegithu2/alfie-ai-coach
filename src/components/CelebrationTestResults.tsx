@@ -154,8 +154,8 @@ const CelebrationTestResults: React.FC<CelebrationTestResultsProps> = ({
                 <p className="text-sm text-muted-foreground font-inter">Questions Correct</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-semibold text-foreground font-inter">{percentage}%</div>
-                <p className="text-sm text-muted-foreground font-inter">Accuracy</p>
+                
+                
               </div>
             </div>
             <div className="inline-flex items-center px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium text-lg font-inter">

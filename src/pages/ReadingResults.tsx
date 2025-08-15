@@ -51,12 +51,30 @@ const ReadingResults = () => {
   const [selectedQuestion, setSelectedQuestion] = useState<ProcessedQuestion | null>(null);
   const [selectedPassage, setSelectedPassage] = useState<string>('');
   const [removedQuestions, setRemovedQuestions] = useState<Set<string>>(new Set());
+  const [processedResultsMap, setProcessedResultsMap] = useState<{ [key: string]: ProcessedQuestion[] }>({});
 
   useEffect(() => {
     if (user) {
       loadReadingResults();
     }
   }, [user]);
+
+  useEffect(() => {
+    // Process questions when results change
+    const processAllResults = async () => {
+      const newProcessedMap: { [key: string]: ProcessedQuestion[] } = {};
+      
+      for (const result of results) {
+        newProcessedMap[result.id] = await processQuestions(result);
+      }
+      
+      setProcessedResultsMap(newProcessedMap);
+    };
+
+    if (results.length > 0) {
+      processAllResults();
+    }
+  }, [results]);
 
   const loadReadingResults = async () => {
     try {
@@ -86,13 +104,37 @@ const ReadingResults = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const processQuestions = (result: ReadingResult): ProcessedQuestion[] => {
+  const processQuestions = async (result: ReadingResult): Promise<ProcessedQuestion[]> => {
     if (!result.questions_data) return [];
     
     const processedQuestions: ProcessedQuestion[] = [];
     const questions = result.questions_data.questions || result.questions_data;
     
     if (Array.isArray(questions)) {
+      // Extract question IDs to fetch full question data with options
+      const questionIds = questions.map((q: any) => q.id).filter(Boolean);
+      
+      let questionDetailsMap: { [key: string]: any } = {};
+      
+      if (questionIds.length > 0) {
+        try {
+          // Fetch question details including choices from the questions table
+          const { data: questionDetails } = await supabase
+            .from('questions')
+            .select('id, choices, question_type')
+            .in('id', questionIds);
+          
+          if (questionDetails) {
+            questionDetailsMap = questionDetails.reduce((acc: any, q: any) => {
+              acc[q.id] = q;
+              return acc;
+            }, {});
+          }
+        } catch (error) {
+          console.error('Error fetching question details:', error);
+        }
+      }
+      
       questions.forEach((question: any, index: number) => {
         // Extract data from the question object itself
         const userAnswer = question.user_answer || '';
@@ -101,6 +143,22 @@ const ReadingResults = () => {
         
         // Only include incorrect answers for this "Incorrect Answer Notes" page
         if (!isCorrect) {
+          const questionDetails = questionDetailsMap[question.id];
+          let options: string[] = [];
+          
+          // Parse choices if available
+          if (questionDetails?.choices) {
+            // Split choices by semicolon and clean up
+            options = questionDetails.choices
+              .split(';')
+              .map((choice: string) => choice.trim())
+              .filter((choice: string) => choice.length > 0)
+              .map((choice: string) => {
+                // Remove the roman numeral prefix (i., ii., iii., etc.) to get clean option text
+                return choice.replace(/^[ivxlc]+\.\s*/i, '').trim();
+              });
+          }
+          
           processedQuestions.push({
             questionNumber: index + 1,
             question: question.question_text || question.question || question.text || '',
@@ -108,8 +166,8 @@ const ReadingResults = () => {
             userAnswer: userAnswer,
             correctAnswer: correctAnswer,
             explanation: question.explanation || '',
-            options: question.options || [],
-            type: question.type || question.question_type || '',
+            options: options,
+            type: question.type || question.question_type || questionDetails?.question_type || '',
             isCorrect: isCorrect
           });
         }
@@ -183,7 +241,7 @@ const ReadingResults = () => {
         <div className="space-y-8">
           {results.length > 0 ? (
             results.map((result) => {
-              const questions = processQuestions(result); // Only incorrect questions
+              const questions = processedResultsMap[result.id] || []; // Use processed questions from state
               const allQuestions = result.questions_data.questions || result.questions_data || [];
               const totalQuestions = Array.isArray(allQuestions) ? allQuestions.length : 0;
               const incorrectCount = questions.length;

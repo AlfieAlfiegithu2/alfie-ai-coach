@@ -25,7 +25,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
   onClose,
   question,
   passage
-}) => {
+}) => {  
   if (!question) return null;
 
   const highlightAnswerInPassage = (passageText: string, explanation?: string) => {
@@ -52,7 +52,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden z-50">
         <DialogHeader className="border-b border-border pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl font-bold text-foreground flex items-center gap-3">
@@ -75,10 +75,15 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
             <h3 className="text-lg font-semibold mb-3 text-foreground border-b border-border pb-2">
               Reading Passage
             </h3>
-            <div 
-              className="flex-1 bg-muted/30 p-6 rounded-lg text-sm text-foreground leading-relaxed overflow-y-auto"
-              dangerouslySetInnerHTML={{ __html: highlightedPassage }}
-            />
+            <div className="flex-1 bg-muted/30 p-6 rounded-lg text-sm text-foreground leading-relaxed overflow-y-auto">
+              {passage ? (
+                <div dangerouslySetInnerHTML={{ __html: highlightedPassage }} />
+              ) : (
+                <div className="text-muted-foreground italic">
+                  No passage text available for this question.
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Right Pane - Question Details */}
@@ -96,7 +101,7 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                 <h3 className="text-lg font-semibold mb-3 text-foreground">Question</h3>
                 <div className="bg-background border border-border rounded-lg p-4">
                   <p className="text-foreground font-medium">
-                    {question.question || question.text}
+                    {question.question || question.text || 'No question text available'}
                   </p>
                 </div>
               </div>
@@ -156,12 +161,12 @@ const QuestionReviewModal: React.FC<QuestionReviewModalProps> = ({
                     <p className={`font-medium ${
                       isCorrect ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {question.userAnswer}
+                      {question.userAnswer || 'No answer provided'}
                     </p>
                   </div>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <h5 className="font-semibold text-green-700 mb-2">Correct Answer</h5>
-                    <p className="text-green-600 font-medium">{question.correctAnswer}</p>
+                    <p className="text-green-600 font-medium">{question.correctAnswer || 'Not available'}</p>
                   </div>
                 </div>
               </div>

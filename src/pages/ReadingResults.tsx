@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   BookOpen, 
   ArrowLeft,
@@ -12,7 +14,12 @@ import {
   XCircle,
   Clock,
   Trash2,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  Filter,
+  TrendingDown
 } from "lucide-react";
 import Header from '@/components/Header';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -52,6 +59,9 @@ const ReadingResults = () => {
   const [selectedPassage, setSelectedPassage] = useState<string>('');
   const [removedQuestions, setRemovedQuestions] = useState<Set<string>>(new Set());
   const [processedResultsMap, setProcessedResultsMap] = useState<{ [key: string]: ProcessedQuestion[] }>({});
+  const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
 
   useEffect(() => {
     if (user) {
@@ -178,6 +188,58 @@ const ReadingResults = () => {
     return removedQuestions.has(`${resultId}-${questionNumber}`);
   };
 
+  const toggleResultExpansion = (resultId: string) => {
+    setExpandedResults(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(resultId)) {
+        newSet.delete(resultId);
+      } else {
+        newSet.add(resultId);
+      }
+      return newSet;
+    });
+  };
+
+  const filteredResults = results.filter(result => {
+    const questions = processedResultsMap[result.id] || [];
+    const visibleQuestions = questions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
+    
+    if (visibleQuestions.length === 0) return false;
+    
+    // Search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const titleMatch = result.passage_title?.toLowerCase().includes(searchLower);
+      const questionMatch = visibleQuestions.some(q => 
+        q.question.toLowerCase().includes(searchLower) ||
+        q.userAnswer.toLowerCase().includes(searchLower) ||
+        q.correctAnswer.toLowerCase().includes(searchLower)
+      );
+      if (!titleMatch && !questionMatch) return false;
+    }
+    
+    // Type filter
+    if (filterType !== 'all') {
+      const hasFilterType = visibleQuestions.some(q => 
+        q.type?.toLowerCase().includes(filterType.toLowerCase())
+      );
+      if (!hasFilterType) return false;
+    }
+    
+    return true;
+  });
+
+  const getUniqueQuestionTypes = () => {
+    const types = new Set<string>();
+    results.forEach(result => {
+      const questions = processedResultsMap[result.id] || [];
+      questions.forEach(q => {
+        if (q.type) types.add(q.type);
+      });
+    });
+    return Array.from(types);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -212,160 +274,238 @@ const ReadingResults = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Test Results List */}
-        <div className="space-y-8">
-          {results.length > 0 ? (
-            results.map((result) => {
+        {/* Search and Filter Controls */}
+        {results.length > 0 && (
+          <div className="mb-8 space-y-4">
+            <div className="flex gap-4 items-center">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search questions, answers, or passages..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <select 
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                >
+                  <option value="all">All Question Types</option>
+                  {getUniqueQuestionTypes().map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            {/* Stats Summary */}
+            <div className="flex gap-4 text-sm text-muted-foreground">
+              <span>Total Tests: {results.length}</span>
+              <span>Filtered Results: {filteredResults.length}</span>
+              <span>Total Incorrect Notes: {
+                filteredResults.reduce((acc, result) => {
+                  const questions = processedResultsMap[result.id] || [];
+                  const visibleQuestions = questions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
+                  return acc + visibleQuestions.length;
+                }, 0)
+              }</span>
+            </div>
+          </div>
+        )}
+
+        {/* Test Results List - Collapsible */}
+        <div className="space-y-6">
+          {filteredResults.length > 0 ? (
+            filteredResults.map((result) => {
               const questions = processedResultsMap[result.id];
-              
-              // Add debugging and safety checks
-              console.log('Processing result:', result.id, 'Questions from map:', questions);
-              
-              // Ensure questions is always an array
               const safeQuestions = Array.isArray(questions) ? questions : [];
               const allQuestions = result.questions_data.questions || result.questions_data || [];
               const totalQuestions = Array.isArray(allQuestions) ? allQuestions.length : 0;
               const incorrectCount = safeQuestions.length;
               const visibleQuestions = safeQuestions.filter(q => !isQuestionRemoved(result.id, q.questionNumber));
-              // Only show result if there are visible questions remaining
-              if (visibleQuestions.length === 0) {
-                return null; // Hide the entire result card when no questions remain
-              }
+              const isExpanded = expandedResults.has(result.id);
+              
+              // Skip if no visible questions
+              if (visibleQuestions.length === 0) return null;
 
               return (
-                <Card key={result.id} className="bg-gradient-to-br from-card to-card/80 border-0 shadow-lg">
-                  <CardHeader className="border-b border-border/50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-xl font-bold text-foreground">
-                          {result.passage_title || 'Reading Test'}
-                        </CardTitle>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {formatTime(result.reading_time_seconds || 0)}
-                          </span>
-                          <span>{new Date(result.created_at).toLocaleDateString()}</span>
-                          <span className="text-foreground font-medium">
-                            {totalQuestions - incorrectCount}/{totalQuestions} correct
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        Incorrect Answer Notes ({visibleQuestions.length} remaining)
-                      </h3>
-                      {visibleQuestions.length > 0 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeAllIncorrectAnswers(result.id, visibleQuestions)}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Clear All Incorrect
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {visibleQuestions.length > 0 ? (
-                      <div className="space-y-3">
-                        {visibleQuestions.map((question, index) => (
-                          <div
-                            key={index}
-                            className={`p-4 border rounded-lg transition-all ${
-                              question.isCorrect 
-                                ? 'bg-green-50 border-green-200' 
-                                : 'bg-red-50 border-red-200'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-muted-foreground">
-                                    Q{question.questionNumber}
-                                  </span>
-                                  {question.isCorrect ? (
-                                    <CheckCircle className="w-5 h-5 text-green-600" />
-                                  ) : (
-                                    <XCircle className="w-5 h-5 text-red-600" />
-                                  )}
-                                </div>
-                                
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-foreground line-clamp-1">
-                                    {question.question}
-                                  </p>
-                                  {question.type && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {question.type}
-                                    </span>  
-                                  )}
-                                </div>
+                <Collapsible key={result.id} open={isExpanded} onOpenChange={() => toggleResultExpansion(result.id)}>
+                  <Card className="overflow-hidden transition-all duration-200 hover:shadow-md">
+                    <CollapsibleTrigger className="w-full">
+                      <CardHeader className="hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                              <TrendingDown className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div className="text-left">
+                              <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                                {result.passage_title || 'Reading Test'}
+                                <Badge variant="destructive" className="text-xs">
+                                  {visibleQuestions.length} incorrect
+                                </Badge>
+                              </CardTitle>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {formatTime(result.reading_time_seconds || 0)}
+                                </span>
+                                <span>{new Date(result.created_at).toLocaleDateString()}</span>
+                                <span className="text-foreground font-medium">
+                                  {totalQuestions - incorrectCount}/{totalQuestions} correct
+                                </span>
                               </div>
-                              
-                              <div className="flex items-center gap-3">
-                                <div className="text-right">
-                                  <div className="text-xs text-muted-foreground">Your answer</div>
-                                  <div className={`text-sm font-medium ${
-                                    question.isCorrect ? 'text-green-600' : 'text-red-600'
-                                  }`}>
-                                    {question.userAnswer}
-                                  </div>
-                                </div>
-                                {!question.isCorrect && (
-                                  <div className="text-right">
-                                    <div className="text-xs text-muted-foreground">Correct</div>
-                                    <div className="text-sm font-medium text-green-600">
-                                      {question.correctAnswer}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {visibleQuestions.length > 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeAllIncorrectAnswers(result.id, visibleQuestions);
+                                }}
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Clear All
+                              </Button>
+                            )}
+                            {isExpanded ? (
+                              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <CardContent className="pt-0 px-6 pb-6">
+                        <div className="space-y-4">
+                          {visibleQuestions.map((question, index) => (
+                            <div
+                              key={index}
+                              className="p-4 border rounded-lg bg-red-50 border-red-200 hover:shadow-sm transition-shadow"
+                            >
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3 flex-1">
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      <span className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-xs font-medium text-red-700">
+                                        Q{question.questionNumber}
+                                      </span>
+                                      <XCircle className="w-5 h-5 text-red-600" />
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-foreground mb-1">
+                                        {question.question}
+                                      </p>
+                                      {question.type && (
+                                        <Badge variant="outline" className="text-xs mb-2">
+                                          {question.type.replace('_', ' ')}
+                                        </Badge>
+                                      )}
+                                      
+                                      {/* Answer Options Display */}
+                                      {question.options && question.options.length > 0 && (
+                                        <div className="mt-3 p-3 bg-background rounded-md border">
+                                          <p className="text-xs text-muted-foreground mb-2">Answer Options:</p>
+                                          <div className="space-y-1">
+                                            {question.options.map((option, optIndex) => (
+                                              <div key={optIndex} className="text-xs text-foreground">
+                                                {option}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      <div className="grid grid-cols-2 gap-4 mt-3">
+                                        <div>
+                                          <div className="text-xs text-muted-foreground mb-1">Your Answer</div>
+                                          <div className="text-sm font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
+                                            {question.userAnswer || 'No answer'}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div className="text-xs text-muted-foreground mb-1">Correct Answer</div>
+                                          <div className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+                                            {question.correctAnswer}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {question.explanation && (
+                                        <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+                                          <p className="text-xs font-medium text-blue-800 mb-1">💡 Explanation:</p>
+                                          <p className="text-xs text-blue-700 leading-relaxed">
+                                            {question.explanation}
+                                          </p>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                )}
-                                
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleQuestionClick(question, result.passage_text || '')}
-                                    className="text-blue-600 hover:text-blue-700"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                  {!question.isCorrect && (
+                                  
+                                  <div className="flex gap-1 flex-shrink-0 ml-3">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleQuestionClick(question, result.passage_text || '')}
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => removeQuestion(result.id, question.questionNumber)}
-                                      className="text-red-600 hover:text-red-700"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
-                                  )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-600" />
-                        <p>All incorrect answers have been noted and removed!</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
               );
             })
+          ) : results.length > 0 ? (
+            <div className="text-center py-12">
+              <Search className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No results found</h3>
+              <p className="text-muted-foreground mb-4">Try adjusting your search or filter criteria</p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterType('all');
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
           ) : (
             <div className="text-center py-12">
               <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
               <h3 className="text-lg font-semibold text-foreground mb-2">No reading test results yet</h3>
               <p className="text-muted-foreground mb-4">Start practicing to see your progress here</p>
+              <Button onClick={() => navigate('/ielts-portal')}>
+                Start Reading Practice
+              </Button>
             </div>
           )}
         </div>

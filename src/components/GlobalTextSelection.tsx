@@ -11,6 +11,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [showHelper, setShowHelper] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState('es'); // Default to Spanish
+  const [isSaving, setIsSaving] = useState(false);
   const selectionTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();
 
@@ -57,6 +58,9 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
 
       // Wait a bit to ensure selection is complete
       selectionTimeoutRef.current = setTimeout(() => {
+        // Don't show new translations if we're currently saving
+        if (isSaving) return;
+        
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return;
 
@@ -88,7 +92,12 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
       }, 100);
     };
 
-    const handleMouseDown = () => {
+    const handleMouseDown = (e: MouseEvent) => {
+      // Don't hide helper if clicking inside the translation helper popup
+      const target = e.target as Element;
+      if (target && target.closest('[data-translation-helper]')) {
+        return;
+      }
       setShowHelper(false);
     };
 
@@ -104,7 +113,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
         clearTimeout(selectionTimeoutRef.current);
       }
     };
-  }, []);
+  }, [isSaving]); // Add isSaving as dependency
 
   // Function to determine if content is selectable for translation
   const isSelectableContent = (element: Element): boolean => {
@@ -147,8 +156,15 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
     return true;
   };
 
+  const handleSaveStart = () => {
+    setIsSaving(true);
+    // Hide the helper immediately when save starts
+    setShowHelper(false);
+  };
+
   const handleCloseHelper = () => {
     setShowHelper(false);
+    setIsSaving(false);
     // Clear text selection
     const selection = window.getSelection();
     if (selection) {
@@ -164,6 +180,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
           selectedText={selectedText}
           position={position}
           onClose={handleCloseHelper}
+          onSaveStart={handleSaveStart}
           language={targetLanguage}
         />
       )}

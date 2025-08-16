@@ -11,6 +11,7 @@ interface TranslationHelperProps {
   position: { x: number; y: number };
   onClose: () => void;
   language: string;
+  onSaveStart?: () => void;
 }
 
 interface TranslationResult {
@@ -21,7 +22,7 @@ interface TranslationResult {
   simple?: boolean;
 }
 
-const TranslationHelper = ({ selectedText, position, onClose, language }: TranslationHelperProps) => {
+const TranslationHelper = ({ selectedText, position, onClose, language, onSaveStart }: TranslationHelperProps) => {
   const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -108,8 +109,23 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     return { left, top };
   };
 
-  const saveToWordBook = async () => {
+  const saveToWordBook = async (event?: React.MouseEvent) => {
     if (!translationResult || isSaving || isSaved) return;
+    
+    // Prevent event bubbling and default behavior
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    
+    // Clear text selection immediately to prevent re-triggering
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+    
+    // Notify parent that save is starting
+    onSaveStart?.();
     
     setIsSaving(true);
     console.log('🔄 Saving word to book:', { 
@@ -177,6 +193,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
   return (
     <div 
       className="fixed z-50 max-w-sm"
+      data-translation-helper
       style={{
         left: dynamicPosition.left,
         top: dynamicPosition.top,
@@ -246,7 +263,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
             {/* Add to Word Book Button */}
             {translationResult && (
               <Button
-                onClick={saveToWordBook}
+                onClick={(e) => saveToWordBook(e)}
                 disabled={isSaving || isSaved}
                 className={`w-full mt-3 transition-all ${
                   isSaved 

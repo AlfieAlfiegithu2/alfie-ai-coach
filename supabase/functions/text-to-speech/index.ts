@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,15 +13,42 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Invalid authentication');
+    }
+
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    const { text, voice = 'alloy' } = await req.json();
+    const body = await req.json();
+    const { text, voice = 'alloy' } = body;
 
-    if (!text) {
-      throw new Error('Text is required');
+    if (!text || typeof text !== 'string') {
+      throw new Error('Text is required and must be a string');
+    }
+
+    if (text.length > 1000) {
+      throw new Error('Text too long (max 1000 characters)');
+    }
+
+    const allowedVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
+    if (!allowedVoices.includes(voice)) {
+      throw new Error('Invalid voice selection');
     }
 
     console.log(`Generating speech for text: ${text.substring(0, 100)}...`);

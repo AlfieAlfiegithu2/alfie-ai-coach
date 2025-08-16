@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
@@ -15,14 +16,36 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Invalid authentication');
+    }
+
     if (!geminiApiKey) {
       throw new Error('Gemini API key not configured');
     }
 
-    const { message, context = "english_tutor" } = await req.json();
+    const body = await req.json();
+    const { message, context = "english_tutor" } = body;
 
-    if (!message) {
-      throw new Error('Message is required');
+    if (!message || typeof message !== 'string') {
+      throw new Error('Message is required and must be a string');
+    }
+
+    if (message.length > 2000) {
+      throw new Error('Message too long (max 2000 characters)');
     }
 
     console.log('🤖 Gemini Chat Request:', { message, context });

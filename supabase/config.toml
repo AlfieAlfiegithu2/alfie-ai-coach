@@ -1,19 +1,19 @@
 project_id = "cuumxmfzhwljylbdlflj"
 
 [functions.analyze-speaking-suggestion]
-verify_jwt = false
+verify_jwt = true
 
 [functions.gemini-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.content-generator-gemini]
-verify_jwt = false
+verify_jwt = true
 
 [functions.elevenlabs-voice]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-checkout]
-verify_jwt = false
+verify_jwt = true
 
 [functions.admin-auth]
 verify_jwt = false
@@ -22,31 +22,31 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.speech-analysis]
-verify_jwt = false
+verify_jwt = true
 
 [functions.writing-feedback]
-verify_jwt = false
+verify_jwt = true
 
 [functions.openai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.daily-challenge-generator]
 verify_jwt = false
 
 [functions.content-generator]
-verify_jwt = false
+verify_jwt = true
 
 [functions.translation-service]
-verify_jwt = false
+verify_jwt = true
 
 [functions.text-to-speech]
-verify_jwt = false
+verify_jwt = true
 
 [functions.audio-cache]
 verify_jwt = false
 
 [functions.pronunciation-analysis]
-verify_jwt = false
+verify_jwt = true
 
 [functions.analyze-writing-correction]
-verify_jwt = false
+verify_jwt = true

@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -15,17 +16,39 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Invalid authentication');
+    }
+
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { messages, message, context = "english_tutor" } = await req.json();
+    const body = await req.json();
+    const { messages, message, context = "english_tutor" } = body;
 
     // Support both old format (message) and new format (messages)
     const finalMessage = messages ? messages[messages.length - 1].content : message;
     
-    if (!finalMessage) {
-      throw new Error('Message is required');
+    if (!finalMessage || typeof finalMessage !== 'string') {
+      throw new Error('Message is required and must be a string');
+    }
+
+    if (finalMessage.length > 2000) {
+      throw new Error('Message too long (max 2000 characters)');
     }
 
     console.log('🤖 AI Chat Request:', { message: finalMessage, context });

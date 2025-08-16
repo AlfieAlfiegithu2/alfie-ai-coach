@@ -238,7 +238,7 @@ const MyWordBook = () => {
                         onClick={() => handleCardClick(word.id)}
                       >
                         {/* Front of Card */}
-                        <Card className="absolute inset-0 backface-hidden bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all">
+                        <Card className="absolute inset-0 backface-hidden bg-white/10 border-white/20 backdrop-blur-xl">
                           <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
                             <h3 className="text-2xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                               {word.word}
@@ -252,12 +252,9 @@ const MyWordBook = () => {
                         </Card>
 
                         {/* Back of Card */}
-                        <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all">
+                        <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-white/10 border-white/20 backdrop-blur-xl">
                           <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
                             <div className="space-y-3 w-full">
-                              <h4 className="text-sm font-medium text-slate-800 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-                                Translations:
-                              </h4>
                               {word.translations.map((translation, index) => (
                                 <div key={index} className="bg-white/20 rounded-lg p-2 border border-white/30">
                                   <p className="text-sm text-slate-800 font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>

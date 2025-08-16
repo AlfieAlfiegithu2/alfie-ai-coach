@@ -188,14 +188,10 @@ const MyWordBook = () => {
           {/* Main Content */}
           <main className="relative sm:px-6 lg:px-12 pr-4 pb-12 pl-4">
             {/* Title */}
-            <div className="text-center mb-12 pt-8">
-              <h1 className="text-4xl lg:text-5xl text-slate-800 tracking-tight font-semibold mb-4 flex items-center justify-center gap-3" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                <BookOpen className="w-10 h-10 text-slate-800" />
+            <div className="text-center mb-8 pt-6">
+              <h1 className="text-3xl lg:text-4xl text-slate-800 tracking-tight font-semibold mb-4" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                 My Word Book
               </h1>
-              <p className="text-slate-600 text-lg mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Review your saved vocabulary
-              </p>
               <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full backdrop-blur-sm">
                 <Badge variant="secondary" className="bg-white/20 text-slate-700 border-white/30">
                   {words.length} {words.length === 1 ? 'word' : 'words'} saved
@@ -222,25 +218,25 @@ const MyWordBook = () => {
               </div>
             ) : (
               /* Word Cards Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {words.map((word) => {
                   const isFlipped = flippedCards.has(word.id);
                   return (
                     <div
                       key={word.id}
-                      className="relative group perspective-1000"
+                      className="relative perspective-1000"
                     >
                       {/* Flashcard Container */}
                       <div
-                        className={`relative w-full h-48 cursor-pointer transition-transform duration-500 preserve-3d ${
+                        className={`relative w-full h-36 cursor-pointer transition-transform duration-500 preserve-3d ${
                           isFlipped ? 'rotate-y-180' : ''
                         }`}
                         onClick={() => handleCardClick(word.id)}
                       >
                         {/* Front of Card */}
                         <Card className="absolute inset-0 backface-hidden bg-white/10 border-white/20 backdrop-blur-xl">
-                          <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
-                            <h3 className="text-2xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                          <CardContent className="p-4 flex flex-col items-center justify-center h-full text-center">
+                            <h3 className="text-xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                               {word.word}
                             </h3>
                             {word.context && (
@@ -253,11 +249,11 @@ const MyWordBook = () => {
 
                         {/* Back of Card */}
                         <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-white/10 border-white/20 backdrop-blur-xl">
-                          <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
-                            <div className="space-y-3 w-full">
+                          <CardContent className="p-4 flex flex-col items-center justify-center h-full text-center">
+                            <div className="space-y-2 w-full">
                               {word.translations.map((translation, index) => (
                                 <div key={index} className="bg-white/20 rounded-lg p-2 border border-white/30">
-                                  <p className="text-sm text-slate-800 font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                  <p className="text-xl font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                                     {translation}
                                   </p>
                                 </div>
@@ -271,13 +267,13 @@ const MyWordBook = () => {
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="absolute -top-2 -right-2 w-8 h-8 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-red-500/80 hover:bg-red-500 border border-white/20"
+                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0 opacity-0 transition-opacity z-10 bg-red-500/80 border border-white/20"
                         onClick={(e) => {
                           e.stopPropagation();
                           removeWord(word.id);
                         }}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   );

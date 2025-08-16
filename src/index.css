@@ -2,30 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced 3D Flip Card Styles with GPU Acceleration */
-.word-card-grid {
+/* 3D Flip Card Styles - Hover-based animation */
+.word-card {
+  width: 100%;
+  height: 96px; /* h-24 */
   perspective: 1000px;
-  perspective-origin: center;
 }
 
-.word-card-container {
+.word-card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
   transform-style: preserve-3d;
-  will-change: transform;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.999s;
 }
 
-.word-card-container.flipped {
+.word-card:hover .word-card-inner {
   transform: rotateY(180deg);
 }
 
-.word-card-face {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+.word-card-front,
+.word-card-back {
   position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
+  backface-visibility: hidden;
+}
+
+.word-card-front {
+  transform: rotateY(0deg);
 }
 
 .word-card-back {

@@ -20,15 +20,12 @@ interface WordCardProps {
 }
 
 const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false, onToggleSelect }: WordCardProps) => {
-  const [isFlipped, setIsFlipped] = useState(false);
-
   const handleCardClick = (e: React.MouseEvent) => {
     if (isEditMode) {
       e.preventDefault();
       onToggleSelect?.(word.id);
       return;
     }
-    setIsFlipped(!isFlipped);
   };
 
   return (
@@ -47,35 +44,35 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
 
       {/* Flashcard Container */}
       <div
-        className={`relative w-full h-24 cursor-pointer word-card-container ${
-          isFlipped ? 'flipped' : ''
-        }`}
+        className={`word-card ${isEditMode ? 'cursor-pointer' : ''}`}
         onClick={handleCardClick}
       >
-        {/* Front of Card */}
-        <Card className="word-card-face bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
-          <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
-            <h3 className="text-base font-bold text-slate-800 mb-1" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-              {word.word}
-            </h3>
-            {word.context && (
-              <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs">
-                {word.context}
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
+        <div className="word-card-inner">
+          {/* Front of Card */}
+          <Card className="word-card-front bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
+            <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
+              <h3 className="text-base font-bold text-slate-800 mb-1" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                {word.word}
+              </h3>
+              {word.context && (
+                <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs">
+                  {word.context}
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Back of Card */}
-        <Card className="word-card-face word-card-back bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
-          <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
-            {word.translations.map((translation, index) => (
-              <p key={index} className="text-base font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                {translation}
-              </p>
-            ))}
-          </CardContent>
-        </Card>
+          {/* Back of Card */}
+          <Card className="word-card-back bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
+            <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
+              {word.translations.map((translation, index) => (
+                <p key={index} className="text-base font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                  {translation}
+                </p>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

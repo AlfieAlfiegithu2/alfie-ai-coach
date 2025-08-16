@@ -35,32 +35,39 @@ const MyWordBook = () => {
   const fetchWordBook = async () => {
     try {
       setLoading(true);
-      console.log('Fetching word book...');
+      console.log('📖 Fetching word book from user_vocabulary table...');
       
-      const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
-        body: { action: 'getUserVocabulary' }
-      });
+      const { data, error } = await supabase
+        .from('user_vocabulary')
+        .select('id, word, part_of_speech, translations, created_at')
+        .order('created_at', { ascending: false });
 
-      console.log('Word book response:', { data, error });
+      console.log('📊 Word book response:', { data, error, count: data?.length });
 
       if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(`Function error: ${error.message}`);
+        console.error('Database error:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
 
-      if (data?.vocabulary) {
-        console.log('Found vocabulary:', data.vocabulary.length, 'words');
-        setWords(data.vocabulary);
-      } else {
-        console.log('No vocabulary found, setting empty array');
-        setWords([]);
-      }
+      // Transform data to match the expected format
+      const transformedWords = data?.map(item => ({
+        id: item.id,
+        word: item.word,
+        translation: item.translations?.[0] || 'No translation available',
+        context: item.part_of_speech || '',
+        savedAt: item.created_at,
+        languageCode: 'en' // Default since we don't store this
+      })) || [];
+
+      console.log('✅ Successfully loaded', transformedWords.length, 'words');
+      setWords(transformedWords);
     } catch (error) {
-      console.error('Error fetching word book:', error);
+      console.error('❌ Error fetching word book:', error);
       toast({
-        title: "❌ Error loading Word Book",
-        description: `Failed to load your word book: ${error.message}`,
-        variant: "destructive"
+        title: "Failed to Load Word Book",
+        description: `Could not load your word book: ${error.message}`,
+        variant: "destructive",
+        duration: 4000,
       });
       setWords([]); // Set empty array on error so UI doesn't break
     } finally {
@@ -70,28 +77,35 @@ const MyWordBook = () => {
 
   const removeWord = async (wordId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
-        body: { 
-          action: 'removeWord',
-          wordId: wordId
-        }
-      });
+      console.log('🗑️ Removing word:', wordId);
+      
+      const { error } = await supabase
+        .from('user_vocabulary')
+        .delete()
+        .eq('id', wordId);
 
-      if (error) throw error;
-
-      if (data?.success) {
-        setWords(prev => prev.filter(w => w.id !== wordId));
-        toast({
-          title: "Word removed",
-          description: "The word has been removed from your Word Book.",
-        });
+      if (error) {
+        console.error('Database error removing word:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
-    } catch (error) {
-      console.error('Error removing word:', error);
+
+      // Remove the word from local state
+      setWords(prev => prev.filter(w => w.id !== wordId));
+      
       toast({
-        title: "Error",
-        description: "Failed to remove word. Please try again.",
-        variant: "destructive"
+        title: "✅ Word Removed",
+        description: "The word has been removed from your Word Book.",
+        duration: 3000,
+      });
+      
+      console.log('✅ Successfully removed word');
+    } catch (error) {
+      console.error('❌ Error removing word:', error);
+      toast({
+        title: "Failed to Remove Word",
+        description: error.message || "Could not remove word. Please try again.",
+        variant: "destructive",
+        duration: 4000,
       });
     }
   };

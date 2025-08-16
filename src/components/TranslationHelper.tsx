@@ -112,43 +112,47 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     if (!translationResult || isSaving || isSaved) return;
     
     setIsSaving(true);
-    console.log('Saving word to book:', { word: selectedText.trim(), language });
+    console.log('🔄 Saving word to book:', { 
+      word: selectedText.trim(), 
+      translation: translationResult.translation,
+      hasContext: !!translationResult.context 
+    });
     
     try {
-      const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
+      const { data, error } = await supabase.functions.invoke('add-to-word-book', {
         body: {
-          action: 'saveWord',
           word: selectedText.trim(),
-          context: translationResult.context || '',
-          nativeLanguage: language
+          part_of_speech: null, // We don't have part of speech from translation
+          translation: translationResult.translation
         }
       });
 
-      console.log('Save word response:', { data, error });
+      console.log('💾 Save word response:', { data, error });
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw new Error(`Function error: ${error.message}`);
+        throw new Error(error.message || 'Network error occurred');
       }
 
       if (data?.success) {
         setIsSaved(true);
         toast({
-          title: "✅ Word saved!",
+          title: "✅ Word Saved!",
           description: `"${selectedText}" has been added to your Word Book.`,
+          duration: 3000,
         });
         
-        // Reset after 2 seconds and close
+        // Close popup after showing success
         setTimeout(() => {
           onClose();
         }, 1500);
-      } else if (data?.alreadySaved) {
-        setIsSaved(true);
+      } else if (data?.error === 'already_exists') {
         toast({
-          title: "Already saved!",
-          description: `"${selectedText}" is already in your Word Book.`,
+          title: "Already in Word Book",
+          description: `"${selectedText}" is already saved in your Word Book.`,
+          duration: 3000,
         });
-        
+        // Don't set as saved since it wasn't actually saved now
         setTimeout(() => {
           onClose();
         }, 1500);
@@ -156,11 +160,12 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         throw new Error(data?.error || 'Failed to save word');
       }
     } catch (error) {
-      console.error('Error saving word:', error);
+      console.error('❌ Error saving word:', error);
       toast({
-        title: "❌ Error",
-        description: `Failed to save "${selectedText}". Please try again.`,
-        variant: "destructive"
+        title: "Failed to Save Word",
+        description: error.message || `Could not save "${selectedText}". Please try again.`,
+        variant: "destructive",
+        duration: 4000,
       });
     } finally {
       setIsSaving(false);

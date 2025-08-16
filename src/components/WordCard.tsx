@@ -1,8 +1,6 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trash2 } from 'lucide-react';
 
 interface SavedWord {
   id: string;
@@ -16,28 +14,48 @@ interface SavedWord {
 interface WordCardProps {
   word: SavedWord;
   onRemove: (wordId: string) => void;
+  isEditMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (wordId: string) => void;
 }
 
-const WordCard = ({ word, onRemove }: WordCardProps) => {
+const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false, onToggleSelect }: WordCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const handleCardClick = () => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isEditMode) {
+      e.preventDefault();
+      onToggleSelect?.(word.id);
+      return;
+    }
     setIsFlipped(!isFlipped);
   };
 
   return (
     <div className="relative">
+      {/* Edit Mode Checkbox */}
+      {isEditMode && (
+        <div className="absolute -top-2 -left-2 z-20">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect?.(word.id)}
+            className="w-5 h-5 rounded-full bg-white/90 border-2 border-slate-300 checked:bg-red-500 checked:border-red-500"
+          />
+        </div>
+      )}
+
       {/* Flashcard Container */}
       <div
-        className={`relative w-full h-28 cursor-pointer transition-transform duration-500 preserve-3d ${
-          isFlipped ? 'rotate-y-180' : ''
+        className={`relative w-full h-24 cursor-pointer word-card-container ${
+          isFlipped ? 'flipped' : ''
         }`}
         onClick={handleCardClick}
       >
         {/* Front of Card */}
-        <Card className="absolute inset-0 backface-hidden bg-white/10 border-white/20 backdrop-blur-xl">
+        <Card className="word-card-face bg-white/10 border-white/20 backdrop-blur-xl">
           <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
-            <h3 className="text-lg font-bold text-slate-800 mb-1" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+            <h3 className="text-base font-bold text-slate-800 mb-1" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
               {word.word}
             </h3>
             {word.context && (
@@ -49,48 +67,18 @@ const WordCard = ({ word, onRemove }: WordCardProps) => {
         </Card>
 
         {/* Back of Card */}
-        <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-white/10 border-white/20 backdrop-blur-xl">
-          <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center space-y-1">
+        <Card className="word-card-face word-card-back bg-white/10 border-white/20 backdrop-blur-xl">
+          <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
             {word.translations.map((translation, index) => (
-              <p key={index} className="text-lg font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+              <p key={index} className="text-base font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                 {translation}
               </p>
             ))}
           </CardContent>
         </Card>
       </div>
-
-      {/* Delete Button */}
-      <Button
-        variant="destructive"
-        size="sm"
-        className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0 z-10 bg-red-500/80 border border-white/20"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove(word.id);
-        }}
-      >
-        <Trash2 className="w-3 h-3" />
-      </Button>
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .perspective-1000 {
-            perspective: 1000px;
-          }
-          .preserve-3d {
-            transform-style: preserve-3d;
-          }
-          .backface-hidden {
-            backface-visibility: hidden;
-          }
-          .rotate-y-180 {
-            transform: rotateY(180deg);
-          }
-        `
-      }} />
     </div>
   );
-};
+});
 
 export default WordCard;

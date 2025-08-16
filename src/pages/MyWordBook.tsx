@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, ArrowLeft, User } from 'lucide-react';
+import { BookOpen, ArrowLeft, User, Edit3, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,8 @@ const MyWordBook = () => {
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Preload the background image
@@ -116,6 +118,62 @@ const MyWordBook = () => {
     }
   };
 
+  const toggleEditMode = () => {
+    setIsEditMode(!isEditMode);
+    setSelectedWords(new Set());
+  };
+
+  const toggleWordSelection = (wordId: string) => {
+    setSelectedWords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(wordId)) {
+        newSet.delete(wordId);
+      } else {
+        newSet.add(wordId);
+      }
+      return newSet;
+    });
+  };
+
+  const deleteSelectedWords = async () => {
+    if (selectedWords.size === 0) return;
+
+    try {
+      console.log('🗑️ Removing selected words:', Array.from(selectedWords));
+      
+      const { error } = await supabase
+        .from('user_vocabulary')
+        .delete()
+        .in('id', Array.from(selectedWords));
+
+      if (error) {
+        console.error('Database error removing words:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      // Remove the words from local state
+      setWords(prev => prev.filter(w => !selectedWords.has(w.id)));
+      setSelectedWords(new Set());
+      setIsEditMode(false);
+      
+      toast({
+        title: "✅ Words Removed",
+        description: `${selectedWords.size} word${selectedWords.size > 1 ? 's' : ''} removed from your Word Book.`,
+        duration: 3000,
+      });
+      
+      console.log('✅ Successfully removed selected words');
+    } catch (error) {
+      console.error('❌ Error removing words:', error);
+      toast({
+        title: "Failed to Remove Words",
+        description: error.message || "Could not remove words. Please try again.",
+        variant: "destructive",
+        duration: 4000,
+      });
+    }
+  };
+
 
 
   if (!user) {
@@ -168,6 +226,35 @@ const MyWordBook = () => {
             </div>
             
             <div className="flex items-center gap-3 lg:gap-4">
+              {/* Edit Mode Controls */}
+              {words.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {isEditMode && selectedWords.size > 0 && (
+                    <Button
+                      onClick={deleteSelectedWords}
+                      variant="destructive"
+                      size="sm"
+                      className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete ({selectedWords.size})
+                    </Button>
+                  )}
+                  <Button
+                    onClick={toggleEditMode}
+                    variant={isEditMode ? "secondary" : "outline"}
+                    size="sm"
+                    className={isEditMode 
+                      ? "bg-white/20 text-slate-800 border-white/30" 
+                      : "bg-white/10 text-slate-800 border-white/30 hover:bg-white/20"
+                    }
+                  >
+                    <Edit3 className="w-4 h-4 mr-1" />
+                    {isEditMode ? 'Done' : 'Modify'}
+                  </Button>
+                </div>
+              )}
+              
               {/* User Avatar */}
               <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
                 <User className="w-4 h-4 text-white" />
@@ -182,11 +269,9 @@ const MyWordBook = () => {
               <h1 className="text-2xl lg:text-3xl text-slate-800 tracking-tight font-semibold mb-4" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                 My Word Book
               </h1>
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full backdrop-blur-sm">
-                <Badge variant="secondary" className="bg-white/20 text-slate-700 border-white/30">
-                  {words.length} {words.length === 1 ? 'word' : 'words'} saved
-                </Badge>
-              </div>
+              <Badge variant="secondary" className="bg-white/20 text-slate-700 border-white/30">
+                {words.length} {words.length === 1 ? 'word' : 'words'} saved
+              </Badge>
             </div>
 
             {/* Empty State */}
@@ -208,12 +293,15 @@ const MyWordBook = () => {
               </div>
             ) : (
               /* Word Cards Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 word-card-grid">
                 {words.map((word) => (
                   <WordCard
                     key={word.id}
                     word={word}
                     onRemove={removeWord}
+                    isEditMode={isEditMode}
+                    isSelected={selectedWords.has(word.id)}
+                    onToggleSelect={toggleWordSelection}
                   />
                 ))}
               </div>

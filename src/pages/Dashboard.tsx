@@ -347,28 +347,6 @@ const Dashboard = () => {
               </div>
 
 
-              {/* My Word Book Quick Access */}
-              <button
-                onClick={() => navigate('/dashboard/my-word-book')}
-                className="relative lg:p-6 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl mt-4 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:from-emerald-500/15 hover:to-teal-500/15 transition-all group w-full text-left"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base lg:text-lg font-semibold mb-2 text-emerald-800 flex items-center gap-2" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                      <BookOpen className="w-5 h-5" />
-                      My Word Book
-                    </h3>
-                    <p className="text-sm text-emerald-600" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                      Review your saved vocabulary with interactive flashcards
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-emerald-600 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
             </div>
 
             {/* Right column */}

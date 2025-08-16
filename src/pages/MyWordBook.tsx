@@ -2,17 +2,18 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, ArrowLeft, Trash2, RefreshCw } from 'lucide-react';
+import { BookOpen, ArrowLeft, Trash2, RefreshCw, User, LogOut, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import SettingsModal from '@/components/SettingsModal';
 
 interface SavedWord {
   id: string;
   word: string;
-  translation: string;
+  translations: string[];
   context: string;
   savedAt: string;
   languageCode: string;
@@ -20,13 +21,18 @@ interface SavedWord {
 
 const MyWordBook = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
+    // Preload the background image
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
+    
     if (user) {
       fetchWordBook();
     }
@@ -53,7 +59,7 @@ const MyWordBook = () => {
       const transformedWords = data?.map(item => ({
         id: item.id,
         word: item.word,
-        translation: item.translations?.[0] || 'No translation available',
+        translations: item.translations || ['No translation available'],
         context: item.part_of_speech || '',
         savedAt: item.created_at,
         languageCode: 'en' // Default since we don't store this
@@ -110,211 +116,226 @@ const MyWordBook = () => {
     }
   };
 
-  const handleCardClick = (wordId: string) => {
-    setFlippedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(wordId)) {
-        newSet.delete(wordId);
-      } else {
-        newSet.add(wordId);
-      }
-      return newSet;
-    });
-  };
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <Card className="p-8 text-center">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <Card className="p-8 text-center glass-card">
           <CardContent>
             <p className="text-text-secondary mb-4">Please sign in to access your Word Book.</p>
-            <Button onClick={() => navigate('/auth')}>Sign In</Button>
+            <Button onClick={() => navigate('/auth')} className="btn-primary">Sign In</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (loading) {
+  if (loading || !imageLoaded) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Button>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchWordBook}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </Button>
-        </div>
-
-        {/* Title */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-text-primary mb-4 flex items-center justify-center gap-3">
-            <BookOpen className="w-10 h-10 text-brand-blue" />
-            My Word Book
-          </h1>
-          <p className="text-text-secondary text-lg">
-            Review your saved vocabulary with interactive flashcards
-          </p>
-          <Badge variant="secondary" className="mt-4">
-            {words.length} {words.length === 1 ? 'word' : 'words'} saved
-          </Badge>
-        </div>
-
-        {/* Empty State */}
-        {words.length === 0 ? (
-          <div className="text-center py-16">
-            <BookOpen className="w-20 h-20 text-text-secondary/30 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-text-primary mb-4">
-              Your Word Book is empty
-            </h3>
-            <p className="text-text-secondary mb-8 max-w-md mx-auto">
-              Start building your vocabulary by selecting words during reading tests and clicking "Add to Word Book" in the translation popup.
-            </p>
-            <Button onClick={() => navigate('/ielts-portal')} className="bg-brand-blue hover:bg-brand-blue/90">
-              Start Learning
-            </Button>
-          </div>
-        ) : (
-          /* Word Cards Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {words.map((word) => {
-              const isFlipped = flippedCards.has(word.id);
-              return (
-                <div
-                  key={word.id}
-                  className="relative group perspective-1000"
-                >
-                  {/* Flashcard Container */}
-                  <div
-                    className={`relative w-full h-48 cursor-pointer transition-transform duration-500 preserve-3d ${
-                      isFlipped ? 'rotate-y-180' : ''
-                    }`}
-                    onClick={() => handleCardClick(word.id)}
-                  >
-                    {/* Front of Card */}
-                    <Card className={`absolute inset-0 backface-hidden hover:shadow-lg transition-shadow border-2 ${
-                      isFlipped ? 'border-green-200' : 'border-blue-200'
-                    }`}>
-                      <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
-                        <h3 className="text-2xl font-bold text-text-primary mb-2">
-                          {word.word}
-                        </h3>
-                        <p className="text-sm text-text-secondary">
-                          Click to see translation
-                        </p>
-                        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Badge variant="outline" className="text-xs">
-                            EN
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Back of Card */}
-                    <Card className="absolute inset-0 backface-hidden rotate-y-180 hover:shadow-lg transition-shadow border-2 border-green-200 bg-green-50">
-                      <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
-                        <h3 className="text-xl font-semibold text-green-800 mb-4">
-                          {word.translation}
-                        </h3>
-                        {word.context && (
-                          <p className="text-sm text-green-600 italic">
-                            "{word.context}"
-                          </p>
-                        )}
-                        <div className="absolute bottom-3 right-3">
-                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700">
-                            Translation
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Delete Button */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute -top-2 -right-2 w-8 h-8 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeWord(word.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-
-                  {/* Save Date */}
-                  <div className="absolute -bottom-6 left-0 right-0 text-center">
-                    <p className="text-xs text-text-secondary">
-                      Saved {new Date(word.savedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Instructions */}
-        {words.length > 0 && (
-          <div className="mt-16 text-center">
-            <Card className="max-w-2xl mx-auto">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-text-primary mb-3">
-                  How to use your Word Book
-                </h3>
-                <ul className="text-sm text-text-secondary space-y-2 text-left">
-                  <li>• Click on any card to flip it and see the translation</li>
-                  <li>• Hover over cards to see the delete button</li>
-                  <li>• Add new words by selecting text during reading tests</li>
-                  <li>• Use this space to review and memorize your vocabulary</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
+    <div className="min-h-screen relative">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+        style={{
+          backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+          backgroundColor: '#a2d2ff'
+        }}
+      />
       
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .perspective-1000 {
-            perspective: 1000px;
-          }
-          .preserve-3d {
-            transform-style: preserve-3d;
-          }
-          .backface-hidden {
-            backface-visibility: hidden;
-          }
-          .rotate-y-180 {
-            transform: rotateY(180deg);
-          }
-        `
-      }} />
+      <div className="relative z-10 min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
+        <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
+          {/* Header */}
+          <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-2 text-slate-800 hover:text-blue-600"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            
+            <nav className="hidden lg:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2">
+              <button 
+                onClick={() => navigate('/dashboard/my-word-book')} 
+                className="text-slate-800 hover:text-blue-600 transition flex items-center gap-1" 
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                <BookOpen className="w-4 h-4" />
+                Word Book
+              </button>
+              <button 
+                onClick={() => navigate('/ielts-portal')} 
+                className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" 
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                <Home className="w-4 h-4" />
+                Home
+              </button>
+            </nav>
+            
+            <div className="flex items-center gap-3 lg:gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchWordBook}
+                className="flex items-center gap-2 bg-white/10 border-white/20 hover:bg-white/20 text-slate-700"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </Button>
+              
+              {/* Settings Button */}
+              <SettingsModal onSettingsChange={() => {}} />
+              
+              {/* Logout Button */}
+              <button 
+                onClick={signOut}
+                className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-red-500/20 backdrop-blur-sm flex items-center justify-center border border-red-500/30 hover:bg-red-500/30 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4 text-red-500" />
+              </button>
+              
+              {/* User Avatar */}
+              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                <User className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="relative sm:px-6 lg:px-12 pr-4 pb-12 pl-4">
+            {/* Title */}
+            <div className="text-center mb-12 pt-8">
+              <h1 className="text-4xl lg:text-5xl text-slate-800 tracking-tight font-semibold mb-4 flex items-center justify-center gap-3" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                <BookOpen className="w-10 h-10 text-slate-800" />
+                My Word Book
+              </h1>
+              <p className="text-slate-600 text-lg mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Review your saved vocabulary
+              </p>
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full backdrop-blur-sm">
+                <Badge variant="secondary" className="bg-white/20 text-slate-700 border-white/30">
+                  {words.length} {words.length === 1 ? 'word' : 'words'} saved
+                </Badge>
+              </div>
+            </div>
+
+            {/* Empty State */}
+            {words.length === 0 ? (
+              <div className="text-center py-16">
+                <BookOpen className="w-20 h-20 text-slate-400/50 mx-auto mb-6" />
+                <h3 className="text-2xl font-semibold text-slate-800 mb-4" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                  Your Word Book is empty
+                </h3>
+                <p className="text-slate-600 mb-8 max-w-md mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Start building your vocabulary by selecting words during reading tests and clicking "Add to Word Book" in the translation popup.
+                </p>
+                <Button 
+                  onClick={() => navigate('/ielts-portal')} 
+                  className="bg-slate-800/80 hover:bg-slate-800 text-white px-6 py-3 rounded-xl backdrop-blur-sm border border-white/20"
+                >
+                  Start Learning
+                </Button>
+              </div>
+            ) : (
+              /* Word Cards Grid */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {words.map((word) => (
+                  <div
+                    key={word.id}
+                    className="relative group"
+                  >
+                    {/* Word Card */}
+                    <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 min-h-[200px]">
+                      <CardContent className="p-6">
+                        {/* Word */}
+                        <div className="text-center mb-4">
+                          <h3 className="text-2xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                            {word.word}
+                          </h3>
+                          {word.context && (
+                            <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs">
+                              {word.context}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Translations */}
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-slate-700 mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            Translations:
+                          </h4>
+                          <div className="space-y-1">
+                            {word.translations.map((translation, index) => (
+                              <div key={index} className="bg-white/10 rounded-lg p-3 border border-white/20">
+                                <p className="text-sm text-slate-700 font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                  {translation}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Save Date */}
+                        <div className="mt-4 pt-3 border-t border-white/20">
+                          <p className="text-xs text-slate-500 text-center" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            Saved {new Date(word.savedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Delete Button */}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 w-8 h-8 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-red-500/80 hover:bg-red-500 border border-white/20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeWord(word.id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Instructions */}
+            {words.length > 0 && (
+              <div className="mt-16 text-center">
+                <Card className="max-w-2xl mx-auto bg-white/10 border-white/20 backdrop-blur-xl">
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-3" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                      How to use your Word Book
+                    </h3>
+                    <ul className="text-sm text-slate-600 space-y-2 text-left" style={{ fontFamily: 'Inter, sans-serif' }}>
+                      <li>• Each card shows the word and all its translations</li>
+                      <li>• Hover over cards to see the delete button</li>
+                      <li>• Add new words by selecting text during reading tests</li>
+                      <li>• Use this space to review and memorize your vocabulary</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
     </div>
   );
 };

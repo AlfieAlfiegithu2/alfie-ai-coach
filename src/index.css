@@ -2,14 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 3D Flip Card Styles - Hover-based animation */
-.word-card {
+/* 3D Flip Card Styles - From Uiverse.io by vamsidevendrakumar */
+.card {
   width: 100%;
   height: 96px; /* h-24 */
   perspective: 1000px;
 }
 
-.word-card-inner {
+.card-inner {
   width: 100%;
   height: 100%;
   position: relative;
@@ -17,23 +17,23 @@
   transition: transform 0.999s;
 }
 
-.word-card:hover .word-card-inner {
+.card:hover .card-inner {
   transform: rotateY(180deg);
 }
 
-.word-card-front,
-.word-card-back {
+.card-front,
+.card-back {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
 }
 
-.word-card-front {
+.card-front {
   transform: rotateY(0deg);
 }
 
-.word-card-back {
+.card-back {
   transform: rotateY(180deg);
 }
 

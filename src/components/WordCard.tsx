@@ -44,12 +44,12 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
 
       {/* Flashcard Container */}
       <div
-        className={`word-card ${isEditMode ? 'cursor-pointer' : ''}`}
+        className={`card ${isEditMode ? 'cursor-pointer' : ''}`}
         onClick={handleCardClick}
       >
-        <div className="word-card-inner">
+        <div className="card-inner">
           {/* Front of Card */}
-          <Card className="word-card-front bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
+          <Card className="card-front bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
             <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
               <h3 className="text-base font-bold text-slate-800 mb-1" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                 {word.word}
@@ -63,7 +63,7 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
           </Card>
 
           {/* Back of Card */}
-          <Card className="word-card-back bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
+          <Card className="card-back bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
             <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
               {word.translations.map((translation, index) => (
                 <p key={index} className="text-base font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>

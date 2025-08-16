@@ -26,6 +26,7 @@ const MyWordBook = () => {
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Preload the background image
@@ -116,6 +117,18 @@ const MyWordBook = () => {
     }
   };
 
+  const handleCardClick = (wordId: string) => {
+    setFlippedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(wordId)) {
+        newSet.delete(wordId);
+      } else {
+        newSet.add(wordId);
+      }
+      return newSet;
+    });
+  };
+
 
   if (!user) {
     return (
@@ -166,48 +179,7 @@ const MyWordBook = () => {
               </Button>
             </div>
             
-            <nav className="hidden lg:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2">
-              <button 
-                onClick={() => navigate('/dashboard/my-word-book')} 
-                className="text-slate-800 hover:text-blue-600 transition flex items-center gap-1" 
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                <BookOpen className="w-4 h-4" />
-                Word Book
-              </button>
-              <button 
-                onClick={() => navigate('/ielts-portal')} 
-                className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" 
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                <Home className="w-4 h-4" />
-                Home
-              </button>
-            </nav>
-            
             <div className="flex items-center gap-3 lg:gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchWordBook}
-                className="flex items-center gap-2 bg-white/10 border-white/20 hover:bg-white/20 text-slate-700"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </Button>
-              
-              {/* Settings Button */}
-              <SettingsModal onSettingsChange={() => {}} />
-              
-              {/* Logout Button */}
-              <button 
-                onClick={signOut}
-                className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-red-500/20 backdrop-blur-sm flex items-center justify-center border border-red-500/30 hover:bg-red-500/30 transition-colors"
-                title="Sign Out"
-              >
-                <LogOut className="w-4 h-4 text-red-500" />
-              </button>
-              
               {/* User Avatar */}
               <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
                 <User className="w-4 h-4 text-white" />
@@ -252,90 +224,106 @@ const MyWordBook = () => {
               </div>
             ) : (
               /* Word Cards Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {words.map((word) => (
-                  <div
-                    key={word.id}
-                    className="relative group"
-                  >
-                    {/* Word Card */}
-                    <Card className="bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all duration-300 min-h-[200px]">
-                      <CardContent className="p-6">
-                        {/* Word */}
-                        <div className="text-center mb-4">
-                          <h3 className="text-2xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                            {word.word}
-                          </h3>
-                          {word.context && (
-                            <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs">
-                              {word.context}
-                            </Badge>
-                          )}
-                        </div>
-
-                        {/* Translations */}
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-slate-700 mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            Translations:
-                          </h4>
-                          <div className="space-y-1">
-                            {word.translations.map((translation, index) => (
-                              <div key={index} className="bg-white/10 rounded-lg p-3 border border-white/20">
-                                <p className="text-sm text-slate-700 font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
-                                  {translation}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Save Date */}
-                        <div className="mt-4 pt-3 border-t border-white/20">
-                          <p className="text-xs text-slate-500 text-center" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            Saved {new Date(word.savedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Delete Button */}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute -top-2 -right-2 w-8 h-8 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-red-500/80 hover:bg-red-500 border border-white/20"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeWord(word.id);
-                      }}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {words.map((word) => {
+                  const isFlipped = flippedCards.has(word.id);
+                  return (
+                    <div
+                      key={word.id}
+                      className="relative group perspective-1000"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      {/* Flashcard Container */}
+                      <div
+                        className={`relative w-full h-48 cursor-pointer transition-transform duration-500 preserve-3d ${
+                          isFlipped ? 'rotate-y-180' : ''
+                        }`}
+                        onClick={() => handleCardClick(word.id)}
+                      >
+                        {/* Front of Card */}
+                        <Card className="absolute inset-0 backface-hidden bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all">
+                          <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
+                            <h3 className="text-2xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                              {word.word}
+                            </h3>
+                            {word.context && (
+                              <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs mb-2">
+                                {word.context}
+                              </Badge>
+                            )}
+                            <p className="text-sm text-slate-500" style={{ fontFamily: 'Inter, sans-serif' }}>
+                              Click to see translation
+                            </p>
+                          </CardContent>
+                        </Card>
 
-            {/* Instructions */}
-            {words.length > 0 && (
-              <div className="mt-16 text-center">
-                <Card className="max-w-2xl mx-auto bg-white/10 border-white/20 backdrop-blur-xl">
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-3" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                      How to use your Word Book
-                    </h3>
-                    <ul className="text-sm text-slate-600 space-y-2 text-left" style={{ fontFamily: 'Inter, sans-serif' }}>
-                      <li>• Each card shows the word and all its translations</li>
-                      <li>• Hover over cards to see the delete button</li>
-                      <li>• Add new words by selecting text during reading tests</li>
-                      <li>• Use this space to review and memorize your vocabulary</li>
-                    </ul>
-                  </CardContent>
-                </Card>
+                        {/* Back of Card */}
+                        <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-emerald-500/10 border-emerald-500/20 backdrop-blur-xl hover:bg-emerald-500/15 transition-all">
+                          <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
+                            <div className="space-y-3 w-full">
+                              <h4 className="text-sm font-medium text-emerald-800 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                Translations:
+                              </h4>
+                              {word.translations.slice(0, 3).map((translation, index) => (
+                                <div key={index} className="bg-emerald-500/10 rounded-lg p-2 border border-emerald-500/20">
+                                  <p className="text-sm text-emerald-800 font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                    {translation}
+                                  </p>
+                                </div>
+                              ))}
+                              {word.translations.length > 3 && (
+                                <p className="text-xs text-emerald-600" style={{ fontFamily: 'Inter, sans-serif' }}>
+                                  +{word.translations.length - 3} more
+                                </p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Delete Button */}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 w-8 h-8 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-red-500/80 hover:bg-red-500 border border-white/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeWord(word.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+
+                      {/* Save Date */}
+                      <div className="absolute -bottom-6 left-0 right-0 text-center">
+                        <p className="text-xs text-slate-500" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Saved {new Date(word.savedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </main>
         </div>
       </div>
+      
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .perspective-1000 {
+            perspective: 1000px;
+          }
+          .preserve-3d {
+            transform-style: preserve-3d;
+          }
+          .backface-hidden {
+            backface-visibility: hidden;
+          }
+          .rotate-y-180 {
+            transform: rotateY(180deg);
+          }
+        `
+      }} />
     </div>
   );
 };

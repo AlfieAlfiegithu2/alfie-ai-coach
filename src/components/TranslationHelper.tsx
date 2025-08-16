@@ -120,16 +120,29 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(`Function error: ${error.message}`);
+      }
 
       if (data?.success) {
         setIsSaved(true);
         toast({
-          title: "Word saved!",
+          title: "✅ Word saved!",
           description: `"${selectedText}" has been added to your Word Book.`,
         });
         
         // Reset after 2 seconds and close
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else if (data?.alreadySaved) {
+        setIsSaved(true);
+        toast({
+          title: "Already saved!",
+          description: `"${selectedText}" is already in your Word Book.`,
+        });
+        
         setTimeout(() => {
           onClose();
         }, 1500);
@@ -139,8 +152,8 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     } catch (error) {
       console.error('Error saving word:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to save word. Please try again.",
+        title: "❌ Error",
+        description: `Failed to save "${selectedText}". Please try again.`,
         variant: "destructive"
       });
     } finally {

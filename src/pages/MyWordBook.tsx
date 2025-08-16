@@ -35,22 +35,34 @@ const MyWordBook = () => {
   const fetchWordBook = async () => {
     try {
       setLoading(true);
+      console.log('Fetching word book...');
+      
       const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
         body: { action: 'getUserVocabulary' }
       });
 
-      if (error) throw error;
+      console.log('Word book response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(`Function error: ${error.message}`);
+      }
 
       if (data?.vocabulary) {
+        console.log('Found vocabulary:', data.vocabulary.length, 'words');
         setWords(data.vocabulary);
+      } else {
+        console.log('No vocabulary found, setting empty array');
+        setWords([]);
       }
     } catch (error) {
       console.error('Error fetching word book:', error);
       toast({
-        title: "Error",
-        description: "Failed to load your word book. Please try again.",
+        title: "❌ Error loading Word Book",
+        description: `Failed to load your word book: ${error.message}`,
         variant: "destructive"
       });
+      setWords([]); // Set empty array on error so UI doesn't break
     } finally {
       setLoading(false);
     }

@@ -50,9 +50,10 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
 
       if (error || !data.success) {
         console.warn('Translation service error:', error);
-        // Fallback to simple translation
+        // Fallback to simple translation that still allows saving
         setTranslationResult({
-          translation: `Translation for "${text}" (${language})`,
+          translation: `${text} → ${language} translation`,
+          context: 'Translation service temporarily unavailable, but you can still save this word.',
           simple: true
         });
       } else {
@@ -61,7 +62,8 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     } catch (error) {
       console.error('Translation error:', error);
       setTranslationResult({
-        translation: 'Translation unavailable',
+        translation: `${text} → ${language}`,
+        context: 'Translation temporarily unavailable, but you can still save this word to practice later.',
         simple: true
       });
     } finally {
@@ -110,15 +112,19 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     if (!translationResult || isSaving || isSaved) return;
     
     setIsSaving(true);
+    console.log('Saving word to book:', { word: selectedText.trim(), language });
+    
     try {
       const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
         body: {
           action: 'saveWord',
           word: selectedText.trim(),
-          context: '',
+          context: translationResult.context || '',
           nativeLanguage: language
         }
       });
+
+      console.log('Save word response:', { data, error });
 
       if (error) {
         console.error('Supabase function error:', error);
@@ -233,7 +239,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
             </div>
             
             {/* Add to Word Book Button */}
-            {translationResult && !translationResult.simple && (
+            {translationResult && (
               <Button
                 onClick={saveToWordBook}
                 disabled={isSaving || isSaved}

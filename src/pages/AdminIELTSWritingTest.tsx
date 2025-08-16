@@ -419,7 +419,7 @@ const AdminIELTSWritingTest = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="task2-instructions">Instructions (Essay Question)</Label>
+              <Label htmlFor="task2-instructions">Question (Essay Question)</Label>
               <Textarea
                 id="task2-instructions"
                 rows={6}

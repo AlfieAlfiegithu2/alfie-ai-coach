@@ -457,7 +457,16 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  
+                  <div className="space-y-4">
+                    {currentTaskData.title && (
+                      <h3 className="font-semibold text-foreground">{currentTaskData.title}</h3>
+                    )}
+                    {currentTaskData.instructions && (
+                      <div className="text-foreground whitespace-pre-wrap leading-relaxed">
+                        {currentTaskData.instructions}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>}
             

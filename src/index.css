@@ -2,39 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 3D Flip Card Styles - From Uiverse.io by vamsidevendrakumar */
-.card {
+/* Word Card Corner-Wipe Animation */
+.word-card {
+  position: relative;
   width: 100%;
   height: 96px; /* h-24 */
-  perspective: 1000px;
-}
-
-.card-inner {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.999s;
-}
-
-.card:hover .card-inner {
-  transform: rotateY(180deg);
-}
-
-.card-front,
-.card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
+  background: hsl(var(--surface-1) / 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--border) / 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: hsl(var(--text-primary));
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  transition: all 0.3s ease;
 }
 
-.card-front {
-  transform: rotateY(0deg);
+.word-card::before,
+.word-card::after {
+  position: absolute;
+  content: "";
+  width: 20%;
+  height: 20%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  transition: all 0.5s ease;
+  z-index: 1;
 }
 
-.card-back {
-  transform: rotateY(180deg);
+.word-card::before {
+  top: 0;
+  right: 0;
+  border-radius: 0 12px 0 100%;
+}
+
+.word-card::after {
+  bottom: 0;
+  left: 0;
+  border-radius: 0 100% 0 12px;
+}
+
+.word-card:hover::before,
+.word-card:hover::after {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  transition: all 0.5s ease;
+}
+
+.word-card:hover::after {
+  content: attr(data-translation);
 }
 
 /* Modern EdTech Design System - Duolingo/Khan Academy Inspired */

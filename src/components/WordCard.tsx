@@ -1,6 +1,4 @@
-import { useState, memo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { memo } from 'react';
 
 interface SavedWord {
   id: string;
@@ -42,36 +40,20 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
         </div>
       )}
 
-      {/* Flashcard Container */}
+      {/* Word Card with Corner-Wipe Animation */}
       <div
-        className={`card ${isEditMode ? 'cursor-pointer' : ''}`}
+        className={`word-card ${isEditMode ? 'cursor-pointer' : ''}`}
+        data-translation={word.translations.join(', ')}
         onClick={handleCardClick}
+        style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}
       >
-        <div className="card-inner">
-          {/* Front of Card */}
-          <Card className="card-front bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
-            <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
-              <h3 className="text-base font-bold text-slate-800 mb-1" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                {word.word}
-              </h3>
-              {word.context && (
-                <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs">
-                  {word.context}
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Back of Card */}
-          <Card className="card-back bg-white/10 border-white/20 backdrop-blur-xl hover:scale-100 hover:shadow-none hover:ring-0">
-            <CardContent className="p-3 flex flex-col items-center justify-center h-full text-center">
-              {word.translations.map((translation, index) => (
-                <p key={index} className="text-base font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                  {translation}
-                </p>
-              ))}
-            </CardContent>
-          </Card>
+        <div className="text-center">
+          <div className="font-bold text-lg mb-1">{word.word}</div>
+          {word.context && (
+            <div className="text-xs opacity-60 px-2 py-1 bg-white/20 rounded-full inline-block">
+              {word.context}
+            </div>
+          )}
         </div>
       </div>
     </div>

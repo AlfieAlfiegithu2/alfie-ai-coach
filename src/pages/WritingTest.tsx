@@ -155,6 +155,8 @@ const WritingTest = () => {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
+            console.log('💾 Saving writing test results for user:', user.id);
+            
             // Save main test result
             const { data: testResult, error: testError } = await supabase
               .from('test_results')
@@ -165,7 +167,6 @@ const WritingTest = () => {
                 correct_answers: 1, // Writing tasks are marked subjectively
                 score_percentage: 85, // Placeholder - would be extracted from AI feedback
                 time_taken: (currentPrompt?.time_limit || 60) * 60,
-                cambridge_book: cambridgeBook || 'IELTS Cambridge',
                 test_data: {
                   prompt: currentPrompt,
                   response: writingText,
@@ -176,7 +177,12 @@ const WritingTest = () => {
               .select()
               .single();
 
-            if (testError) throw testError;
+            if (testError) {
+              console.error('❌ Error saving test result:', testError);
+              throw testError;
+            }
+
+            console.log('✅ Test result saved:', testResult);
 
             // Save detailed writing result
             const { error: writingError } = await supabase.from('writing_test_results').insert({
@@ -192,12 +198,26 @@ const WritingTest = () => {
               time_taken_seconds: (currentPrompt?.time_limit || 60) * 60
             });
 
-            if (writingError) throw writingError;
+            if (writingError) {
+              console.error('❌ Error saving writing result:', writingError);
+              throw writingError;
+            }
 
             console.log('✅ Writing test results saved successfully');
+            
+            // Show success message for saving
+            toast({
+              title: "Results Saved",
+              description: "Your writing test results have been saved to your dashboard!",
+            });
           }
         } catch (saveError) {
-          console.error('Error saving writing results:', saveError);
+          console.error('❌ Error saving writing results:', saveError);
+          toast({
+            title: "Save Failed",
+            description: "Your feedback was generated but results couldn't be saved. Please contact support.",
+            variant: "destructive"
+          });
         }
         
         console.log('✅ AI feedback received successfully');

@@ -385,7 +385,12 @@ const Dashboard = () => {
                   const Icon = getIcon(skill);
 
                   // Get recent test results for this skill
-                  const skillResults = testResults.filter(result => result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase())).slice(0, 3);
+                  const skillResults = testResults.filter(result => {
+                    if (skill === 'Writing') {
+                      return result.test_type === 'writing';
+                    }
+                    return result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase());
+                  }).slice(0, 3);
                   const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
                   return <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                         <div className="flex items-center justify-between mb-3 lg:mb-4">

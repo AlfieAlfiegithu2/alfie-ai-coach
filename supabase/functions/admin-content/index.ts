@@ -13,6 +13,34 @@ serve(async (req) => {
   }
 
   try {
+    // Verify admin authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('Admin authentication required');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Verify admin session
+    const { data: session, error: sessionError } = await supabaseClient
+      .from('admin_sessions')
+      .select('admin_id, expires_at')
+      .eq('session_token', token)
+      .single();
+
+    if (sessionError || !session) {
+      throw new Error('Invalid admin session');
+    }
+
+    if (new Date(session.expires_at) < new Date()) {
+      throw new Error('Admin session expired');
+    }
+
     // Create a Supabase client with the service role key to bypass RLS for admin actions
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

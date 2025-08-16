@@ -5,6 +5,7 @@ interface Admin {
   id: string;
   email: string;
   name: string;
+  token?: string;
 }
 
 interface UseAdminAuthReturn {
@@ -15,75 +16,120 @@ interface UseAdminAuthReturn {
   logout: () => void;
 }
 
+const ADMIN_TOKEN_KEY = 'admin_session_token';
+const ADMIN_DATA_KEY = 'admin_data';
+const ADMIN_EXPIRES_KEY = 'admin_expires';
+
 export function useAdminAuth(): UseAdminAuthReturn {
   const [admin, setAdmin] = useState<Admin | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Check for existing admin session on mount
   useEffect(() => {
-    const storedAdmin = localStorage.getItem('admin_user');
-    const storedToken = localStorage.getItem('admin_token');
-    
-    if (storedAdmin && storedToken) {
-      try {
-        const adminData = JSON.parse(storedAdmin);
-        setAdmin(adminData);
-      } catch (error) {
-        console.error('Failed to parse stored admin data:', error);
-        localStorage.removeItem('admin_user');
-        localStorage.removeItem('admin_token');
+    // Check for existing admin session on mount
+    const checkExistingSession = () => {
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+      const adminData = localStorage.getItem(ADMIN_DATA_KEY);
+      const expiresAt = localStorage.getItem(ADMIN_EXPIRES_KEY);
+
+      if (token && adminData && expiresAt) {
+        const expiration = new Date(expiresAt);
+        if (expiration > new Date()) {
+          try {
+            const parsedAdmin = JSON.parse(adminData);
+            setAdmin({ ...parsedAdmin, token });
+          } catch (error) {
+            console.error('Error parsing admin data:', error);
+            logout();
+          }
+        } else {
+          // Session expired
+          logout();
+        }
       }
-    }
+      setLoading(false);
+    };
+
+    checkExistingSession();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setLoading(true);
+  const login = async (email: string, password: string): Promise<{ success?: boolean; error?: string }> => {
     try {
+      setLoading(true);
+      
       const { data, error } = await supabase.functions.invoke('admin-auth', {
         body: { action: 'login', email, password }
       });
 
-      if (error) throw error;
+      if (error) {
+        return { error: error.message };
+      }
+
+      if (data.error) {
+        return { error: data.error };
+      }
 
       if (data.success && data.admin && data.token) {
-        const adminData = data.admin;
-        setAdmin(adminData);
-        localStorage.setItem('admin_token', data.token);
-        localStorage.setItem('admin_user', JSON.stringify(adminData));
+        // Store admin data and token with 24-hour expiration
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        
+        localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+        localStorage.setItem(ADMIN_DATA_KEY, JSON.stringify(data.admin));
+        localStorage.setItem(ADMIN_EXPIRES_KEY, expiresAt);
+        
+        setAdmin({ ...data.admin, token: data.token });
         return { success: true };
-      } else {
-        return { error: data.error || 'Login failed' };
       }
-    } catch (error: any) {
-      return { error: error.message || 'Login failed' };
+
+      return { error: 'Login failed' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { error: 'An error occurred during login' };
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string): Promise<{ success?: boolean; error?: string }> => {
     try {
+      setLoading(true);
+      
       const { data, error } = await supabase.functions.invoke('admin-auth', {
         body: { action: 'register', email, password, name }
       });
 
-      if (error) throw error;
+      if (error) {
+        return { error: error.message };
+      }
+
+      if (data.error) {
+        return { error: data.error };
+      }
 
       if (data.success) {
         return { success: true };
-      } else {
-        return { error: data.error || 'Registration failed' };
       }
-    } catch (error: any) {
-      return { error: error.message || 'Registration failed' };
+
+      return { error: 'Registration failed' };
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { error: 'An error occurred during registration' };
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = () => {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_DATA_KEY);
+    localStorage.removeItem(ADMIN_EXPIRES_KEY);
     setAdmin(null);
-    localStorage.removeItem('admin_user');
-    localStorage.removeItem('admin_token');
   };
 
-  return { admin, loading, login, register, logout };
+  return {
+    admin,
+    loading,
+    login,
+    register,
+    logout
+  };
 }

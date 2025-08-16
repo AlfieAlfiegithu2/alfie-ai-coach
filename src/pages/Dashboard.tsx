@@ -217,6 +217,12 @@ const Dashboard = () => {
             <a href="#" className="text-slate-800 hover:text-blue-600 transition" style={{
             fontFamily: 'Inter, sans-serif'
           }}>Dashboard</a>
+            <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
+            fontFamily: 'Inter, sans-serif'
+          }}>
+              <BookOpen className="w-4 h-4" />
+              My Word Book
+            </button>
             <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
             fontFamily: 'Inter, sans-serif'
           }}>
@@ -340,28 +346,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Writing History Quick Access */}
-              <button
-                onClick={() => navigate('/dashboard/writing-history')}
-                className="relative lg:p-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl mt-4 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl hover:from-purple-500/15 hover:to-blue-500/15 transition-all group w-full text-left"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base lg:text-lg font-semibold mb-2 text-purple-800 flex items-center gap-2" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                      <PenTool className="w-5 h-5" />
-                      My Writing History
-                    </h3>
-                    <p className="text-sm text-purple-600" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                      Review all your past IELTS writing tests and feedback
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
 
               {/* My Word Book Quick Access */}
               <button

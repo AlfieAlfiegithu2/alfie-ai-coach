@@ -165,6 +165,7 @@ const WritingTest = () => {
                 correct_answers: 1, // Writing tasks are marked subjectively
                 score_percentage: 85, // Placeholder - would be extracted from AI feedback
                 time_taken: (currentPrompt?.time_limit || 60) * 60,
+                cambridge_book: cambridgeBook || 'IELTS Cambridge',
                 test_data: {
                   prompt: currentPrompt,
                   response: writingText,
@@ -178,7 +179,7 @@ const WritingTest = () => {
             if (testError) throw testError;
 
             // Save detailed writing result
-            await supabase.from('writing_test_results').insert({
+            const { error: writingError } = await supabase.from('writing_test_results').insert({
               user_id: user.id,
               test_result_id: testResult.id,
               task_number: currentPrompt?.task_number || 1,
@@ -190,6 +191,8 @@ const WritingTest = () => {
               improvement_suggestions: [],
               time_taken_seconds: (currentPrompt?.time_limit || 60) * 60
             });
+
+            if (writingError) throw writingError;
 
             console.log('✅ Writing test results saved successfully');
           }

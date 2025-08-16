@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, ArrowLeft, Trash2, RefreshCw, User, LogOut, Home } from 'lucide-react';
+import { BookOpen, ArrowLeft, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
-import SettingsModal from '@/components/SettingsModal';
+import WordCard from '@/components/WordCard';
 
 interface SavedWord {
   id: string;
@@ -26,7 +26,6 @@ const MyWordBook = () => {
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Preload the background image
@@ -117,15 +116,6 @@ const MyWordBook = () => {
     }
   };
 
-  const handleCardClick = (wordId: string) => {
-    setFlippedCards(prev => {
-      const newSet = new Set<string>();
-      if (!prev.has(wordId)) {
-        newSet.add(wordId);
-      }
-      return newSet;
-    });
-  };
 
 
   if (!user) {
@@ -189,7 +179,7 @@ const MyWordBook = () => {
           <main className="relative sm:px-6 lg:px-12 pr-4 pb-12 pl-4">
             {/* Title */}
             <div className="text-center mb-8 pt-6">
-              <h1 className="text-3xl lg:text-4xl text-slate-800 tracking-tight font-semibold mb-4" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+              <h1 className="text-2xl lg:text-3xl text-slate-800 tracking-tight font-semibold mb-4" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                 My Word Book
               </h1>
               <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full backdrop-blur-sm">
@@ -218,66 +208,14 @@ const MyWordBook = () => {
               </div>
             ) : (
               /* Word Cards Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {words.map((word) => {
-                  const isFlipped = flippedCards.has(word.id);
-                  return (
-                    <div
-                      key={word.id}
-                      className="relative perspective-1000"
-                    >
-                      {/* Flashcard Container */}
-                      <div
-                        className={`relative w-full h-36 cursor-pointer transition-transform duration-500 preserve-3d ${
-                          isFlipped ? 'rotate-y-180' : ''
-                        }`}
-                        onClick={() => handleCardClick(word.id)}
-                      >
-                        {/* Front of Card */}
-                        <Card className="absolute inset-0 backface-hidden bg-white/10 border-white/20 backdrop-blur-xl">
-                          <CardContent className="p-4 flex flex-col items-center justify-center h-full text-center">
-                            <h3 className="text-xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                              {word.word}
-                            </h3>
-                            {word.context && (
-                              <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs">
-                                {word.context}
-                              </Badge>
-                            )}
-                          </CardContent>
-                        </Card>
-
-                        {/* Back of Card */}
-                        <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-white/10 border-white/20 backdrop-blur-xl">
-                          <CardContent className="p-4 flex flex-col items-center justify-center h-full text-center">
-                            <div className="space-y-2 w-full">
-                              {word.translations.map((translation, index) => (
-                                <div key={index} className="bg-white/20 rounded-lg p-2 border border-white/30">
-                                  <p className="text-xl font-bold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                                    {translation}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-
-                      {/* Delete Button */}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0 opacity-0 transition-opacity z-10 bg-red-500/80 border border-white/20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeWord(word.id);
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  );
-                })}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 perspective-1000">
+                {words.map((word) => (
+                  <WordCard
+                    key={word.id}
+                    word={word}
+                    onRemove={removeWord}
+                  />
+                ))}
               </div>
             )}
           </main>
@@ -288,15 +226,6 @@ const MyWordBook = () => {
         __html: `
           .perspective-1000 {
             perspective: 1000px;
-          }
-          .preserve-3d {
-            transform-style: preserve-3d;
-          }
-          .backface-hidden {
-            backface-visibility: hidden;
-          }
-          .rotate-y-180 {
-            transform: rotateY(180deg);
           }
         `
       }} />

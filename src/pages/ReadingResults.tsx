@@ -209,17 +209,123 @@ const ReadingResults = () => {
     setSelectedQuestion(question);
     setSelectedPassage(passage);
   };
-  const removeQuestion = (resultId: string, questionNumber: number) => {
-    const questionKey = `${resultId}-${questionNumber}`;
-    setRemovedQuestions(prev => new Set([...prev, questionKey]));
+  const removeQuestion = async (resultId: string, questionNumber: number) => {
+    try {
+      // Find the result and update its questions_data
+      const result = results.find(r => r.id === resultId);
+      if (!result) return;
+
+      const questions = result.questions_data.questions || result.questions_data;
+      const updatedQuestions = questions.filter((_, index) => index + 1 !== questionNumber);
+
+      // If no questions left, delete the entire result
+      if (updatedQuestions.length === 0) {
+        const { error } = await supabase
+          .from('reading_test_results')
+          .delete()
+          .eq('id', resultId);
+
+        if (error) throw error;
+
+        // Remove from local state
+        setResults(prev => prev.filter(r => r.id !== resultId));
+        toast({
+          title: "Test result removed",
+          description: "All questions were removed, so the test result has been deleted"
+        });
+      } else {
+        // Update the questions_data in database
+        const { error } = await supabase
+          .from('reading_test_results')
+          .update({ 
+            questions_data: { questions: updatedQuestions }
+          })
+          .eq('id', resultId);
+
+        if (error) throw error;
+
+        // Update local state
+        setResults(prev => prev.map(r => 
+          r.id === resultId 
+            ? { ...r, questions_data: { questions: updatedQuestions } }
+            : r
+        ));
+        toast({
+          title: "Question removed",
+          description: "Question permanently removed from your results"
+        });
+      }
+    } catch (error) {
+      console.error('Error removing question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove question",
+        variant: "destructive"
+      });
+    }
   };
-  const removeAllIncorrectAnswers = (resultId: string, questions: ProcessedQuestion[]) => {
-    const incorrectQuestionKeys = questions.filter(q => !q.isCorrect).map(q => `${resultId}-${q.questionNumber}`);
-    setRemovedQuestions(prev => {
-      const newSet = new Set(prev);
-      incorrectQuestionKeys.forEach(key => newSet.add(key));
-      return newSet;
-    });
+
+  const removeAllIncorrectAnswers = async (resultId: string, questions: ProcessedQuestion[]) => {
+    try {
+      // Find the result
+      const result = results.find(r => r.id === resultId);
+      if (!result) return;
+
+      const allQuestions = result.questions_data.questions || result.questions_data;
+      
+      // Keep only the correct questions
+      const correctQuestions = allQuestions.filter((question, index) => {
+        const userAnswer = question.user_answer || '';
+        const correctAnswer = question.correct_answer || question.answer || '';
+        const isCorrect = question.is_correct !== undefined ? question.is_correct : userAnswer === correctAnswer;
+        return isCorrect;
+      });
+
+      // If no questions left, delete the entire result
+      if (correctQuestions.length === 0) {
+        const { error } = await supabase
+          .from('reading_test_results')
+          .delete()
+          .eq('id', resultId);
+
+        if (error) throw error;
+
+        // Remove from local state
+        setResults(prev => prev.filter(r => r.id !== resultId));
+        toast({
+          title: "Test result removed", 
+          description: "All incorrect questions were removed, so the test result has been deleted"
+        });
+      } else {
+        // Update the questions_data in database
+        const { error } = await supabase
+          .from('reading_test_results')
+          .update({ 
+            questions_data: { questions: correctQuestions }
+          })
+          .eq('id', resultId);
+
+        if (error) throw error;
+
+        // Update local state
+        setResults(prev => prev.map(r => 
+          r.id === resultId 
+            ? { ...r, questions_data: { questions: correctQuestions } }
+            : r
+        ));
+        toast({
+          title: "Questions removed",
+          description: `${questions.length} incorrect questions permanently removed`
+        });
+      }
+    } catch (error) {
+      console.error('Error removing questions:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to remove questions",
+        variant: "destructive"
+      });
+    }
   };
   const isQuestionRemoved = (resultId: string, questionNumber: number) => {
     return removedQuestions.has(`${resultId}-${questionNumber}`);

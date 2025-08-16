@@ -7,16 +7,92 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Secure password hashing using bcrypt
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
-
+// Secure password hashing using Web Crypto API
 async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(12);
-  return await bcrypt.hash(password, salt);
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  
+  const key = await crypto.subtle.importKey(
+    'raw',
+    data,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+  
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    key,
+    256
+  );
+  
+  const hashArray = new Uint8Array(derivedBits);
+  const saltArray = Array.from(salt);
+  const hashArrayConverted = Array.from(hashArray);
+  
+  // Combine salt and hash
+  const combined = saltArray.concat(hashArrayConverted);
+  return btoa(String.fromCharCode(...combined));
 }
 
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return await bcrypt.compare(password, hash);
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  try {
+    const combined = atob(storedHash);
+    const combinedArray = new Uint8Array(combined.length);
+    for (let i = 0; i < combined.length; i++) {
+      combinedArray[i] = combined.charCodeAt(i);
+    }
+    
+    // Extract salt (first 16 bytes) and hash (remaining bytes)
+    const salt = combinedArray.slice(0, 16);
+    const originalHash = combinedArray.slice(16);
+    
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    
+    const key = await crypto.subtle.importKey(
+      'raw',
+      data,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    );
+    
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      key,
+      256
+    );
+    
+    const newHash = new Uint8Array(derivedBits);
+    
+    // Compare hashes
+    if (newHash.length !== originalHash.length) {
+      return false;
+    }
+    
+    for (let i = 0; i < newHash.length; i++) {
+      if (newHash[i] !== originalHash[i]) {
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Password verification error:', error);
+    return false;
+  }
 }
 
 // Generate cryptographically secure session token
@@ -61,6 +137,8 @@ serve(async (req) => {
     const requestData = await req.json();
     const { action, email, password, name, session_token } = requestData;
 
+    console.log(`Admin auth action: ${action}`);
+
     // Validate input for all actions
     if (action === 'login' || action === 'register') {
       validateInput({ email, password });
@@ -75,6 +153,7 @@ serve(async (req) => {
         .single();
 
       if (error || !admin) {
+        console.log('Admin not found or error:', error);
         return new Response(
           JSON.stringify({ error: 'Invalid credentials' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -84,6 +163,7 @@ serve(async (req) => {
       const isValidPassword = await verifyPassword(password, admin.password_hash);
       
       if (!isValidPassword) {
+        console.log('Invalid password for admin:', email);
         return new Response(
           JSON.stringify({ error: 'Invalid credentials' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -117,6 +197,7 @@ serve(async (req) => {
         );
       }
       
+      console.log('Admin login successful:', email);
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -168,6 +249,7 @@ serve(async (req) => {
         );
       }
 
+      console.log('Admin registered successfully:', email);
       return new Response(
         JSON.stringify({ 
           success: true, 

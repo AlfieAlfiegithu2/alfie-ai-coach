@@ -3,8 +3,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,27 +14,89 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+
   try {
-    const requestBody = await req.json();
-    const { action, word, context, userId, nativeLanguage, wordId } = requestBody;
-
-    console.log('📝 Smart vocabulary request:', { action, word: word?.substring(0, 20) + '...', userId: userId?.substring(0, 8) + '...', nativeLanguage });
-
-    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
-
-    if (action === 'saveWord') {
-      return await saveWordToVocabulary(supabase, word, context, userId, nativeLanguage);
-    } else if (action === 'getUserVocabulary') {
-      return await getUserVocabulary(supabase, userId);
-    } else if (action === 'removeWord') {
-      return await removeWordFromVocabulary(supabase, wordId, userId);
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    throw new Error('Invalid action');
+    // Set the auth token
+    supabase.auth.setAuth(authHeader.replace('Bearer ', ''));
+
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const requestBody = await req.json();
+    const { action, word, context, nativeLanguage, wordId } = requestBody;
+
+    // Input validation
+    if (!action || typeof action !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('📝 Smart vocabulary request:', { action, word: word?.substring(0, 20) + '...', userId: user.id?.substring(0, 8) + '...', nativeLanguage });
+
+    if (action === 'saveWord') {
+      // Validate input
+      if (!word || typeof word !== 'string' || word.length > 100) {
+        return new Response(JSON.stringify({ error: 'Invalid word' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (context && (typeof context !== 'string' || context.length > 1000)) {
+        return new Response(JSON.stringify({ error: 'Context too long' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return await saveWordToVocabulary(supabase, word.trim(), context?.trim() || '', user.id, nativeLanguage || 'English');
+    } else if (action === 'getUserVocabulary') {
+      return await getUserVocabulary(supabase, user.id);
+    } else if (action === 'removeWord') {
+      if (!wordId || typeof wordId !== 'string') {
+        return new Response(JSON.stringify({ error: 'Invalid word ID' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      return await removeWordFromVocabulary(supabase, wordId, user.id);
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid action' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('❌ Error in smart-vocabulary function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -160,7 +220,7 @@ async function getTranslationFromAPI(word: string, targetLanguage: string): Prom
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4.1-mini-2025-04-14',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',

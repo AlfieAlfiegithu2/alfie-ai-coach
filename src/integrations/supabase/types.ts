@@ -16,25 +16,34 @@ export type Database = {
     Tables: {
       admin_sessions: {
         Row: {
-          admin_id: string | null
-          created_at: string | null
+          admin_id: string
+          created_at: string
           expires_at: string
           id: string
+          ip_address: unknown | null
+          last_accessed: string | null
           session_token: string
+          user_agent: string | null
         }
         Insert: {
-          admin_id?: string | null
-          created_at?: string | null
+          admin_id: string
+          created_at?: string
           expires_at: string
           id?: string
+          ip_address?: unknown | null
+          last_accessed?: string | null
           session_token: string
+          user_agent?: string | null
         }
         Update: {
-          admin_id?: string | null
-          created_at?: string | null
+          admin_id?: string
+          created_at?: string
           expires_at?: string
           id?: string
+          ip_address?: unknown | null
+          last_accessed?: string | null
           session_token?: string
+          user_agent?: string | null
         }
         Relationships: [
           {
@@ -1339,7 +1348,7 @@ export type Database = {
           id: string
           part_of_speech: string | null
           translations: string[] | null
-          user_id: string | null
+          user_id: string
           word: string
         }
         Insert: {
@@ -1347,7 +1356,7 @@ export type Database = {
           id?: string
           part_of_speech?: string | null
           translations?: string[] | null
-          user_id?: string | null
+          user_id: string
           word: string
         }
         Update: {
@@ -1355,7 +1364,7 @@ export type Database = {
           id?: string
           part_of_speech?: string | null
           translations?: string[] | null
-          user_id?: string | null
+          user_id?: string
           word?: string
         }
         Relationships: []
@@ -1497,6 +1506,14 @@ export type Database = {
       update_question_numbering: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_admin_session: {
+        Args: { session_token: string }
+        Returns: {
+          admin_id: string
+          email: string
+          name: string
+        }[]
       }
     }
     Enums: {

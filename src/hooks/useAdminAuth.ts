@@ -13,7 +13,8 @@ interface UseAdminAuthReturn {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success?: boolean; error?: string }>;
   register: (email: string, password: string, name: string) => Promise<{ success?: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  validateSession: () => Promise<boolean>;
 }
 
 const ADMIN_TOKEN_KEY = 'admin_session_token';
@@ -24,9 +25,46 @@ export function useAdminAuth(): UseAdminAuthReturn {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const clearSession = () => {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_DATA_KEY);
+    localStorage.removeItem(ADMIN_EXPIRES_KEY);
+    setAdmin(null);
+  };
+
+  const validateSession = async (): Promise<boolean> => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!token) {
+      clearSession();
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { action: 'validate', session_token: token }
+      });
+
+      if (error || !data?.valid) {
+        clearSession();
+        return false;
+      }
+
+      // Update admin data if validation successful
+      if (data.admin) {
+        localStorage.setItem(ADMIN_DATA_KEY, JSON.stringify(data.admin));
+        setAdmin({ ...data.admin, token });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Session validation error:', error);
+      clearSession();
+      return false;
+    }
+  };
+
   useEffect(() => {
-    // Check for existing admin session on mount
-    const checkExistingSession = () => {
+    const checkExistingSession = async () => {
       const token = localStorage.getItem(ADMIN_TOKEN_KEY);
       const adminData = localStorage.getItem(ADMIN_DATA_KEY);
       const expiresAt = localStorage.getItem(ADMIN_EXPIRES_KEY);
@@ -36,14 +74,18 @@ export function useAdminAuth(): UseAdminAuthReturn {
         if (expiration > new Date()) {
           try {
             const parsedAdmin = JSON.parse(adminData);
-            setAdmin({ ...parsedAdmin, token });
+            // Validate session with server
+            const isValid = await validateSession();
+            if (isValid) {
+              setAdmin({ ...parsedAdmin, token });
+            }
           } catch (error) {
             console.error('Error parsing admin data:', error);
-            logout();
+            clearSession();
           }
         } else {
           // Session expired
-          logout();
+          clearSession();
         }
       }
       setLoading(false);
@@ -56,8 +98,13 @@ export function useAdminAuth(): UseAdminAuthReturn {
     try {
       setLoading(true);
       
+      // Input validation
+      if (!email?.trim() || !password?.trim()) {
+        return { error: 'Email and password are required' };
+      }
+
       const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { action: 'login', email, password }
+        body: { action: 'login', email: email.trim(), password }
       });
 
       if (error) {
@@ -69,8 +116,8 @@ export function useAdminAuth(): UseAdminAuthReturn {
       }
 
       if (data.success && data.admin && data.token) {
-        // Store admin data and token with 24-hour expiration
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        // Use server-provided expiration time for better security
+        const expiresAt = data.expires_at || new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
         
         localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
         localStorage.setItem(ADMIN_DATA_KEY, JSON.stringify(data.admin));
@@ -93,8 +140,17 @@ export function useAdminAuth(): UseAdminAuthReturn {
     try {
       setLoading(true);
       
+      // Input validation
+      if (!email?.trim() || !password?.trim() || !name?.trim()) {
+        return { error: 'All fields are required' };
+      }
+
+      if (password.length < 8) {
+        return { error: 'Password must be at least 8 characters' };
+      }
+
       const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { action: 'register', email, password, name }
+        body: { action: 'register', email: email.trim(), password, name: name.trim() }
       });
 
       if (error) {
@@ -118,11 +174,23 @@ export function useAdminAuth(): UseAdminAuthReturn {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    localStorage.removeItem(ADMIN_DATA_KEY);
-    localStorage.removeItem(ADMIN_EXPIRES_KEY);
-    setAdmin(null);
+  const logout = async (): Promise<void> => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    
+    // Clear local session first
+    clearSession();
+    
+    // Then invalidate server session
+    if (token) {
+      try {
+        await supabase.functions.invoke('admin-auth', {
+          body: { action: 'logout', session_token: token }
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Don't throw error since local session is already cleared
+      }
+    }
   };
 
   return {
@@ -130,6 +198,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
     loading,
     login,
     register,
-    logout
+    logout,
+    validateSession
   };
 }

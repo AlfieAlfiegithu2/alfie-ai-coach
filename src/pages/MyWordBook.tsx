@@ -119,10 +119,8 @@ const MyWordBook = () => {
 
   const handleCardClick = (wordId: string) => {
     setFlippedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(wordId)) {
-        newSet.delete(wordId);
-      } else {
+      const newSet = new Set<string>();
+      if (!prev.has(wordId)) {
         newSet.add(wordId);
       }
       return newSet;
@@ -246,35 +244,27 @@ const MyWordBook = () => {
                               {word.word}
                             </h3>
                             {word.context && (
-                              <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs mb-2">
+                              <Badge variant="outline" className="bg-white/20 text-slate-600 border-white/30 text-xs">
                                 {word.context}
                               </Badge>
                             )}
-                            <p className="text-sm text-slate-500" style={{ fontFamily: 'Inter, sans-serif' }}>
-                              Click to see translation
-                            </p>
                           </CardContent>
                         </Card>
 
                         {/* Back of Card */}
-                        <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-emerald-500/10 border-emerald-500/20 backdrop-blur-xl hover:bg-emerald-500/15 transition-all">
+                        <Card className="absolute inset-0 backface-hidden rotate-y-180 bg-white/10 border-white/20 backdrop-blur-xl hover:bg-white/15 transition-all">
                           <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
                             <div className="space-y-3 w-full">
-                              <h4 className="text-sm font-medium text-emerald-800 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+                              <h4 className="text-sm font-medium text-slate-800 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
                                 Translations:
                               </h4>
-                              {word.translations.slice(0, 3).map((translation, index) => (
-                                <div key={index} className="bg-emerald-500/10 rounded-lg p-2 border border-emerald-500/20">
-                                  <p className="text-sm text-emerald-800 font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
+                              {word.translations.map((translation, index) => (
+                                <div key={index} className="bg-white/20 rounded-lg p-2 border border-white/30">
+                                  <p className="text-sm text-slate-800 font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
                                     {translation}
                                   </p>
                                 </div>
                               ))}
-                              {word.translations.length > 3 && (
-                                <p className="text-xs text-emerald-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-                                  +{word.translations.length - 3} more
-                                </p>
-                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -292,13 +282,6 @@ const MyWordBook = () => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-
-                      {/* Save Date */}
-                      <div className="absolute -bottom-6 left-0 right-0 text-center">
-                        <p className="text-xs text-slate-500" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Saved {new Date(word.savedAt).toLocaleDateString()}
-                        </p>
-                      </div>
                     </div>
                   );
                 })}

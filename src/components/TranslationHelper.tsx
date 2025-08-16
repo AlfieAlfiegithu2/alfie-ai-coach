@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Globe } from 'lucide-react';
+import { X, Globe, BookPlus, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TranslationHelperProps {
   selectedText: string;
@@ -23,6 +24,8 @@ interface TranslationResult {
 const TranslationHelper = ({ selectedText, position, onClose, language }: TranslationHelperProps) => {
   const [translationResult, setTranslationResult] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -103,6 +106,48 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
     return { left, top };
   };
 
+  const saveToWordBook = async () => {
+    if (!translationResult || isSaving || isSaved) return;
+    
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('smart-vocabulary', {
+        body: {
+          action: 'saveWord',
+          word: selectedText.trim(),
+          context: '',
+          nativeLanguage: language
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setIsSaved(true);
+        toast({
+          title: "Word saved!",
+          description: `"${selectedText}" has been added to your Word Book.`,
+        });
+        
+        // Reset after 2 seconds and close
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data?.error || 'Failed to save word');
+      }
+    } catch (error) {
+      console.error('Error saving word:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save word. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const dynamicPosition = getPopupPosition();
 
   return (
@@ -173,6 +218,37 @@ const TranslationHelper = ({ selectedText, position, onClose, language }: Transl
                 </div>
               ) : null}
             </div>
+            
+            {/* Add to Word Book Button */}
+            {translationResult && !translationResult.simple && (
+              <Button
+                onClick={saveToWordBook}
+                disabled={isSaving || isSaved}
+                className={`w-full mt-3 transition-all ${
+                  isSaved 
+                    ? 'bg-green-600 hover:bg-green-600 text-white' 
+                    : 'bg-brand-blue hover:bg-brand-blue/90 text-white'
+                }`}
+                size="sm"
+              >
+                {isSaving ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Saving...</span>
+                  </div>
+                ) : isSaved ? (
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4" />
+                    <span>Added to Word Book</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <BookPlus className="w-4 h-4" />
+                    <span>Add to Word Book</span>
+                  </div>
+                )}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

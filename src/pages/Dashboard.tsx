@@ -276,7 +276,7 @@ const Dashboard = () => {
                   };
                   const Icon = getIcon(skill);
                   return <button key={skill} onClick={() => setSelectedSkill(skill.toLowerCase())} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                      
+                      <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
                       <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
                       fontFamily: 'Inter, sans-serif'
                     }}>
@@ -285,7 +285,7 @@ const Dashboard = () => {
                     </button>;
                 })}
                 <button onClick={() => setSelectedSkill('overall')} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${selectedSkill === 'overall' ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                  
+                  <BarChart3 className={`w-5 h-5 lg:w-6 lg:h-6 ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} />
                   <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
                     fontFamily: 'Inter, sans-serif'
                   }}>
@@ -345,7 +345,15 @@ const Dashboard = () => {
             {/* Right column */}
             <div className="flex flex-col gap-4 lg:gap-6">
               {/* Today's Schedule Heading */}
-              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h2 className="text-lg lg:text-xl font-semibold text-slate-800" style={{
+                  fontFamily: 'Inter, sans-serif'
+                }}>Practice Areas</h2>
+                <div className="flex items-center gap-3 text-sm">
+                  
+                  
+                </div>
+              </div>
 
               <div className="grid xl:grid-cols-1 gap-4 lg:gap-6">
                 {/* Test Results and Feedback Cards */}

@@ -223,11 +223,17 @@ const Dashboard = () => {
               <BookOpen className="w-4 h-4" />
               My Word Book
             </button>
-            <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
+            <button onClick={() => navigate('/')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
             fontFamily: 'Inter, sans-serif'
           }}>
               <Home className="w-4 h-4" />
               Home
+            </button>
+            <button onClick={() => navigate('/tests')} className="text-slate-600 hover:text-blue-600 transition flex items-center gap-1" style={{
+            fontFamily: 'Inter, sans-serif'
+          }}>
+              <Target className="w-4 h-4" />
+              Tests
             </button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">

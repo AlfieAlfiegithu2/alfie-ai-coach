@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import StudentLayout from '@/components/StudentLayout';
 import CelebrationTestResults from '@/components/CelebrationTestResults';
+import GlobalTextSelection from '@/components/GlobalTextSelection';
 
 interface ReadingPassage {
   id: string;
@@ -642,8 +643,9 @@ const EnhancedReadingTest = () => {
   }
 
   return (
-    <StudentLayout title={`Reading Test ${testId} - Part ${currentPart}`}>
-      <div className="min-h-screen bg-background">
+    <GlobalTextSelection>
+      <StudentLayout title={`Reading Test ${testId} - Part ${currentPart}`}>
+        <div className="min-h-screen bg-background">
         {/* Compact Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
           <div className="container mx-auto px-3 py-2">
@@ -938,7 +940,8 @@ const EnhancedReadingTest = () => {
           </div>
         </div>
       </StudentLayout>
-    );
-  };
+    </GlobalTextSelection>
+  );
+};
 
 export default EnhancedReadingTest;

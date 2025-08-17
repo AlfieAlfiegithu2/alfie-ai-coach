@@ -21,7 +21,7 @@ interface SavedWord {
 
 const MyWordBook = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,13 +178,35 @@ const MyWordBook = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Card className="p-8 text-center glass-card">
-          <CardContent>
-            <p className="text-text-secondary mb-4">Please sign in to access your Word Book.</p>
-            <Button onClick={() => navigate('/auth')} className="btn-primary">Sign In</Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen relative">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+          style={{
+            backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+            backgroundColor: '#a2d2ff'
+          }}
+        />
+        
+        <div className="relative z-10 min-h-full flex items-center justify-center">
+          <Card className="p-8 text-center bg-white/20 border-white/30 backdrop-blur-xl shadow-xl">
+            <CardContent>
+              <div className="mb-4">
+                <User className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-slate-800 mb-2">Sign in Required</h2>
+                <p className="text-slate-600 mb-6">Please sign in to access your Word Book and save your progress.</p>
+              </div>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => navigate('/auth')} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2">
+                  Sign In
+                </Button>
+                <Button onClick={() => navigate('/')} variant="outline" className="bg-white/50 border-white/30 text-slate-800 hover:bg-white/70">
+                  Go Home
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -216,12 +238,12 @@ const MyWordBook = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/')}
                 className="flex items-center gap-2 text-slate-800 hover:text-blue-600"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
+                Home
               </Button>
             </div>
             
@@ -256,8 +278,16 @@ const MyWordBook = () => {
               )}
               
               {/* User Avatar */}
-              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                <User className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden">
+                {user?.user_metadata?.avatar_url || profile?.avatar_url ? (
+                  <img 
+                    src={user?.user_metadata?.avatar_url || profile?.avatar_url} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-white" />
+                )}
               </div>
             </div>
           </header>

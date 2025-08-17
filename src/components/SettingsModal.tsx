@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon, LogOut } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut, Upload, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -35,10 +35,11 @@ interface SettingsModalProps {
 }
 
 const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({
     target_test_type: 'IELTS',
     target_score: 7.0,
@@ -176,6 +177,46 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     }
   };
 
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setAvatarUploading(true);
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Profile photo updated successfully!');
+      onSettingsChange?.();
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload profile photo');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -249,6 +290,44 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           <DialogTitle className="text-slate-800">Study Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Profile Photo Section */}
+          <div className="flex items-center gap-4 p-4 bg-white/30 rounded-lg border border-white/20">
+            <div className="w-16 h-16 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden">
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-8 h-8 text-white" />
+              )}
+            </div>
+            <div className="flex-1">
+              <Label className="text-slate-700 font-medium">Profile Photo</Label>
+              <p className="text-sm text-slate-600 mb-2">Upload a profile picture to personalize your account</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={avatarUploading}
+                  className="bg-white/50 border-white/30 text-slate-700 hover:bg-white/70"
+                  onClick={() => document.getElementById('avatar-upload')?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {avatarUploading ? 'Uploading...' : 'Change Photo'}
+                </Button>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={uploadAvatar}
+                  className="hidden"
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="preferred_name" className="text-slate-700">Preferred Name</Label>
             <Input

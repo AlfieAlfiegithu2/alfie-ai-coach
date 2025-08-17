@@ -238,8 +238,16 @@ const Dashboard = () => {
             <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
             
             {/* User Avatar */}
-            <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20">
-              <User className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden">
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-4 h-4 text-white" />
+              )}
             </div>
           </div>
         </header>

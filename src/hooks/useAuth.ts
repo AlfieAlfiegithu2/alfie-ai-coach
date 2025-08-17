@@ -8,6 +8,7 @@ interface Profile {
   full_name: string;
   subscription_status: string;
   native_language: string;
+  avatar_url?: string;
   created_at?: string;
 }
 

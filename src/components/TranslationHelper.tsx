@@ -135,11 +135,17 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
     });
     
     try {
+      // Prepare all translations (main + alternatives)
+      const allTranslations = [translationResult.translation];
+      if (translationResult.alternatives && translationResult.alternatives.length > 0) {
+        allTranslations.push(...translationResult.alternatives);
+      }
+      
       const { data, error } = await supabase.functions.invoke('add-to-word-book', {
         body: {
           word: selectedText.trim(),
           part_of_speech: null, // We don't have part of speech from translation
-          translation: translationResult.translation
+          translations: allTranslations // Send all translations including alternatives
         }
       });
 

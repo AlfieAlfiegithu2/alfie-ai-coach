@@ -58,14 +58,17 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { word, part_of_speech, translation } = await req.json();
+    const { word, part_of_speech, translation, translations } = await req.json();
+    
+    // Use translations array if provided, otherwise fall back to single translation
+    const translationArray = translations || (translation ? [translation] : []);
     
     // Validate required fields
-    if (!word || !translation) {
-      console.error('Missing required fields:', { word: !!word, translation: !!translation });
+    if (!word || translationArray.length === 0) {
+      console.error('Missing required fields:', { word: !!word, hasTranslations: translationArray.length > 0 });
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Word and translation are required' 
+        error: 'Word and at least one translation are required' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -76,7 +79,7 @@ serve(async (req) => {
       userId: user.id, 
       word: word.substring(0, 20) + '...', 
       part_of_speech, 
-      hasTranslation: !!translation 
+      translationsCount: translationArray.length 
     });
 
     // Check if word already exists for this user
@@ -110,14 +113,14 @@ serve(async (req) => {
       });
     }
 
-    // Insert the new word
+    // Insert the new word with all translations
     const { data, error: insertError } = await supabase
       .from('user_vocabulary')
       .insert({
         user_id: user.id,
         word: word.trim().toLowerCase(),
         part_of_speech: part_of_speech || null,
-        translations: [translation.trim()]
+        translations: translationArray.map(t => t.trim())
       })
       .select('id, word, created_at')
       .single();

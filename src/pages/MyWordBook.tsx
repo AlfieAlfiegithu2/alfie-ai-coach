@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, ArrowLeft, User, Edit3, Trash2, Upload } from 'lucide-react';
+import { BookOpen, ArrowLeft, User, Edit3, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import WordCard from '@/components/WordCard';
+import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
 
 interface SavedWord {
   id: string;
@@ -21,60 +22,13 @@ interface SavedWord {
 
 const MyWordBook = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
-  const [avatarUploading, setAvatarUploading] = useState(false);
-
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    setAvatarUploading(true);
-    try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      // Update profile with avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Success!",
-        description: "Profile photo updated successfully!"
-      });
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to upload profile photo. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
 
   useEffect(() => {
     // Preload the background image
@@ -325,11 +279,9 @@ const MyWordBook = () => {
               )}
               
               {/* Clickable User Avatar for Photo Upload */}
-              <div className="relative">
+              <ProfilePhotoSelector onPhotoUpdate={() => refreshProfile()}>
                 <button
-                  onClick={() => document.getElementById('avatar-upload-wordbook')?.click()}
-                  disabled={avatarUploading}
-                  className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105"
                   title="Click to change profile photo"
                 >
                   {profile?.avatar_url ? (
@@ -344,22 +296,10 @@ const MyWordBook = () => {
                   
                   {/* Upload overlay on hover */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-                    {avatarUploading ? (
-                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Upload className="w-3 h-3 text-white" />
-                    )}
+                    <User className="w-3 h-3 text-white" />
                   </div>
                 </button>
-                
-                <input
-                  id="avatar-upload-wordbook"
-                  type="file"
-                  accept="image/*"
-                  onChange={uploadAvatar}
-                  className="hidden"
-                />
-              </div>
+              </ProfilePhotoSelector>
             </div>
           </header>
 

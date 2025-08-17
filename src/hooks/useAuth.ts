@@ -22,6 +22,7 @@ interface UseAuthReturn {
   signInWithGoogle: () => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
+  refreshProfile: () => Promise<void>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -81,8 +82,15 @@ export function useAuth(): UseAuthReturn {
       }
 
       setProfile(data);
+      return data;
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
     }
   };
 
@@ -208,6 +216,7 @@ export function useAuth(): UseAuthReturn {
     signUp,
     signInWithGoogle,
     signOut,
-    resetPassword
+    resetPassword,
+    refreshProfile
   };
 }

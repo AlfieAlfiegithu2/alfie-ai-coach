@@ -40,22 +40,18 @@ export function useAdminAuth(): UseAdminAuthReturn {
 
   useEffect(() => {
     const checkAdminStatus = () => {
-      console.log('Checking admin status:', { user: user?.email, profile: profile?.role });
       if (user && profile) {
         // Check if user has admin role
         if (profile.role === 'admin') {
-          console.log('Setting admin user:', user.email);
           setAdmin({
             id: user.id,
             email: user.email || '',
             name: profile.full_name || user.email || ''
           });
         } else {
-          console.log('User is not admin, role:', profile.role);
           setAdmin(null);
         }
       } else {
-        console.log('No user or profile loaded yet');
         setAdmin(null);
       }
       setLoading(false);

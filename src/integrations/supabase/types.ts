@@ -1506,6 +1506,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      set_user_as_admin: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
       update_question_numbering: {
         Args: Record<PropertyKey, never>
         Returns: undefined

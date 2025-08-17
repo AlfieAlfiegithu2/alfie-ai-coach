@@ -6,12 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, Calendar as CalendarIcon } from 'lucide-react';
+import { Settings, Calendar as CalendarIcon, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface SectionScores {
   reading: number;
@@ -34,7 +35,8 @@ interface SettingsModalProps {
 }
 
 const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -171,6 +173,17 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
       }
     } catch (error) {
       console.error('Error loading preferences:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+      setOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
     }
   };
 
@@ -369,6 +382,17 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               className="bg-white/50 border-white/30"
             >
               Cancel
+            </Button>
+          </div>
+          
+          <div className="border-t border-white/20 pt-4">
+            <Button 
+              onClick={handleLogout}
+              variant="outline"
+              className="w-full bg-red-50/50 border-red-200/50 text-red-600 hover:bg-red-100/50 hover:text-red-700"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
             </Button>
           </div>
         </div>

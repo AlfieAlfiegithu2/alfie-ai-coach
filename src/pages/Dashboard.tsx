@@ -22,7 +22,9 @@ const Dashboard = () => {
     profile,
     refreshProfile
   } = useAuth();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
   const [selectedSkill, setSelectedSkill] = useState("overall");
   const [userStats, setUserStats] = useState<any>(null);
@@ -91,7 +93,6 @@ const Dashboard = () => {
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png';
-    
     const fetchUserData = async () => {
       if (!user) {
         setLoading(false);
@@ -155,10 +156,9 @@ const Dashboard = () => {
     const skillRoutes = {
       'Reading': '/reading-results',
       'Writing': '/ielts-writing-results',
-      'Speaking': '/ielts-speaking-results', 
+      'Speaking': '/ielts-speaking-results',
       'Listening': '/listening-results'
     };
-    
     const route = skillRoutes[skillName as keyof typeof skillRoutes];
     if (route) {
       navigate(route);
@@ -188,24 +188,17 @@ const Dashboard = () => {
     if (percentage >= 20) return "1.5";
     return "1.0";
   };
-
   if (loading || !imageLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
-      </div>
-    );
+      </div>;
   }
-
   return <div className="min-h-screen relative">
       {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
-        style={{
-          backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-          backgroundColor: '#a2d2ff'
-        }}
-      />
+      <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
+      backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+      backgroundColor: '#a2d2ff'
+    }} />
       
       <div className="relative z-10 min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
       
@@ -218,18 +211,14 @@ const Dashboard = () => {
           </div>
           <nav className="hidden lg:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2">
             <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>
+              fontFamily: 'Inter, sans-serif'
+            }}>
               My Word Book
             </button>
-            <button onClick={() => navigate('/')} className="text-slate-600 hover:text-blue-600 transition" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>
-              Home
-            </button>
+            
             <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition" style={{
-            fontFamily: 'Inter, sans-serif'
-          }}>
+              fontFamily: 'Inter, sans-serif'
+            }}>
               Tests
             </button>
           </nav>
@@ -242,19 +231,8 @@ const Dashboard = () => {
               refreshProfile();
               setRefreshKey(prev => prev + 1);
             }}>
-              <button
-                className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105"
-                title="Click to change profile photo"
-              >
-                {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                  />
-                ) : (
-                  <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />
-                )}
+              <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title="Click to change profile photo">
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
                 
                 {/* Upload overlay on hover */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
@@ -273,44 +251,44 @@ const Dashboard = () => {
             <div className="flex flex-col gap-4 lg:gap-6">
               {/* Greeting */}
               <h1 className="text-3xl sm:text-4xl lg:text-5xl text-slate-800 tracking-tight font-semibold" style={{
-              fontFamily: 'Bricolage Grotesque, sans-serif'
-            }}>
+                fontFamily: 'Bricolage Grotesque, sans-serif'
+              }}>
                 Good morning, {userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'}!
               </h1>
 
               {/* Skills Selection Card */}
               <div className="grid grid-cols-5 gap-2 lg:gap-3">
                 {skills.map(skill => {
-                const isSelected = selectedSkill === skill.toLowerCase();
-                const getIcon = (skillName: string) => {
-                  switch (skillName) {
-                    case 'Reading':
-                      return BookOpen;
-                    case 'Listening':
-                      return Volume2;
-                    case 'Writing':
-                      return PenTool;
-                    case 'Speaking':
-                      return MessageSquare;
-                    default:
-                      return BookOpen;
-                  }
-                };
-                const Icon = getIcon(skill);
-                return <button key={skill} onClick={() => setSelectedSkill(skill.toLowerCase())} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
+                  const isSelected = selectedSkill === skill.toLowerCase();
+                  const getIcon = (skillName: string) => {
+                    switch (skillName) {
+                      case 'Reading':
+                        return BookOpen;
+                      case 'Listening':
+                        return Volume2;
+                      case 'Writing':
+                        return PenTool;
+                      case 'Speaking':
+                        return MessageSquare;
+                      default:
+                        return BookOpen;
+                    }
+                  };
+                  const Icon = getIcon(skill);
+                  return <button key={skill} onClick={() => setSelectedSkill(skill.toLowerCase())} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
                       <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
                       <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
+                      fontFamily: 'Inter, sans-serif'
+                    }}>
                         {skill}
                       </span>
                     </button>;
-              })}
+                })}
                 <button onClick={() => setSelectedSkill('overall')} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${selectedSkill === 'overall' ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
                   <BarChart3 className={`w-5 h-5 lg:w-6 lg:h-6 ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} />
                   <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
-                  fontFamily: 'Inter, sans-serif'
-                }}>
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
                     Overall
                   </span>
                 </button>
@@ -331,32 +309,32 @@ const Dashboard = () => {
               {/* Analytics Card */}
               <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                 <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Study Progress</h3>
+                  fontFamily: 'Inter, sans-serif'
+                }}>Study Progress</h3>
                 <div className="grid grid-cols-3 gap-3 lg:gap-4">
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
-                    fontFamily: 'Bricolage Grotesque, sans-serif'
-                  }}>{userStats?.totalTests || 0}</p>
+                      fontFamily: 'Bricolage Grotesque, sans-serif'
+                    }}>{userStats?.totalTests || 0}</p>
                     <p className="text-xs text-slate-600" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>Tests Taken</p>
+                      fontFamily: 'Inter, sans-serif'
+                    }}>Tests Taken</p>
                   </div>
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
-                    fontFamily: 'Bricolage Grotesque, sans-serif'
-                  }}>{savedWords.length}</p>
+                      fontFamily: 'Bricolage Grotesque, sans-serif'
+                    }}>{savedWords.length}</p>
                     <p className="text-xs text-slate-600" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>Words Saved</p>
+                      fontFamily: 'Inter, sans-serif'
+                    }}>Words Saved</p>
                   </div>
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
-                    fontFamily: 'Bricolage Grotesque, sans-serif'
-                  }}>7</p>
+                      fontFamily: 'Bricolage Grotesque, sans-serif'
+                    }}>7</p>
                     <p className="text-xs text-slate-600" style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>Day Streak</p>
+                      fontFamily: 'Inter, sans-serif'
+                    }}>Day Streak</p>
                   </div>
                 </div>
               </div>
@@ -369,12 +347,10 @@ const Dashboard = () => {
               {/* Today's Schedule Heading */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 className="text-lg lg:text-xl font-semibold text-slate-800" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>Practice Areas</h2>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-slate-600" style={{
                   fontFamily: 'Inter, sans-serif'
-                }}>Your progress:</span>
+                }}>Practice Areas</h2>
+                <div className="flex items-center gap-3 text-sm">
+                  
                   
                 </div>
               </div>
@@ -383,106 +359,99 @@ const Dashboard = () => {
                 {/* Test Results and Feedback Cards */}
                 <div className="flex flex-col gap-4 lg:gap-6">
                   {skills.map(skill => {
-                  const getIcon = (skillName: string) => {
-                    switch (skillName) {
-                      case 'Reading':
-                        return BookOpen;
-                      case 'Listening':
-                        return Volume2;
-                      case 'Writing':
-                        return PenTool;
-                      case 'Speaking':
-                        return MessageSquare;
-                      default:
-                        return BookOpen;
-                    }
-                  };
-                  const Icon = getIcon(skill);
+                    const getIcon = (skillName: string) => {
+                      switch (skillName) {
+                        case 'Reading':
+                          return BookOpen;
+                        case 'Listening':
+                          return Volume2;
+                        case 'Writing':
+                          return PenTool;
+                        case 'Speaking':
+                          return MessageSquare;
+                        default:
+                          return BookOpen;
+                      }
+                    };
+                    const Icon = getIcon(skill);
 
-                  // Get recent test results for this skill
-                  const skillResults = testResults.filter(result => {
-                    if (skill === 'Writing') {
-                      return result.test_type === 'writing';
-                    }
-                    return result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase());
-                  }).slice(0, 3);
-                  const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
-                  return <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
+                    // Get recent test results for this skill
+                    const skillResults = testResults.filter(result => {
+                      if (skill === 'Writing') {
+                        return result.test_type === 'writing';
+                      }
+                      return result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase());
+                    }).slice(0, 3);
+                    const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
+                    return <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                         <div className="flex items-center justify-between mb-3 lg:mb-4">
                           <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold text-slate-800" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
-                            <Icon className="w-4 h-4" />
+                          fontFamily: 'Inter, sans-serif'
+                        }}>
+                            
                             {skill} Results & Feedback
                           </h3>
-                          {skill === 'Writing' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate('/dashboard/writing-history');
-                              }}
-                              className="text-xs text-slate-600 hover:text-slate-800"
-                            >
+                          {skill === 'Writing' && <Button variant="ghost" size="sm" onClick={e => {
+                          e.stopPropagation();
+                          navigate('/dashboard/writing-history');
+                        }} className="text-xs text-slate-600 hover:text-slate-800">
                               View History
-                            </Button>
-                          )}
+                            </Button>}
                         </div>
                         
                         {skillResults.length > 0 ? <div className="space-y-3">
                             <div className="grid grid-cols-3 gap-3 text-xs text-slate-600 mb-4">
                               <div>
                                 <p className="font-medium text-slate-800" style={{
-                            fontFamily: 'Inter, sans-serif'
-                          }}>
+                              fontFamily: 'Inter, sans-serif'
+                            }}>
                                   Tests Taken:
                                 </p>
                                 <p style={{
-                            fontFamily: 'Inter, sans-serif'
-                          }}>{skillResults.length}</p>
+                              fontFamily: 'Inter, sans-serif'
+                            }}>{skillResults.length}</p>
                               </div>
                               <div>
                                 <p className="font-medium text-slate-800" style={{
-                            fontFamily: 'Inter, sans-serif'
-                          }}>
+                              fontFamily: 'Inter, sans-serif'
+                            }}>
                                   Average Score:
                                 </p>
                                 <p style={{
-                            fontFamily: 'Inter, sans-serif'
-                          }}>{convertToIELTSScore(averageScore)}</p>
+                              fontFamily: 'Inter, sans-serif'
+                            }}>{convertToIELTSScore(averageScore)}</p>
                               </div>
                               <div>
                                 <p className="font-medium text-slate-800" style={{
-                            fontFamily: 'Inter, sans-serif'
-                          }}>
+                              fontFamily: 'Inter, sans-serif'
+                            }}>
                                   Latest Score:
                                 </p>
                                 <p style={{
-                            fontFamily: 'Inter, sans-serif'
-                          }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
+                              fontFamily: 'Inter, sans-serif'
+                            }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
                               </div>
                             </div>
                             
                             <button onClick={() => handleViewResults(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
+                          fontFamily: 'Inter, sans-serif'
+                        }}>
                               View Detailed Results <ChevronRight className="w-4 h-4" />
                             </button>
                           </div> : <div className="text-center py-6">
                             <p className="text-slate-600 mb-4" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
+                          fontFamily: 'Inter, sans-serif'
+                        }}>
                               No {skill.toLowerCase()} tests taken yet
                             </p>
                             <button onClick={() => navigate('/ielts-portal')} className="text-sm font-medium bg-[#FFFFF0] backdrop-blur-sm text-black px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-[#F5F5DC] transition border border-white/20" style={{
-                        fontFamily: 'Inter, sans-serif'
-                      }}>
+                          fontFamily: 'Inter, sans-serif'
+                        }}>
                               Start First Test <ChevronRight className="w-4 h-4" />
                             </button>
                           </div>}
                       </div>;
-                })}
+                  })}
                 </div>
 
                 {/* Quick Actions */}
@@ -495,5 +464,4 @@ const Dashboard = () => {
       </div>
     </div>;
 };
-
 export default Dashboard;

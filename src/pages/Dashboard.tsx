@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home } from "lucide-react";
+import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import DailyChallenge from "@/components/DailyChallenge";
 import LoadingAnimation from "@/components/animations/LoadingAnimation";
 import SettingsModal from "@/components/SettingsModal";
@@ -19,6 +20,7 @@ const Dashboard = () => {
     user,
     profile
   } = useAuth();
+  const { toast } = useToast();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
   const [selectedSkill, setSelectedSkill] = useState("overall");
   const [userStats, setUserStats] = useState<any>(null);
@@ -29,6 +31,7 @@ const Dashboard = () => {
   const [userPreferences, setUserPreferences] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const testTypes = [{
     id: "IELTS",
     name: "IELTS",
@@ -81,7 +84,53 @@ const Dashboard = () => {
     color: "text-gray-500"
   }];
 
-  // Fetch user data from Supabase
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setAvatarUploading(true);
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Success!",
+        description: "Profile photo updated successfully!"
+      });
+      
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload profile photo. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
   useEffect(() => {
     // Preload the background image
     const img = new Image();
@@ -237,17 +286,41 @@ const Dashboard = () => {
             {/* Settings Button */}
             <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
             
-            {/* User Avatar */}
-            <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden">
-              {profile?.avatar_url ? (
-                <img 
-                  src={profile.avatar_url} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-4 h-4 text-white" />
-              )}
+            {/* Clickable User Avatar for Photo Upload */}
+            <div className="relative">
+              <button
+                onClick={() => document.getElementById('avatar-upload-dashboard')?.click()}
+                disabled={avatarUploading}
+                className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Click to change profile photo"
+              >
+                {profile?.avatar_url ? (
+                  <img 
+                    src={profile.avatar_url} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />
+                )}
+                
+                {/* Upload overlay on hover */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                  {avatarUploading ? (
+                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Upload className="w-3 h-3 text-white" />
+                  )}
+                </div>
+              </button>
+              
+              <input
+                id="avatar-upload-dashboard"
+                type="file"
+                accept="image/*"
+                onChange={uploadAvatar}
+                className="hidden"
+              />
             </div>
           </div>
         </header>

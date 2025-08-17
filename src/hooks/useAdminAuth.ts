@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Admin {
   id: string;
@@ -22,6 +23,7 @@ const ADMIN_DATA_KEY = 'admin_data';
 const ADMIN_EXPIRES_KEY = 'admin_expires';
 
 export function useAdminAuth(): UseAdminAuthReturn {
+  const { user, profile, signIn, signOut } = useAuth();
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,106 +35,51 @@ export function useAdminAuth(): UseAdminAuthReturn {
   };
 
   const validateSession = async (): Promise<boolean> => {
-    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-    if (!token) {
-      clearSession();
-      return false;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { action: 'validate', session_token: token }
-      });
-
-      if (error || !data?.valid) {
-        clearSession();
-        return false;
-      }
-
-      // Update admin data if validation successful
-      if (data.admin) {
-        localStorage.setItem(ADMIN_DATA_KEY, JSON.stringify(data.admin));
-        setAdmin({ ...data.admin, token });
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Session validation error:', error);
-      clearSession();
-      return false;
-    }
+    return user && profile?.role === 'admin' ? true : false;
   };
 
   useEffect(() => {
-    const checkExistingSession = async () => {
-      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-      const adminData = localStorage.getItem(ADMIN_DATA_KEY);
-      const expiresAt = localStorage.getItem(ADMIN_EXPIRES_KEY);
-
-      if (token && adminData && expiresAt) {
-        const expiration = new Date(expiresAt);
-        if (expiration > new Date()) {
-          try {
-            const parsedAdmin = JSON.parse(adminData);
-            // Validate session with server
-            const isValid = await validateSession();
-            if (isValid) {
-              setAdmin({ ...parsedAdmin, token });
-            }
-          } catch (error) {
-            console.error('Error parsing admin data:', error);
-            clearSession();
-          }
+    const checkAdminStatus = () => {
+      if (user && profile) {
+        // Check if user has admin role
+        if (profile.role === 'admin') {
+          setAdmin({
+            id: user.id,
+            email: user.email || '',
+            name: profile.full_name || user.email || ''
+          });
         } else {
-          // Session expired
-          clearSession();
+          setAdmin(null);
         }
+      } else {
+        setAdmin(null);
       }
       setLoading(false);
     };
 
-    checkExistingSession();
-  }, []);
+    checkAdminStatus();
+  }, [user, profile]);
 
   const login = async (email: string, password: string): Promise<{ success?: boolean; error?: string }> => {
     try {
       setLoading(true);
       
-      // Input validation
-      if (!email?.trim() || !password?.trim()) {
-        return { error: 'Email and password are required' };
+      // Use regular Supabase authentication
+      const result = await signIn(email, password);
+      
+      if (result.error) {
+        return { error: result.error };
       }
 
-      const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { action: 'login', email: email.trim(), password }
-      });
+      // Wait a moment for profile to load
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
 
-      if (error) {
-        return { error: error.message };
-      }
-
-      if (data.error) {
-        return { error: data.error };
-      }
-
-      if (data.success && data.admin && data.token) {
-        // Use server-provided expiration time for better security
-        const expiresAt = data.expires_at || new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
-        
-        localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-        localStorage.setItem(ADMIN_DATA_KEY, JSON.stringify(data.admin));
-        localStorage.setItem(ADMIN_EXPIRES_KEY, expiresAt);
-        
-        setAdmin({ ...data.admin, token: data.token });
-        return { success: true };
-      }
-
-      return { error: 'Login failed' };
+      return { success: true };
     } catch (error) {
       console.error('Login error:', error);
       return { error: 'An error occurred during login' };
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -149,19 +96,33 @@ export function useAdminAuth(): UseAdminAuthReturn {
         return { error: 'Password must be at least 8 characters' };
       }
 
-      const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { action: 'register', email: email.trim(), password, name: name.trim() }
+      // Use regular Supabase auth for registration
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: name.trim()
+          }
+        }
       });
 
       if (error) {
         return { error: error.message };
       }
 
-      if (data.error) {
-        return { error: data.error };
-      }
+      if (data.user) {
+        // Update the user's profile to set admin role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ role: 'admin', full_name: name.trim() })
+          .eq('id', data.user.id);
 
-      if (data.success) {
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+
         return { success: true };
       }
 
@@ -175,22 +136,8 @@ export function useAdminAuth(): UseAdminAuthReturn {
   };
 
   const logout = async (): Promise<void> => {
-    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-    
-    // Clear local session first
     clearSession();
-    
-    // Then invalidate server session
-    if (token) {
-      try {
-        await supabase.functions.invoke('admin-auth', {
-          body: { action: 'logout', session_token: token }
-        });
-      } catch (error) {
-        console.error('Logout error:', error);
-        // Don't throw error since local session is already cleared
-      }
-    }
+    await signOut();
   };
 
   return {

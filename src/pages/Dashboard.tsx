@@ -242,7 +242,10 @@ const Dashboard = () => {
             <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
             
             {/* Clickable User Avatar for Photo Upload */}
-            <ProfilePhotoSelector onPhotoUpdate={() => setRefreshKey(prev => prev + 1)}>
+            <ProfilePhotoSelector onPhotoUpdate={() => {
+              refreshProfile();
+              setRefreshKey(prev => prev + 1);
+            }}>
               <button
                 className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105"
                 title="Click to change profile photo"

@@ -69,6 +69,8 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
 
       if (updateError) throw updateError;
 
+      console.log('✅ Custom photo uploaded successfully');
+
       // Refresh profile to show new photo
       await refreshProfile();
       
@@ -104,16 +106,18 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
 
       if (error) throw error;
 
-      // Refresh profile to show new photo
-      await refreshProfile();
-      
-      toast({
-        title: "Success!",
-        description: "Profile photo updated successfully!"
-      });
-      
-      setOpen(false);
-      onPhotoUpdate?.();
+        console.log('✅ Animal photo selected successfully');
+        
+        // Refresh profile to show new photo
+        await refreshProfile();
+        
+        toast({
+          title: "Success!",
+          description: "Profile photo updated successfully!"
+        });
+        
+        setOpen(false);
+        onPhotoUpdate?.();
     } catch (error) {
       console.error('Error updating photo:', error);
       toast({

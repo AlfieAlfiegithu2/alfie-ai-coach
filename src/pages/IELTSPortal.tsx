@@ -6,8 +6,35 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
-import { SKILLS } from '@/lib/skills';
-import { Home } from 'lucide-react';
+import { Home, BookOpen, Headphones, PenTool, Mic } from 'lucide-react';
+
+// IELTS Core Skills
+const IELTS_SKILLS = [
+  { 
+    id: 'reading', 
+    title: 'Reading', 
+    description: 'Academic & General texts',
+    icon: BookOpen 
+  },
+  { 
+    id: 'listening', 
+    title: 'Listening', 
+    description: 'Audio comprehension',
+    icon: Headphones 
+  },
+  { 
+    id: 'writing', 
+    title: 'Writing', 
+    description: 'Task 1 & Task 2',
+    icon: PenTool 
+  },
+  { 
+    id: 'speaking', 
+    title: 'Speaking', 
+    description: 'Interview & presentation',
+    icon: Mic 
+  }
+];
 
 const IELTSPortal = () => {
   const navigate = useNavigate();
@@ -206,20 +233,116 @@ const IELTSPortal = () => {
               </Button>
             </div>
             
-            {/* Redirect Notice */}
-            <div className="bg-muted/80 rounded-lg p-6 text-center backdrop-blur-sm">
-              <h2 className="text-2xl font-semibold mb-4">IELTS Tests Have Been Reorganized!</h2>
-              <p className="text-muted-foreground mb-4">
-                We've organized all IELTS tests by the four core skills for better practice.
-              </p>
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/ielts')}
-                className="bg-primary hover:bg-primary/90"
-              >
-                Go to New IELTS Hub
-              </Button>
+            {/* Skill Practice Quick Links */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+              {IELTS_SKILLS.map((skill) => (
+                <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
+                  <CardContent className="p-3 md:p-4 text-center">
+                    <div className="mb-3">
+                      <skill.icon className="h-8 w-8 md:h-10 md:w-10 mx-auto text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-sm md:text-base mb-1">{skill.title}</h3>
+                    <p className="text-xs text-muted-foreground mb-2">{skill.description}</p>
+                    {skillBands[skill.id] && (
+                      <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+                        Last: {skillBands[skill.id]}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+
+            {/* Available IELTS Tests */}
+            <div className="mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Complete IELTS Tests</h2>
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <LoadingAnimation />
+                </div>
+              ) : availableTests.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  {availableTests.map((test) => (
+                    <Card key={test.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleTestClick(test.id)}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base md:text-lg flex justify-between items-center">
+                          <span>Test {test.test_number}</span>
+                          {test.comingSoon && (
+                            <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
+                              Coming Soon
+                            </span>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="text-xs md:text-sm text-muted-foreground mb-3">
+                          <p className="mb-1">{test.test_name}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {['reading', 'listening', 'writing', 'speaking'].map((module) => {
+                              const hasModule = test.modules.includes(module);
+                              return (
+                                <span key={module} className={`px-2 py-1 rounded text-xs capitalize ${
+                                  hasModule 
+                                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                }`}>
+                                  {module}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {test.total_questions > 0 && (
+                            <p>Questions: {test.total_questions}</p>
+                          )}
+                          {test.speaking_prompts > 0 && (
+                            <p>Speaking: {test.speaking_prompts} prompts</p>
+                          )}
+                        </div>
+                        <Button 
+                          className="w-full mt-3" 
+                          size="sm" 
+                          disabled={test.comingSoon}
+                        >
+                          {test.comingSoon ? 'Coming Soon' : 'Start Test'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="bg-card/80 backdrop-blur-sm">
+                  <CardContent className="p-6 text-center">
+                    <p className="text-muted-foreground">No IELTS tests available yet. Check back soon!</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Complete IELTS Preparation Info */}
+            <Card className="bg-card/80 backdrop-blur-sm">
+              <CardContent className="p-4 md:p-6">
+                <h3 className="text-lg font-semibold mb-3">Complete IELTS Preparation</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Get comprehensive practice with all four IELTS skills. Each complete test includes Reading, Listening, Writing, and Speaking sections based on official Cambridge materials.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded">
+                    <strong>Reading:</strong> 60 minutes, 40 questions
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-950 p-2 rounded">
+                    <strong>Listening:</strong> 30 minutes, 40 questions
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-950 p-2 rounded">
+                    <strong>Writing:</strong> 60 minutes, 2 tasks
+                  </div>
+                  <div className="bg-orange-50 dark:bg-orange-950 p-2 rounded">
+                    <strong>Speaking:</strong> 11-14 minutes, 3 parts
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </StudentLayout>
       </div>

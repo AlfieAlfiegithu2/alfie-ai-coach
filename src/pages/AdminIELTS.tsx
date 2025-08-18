@@ -107,109 +107,43 @@ const AdminIELTS = () => {
     }
   };
 
-  const createSpeakingTest = async () => {
+  const createTestWithName = async (skill: string, testName?: string) => {
+    if (!testName) {
+      const name = prompt(`Enter name for the ${skill} test:`);
+      if (!name?.trim()) return;
+      testName = name.trim();
+    }
+
     setIsCreating(true);
     try {
       const { data, error } = await supabase
         .from('tests')
         .insert({
-          test_name: `IELTS Speaking Test ${tests.filter(t => t.skill_category === 'Speaking').length + 1}`,
+          test_name: testName,
           test_type: 'IELTS',
-          module: 'Speaking',
-          skill_category: 'Speaking'
+          module: skill === 'Speaking' ? 'Speaking' : 'academic',
+          skill_category: skill
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success('Speaking test created successfully');
-      navigate(`/admin/ielts/test/${data.id}/speaking`);
+      toast.success(`${skill} test created successfully`);
+      const route = skill.toLowerCase();
+      navigate(`/admin/ielts/test/${data.id}/${route}`);
     } catch (error) {
-      console.error('Error creating speaking test:', error);
-      toast.error('Failed to create speaking test');
+      console.error(`Error creating ${skill} test:`, error);
+      toast.error(`Failed to create ${skill} test`);
     } finally {
       setIsCreating(false);
     }
   };
 
-  const createListeningTest = async () => {
-    setIsCreating(true);
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .insert({
-          test_name: `IELTS Listening Test ${tests.filter(t => t.skill_category === 'Listening').length + 1}`,
-          test_type: 'IELTS',
-          module: 'academic',
-          skill_category: 'Listening'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast.success('Listening test created successfully');
-      navigate(`/admin/ielts/test/${data.id}/listening`);
-    } catch (error) {
-      console.error('Error creating listening test:', error);
-      toast.error('Failed to create listening test');
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const createReadingTest = async () => {
-    setIsCreating(true);
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .insert({
-          test_name: `IELTS Reading Test ${tests.filter(t => t.skill_category === 'Reading').length + 1}`,
-          test_type: 'IELTS',
-          module: 'academic',
-          skill_category: 'Reading'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast.success('Reading test created successfully');
-      navigate(`/admin/ielts/test/${data.id}/reading`);
-    } catch (error) {
-      console.error('Error creating reading test:', error);
-      toast.error('Failed to create reading test');
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const createWritingTest = async () => {
-    setIsCreating(true);
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .insert({
-          test_name: `IELTS Writing Test ${tests.filter(t => t.skill_category === 'Writing').length + 1}`,
-          test_type: 'IELTS',
-          module: 'academic',
-          skill_category: 'Writing'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast.success('Writing test created successfully');
-      navigate(`/admin/ielts/test/${data.id}/writing`);
-    } catch (error) {
-      console.error('Error creating writing test:', error);
-      toast.error('Failed to create writing test');
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  const createSpeakingTest = () => createTestWithName('Speaking');
+  const createListeningTest = () => createTestWithName('Listening');
+  const createReadingTest = () => createTestWithName('Reading');
+  const createWritingTest = () => createTestWithName('Writing');
 
   useEffect(() => {
     console.log('🚀 AdminIELTS auth check:', { loading, admin: !!admin });

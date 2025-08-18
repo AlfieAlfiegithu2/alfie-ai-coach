@@ -295,6 +295,29 @@ const CSVImport = ({
             </AlertDescription>
           </Alert>}
 
+        <div className="bg-muted/30 border border-dashed rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <HelpCircle className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-sm mb-2">Need CSV Format Reference?</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Download a sample CSV with the correct format and column headers for {type} questions.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={downloadTemplate}
+                className="text-xs"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Download Sample CSV
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {!showPreview ? <div className="flex flex-col sm:flex-row gap-3">
             <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
             

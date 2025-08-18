@@ -368,41 +368,19 @@ export default function AdminReadingManagement() {
       complete: async (results) => {
         try {
           const parsedQuestions = results.data.map((row: any, index: number) => {
-            const questionNumber = parseInt(row['Question Number'], 10) || (index + 1);
-            const questionType = row['Type'] || 'Multiple Choice';
+            const questionNumber = parseInt(row['question_number_in_part'], 10) || (index + 1);
+            const questionType = row['question_type'] || 'multiple_choice';
             
-            // Convert IELTS question types to our internal format
-            let internalType = 'multiple_choice';
-            switch (questionType.toLowerCase().trim()) {
-              case 'true/false/not given':
-                internalType = 'true_false_not_given';
-                break;
-              case 'short-answer questions':
-                internalType = 'short_answer';
-                break;
-              case 'flow chart completion':
-                internalType = 'completion';
-                break;
-              case 'matching headings':
-                internalType = 'matching';
-                break;
-              case 'multiple choice':
-                internalType = 'multiple_choice';
-                break;
-              default:
-                internalType = 'short_answer';
-            }
-
             return {
               test_id: testId,
-              part_number: partNumber,
+              part_number: parseInt(row['part_number'], 10) || partNumber,
               question_number_in_part: questionNumber,
-              question_text: row['Question Text'] || '',
-              question_type: internalType,
-              choices: row['Choices'] || '',
-              correct_answer: row['Correct Answer'] || '',
-              explanation: row['Explanation'] || '',
-              passage_text: passages[partNumber as keyof typeof passages] || null,
+              question_text: row['question_text'] || '',
+              question_type: questionType,
+              choices: row['choices'] || '',
+              correct_answer: row['correct_answer'] || '',
+              explanation: row['explanation'] || '',
+              passage_text: row['passage_text'] || passages[partNumber as keyof typeof passages] || null,
             };
           }).filter(q => q.question_text.trim() !== '');
 
@@ -410,7 +388,8 @@ export default function AdminReadingManagement() {
           const { data, error } = await supabase.functions.invoke('admin-content', {
             body: { 
               action: 'upload_questions',
-              payload: parsedQuestions 
+              payload: parsedQuestions,
+              adminKeypass: 'myye65402086'
             },
           });
 
@@ -496,7 +475,18 @@ export default function AdminReadingManagement() {
 
               <div>
                 <Label htmlFor={`csv-${partNumber}`}>Upload Questions CSV</Label>
-                <div className="space-y-2">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-800">Need help with CSV format?</span>
+                    <a 
+                      href="/examples/ielts-reading-example.csv" 
+                      download="ielts-reading-example.csv"
+                      className="text-blue-600 hover:text-blue-800 underline text-sm font-medium"
+                    >
+                      Download Example CSV
+                    </a>
+                  </div>
                   <input
                     id={`csv-${partNumber}`}
                     type="file"
@@ -511,7 +501,7 @@ export default function AdminReadingManagement() {
                     disabled={partLocked[partNumber] && !editMode[partNumber]}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Required columns: Question Number, Section, Type, Question Text, Choices, Correct Answer, Explanation
+                    Required columns: question_text, question_type, passage_text, correct_answer, choices, explanation, part_number, question_number_in_part, passage_title, cambridge_book, section_number
                   </p>
                 </div>
               </div>

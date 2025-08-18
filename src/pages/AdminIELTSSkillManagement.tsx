@@ -102,11 +102,22 @@ const AdminIELTSSkillManagement = () => {
       setNewTestName('');
       loadSkillTests();
       
-      // Navigate to test management page
-      if (skill === 'speaking') {
-        navigate(`/admin/ielts/test/${data.id}/speaking`);
-      } else {
-        navigate(`/admin/ielts/test/${data.id}`);
+      // Navigate to skill-specific test management pages for individual tests
+      switch(skill) {
+        case 'speaking':
+          navigate(`/admin/ielts/test/${data.id}/speaking`);
+          break;
+        case 'writing':
+          navigate(`/admin/ielts/test/${data.id}/writing`);
+          break;
+        case 'reading':
+          navigate(`/admin/ielts/test/${data.id}/reading`);
+          break;
+        case 'listening':
+          navigate(`/admin/ielts/test/${data.id}/listening`);
+          break;
+        default:
+          navigate(`/admin/ielts/test/${data.id}`);
       }
     } catch (error) {
       console.error('Error creating test:', error);
@@ -153,10 +164,22 @@ const AdminIELTSSkillManagement = () => {
   const handleTestClick = (test: any) => {
     if (editingTestId) return;
     
-    if (skill === 'speaking') {
-      navigate(`/admin/ielts/test/${test.id}/speaking`);
-    } else {
-      navigate(`/admin/ielts/test/${test.id}`);
+    // Navigate to skill-specific test management pages for individual tests
+    switch(skill) {
+      case 'speaking':
+        navigate(`/admin/ielts/test/${test.id}/speaking`);
+        break;
+      case 'writing':
+        navigate(`/admin/ielts/test/${test.id}/writing`);
+        break;
+      case 'reading':
+        navigate(`/admin/ielts/test/${test.id}/reading`);
+        break;
+      case 'listening':
+        navigate(`/admin/ielts/test/${test.id}/listening`);
+        break;
+      default:
+        navigate(`/admin/ielts/test/${test.id}`);
     }
   };
 
@@ -293,7 +316,7 @@ const AdminIELTSSkillManagement = () => {
                         handleTestClick(test);
                       }}
                     >
-                      Manage Content
+                      Manage {skillName} Content
                     </Button>
                   </CardContent>
                 </Card>

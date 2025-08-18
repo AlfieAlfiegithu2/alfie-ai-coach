@@ -33,10 +33,12 @@ const AdminIELTS = () => {
 
   const loadTests = async () => {
     try {
+      // Only load generic IELTS tests (multi-skill tests without skill_category)
       const { data, error } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
+        .is('skill_category', null)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -56,15 +58,25 @@ const AdminIELTS = () => {
 
     setIsCreating(true);
     try {
-      await createContent('tests', {
-        test_name: newTestName,
-        test_type: 'IELTS',
-        module: 'academic'
-      });
+      const { data } = await supabase
+        .from('tests')
+        .insert({
+          test_name: newTestName,
+          test_type: 'IELTS',
+          module: 'academic',
+          skill_category: null // Generic multi-skill IELTS test
+        })
+        .select()
+        .single();
 
       toast.success('Test created successfully');
       setNewTestName('');
       loadTests();
+      
+      // Navigate to generic test management with 4 sections
+      if (data) {
+        navigate(`/admin/ielts/test/${data.id}`);
+      }
     } catch (error) {
       console.error('Error creating test:', error);
       toast.error('Failed to create test');
@@ -351,14 +363,23 @@ const AdminIELTS = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold">IELTS Tests</h3>
+                  <h3 className="text-xl font-semibold">Multi-skill IELTS Tests</h3>
                   <p className="text-muted-foreground">
-                    Manage your IELTS practice tests
+                    Manage complete IELTS tests with all 4 sections
                   </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Use the skill-based management system above to organize and manage your IELTS tests.
-                </p>
+                <div className="flex gap-3 items-end">
+                  <Input
+                    placeholder="Test name (e.g., IELTS Test 1)"
+                    value={newTestName}
+                    onChange={(e) => setNewTestName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && createNewTest()}
+                    className="max-w-sm"
+                  />
+                  <Button onClick={createNewTest} disabled={isCreating}>
+                    {isCreating ? "Creating..." : "Create Test"}
+                  </Button>
+                </div>
               </div>
 
               {tests.length > 0 ? (
@@ -367,7 +388,7 @@ const AdminIELTS = () => {
                     <Card 
                       key={test.id} 
                       className="cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => !editingTestId && navigate(test.module === 'Speaking' ? `/admin/ielts/test/${test.id}/speaking` : `/admin/ielts/test/${test.id}`)}
+                      onClick={() => !editingTestId && navigate(`/admin/ielts/test/${test.id}`)}
                     >
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">
@@ -411,9 +432,19 @@ const AdminIELTS = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <span>Type: {test.test_type}</span>
-                          <span>Module: {test.module}</span>
+                          <span>Type: Multi-skill IELTS Test</span>
+                          <span>Sections: 4 (L,R,W,S)</span>
                         </div>
+                        <Button 
+                          size="sm" 
+                          className="w-full mt-3"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/ielts/test/${test.id}`);
+                          }}
+                        >
+                          Manage All Sections
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -421,10 +452,22 @@ const AdminIELTS = () => {
               ) : (
                 <div className="text-center py-12">
                   <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No IELTS tests found</h3>
+                  <h3 className="text-lg font-semibold mb-2">No Multi-skill IELTS tests found</h3>
                   <p className="text-muted-foreground mb-4">
-                    Create your first IELTS test to get started
+                    Create your first multi-skill IELTS test with all 4 sections
                   </p>
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Test name (e.g., IELTS Test 1)"
+                      value={newTestName}
+                      onChange={(e) => setNewTestName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && createNewTest()}
+                      className="max-w-sm mx-auto"
+                    />
+                    <Button onClick={createNewTest} disabled={isCreating}>
+                      {isCreating ? "Creating..." : "Create First Multi-skill Test"}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

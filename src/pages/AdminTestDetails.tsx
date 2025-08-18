@@ -81,23 +81,23 @@ const AdminTestDetails = () => {
 
   return (
     <AdminLayout 
-      title={`${testType?.toUpperCase()} Test ${testId}`} 
+      title={`${testType?.toUpperCase()} Test Management`} 
       showBackButton={true} 
-      backPath={`/admin/${testType}/tests`}
+      backPath={`/admin/${testType}`}
     >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              {testType?.toUpperCase()} Test {testId} Management
+              Multi-skill {testType?.toUpperCase()} Test Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage content for all four skills
+              Manage content for all four skills: Listening, Reading, Writing, Speaking
             </p>
           </div>
           <Badge variant="secondary" className="text-sm">
-            Test {testId}
+            Multi-skill Test
           </Badge>
         </div>
 

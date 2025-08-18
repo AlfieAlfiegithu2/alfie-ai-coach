@@ -6,7 +6,7 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, BookOpen, Headphones, PenTool, Mic, Brain, Zap, Repeat, Volume2, Shuffle, Search, Link, Target } from 'lucide-react';
+import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 
 // IELTS Core Skills
@@ -14,40 +14,24 @@ const IELTS_SKILLS = [
   { 
     id: 'reading', 
     title: 'Reading', 
-    description: 'Academic & General texts',
-    icon: BookOpen 
+    description: 'Academic & General texts'
   },
   { 
     id: 'listening', 
     title: 'Listening', 
-    description: 'Audio comprehension',
-    icon: Headphones 
+    description: 'Audio comprehension'
   },
   { 
     id: 'writing', 
     title: 'Writing', 
-    description: 'Task 1 & Task 2',
-    icon: PenTool 
+    description: 'Task 1 & Task 2'
   },
   { 
     id: 'speaking', 
     title: 'Speaking', 
-    description: 'Interview & presentation',
-    icon: Mic 
+    description: 'Interview & presentation'
   }
 ];
-
-// Skill Practice Icons Map
-const SKILL_ICONS = {
-  'vocabulary-builder': Brain,
-  'grammar-fix-it': Zap,
-  'paraphrasing-challenge': Repeat,
-  'pronunciation-repeat-after-me': Volume2,
-  'sentence-structure-scramble': Shuffle,
-  'listening-for-details': Search,
-  'synonym-match': Link,
-  'collocation-connect': Target
-};
 
 const IELTSPortal = () => {
   const navigate = useNavigate();
@@ -251,9 +235,6 @@ const IELTSPortal = () => {
               {IELTS_SKILLS.map((skill) => (
                 <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
                   <CardContent className="p-3 md:p-4 text-center">
-                    <div className="mb-3">
-                      <skill.icon className="h-8 w-8 md:h-10 md:w-10 mx-auto text-primary" />
-                    </div>
                     <h3 className="font-semibold text-sm md:text-base mb-1">{skill.title}</h3>
                     <p className="text-xs text-muted-foreground mb-2">{skill.description}</p>
                     {skillBands[skill.id] && (
@@ -270,19 +251,13 @@ const IELTSPortal = () => {
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                {SKILLS.map((skill) => {
-                  const IconComponent = SKILL_ICONS[skill.slug as keyof typeof SKILL_ICONS];
-                  return (
-                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skill-practice/${skill.slug}`)}>
-                      <CardContent className="p-3 md:p-4 text-center">
-                        <div className="mb-3">
-                          <IconComponent className="h-8 w-8 md:h-10 md:w-10 mx-auto text-primary" />
-                        </div>
-                        <h3 className="font-semibold text-xs md:text-sm mb-1">{skill.label}</h3>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                {SKILLS.map((skill) => (
+                  <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skill-practice/${skill.slug}`)}>
+                    <CardContent className="p-3 md:p-4 text-center">
+                      <h3 className="font-semibold text-xs md:text-sm mb-1">{skill.label}</h3>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </div>
 
@@ -309,29 +284,7 @@ const IELTSPortal = () => {
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="text-xs md:text-sm text-muted-foreground mb-3">
-                          <p className="mb-1">{test.test_name}</p>
-                          <div className="flex flex-wrap gap-1">
-                            {['reading', 'listening', 'writing', 'speaking'].map((module) => {
-                              const hasModule = test.modules.includes(module);
-                              return (
-                                <span key={module} className={`px-2 py-1 rounded text-xs capitalize ${
-                                  hasModule 
-                                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
-                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                                }`}>
-                                  {module}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {test.total_questions > 0 && (
-                            <p>Questions: {test.total_questions}</p>
-                          )}
-                          {test.speaking_prompts > 0 && (
-                            <p>Speaking: {test.speaking_prompts} prompts</p>
-                          )}
+                          <p>{test.test_name}</p>
                         </div>
                         <Button 
                           className="w-full mt-3" 

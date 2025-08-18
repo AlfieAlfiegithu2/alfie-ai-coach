@@ -107,43 +107,14 @@ const AdminIELTS = () => {
     }
   };
 
-  const createTestWithName = async (skill: string, testName?: string) => {
-    if (!testName) {
-      const name = prompt(`Enter name for the ${skill} test:`);
-      if (!name?.trim()) return;
-      testName = name.trim();
-    }
-
-    setIsCreating(true);
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .insert({
-          test_name: testName,
-          test_type: 'IELTS',
-          module: skill === 'Speaking' ? 'Speaking' : 'academic',
-          skill_category: skill
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast.success(`${skill} test created successfully`);
-      const route = skill.toLowerCase();
-      navigate(`/admin/ielts/test/${data.id}/${route}`);
-    } catch (error) {
-      console.error(`Error creating ${skill} test:`, error);
-      toast.error(`Failed to create ${skill} test`);
-    } finally {
-      setIsCreating(false);
-    }
+  const navigateToSkillManagement = (skill: string) => {
+    navigate(`/admin/ielts/${skill.toLowerCase()}`);
   };
 
-  const createSpeakingTest = () => createTestWithName('Speaking');
-  const createListeningTest = () => createTestWithName('Listening');
-  const createReadingTest = () => createTestWithName('Reading');
-  const createWritingTest = () => createTestWithName('Writing');
+  const createSpeakingTest = () => navigateToSkillManagement('Speaking');
+  const createListeningTest = () => navigateToSkillManagement('Listening');
+  const createReadingTest = () => navigateToSkillManagement('Reading');
+  const createWritingTest = () => navigateToSkillManagement('Writing');
 
   useEffect(() => {
     console.log('🚀 AdminIELTS auth check:', { loading, admin: !!admin });

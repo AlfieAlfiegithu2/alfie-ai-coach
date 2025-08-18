@@ -7,50 +7,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const ADMIN_KEYPASS = 'myye65402086';
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Authentication required');
-    }
-
-    const jwt = authHeader.replace('Bearer ', '');
+    const requestBody = await req.json();
     
-    // Create Supabase client to verify the JWT and check admin status
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    // Set the auth token
-    await supabaseClient.auth.setSession({
-      access_token: jwt,
-      refresh_token: ''
-    });
-
-    // Get the current user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(jwt);
-    
-    if (userError || !user) {
-      console.error('Auth error:', userError);
-      throw new Error('Invalid authentication token');
-    }
-
-    // Check if user is admin
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile || profile.role !== 'admin') {
-      console.error('Profile check error:', profileError, 'Profile:', profile);
-      throw new Error('Admin access required');
+    // Check for admin keypass in the request body
+    if (requestBody.adminKeypass !== ADMIN_KEYPASS) {
+      console.error('Invalid admin keypass provided:', requestBody.adminKeypass);
+      throw new Error('Invalid admin access');
     }
 
     // Create a Supabase client with the service role key for admin operations
@@ -59,7 +29,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const requestBody = await req.json();
     console.log('Received request:', requestBody);
     
     // Handle different action types

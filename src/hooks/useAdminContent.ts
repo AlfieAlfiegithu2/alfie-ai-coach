@@ -82,7 +82,10 @@ export function useAdminContent() {
       // For CSV uploads, use the Edge Function
       if (type === 'csv_upload') {
         const { data: result, error } = await supabase.functions.invoke('admin-content', {
-          body: { questions: data.questions },
+          body: { 
+            questions: data.questions,
+            adminKeypass: 'myye65402086'
+          },
         });
 
         if (error) {
@@ -95,7 +98,12 @@ export function useAdminContent() {
 
       // For other types, use the Edge Function (for backward compatibility)
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'create', type, data },
+        body: { 
+          action: 'create', 
+          type, 
+          data,
+          adminKeypass: 'myye65402086'
+        },
       });
 
       if (error) {
@@ -119,7 +127,12 @@ export function useAdminContent() {
       
       // For backward compatibility with existing components
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'update', type, data },
+        body: { 
+          action: 'update', 
+          type, 
+          data,
+          adminKeypass: 'myye65402086'
+        },
       });
 
       if (error) {
@@ -143,7 +156,12 @@ export function useAdminContent() {
       
       // For backward compatibility with existing components
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'delete', type, data: { id } },
+        body: { 
+          action: 'delete', 
+          type, 
+          data: { id },
+          adminKeypass: 'myye65402086'
+        },
       });
 
       if (error) {
@@ -197,7 +215,11 @@ export function useAdminContent() {
 
       // For other types, use the Edge Function for backward compatibility
       const { data: result, error } = await supabase.functions.invoke('admin-content', {
-        body: { action: 'list', type },
+        body: { 
+          action: 'list', 
+          type,
+          adminKeypass: 'myye65402086'
+        },
       });
 
       if (error) {

@@ -6,7 +6,8 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, BookOpen, Headphones, PenTool, Mic } from 'lucide-react';
+import { Home, BookOpen, Headphones, PenTool, Mic, Brain, Zap, Repeat, Volume2, Shuffle, Search, Link, Target } from 'lucide-react';
+import { SKILLS } from '@/lib/skills';
 
 // IELTS Core Skills
 const IELTS_SKILLS = [
@@ -35,6 +36,18 @@ const IELTS_SKILLS = [
     icon: Mic 
   }
 ];
+
+// Skill Practice Icons Map
+const SKILL_ICONS = {
+  'vocabulary-builder': Brain,
+  'grammar-fix-it': Zap,
+  'paraphrasing-challenge': Repeat,
+  'pronunciation-repeat-after-me': Volume2,
+  'sentence-structure-scramble': Shuffle,
+  'listening-for-details': Search,
+  'synonym-match': Link,
+  'collocation-connect': Target
+};
 
 const IELTSPortal = () => {
   const navigate = useNavigate();
@@ -253,6 +266,26 @@ const IELTSPortal = () => {
               ))}
             </div>
 
+            {/* Sharpening Your Skills */}
+            <div className="mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Sharpening Your Skills</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                {SKILLS.map((skill) => {
+                  const IconComponent = SKILL_ICONS[skill.slug as keyof typeof SKILL_ICONS];
+                  return (
+                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skill-practice/${skill.slug}`)}>
+                      <CardContent className="p-3 md:p-4 text-center">
+                        <div className="mb-3">
+                          <IconComponent className="h-8 w-8 md:h-10 md:w-10 mx-auto text-primary" />
+                        </div>
+                        <h3 className="font-semibold text-xs md:text-sm mb-1">{skill.label}</h3>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Available IELTS Tests */}
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Complete IELTS Tests</h2>
@@ -319,30 +352,6 @@ const IELTSPortal = () => {
                 </Card>
               )}
             </div>
-
-            {/* Complete IELTS Preparation Info */}
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 md:p-6">
-                <h3 className="text-lg font-semibold mb-3">Complete IELTS Preparation</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Get comprehensive practice with all four IELTS skills. Each complete test includes Reading, Listening, Writing, and Speaking sections based on official Cambridge materials.
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded">
-                    <strong>Reading:</strong> 60 minutes, 40 questions
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-950 p-2 rounded">
-                    <strong>Listening:</strong> 30 minutes, 40 questions
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-950 p-2 rounded">
-                    <strong>Writing:</strong> 60 minutes, 2 tasks
-                  </div>
-                  <div className="bg-orange-50 dark:bg-orange-950 p-2 rounded">
-                    <strong>Speaking:</strong> 11-14 minutes, 3 parts
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </StudentLayout>
       </div>

@@ -31,14 +31,14 @@ export default function AdminIELTSReadingDashboard() {
       const { data, error } = await supabase
         .from('tests')
         .select('*')
-        .eq('test_type', testType.toLowerCase())
-        .eq('module', module.toLowerCase())
+        .eq('test_type', 'IELTS')
+        .eq('skill_category', 'Reading') // Individual skill tests
         .order('created_at', { ascending: false });
       
       if (error) {
         setError(error.message);
       } else {
-        setTests(data);
+        setTests(data || []);
       }
       setLoading(false);
     };
@@ -48,33 +48,39 @@ export default function AdminIELTSReadingDashboard() {
   const handleCreateNewTest = async () => {
     setLoading(true);
     setError(null);
+    
+    try {
       const { count } = await supabase
         .from('tests')
         .select('*', { count: 'exact', head: true })
-        .eq('test_type', testType.toLowerCase())
-        .eq('module', module.toLowerCase());
+        .eq('test_type', testType)
+        .eq('skill_category', 'Reading'); // Individual skill test
 
-    const newTestNumber = (count || 0) + 1;
-    
-    const { data: newTest, error: invokeError } = await supabase.functions.invoke('admin-content', {
-        body: {
-            action: 'create_test',
-            payload: {
-                test_name: `${testType} ${module} Test ${newTestNumber}`,
-                test_type: testType.toLowerCase(),
-                module: module.toLowerCase(),
-            }
-        },
-    });
+      const newTestNumber = (count || 0) + 1;
+      
+      const { data, error } = await supabase
+        .from('tests')
+        .insert({
+          test_name: `IELTS Reading Test ${newTestNumber}`,
+          test_type: 'IELTS',
+          module: 'academic',
+          skill_category: 'Reading'
+        })
+        .select()
+        .single();
 
-    if (invokeError || newTest.error) {
-      setError(invokeError?.message || newTest.error);
-      toast.error('Failed to create test');
-    } else {
-      // Refresh the list or navigate
-      navigate(`/admin/ielts/test/${newTest.data.id}/reading`);
+      if (error) throw error;
+
       toast.success('Test created successfully');
+      
+      // Refresh the list and navigate to test management
+      navigate(`/admin/ielts/test/${data.id}/reading`);
+    } catch (err: any) {
+      console.error('Error creating test:', err);
+      setError(err.message);
+      toast.error('Failed to create test');
     }
+    
     setLoading(false);
   };
 
@@ -97,19 +103,30 @@ export default function AdminIELTSReadingDashboard() {
     <AdminLayout title="IELTS Reading Tests" showBackButton={true} backPath="/admin">
       <div className="p-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-white">IELTS Reading Tests</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            IELTS Reading Tests
+          </h1>
           <Button
             onClick={handleCreateNewTest}
             disabled={loading}
-            className="bg-[#3B82F6] text-white font-semibold py-2 px-4 rounded-lg hover:bg-[#2563EB]"
+            className="gap-2"
           >
-            {loading ? 'Creating...' : '+ Add New Test'}
+            <Plus className="w-4 h-4" />
+            {loading ? 'Creating...' : 'Create Reading Test'}
           </Button>
         </div>
         
         {tests.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-white">No tests found. Create your first test!</p>
+          <div className="text-center py-12">
+            <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Reading tests found</h3>
+            <p className="text-muted-foreground mb-4">
+              Create your first IELTS Reading test to get started
+            </p>
+            <Button onClick={handleCreateNewTest} disabled={loading}>
+              <Plus className="w-4 h-4 mr-2" />
+              {loading ? 'Creating...' : 'Create First Test'}
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

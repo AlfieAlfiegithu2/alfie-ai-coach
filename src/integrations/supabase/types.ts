@@ -1064,6 +1064,7 @@ export type Database = {
           created_at: string
           id: string
           module: string
+          skill_category: string | null
           test_name: string
           test_type: string
         }
@@ -1071,6 +1072,7 @@ export type Database = {
           created_at?: string
           id?: string
           module: string
+          skill_category?: string | null
           test_name: string
           test_type: string
         }
@@ -1078,6 +1080,7 @@ export type Database = {
           created_at?: string
           id?: string
           module?: string
+          skill_category?: string | null
           test_name?: string
           test_type?: string
         }

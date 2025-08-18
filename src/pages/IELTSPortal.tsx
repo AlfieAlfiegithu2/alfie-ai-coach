@@ -190,80 +190,41 @@ const IELTSPortal = () => {
       </div>;
   }
 
-  return <div className="min-h-screen relative">
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" style={{
-      backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-      backgroundColor: '#f3f4f6'
-    }} />
+  return (
+    <div className="min-h-screen relative">
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" 
+           style={{
+             backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+             backgroundColor: '#f3f4f6'
+           }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
-      <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
-        <div className="flex items-center mb-2">
-          <Button variant="ghost" onClick={() => navigate('/')} className="text-text-secondary px-2 py-1 h-8">
-            <Home className="mr-2 h-4 w-4" /> Home
-          </Button>
-        </div>
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-semibold text-foreground">IELTS Mock Test</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {availableTests.slice(0, 6).map(test => (
-              <Card
-                key={test.test_number || test.id}
-                className="rounded-2xl border-light-border shadow-soft p-3 transition-all duration-200 hover:scale-105"
-                style={{ background: 'var(--gradient-card)' }}
+          <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
+            <div className="flex items-center mb-2">
+              <Button variant="ghost" onClick={() => navigate('/')} className="text-text-secondary px-2 py-1 h-8">
+                <Home className="mr-2 h-4 w-4" /> Home
+              </Button>
+            </div>
+            
+            {/* Redirect Notice */}
+            <div className="bg-muted/80 rounded-lg p-6 text-center backdrop-blur-sm">
+              <h2 className="text-2xl font-semibold mb-4">IELTS Tests Have Been Reorganized!</h2>
+              <p className="text-muted-foreground mb-4">
+                We've organized all IELTS tests by the four core skills for better practice.
+              </p>
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/ielts')}
+                className="bg-primary hover:bg-primary/90"
               >
-                <CardHeader className="pb-2 p-0">
-                  <div className="flex items-center justify-center">
-                    <CardTitle className="text-base font-semibold text-foreground">{test.test_name}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="text-sm text-warm-gray text-center">
-                    Last Score: <span className="font-medium text-foreground">Not Yet Taken</span>
-                  </div>
-                  <Button
-                    onClick={() => handleTestClick(test.id)}
-                    size="sm"
-                    disabled={test.comingSoon}
-                    className="w-full mt-2 font-semibold rounded-2xl text-black"
-                    style={{ background: test.comingSoon ? 'var(--warm-gray)' : 'var(--gradient-button)', border: 'none' }}
-                  >
-                    {test.comingSoon ? 'Coming Soon' : 'Start Test'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                Go to New IELTS Hub
+              </Button>
+            </div>
           </div>
-        </section>
-
-
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-semibold text-foreground">Sharpen Your Skills</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {SKILLS.map((item) => (
-              <Card
-                key={item.slug}
-                className="cursor-pointer transition-all duration-200 rounded-2xl border-light-border hover:border-gentle-blue/30 hover:scale-105 h-20"
-                onClick={() => navigate(`/skills/${item.slug}`)}
-                style={{ background: 'white' }}
-              >
-                <CardHeader className="pb-2 p-4 h-full">
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <CardTitle className="text-sm font-semibold text-foreground text-center">{item.label}</CardTitle>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </section>
-        </div>
         </StudentLayout>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default IELTSPortal;

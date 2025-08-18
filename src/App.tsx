@@ -36,6 +36,9 @@ import TOEFLPortal from "./pages/TOEFLPortal";
 import GeneralPortal from "./pages/GeneralPortal";
 import EnhancedGeneralPortal from "./pages/EnhancedGeneralPortal";
 import IELTSPortal from "./pages/IELTSPortal";
+import IELTSSkillHub from "./pages/IELTSSkillHub";
+import IELTSSkillTests from "./pages/IELTSSkillTests";
+import AdminIELTSSkillManagement from "./pages/AdminIELTSSkillManagement";
 import IELTSTestModules from "./pages/IELTSTestModules";
 import AdminTestManagement from "./pages/AdminTestManagement";
 import AdminTestDetails from "./pages/AdminTestDetails";
@@ -120,6 +123,11 @@ const App = () => {
             <Route path="/general/conversation" element={<EnhancedGeneralPortal />} />
             <Route path="/general/listening" element={<EnhancedGeneralPortal />} />
             <Route path="/general/speaking" element={<EnhancedGeneralPortal />} />
+            {/* IELTS Routes - New Skill-Based Structure */}
+            <Route path="/ielts-portal" element={<IELTSPortal />} />
+            <Route path="/ielts" element={<IELTSSkillHub />} />
+            <Route path="/ielts/:skill" element={<IELTSSkillTests />} />
+            
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/reading" element={<AdminReading />} />
@@ -127,6 +135,7 @@ const App = () => {
             <Route path="/admin/writing" element={<AdminWriting />} />
             <Route path="/admin/speaking" element={<AdminSpeaking />} />
             <Route path="/admin/ielts" element={<AdminIELTS />} />
+            <Route path="/admin/ielts/:skill" element={<AdminIELTSSkillManagement />} />
             <Route path="/admin/pte" element={<AdminPTE />} />
             <Route path="/admin/toefl" element={<AdminTOEFL />} />
             <Route path="/admin/general" element={<AdminGeneral />} />

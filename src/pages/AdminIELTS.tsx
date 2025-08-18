@@ -262,7 +262,35 @@ const AdminIELTS = () => {
           </Card>
         </div>
 
-        {/* Skill Training Sections - unified with student portal */}
+        {/* IELTS Skills Hub */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">IELTS Test Management</h3>
+          <p className="text-muted-foreground">Manage IELTS tests organized by the four core skills. Click on any skill to manage its tests.</p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              { skill: 'Listening', icon: Headphones, path: '/admin/ielts/listening' },
+              { skill: 'Reading', icon: BookOpen, path: '/admin/ielts/reading' },
+              { skill: 'Writing', icon: PenTool, path: '/admin/ielts/writing' },
+              { skill: 'Speaking', icon: Mic, path: '/admin/ielts/speaking' }
+            ].map((item) => (
+              <Card
+                key={item.skill}
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigate(item.path)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{item.skill} Tests</CardTitle>
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">Manage {item.skill.toLowerCase()} test content and settings</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Skill Training Sections */}
         <div className="space-y-4">
           <h3 className="text-xl font-semibold">Sharpen Your Skills</h3>
           <p className="text-muted-foreground">Manage 8 targeted skill drills. Changes appear instantly for students.</p>
@@ -303,24 +331,9 @@ const AdminIELTS = () => {
                     Manage your IELTS practice tests
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Test name"
-                    value={newTestName}
-                    onChange={(e) => setNewTestName(e.target.value)}
-                    className="px-3 py-2 border rounded-md"
-                    onKeyPress={(e) => e.key === 'Enter' && createNewTest()}
-                  />
-                  <Button 
-                    onClick={createNewTest}
-                    disabled={isCreating}
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Test
-                  </Button>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use the skill-based management system above to organize and manage your IELTS tests.
+                </p>
               </div>
 
               {tests.length > 0 ? (

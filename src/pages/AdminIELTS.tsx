@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings, ArrowLeft, Plus, Edit3, Check, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings, ArrowLeft, Plus, Edit3, Check, X, Trash2 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAdminContent } from "@/hooks/useAdminContent";
@@ -116,6 +117,35 @@ const AdminIELTS = () => {
     } catch (error) {
       console.error('Error updating test name:', error);
       toast.error('Failed to update test name');
+    }
+  };
+
+  const deleteTest = async (testId: string, testName: string) => {
+    try {
+      // First, delete any questions associated with this test
+      const { error: questionsError } = await supabase
+        .from('questions')
+        .delete()
+        .eq('test_id', testId);
+
+      if (questionsError) {
+        console.error('Error deleting questions:', questionsError);
+        // Continue with test deletion even if questions deletion fails
+      }
+
+      // Then delete the test itself
+      const { error } = await supabase
+        .from('tests')
+        .delete()
+        .eq('id', testId);
+
+      if (error) throw error;
+
+      toast.success(`Test "${testName}" deleted successfully`);
+      loadTests(); // Refresh the test list
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      toast.error('Failed to delete test');
     }
   };
 
@@ -411,9 +441,10 @@ const AdminIELTS = () => {
                               </div>
                             ) : (
                               <span>{test.test_name}</span>
-                            )}
-                          </div>
-                          {editingTestId !== test.id && (
+                          )}
+                        </div>
+                        {editingTestId !== test.id && (
+                          <div className="flex items-center gap-1">
                             <Button 
                               size="sm" 
                               variant="ghost"
@@ -424,7 +455,36 @@ const AdminIELTS = () => {
                             >
                               <Edit3 className="w-4 h-4" />
                             </Button>
-                          )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Test</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{test.test_name}"? This will also delete all questions associated with this test. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => deleteTest(test.id, test.test_name)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
                         </CardTitle>
                         <CardDescription>
                           Created: {new Date(test.created_at).toLocaleDateString()}
@@ -442,6 +502,7 @@ const AdminIELTS = () => {
                             e.stopPropagation();
                             navigate(`/admin/ielts/test/${test.id}`);
                           }}
+                          disabled={editingTestId === test.id}
                         >
                           Manage All Sections
                         </Button>

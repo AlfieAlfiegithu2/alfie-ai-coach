@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Headphones, PenTool, Mic, Plus, Edit3, Check, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { BookOpen, Headphones, PenTool, Mic, Plus, Edit3, Check, X, Trash2 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { toast } from "sonner";
@@ -183,6 +184,35 @@ const AdminIELTSSkillManagement = () => {
     }
   };
 
+  const deleteTest = async (testId: string, testName: string) => {
+    try {
+      // First, delete any questions associated with this test
+      const { error: questionsError } = await supabase
+        .from('questions')
+        .delete()
+        .eq('test_id', testId);
+
+      if (questionsError) {
+        console.error('Error deleting questions:', questionsError);
+        // Continue with test deletion even if questions deletion fails
+      }
+
+      // Then delete the test itself
+      const { error } = await supabase
+        .from('tests')
+        .delete()
+        .eq('id', testId);
+
+      if (error) throw error;
+
+      toast.success(`Test "${testName}" deleted successfully`);
+      loadSkillTests(); // Refresh the test list
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      toast.error('Failed to delete test');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -287,16 +317,46 @@ const AdminIELTSSkillManagement = () => {
                         )}
                       </div>
                       {editingTestId !== test.id && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditingTest(test);
-                          }}
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingTest(test);
+                            }}
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Test</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{test.test_name}"? This will also delete all questions associated with this test. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteTest(test.id, test.test_name)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       )}
                     </CardTitle>
                     <CardDescription>
@@ -315,6 +375,7 @@ const AdminIELTSSkillManagement = () => {
                         e.stopPropagation();
                         handleTestClick(test);
                       }}
+                      disabled={editingTestId === test.id}
                     >
                       Manage {skillName} Content
                     </Button>

@@ -28,8 +28,25 @@ const AdminIELTSSkillManagement = () => {
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [editingTestName, setEditingTestName] = useState("");
 
+  // Validate skill parameter and redirect if invalid
+  const validSkills = ['listening', 'reading', 'writing', 'speaking'];
+  
+  useEffect(() => {
+    if (!skill || !validSkills.includes(skill.toLowerCase())) {
+      console.log('Invalid or missing skill parameter:', skill, 'Redirecting to /admin/ielts');
+      navigate('/admin/ielts');
+      return;
+    }
+  }, [skill, navigate]);
+
+  // Don't render if skill is invalid
+  if (!skill || !validSkills.includes(skill.toLowerCase())) {
+    return null;
+  }
+
   const skillName = skill ? skill.charAt(0).toUpperCase() + skill.slice(1) : "";
-  const SkillIcon = skill ? skillIcons[skill as keyof typeof skillIcons] : BookOpen;
+  const normalizedSkill = skill?.toLowerCase();
+  const SkillIcon = (normalizedSkill && skillIcons[normalizedSkill as keyof typeof skillIcons]) || BookOpen;
 
   useEffect(() => {
     if (!loading) {

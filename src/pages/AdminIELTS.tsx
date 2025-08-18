@@ -17,7 +17,7 @@ import { SKILLS } from "@/lib/skills";
 
 const AdminIELTS = () => {
   const navigate = useNavigate();
-  const { admin, loading, adminCheckComplete } = useAdminAuth();
+  const { admin, loading } = useAdminAuth();
   const { createContent } = useAdminContent();
   const [tests, setTests] = useState<any[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -129,22 +129,19 @@ const AdminIELTS = () => {
   };
 
   useEffect(() => {
-    console.log('🚀 AdminIELTS auth check:', { loading, admin: !!admin, adminCheckComplete });
+    console.log('🚀 AdminIELTS auth check:', { loading, admin: !!admin });
     
-    // Wait for admin check to be complete before making decisions
-    if (!loading && adminCheckComplete) {
+    // Wait for loading to complete before making decisions
+    if (!loading) {
       if (!admin) {
         console.log('🔄 Redirecting to login - no admin access');
-        // Add a small delay to prevent race conditions
-        setTimeout(() => {
-          navigate('/admin/login');
-        }, 100);
+        navigate('/admin/login');
       } else {
         console.log('✅ Admin access confirmed, loading tests');
         loadTests();
       }
     }
-  }, [admin, loading, adminCheckComplete, navigate]);
+  }, [admin, loading, navigate]);
 
   if (loading) {
     return (

@@ -13,35 +13,47 @@ serve(async (req) => {
   }
 
   try {
-    // Verify admin authentication
+    // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Admin authentication required');
+      throw new Error('Authentication required');
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const jwt = authHeader.replace('Bearer ', '');
     
+    // Create Supabase client to verify the JWT and check admin status
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Verify admin session
-    const { data: session, error: sessionError } = await supabaseClient
-      .from('admin_sessions')
-      .select('admin_id, expires_at')
-      .eq('session_token', token)
+    // Set the auth token
+    await supabaseClient.auth.setSession({
+      access_token: jwt,
+      refresh_token: ''
+    });
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(jwt);
+    
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      throw new Error('Invalid authentication token');
+    }
+
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
       .single();
 
-    if (sessionError || !session) {
-      throw new Error('Invalid admin session');
+    if (profileError || !profile || profile.role !== 'admin') {
+      console.error('Profile check error:', profileError, 'Profile:', profile);
+      throw new Error('Admin access required');
     }
 
-    if (new Date(session.expires_at) < new Date()) {
-      throw new Error('Admin session expired');
-    }
-
-    // Create a Supabase client with the service role key to bypass RLS for admin actions
+    // Create a Supabase client with the service role key for admin operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

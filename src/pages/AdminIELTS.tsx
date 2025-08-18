@@ -110,19 +110,102 @@ const AdminIELTS = () => {
   const createSpeakingTest = async () => {
     setIsCreating(true);
     try {
-      const result = await createContent('tests', {
-        test_name: `IELTS Speaking Test ${tests.length + 1}`,
-        test_type: 'IELTS',
-        module: 'Speaking'
-      });
+      const { data, error } = await supabase
+        .from('tests')
+        .insert({
+          test_name: `IELTS Speaking Test ${tests.filter(t => t.skill_category === 'Speaking').length + 1}`,
+          test_type: 'IELTS',
+          module: 'Speaking',
+          skill_category: 'Speaking'
+        })
+        .select()
+        .single();
 
-      if (result.data) {
-        toast.success('Speaking test created successfully');
-        navigate(`/admin/ielts/test/${result.data.id}/speaking`);
-      }
+      if (error) throw error;
+
+      toast.success('Speaking test created successfully');
+      navigate(`/admin/ielts/test/${data.id}/speaking`);
     } catch (error) {
       console.error('Error creating speaking test:', error);
       toast.error('Failed to create speaking test');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const createListeningTest = async () => {
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .insert({
+          test_name: `IELTS Listening Test ${tests.filter(t => t.skill_category === 'Listening').length + 1}`,
+          test_type: 'IELTS',
+          module: 'academic',
+          skill_category: 'Listening'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Listening test created successfully');
+      navigate(`/admin/ielts/test/${data.id}/listening`);
+    } catch (error) {
+      console.error('Error creating listening test:', error);
+      toast.error('Failed to create listening test');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const createReadingTest = async () => {
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .insert({
+          test_name: `IELTS Reading Test ${tests.filter(t => t.skill_category === 'Reading').length + 1}`,
+          test_type: 'IELTS',
+          module: 'academic',
+          skill_category: 'Reading'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Reading test created successfully');
+      navigate(`/admin/ielts/test/${data.id}/reading`);
+    } catch (error) {
+      console.error('Error creating reading test:', error);
+      toast.error('Failed to create reading test');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const createWritingTest = async () => {
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .insert({
+          test_name: `IELTS Writing Test ${tests.filter(t => t.skill_category === 'Writing').length + 1}`,
+          test_type: 'IELTS',
+          module: 'academic',
+          skill_category: 'Writing'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Writing test created successfully');
+      navigate(`/admin/ielts/test/${data.id}/writing`);
+    } catch (error) {
+      console.error('Error creating writing test:', error);
+      toast.error('Failed to create writing test');
     } finally {
       setIsCreating(false);
     }
@@ -265,25 +348,62 @@ const AdminIELTS = () => {
         {/* IELTS Skills Hub */}
         <div className="space-y-4">
           <h3 className="text-xl font-semibold">IELTS Test Management</h3>
-          <p className="text-muted-foreground">Manage IELTS tests organized by the four core skills. Click on any skill to manage its tests.</p>
+          <p className="text-muted-foreground">Manage IELTS tests organized by the four core skills. Each skill has a quick create option.</p>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { skill: 'Listening', icon: Headphones, path: '/admin/ielts/listening' },
-              { skill: 'Reading', icon: BookOpen, path: '/admin/ielts/reading' },
-              { skill: 'Writing', icon: PenTool, path: '/admin/ielts/writing' },
-              { skill: 'Speaking', icon: Mic, path: '/admin/ielts/speaking' }
+              { 
+                skill: 'Listening', 
+                icon: Headphones, 
+                path: '/admin/ielts/listening',
+                createTest: () => createListeningTest()
+              },
+              { 
+                skill: 'Reading', 
+                icon: BookOpen, 
+                path: '/admin/ielts/reading',
+                createTest: () => createReadingTest()
+              },
+              { 
+                skill: 'Writing', 
+                icon: PenTool, 
+                path: '/admin/ielts/writing',
+                createTest: () => createWritingTest()
+              },
+              { 
+                skill: 'Speaking', 
+                icon: Mic, 
+                path: '/admin/ielts/speaking',
+                createTest: () => createSpeakingTest()
+              }
             ].map((item) => (
               <Card
                 key={item.skill}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate(item.path)}
+                className="hover:shadow-lg transition-shadow"
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">{item.skill} Tests</CardTitle>
                   <item.icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <p className="text-xs text-muted-foreground">Manage {item.skill.toLowerCase()} test content and settings</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => navigate(item.path)}
+                    >
+                      View All
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={item.createTest}
+                      disabled={isCreating}
+                    >
+                      {isCreating ? "..." : "New Test"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

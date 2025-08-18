@@ -12,6 +12,7 @@ interface Admin {
 interface UseAdminAuthReturn {
   admin: Admin | null;
   loading: boolean;
+  adminCheckComplete: boolean;
   login: (email: string, password: string) => Promise<{ success?: boolean; error?: string }>;
   register: (email: string, password: string, name: string) => Promise<{ success?: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -26,6 +27,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
   const { user, profile, signIn, signOut } = useAuth();
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
+  const [adminCheckComplete, setAdminCheckComplete] = useState(false);
 
   const clearSession = () => {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
@@ -40,21 +42,36 @@ export function useAdminAuth(): UseAdminAuthReturn {
 
   useEffect(() => {
     const checkAdminStatus = () => {
+      console.log('🔍 Admin check - User:', user?.email, 'Profile role:', profile?.role);
+      
       if (user && profile) {
         // Check if user has admin role
         if (profile.role === 'admin') {
+          console.log('✅ Admin status confirmed for:', user.email);
           setAdmin({
             id: user.id,
             email: user.email || '',
             name: profile.full_name || user.email || ''
           });
         } else {
+          console.log('❌ User is not admin. Role:', profile.role);
           setAdmin(null);
         }
+        setAdminCheckComplete(true);
+      } else if (user && !profile) {
+        console.log('⏳ User exists but profile still loading...');
+        // Profile is still loading, don't set admin check as complete yet
+        setAdminCheckComplete(false);
       } else {
+        console.log('🚫 No user or profile found');
         setAdmin(null);
+        setAdminCheckComplete(true);
       }
-      setLoading(false);
+      
+      // Only set loading to false when we have both user and profile, or confirmed no user
+      if ((user && profile) || !user) {
+        setLoading(false);
+      }
     };
 
     checkAdminStatus();
@@ -143,6 +160,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
   return {
     admin,
     loading,
+    adminCheckComplete,
     login,
     register,
     logout,

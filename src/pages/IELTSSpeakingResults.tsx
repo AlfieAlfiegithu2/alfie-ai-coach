@@ -10,6 +10,7 @@ import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
+import { ElevenLabsVoiceOptimized } from "@/components/ElevenLabsVoiceOptimized";
 
 interface QuestionAnalysis {
   part: string;
@@ -549,6 +550,13 @@ const IELTSSpeakingResults = () => {
                             dimNeutral={false}
                             hideOriginal={false}
                           />
+                          <div className="mt-3 flex justify-end">
+                            <ElevenLabsVoiceOptimized 
+                              text={suggestion.suggested_spans.map(span => span.text).join('')}
+                              className="text-xs"
+                              questionId={`suggestion_${analysis.part}_${analysis.questionIndex}`}
+                            />
+                          </div>
                         </div>
                       );
                     }

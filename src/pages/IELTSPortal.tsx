@@ -224,9 +224,12 @@ const IELTSPortal = () => {
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
           <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
-            <div className="flex items-center mb-2">
-              <Button variant="ghost" onClick={() => navigate('/')} className="text-text-secondary px-2 py-1 h-8">
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="ghost" onClick={() => navigate('/hero')} className="text-text-secondary px-2 py-1 h-8">
                 <Home className="mr-2 h-4 w-4" /> Home
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-text-secondary px-2 py-1 h-8">
+                My Dashboard
               </Button>
             </div>
             

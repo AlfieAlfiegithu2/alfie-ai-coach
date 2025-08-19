@@ -224,9 +224,7 @@ const Dashboard = () => {
             
             <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
-            }}>
-              Master English with AI
-            </button>
+            }}>Home</button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Settings Button */}

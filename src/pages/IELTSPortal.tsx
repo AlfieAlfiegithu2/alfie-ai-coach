@@ -117,7 +117,7 @@ const IELTSPortal = () => {
         }
       });
 
-      const transformedTests = testsData?.map(test => {
+      const transformedTests = testsData?.map((test, index) => {
         const availableModules = testModules.get(test.id) || new Set();
         const questionCount = questionsData?.filter(q => q.test_id === test.id).length || 0;
         const speakingCount = speakingData?.filter(sp => sp.test_number?.toString() === test.test_name || sp.cambridge_book?.includes(test.test_name)).length || 0;
@@ -125,7 +125,7 @@ const IELTSPortal = () => {
         return {
           id: test.id,
           test_name: test.test_name,
-          test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
+          test_number: index + 1, // Use sequential numbering to avoid duplicates
           status: totalContent > 0 ? 'complete' : 'incomplete',
           modules: Array.from(availableModules),
           total_questions: questionCount,
@@ -231,20 +231,22 @@ const IELTSPortal = () => {
             </div>
             
             {/* Skill Practice Quick Links */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
-              {IELTS_SKILLS.map((skill) => (
-                <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
-                  <CardContent className="p-3 md:p-4 text-center">
-                    <h3 className="font-semibold text-sm md:text-base mb-1">{skill.title}</h3>
-                    <p className="text-xs text-muted-foreground mb-2">{skill.description}</p>
-                    {skillBands[skill.id] && (
-                      <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
-                        Last: {skillBands[skill.id]}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                {IELTS_SKILLS.map((skill) => (
+                  <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
+                    <CardContent className="p-3 md:p-4 text-center min-h-[80px] flex flex-col justify-center">
+                      <h3 className="font-semibold text-sm md:text-base">{skill.title}</h3>
+                      {skillBands[skill.id] && skill.id !== 'speaking' && (
+                        <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mt-2">
+                          Last: {skillBands[skill.id]}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
 
             {/* Sharpening Your Skills */}
@@ -253,8 +255,8 @@ const IELTSPortal = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {SKILLS.map((skill) => (
                   <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skill-practice/${skill.slug}`)}>
-                    <CardContent className="p-3 md:p-4 text-center">
-                      <h3 className="font-semibold text-xs md:text-sm mb-1">{skill.label}</h3>
+                    <CardContent className="p-3 md:p-4 text-center min-h-[80px] flex flex-col justify-center">
+                      <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
                     </CardContent>
                   </Card>
                 ))}

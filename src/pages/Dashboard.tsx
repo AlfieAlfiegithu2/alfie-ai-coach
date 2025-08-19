@@ -221,6 +221,12 @@ const Dashboard = () => {
             }}>
               Tests
             </button>
+            
+            <button onClick={() => window.open('https://example.com', '_blank')} className="text-slate-600 hover:text-blue-600 transition" style={{
+              fontFamily: 'Inter, sans-serif'
+            }}>
+              Master English with AI
+            </button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Settings Button */}

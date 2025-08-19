@@ -37,6 +37,7 @@ const AdminIELTSWriting = () => {
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
+        .eq('module', 'academic')
         .eq('skill_category', 'Writing')
         .order('created_at', { ascending: false });
 
@@ -57,6 +58,7 @@ const AdminIELTSWriting = () => {
         .from('tests')
         .select('*', { count: 'exact', head: true })
         .eq('test_type', 'IELTS')
+        .eq('module', 'academic')
         .eq('skill_category', 'Writing');
 
       const newTestNumber = (count || 0) + 1;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -41,11 +42,15 @@ const IELTSPortal = () => {
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [skillBands, setSkillBands] = useState<Record<string, string>>({});
+  const [skillProgress, setSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
+  const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   useEffect(() => {
     loadAvailableTests();
 
     if (user) {
       loadSkillBands();
+      loadSkillProgress();
+      loadIeltsSkillProgress();
     }
 
     // Preload the background image
@@ -192,6 +197,65 @@ const IELTSPortal = () => {
     }
   };
 
+  const loadSkillProgress = async () => {
+    if (!user) return;
+    try {
+      const progress: Record<string, { completed: number; total: number }> = {};
+      
+      for (const skill of SKILLS) {
+        // Get user progress for this skill
+        const { data: userProgress } = await supabase
+          .from('user_skill_progress')
+          .select('max_unlocked_level')
+          .eq('user_id', user.id)
+          .eq('skill_slug', skill.slug)
+          .single();
+
+        // Get total available tests for this skill
+        const { data: totalTests } = await supabase
+          .from('skill_tests')
+          .select('id')
+          .eq('skill_slug', skill.slug);
+
+        const completed = userProgress?.max_unlocked_level || 0;
+        const total = totalTests?.length || 10; // Default to 10 if no tests found
+        
+        progress[skill.slug] = { completed, total };
+      }
+      
+      setSkillProgress(progress);
+    } catch (error) {
+      console.error('Error loading skill progress:', error);
+    }
+  };
+
+  const loadIeltsSkillProgress = async () => {
+    if (!user) return;
+    try {
+      const progress: Record<string, { completed: number; total: number }> = {};
+      
+      for (const skill of IELTS_SKILLS) {
+        // Get completed tests for this IELTS skill
+        const { data: completedTests } = await supabase
+          .from('test_results')
+          .select('id')
+          .eq('user_id', user.id)
+          .ilike('test_type', `%${skill.id}%`);
+
+        // For total, we can estimate or use a fixed number
+        // You might want to adjust this based on actual available content
+        const completed = completedTests?.length || 0;
+        const total = 20; // Assuming 20 total levels/tests per skill
+        
+        progress[skill.id] = { completed, total };
+      }
+      
+      setIeltsSkillProgress(progress);
+    } catch (error) {
+      console.error('Error loading IELTS skill progress:', error);
+    }
+  };
+
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting IELTS ${skillId} practice`);
     if (skillId === 'writing') {
@@ -237,18 +301,33 @@ const IELTSPortal = () => {
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                {IELTS_SKILLS.map((skill) => (
-                  <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
-                    <CardContent className="p-3 md:p-4 text-center min-h-[80px] flex flex-col justify-center">
-                      <h3 className="font-semibold text-sm md:text-base">{skill.title}</h3>
-                      {skillBands[skill.id] && skill.id !== 'speaking' && (
-                        <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mt-2">
-                          Last: {skillBands[skill.id]}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                {IELTS_SKILLS.map((skill) => {
+                  const progress = ieltsSkillProgress[skill.id];
+                  const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
+                  
+                  return (
+                    <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
+                      <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
+                        <h3 className="font-semibold text-sm md:text-base">{skill.title}</h3>
+                        
+                        {progress && (
+                          <div className="mt-3 space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              ({progress.completed}/{progress.total} Completed)
+                            </div>
+                            <Progress value={progressPercentage} className="h-2" />
+                          </div>
+                        )}
+                        
+                        {skillBands[skill.id] && skill.id !== 'speaking' && (
+                          <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mt-2">
+                            Last: {skillBands[skill.id]}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
 
@@ -256,13 +335,27 @@ const IELTSPortal = () => {
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                {SKILLS.map((skill) => (
-                  <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skill-practice/${skill.slug}`)}>
-                    <CardContent className="p-3 md:p-4 text-center min-h-[80px] flex flex-col justify-center">
-                      <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
-                    </CardContent>
-                  </Card>
-                ))}
+                {SKILLS.map((skill) => {
+                  const progress = skillProgress[skill.slug];
+                  const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
+                  
+                  return (
+                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skill-practice/${skill.slug}`)}>
+                      <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
+                        <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
+                        
+                        {progress && (
+                          <div className="mt-3 space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              ({progress.completed}/{progress.total} Completed)
+                            </div>
+                            <Progress value={progressPercentage} className="h-2" />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
 
@@ -274,9 +367,13 @@ const IELTSPortal = () => {
                   <LoadingAnimation />
                 </div>
               ) : availableTests.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                <div className="flex overflow-x-auto pb-5 gap-3 md:gap-4" style={{ scrollbarWidth: 'thin' }}>
                   {availableTests.map((test) => (
-                    <Card key={test.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleTestClick(test.id)}>
+                    <Card 
+                      key={test.id} 
+                      className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm flex-shrink-0 w-64 md:w-72" 
+                      onClick={() => handleTestClick(test.id)}
+                    >
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base md:text-lg flex justify-between items-center">
                           <span>Test {test.test_number}</span>

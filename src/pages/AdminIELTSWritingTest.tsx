@@ -298,18 +298,6 @@ const AdminIELTSWritingTest = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="task1-instructions">Task Instructions</Label>
-              <Textarea
-                id="task1-instructions"
-                rows={6}
-                value={task1.instructions}
-                onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
-                placeholder="Write the complete task instructions here..."
-                disabled={isLocked && !isModifying}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="task1-image">Upload Image</Label>
               <div className="flex items-center gap-4">
                 <Input
@@ -412,18 +400,6 @@ const AdminIELTSWritingTest = () => {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="task2-instructions">Essay Question & Instructions</Label>
-              <Textarea
-                id="task2-instructions"
-                rows={8}
-                value={task2.instructions}
-                onChange={(e) => setTask2(prev => ({ ...prev, instructions: e.target.value }))}
-                placeholder="Write the complete essay question and instructions here..."
-                disabled={isLocked && !isModifying}
-              />
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="task2-model-answer">Model Answer (Optional)</Label>
               <Textarea

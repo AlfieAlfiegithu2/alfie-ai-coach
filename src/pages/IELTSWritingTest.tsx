@@ -14,6 +14,7 @@ interface Task {
   instructions: string;
   imageUrl?: string;
   imageContext?: string;
+  modelAnswer?: string;
 }
 interface ChatMessage {
   id: string;
@@ -105,113 +106,46 @@ const IELTSWritingTestInterface = () => {
   }, [testId]);
   const loadTestData = async () => {
     try {
-      // Check if this is a writing prompt test (starts with "writing-")
-      if (testId?.startsWith('writing-')) {
-        // Extract cambridge_book and test_number from the ID
-        const parts = testId.split('-');
-        if (parts.length >= 3) {
-          const cambridgeBook = parts[1];
-          const testNumber = parts[2];
-          
-          // Load writing prompts directly
-          const { data: writingPrompts, error: promptsError } = await supabase
-            .from('writing_prompts')
-            .select('*')
-            .eq('cambridge_book', cambridgeBook)
-            .eq('test_number', parseInt(testNumber))
-            .order('task_number');
+      // Load test from tests table
+      const { data: testData, error: testError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('id', testId)
+        .single();
 
-          if (promptsError) throw promptsError;
-
-          // Create mock test data
-          setTest({
-            id: testId,
-            test_name: `${cambridgeBook} Test ${testNumber}`,
-            test_type: 'IELTS Writing',
-            cambridge_book: cambridgeBook,
-            test_number: testNumber
-          });
-
-          // Map writing prompts to tasks
-          const task1Prompt = writingPrompts?.find(p => p.task_number === 1);
-          const task2Prompt = writingPrompts?.find(p => p.task_number === 2);
-
-          if (task1Prompt) {
-            setTask1({
-              id: task1Prompt.id,
-              title: task1Prompt.title || "Task 1 - Data Description",
-              instructions: task1Prompt.prompt_text || "",
-              imageUrl: task1Prompt.image_url || "",
-              imageContext: ""
-            });
-          }
-
-          if (task2Prompt) {
-            setTask2({
-              id: task2Prompt.id,
-              title: task2Prompt.title || "Task 2 - Essay Writing",
-              instructions: task2Prompt.prompt_text || ""
-            });
-          }
-          
-          return; // Exit early for writing prompt tests
-        }
-      }
-
-      // Original logic for regular tests
-      const {
-        data: testData,
-        error: testError
-      } = await supabase.from('tests').select('*').eq('id', testId).single();
       if (testError) throw testError;
       setTest(testData);
 
-      // Load questions for this test (only IELTS Writing tasks)
-      const {
-        data: questions,
-        error: questionsError
-      } = await supabase.from('questions').select('*').eq('test_id', testId).in('question_type', ['Task 1', 'Task 2']).order('part_number');
+      // Load questions for this test (IELTS Writing tasks)
+      const { data: questions, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('test_id', testId)
+        .order('part_number');
+
       if (questionsError) throw questionsError;
-      const task1Question = questions.find(q => q.part_number === 1);
-      const task2Question = questions.find(q => q.part_number === 2);
+
+      // Find Task 1 and Task 2 questions
+      const task1Question = questions?.find(q => q.part_number === 1);
+      const task2Question = questions?.find(q => q.part_number === 2);
+
       if (task1Question) {
         setTask1({
           id: task1Question.id,
-          title: task1Question.question_text || "",
+          title: task1Question.question_text || "Task 1 - Data Description",
           instructions: task1Question.passage_text || "",
           imageUrl: task1Question.image_url || "",
-          imageContext: task1Question.explanation || ""
+          imageContext: task1Question.explanation || "",
+          modelAnswer: task1Question.transcription || "" // Model answer stored in transcription field
         });
       }
-      if (task2Question) {
-        // For Task 2, ensure we use the correct field mapping
-        let taskTitle = "";
-        let taskInstructions = "";
 
-        // If question_text contains the actual essay prompt, use it as title
-        if (task2Question.question_text && !task2Question.question_text.toLowerCase().includes('paragraph')) {
-          taskTitle = task2Question.question_text;
-          taskInstructions = task2Question.passage_text || "";
-        } else if (task2Question.passage_text) {
-          // Extract the main question from passage_text
-          const lines = task2Question.passage_text.split('\n').filter(line => line.trim());
-          // Find the actual question (usually starts with common essay prompts)
-          const questionLine = lines.find(line => line.includes('To what extent') || line.includes('Do you agree') || line.includes('Discuss both') || line.includes('What is your opinion') || line.includes('Some people') || line.includes('Many people') || line.length > 50 // Essay questions are typically longer
-          );
-          if (questionLine) {
-            taskTitle = questionLine;
-            // Use remaining text as instructions, or use explanation field
-            taskInstructions = task2Question.explanation || lines.filter(line => line !== questionLine).join('\n');
-          } else {
-            // Fallback: use first substantial line as title
-            taskTitle = lines[0] || task2Question.question_text || "Essay Writing Task";
-            taskInstructions = lines.slice(1).join('\n') || task2Question.explanation || "";
-          }
-        }
+      if (task2Question) {
         setTask2({
           id: task2Question.id,
-          title: taskTitle,
-          instructions: taskInstructions
+          title: task2Question.question_text || "Task 2 - Essay Writing",
+          instructions: task2Question.passage_text || "",
+          modelAnswer: task2Question.transcription || "" // Model answer stored in transcription field
         });
       }
     } catch (error) {

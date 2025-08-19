@@ -48,46 +48,29 @@ const IELTSSkillTests = () => {
     try {
       let testsData = [];
       
-      if (skill === 'writing') {
-        // For writing, fetch from writing_prompts and group by test
-        const { data: writingPrompts, error: promptsError } = await supabase
-          .from('writing_prompts')
-          .select('*')
-          .order('test_number', { ascending: true });
+      // Fetch from tests table - unified approach for all skills
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('skill_category', skillName)
+        .order('created_at', { ascending: true });
 
-        if (promptsError) throw promptsError;
+      if (error) throw error;
+      testsData = data || [];
 
-        // Group prompts by test_number and cambridge_book to create test entries
-        const testGroups = writingPrompts?.reduce((acc: any, prompt: any) => {
-          const key = `${prompt.cambridge_book}-${prompt.test_number}`;
-          if (!acc[key]) {
-            acc[key] = {
-              id: `writing-${prompt.cambridge_book}-${prompt.test_number}`,
-              test_name: `${prompt.cambridge_book} Test ${prompt.test_number}`,
-              test_type: 'IELTS',
-              skill_category: 'Writing',
-              created_at: prompt.created_at,
-              cambridge_book: prompt.cambridge_book,
-              test_number: prompt.test_number,
-              prompts: []
-            };
+      // For writing tests, also get question count to show task info
+      if (skill === 'writing' && testsData.length > 0) {
+        for (const test of testsData) {
+          const { count, error: questionsError } = await supabase
+            .from('questions')
+            .select('*', { count: 'exact', head: true })
+            .eq('test_id', test.id);
+          
+          if (!questionsError) {
+            test.questionsCount = count || 0;
           }
-          acc[key].prompts.push(prompt);
-          return acc;
-        }, {}) || {};
-
-        testsData = Object.values(testGroups);
-      } else {
-        // For other skills, fetch from tests table
-        const { data, error } = await supabase
-          .from('tests')
-          .select('*')
-          .eq('test_type', 'IELTS')
-          .eq('skill_category', skillName)
-          .order('created_at', { ascending: true });
-
-        if (error) throw error;
-        testsData = data || [];
+        }
       }
 
       // Load user's results for these tests if authenticated
@@ -231,9 +214,9 @@ const IELTSSkillTests = () => {
                       </p>
                       
                       {/* Show writing tasks info if available */}
-                      {skill === 'writing' && test.prompts && (
+                      {skill === 'writing' && (
                         <div className="text-xs text-muted-foreground">
-                          {test.prompts.length} tasks • Task 1 & Task 2
+                          {test.questionsCount || 2} tasks • Task 1 & Task 2
                         </div>
                       )}
                     </CardHeader>

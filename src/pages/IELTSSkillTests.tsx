@@ -46,38 +46,72 @@ const IELTSSkillTests = () => {
     
     setIsLoading(true);
     try {
-      // Load tests for this skill
-      const { data: testsData, error: testsError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('test_type', 'IELTS')
-        .eq('skill_category', skillName)
-        .order('created_at', { ascending: true });
+      let testsData = [];
+      
+      if (skill === 'writing') {
+        // For writing, fetch from writing_prompts and group by test
+        const { data: writingPrompts, error: promptsError } = await supabase
+          .from('writing_prompts')
+          .select('*')
+          .order('test_number', { ascending: true });
 
-      if (testsError) throw testsError;
+        if (promptsError) throw promptsError;
+
+        // Group prompts by test_number and cambridge_book to create test entries
+        const testGroups = writingPrompts?.reduce((acc: any, prompt: any) => {
+          const key = `${prompt.cambridge_book}-${prompt.test_number}`;
+          if (!acc[key]) {
+            acc[key] = {
+              id: `writing-${prompt.cambridge_book}-${prompt.test_number}`,
+              test_name: `${prompt.cambridge_book} Test ${prompt.test_number}`,
+              test_type: 'IELTS',
+              skill_category: 'Writing',
+              created_at: prompt.created_at,
+              cambridge_book: prompt.cambridge_book,
+              test_number: prompt.test_number,
+              prompts: []
+            };
+          }
+          acc[key].prompts.push(prompt);
+          return acc;
+        }, {}) || {};
+
+        testsData = Object.values(testGroups);
+      } else {
+        // For other skills, fetch from tests table
+        const { data, error } = await supabase
+          .from('tests')
+          .select('*')
+          .eq('test_type', 'IELTS')
+          .eq('skill_category', skillName)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        testsData = data || [];
+      }
 
       // Load user's results for these tests if authenticated
       let results: Record<string, any> = {};
-      if (user && testsData) {
-        const testIds = testsData.map(t => t.id);
+      if (user && testsData.length > 0) {
         const { data: resultsData, error: resultsError } = await supabase
           .from('test_results')
           .select('*')
           .eq('user_id', user.id)
-          .in('cambridge_book', testsData.map(t => t.test_name))
+          .ilike('test_type', `%${skill}%`)
           .order('created_at', { ascending: false });
 
         if (!resultsError && resultsData) {
           results = resultsData.reduce((acc, result) => {
-            if (!acc[result.cambridge_book] || new Date(result.created_at) > new Date(acc[result.cambridge_book].created_at)) {
-              acc[result.cambridge_book] = result;
+            const key = result.cambridge_book || result.test_type;
+            if (!acc[key] || new Date(result.created_at) > new Date(acc[key].created_at)) {
+              acc[key] = result;
             }
             return acc;
           }, {});
         }
       }
 
-      setTests(testsData || []);
+      setTests(testsData);
       setUserResults(results);
     } catch (error) {
       console.error('Error loading skill tests:', error);
@@ -115,7 +149,8 @@ const IELTSSkillTests = () => {
     } else if (skill === 'listening') {
       navigate(`/listening-test/${test.id}`);
     } else if (skill === 'writing') {
-      navigate(`/writing-test/${test.id}`);
+      // For writing, navigate to IELTS Writing Test interface
+      navigate(`/ielts-writing-test/${test.id}`);
     } else if (skill === 'speaking') {
       navigate(`/speaking-test/${test.id}`);
     } else {
@@ -171,7 +206,7 @@ const IELTSSkillTests = () => {
           {tests.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {tests.map((test) => {
-                const result = userResults[test.test_name];
+                const result = userResults[test.test_name] || userResults[test.cambridge_book];
                 const hasResult = !!result;
                 const band = hasResult ? percentageToIELTSBand(result.score_percentage) : null;
                 
@@ -194,6 +229,13 @@ const IELTSSkillTests = () => {
                       <p className="text-sm text-muted-foreground">
                         Created: {new Date(test.created_at).toLocaleDateString()}
                       </p>
+                      
+                      {/* Show writing tasks info if available */}
+                      {skill === 'writing' && test.prompts && (
+                        <div className="text-xs text-muted-foreground">
+                          {test.prompts.length} tasks • Task 1 & Task 2
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex justify-between items-center text-sm">

@@ -105,7 +105,60 @@ const IELTSWritingTestInterface = () => {
   }, [testId]);
   const loadTestData = async () => {
     try {
-      // Load test details
+      // Check if this is a writing prompt test (starts with "writing-")
+      if (testId?.startsWith('writing-')) {
+        // Extract cambridge_book and test_number from the ID
+        const parts = testId.split('-');
+        if (parts.length >= 3) {
+          const cambridgeBook = parts[1];
+          const testNumber = parts[2];
+          
+          // Load writing prompts directly
+          const { data: writingPrompts, error: promptsError } = await supabase
+            .from('writing_prompts')
+            .select('*')
+            .eq('cambridge_book', cambridgeBook)
+            .eq('test_number', parseInt(testNumber))
+            .order('task_number');
+
+          if (promptsError) throw promptsError;
+
+          // Create mock test data
+          setTest({
+            id: testId,
+            test_name: `${cambridgeBook} Test ${testNumber}`,
+            test_type: 'IELTS Writing',
+            cambridge_book: cambridgeBook,
+            test_number: testNumber
+          });
+
+          // Map writing prompts to tasks
+          const task1Prompt = writingPrompts?.find(p => p.task_number === 1);
+          const task2Prompt = writingPrompts?.find(p => p.task_number === 2);
+
+          if (task1Prompt) {
+            setTask1({
+              id: task1Prompt.id,
+              title: task1Prompt.title || "Task 1 - Data Description",
+              instructions: task1Prompt.prompt_text || "",
+              imageUrl: task1Prompt.image_url || "",
+              imageContext: ""
+            });
+          }
+
+          if (task2Prompt) {
+            setTask2({
+              id: task2Prompt.id,
+              title: task2Prompt.title || "Task 2 - Essay Writing",
+              instructions: task2Prompt.prompt_text || ""
+            });
+          }
+          
+          return; // Exit early for writing prompt tests
+        }
+      }
+
+      // Original logic for regular tests
       const {
         data: testData,
         error: testError
@@ -381,7 +434,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </div>
               
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate(`/ielts-test-modules/${testId}`)} className="rounded-xl">
+                <Button variant="outline" size="sm" onClick={() => navigate('/ielts/writing')} className="rounded-xl">
                   Exit
                 </Button>
                 <Button variant={currentTask === 1 ? "default" : "outline"} size="sm" onClick={() => switchToTask(1)} className="rounded-xl">

@@ -215,10 +215,7 @@ const AdminIELTSWritingTest = () => {
         }
       }
 
-      // Reload test data to check if both tasks are completed
-      await loadTestData();
-      
-      // If both tasks are now completed, lock the content
+      // Check if both tasks are now completed to lock the content
       const { data: questionsCheck } = await supabase
         .from('questions')
         .select('*')
@@ -226,6 +223,7 @@ const AdminIELTSWritingTest = () => {
         .in('question_type', ['Task 1', 'Task 2']);
       
       if (questionsCheck && questionsCheck.length === 2) {
+        setIsLocked(true);
         setIsModifying(false);
       }
       

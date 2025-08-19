@@ -340,7 +340,7 @@ const IELTSPortal = () => {
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
                   return (
-                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skill-practice/${skill.slug}`)}>
+                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skills/${skill.slug}`)}>
                       <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
                         <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
                         

@@ -258,13 +258,7 @@ const IELTSPortal = () => {
 
   const handleSkillPractice = (skillId: string) => {
     console.log(`🚀 Starting IELTS ${skillId} practice`);
-    if (skillId === 'writing') {
-      document.getElementById('writing-tests')?.scrollIntoView({
-        behavior: 'smooth'
-      });
-    } else {
-      navigate(`/${skillId}`);
-    }
+    navigate(`/ielts/${skillId}`);
   };
 
   const handleTestClick = (testId: string) => {
@@ -301,17 +295,41 @@ const IELTSPortal = () => {
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                {IELTS_SKILLS.map((skill) => {
+                {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
+                  // Animal photos for skills
+                  const skillAnimalPhotos = [
+                    '/panda.png',    // Reading
+                    '/koala.png',    // Listening  
+                    '/cat.png',      // Writing
+                    '/puppy.png'     // Speaking
+                  ];
+                  
+                  const animalImage = skillAnimalPhotos[index];
+                  
                   return (
                     <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
-                      <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
-                        <h3 className="font-semibold text-sm md:text-base">{skill.title}</h3>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-3 mb-2">
+                          <img 
+                            src={animalImage} 
+                            alt={`${skill.title} mascot`}
+                            className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
+                          />
+                          <CardTitle className="text-base md:text-lg flex-1">
+                            {skill.title}
+                          </CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="text-xs md:text-sm text-muted-foreground mb-3">
+                          <p>{skill.description}</p>
+                        </div>
                         
                         {progress && (
-                          <div className="mt-3 space-y-2">
+                          <div className="mb-3 space-y-2">
                             <div className="text-xs text-muted-foreground">
                               ({progress.completed}/{progress.total} Completed)
                             </div>
@@ -320,10 +338,17 @@ const IELTSPortal = () => {
                         )}
                         
                         {skillBands[skill.id] && skill.id !== 'speaking' && (
-                          <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mt-2">
+                          <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mb-3">
                             Last: {skillBands[skill.id]}
                           </div>
                         )}
+                        
+                        <Button 
+                          className="w-full" 
+                          size="sm"
+                        >
+                          Start Practice
+                        </Button>
                       </CardContent>
                     </Card>
                   );

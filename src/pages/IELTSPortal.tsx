@@ -368,36 +368,70 @@ const IELTSPortal = () => {
                 </div>
               ) : availableTests.length > 0 ? (
                 <div className="flex overflow-x-auto pb-5 gap-3 md:gap-4" style={{ scrollbarWidth: 'thin' }}>
-                  {availableTests.map((test) => (
-                    <Card 
-                      key={test.id} 
-                      className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm flex-shrink-0 w-64 md:w-72" 
-                      onClick={() => handleTestClick(test.id)}
-                    >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base md:text-lg flex justify-between items-center">
-                          <span>Test {test.test_number}</span>
-                          {test.comingSoon && (
-                            <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
-                              Coming Soon
-                            </span>
-                          )}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="text-xs md:text-sm text-muted-foreground mb-3">
-                          <p>{test.test_name}</p>
-                        </div>
-                        <Button 
-                          className="w-full mt-3" 
-                          size="sm" 
-                          disabled={test.comingSoon}
-                        >
-                          {test.comingSoon ? 'Coming Soon' : 'Start Test'}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {availableTests.map((test, index) => {
+                    // Animal photos array - cycling through available animals
+                    const animalPhotos = [
+                      '/panda.png',
+                      '/koala.png', 
+                      '/cat.png',
+                      '/puppy.png',
+                      '/rabbit.png',
+                      '/bear.png',
+                      '/fox.png',
+                      '/hedgehog.png',
+                      '/otter.png',
+                      '/seal.png',
+                      '/chick.png',
+                      '/duck.png',
+                      '/Hamster.png',
+                      '/Monkey.png',
+                      '/Penguine.png',
+                      '/dear.png',
+                      '/piglet.png',
+                      '/polar bear.png',
+                      '/squerrel.png'
+                    ];
+                    
+                    const animalImage = animalPhotos[index % animalPhotos.length];
+                    
+                    return (
+                      <Card 
+                        key={test.id} 
+                        className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm flex-shrink-0 w-64 md:w-72" 
+                        onClick={() => handleTestClick(test.id)}
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center gap-3 mb-2">
+                            <img 
+                              src={animalImage} 
+                              alt={`Test ${test.test_number} mascot`}
+                              className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
+                            />
+                            <CardTitle className="text-base md:text-lg flex-1 flex justify-between items-center">
+                              <span>Test {test.test_number}</span>
+                              {test.comingSoon && (
+                                <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
+                                  Coming Soon
+                                </span>
+                              )}
+                            </CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="text-xs md:text-sm text-muted-foreground mb-3">
+                            <p>{test.test_name}</p>
+                          </div>
+                          <Button 
+                            className="w-full mt-3" 
+                            size="sm" 
+                            disabled={test.comingSoon}
+                          >
+                            {test.comingSoon ? 'Coming Soon' : 'Start Test'}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
                 <Card className="bg-card/80 backdrop-blur-sm">

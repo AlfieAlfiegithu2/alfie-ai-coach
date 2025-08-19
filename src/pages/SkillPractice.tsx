@@ -8,7 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PronunciationPracticeItem from "@/components/PronunciationPracticeItem";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
-import VocabularyMapGrid from "@/components/VocabularyMapGrid";
+import VocabularyMapView from "@/components/VocabularyMapView";
+import GrammarMapView from "@/components/GrammarMapView";
+import ParaphrasingMapView from "@/components/ParaphrasingMapView";
+import SentenceScrambleMapView from "@/components/SentenceScrambleMapView";
+import ListeningMapView from "@/components/ListeningMapView";
+import SynonymMapView from "@/components/SynonymMapView";
+import CollocationMapView from "@/components/CollocationMapView";
 const db = supabase as any;
 
 interface Question {
@@ -243,53 +249,32 @@ const [overallSummary, setOverallSummary] = useState<string>("");
       </StudentLayout>
     );
   }
-  if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble" || slug === "listening-for-details") {
-    if (slug === "vocabulary-builder") {
-      return (
-        <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
-          <section className="max-w-4xl mx-auto space-y-3">
-            <VocabularyMapGrid />
-          </section>
-        </StudentLayout>
-      );
-    }
-    return (
-      <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
-          <section className="max-w-3xl mx-auto">
-            {tests.length === 0 ? (
-              <Card className="border-light-border">
-                <CardContent className="p-4">
-                  <p className="text-muted-foreground text-sm">No tests yet. Please check back soon.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-light-border">
-                <CardContent className="p-4">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {tests.map((t) => {
-                      const path = slug === "grammar-fix-it"
-                        ? `/skills/grammar-fix-it/test/${t.id}`
-                        : slug === "paraphrasing-challenge"
-                          ? `/skills/paraphrasing-challenge/test/${t.id}`
-                          : slug === "sentence-structure-scramble"
-                            ? `/skills/sentence-structure-scramble/test/${t.id}`
-                            : `/skills/listening-for-details/test/${t.id}`;
-                      return (
-                        <Card key={t.id} className="border-light-border h-full">
-                          <CardContent className="p-4 flex flex-col items-start gap-3">
-                            <p className="font-medium whitespace-normal break-words">{t.title}</p>
-                            <Button size="sm" onClick={() => navigate(path)}>Start</Button>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </section>
-      </StudentLayout>
-    );
+  if (slug === "vocabulary-builder") {
+    return <VocabularyMapView />;
+  }
+  
+  if (slug === "grammar-fix-it") {
+    return <GrammarMapView />;
+  }
+  
+  if (slug === "paraphrasing-challenge") {
+    return <ParaphrasingMapView />;
+  }
+  
+  if (slug === "sentence-structure-scramble") {
+    return <SentenceScrambleMapView />;
+  }
+  
+  if (slug === "listening-for-details") {
+    return <ListeningMapView />;
+  }
+  
+  if (slug === "synonym-match") {
+    return <SynonymMapView />;
+  }
+  
+  if (slug === "collocation-connect") {
+    return <CollocationMapView />;
   }
 
   return (

@@ -25,14 +25,16 @@ const AdminIELTSWritingTest = () => {
     title: "",
     instructions: "",
     imageUrl: "",
-    imageContext: ""
+    imageContext: "",
+    modelAnswer: ""
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [task2, setTask2] = useState({
     id: null,
     title: "",
-    instructions: ""
+    instructions: "",
+    modelAnswer: ""
   });
   const [isLocked, setIsLocked] = useState(false);
   const [isModifying, setIsModifying] = useState(false);
@@ -75,7 +77,8 @@ const AdminIELTSWritingTest = () => {
           title: task1Question.question_text || "",
           instructions: task1Question.passage_text || "",
           imageUrl: task1Question.image_url || "",
-          imageContext: task1Question.explanation || ""
+          imageContext: task1Question.explanation || "",
+          modelAnswer: task1Question.transcription || ""
         });
       }
 
@@ -83,7 +86,8 @@ const AdminIELTSWritingTest = () => {
         setTask2({
           id: task2Question.id,
           title: task2Question.question_text || "",
-          instructions: task2Question.passage_text || ""
+          instructions: task2Question.passage_text || "",
+          modelAnswer: task2Question.transcription || ""
         });
       }
 
@@ -182,6 +186,7 @@ const AdminIELTSWritingTest = () => {
         passage_text: taskData.instructions,
         question_type: `Task ${taskNumber}`,
         correct_answer: "N/A", // Required field
+        transcription: taskData.modelAnswer, // Store model answer in transcription field
         ...(taskNumber === 1 && {
           image_url: task1.imageUrl,
           explanation: task1.imageContext
@@ -382,6 +387,21 @@ const AdminIELTSWritingTest = () => {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="task1-model-answer">Model Answer (Optional)</Label>
+              <Textarea
+                id="task1-model-answer"
+                rows={6}
+                value={task1.modelAnswer}
+                onChange={(e) => setTask1(prev => ({ ...prev, modelAnswer: e.target.value }))}
+                placeholder="Provide a high-band sample answer for Task 1 that students can view after completing the test..."
+                disabled={isLocked && !isModifying}
+              />
+              <p className="text-xs text-muted-foreground">
+                This model answer will be shown to students after they complete the test
+              </p>
+            </div>
+
             <Button 
               onClick={() => saveTask(1)}
               disabled={loading || (isLocked && !isModifying)}
@@ -428,6 +448,21 @@ const AdminIELTSWritingTest = () => {
                 placeholder="Write the complete essay question and instructions here..."
                 disabled={isLocked && !isModifying}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task2-model-answer">Model Answer (Optional)</Label>
+              <Textarea
+                id="task2-model-answer"
+                rows={8}
+                value={task2.modelAnswer}
+                onChange={(e) => setTask2(prev => ({ ...prev, modelAnswer: e.target.value }))}
+                placeholder="Provide a high-band sample essay for Task 2 that students can view after completing the test..."
+                disabled={isLocked && !isModifying}
+              />
+              <p className="text-xs text-muted-foreground">
+                This model answer will be shown to students after they complete the test
+              </p>
             </div>
 
             <Button 

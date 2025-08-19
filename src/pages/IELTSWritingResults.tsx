@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Star, ArrowLeft, Download, Share2, Trophy, Target, Book, MessageSquare, Edit3 } from "lucide-react";
+import { CheckCircle, Star, ArrowLeft, Download, Share2, Trophy, Target, Book, MessageSquare, Edit3, BookOpen } from "lucide-react";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import LightRays from "@/components/animations/LightRays";
 import AnnotatedWritingText from "@/components/AnnotatedWritingText";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const IELTSWritingResults = () => {
   const location = useLocation();
@@ -21,8 +23,46 @@ const IELTSWritingResults = () => {
     task2Data,
     task1WordCount,
     task2WordCount,
-    structured
+    structured,
+    testId // Added testId to get model answers
   } = location.state || {};
+
+  const [modelAnswers, setModelAnswers] = useState<{
+    task1: string | null;
+    task2: string | null;
+  }>({ task1: null, task2: null });
+
+  useEffect(() => {
+    // Fetch model answers if testId is available
+    const fetchModelAnswers = async () => {
+      if (testId) {
+        try {
+          const { data, error } = await supabase
+            .from('questions')
+            .select('part_number, transcription')
+            .eq('test_id', testId)
+            .in('question_type', ['Task 1', 'Task 2']);
+
+          if (error) {
+            console.error('Error fetching model answers:', error);
+            return;
+          }
+
+          const task1Model = data?.find(q => q.part_number === 1)?.transcription;
+          const task2Model = data?.find(q => q.part_number === 2)?.transcription;
+
+          setModelAnswers({
+            task1: task1Model || null,
+            task2: task2Model || null
+          });
+        } catch (error) {
+          console.error('Error fetching model answers:', error);
+        }
+      }
+    };
+
+    fetchModelAnswers();
+  }, [testId]);
 
   if (!feedback) {
     navigate('/dashboard');
@@ -473,6 +513,64 @@ const IELTSWritingResults = () => {
             colorScheme="text-brand-purple"
           />
         </div>
+
+        {/* Model Answers Section */}
+        {(modelAnswers.task1 || modelAnswers.task2) && (
+          <div className="mb-8">
+            <Card className="border-2 border-brand-green/20 card-elevated">
+              <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
+                <CardTitle className="flex items-center gap-2 text-brand-green">
+                  <div className="p-2 rounded-xl bg-brand-green/10">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  High-Band Model Answers
+                </CardTitle>
+                <p className="text-body">
+                  Study these exemplar responses to understand what high-scoring answers look like
+                </p>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {modelAnswers.task1 && (
+                    <div>
+                      <h3 className="text-xl font-semibold text-brand-blue mb-4 flex items-center gap-2">
+                        <Target className="w-5 h-5" />
+                        Task 1 Model Answer
+                      </h3>
+                      <div className="bg-surface-3 rounded-xl p-4 border-l-4 border-brand-blue">
+                        <div className="prose prose-sm max-w-none text-text-secondary whitespace-pre-wrap">
+                          {modelAnswers.task1}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {modelAnswers.task2 && (
+                    <div>
+                      <h3 className="text-xl font-semibold text-brand-purple mb-4 flex items-center gap-2">
+                        <Edit3 className="w-5 h-5" />
+                        Task 2 Model Answer
+                      </h3>
+                      <div className="bg-surface-3 rounded-xl p-4 border-l-4 border-brand-purple">
+                        <div className="prose prose-sm max-w-none text-text-secondary whitespace-pre-wrap">
+                          {modelAnswers.task2}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-6 p-4 bg-brand-green/5 rounded-xl border border-brand-green/20">
+                  <p className="text-sm text-text-secondary">
+                    <strong>Study Tip:</strong> Compare your answers with these model responses. Notice the structure, 
+                    vocabulary choices, and how ideas are developed and connected. This will help you understand 
+                    what examiners look for in high-band responses.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">

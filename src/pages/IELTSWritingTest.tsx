@@ -310,6 +310,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       navigate('/ielts-writing-results-pro', {
         state: {
           testName: test?.test_name,
+          testId: testId, // Added testId for model answers
           task1Answer,
           task2Answer,
           feedback: examinerResponse.data.feedback,

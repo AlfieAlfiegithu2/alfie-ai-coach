@@ -222,7 +222,7 @@ const VocabularyQuiz = () => {
 
           {!finished && (
             <div className="w-full max-w-3xl md:max-w-4xl lg:max-w-5xl flex justify-end -mt-2">
-              <Button variant="outline" onClick={() => navigate('/vocabulary/map')}>Quit to Map</Button>
+              <Button variant="outline" onClick={() => navigate('/skills/vocabulary-builder')}>Quit to Map</Button>
             </div>
           )}
 
@@ -261,7 +261,7 @@ const VocabularyQuiz = () => {
 
                 <div className="flex gap-2 justify-center">
                   <Button onClick={() => { setIdx(0); setScore(0); setSelected(null); setFinished(false); setAttempts([]); }}>Retry</Button>
-                  <Button variant="secondary" onClick={() => navigate("/vocabulary/map")}>Back to Map</Button>
+                  <Button variant="secondary" onClick={() => navigate("/skills/vocabulary-builder")}>Back to Map</Button>
                 </div>
               </CardContent>
             </Card>

@@ -383,7 +383,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         </div>
 
         {/* Main Content Layout */}
-        {currentTask === 1 && currentTaskData?.imageUrl ? <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
+        {currentTask === 1 ? (
+          currentTaskData?.imageUrl ? <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
             <ResizablePanel defaultSize={55} minSize={40}>
               <Card className="glass-card rounded-3xl h-full">
                 
@@ -435,7 +436,77 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </CardContent>
               </Card>
             </ResizablePanel>
-          </ResizablePanelGroup> : <div className="space-y-6">
+          </ResizablePanelGroup> : 
+          // Task 1 without image - show instructions above answer
+          <div className="space-y-6">
+            <Card className="glass-card rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-slate-950 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5" />
+                  Task 1 Instructions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {currentTaskData.title && (
+                    <h3 className="font-semibold text-foreground">{currentTaskData.title}</h3>
+                  )}
+                  {currentTaskData.instructions && (
+                    <div className="text-foreground whitespace-pre-wrap leading-relaxed">
+                      {currentTaskData.instructions}
+                    </div>
+                  )}
+                  {currentTaskData.imageContext && (
+                    <div className="text-sm text-muted-foreground italic">
+                      Image Context: {currentTaskData.imageContext}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Answer Section for Task 1 */}
+            <Card className="glass-card rounded-3xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-slate-950">Your Answer - Task 1</CardTitle>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-slate-950">Words: {getWordCount(task1Answer)}</span>
+                    <span className={getWordCount(task1Answer) >= 150 ? "text-green-400" : "text-orange-400"}>
+                      Min: 150
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Textarea 
+                  value={task1Answer} 
+                  onChange={e => setTask1Answer(e.target.value)} 
+                  placeholder="Write your Task 1 answer here..." 
+                  className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" 
+                />
+                <div className="flex justify-between items-center mt-4">
+                  <div className="text-sm">
+                    {getWordCount(task1Answer) >= 150 ? (
+                      <span className="text-green-400">✓ Word count requirement met</span>
+                    ) : (
+                      <span className="text-orange-400">
+                        {150 - getWordCount(task1Answer)} more words needed
+                      </span>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={proceedToTask2} 
+                    disabled={!task1Answer.trim()} 
+                    className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm"
+                  >
+                    Continue to Task 2
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : <div className="space-y-6">
             {/* Task 2 Question/Instructions - Show above answer */}
             {currentTask === 2 && currentTaskData && <Card className="glass-card rounded-3xl">
                 <CardHeader>
@@ -462,29 +533,29 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             <Card className="glass-card rounded-3xl">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-slate-950">Your Answer - Task {currentTask}</CardTitle>
+                <CardTitle className="text-slate-950">Your Answer - Task 2</CardTitle>
                 <div className="flex items-center gap-4 text-sm text-white/80">
-                  <span className="text-slate-950">Words: {getWordCount(currentAnswer)}</span>
-                  <span className={getWordCount(currentAnswer) >= (currentTask === 1 ? 150 : 250) ? "text-green-400" : "text-orange-400"}>
-                    Min: {currentTask === 1 ? '150' : '250'}
+                  <span className="text-slate-950">Words: {getWordCount(task2Answer)}</span>
+                  <span className={getWordCount(task2Answer) >= 250 ? "text-green-400" : "text-orange-400"}>
+                    Min: 250
                   </span>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <Textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)} placeholder={`Write your Task ${currentTask} answer here...`} className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
+              <Textarea value={task2Answer} onChange={e => setTask2Answer(e.target.value)} placeholder="Write your Task 2 answer here..." className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
               <div className="flex justify-between items-center mt-4">
                 <div className="text-sm text-white/80">
-                  {getWordCount(currentAnswer) >= (currentTask === 1 ? 150 : 250) ? <span className="text-green-400">✓ Word count requirement met</span> : <span className="text-orange-400">
-                      {(currentTask === 1 ? 150 : 250) - getWordCount(currentAnswer)} more words needed
+                  {getWordCount(task2Answer) >= 250 ? <span className="text-green-400">✓ Word count requirement met</span> : <span className="text-orange-400">
+                      {250 - getWordCount(task2Answer)} more words needed
                     </span>}
                 </div>
-                {currentTask === 2 && <Button onClick={submitTest} disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm">
+                <Button onClick={submitTest} disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm">
                     {isSubmitting ? <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                         Submitting...
                       </> : 'Submit for Feedback'}
-                  </Button>}
+                  </Button>
               </div>
             </CardContent>
             </Card>

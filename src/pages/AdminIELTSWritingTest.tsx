@@ -22,7 +22,6 @@ const AdminIELTSWritingTest = () => {
   const [test, setTest] = useState<any>(null);
   const [task1, setTask1] = useState({
     id: null,
-    title: "",
     instructions: "",
     imageUrl: "",
     imageContext: "",
@@ -32,7 +31,6 @@ const AdminIELTSWritingTest = () => {
   const [uploading, setUploading] = useState(false);
   const [task2, setTask2] = useState({
     id: null,
-    title: "",
     instructions: "",
     modelAnswer: ""
   });
@@ -74,7 +72,6 @@ const AdminIELTSWritingTest = () => {
       if (task1Question) {
         setTask1({
           id: task1Question.id,
-          title: task1Question.question_text || "",
           instructions: task1Question.passage_text || "",
           imageUrl: task1Question.image_url || "",
           imageContext: task1Question.explanation || "",
@@ -85,7 +82,6 @@ const AdminIELTSWritingTest = () => {
       if (task2Question) {
         setTask2({
           id: task2Question.id,
-          title: task2Question.question_text || "",
           instructions: task2Question.passage_text || "",
           modelAnswer: task2Question.transcription || ""
         });
@@ -182,7 +178,7 @@ const AdminIELTSWritingTest = () => {
         test_id: testId,
         part_number: taskNumber,
         question_number_in_part: 1,
-        question_text: taskData.title,
+        question_text: `Task ${taskNumber}`, // Use generic task title
         passage_text: taskData.instructions,
         question_type: `Task ${taskNumber}`,
         correct_answer: "N/A", // Required field
@@ -302,21 +298,10 @@ const AdminIELTSWritingTest = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="task1-title">Prompt Title</Label>
-              <Input
-                id="task1-title"
-                value={task1.title}
-                onChange={(e) => setTask1(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g., The chart below shows the number of visitors to a museum..."
-                disabled={isLocked && !isModifying}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="task1-instructions">Instructions</Label>
+              <Label htmlFor="task1-instructions">Task Instructions</Label>
               <Textarea
                 id="task1-instructions"
-                rows={4}
+                rows={6}
                 value={task1.instructions}
                 onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="Write the complete task instructions here..."
@@ -428,21 +413,10 @@ const AdminIELTSWritingTest = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="task2-title">Prompt Title</Label>
-              <Input
-                id="task2-title"
-                value={task2.title}
-                onChange={(e) => setTask2(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g., Some people think that..."
-                disabled={isLocked && !isModifying}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="task2-instructions">Question (Essay Question)</Label>
+              <Label htmlFor="task2-instructions">Essay Question & Instructions</Label>
               <Textarea
                 id="task2-instructions"
-                rows={6}
+                rows={8}
                 value={task2.instructions}
                 onChange={(e) => setTask2(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="Write the complete essay question and instructions here..."

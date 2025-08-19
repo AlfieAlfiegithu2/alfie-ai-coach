@@ -222,7 +222,7 @@ const Dashboard = () => {
               Tests
             </button>
             
-            <button onClick={() => window.open('https://example.com', '_blank')} className="text-slate-600 hover:text-blue-600 transition" style={{
+            <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
               Master English with AI

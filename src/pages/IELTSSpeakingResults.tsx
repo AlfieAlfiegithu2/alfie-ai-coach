@@ -552,7 +552,7 @@ const IELTSSpeakingResults = () => {
                           />
                           <div className="mt-3 flex justify-end">
                             <ElevenLabsVoiceOptimized 
-                              text={suggestion.suggested_spans.map(span => span.text).join('')}
+                              text={suggestion.suggested_spans?.map(span => span?.text || '').filter(Boolean).join('') || ''}
                               className="text-xs"
                               questionId={`suggestion_${analysis.part}_${analysis.questionIndex}`}
                             />

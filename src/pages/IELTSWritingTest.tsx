@@ -599,6 +599,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           onClose={() => setIsDraggableChatOpen(false)}
           taskType={currentTaskData?.title || "IELTS Writing"}
           taskInstructions={currentTaskData?.instructions || ""}
+          initialPosition={{ x: window.innerWidth - 450, y: window.innerHeight - 550 }}
         />
       </div>
     </StudentLayout>

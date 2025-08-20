@@ -17,6 +17,7 @@ interface DraggableChatbotProps {
   taskInstructions: string;
   isVisible: boolean;
   onClose: () => void;
+  initialPosition?: { x: number; y: number };
 }
 
 export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
@@ -24,12 +25,13 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   taskInstructions,
   isVisible,
   onClose,
+  initialPosition,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: 50, y: 50 });
+  const [position, setPosition] = useState(initialPosition || { x: 50, y: 50 });
   const [size, setSize] = useState({ width: 400, height: 500 });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);

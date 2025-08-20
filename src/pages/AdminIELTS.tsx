@@ -347,31 +347,18 @@ const AdminIELTS = () => {
             ].map((item) => (
               <Card
                 key={item.skill}
-                className="hover:shadow-lg transition-shadow"
+                className="hover:shadow-lg transition-all duration-300 cursor-pointer border-border/40 bg-card/50 backdrop-blur-sm hover:bg-card/80"
+                onClick={() => navigate(item.path)}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{item.skill} Tests</CardTitle>
-                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-lg font-semibold">{item.skill} Tests</CardTitle>
+                  <item.icon className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className="text-xs text-muted-foreground">Manage {item.skill.toLowerCase()} test content and settings</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => navigate(item.path)}
-                    >
-                      View All
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={item.createTest}
-                      disabled={isCreating}
-                    >
-                      {isCreating ? "..." : "New Test"}
-                    </Button>
+                  <p className="text-sm text-muted-foreground">Manage {item.skill.toLowerCase()} test content and settings</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Click to manage tests</span>
+                    <span className="text-primary font-medium">→</span>
                   </div>
                 </CardContent>
               </Card>

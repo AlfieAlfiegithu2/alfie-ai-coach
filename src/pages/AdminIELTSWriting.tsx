@@ -36,7 +36,8 @@ const AdminIELTSWriting = () => {
       const { data, error } = await supabase
         .from('tests')
         .select('*')
-        .ilike('test_type', 'IELTS')
+        .eq('test_type', 'IELTS')
+        .eq('skill_category', 'Writing')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -55,7 +56,8 @@ const AdminIELTSWriting = () => {
       const { count } = await supabase
         .from('tests')
         .select('*', { count: 'exact', head: true })
-        .ilike('test_type', 'IELTS');
+        .eq('test_type', 'IELTS')
+        .eq('skill_category', 'Writing');
 
       const newTestNumber = (count || 0) + 1;
       

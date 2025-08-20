@@ -56,7 +56,7 @@ const AdminIELTSListeningDashboard = () => {
 
       // Filter for IELTS Listening tests
       const ieltsListeningTests = allTests.filter((test: any) => 
-        test.test_type === 'IELTS' && test.module === 'Listening'
+        test.test_type === 'IELTS' && test.skill_category === 'Listening'
       );
 
       // Group by test number to create test list
@@ -135,7 +135,8 @@ const AdminIELTSListeningDashboard = () => {
       const testData = {
         test_name: newTestName,
         test_type: 'IELTS',
-        module: 'Listening',
+        module: 'academic',
+        skill_category: 'Listening',
         test_number: nextNumber,
         status: 'incomplete',
         parts_completed: 0,

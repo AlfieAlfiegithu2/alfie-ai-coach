@@ -584,13 +584,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           </Card>
         )}
 
-        {/* Floating Catbot Button */}
+        {/* Floating Foxbot Button */}
         {!isDraggableChatOpen && (
           <Button 
             onClick={() => setIsDraggableChatOpen(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transform hover:scale-110 transition-all duration-300 z-40"
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg bg-muted hover:bg-muted/80 transform hover:scale-110 transition-all duration-300 z-40"
           >
-            <img src="/lovable-uploads/a3837ac0-0724-473b-a728-8177e3de04e4.png" alt="Catbot" className="w-8 h-8 rounded-full object-cover" />
+            <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-10 h-10 rounded-full object-cover" />
           </Button>
         )}
 

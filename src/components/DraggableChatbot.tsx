@@ -43,7 +43,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     if (isVisible && messages.length === 0) {
       const welcomeMessage: Message = {
         id: Date.now().toString(),
-        text: `Hi! I'm Catbot, your IELTS Writing assistant for ${taskType}. I can help you with vocabulary, structure, grammar, and writing techniques. How can I assist you today?`,
+        text: `Hi! I'm Foxbot, your IELTS Writing assistant for ${taskType}. I can help you with vocabulary, structure, grammar, and writing techniques. How can I assist you today?`,
         isUser: false,
         timestamp: new Date(),
       };
@@ -135,7 +135,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
           messages: [
             {
               role: 'system',
-              content: `You are Catbot, an expert IELTS Writing tutor. You're helping with ${taskType}. Task instructions: ${taskInstructions}. Provide helpful, concise advice on vocabulary, grammar, structure, and writing techniques.`
+              content: `You are Foxbot, an expert IELTS Writing tutor. You're helping with ${taskType}. Task instructions: ${taskInstructions}. Provide helpful, concise advice on vocabulary, grammar, structure, and writing techniques.`
             },
             {
               role: 'user',
@@ -210,12 +210,12 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
       <Card className="bg-background/95 backdrop-blur-sm border-2 border-primary/20 shadow-2xl">
         {/* Header */}
         <div 
-          className="drag-handle flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-lg cursor-move"
+          className="drag-handle flex items-center justify-between p-3 bg-muted/30 rounded-t-lg cursor-move"
           onMouseDown={(e) => handleMouseDown(e, 'drag')}
         >
           <div className="flex items-center gap-2">
-            <img src="/lovable-uploads/a3837ac0-0724-473b-a728-8177e3de04e4.png" alt="Catbot" className="w-6 h-6 rounded-full object-cover" />
-            <span className="font-semibold text-sm">Catbot Assistant</span>
+            <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-8 h-8 rounded-full object-cover" />
+            <span className="font-semibold text-sm">Foxbot Assistant</span>
             <Move className="w-3 h-3 text-muted-foreground ml-1" />
           </div>
           <div className="flex items-center gap-1">

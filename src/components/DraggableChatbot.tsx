@@ -36,6 +36,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeOffset, setResizeOffset] = useState({ x: 0, y: 0 });
   const [isBlinking, setIsBlinking] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,24 +53,27 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     }
   }, [isVisible, taskType, messages.length]);
 
-  // Stop blinking after 3 seconds
+  // Stop blinking after 3 seconds - only once when component first loads
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && !hasInitialized) {
+      setHasInitialized(true);
       const timer = setTimeout(() => {
         setIsBlinking(false);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [isVisible]);
+  }, [isVisible, hasInitialized]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent text selection
     if (e.target instanceof HTMLElement) {
       if (e.target.closest('.drag-handle')) {
         setIsDragging(true);
+        document.body.style.userSelect = 'none'; // Prevent text selection globally
         const rect = chatRef.current?.getBoundingClientRect();
         if (rect) {
           setDragOffset({
@@ -79,13 +83,11 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         }
       } else if (e.target.closest('.resize-handle')) {
         setIsResizing(true);
-        const rect = chatRef.current?.getBoundingClientRect();
-        if (rect) {
-          setResizeOffset({
-            x: e.clientX - (rect.left + size.width),
-            y: e.clientY - (rect.top + size.height),
-          });
-        }
+        document.body.style.userSelect = 'none'; // Prevent text selection globally
+        setResizeOffset({
+          x: e.clientX - position.x - size.width,
+          y: e.clientY - position.y - size.height,
+        });
       }
     }
   };
@@ -117,6 +119,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   const handleMouseUp = () => {
     setIsDragging(false);
     setIsResizing(false);
+    document.body.style.userSelect = ''; // Restore text selection
   };
 
   useEffect(() => {
@@ -341,8 +344,8 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         </div>
         
         {/* Resize Handle */}
-        <div className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-50 hover:opacity-100 transition-opacity">
-          <div className="w-full h-full bg-gradient-to-tr from-transparent via-muted-foreground/30 to-muted-foreground/50 rounded-tl-lg"></div>
+        <div className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize opacity-60 hover:opacity-100 transition-opacity">
+          <div className="w-full h-full bg-gradient-to-tr from-transparent via-muted-foreground/40 to-muted-foreground/70 rounded-tl-lg"></div>
         </div>
       </Card>
     </div>

@@ -114,6 +114,18 @@ const IELTSWritingTestInterface = () => {
         .single();
 
       if (testError) throw testError;
+      
+      // Check if this is actually a writing test
+      if (testData.skill_category !== 'Writing') {
+        toast({
+          title: "Wrong Test Type",
+          description: `This is a ${testData.skill_category} test, not a Writing test. Please select a Writing test from the admin panel.`,
+          variant: "destructive",
+        });
+        navigate('/ielts');
+        return;
+      }
+      
       setTest(testData);
 
       // Load questions for this test (IELTS Writing tasks)
@@ -132,8 +144,8 @@ const IELTSWritingTestInterface = () => {
       if (task1Question) {
         setTask1({
           id: task1Question.id,
-          title: task1Question.question_text || "Task 1 - Data Description",
-          instructions: task1Question.passage_text || "",
+          title: "Task 1 - Data Description",
+          instructions: task1Question.question_text || "",
           imageUrl: task1Question.image_url || "",
           imageContext: task1Question.explanation || "",
           modelAnswer: task1Question.transcription || "" // Model answer stored in transcription field
@@ -143,8 +155,8 @@ const IELTSWritingTestInterface = () => {
       if (task2Question) {
         setTask2({
           id: task2Question.id,
-          title: task2Question.question_text || "Task 2 - Essay Writing",
-          instructions: task2Question.passage_text || "",
+          title: "Task 2 - Essay Writing", 
+          instructions: task2Question.question_text || "",
           modelAnswer: task2Question.transcription || "" // Model answer stored in transcription field
         });
       }

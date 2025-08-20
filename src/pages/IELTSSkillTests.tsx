@@ -152,150 +152,86 @@ const IELTSSkillTests = () => {
   }
 
   return (
-    <StudentLayout title={`IELTS ${skillName} Tests`} showBackButton>
-      <div className="space-y-6 max-w-6xl mx-auto px-4">
-        {/* Breadcrumb */}
-        <div className="flex items-center space-x-2 mb-4">
-          <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground px-2 py-1 h-8">
-            <Home className="mr-2 h-4 w-4" /> Home
-          </Button>
-          <span className="text-muted-foreground">/</span>
-          <Button variant="ghost" onClick={() => navigate('/ielts')} className="text-muted-foreground px-2 py-1 h-8">
-            IELTS Tests
-          </Button>
-          <span className="text-muted-foreground">/</span>
-          <span className="text-foreground font-medium">{skillName}</span>
-        </div>
-
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${skillColor} mx-auto flex items-center justify-center`}>
-            <SkillIcon className="h-10 w-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            IELTS {skillName} Tests
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Practice authentic IELTS {skillName.toLowerCase()} tests and track your progress
-          </p>
-        </div>
-
-        {/* Tests Grid */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Available Tests</h2>
-            <Badge variant="outline">{tests.length} tests available</Badge>
-          </div>
-
-          {tests.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tests.map((test) => {
-                const result = userResults[test.test_name] || userResults[test.cambridge_book];
-                const hasResult = !!result;
-                const band = hasResult ? percentageToIELTSBand(result.score_percentage) : null;
-                
-                return (
-                  <Card 
-                    key={test.id}
-                    className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
-                    onClick={() => handleTestStart(test)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center space-x-2">
-                          <SkillIcon className="w-5 h-5 text-primary" />
-                          <span>{test.test_name}</span>
-                        </CardTitle>
-                        {hasResult && (
-                          <Badge variant="secondary">Band {band}</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Created: {new Date(test.created_at).toLocaleDateString()}
-                      </p>
-                      
-                      {/* Show writing tasks info if available */}
-                      {skill === 'writing' && (
-                        <div className="text-xs text-muted-foreground">
-                          {test.questionsCount || 2} tasks • Task 1 & Task 2
-                        </div>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Type:</span>
-                        <span className="font-medium">{test.test_type} {skillName}</span>
-                      </div>
-                      
-                      {hasResult && (
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">Last Score:</span>
-                          <span className="font-medium">{result.score_percentage}%</span>
-                        </div>
-                      )}
-
-                      <Button 
-                        className="w-full" 
-                        size="lg"
-                      >
-                        {hasResult ? 'Retake Test' : 'Start Test'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <SkillIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No {skillName} Tests Available</h3>
-              <p className="text-muted-foreground mb-4">
-                {skillName} tests are being prepared. Check back soon!
-              </p>
-              <Button onClick={() => navigate('/ielts')} variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to IELTS Hub
+    <div className="min-h-screen relative">
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" 
+           style={{
+             backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+             backgroundColor: '#f3f4f6'
+           }} />
+      <div className="relative z-10">
+        <StudentLayout title={`IELTS ${skillName} Tests`} showBackButton>
+          <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="ghost" onClick={() => navigate('/hero')} className="text-text-secondary px-2 py-1 h-8">
+                Home
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/ielts')} className="text-text-secondary px-2 py-1 h-8">
+                IELTS Tests
               </Button>
             </div>
-          )}
-        </div>
 
-        {/* Tips Section */}
-        <div className="bg-muted/50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-3">IELTS {skillName} Tips</h3>
-          <ul className="space-y-2 text-muted-foreground">
-            {skill === 'reading' && (
-              <>
-                <li>• Read the questions before reading the passage</li>
-                <li>• Look for keywords and synonyms in the text</li>
-                <li>• Practice skimming and scanning techniques</li>
-              </>
-            )}
-            {skill === 'listening' && (
-              <>
-                <li>• Read the questions before the audio starts</li>
-                <li>• Listen for keywords and context clues</li>
-                <li>• Use the time between sections wisely</li>
-              </>
-            )}
-            {skill === 'writing' && (
-              <>
-                <li>• Plan your essay structure before writing</li>
-                <li>• Use a variety of vocabulary and grammar structures</li>
-                <li>• Leave time to review and edit your work</li>
-              </>
-            )}
-            {skill === 'speaking' && (
-              <>
-                <li>• Practice speaking clearly and at a natural pace</li>
-                <li>• Extend your answers with examples and explanations</li>
-                <li>• Use a range of vocabulary and expressions</li>
-              </>
-            )}
-          </ul>
-        </div>
+            {/* Header */}
+            <div className="text-center space-y-4 mb-6">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">
+                IELTS {skillName} Tests
+              </h1>
+              <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
+                Practice authentic IELTS {skillName.toLowerCase()} tests and track your progress
+              </p>
+            </div>
+
+            {/* Tests Grid */}
+            <div className="space-y-4">
+              {tests.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  {tests.map((test) => {
+                    const result = userResults[test.test_name] || userResults[test.cambridge_book];
+                    const hasResult = !!result;
+                    const band = hasResult ? percentageToIELTSBand(result.score_percentage) : null;
+                    
+                    return (
+                      <Card 
+                        key={test.id}
+                        className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm"
+                        onClick={() => handleTestStart(test)}
+                      >
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base md:text-lg flex items-center justify-between">
+                            <span>{test.test_name}</span>
+                            {hasResult && (
+                              <Badge variant="secondary" className="text-xs">Band {band}</Badge>
+                            )}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <Button 
+                            className="w-full" 
+                            size="sm"
+                          >
+                            {hasResult ? 'Retake Test' : 'Start Test'}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">No {skillName} Tests Available</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {skillName} tests are being prepared. Check back soon!
+                  </p>
+                  <Button onClick={() => navigate('/ielts')} variant="outline">
+                    Back to IELTS Hub
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </StudentLayout>
       </div>
-    </StudentLayout>
+    </div>
   );
 };
 

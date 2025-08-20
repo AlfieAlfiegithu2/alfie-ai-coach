@@ -38,6 +38,7 @@ const AdminIELTSWriting = () => {
         .select('*')
         .eq('test_type', 'IELTS')
         .eq('skill_category', 'Writing')
+        .eq('test_category', 'individual')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -57,7 +58,8 @@ const AdminIELTSWriting = () => {
         .from('tests')
         .select('*', { count: 'exact', head: true })
         .eq('test_type', 'IELTS')
-        .eq('skill_category', 'Writing');
+        .eq('skill_category', 'Writing')
+        .eq('test_category', 'individual');
 
       const newTestNumber = (count || 0) + 1;
       
@@ -67,7 +69,8 @@ const AdminIELTSWriting = () => {
           test_name: `IELTS Writing Test ${newTestNumber}`,
           test_type: 'IELTS',
           module: 'academic',
-          skill_category: 'Writing'
+          skill_category: 'Writing',
+          test_category: 'individual'
         })
         .select()
         .single();

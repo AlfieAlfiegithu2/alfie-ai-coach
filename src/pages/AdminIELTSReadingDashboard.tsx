@@ -36,7 +36,8 @@ export default function AdminIELTSReadingDashboard() {
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('skill_category', 'Reading') // Individual skill tests
+        .eq('skill_category', 'Reading')
+        .eq('test_category', 'individual') // Individual skill tests
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -58,7 +59,8 @@ export default function AdminIELTSReadingDashboard() {
         .from('tests')
         .select('*', { count: 'exact', head: true })
         .eq('test_type', testType)
-        .eq('skill_category', 'Reading'); // Individual skill test
+        .eq('skill_category', 'Reading')
+        .eq('test_category', 'individual'); // Individual skill test
 
       const newTestNumber = (count || 0) + 1;
       
@@ -68,7 +70,8 @@ export default function AdminIELTSReadingDashboard() {
           test_name: `IELTS Reading Test ${newTestNumber}`,
           test_type: 'IELTS',
           module: 'academic',
-          skill_category: 'Reading'
+          skill_category: 'Reading',
+          test_category: 'individual'
         })
         .select()
         .single();
@@ -123,6 +126,7 @@ export default function AdminIELTSReadingDashboard() {
           .select('*')
           .eq('test_type', 'IELTS')
           .eq('skill_category', 'Reading')
+          .eq('test_category', 'individual')
           .order('created_at', { ascending: false });
         
         if (error) {
@@ -168,6 +172,7 @@ export default function AdminIELTSReadingDashboard() {
           .select('*')
           .eq('test_type', 'IELTS')
           .eq('skill_category', 'Reading')
+          .eq('test_category', 'individual')
           .order('created_at', { ascending: false });
         
         if (error) {

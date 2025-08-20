@@ -7,7 +7,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, BookOpen, ListTree, Clock } from "lucide-react";
+import { Bot, BookOpen, ListTree, Clock, FileText, PenTool } from "lucide-react";
 interface Task {
   id: string;
   title: string;
@@ -55,7 +55,6 @@ const IELTSWritingTestInterface = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1);
   const [isCatbotOpen, setIsCatbotOpen] = useState(false);
 
   // Timer states
@@ -374,31 +373,48 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           </div>
         </div>
 
+        {/* Task Description Section */}
+        <Card className="glass-card rounded-3xl">
+          <CardHeader>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              {currentTaskData?.title || `Task ${currentTask} - ${currentTask === 1 ? 'Data Description' : 'Essay Writing'}`}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-text-secondary">
+                {currentTask === 1 
+                  ? "Task 1 requires students to describe visual information (graphs, charts, tables, etc.)"
+                  : "Task 2 requires students to write an essay presenting arguments, opinions, and examples."
+                }
+              </p>
+              
+              {currentTaskData?.instructions && (
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">Task Instructions</h4>
+                  <div className="text-foreground whitespace-pre-wrap leading-relaxed bg-surface-3 p-4 rounded-lg border border-border">
+                    {currentTaskData.instructions}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Main Content Layout */}
         {currentTask === 1 ? (
-          currentTaskData?.imageUrl ? <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
+          currentTaskData?.imageUrl ? <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]")
             <ResizablePanel defaultSize={55} minSize={40}>
               <Card className="glass-card rounded-3xl h-full">
                 
-                <CardContent className="h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex gap-2 items-center">
-                      <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.max(1, Number((s - 0.25).toFixed(2))))}>-</Button>
-                      
-                      <Button variant="outline" size="sm" onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}>+</Button>
-                      
-                    </div>
-                  </div>
-                  <div className="h-[500px] overflow-auto rounded-lg border border-border bg-background p-2">
+                <CardContent className="h-full p-6">
+                  <div className="h-full overflow-auto rounded-2xl border border-border bg-surface-3 p-4">
                     <div className="flex items-center justify-center min-h-full">
                       <img 
                         src={currentTaskData.imageUrl} 
                         alt="Task 1 visual data" 
-                        className="max-w-full max-h-full object-contain"
-                        style={{
-                          transform: `scale(${zoomScale})`,
-                          transformOrigin: 'center'
-                        }} 
+                        className="max-w-full max-h-full object-contain rounded-lg"
                       />
                     </div>
                   </div>
@@ -412,13 +428,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <Card className="glass-card rounded-3xl h-full">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-text-tertiary">
                       Words: {getWordCount(task1Answer)} • Min: 150
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="h-full">
-                  <Textarea value={task1Answer} onChange={e => setTask1Answer(e.target.value)} placeholder="Write here while viewing the larger image..." className="h-[450px] text-base leading-relaxed resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" />
+                  <Textarea value={task1Answer} onChange={e => setTask1Answer(e.target.value)} placeholder="Write your description here..." className="h-[450px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" />
                   <div className="flex justify-between items-center mt-4">
                     <div className="text-sm">
                       {getWordCount(task1Answer) >= 150 ? <span className="text-green-400">✓ Word count requirement met</span> : <span className="text-orange-400">
@@ -437,26 +453,23 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <div className="space-y-6">
             <Card className="glass-card rounded-3xl">
               <CardHeader>
-                <CardTitle className="text-slate-950 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" />
-                  Task 1 Instructions
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  {currentTaskData.title}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {currentTaskData.title && (
-                    <h3 className="font-semibold text-foreground">{currentTaskData.title}</h3>
-                  )}
-                  {currentTaskData.instructions && (
-                    <div className="text-foreground whitespace-pre-wrap leading-relaxed">
+                  <p className="text-text-secondary">
+                    Task 1 requires students to describe visual information (graphs, charts, tables, etc.)
+                  </p>
+                  
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Task Instructions</h4>
+                    <div className="text-foreground whitespace-pre-wrap leading-relaxed bg-surface-3 p-4 rounded-lg border border-border">
                       {currentTaskData.instructions}
                     </div>
-                  )}
-                  {currentTaskData.imageContext && (
-                    <div className="text-sm text-muted-foreground italic">
-                      Image Context: {currentTaskData.imageContext}
-                    </div>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -465,10 +478,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             <Card className="glass-card rounded-3xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-slate-950">Your Answer - Task 1</CardTitle>
+                  <CardTitle className="text-foreground">Your Answer - Task 1</CardTitle>
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="text-slate-950">Words: {getWordCount(task1Answer)}</span>
-                    <span className={getWordCount(task1Answer) >= 150 ? "text-green-400" : "text-orange-400"}>
+                    <span className="text-text-secondary">Words: {getWordCount(task1Answer)}</span>
+                    <span className={getWordCount(task1Answer) >= 150 ? "text-brand-green" : "text-brand-orange"}>
                       Min: 150
                     </span>
                   </div>
@@ -478,15 +491,15 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <Textarea 
                   value={task1Answer} 
                   onChange={e => setTask1Answer(e.target.value)} 
-                  placeholder="Write your Task 1 answer here..." 
-                  className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" 
+                  placeholder="Write your description here..." 
+                  className="min-h-[400px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
                 />
                 <div className="flex justify-between items-center mt-4">
                   <div className="text-sm">
                     {getWordCount(task1Answer) >= 150 ? (
-                      <span className="text-green-400">✓ Word count requirement met</span>
+                      <span className="text-brand-green">✓ Word count requirement met</span>
                     ) : (
-                      <span className="text-orange-400">
+                      <span className="text-brand-orange">
                         {150 - getWordCount(task1Answer)} more words needed
                       </span>
                     )}
@@ -494,7 +507,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   <Button 
                     onClick={proceedToTask2} 
                     disabled={!task1Answer.trim()} 
-                    className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm"
+                    variant="default"
                   >
                     Continue to Task 2
                   </Button>
@@ -502,60 +515,64 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </CardContent>
             </Card>
           </div>
-        ) : <div className="space-y-6">
-            {/* Task 2 Question/Instructions - Show above answer */}
-            {currentTask === 2 && currentTaskData && <Card className="glass-card rounded-3xl">
-                <CardHeader>
-                  <CardTitle className="text-slate-950 flex items-center gap-2">
-                    <ListTree className="w-5 h-5" />
-                    Task 2 Question
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {currentTaskData.title && (
-                      <h3 className="font-semibold text-foreground">{currentTaskData.title}</h3>
-                    )}
-                    {currentTaskData.instructions && (
-                      <div className="text-foreground whitespace-pre-wrap leading-relaxed">
-                        {currentTaskData.instructions}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>}
-            
-            {/* Answer Section */}
+        ) : (
+          // Task 2 - Essay Writing
+          <div className="space-y-6">
             <Card className="glass-card rounded-3xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-slate-950">Your Answer - Task 2</CardTitle>
-                <div className="flex items-center gap-4 text-sm text-white/80">
-                  <span className="text-slate-950">Words: {getWordCount(task2Answer)}</span>
-                  <span className={getWordCount(task2Answer) >= 250 ? "text-green-400" : "text-orange-400"}>
-                    Min: 250
-                  </span>
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <PenTool className="w-5 h-5" />
+                  {currentTaskData?.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-text-secondary">
+                    Task 2 requires students to write an essay presenting arguments, opinions, and examples.
+                  </p>
+                  
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Task Instructions</h4>
+                    <div className="text-foreground whitespace-pre-wrap leading-relaxed bg-surface-3 p-4 rounded-lg border border-border">
+                      {currentTaskData?.instructions}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Textarea value={task2Answer} onChange={e => setTask2Answer(e.target.value)} placeholder="Write your Task 2 answer here..." className="min-h-[400px] text-base leading-relaxed resize-none bg-white/90 border-white/20 text-black placeholder:text-gray-500 focus:border-white/40" />
-              <div className="flex justify-between items-center mt-4">
-                <div className="text-sm text-white/80">
-                  {getWordCount(task2Answer) >= 250 ? <span className="text-green-400">✓ Word count requirement met</span> : <span className="text-orange-400">
-                      {250 - getWordCount(task2Answer)} more words needed
-                    </span>}
-                </div>
-                <Button onClick={submitTest} disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} className="bg-green-600/80 hover:bg-green-600 text-white border border-green-500/50 backdrop-blur-sm">
-                    {isSubmitting ? <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                        Submitting...
-                      </> : 'Submit for Feedback'}
-                  </Button>
-              </div>
-            </CardContent>
+              </CardContent>
             </Card>
-          </div>}
+
+            <Card className="glass-card rounded-3xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-text-tertiary">
+                    Words: {getWordCount(task2Answer)} • Min: 250
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Textarea 
+                  value={task2Answer} 
+                  onChange={e => setTask2Answer(e.target.value)} 
+                  placeholder="Write your essay here..." 
+                  className="h-[400px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
+                />
+                <div className="flex justify-between items-center mt-4">
+                  <div className="text-sm">
+                    {getWordCount(task2Answer) >= 250 ? 
+                      <span className="text-brand-green">✓ Word count requirement met</span> : 
+                      <span className="text-brand-orange">
+                        {250 - getWordCount(task2Answer)} more words needed
+                      </span>
+                    }
+                  </div>
+                  <Button onClick={submitTest} disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} variant="default">
+                    {isSubmitting ? "Submitting..." : "Submit Test"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         
         {/* AI Assistant - Floating Bottom Right */}

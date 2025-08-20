@@ -30,8 +30,12 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState({ x: 50, y: 50 });
+  const [size, setSize] = useState({ width: 400, height: 500 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizeOffset, setResizeOffset] = useState({ x: 0, y: 0 });
+  const [isBlinking, setIsBlinking] = useState(true);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,19 +52,40 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     }
   }, [isVisible, taskType, messages.length]);
 
+  // Stop blinking after 3 seconds
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        setIsBlinking(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.target instanceof HTMLElement && e.target.closest('.drag-handle')) {
-      setIsDragging(true);
-      const rect = chatRef.current?.getBoundingClientRect();
-      if (rect) {
-        setDragOffset({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
-        });
+    if (e.target instanceof HTMLElement) {
+      if (e.target.closest('.drag-handle')) {
+        setIsDragging(true);
+        const rect = chatRef.current?.getBoundingClientRect();
+        if (rect) {
+          setDragOffset({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          });
+        }
+      } else if (e.target.closest('.resize-handle')) {
+        setIsResizing(true);
+        const rect = chatRef.current?.getBoundingClientRect();
+        if (rect) {
+          setResizeOffset({
+            x: e.clientX - (rect.left + size.width),
+            y: e.clientY - (rect.top + size.height),
+          });
+        }
       }
     }
   };
@@ -71,22 +96,31 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
       const newY = e.clientY - dragOffset.y;
       
       // Keep within viewport bounds
-      const maxX = window.innerWidth - 400;
-      const maxY = window.innerHeight - 300;
+      const maxX = window.innerWidth - size.width;
+      const maxY = window.innerHeight - size.height;
       
       setPosition({
         x: Math.max(0, Math.min(newX, maxX)),
         y: Math.max(0, Math.min(newY, maxY)),
+      });
+    } else if (isResizing) {
+      const newWidth = Math.max(300, Math.min(600, e.clientX - position.x - resizeOffset.x));
+      const newHeight = Math.max(400, Math.min(700, e.clientY - position.y - resizeOffset.y));
+      
+      setSize({
+        width: newWidth,
+        height: newHeight,
       });
     }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setIsResizing(false);
   };
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -94,7 +128,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, dragOffset]);
+  }, [isDragging, isResizing, dragOffset, resizeOffset]);
 
   const sendMessage = async (message: string) => {
     const userMessage: Message = {
@@ -175,10 +209,12 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   return (
     <div
       ref={chatRef}
-      className="fixed z-50 w-96 transition-all duration-300 ease-in-out"
+      className={`fixed z-50 transition-all duration-300 ease-in-out ${isBlinking ? 'animate-pulse' : ''}`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
         transform: isDragging ? 'rotate(2deg)' : 'rotate(0deg)',
       }}
       onMouseDown={handleMouseDown}
@@ -212,7 +248,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         </div>
 
         {/* Chat Content */}
-        <div className={`transition-all duration-300 ${isMinimized ? 'h-0 overflow-hidden' : 'h-80'}`}>
+        <div className={`transition-all duration-300 flex flex-col ${isMinimized ? 'h-0 overflow-hidden' : ''}`} style={{ height: isMinimized ? '0px' : `${size.height - 54}px` }}>
           {/* Quick Chat Buttons */}
           <div className="p-3 bg-muted/30 border-b">
             <div className="flex gap-2 flex-wrap">
@@ -244,7 +280,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
           </div>
 
           {/* Messages */}
-          <div className="h-48 overflow-y-auto p-3 space-y-3">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -302,6 +338,11 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
               </Button>
             </div>
           </div>
+        </div>
+        
+        {/* Resize Handle */}
+        <div className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-50 hover:opacity-100 transition-opacity">
+          <div className="w-full h-full bg-gradient-to-tr from-transparent via-muted-foreground/30 to-muted-foreground/50 rounded-tl-lg"></div>
         </div>
       </Card>
     </div>

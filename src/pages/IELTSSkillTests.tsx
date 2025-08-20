@@ -48,12 +48,13 @@ const IELTSSkillTests = () => {
     try {
       let testsData = [];
       
-      // Fetch from tests table - unified approach for all skills
+      // Fetch from tests table - unified approach for all skills (individual tests only)
       const { data, error } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
         .eq('skill_category', skillName)
+        .eq('test_category', 'individual')
         .order('created_at', { ascending: true });
 
       if (error) throw error;

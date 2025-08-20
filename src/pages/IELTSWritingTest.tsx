@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
 import { Bot, BookOpen, ListTree, Clock, FileText, PenTool } from "lucide-react";
+
 interface Task {
   id: string;
   title: string;
@@ -16,22 +17,19 @@ interface Task {
   imageContext?: string;
   modelAnswer?: string;
 }
+
 interface ChatMessage {
   id: string;
   type: 'user' | 'bot';
   content: string;
   timestamp: Date;
 }
+
 const IELTSWritingTestInterface = () => {
-  const {
-    testId
-  } = useParams<{
-    testId: string;
-  }>();
+  const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+
   const [test, setTest] = useState<any>(null);
   const [task1, setTask1] = useState<Task | null>(null);
   const [task2, setTask2] = useState<Task | null>(null);
@@ -46,12 +44,14 @@ const IELTSWritingTestInterface = () => {
     content: "Hello! I'm Catbot, your IELTS Writing tutor. I'm here to help you with Task 1 - Data Description. I'll guide you through analyzing charts, graphs, or diagrams and structuring your description. What would you like help with?",
     timestamp: new Date()
   }]);
+  
   const [task2ChatMessages, setTask2ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
     content: "Hello! I'm Catbot, your IELTS Writing tutor. I'm here to help you with Task 2 - Essay Writing. I'll guide you through structuring arguments, developing ideas, and presenting your opinion clearly. What would you like help with?",
     timestamp: new Date()
   }]);
+
   const [newMessage, setNewMessage] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,10 +71,12 @@ const IELTSWritingTestInterface = () => {
     if (saved1 && !task1Answer) setTask1Answer(saved1);
     if (saved2 && !task2Answer) setTask2Answer(saved2);
   }, [testId]);
+
   useEffect(() => {
     if (!testId) return;
     localStorage.setItem(`ielts-writing-draft-${testId}-task1`, task1Answer);
   }, [task1Answer, testId]);
+
   useEffect(() => {
     if (!testId) return;
     localStorage.setItem(`ielts-writing-draft-${testId}-task2`, task2Answer);
@@ -98,11 +100,13 @@ const IELTSWritingTestInterface = () => {
       if (interval) clearInterval(interval);
     };
   }, [timerStarted, timeRemaining]);
+
   useEffect(() => {
     if (testId) {
       loadTestData();
     }
   }, [testId]);
+
   const loadTestData = async () => {
     try {
       // Load test from tests table
@@ -135,7 +139,7 @@ const IELTSWritingTestInterface = () => {
           instructions: task1Question.passage_text || "",
           imageUrl: task1Question.image_url || "",
           imageContext: task1Question.explanation || "",
-          modelAnswer: task1Question.transcription || "" // Model answer stored in transcription field
+          modelAnswer: task1Question.transcription || ""
         });
       }
 
@@ -144,7 +148,7 @@ const IELTSWritingTestInterface = () => {
           id: task2Question.id,
           title: task2Question.question_text || "Task 2 - Essay Writing",
           instructions: task2Question.passage_text || "",
-          modelAnswer: task2Question.transcription || "" // Model answer stored in transcription field
+          modelAnswer: task2Question.transcription || ""
         });
       }
     } catch (error) {
@@ -156,6 +160,7 @@ const IELTSWritingTestInterface = () => {
       });
     }
   };
+
   const getCurrentTask = () => currentTask === 1 ? task1 : task2;
   const getCurrentAnswer = () => currentTask === 1 ? task1Answer : task2Answer;
   const setCurrentAnswer = (value: string) => {
@@ -165,6 +170,7 @@ const IELTSWritingTestInterface = () => {
       setTask2Answer(value);
     }
   };
+
   const getWordCount = (text: string) => {
     return text.trim().split(/\s+/).filter(word => word.length > 0).length;
   };
@@ -178,23 +184,27 @@ const IELTSWritingTestInterface = () => {
       setTask2ChatMessages(messages);
     }
   };
+
   const sendChatMessage = async (messageText?: string) => {
     const message = messageText || newMessage.trim();
     if (!message || isChatLoading) return;
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       type: 'user',
       content: message,
       timestamp: new Date()
     };
+
     setCurrentChatMessages(prev => [...prev, userMessage]);
     if (!messageText) setNewMessage("");
     setIsChatLoading(true);
+
     try {
       const currentTaskData = getCurrentTask();
       if (!currentTaskData) throw new Error('No task data available');
 
-      // Create context-aware prompt for Catbot (shortened to stay under 2000 char limit)
+      // Create context-aware prompt for Catbot
       let contextPrompt = `CONTEXT: The student is working on IELTS Writing Task ${currentTask}.
 
 **Task ${currentTask} Details:**
@@ -211,22 +221,23 @@ const IELTSWritingTestInterface = () => {
       contextPrompt += `\n\n**Student's Question:** "${message}"
 
 Please provide context-aware guidance. If they ask "How do I start?", guide them with leading questions about the specific task. Never write content for them - help them think it through.`;
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('openai-chat', {
+
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           message: contextPrompt,
           context: 'catbot'
         }
       });
+
       if (error) throw error;
+
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'bot',
         content: data.response,
         timestamp: new Date()
       };
+
       setCurrentChatMessages(prev => [...prev, botMessage]);
     } catch (error: any) {
       console.error('Error sending chat message:', error);
@@ -239,9 +250,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       setIsChatLoading(false);
     }
   };
+
   const handleSuggestionClick = (suggestion: string) => {
     sendChatMessage(suggestion);
   };
+
   const proceedToTask2 = () => {
     if (!task1Answer.trim()) {
       toast({
@@ -262,6 +275,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     setTimeRemaining(taskTime);
     setTimerStarted(true);
   };
+
   const submitTest = async () => {
     if (!task1Answer.trim() || !task2Answer.trim()) {
       toast({
@@ -271,6 +285,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       });
       return;
     }
+
     setIsSubmitting(true);
     try {
       // Use the new AI Examiner for comprehensive assessment
@@ -282,13 +297,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           task2Data: task2
         }
       });
+
       if (examinerResponse.error) throw examinerResponse.error;
 
       // Navigate to the enhanced results page
       navigate('/ielts-writing-results-pro', {
         state: {
           testName: test?.test_name,
-          testId: testId, // Added testId for model answers
+          testId: testId,
           task1Answer,
           task2Answer,
           feedback: examinerResponse.data.feedback,
@@ -326,28 +342,33 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       setTimerStarted(true);
     }
   }, [currentTask, timerStarted]);
+
   if (!test || !task1 || !task2) {
-    return <StudentLayout title="IELTS Writing Test" showBackButton>
+    return (
+      <StudentLayout title="IELTS Writing Test" showBackButton>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-sm text-muted-foreground">Loading IELTS Writing test...</p>
+            <p className="mt-2 text-sm text-text-tertiary">Loading IELTS Writing test...</p>
           </div>
         </div>
-      </StudentLayout>;
+      </StudentLayout>
+    );
   }
+
   const currentTaskData = getCurrentTask();
   const currentAnswer = getCurrentAnswer();
-  return <StudentLayout title="IELTS Writing Test" showBackButton>
+
+  return (
+    <StudentLayout title="IELTS Writing Test" showBackButton>
       <div className="space-y-6 relative z-10">
         {/* Test Header */}
         <div className="rounded-2xl border border-light-border p-4" style={{
-        background: 'var(--gradient-card)'
-      }}>
+          background: 'var(--gradient-card)'
+        }}>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-heading-2 mb-1 text-foreground">{test.test_name}</h1>
-              
             </div>
             <div className="flex items-center gap-4">
               {/* Timer */}
@@ -404,86 +425,65 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
         {/* Main Content Layout */}
         {currentTask === 1 ? (
-          currentTaskData?.imageUrl ? <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]")
-            <ResizablePanel defaultSize={55} minSize={40}>
-              <Card className="glass-card rounded-3xl h-full">
-                
-                <CardContent className="h-full p-6">
-                  <div className="h-full overflow-auto rounded-2xl border border-border bg-surface-3 p-4">
-                    <div className="flex items-center justify-center min-h-full">
-                      <img 
-                        src={currentTaskData.imageUrl} 
-                        alt="Task 1 visual data" 
-                        className="max-w-full max-h-full object-contain rounded-lg"
-                      />
+          currentTaskData?.imageUrl ? (
+            <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
+              <ResizablePanel defaultSize={55} minSize={40}>
+                <Card className="glass-card rounded-3xl h-full">
+                  <CardContent className="h-full p-6">
+                    <div className="h-full overflow-auto rounded-2xl border border-border bg-surface-3 p-4">
+                      <div className="flex items-center justify-center min-h-full">
+                        <img 
+                          src={currentTaskData.imageUrl} 
+                          alt="Task 1 visual data" 
+                          className="max-w-full max-h-full object-contain rounded-lg"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </ResizablePanel>
+                  </CardContent>
+                </Card>
+              </ResizablePanel>
 
-            <ResizableHandle withHandle />
+              <ResizableHandle withHandle />
 
-            <ResizablePanel defaultSize={45} minSize={35}>
-              <Card className="glass-card rounded-3xl h-full">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
+              <ResizablePanel defaultSize={45} minSize={35}>
+                <Card className="glass-card rounded-3xl h-full">
+                  <CardHeader>
                     <div className="text-xs text-text-tertiary">
                       Words: {getWordCount(task1Answer)} • Min: 150
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="h-full">
-                  <Textarea value={task1Answer} onChange={e => setTask1Answer(e.target.value)} placeholder="Write your description here..." className="h-[450px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" />
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="text-sm">
-                      {getWordCount(task1Answer) >= 150 ? <span className="text-green-400">✓ Word count requirement met</span> : <span className="text-orange-400">
-                          {150 - getWordCount(task1Answer)} more words needed
-                        </span>}
+                  </CardHeader>
+                  <CardContent className="h-full">
+                    <Textarea 
+                      value={task1Answer} 
+                      onChange={e => setTask1Answer(e.target.value)} 
+                      placeholder="Write your description here..." 
+                      className="h-[450px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
+                    />
+                    <div className="flex justify-between items-center mt-4">
+                      <div className="text-sm">
+                        {getWordCount(task1Answer) >= 150 ? 
+                          <span className="text-brand-green">✓ Word count requirement met</span> : 
+                          <span className="text-brand-orange">
+                            {150 - getWordCount(task1Answer)} more words needed
+                          </span>
+                        }
+                      </div>
+                      <Button onClick={proceedToTask2} disabled={!task1Answer.trim()} variant="default">
+                        Continue to Task 2
+                      </Button>
                     </div>
-                    <Button onClick={proceedToTask2} disabled={!task1Answer.trim()} className="glass-button hover:bg-white/20 border-white/30 text-slate-950">
-                      Continue to Task 2
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </ResizablePanel>
-          </ResizablePanelGroup> : 
-          // Task 1 without image - show instructions above answer
-          <div className="space-y-6">
-            <Card className="glass-card rounded-3xl">
-              <CardHeader>
-                <CardTitle className="text-foreground flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  {currentTaskData.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-text-secondary">
-                    Task 1 requires students to describe visual information (graphs, charts, tables, etc.)
-                  </p>
-                  
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Task Instructions</h4>
-                    <div className="text-foreground whitespace-pre-wrap leading-relaxed bg-surface-3 p-4 rounded-lg border border-border">
-                      {currentTaskData.instructions}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Answer Section for Task 1 */}
+                  </CardContent>
+                </Card>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          ) : (
+            // Task 1 without image
             <Card className="glass-card rounded-3xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-foreground">Your Answer - Task 1</CardTitle>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-text-secondary">Words: {getWordCount(task1Answer)}</span>
-                    <span className={getWordCount(task1Answer) >= 150 ? "text-brand-green" : "text-brand-orange"}>
-                      Min: 150
-                    </span>
+                  <div className="text-xs text-text-tertiary">
+                    Words: {getWordCount(task1Answer)} • Min: 150
                   </div>
                 </div>
               </CardHeader>
@@ -514,141 +514,122 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
               </CardContent>
             </Card>
-          </div>
+          )
         ) : (
           // Task 2 - Essay Writing
-          <div className="space-y-6">
-            <Card className="glass-card rounded-3xl">
-              <CardHeader>
-                <CardTitle className="text-foreground flex items-center gap-2">
-                  <PenTool className="w-5 h-5" />
-                  {currentTaskData?.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-text-secondary">
-                    Task 2 requires students to write an essay presenting arguments, opinions, and examples.
-                  </p>
-                  
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Task Instructions</h4>
-                    <div className="text-foreground whitespace-pre-wrap leading-relaxed bg-surface-3 p-4 rounded-lg border border-border">
-                      {currentTaskData?.instructions}
+          <Card className="glass-card rounded-3xl">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-foreground">Your Answer - Task 2</CardTitle>
+                <div className="text-xs text-text-tertiary">
+                  Words: {getWordCount(task2Answer)} • Min: 250
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Textarea 
+                value={task2Answer} 
+                onChange={e => setTask2Answer(e.target.value)} 
+                placeholder="Write your essay here..." 
+                className="min-h-[400px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
+              />
+              <div className="flex justify-between items-center mt-4">
+                <div className="text-sm">
+                  {getWordCount(task2Answer) >= 250 ? 
+                    <span className="text-brand-green">✓ Word count requirement met</span> : 
+                    <span className="text-brand-orange">
+                      {250 - getWordCount(task2Answer)} more words needed
+                    </span>
+                  }
+                </div>
+                <Button 
+                  onClick={submitTest} 
+                  disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
+                  variant="default"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Test"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Floating AI Assistant (Catbot) */}
+        {isCatbotOpen && (
+          <div className="fixed bottom-4 right-4 z-50 w-80 h-96 bg-surface-2 border border-border rounded-2xl shadow-lg">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-primary" />
+                <span className="font-medium text-foreground">Catbot Assistant</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setIsCatbotOpen(false)}>
+                ×
+              </Button>
+            </div>
+            
+            <div className="h-64 overflow-y-auto p-4 space-y-3">
+              {getCurrentChatMessages().map((message) => (
+                <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] p-3 rounded-lg ${
+                    message.type === 'user' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-surface-3 text-foreground'
+                  }`}>
+                    <p className="text-sm">{message.content}</p>
+                  </div>
+                </div>
+              ))}
+              {isChatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-surface-3 p-3 rounded-lg">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
 
-            <Card className="glass-card rounded-3xl">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-text-tertiary">
-                    Words: {getWordCount(task2Answer)} • Min: 250
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Textarea 
-                  value={task2Answer} 
-                  onChange={e => setTask2Answer(e.target.value)} 
-                  placeholder="Write your essay here..." 
-                  className="h-[400px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
+            <div className="p-4 border-t border-border">
+              <div className="flex gap-2 mb-2">
+                <Button size="sm" variant="ghost" onClick={() => handleSuggestionClick("How do I start?")}>
+                  How do I start?
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => handleSuggestionClick("Help me structure this")}>
+                  Help me structure
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Ask Catbot..."
+                  className="flex-1 px-3 py-2 bg-surface-3 border border-border rounded-lg text-sm text-foreground placeholder:text-text-tertiary"
+                  onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
                 />
-                <div className="flex justify-between items-center mt-4">
-                  <div className="text-sm">
-                    {getWordCount(task2Answer) >= 250 ? 
-                      <span className="text-brand-green">✓ Word count requirement met</span> : 
-                      <span className="text-brand-orange">
-                        {250 - getWordCount(task2Answer)} more words needed
-                      </span>
-                    }
-                  </div>
-                  <Button onClick={submitTest} disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} variant="default">
-                    {isSubmitting ? "Submitting..." : "Submit Test"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                <Button size="sm" onClick={() => sendChatMessage()} disabled={!newMessage.trim() || isChatLoading}>
+                  Send
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
-        
-        {/* AI Assistant - Floating Bottom Right */}
-        <div className="fixed bottom-6 right-6 z-50">
-          {isCatbotOpen ? <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
-              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-3 text-foreground">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center">
-                      <Bot className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-foreground">AI Writing Assistant</div>
-                      <div className="text-sm text-muted-foreground font-normal">Your IELTS Writing Tutor</div>
-                    </div>
-                  </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setIsCatbotOpen(false)} className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground">
-                    ✕
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
-                <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
-                  {getCurrentChatMessages().map(message => <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                        {message.type === 'bot'}
-                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground border border-border'}`}>
-                          <div dangerouslySetInnerHTML={{
-                      __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/^• (.*)$/gm, '<li>$1</li>').replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>').replace(/\n/g, '<br>')
-                    }} className="prose prose-sm max-w-none dark:prose-invert" />
-                        </div>
-                      </div>
-                    </div>)}
-                  {isChatLoading && <div className="flex gap-3 justify-start">
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1">
-                        <Bot className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{
-                      animationDelay: '0.1s'
-                    }} />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{
-                      animationDelay: '0.2s'
-                    }} />
-                        </div>
-                      </div>
-                    </div>}
-                </div>
-                
-                {/* Quick Help Buttons */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Help with Writing Structure")} disabled={isChatLoading} className="text-xs h-8 border-primary/30 hover:bg-primary/10">
-                    <ListTree className="w-3 h-3 mr-2" />
-                    Structure
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSuggestionClick("Suggest Some Vocabulary")} disabled={isChatLoading} className="text-xs h-8 border-primary/30 hover:bg-primary/10">
-                    <BookOpen className="w-3 h-3 mr-2" />
-                    Vocabulary
-                  </Button>
-                </div>
-                
-                {/* Chat Input */}
-                <div className="flex gap-2 mt-2">
-                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()} placeholder="Ask for writing help..." className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none" disabled={isChatLoading} />
-                  <Button onClick={() => sendChatMessage()} disabled={isChatLoading || !newMessage.trim()} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    {isChatLoading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" /> : 'Send'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card> : <Button onClick={() => setIsCatbotOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center font-medium transition-all duration-300 hover:scale-105">
-              <Bot className="w-6 h-6" />
-            </Button>}
-        </div>
+        {/* Floating Catbot Toggle Button */}
+        {!isCatbotOpen && (
+          <Button
+            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
+            onClick={() => setIsCatbotOpen(true)}
+          >
+            <Bot className="w-5 h-5" />
+          </Button>
+        )}
       </div>
-    </StudentLayout>;
+    </StudentLayout>
+  );
 };
+
 export default IELTSWritingTestInterface;

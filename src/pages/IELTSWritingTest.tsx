@@ -429,15 +429,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
               <ResizablePanel defaultSize={55} minSize={40}>
                 <Card className="glass-card rounded-3xl h-full">
-                  <CardContent className="h-full p-6">
-                    <div className="h-full overflow-auto rounded-2xl border border-border bg-surface-3 p-4">
-                      <div className="flex items-center justify-center min-h-full">
-                        <img 
-                          src={currentTaskData.imageUrl} 
-                          alt="Task 1 visual data" 
-                          className="max-w-full max-h-full object-contain rounded-lg"
-                        />
-                      </div>
+                  <CardContent className="p-6 h-full flex items-center justify-center">
+                    <div className="w-full max-w-full">
+                      <img 
+                        src={currentTaskData.imageUrl} 
+                        alt="Task 1 visual data" 
+                        className="w-full h-auto object-contain rounded-lg border border-border shadow-sm"
+                        style={{ maxHeight: '70vh' }}
+                      />
                     </div>
                   </CardContent>
                 </Card>

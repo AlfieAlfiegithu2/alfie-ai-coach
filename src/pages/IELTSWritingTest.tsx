@@ -590,7 +590,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             onClick={() => setIsDraggableChatOpen(true)}
             className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transform hover:scale-110 transition-all duration-300 z-40"
           >
-            <img src="/lovable-uploads/ecfa02d3-447e-40e3-89b3-f9f393f4e7bd.png" alt="Catbot" className="w-6 h-6" />
+            <img src="/lovable-uploads/a3837ac0-0724-473b-a728-8177e3de04e4.png" alt="Catbot" className="w-8 h-8 rounded-full object-cover" />
           </Button>
         )}
 

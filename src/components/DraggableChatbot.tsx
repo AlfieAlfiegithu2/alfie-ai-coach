@@ -55,25 +55,23 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent, action?: 'drag' | 'resize') => {
     e.preventDefault(); // Prevent text selection
-    if (e.target instanceof HTMLElement) {
-      if (e.target.closest('.drag-handle')) {
-        setIsDragging(true);
-        document.body.style.userSelect = 'none'; // Prevent text selection globally
-        const rect = chatRef.current?.getBoundingClientRect();
-        if (rect) {
-          setDragOffset({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-          });
-        }
-      } else if (e.target.closest('.resize-handle')) {
-        setIsResizing(true);
-        document.body.style.userSelect = 'none'; // Prevent text selection globally
-        setResizeOffset({
-          x: e.clientX - position.x - size.width,
-          y: e.clientY - position.y - size.height,
+    document.body.style.userSelect = 'none'; // Prevent text selection globally
+    
+    if (action === 'resize') {
+      setIsResizing(true);
+      setResizeOffset({
+        x: e.clientX - position.x - size.width,
+        y: e.clientY - position.y - size.height,
+      });
+    } else {
+      setIsDragging(true);
+      const rect = chatRef.current?.getBoundingClientRect();
+      if (rect) {
+        setDragOffset({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
         });
       }
     }
@@ -207,13 +205,16 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         height: `${size.height}px`,
         transform: isDragging ? 'rotate(2deg)' : 'rotate(0deg)',
       }}
-      onMouseDown={handleMouseDown}
+      onMouseDown={undefined}
     >
       <Card className="bg-background/95 backdrop-blur-sm border-2 border-primary/20 shadow-2xl">
         {/* Header */}
-        <div className="drag-handle flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-lg cursor-move">
+        <div 
+          className="drag-handle flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-lg cursor-move"
+          onMouseDown={(e) => handleMouseDown(e, 'drag')}
+        >
           <div className="flex items-center gap-2">
-            <img src="/lovable-uploads/ecfa02d3-447e-40e3-89b3-f9f393f4e7bd.png" alt="Catbot" className="w-4 h-4" />
+            <img src="/lovable-uploads/a3837ac0-0724-473b-a728-8177e3de04e4.png" alt="Catbot" className="w-6 h-6 rounded-full object-cover" />
             <span className="font-semibold text-sm">Catbot Assistant</span>
             <Move className="w-3 h-3 text-muted-foreground ml-1" />
           </div>
@@ -222,17 +223,17 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setIsMinimized(!isMinimized)}
-              className="h-6 w-6 p-0"
+              className="h-8 w-8 p-0 hover:bg-white/20 rounded-md"
             >
-              {isMinimized ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
+              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="h-6 w-6 p-0"
+              className="h-8 w-8 p-0 hover:bg-white/20 rounded-md"
             >
-              <X className="w-3 h-3" />
+              <X className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -331,8 +332,11 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         </div>
         
         {/* Resize Handle */}
-        <div className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize opacity-60 hover:opacity-100 transition-opacity">
-          <div className="w-full h-full bg-gradient-to-tr from-transparent via-muted-foreground/40 to-muted-foreground/70 rounded-tl-lg"></div>
+        <div 
+          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-primary/30 hover:bg-primary/50 transition-colors rounded-tl-lg"
+          onMouseDown={(e) => handleMouseDown(e, 'resize')}
+        >
+          <div className="absolute bottom-1 right-1 w-2 h-2 bg-primary/60 rounded-full"></div>
         </div>
       </Card>
     </div>

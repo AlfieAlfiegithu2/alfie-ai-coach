@@ -232,10 +232,14 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0 hover:bg-white/20 rounded-md"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
+              className="h-10 w-10 p-0 hover:bg-muted/60 rounded-md"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </Button>
           </div>
         </div>

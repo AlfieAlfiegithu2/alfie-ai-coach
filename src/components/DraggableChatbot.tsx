@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Maximize2, Minimize2, X, MessageCircle, Send, Move } from 'lucide-react';
+import { Maximize2, Minimize2, X, Send, Move } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
@@ -35,8 +35,6 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeOffset, setResizeOffset] = useState({ x: 0, y: 0 });
-  const [isBlinking, setIsBlinking] = useState(true);
-  const [hasInitialized, setHasInitialized] = useState(false);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,17 +50,6 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
       setMessages([welcomeMessage]);
     }
   }, [isVisible, taskType, messages.length]);
-
-  // Stop blinking after 3 seconds - only once when component first loads
-  useEffect(() => {
-    if (isVisible && !hasInitialized) {
-      setHasInitialized(true);
-      const timer = setTimeout(() => {
-        setIsBlinking(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, hasInitialized]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -212,7 +199,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   return (
     <div
       ref={chatRef}
-      className={`fixed z-50 transition-all duration-300 ease-in-out ${isBlinking ? 'animate-pulse' : ''}`}
+      className="fixed z-50 transition-all duration-300 ease-in-out"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
@@ -226,7 +213,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         {/* Header */}
         <div className="drag-handle flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-lg cursor-move">
           <div className="flex items-center gap-2">
-            <MessageCircle className="w-4 h-4 text-primary" />
+            <img src="/lovable-uploads/ecfa02d3-447e-40e3-89b3-f9f393f4e7bd.png" alt="Catbot" className="w-4 h-4" />
             <span className="font-semibold text-sm">Catbot Assistant</span>
             <Move className="w-3 h-3 text-muted-foreground ml-1" />
           </div>

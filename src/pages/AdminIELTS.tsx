@@ -122,6 +122,8 @@ const AdminIELTS = () => {
 
   const deleteTest = async (testId: string, testName: string) => {
     try {
+      console.log('🗑️ Starting delete process for test:', testId);
+      
       // First, delete any questions associated with this test
       const { error: questionsError } = await supabase
         .from('questions')
@@ -129,22 +131,42 @@ const AdminIELTS = () => {
         .eq('test_id', testId);
 
       if (questionsError) {
-        console.error('Error deleting questions:', questionsError);
-        // Continue with test deletion even if questions deletion fails
+        console.error('❌ Error deleting questions:', questionsError);
+        toast.error('Failed to delete associated questions');
+        return;
       }
+      
+      console.log('✅ Questions deleted successfully');
 
       // Then delete the test itself
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('tests')
         .delete()
-        .eq('id', testId);
+        .eq('id', testId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error deleting test:', error);
+        throw error;
+      }
+
+      console.log('✅ Deleted test data:', data);
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No test was deleted - test may not exist or access denied');
+        toast.error('Test not found or access denied');
+        return;
+      }
 
       toast.success(`Test "${testName}" deleted successfully`);
-      loadTests(); // Refresh the test list
+      
+      // Add a small delay to ensure database consistency
+      setTimeout(() => {
+        loadTests(); // Refresh the test list
+      }, 500);
+      
     } catch (error) {
-      console.error('Error deleting test:', error);
+      console.error('❌ Error deleting test:', error);
       toast.error('Failed to delete test');
     }
   };

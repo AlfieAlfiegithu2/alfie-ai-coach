@@ -195,28 +195,20 @@ const IELTSWritingTestInterface = () => {
       const currentTaskData = getCurrentTask();
       if (!currentTaskData) throw new Error('No task data available');
 
-      // Create context-aware prompt for Catbot
+      // Create context-aware prompt for Catbot (shortened to stay under 2000 char limit)
       let contextPrompt = `CONTEXT: The student is working on IELTS Writing Task ${currentTask}.
 
 **Task ${currentTask} Details:**
 - Prompt: "${currentTaskData.title}"
-- Instructions: "${currentTaskData.instructions.substring(0, 500)}${currentTaskData.instructions.length > 500 ? '...' : ''}"`;
-      if (currentTask === 1 && currentTaskData.imageContext) {
-        contextPrompt += `\n- Image Context: "${currentTaskData.imageContext}"`;
-      }
-
-      // Add task type context to help AI understand what the student should focus on
+- Instructions: "${currentTaskData.instructions.substring(0, 300)}${currentTaskData.instructions.length > 300 ? '...' : ''}"`;
+      
+      // Add task type context
       if (currentTask === 1) {
         contextPrompt += `\n- Task Type: Data Description (charts, graphs, tables, diagrams)`;
       } else {
         contextPrompt += `\n- Task Type: Essay Writing (present arguments, opinions with examples)`;
       }
 
-      // Add current writing progress if available
-      const currentAnswer = getCurrentAnswer();
-      if (currentAnswer.trim()) {
-        contextPrompt += `\n\n**Current Writing Progress:** (${getWordCount(currentAnswer)} words)\n"${currentAnswer.substring(0, 200)}${currentAnswer.length > 200 ? '...' : ''}"`;
-      }
       contextPrompt += `\n\n**Student's Question:** "${message}"
 
 Please provide context-aware guidance. If they ask "How do I start?", guide them with leading questions about the specific task. Never write content for them - help them think it through.`;
@@ -398,12 +390,16 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   </div>
                   <div className="h-[500px] overflow-auto rounded-lg border border-border bg-background p-2">
-                    <div className="min-w-fit min-h-fit">
-                      <img src={currentTaskData.imageUrl} alt="Task 1 visual data" className="block mx-auto" style={{
-                    transform: `scale(${zoomScale})`,
-                    transformOrigin: 'center top',
-                    maxWidth: 'none'
-                  }} />
+                    <div className="flex items-center justify-center min-h-full">
+                      <img 
+                        src={currentTaskData.imageUrl} 
+                        alt="Task 1 visual data" 
+                        className="max-w-full max-h-full object-contain"
+                        style={{
+                          transform: `scale(${zoomScale})`,
+                          transformOrigin: 'center'
+                        }} 
+                      />
                     </div>
                   </div>
                 </CardContent>

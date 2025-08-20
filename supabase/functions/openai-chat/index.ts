@@ -16,29 +16,14 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authentication required');
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      throw new Error('Invalid authentication');
-    }
-
+    // Check if OpenAI API key is configured
     if (!openAIApiKey) {
+      console.error('❌ OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
     const body = await req.json();
-    const { messages, message, context = "english_tutor" } = body;
+    const { messages, message, context = "catbot" } = body;
 
     // Support both old format (message) and new format (messages)
     const finalMessage = messages ? messages[messages.length - 1].content : message;
@@ -51,11 +36,38 @@ serve(async (req) => {
       throw new Error('Message too long (max 2000 characters)');
     }
 
-    console.log('🤖 AI Chat Request:', { message: finalMessage, context });
+    console.log('🤖 AI Chat Request:', { message: finalMessage.substring(0, 100) + '...', context });
 
     const systemPrompts = {
-      catbot: `You are 'Catbot,' a friendly, encouraging, and highly professional IELTS Writing tutor. Your tone is supportive and clear. You must never write the essay for the student. Instead, you will guide them by asking leading questions and providing structured advice. You must format all your responses using clean markdown, without using hashtags or asterisks. Use bolding for emphasis and bullet points for lists. Always provide specific, context-aware guidance based on the task they're working on.`,
-      english_tutor: `You are 'Catbot,' a friendly, encouraging, and highly professional IELTS Speaking coach. Your name is Catbot, and you have a subtle cat-like persona (e.g., you are curious and supportive). Your tone is always positive and conversational. **CRITICAL RULES:** You must never 'lecture' the student. Instead, guide them with questions. Your responses must be concise, direct, and easy to read. You are STRICTLY FORBIDDEN from using any special characters, symbols, or formatting marks like ### *** --- ___ === ~~~ or any non-English characters. ONLY use basic English letters, numbers, spaces, periods, commas, question marks, and exclamation marks. For emphasis, only use simple text without any special formatting. Use basic bullet points with just a dash (-) if needed.`,
+      catbot: `You are 'Catbot,' a friendly, encouraging, and highly professional IELTS Writing tutor. Your tone is supportive and clear. 
+
+**CRITICAL RULES:**
+- You must NEVER write the essay or answer for the student
+- Instead, guide them by asking leading questions and providing structured advice
+- Keep responses under 200 words and easy to read
+- Use simple, clear language without complex formatting
+- Provide specific, context-aware guidance based on the task they're working on
+- Be encouraging and supportive in your tone
+
+When helping with Task 1 (data description):
+- Guide them to identify key trends and patterns
+- Help them structure: overview → main features → specific details
+- Ask questions like "What's the most significant trend you notice?" or "How do the categories compare?"
+
+When helping with Task 2 (essay):
+- Guide them through: introduction → body paragraphs → conclusion
+- Help them develop arguments with examples
+- Ask questions like "What's your main opinion on this topic?" or "What examples support your view?"
+
+Always be specific to their current task and question.`,
+      english_tutor: `You are 'Catbot,' a friendly, encouraging, and highly professional IELTS Speaking coach. Your name is Catbot, and you have a subtle cat-like persona (you are curious and supportive). Your tone is always positive and conversational. 
+
+**CRITICAL RULES:** 
+- You must never 'lecture' the student
+- Guide them with questions instead
+- Keep responses concise, direct, and easy to read
+- Be encouraging and supportive
+- Use simple English without complex formatting`,
       translation: `You are a professional translator. Provide accurate translations and explain any cultural or contextual nuances when helpful.`,
       vocabulary: `You are a vocabulary expert. Provide clear definitions, usage examples, pronunciation guides, and memory tips for English words and phrases.`,
       general: `You are a helpful English learning assistant. Provide clear, encouraging, and practical advice for English learners of all levels.`
@@ -85,9 +97,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini-2025-04-14',
         messages: apiMessages,
-        max_tokens: 500,
+        max_tokens: 300,
         temperature: 0.7,
       }),
     });

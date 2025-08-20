@@ -584,32 +584,35 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
         {/* Floating AI Assistant (Catbot) */}
         {isCatbotOpen && (
-          <div className="fixed bottom-4 right-4 z-50 w-80 h-96 bg-surface-2 border border-border rounded-2xl shadow-lg">
-            <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="fixed bottom-4 right-4 z-50 w-96 h-[500px] bg-surface-2 border border-border rounded-2xl shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5 rounded-t-2xl">
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5 text-primary" />
-                <span className="font-medium text-foreground">Catbot Assistant</span>
+                <span className="font-medium text-foreground">Catbot - IELTS Writing Tutor</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setIsCatbotOpen(false)}>
+              <Button variant="ghost" size="sm" onClick={() => setIsCatbotOpen(false)} className="hover:bg-surface-3">
                 ×
               </Button>
             </div>
             
-            <div className="h-64 overflow-y-auto p-4 space-y-3">
+            <div className="h-80 overflow-y-auto p-4 space-y-3 bg-surface-1">
               {getCurrentChatMessages().map((message) => (
                 <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] p-3 rounded-lg ${
+                  <div className={`max-w-[85%] p-3 rounded-2xl ${
                     message.type === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-surface-3 text-foreground'
+                      ? 'bg-primary text-primary-foreground rounded-br-md' 
+                      : 'bg-surface-3 text-foreground border border-border rounded-bl-md'
                   }`}>
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    <span className="text-xs opacity-70 mt-1 block">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 </div>
               ))}
               {isChatLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-surface-3 p-3 rounded-lg">
+                  <div className="bg-surface-3 border border-border p-3 rounded-2xl rounded-bl-md">
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -620,13 +623,31 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               )}
             </div>
 
-            <div className="p-4 border-t border-border">
-              <div className="flex gap-2 mb-2">
-                <Button size="sm" variant="ghost" onClick={() => handleSuggestionClick("How do I start?")}>
+            <div className="p-4 border-t border-border bg-surface-2 rounded-b-2xl">
+              <div className="flex flex-wrap gap-2 mb-3">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleSuggestionClick("How do I start this task?")}
+                  className="text-xs px-3 py-1 h-7 bg-surface-3 hover:bg-primary/10"
+                >
                   How do I start?
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleSuggestionClick("Help me structure this")}>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleSuggestionClick("Help me structure my answer")}
+                  className="text-xs px-3 py-1 h-7 bg-surface-3 hover:bg-primary/10"
+                >
                   Help me structure
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleSuggestionClick("What should I focus on?")}
+                  className="text-xs px-3 py-1 h-7 bg-surface-3 hover:bg-primary/10"
+                >
+                  What to focus on?
                 </Button>
               </div>
               <div className="flex gap-2">
@@ -634,26 +655,41 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Ask Catbot..."
-                  className="flex-1 px-3 py-2 bg-surface-3 border border-border rounded-lg text-sm text-foreground placeholder:text-text-tertiary"
-                  onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                  placeholder="Ask Catbot for help with your writing..."
+                  className="flex-1 px-3 py-2 bg-surface-3 border border-border rounded-xl text-sm text-foreground placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
+                  disabled={isChatLoading}
                 />
-                <Button size="sm" onClick={() => sendChatMessage()} disabled={!newMessage.trim() || isChatLoading}>
+                <Button 
+                  size="sm" 
+                  onClick={() => sendChatMessage()} 
+                  disabled={!newMessage.trim() || isChatLoading}
+                  className="px-4 bg-primary hover:bg-primary/90"
+                >
                   Send
                 </Button>
               </div>
+              <p className="text-xs text-text-tertiary mt-2 text-center">
+                Press Enter to send • {currentTask === 1 ? 'Task 1' : 'Task 2'} help mode
+              </p>
             </div>
           </div>
         )}
 
         {/* Floating Catbot Toggle Button */}
         {!isCatbotOpen && (
-          <Button
-            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
-            onClick={() => setIsCatbotOpen(true)}
-          >
-            <Bot className="w-5 h-5" />
-          </Button>
+          <div className="fixed bottom-4 right-4 z-50">
+            <Button
+              className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
+              onClick={() => setIsCatbotOpen(true)}
+            >
+              <Bot className="w-6 h-6" />
+            </Button>
+            <div className="absolute -top-12 right-0 bg-surface-2 text-foreground px-3 py-1 rounded-lg text-sm font-medium shadow-lg border border-border">
+              Ask Catbot for help!
+              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-border"></div>
+            </div>
+          </div>
         )}
       </div>
     </StudentLayout>

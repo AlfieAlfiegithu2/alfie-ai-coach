@@ -56,6 +56,7 @@ const IELTSWritingTestInterface = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCatbotOpen, setIsCatbotOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
 
   // Timer states
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -429,14 +430,42 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
               <ResizablePanel defaultSize={55} minSize={40}>
                 <Card className="glass-card rounded-3xl h-full">
-                  <CardContent className="p-6 h-full flex items-center justify-center">
-                    <div className="w-full max-w-full">
-                      <img 
-                        src={currentTaskData.imageUrl} 
-                        alt="Task 1 visual data" 
-                        className="w-full h-auto object-contain rounded-lg border border-border shadow-sm"
-                        style={{ maxHeight: '70vh' }}
-                      />
+                  <CardContent className="p-4 h-full flex flex-col">
+                    {/* Zoom Controls */}
+                    <div className="flex items-center justify-end gap-2 mb-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setZoomScale(s => Math.max(0.5, Number((s - 0.25).toFixed(2))))}
+                        className="w-8 h-8 p-0"
+                      >
+                        -
+                      </Button>
+                      <span className="text-sm text-text-secondary min-w-12 text-center">{Math.round(zoomScale * 100)}%</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}
+                        className="w-8 h-8 p-0"
+                      >
+                        +
+                      </Button>
+                    </div>
+                    
+                    {/* Image Container - Minimal padding, tight fit */}
+                    <div className="flex-1 overflow-auto bg-white rounded-xl p-2">
+                      <div className="flex items-center justify-center min-h-full">
+                        <img 
+                          src={currentTaskData.imageUrl} 
+                          alt="Task 1 visual data" 
+                          className="max-w-full h-auto object-contain"
+                          style={{
+                            transform: `scale(${zoomScale})`,
+                            transformOrigin: 'center',
+                            transition: 'transform 0.2s ease-out'
+                          }}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

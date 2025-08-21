@@ -80,12 +80,15 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
             return;
           }
 
-          // Get mouse position for popup placement
+          // Get more precise positioning based on selection bounds
           const rect = range.getBoundingClientRect();
+          const selectionX = rect.left + (rect.width / 2); // Center of selection horizontally
+          const selectionY = rect.bottom; // Bottom of selection
+          
           setSelectedText(text);
           setPosition({
-            x: e.clientX,
-            y: rect.bottom + window.scrollY + 10
+            x: selectionX,
+            y: selectionY + window.scrollY + 5 // Closer to the selected text
           });
           setShowHelper(true);
         }

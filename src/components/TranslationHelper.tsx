@@ -17,7 +17,7 @@ interface TranslationHelperProps {
 interface TranslationResult {
   translation: string;
   context?: string;
-  alternatives?: string[];
+  alternatives?: Array<{meaning: string; pos: string} | string>;
   grammar_notes?: string;
   simple?: boolean;
 }
@@ -136,7 +136,10 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       // Prepare all translations (main + alternatives)
       const allTranslations = [translationResult.translation];
       if (translationResult.alternatives && translationResult.alternatives.length > 0) {
-        allTranslations.push(...translationResult.alternatives);
+        const meanings = translationResult.alternatives.map(alt => 
+          typeof alt === 'object' && alt.meaning ? alt.meaning : String(alt)
+        );
+        allTranslations.push(...meanings);
       }
       
       const { data, error } = await supabase.functions.invoke('add-to-word-book', {
@@ -235,14 +238,27 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
                   </p>
                   
                   {translationResult.alternatives && translationResult.alternatives.length > 0 && (
-                    <div className="text-xs space-y-1">
+                    <div className="text-xs space-y-2">
                       <p className="text-text-secondary font-medium">Alternative meanings:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {translationResult.alternatives.map((alt, index) => (
-                          <Badge key={index} variant="outline" className="text-xs px-2 py-0.5">
-                            {alt}
-                          </Badge>
-                        ))}
+                      <div className="space-y-1">
+                        {translationResult.alternatives.map((alt, index) => {
+                          const isObjectAlt = typeof alt === 'object' && alt !== null && 'meaning' in alt;
+                          const meaning = isObjectAlt ? alt.meaning : String(alt);
+                          const pos = isObjectAlt ? alt.pos : null;
+                          
+                          return (
+                            <div key={index} className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-surface-1">
+                                {meaning}
+                              </Badge>
+                              {pos && (
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0 text-text-tertiary bg-surface-3">
+                                  {pos}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

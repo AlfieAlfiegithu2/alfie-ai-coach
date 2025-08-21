@@ -39,19 +39,25 @@ serve(async (req) => {
     console.log('🌐 Translation request:', { text: text.substring(0, 50) + '...', sourceLang, targetLang });
 
     const systemPrompt = includeContext ? 
-      `You are a professional translator. When translating words or phrases, provide comprehensive information including multiple meanings when applicable.
+      `You are a professional translator. When translating words or phrases, provide comprehensive information including multiple meanings when applicable and part of speech information.
        
        Always respond with valid JSON in this exact format:
        {
          "translation": "primary translation",
-         "alternatives": ["alternative1", "alternative2", "alternative3"],
+         "alternatives": [
+           {"meaning": "alternative1", "pos": "noun"},
+           {"meaning": "alternative2", "pos": "verb"},
+           {"meaning": "alternative3", "pos": "adjective"}
+         ],
          "context": "cultural or linguistic context if relevant",
          "grammar_notes": "brief grammar explanation if helpful"
        }
        
        Rules:
        - "translation" should be the most common/primary translation
-       - "alternatives" should include 2-4 different meanings/contexts if they exist, or empty array if none
+       - "alternatives" should include ALL different meanings/contexts with their part of speech (pos: "noun", "verb", "adjective", "adverb", "preposition", etc.)
+       - Include as many alternatives as exist - no limit on number
+       - "pos" should be the part of speech in English (noun, verb, adjective, etc.)
        - "context" should explain when/how to use different meanings, or null if not needed
        - "grammar_notes" should be brief and helpful, or null if not needed
        - Always respond with valid JSON, no additional text` :
@@ -101,9 +107,11 @@ serve(async (req) => {
         
         result = JSON.parse(cleanedResult);
         
-        // Ensure alternatives is an array and filter out empty values
+        // Ensure alternatives is an array with part of speech info
         if (result.alternatives && Array.isArray(result.alternatives)) {
-          result.alternatives = result.alternatives.filter((alt: string) => alt && alt.trim().length > 0);
+          result.alternatives = result.alternatives.filter((alt: any) => 
+            alt && (typeof alt === 'string' ? alt.trim().length > 0 : alt.meaning && alt.meaning.trim().length > 0)
+          );
         } else {
           result.alternatives = [];
         }

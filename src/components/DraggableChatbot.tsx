@@ -161,13 +161,8 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
-    setIsTyping(true);
-
-    const messageId = (Date.now() + 1).toString();
-    let accumulatedText = '';
 
     try {
-      // Use supabase.functions.invoke but handle streaming differently
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           messages: [
@@ -191,29 +186,14 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
 
       const responseText = data.response || 'Sorry, I encountered an issue. Please try again.';
       
-      // Add a placeholder message that we'll update with typing effect
-      const placeholderMessage: Message = {
-        id: messageId,
-        text: '',
+      // Add response message immediately
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: responseText,
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, placeholderMessage]);
-
-      // Simulate real-time typing by revealing characters progressively
-      let currentIndex = 0;
-      const typeInterval = setInterval(() => {
-        if (currentIndex <= responseText.length) {
-          const currentText = responseText.slice(0, currentIndex);
-          setMessages(prev => prev.map(msg => 
-            msg.id === messageId ? { ...msg, text: currentText } : msg
-          ));
-          currentIndex += 2; // Show 2 characters at a time for smoother effect
-        } else {
-          clearInterval(typeInterval);
-          setIsTyping(false);
-        }
-      }, 50); // Faster typing effect
+      setMessages(prev => [...prev, responseMessage]);
 
     } catch (error) {
       console.error('Chat error:', error);
@@ -236,10 +216,8 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
-      setIsTyping(false);
     } finally {
       setIsLoading(false);
-      setTypingMessage('');
     }
   };
 
@@ -362,25 +340,13 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-foreground'
                   }`}
-                >
-                  <div className="whitespace-pre-wrap">{message.text}</div>
-                  <p className="text-xs opacity-70 mt-2">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
+                 >
+                   <div className="whitespace-pre-wrap">{message.text}</div>
+                 </div>
               </div>
             ))}
             
-            {/* Typing Animation */}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] bg-muted text-foreground p-3 rounded-lg text-sm leading-relaxed">
-                  <div className="whitespace-pre-wrap">{typingMessage}<span className="animate-pulse">|</span></div>
-                </div>
-              </div>
-            )}
-            
-            {isLoading && !isTyping && (
+            {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-muted p-3 rounded-lg text-sm">
                   <div className="flex items-center gap-1">

@@ -161,8 +161,13 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    setIsTyping(true);
+
+    const messageId = (Date.now() + 1).toString();
+    let accumulatedText = '';
 
     try {
+      // Use supabase.functions.invoke but handle streaming differently
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           messages: [
@@ -185,10 +190,31 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
       if (error) throw error;
 
       const responseText = data.response || 'Sorry, I encountered an issue. Please try again.';
-      const messageId = (Date.now() + 1).toString();
       
-      // Start typing animation
-      typeMessage(responseText, messageId);
+      // Add a placeholder message that we'll update with typing effect
+      const placeholderMessage: Message = {
+        id: messageId,
+        text: '',
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, placeholderMessage]);
+
+      // Simulate real-time typing by revealing characters progressively
+      let currentIndex = 0;
+      const typeInterval = setInterval(() => {
+        if (currentIndex <= responseText.length) {
+          const currentText = responseText.slice(0, currentIndex);
+          setMessages(prev => prev.map(msg => 
+            msg.id === messageId ? { ...msg, text: currentText } : msg
+          ));
+          currentIndex += 2; // Show 2 characters at a time for smoother effect
+        } else {
+          clearInterval(typeInterval);
+          setIsTyping(false);
+        }
+      }, 50); // Faster typing effect
+
     } catch (error) {
       console.error('Chat error:', error);
       
@@ -210,8 +236,10 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
+      setIsTyping(false);
     } finally {
       setIsLoading(false);
+      setTypingMessage('');
     }
   };
 

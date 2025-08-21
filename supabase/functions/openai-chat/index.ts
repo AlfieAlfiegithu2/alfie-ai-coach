@@ -168,7 +168,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: apiMessages,
-        max_tokens: 450, // Increased for complete responses
+        max_tokens: 600, // Increased for complete responses
         temperature: 0.7,
       }),
     });

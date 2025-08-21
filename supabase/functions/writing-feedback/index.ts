@@ -12,10 +12,21 @@ serve(async (req) => {
   }
 
   try {
+    // Check if OpenAI API key is configured
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+      console.error('❌ OpenAI API key not configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Writing feedback service temporarily unavailable. Please try again in a moment.',
+        details: 'OpenAI API key not configured'
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('✅ OpenAI API key found for writing feedback, length:', OPENAI_API_KEY.length);
 
     const { writing, prompt, taskType } = await req.json();
 

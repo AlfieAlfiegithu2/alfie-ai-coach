@@ -44,8 +44,6 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // Cache for storing previous Q&A pairs
-  const responseCache = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (isVisible && messages.length === 0) {
@@ -162,24 +160,6 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     };
 
     setMessages(prev => [...prev, userMessage]);
-    
-    // Create cache key based on message and task context
-    const cacheKey = `${message.toLowerCase().trim()}-${taskType}-${taskInstructions.slice(0, 50)}`;
-    
-    // Check cache first
-    const cachedResponse = responseCache.current.get(cacheKey);
-    if (cachedResponse) {
-      console.log('🚀 Using cached response for:', message.slice(0, 30));
-      const responseMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: cachedResponse,
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, responseMessage]);
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -205,10 +185,6 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
       if (error) throw error;
 
       const responseText = data.response || 'Sorry, I encountered an issue. Please try again.';
-      
-      // Cache the response for future use
-      responseCache.current.set(cacheKey, responseText);
-      console.log('💾 Cached response for:', message.slice(0, 30));
       
       // Add response message immediately
       const responseMessage: Message = {

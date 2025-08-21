@@ -4,6 +4,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
 
+// Initialize Supabase client for caching
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -49,6 +55,42 @@ serve(async (req) => {
     }
 
     console.log('🤖 AI Chat Request:', { message: finalMessage.substring(0, 100) + '...', context });
+
+    // Create cache key for this request
+    const cacheKey = `${context}-${finalMessage.toLowerCase().trim()}-${taskType || ''}-${taskInstructions?.slice(0, 50) || ''}`;
+    
+    // Check cache first
+    console.log('🔍 Checking cache for key:', cacheKey.slice(0, 50) + '...');
+    const { data: cachedResponse } = await supabase
+      .from('chat_cache')
+      .select('response, hit_count')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (cachedResponse) {
+      console.log('🚀 Cache hit! Using cached response, hit count:', cachedResponse.hit_count);
+      
+      // Update hit count
+      await supabase
+        .from('chat_cache')
+        .update({ 
+          hit_count: cachedResponse.hit_count + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('cache_key', cacheKey);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        response: cachedResponse.response,
+        context: context,
+        cached: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('💨 Cache miss, calling DeepSeek API...');
 
     const systemPrompts = {
       catbot: `You are "Foxbot," an expert, clever, and highly efficient IELTS Writing Tutor. Your goal is to give students the most valuable advice in the fewest words possible. You are a coach, not a lecturer. Brevity is key.
@@ -196,10 +238,31 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
 
     console.log('✅ AI Chat Response generated successfully');
 
+    // Cache the response for future use
+    try {
+      const taskContext = [taskType, taskInstructions, imageContext].filter(Boolean).join(' | ');
+      
+      await supabase
+        .from('chat_cache')
+        .insert({
+          cache_key: cacheKey,
+          response: aiResponse,
+          task_context: taskContext || null,
+          hit_count: 1,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+        });
+      
+      console.log('💾 Response cached successfully');
+    } catch (cacheError) {
+      console.warn('⚠️ Failed to cache response:', cacheError);
+      // Don't fail the request if caching fails
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       response: aiResponse,
-      context: context
+      context: context,
+      cached: false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

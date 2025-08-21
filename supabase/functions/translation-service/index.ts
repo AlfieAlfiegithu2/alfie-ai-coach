@@ -1,7 +1,14 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+
+// Initialize Supabase client for caching
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +45,65 @@ serve(async (req) => {
 
     console.log('🌐 Translation request:', { text: text.substring(0, 50) + '...', sourceLang, targetLang });
 
-    const systemPrompt = includeContext ? 
+    // Only cache if text is reasonable length (avoid storage bloat)
+    const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
+    let cachedTranslation = null;
+
+    if (shouldCache) {
+      // Check cache first
+      console.log('🔍 Checking translation cache...');
+      const { data } = await supabase
+        .from('translation_cache')
+        .select('translation, hit_count')
+        .eq('word', text.toLowerCase().trim())
+        .eq('source_lang', sourceLang)
+        .eq('target_lang', targetLang)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (data) {
+        console.log('🚀 Translation cache hit! Hit count:', data.hit_count);
+        
+        // Update hit count and extend expiry for popular translations
+        const newExpiry = data.hit_count >= 5 ? 
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : // 30 days for popular
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);   // 7 days for normal
+        
+        await supabase
+          .from('translation_cache')
+          .update({ 
+            hit_count: data.hit_count + 1,
+            expires_at: newExpiry.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('word', text.toLowerCase().trim())
+          .eq('source_lang', sourceLang)
+          .eq('target_lang', targetLang);
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          result: includeContext ? {
+            translation: data.translation,
+            context: null,
+            alternatives: [],
+            grammar_notes: null,
+            cached: true
+          } : {
+            translation: data.translation,
+            simple: true,
+            cached: true
+          },
+          sourceLang: sourceLang,
+          targetLang: targetLang
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    console.log('💨 Translation cache miss, calling DeepSeek API...');
+
+    const systemPrompt = includeContext ?
       `Professional translator. Return JSON format only:
        {
          "translation": "primary translation",
@@ -121,6 +186,36 @@ serve(async (req) => {
     }
 
     console.log('✅ Translation completed successfully');
+
+    // Cache the translation if it should be cached
+    if (shouldCache && result.translation) {
+      try {
+        const translationText = typeof result.translation === 'string' ? 
+          result.translation : 
+          result.translation?.translation || String(result.translation);
+
+        await supabase
+          .from('translation_cache')
+          .insert({
+            word: text.toLowerCase().trim(),
+            source_lang: sourceLang,
+            target_lang: targetLang,  
+            translation: translationText,
+            hit_count: 1,
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+          });
+        
+        console.log('💾 Translation cached successfully');
+      } catch (cacheError) {
+        console.warn('⚠️ Failed to cache translation:', cacheError);
+        // Don't fail the request if caching fails
+      }
+    }
+
+    // Add cached flag to response
+    if (typeof result === 'object') {
+      result.cached = false;
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 

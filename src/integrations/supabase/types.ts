@@ -142,6 +142,39 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string | null
+          hit_count: number | null
+          id: string
+          response: string
+          task_context: string | null
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          response: string
+          task_context?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          response?: string
+          task_context?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_comments: {
         Row: {
           content: string
@@ -1185,6 +1218,42 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_cache: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          hit_count: number | null
+          id: string
+          source_lang: string
+          target_lang: string
+          translation: string
+          updated_at: string
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          source_lang?: string
+          target_lang: string
+          translation: string
+          updated_at?: string
+          word: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          source_lang?: string
+          target_lang?: string
+          translation?: string
+          updated_at?: string
+          word?: string
+        }
+        Relationships: []
+      }
       user_analytics: {
         Row: {
           action_type: string
@@ -1501,6 +1570,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_expired_audio: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

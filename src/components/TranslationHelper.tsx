@@ -45,7 +45,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
           text: text,
           targetLang: language,
           sourceLang: 'auto',
-          includeContext: false // Simple translation without context
+          includeContext: true // Need context to get alternative meanings
         }
       });
 

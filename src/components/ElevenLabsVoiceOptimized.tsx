@@ -26,7 +26,7 @@ export const ElevenLabsVoiceOptimized = ({
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('elevenlabs-voice', {
+      const { data, error } = await supabase.functions.invoke('audio-cache', {
         body: {
           text,
           voice_id: voiceId,

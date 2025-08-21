@@ -35,7 +35,7 @@ serve(async (req) => {
     console.log('✅ DeepSeek API key found, length:', deepSeekApiKey.length);
 
     const body = await req.json();
-    const { messages, message, context = "catbot" } = body;
+    const { messages, message, context = "catbot", imageContext, taskType, taskInstructions } = body;
 
     // Support both old format (message) and new format (messages)
     const finalMessage = messages ? messages[messages.length - 1].content : message;
@@ -125,11 +125,33 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       // New format with full conversation history
       apiMessages = messages;
     } else {
+      // Build context-aware system prompt
+      let systemPrompt = systemPrompts[context as keyof typeof systemPrompts] || systemPrompts.general;
+      
+      // Add specific task context if available
+      if (context === 'catbot' && (imageContext || taskType || taskInstructions)) {
+        systemPrompt += `\n\n**CURRENT TASK CONTEXT:**`;
+        
+        if (taskType) {
+          systemPrompt += `\nTask Type: ${taskType}`;
+        }
+        
+        if (taskInstructions) {
+          systemPrompt += `\nTask Instructions: "${taskInstructions}"`;
+        }
+        
+        if (imageContext) {
+          systemPrompt += `\nImage/Chart Description: "${imageContext}"`;
+        }
+        
+        systemPrompt += `\n\nWhen students ask about vocabulary, grammar, or structure, provide advice SPECIFIC to this exact task and its content. Reference the task details in your response.`;
+      }
+      
       // Old format with single message
       apiMessages = [
         { 
           role: 'system', 
-          content: systemPrompts[context as keyof typeof systemPrompts] || systemPrompts.general
+          content: systemPrompt
         },
         { role: 'user', content: finalMessage }
       ];
@@ -146,7 +168,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: apiMessages,
-        max_tokens: 500,
+        max_tokens: 300, // Reduced for faster responses
         temperature: 0.7,
       }),
     });
@@ -160,7 +182,14 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
     }
 
     const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    let aiResponse = data.choices[0].message.content;
+    
+    // Clean up formatting - remove ### and *** that shouldn't appear in student responses
+    aiResponse = aiResponse
+      .replace(/#{1,6}\s*/g, '')  // Remove all ### headers
+      .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')  // Remove *** bold formatting
+      .replace(/\*{1,2}([^*]+)\*{1,2}/g, '**$1**')  // Convert * to ** for bold text
+      .trim();
 
     console.log('✅ AI Chat Response generated successfully');
 

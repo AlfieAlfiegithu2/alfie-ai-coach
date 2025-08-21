@@ -228,7 +228,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           message: contextPrompt,
-          context: 'catbot'
+          context: 'catbot',
+          imageContext: currentTaskData.imageContext,
+          taskType: currentTask === 1 ? 'Task 1 - Data Description (charts, graphs, tables, diagrams)' : 'Task 2 - Essay Writing (arguments, opinions, examples)',
+          taskInstructions: currentTaskData.instructions
         }
       });
 
@@ -608,6 +611,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           onClose={() => setIsDraggableChatOpen(false)}
           taskType={currentTaskData?.title || "IELTS Writing"}
           taskInstructions={currentTaskData?.instructions || ""}
+          imageContext={currentTaskData?.imageContext}
           initialPosition={{ x: Math.max(0, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 420), y: Math.max(0, (typeof window !== 'undefined' ? window.innerHeight : 800) - 520) }}
         />
       </div>

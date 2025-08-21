@@ -15,6 +15,7 @@ interface Message {
 interface DraggableChatbotProps {
   taskType: string;
   taskInstructions: string;
+  imageContext?: string;
   isVisible: boolean;
   onClose: () => void;
   initialPosition?: { x: number; y: number };
@@ -23,6 +24,7 @@ interface DraggableChatbotProps {
 export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   taskType,
   taskInstructions,
+  imageContext,
   isVisible,
   onClose,
   initialPosition,
@@ -144,7 +146,10 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
               content: message
             }
           ],
-          context: 'catbot'
+          context: 'catbot',
+          imageContext: imageContext,
+          taskType: taskType,
+          taskInstructions: taskInstructions
         }
       });
 
@@ -195,13 +200,13 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     let message = '';
     switch (type) {
       case 'vocabulary':
-        message = 'How can I improve the vocabulary in my writing?';
+        message = 'What vocabulary would be most useful for this specific task?';
         break;
       case 'structure':
-        message = 'How should I structure my response?';
+        message = 'How should I structure my response for this specific task?';
         break;
       case 'grammar':
-        message = 'What should I focus on to improve my grammar?';
+        message = 'What grammar points should I focus on for this type of task?';
         break;
     }
     if (message) sendMessage(message);

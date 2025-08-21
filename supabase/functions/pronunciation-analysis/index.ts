@@ -164,12 +164,12 @@ Constraints:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-2025-08-07',
         messages: [
           { role: 'system', content: "You are Prolo, an expert AI pronunciation coach. Always respond with a single JSON object only." },
           { role: 'user', content: instructions }
         ],
-        temperature: 0.2,
+        max_completion_tokens: 1200,
       }),
     });
 

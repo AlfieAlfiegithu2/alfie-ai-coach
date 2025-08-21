@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Globe, BookPlus, Check } from 'lucide-react';
+import { X, BookPlus, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -84,39 +84,46 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
     }
   };
 
-  // Calculate dynamic positioning to keep popup on screen
+  // Calculate dynamic positioning to keep popup on screen and next to word
   const getPopupPosition = () => {
     const popupWidth = 400; // max-w-sm is about 400px
     const popupHeight = 250; // estimated popup height
-    const margin = 20; // margin from screen edges
+    const margin = 10; // margin from screen edges
 
     let left = position.x;
     let top = position.y;
 
-    // Check right edge
+    // Position to the right of the word first
+    left = position.x + 10;
+
+    // Check if there's enough space on the right
     if (left + popupWidth > window.innerWidth - margin) {
-      left = window.innerWidth - popupWidth - margin;
+      // Position to the left of the word instead
+      left = position.x - popupWidth - 10;
     }
 
-    // Check left edge
+    // Ensure it doesn't go off the left edge
     if (left < margin) {
       left = margin;
     }
 
-    // Check bottom edge - if popup would go off-screen, position above the selection
-    if (top + popupHeight > window.innerHeight - margin) {
-      top = position.y - popupHeight - 20; // Position above with some spacing
+    // Position below the word by default
+    top = position.y + 5;
+
+    // Check if there's enough space below
+    if (top + popupHeight > window.innerHeight + window.scrollY - margin) {
+      // Position above the word instead
+      top = position.y - popupHeight - 25;
     }
 
-    // Check top edge - if still off-screen, position below
-    if (top < margin) {
-      top = position.y + 20; // Position below the selection
+    // Ensure it doesn't go above the viewport
+    if (top < window.scrollY + margin) {
+      top = window.scrollY + margin;
     }
 
-    // Final check - if still off-screen, center it
-    if (top + popupHeight > window.innerHeight - margin) {
-      top = Math.max(margin, (window.innerHeight - popupHeight) / 2);
-    }
+    // Final bounds check to ensure it's always visible
+    left = Math.max(margin, Math.min(left, window.innerWidth - popupWidth - margin));
+    top = Math.max(window.scrollY + margin, Math.min(top, window.innerHeight + window.scrollY - popupHeight - margin));
 
     return { left, top };
   };
@@ -224,7 +231,6 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-brand-blue" />
               <span className="text-sm font-semibold text-text-primary">Translation</span>
               <Badge variant="secondary" className="text-xs">
                 {language.toUpperCase()}

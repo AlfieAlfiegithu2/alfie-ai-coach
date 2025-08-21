@@ -234,6 +234,9 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
       .replace(/([.!?])\s*([A-Z])/g, '$1\n\n$2')  // Add spacing between sentences
       .replace(/•\s*/g, '\n• ')  // Format bullet points
+      // Fix numbered list spacing - remove excessive spaces around numbers
+      .replace(/\n\s*(\d+\.)\s*\n\s*/g, '\n\n$1 ')  // Clean up numbered list formatting
+      .replace(/\n(\d+\.)\s*/g, '\n$1 ')  // Ensure single space after numbers
       .trim();
 
     console.log('✅ AI Chat Response generated successfully');

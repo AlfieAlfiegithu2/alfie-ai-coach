@@ -45,7 +45,7 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     if (isVisible && messages.length === 0) {
       const welcomeMessage: Message = {
         id: Date.now().toString(),
-        text: `Hi! I'm Foxbot, your IELTS Writing assistant for ${taskType}. I can help you with vocabulary, structure, grammar, and writing techniques. How can I assist you today?`,
+        text: `Hi! I'm Foxbot, your expert IELTS Writing tutor for ${taskType}. I'm here to coach you through the writing process with strategic guidance on structure, vocabulary, and techniques. What specific aspect of your essay would you like to work on?`,
         isUser: false,
         timestamp: new Date(),
       };
@@ -137,13 +137,14 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
           messages: [
             {
               role: 'system',
-              content: `You are Foxbot, an expert IELTS Writing tutor. You're helping with ${taskType}. Task instructions: ${taskInstructions}. Provide helpful, concise advice on vocabulary, grammar, structure, and writing techniques.`
+              content: `You are Foxbot, an expert IELTS Writing tutor helping with ${taskType}. Task instructions: ${taskInstructions}. Use the Foxbot persona and guidelines to provide strategic coaching that guides students to find answers themselves rather than giving direct answers.`
             },
             {
               role: 'user',
               content: message
             }
-          ]
+          ],
+          context: 'catbot'
         }
       });
 
@@ -194,13 +195,13 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     let message = '';
     switch (type) {
       case 'vocabulary':
-        message = 'Can you suggest some advanced vocabulary for this topic?';
+        message = 'How can I improve the vocabulary in my writing?';
         break;
       case 'structure':
         message = 'How should I structure my response?';
         break;
       case 'grammar':
-        message = 'What grammar points should I focus on?';
+        message = 'What should I focus on to improve my grammar?';
         break;
     }
     if (message) sendMessage(message);

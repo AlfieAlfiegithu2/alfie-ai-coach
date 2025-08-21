@@ -193,6 +193,41 @@ export default function IELTSWritingProResults() {
     };
     run();
   }, [task1Answer, task2Answer, task1Data, task2Data, t1CorrData, t2CorrData, t1Loading, t2Loading]);
+
+// Add validation for structured data
+const hasValidData = structured && (structured.task1 || structured.task2);
+
+// Early return with error UI if no structured data
+if (!hasValidData) {
+  return (
+    <div className="min-h-screen bg-surface-2 flex items-center justify-center">
+      <Card className="max-w-md mx-4">
+        <CardHeader className="text-center">
+          <CardTitle className="text-heading-3 text-destructive">Results Not Available</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <p className="text-text-secondary">
+            We couldn't find your test results. This usually happens when:
+          </p>
+          <ul className="text-sm text-text-secondary text-left space-y-1">
+            <li>• You navigated directly to this page</li>
+            <li>• You refreshed the page</li>
+            <li>• The test session expired</li>
+          </ul>
+          <div className="flex flex-col gap-2 pt-4">
+            <Button onClick={() => navigate('/ielts-portal')} className="w-full">
+              Take New Test
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')} className="w-full">
+              Back to Dashboard
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 const t1OverallComputed = computeTaskOverall(structured?.task1, 'task1');
 const t2OverallComputed = computeTaskOverall(structured?.task2, 'task2');
 const denom = (Number.isNaN(t1OverallComputed) ? 0 : 1) + (Number.isNaN(t2OverallComputed) ? 0 : 2);
@@ -400,8 +435,8 @@ const TaskSection = ({
           </CardContent>
         </Card>
 
-        <TaskSection title="Task 1 Assessment" task={structured.task1} type="task1" computedOverall={t1OverallComputed} />
-        <TaskSection title="Task 2 Assessment" task={structured.task2} type="task2" computedOverall={t2OverallComputed} />
+        <TaskSection title="Task 1 Assessment" task={structured?.task1} type="task1" computedOverall={t1OverallComputed} />
+        <TaskSection title="Task 2 Assessment" task={structured?.task2} type="task2" computedOverall={t2OverallComputed} />
 
         {task1Answer ? <Card className="card-elevated mb-8 border-2 border-brand-blue/20">
             <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">

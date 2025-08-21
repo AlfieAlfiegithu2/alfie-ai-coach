@@ -18,9 +18,18 @@ serve(async (req) => {
   try {
     // Check if OpenAI API key is configured
     if (!openAIApiKey) {
-      console.error('❌ OpenAI API key not configured');
-      throw new Error('OpenAI API key not configured');
+      console.error('❌ OpenAI API key not configured. Available env vars:', Object.keys(Deno.env.toObject()));
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'AI service temporarily unavailable. Please try again in a moment.',
+        details: 'OpenAI API key not configured'
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('✅ OpenAI API key found, length:', openAIApiKey.length);
 
     const body = await req.json();
     const { messages, message, context = "catbot" } = body;

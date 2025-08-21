@@ -159,9 +159,21 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Chat error:', error);
+      
+      // Handle different types of errors with appropriate messages
+      let errorText = 'Sorry, I\'m having trouble connecting right now. Please try again.';
+      
+      if (error?.message?.includes('service temporarily unavailable') || error?.statusCode === 503) {
+        errorText = '🔧 Foxbot is being updated! Please try again in a moment.';
+      } else if (error?.statusCode === 429) {
+        errorText = '⏰ I\'m getting lots of requests! Please wait a moment and try again.';
+      } else if (error?.statusCode >= 500) {
+        errorText = '⚠️ Technical issue detected. The team has been notified. Try again soon!';
+      }
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Sorry, I\'m having trouble connecting right now. Please try again.',
+        text: errorText,
         isUser: false,
         timestamp: new Date(),
       };

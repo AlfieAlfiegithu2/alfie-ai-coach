@@ -244,9 +244,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       setCurrentChatMessages(prev => [...prev, botMessage]);
     } catch (error: any) {
       console.error('Error sending chat message:', error);
+      
+      // Handle different error types with better user messaging
+      let errorTitle = "Connection Issue";
+      let errorDescription = "Failed to get response from Foxbot. Please try again.";
+      
+      if (error?.message?.includes('service temporarily unavailable') || error?.statusCode === 503) {
+        errorTitle = "Service Update";
+        errorDescription = "Foxbot is being updated! Please try again in a moment.";
+      } else if (error?.statusCode === 429) {
+        errorTitle = "High Traffic";
+        errorDescription = "Lots of students are getting help! Please wait a moment and try again.";
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to get response from Catbot",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive"
       });
     } finally {

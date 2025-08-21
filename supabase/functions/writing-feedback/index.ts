@@ -112,7 +112,7 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -132,7 +132,7 @@ Return ONLY JSON. Use whole or half bands only (0, 0.5, …, 9). Apply IELTS rou
             content: feedbackPrompt
           }
         ],
-        temperature: 0.3,
+        max_completion_tokens: 1500,
       }),
     });
 

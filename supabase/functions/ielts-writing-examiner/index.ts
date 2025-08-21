@@ -40,7 +40,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -159,8 +159,7 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON. Begin yo
             content: examinerPrompt
           }
         ],
-        temperature: 0.2,
-        max_tokens: 2000,
+        max_completion_tokens: 2000,
       }),
     });
 

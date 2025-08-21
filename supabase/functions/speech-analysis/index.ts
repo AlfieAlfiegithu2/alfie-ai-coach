@@ -164,7 +164,7 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -175,7 +175,7 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
             content: analysisPrompt
           }
         ],
-        temperature: 0.3,
+        max_completion_tokens: 1000,
       }),
     });
 

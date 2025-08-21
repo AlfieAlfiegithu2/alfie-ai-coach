@@ -50,13 +50,12 @@ Make it engaging, educational, and appropriate for daily practice. Focus on prac
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini-2025-08-07',
         messages: [
           { role: 'system', content: 'You are an expert English teacher creating daily challenges. Always respond with valid JSON only.' },
           { role: 'user', content: challengePrompt }
         ],
-        max_tokens: 800,
-        temperature: 0.8,
+        max_completion_tokens: 800,
       }),
     });
 

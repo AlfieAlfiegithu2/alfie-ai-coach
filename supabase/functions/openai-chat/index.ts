@@ -168,7 +168,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: apiMessages,
-        max_tokens: 300, // Reduced for faster responses
+        max_tokens: 450, // Increased for complete responses
         temperature: 0.7,
       }),
     });
@@ -189,6 +189,9 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       .replace(/#{1,6}\s*/g, '')  // Remove all ### headers
       .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')  // Remove *** bold formatting
       .replace(/\*{1,2}([^*]+)\*{1,2}/g, '**$1**')  // Convert * to ** for bold text
+      .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
+      .replace(/([.!?])\s*([A-Z])/g, '$1\n\n$2')  // Add spacing between sentences
+      .replace(/•\s*/g, '\n• ')  // Format bullet points
       .trim();
 
     console.log('✅ AI Chat Response generated successfully');

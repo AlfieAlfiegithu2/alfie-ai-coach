@@ -32,6 +32,8 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [typingMessage, setTypingMessage] = useState<string>('');
+  const [isTyping, setIsTyping] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState(initialPosition || { x: 50, y: 50 });
   const [size, setSize] = useState({ width: 400, height: 500 });
@@ -122,6 +124,33 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
     }
   }, [isDragging, isResizing, dragOffset, resizeOffset]);
 
+  const typeMessage = (fullText: string, messageId: string) => {
+    setIsTyping(true);
+    setTypingMessage('');
+    let currentIndex = 0;
+    
+    const typeInterval = setInterval(() => {
+      if (currentIndex < fullText.length) {
+        const char = fullText[currentIndex];
+        setTypingMessage(prev => prev + char);
+        currentIndex++;
+      } else {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        setTypingMessage('');
+        
+        // Add the complete message to messages
+        const completeMessage: Message = {
+          id: messageId,
+          text: fullText,
+          isUser: false,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, completeMessage]);
+      }
+    }, 30); // Adjust typing speed here (lower = faster)
+  };
+
   const sendMessage = async (message: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -155,14 +184,11 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
 
       if (error) throw error;
 
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.response || 'Sorry, I encountered an issue. Please try again.',
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, botMessage]);
+      const responseText = data.response || 'Sorry, I encountered an issue. Please try again.';
+      const messageId = (Date.now() + 1).toString();
+      
+      // Start typing animation
+      typeMessage(responseText, messageId);
     } catch (error) {
       console.error('Chat error:', error);
       
@@ -296,28 +322,39 @@ export const DraggableChatbot: React.FC<DraggableChatbotProps> = ({
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
+            {/* Messages */}
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-2 rounded-lg text-sm ${
+                  className={`max-w-[80%] p-3 rounded-lg text-sm leading-relaxed ${
                     message.isUser
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-foreground'
                   }`}
                 >
-                  <p>{message.text}</p>
-                  <p className="text-xs opacity-70 mt-1">
+                  <div className="whitespace-pre-wrap">{message.text}</div>
+                  <p className="text-xs opacity-70 mt-2">
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
             ))}
-            {isLoading && (
+            
+            {/* Typing Animation */}
+            {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-muted p-2 rounded-lg text-sm">
+                <div className="max-w-[80%] bg-muted text-foreground p-3 rounded-lg text-sm leading-relaxed">
+                  <div className="whitespace-pre-wrap">{typingMessage}<span className="animate-pulse">|</span></div>
+                </div>
+              </div>
+            )}
+            
+            {isLoading && !isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-muted p-3 rounded-lg text-sm">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>

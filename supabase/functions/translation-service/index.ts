@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,20 +15,20 @@ serve(async (req) => {
   }
 
   try {
-    // Check if OpenAI API key is configured
-    if (!openAIApiKey) {
-      console.error('❌ OpenAI API key not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
+    // Check if DeepSeek API key is configured
+    if (!deepSeekApiKey) {
+      console.error('❌ DeepSeek API key not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Translation service temporarily unavailable. Please try again in a moment.',
-        details: 'OpenAI API key not configured'
+        details: 'DeepSeek API key not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ OpenAI API key found for translation, length:', openAIApiKey.length);
+    console.log('✅ DeepSeek API key found for translation, length:', deepSeekApiKey.length);
 
     const { text, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
 
@@ -61,14 +61,14 @@ serve(async (req) => {
       `Translate this text to ${targetLang}: "${text}"` :
       `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${deepSeekApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini-2025-04-14',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -80,7 +80,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      throw new Error(`DeepSeek API error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const data = await response.json();

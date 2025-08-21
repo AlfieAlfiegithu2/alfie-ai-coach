@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -116,8 +116,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!openAIApiKey) {
-      throw new Error('Missing OPENAI_API_KEY');
+    if (!deepSeekApiKey) {
+      throw new Error('Missing DEEPSEEK_API_KEY');
     }
 
     const { userSubmission, questionPrompt } = (await req.json()) as AnalyzeRequest;
@@ -134,25 +134,26 @@ Return ONLY valid JSON as specified. No extra prose.`;
 
     const user = `Context (IELTS prompt):\n${questionPrompt || 'N/A'}\n\nStudent submission (verbatim):\n"""\n${userSubmission}\n"""\n\nYour tasks:\n1) Create original_spans by splitting the ORIGINAL text into ordered spans whose concatenation exactly reconstructs the input (preserve all spaces and punctuation). Mark status:\n   - "error" for spans that contain grammar/spelling/usage/collocation issues or awkward phrasing\n   - "neutral" for correctly written or acceptable segments\n   Keep spans small (a few words) to localize issues precisely; avoid whole-sentence spans unless every part is problematic.\n\n2) Produce a fully improved, Band 7.5+ CORRECTED text that uses advanced vocabulary, more natural academic phrasing, and varied sentence structures. Then split it into corrected_spans. Mark status:\n   - "improvement" ONLY for spans that reflect a meaningful change (lexical sophistication, grammar correctness, or sentence restructuring); keep spans tight around the changed words/phrases, not the whole sentence.\n   - "neutral" for unchanged/identical segments.\n   Do NOT mark trivial punctuation-only changes as improvements unless they fix a genuine error.\n\nOutput STRICTLY this JSON (no markdown or commentary):\n{\n  "original_spans": [ {"text": string, "status": "error"|"neutral"}, ... ],\n  "corrected_spans": [ {"text": string, "status": "improvement"|"neutral"}, ... ]\n}`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${deepSeekApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        max_completion_tokens: 2200,
+        max_tokens: 2200,
+        temperature: 0.2,
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`OpenAI API error: ${err}`);
+      throw new Error(`DeepSeek API error: ${err}`);
     }
 
     const data = await response.json();

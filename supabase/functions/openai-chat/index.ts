@@ -199,6 +199,25 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       ];
     }
 
+    // Analyze question complexity for dynamic token allocation
+    const analyzeComplexity = (message: string) => {
+      const wordCount = message.split(' ').length;
+      const complexityKeywords = ['explain', 'example', 'structure', 'grammar', 'detailed', 'how to', 'why', 'describe'];
+      const hasComplexityKeywords = complexityKeywords.some(keyword => 
+        message.toLowerCase().includes(keyword)
+      );
+      
+      if (wordCount > 50 || hasComplexityKeywords || message.includes('?')) {
+        return { level: 'complex', tokens: 1200 };
+      } else if (wordCount > 20 || message.length > 100) {
+        return { level: 'medium', tokens: 1000 };
+      } else {
+        return { level: 'simple', tokens: 600 };
+      }
+    };
+
+    const complexity = analyzeComplexity(finalMessage);
+    console.log(`📊 Question complexity: ${complexity.level}, allocated tokens: ${complexity.tokens}`);
     console.log('Making DeepSeek request with API key:', deepSeekApiKey ? 'Present' : 'Missing');
     
     const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -210,7 +229,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: apiMessages,
-        max_tokens: 600, // Increased for complete responses
+        max_tokens: complexity.tokens,
         temperature: 0.7,
       }),
     });
@@ -224,7 +243,33 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
     }
 
     const data = await response.json();
-    let aiResponse = data.choices[0].message.content;
+    const choice = data.choices[0];
+    let aiResponse = choice.message.content;
+    
+    // Check for response truncation and handle accordingly
+    const finishReason = choice.finish_reason;
+    const wasTruncated = finishReason === 'length';
+    
+    console.log(`🔍 Response completion status: ${finishReason}, truncated: ${wasTruncated}`);
+    console.log(`📏 Token usage - requested: ${complexity.tokens}, response length: ${aiResponse.length} chars`);
+    
+    if (wasTruncated) {
+      console.log('⚠️ Response was truncated due to token limit');
+      
+      // Trim to last complete sentence to avoid mid-sentence cutoffs
+      const sentences = aiResponse.split(/[.!?]/);
+      if (sentences.length > 1) {
+        // Remove the last incomplete sentence and rejoin
+        sentences.pop();
+        aiResponse = sentences.join('.') + '.';
+        console.log('✂️ Trimmed to last complete sentence');
+      }
+      
+      // Add continuation note for complex questions
+      if (complexity.level === 'complex' && !aiResponse.includes('continue')) {
+        aiResponse += '\n\n💬 Would you like me to continue with more details?';
+      }
+    }
     
     // Clean up formatting - remove ### and *** that shouldn't appear in student responses
     aiResponse = aiResponse
@@ -241,7 +286,7 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
 
     console.log('✅ AI Chat Response generated successfully');
 
-    // Cache the response for future use
+    // Cache the response for future use with completion metadata
     try {
       const taskContext = [taskType, taskInstructions, imageContext].filter(Boolean).join(' | ');
       
@@ -252,10 +297,24 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
           response: aiResponse,
           task_context: taskContext || null,
           hit_count: 1,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+          // Store metadata for monitoring and optimization
+          metadata: {
+            complexity_level: complexity.level,
+            tokens_allocated: complexity.tokens,
+            response_length: aiResponse.length,
+            was_truncated: wasTruncated,
+            finish_reason: finishReason,
+            question_length: finalMessage.length
+          }
         });
       
-      console.log('💾 Response cached successfully');
+      console.log('💾 Response cached successfully with metadata');
+      
+      // Log usage statistics for monitoring
+      if (wasTruncated) {
+        console.log(`📈 Truncation event logged - complexity: ${complexity.level}, tokens: ${complexity.tokens}`);
+      }
     } catch (cacheError) {
       console.warn('⚠️ Failed to cache response:', cacheError);
       // Don't fail the request if caching fails

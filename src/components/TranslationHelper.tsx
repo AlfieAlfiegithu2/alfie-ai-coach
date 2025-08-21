@@ -38,14 +38,14 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   const fetchTranslation = async (text: string) => {
     setIsLoading(true);
     try {
-      // Use translation service with context for multiple meanings
+      // Use simple translation service
       const { supabase } = await import('@/integrations/supabase/client');
       const { data, error } = await supabase.functions.invoke('translation-service', {
         body: {
           text: text,
           targetLang: language,
           sourceLang: 'auto',
-          includeContext: true // Request multiple meanings and context
+          includeContext: false // Simple translation without context
         }
       });
 
@@ -54,7 +54,6 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
         // Fallback to simple translation that still allows saving
         setTranslationResult({
           translation: `${text} → ${language} translation`,
-          context: 'Translation service temporarily unavailable, but you can still save this word.',
           simple: true
         });
       } else {
@@ -64,7 +63,6 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       console.error('Translation error:', error);
       setTranslationResult({
         translation: `${text} → ${language}`,
-        context: 'Translation temporarily unavailable, but you can still save this word to practice later.',
         simple: true
       });
     } finally {
@@ -246,20 +244,6 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
                           </Badge>
                         ))}
                       </div>
-                    </div>
-                  )}
-                  
-                  {translationResult.context && (
-                    <div className="text-xs">
-                      <p className="text-text-secondary font-medium mb-1">Context:</p>
-                      <p className="text-text-secondary">{translationResult.context}</p>
-                    </div>
-                  )}
-                  
-                  {translationResult.grammar_notes && (
-                    <div className="text-xs">
-                      <p className="text-text-secondary font-medium mb-1">Grammar notes:</p>
-                      <p className="text-text-secondary">{translationResult.grammar_notes}</p>
                     </div>
                   )}
                 </div>

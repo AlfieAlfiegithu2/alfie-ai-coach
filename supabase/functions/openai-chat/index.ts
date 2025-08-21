@@ -16,6 +16,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔍 Environment check - DEEPSEEK_API_KEY exists:', !!deepSeekApiKey);
+    console.log('🔍 All environment variables:', Object.keys(Deno.env.toObject()));
+    
     // Check if DeepSeek API key is configured
     if (!deepSeekApiKey) {
       console.error('❌ DeepSeek API key not configured. Available env vars:', Object.keys(Deno.env.toObject()));

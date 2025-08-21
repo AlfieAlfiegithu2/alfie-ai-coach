@@ -149,6 +149,7 @@ export type Database = {
           expires_at: string | null
           hit_count: number | null
           id: string
+          metadata: Json | null
           response: string
           task_context: string | null
           updated_at: string
@@ -159,6 +160,7 @@ export type Database = {
           expires_at?: string | null
           hit_count?: number | null
           id?: string
+          metadata?: Json | null
           response: string
           task_context?: string | null
           updated_at?: string
@@ -169,6 +171,7 @@ export type Database = {
           expires_at?: string | null
           hit_count?: number | null
           id?: string
+          metadata?: Json | null
           response?: string
           task_context?: string | null
           updated_at?: string

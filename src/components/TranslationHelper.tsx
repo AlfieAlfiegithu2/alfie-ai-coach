@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,9 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
 
+  // Simple cache to avoid repeated API calls
+  const translationCache = useRef<Map<string, TranslationResult>>(new Map());
+
   useEffect(() => {
     if (selectedText.trim()) {
       fetchTranslation(selectedText.trim());
@@ -36,6 +39,15 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   }, [selectedText, language]);
 
   const fetchTranslation = async (text: string) => {
+    const cacheKey = `${text.toLowerCase()}-${language}`;
+    
+    // Check cache first
+    const cached = translationCache.current.get(cacheKey);
+    if (cached) {
+      setTranslationResult(cached);
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Use simple translation service
@@ -58,6 +70,8 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
         });
       } else {
         setTranslationResult(data.result);
+        // Cache the result
+        translationCache.current.set(cacheKey, data.result);
       }
     } catch (error) {
       console.error('Translation error:', error);

@@ -39,29 +39,16 @@ serve(async (req) => {
     console.log('🌐 Translation request:', { text: text.substring(0, 50) + '...', sourceLang, targetLang });
 
     const systemPrompt = includeContext ? 
-      `You are a professional translator. When translating words or phrases, provide comprehensive information including multiple meanings when applicable and part of speech information.
-       
-       Always respond with valid JSON in this exact format:
+      `Professional translator. Return JSON format only:
        {
          "translation": "primary translation",
-         "alternatives": [
-           {"meaning": "alternative1", "pos": "noun"},
-           {"meaning": "alternative2", "pos": "verb"},
-           {"meaning": "alternative3", "pos": "adjective"}
-         ],
-         "context": "cultural or linguistic context if relevant",
-         "grammar_notes": "brief grammar explanation if helpful"
+         "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
+         "context": null,
+         "grammar_notes": null
        }
        
-       Rules:
-       - "translation" should be the most common/primary translation
-       - "alternatives" should include ALL different meanings/contexts with their part of speech (pos: "noun", "verb", "adjective", "adverb", "preposition", etc.)
-       - Include as many alternatives as exist - no limit on number
-       - "pos" should be the part of speech in English (noun, verb, adjective, etc.)
-       - "context" should explain when/how to use different meanings, or null if not needed
-       - "grammar_notes" should be brief and helpful, or null if not needed
-       - Always respond with valid JSON, no additional text` :
-      `You are a professional translator. Provide only the accurate translation of the given text. If the word has multiple common meanings, separate them with " / " (e.g., "right: correcto / derecho"). Respond with just the translated text, no additional formatting.`;
+       Rules: "translation"=most common meaning, "alternatives"=other meanings with part-of-speech, include ALL meanings that exist, "pos"=noun/verb/adj/adv/prep/etc, set context/grammar_notes to null for speed.` :
+      `Translate accurately and concisely. For multiple meanings use format: "meaning1 / meaning2". Just the translation, no extra text.`;
 
     const userPrompt = sourceLang === "auto" ? 
       `Translate this text to ${targetLang}: "${text}"` :
@@ -74,13 +61,13 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek-chat', // Already the fastest DeepSeek model for this task
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 1000,
-        temperature: 0.3,
+        max_tokens: 400, // Reduced from 1000 for faster response
+        temperature: 0.1, // Lower temperature for faster, more deterministic responses
       }),
     });
 

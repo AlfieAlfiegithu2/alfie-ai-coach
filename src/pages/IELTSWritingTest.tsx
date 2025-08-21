@@ -273,10 +273,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   // Handle task switching with proper context isolation
   const switchToTask = (taskNumber: 1 | 2) => {
     setCurrentTask(taskNumber);
-    // Reset and start timer for the new task
-    const taskTime = taskNumber === 1 ? 20 * 60 : 40 * 60; // 20 min for Task 1, 40 min for Task 2
-    setTimeRemaining(taskTime);
-    setTimerStarted(true);
+    // Don't reset timer - it's shared between tasks
   };
 
   const submitTest = async () => {
@@ -337,14 +334,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Initialize timer on component mount
+  // Initialize timer on component mount - 60 minutes total
   useEffect(() => {
-    if (!timerStarted && currentTask) {
-      const taskTime = currentTask === 1 ? 20 * 60 : 40 * 60;
-      setTimeRemaining(taskTime);
+    if (!timerStarted) {
+      setTimeRemaining(60 * 60); // 1 hour total
       setTimerStarted(true);
     }
-  }, [currentTask, timerStarted]);
+  }, [timerStarted]);
 
   if (!test || !task1 || !task2) {
     return (
@@ -378,7 +374,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg">
                 <Clock className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">
-                  Task {currentTask}: {formatTime(timeRemaining)}
+                  Time Remaining: {formatTime(timeRemaining)}
                 </span>
               </div>
               
@@ -408,9 +404,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <CardContent>
             <div className="space-y-4">
               <p className="text-text-secondary">
-                {currentTask === 1 
-                  ? "Task 1 requires students to describe visual information (graphs, charts, tables, etc.)"
-                  : "Task 2 requires students to write an essay presenting arguments, opinions, and examples."
+                {currentTask === 2 
+                  ? "Task 2 requires students to write an essay presenting arguments, opinions, and examples."
+                  : ""
                 }
               </p>
               

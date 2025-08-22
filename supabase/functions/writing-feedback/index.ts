@@ -12,21 +12,21 @@ serve(async (req) => {
   }
 
   try {
-    // Check if OpenAI API key is configured
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      console.error('❌ OpenAI API key not configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
+    // Check if DeepSeek API key is configured
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!deepseekApiKey) {
+      console.error('❌ DeepSeek API key not configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Writing feedback service temporarily unavailable. Please try again in a moment.',
-        details: 'OpenAI API key not configured'
+        details: 'DeepSeek API key not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ OpenAI API key found for writing feedback, length:', OPENAI_API_KEY.length);
+    console.log('✅ DeepSeek API key found for writing feedback, length:', deepseekApiKey.length);
 
     const { writing, prompt, taskType } = await req.json();
 
@@ -116,14 +116,14 @@ Please return your assessment in the following structured format:
 
 Be specific, constructive, and provide actionable feedback that helps achieve higher band scores.`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${deepseekApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -143,7 +143,8 @@ Return ONLY JSON. Use whole or half bands only (0, 0.5, …, 9). Apply IELTS rou
             content: feedbackPrompt
           }
         ],
-        max_completion_tokens: 1500,
+        max_tokens: 1500,
+        temperature: 0.3
       }),
     });
 

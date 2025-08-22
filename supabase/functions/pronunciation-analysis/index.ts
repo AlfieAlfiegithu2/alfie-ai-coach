@@ -28,15 +28,74 @@ function extractJson(text: string): { jsonText: string; parsed: any | null } {
   }
 }
 
+async function transcribeWithAssemblyAI(audioBase64: string): Promise<string> {
+  const assemblyApiKey = Deno.env.get('ASSEMBLYAI_API_KEY');
+  if (!assemblyApiKey) {
+    throw new Error('AssemblyAI API key not configured');
+  }
+
+  // Upload audio to AssemblyAI
+  const audioBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+  const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
+    method: 'POST',
+    headers: {
+      'authorization': assemblyApiKey,
+      'content-type': 'application/octet-stream',
+    },
+    body: audioBytes,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(`AssemblyAI upload failed: ${await uploadResponse.text()}`);
+  }
+
+  const { upload_url } = await uploadResponse.json();
+
+  // Start transcription
+  const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+    method: 'POST',
+    headers: {
+      'authorization': assemblyApiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      audio_url: upload_url,
+      language_code: 'en'
+    }),
+  });
+
+  if (!transcriptResponse.ok) {
+    throw new Error(`AssemblyAI transcript request failed: ${await transcriptResponse.text()}`);
+  }
+
+  const { id } = await transcriptResponse.json();
+
+  // Poll for completion
+  let transcriptData;
+  do {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${id}`, {
+      headers: { 'authorization': assemblyApiKey },
+    });
+    transcriptData = await statusResponse.json();
+  } while (transcriptData.status === 'queued' || transcriptData.status === 'processing');
+
+  if (transcriptData.status === 'error') {
+    throw new Error(`AssemblyAI transcription failed: ${transcriptData.error}`);
+  }
+
+  return transcriptData.text || '';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!deepseekApiKey) {
+      throw new Error('DeepSeek API key not configured');
     }
 
     const { audio, referenceText } = await req.json();
@@ -44,56 +103,8 @@ serve(async (req) => {
     if (!audio) throw new Error('No audio data provided');
     if (!referenceText) throw new Error('referenceText is required');
 
-    // Decode base64 to bytes
-    const binaryString = atob(audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-
-    // Transcribe with Whisper
-    const formData = new FormData();
-    const blob = new Blob([bytes], { type: 'audio/webm' });
-    formData.append('file', blob, 'speech.webm');
-    formData.append('model', 'whisper-1');
-    // Force English-only transcription to prevent incorrect language auto-detection
-    formData.append('language', 'en');
-    formData.append('temperature', '0');
-    formData.append('prompt', 'Transcribe strictly in English (en-US). This is an IELTS Speaking/pronunciation task. Ignore non-English words and output the best English interpretation.');
-
-    const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: formData,
-    });
-
-    if (!transcriptionResponse.ok) {
-      throw new Error(`Transcription failed: ${await transcriptionResponse.text()}`);
-    }
-
-    const transcriptionResult = await transcriptionResponse.json();
-    let userTranscript = transcriptionResult.text || '';
-
-    // Retry guard: if Hangul characters detected, retry with stronger English bias
-    const hangulRegex = /[\u3131-\u318E\uAC00-\uD7A3]/;
-    if (hangulRegex.test(userTranscript)) {
-      console.warn('⚠️ Hangul detected in transcription; retrying with stronger English bias');
-      const retryForm = new FormData();
-      retryForm.append('file', blob, 'speech.webm');
-      retryForm.append('model', 'whisper-1');
-      retryForm.append('language', 'en');
-      retryForm.append('temperature', '0');
-      retryForm.append('prompt', 'TRANSCRIBE ONLY IN ENGLISH (en-US). This is an IELTS Speaking/pronunciation task; even if audio includes non-English sounds, output the closest English words only.');
-      const retryResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-        body: retryForm,
-      });
-      if (retryResp.ok) {
-        const retryJson = await retryResp.json();
-        if (retryJson?.text) userTranscript = retryJson.text;
-      } else {
-        console.error('Retry transcription failed:', await retryResp.text());
-      }
-    }
+    // Transcribe with AssemblyAI
+    const userTranscript = await transcribeWithAssemblyAI(audio);
 
     // Build Prolo prompt
     const instructions = `Role and Goal:
@@ -157,19 +168,20 @@ Constraints:
 - Iterate through each word in the reference text for wordAnalysis, even if pronounced correctly (mark as Excellent/Good/etc.).
 - Be concise, specific, and actionable.`;
 
-    const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${deepseekApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: "You are Prolo, an expert AI pronunciation coach. Always respond with a single JSON object only." },
           { role: 'user', content: instructions }
         ],
-        max_completion_tokens: 1200,
+        max_tokens: 1200,
+        temperature: 0.3
       }),
     });
 

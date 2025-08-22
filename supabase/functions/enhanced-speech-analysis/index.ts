@@ -6,6 +6,65 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function transcribeWithAssemblyAI(audioBase64: string): Promise<string> {
+  const assemblyApiKey = Deno.env.get('ASSEMBLYAI_API_KEY');
+  if (!assemblyApiKey) {
+    throw new Error('AssemblyAI API key not configured');
+  }
+
+  // Upload audio to AssemblyAI
+  const audioBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+  const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
+    method: 'POST',
+    headers: {
+      'authorization': assemblyApiKey,
+      'content-type': 'application/octet-stream',
+    },
+    body: audioBytes,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(`AssemblyAI upload failed: ${await uploadResponse.text()}`);
+  }
+
+  const { upload_url } = await uploadResponse.json();
+
+  // Start transcription
+  const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+    method: 'POST',
+    headers: {
+      'authorization': assemblyApiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      audio_url: upload_url,
+      language_code: 'en'
+    }),
+  });
+
+  if (!transcriptResponse.ok) {
+    throw new Error(`AssemblyAI transcript request failed: ${await transcriptResponse.text()}`);
+  }
+
+  const { id } = await transcriptResponse.json();
+
+  // Poll for completion
+  let transcriptData;
+  do {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${id}`, {
+      headers: { 'authorization': assemblyApiKey },
+    });
+    transcriptData = await statusResponse.json();
+  } while (transcriptData.status === 'queued' || transcriptData.status === 'processing');
+
+  if (transcriptData.status === 'error') {
+    throw new Error(`AssemblyAI transcription failed: ${transcriptData.error}`);
+  }
+
+  return transcriptData.text || '';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -14,9 +73,9 @@ serve(async (req) => {
   try {
     console.log('🚀 Enhanced speech analysis started');
     
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!deepseekApiKey) {
+      throw new Error('DeepSeek API key not configured');
     }
 
     const { allRecordings, testData, analysisType = "comprehensive" } = await req.json();
@@ -54,63 +113,11 @@ serve(async (req) => {
         hasAudio: !!recording.audio_base64,
         questionText: recording.questionTranscription?.substring(0, 50) + '...'
       });
-      const binaryString = atob(recording.audio_base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const blob = new Blob([bytes], { type: 'audio/webm' });
-      const formData = new FormData();
-      formData.append('file', blob, `speech_part${recording.partNum}_q${recording.questionIndex}.webm`);
-      formData.append('model', 'whisper-1');
-      // Force English-only transcription to prevent incorrect language auto-detection
-      formData.append('language', 'en');
-      formData.append('temperature', '0');
-      formData.append('prompt', "Transcribe strictly in English (en-US). This is an IELTS Speaking test answer. Mark any unintelligible segments as 'inaudible'.");
 
-      // Get transcription for this individual question
-      const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: formData,
-      });
+      // Transcribe with AssemblyAI
+      const transcription = await transcribeWithAssemblyAI(recording.audio_base64);
 
-      if (!transcriptionResponse.ok) {
-        const errorText = await transcriptionResponse.text();
-        console.error(`❌ Transcription failed for ${recording.part}:`, errorText);
-        throw new Error(`Transcription failed for ${recording.part}: ${errorText}`);
-      }
-
-      const transcriptionResult = await transcriptionResponse.json();
-      let studentTranscription = transcriptionResult.text || '';
-
-      // Retry guard: if Hangul characters detected, retry with stronger English bias
-      const hangulRegex = /[\u3131-\u318E\uAC00-\uD7A3]/;
-      if (hangulRegex.test(studentTranscription)) {
-        console.warn('⚠️ Hangul detected in transcription; retrying with stronger English bias');
-        const retryForm = new FormData();
-        retryForm.append('file', blob, `speech_part${recording.partNum}_q${recording.questionIndex}.webm`);
-        retryForm.append('model', 'whisper-1');
-        retryForm.append('language', 'en');
-        retryForm.append('temperature', '0');
-        retryForm.append('prompt', 'TRANSCRIBE ONLY IN ENGLISH (en-US). This is an IELTS Speaking test; even if audio includes non-English sounds, output the closest English words only.');
-        const retryResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-          body: retryForm,
-        });
-        if (retryResp.ok) {
-          const retryJson = await retryResp.json();
-          if (retryJson?.text) studentTranscription = retryJson.text;
-        } else {
-          console.error('Retry transcription failed:', await retryResp.text());
-        }
-      }
-
-      console.log(`✅ Transcription complete for ${recording.part}:`, studentTranscription.substring(0, 100) + '...');
+      console.log(`✅ Transcription complete for ${recording.part}:`, transcription.substring(0, 100) + '...');
 
       // Enhanced minimal/quality checks
       const normalize = (t: string) => t
@@ -118,14 +125,14 @@ serve(async (req) => {
         .replace(/\b(uh|um|er|mm|like|you know|ah|uh-huh|hmm)\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
-      const cleaned = normalize(studentTranscription || '');
+      const cleaned = normalize(transcription || '');
       const wordCount = cleaned ? cleaned.split(/\s+/).filter(Boolean).length : 0;
 
-      const isMinimalResponse = !studentTranscription || 
+      const isMinimalResponse = !transcription || 
                                 wordCount < 8 ||
-                                /^(silence|\.{3,}|bye\.?|mm|uh|um|er)$/i.test(studentTranscription.trim()) ||
-                                studentTranscription.toLowerCase().includes('silence') ||
-                                studentTranscription.toLowerCase().includes('inaudible');
+                                /^(silence|\.{3,}|bye\.?|mm|uh|um|er)$/i.test(transcription.trim()) ||
+                                transcription.toLowerCase().includes('silence') ||
+                                transcription.toLowerCase().includes('inaudible');
 
       let feedback = '';
       let original_spans: any[] = [];
@@ -137,19 +144,20 @@ serve(async (req) => {
         // Ask for BOTH feedback bullets and suggestion spans in one call
         const prompt = {
           role: 'user' as const,
-          content: `You are a senior IELTS examiner. Analyze the student's answer to the question: "${recording.questionTranscription || recording.prompt}"\n\nStudent transcription (may include 'inaudible' where sound is unclear):\n${studentTranscription}\n\nReturn STRICT JSON with this shape only:{\n  "feedback_bullets": string[2..3],\n  "original_spans": {"text": string, "status": "error"|"neutral"}[],\n  "suggested_spans": {"text": string, "status": "improvement"|"neutral"}[]\n}\nRules:\n- feedback_bullets: 2-3 short, actionable points about fluency/pronunciation/intonation (audio-focused).\n- original_spans: segment the student's text; mark weak or incorrect segments as status "error"; others "neutral".\n- suggested_spans: rewrite as a higher-band answer; mark improved parts as status "improvement"; others "neutral".\n- Do NOT include explanations outside JSON.`,
+          content: `You are a senior IELTS examiner. Analyze the student's answer to the question: "${recording.questionTranscription || recording.prompt}"\n\nStudent transcription (may include 'inaudible' where sound is unclear):\n${transcription}\n\nReturn STRICT JSON with this shape only:{\n  "feedback_bullets": string[2..3],\n  "original_spans": {"text": string, "status": "error"|"neutral"}[],\n  "suggested_spans": {"text": string, "status": "improvement"|"neutral"}[]\n}\nRules:\n- feedback_bullets: 2-3 short, actionable points about fluency/pronunciation/intonation (audio-focused).\n- original_spans: segment the student's text; mark weak or incorrect segments as status "error"; others "neutral".\n- suggested_spans: rewrite as a higher-band answer; mark improved parts as status "improvement"; others "neutral".\n- Do NOT include explanations outside JSON.`,
         };
 
-        const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': `Bearer ${deepseekApiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'gpt-5-2025-08-07',
+            model: 'deepseek-chat',
             messages: [
               { role: 'system', content: 'You are a precise IELTS examiner. Output STRICT JSON only, no prose.' },
               prompt
             ],
-            max_completion_tokens: 800,
+            max_tokens: 800,
+            temperature: 0.7
           }),
         });
 
@@ -180,7 +188,7 @@ serve(async (req) => {
         partNumber: recording.partNum,
         questionIndex: recording.questionIndex,
         questionText: recording.questionTranscription || recording.prompt,
-        transcription: studentTranscription,
+        transcription: transcription,
         feedback,
         audio_url: recording.audio_url,
         original_spans,
@@ -277,43 +285,6 @@ COMPREHENSIVE ANALYSIS INSTRUCTIONS:
 
 Evaluate the student's OVERALL performance across the complete test using these criteria with appropriate caps based on response length and coverage:
 
-Fluency and Coherence (0-9):
-- How well did they maintain speech flow throughout ALL parts?
-- Did they show improvement or decline across parts?
-- Overall coherence and logical development across different question types
-- Cap at 5.5 if responses are consistently very short (under 20 words average)
-
-Lexical Resource (0-9):
-- Range of vocabulary demonstrated across ALL topics and parts
-- Flexibility in vocabulary use between different speaking tasks
-- Appropriateness of language for different contexts (interview, long turn, discussion)
-- Cap at 5.5 if limited vocabulary range due to short responses
-
-Grammatical Range and Accuracy (0-9):
-- Variety of structures used throughout the complete test
-- Accuracy patterns across all responses
-- Ability to handle different grammatical demands of each part
-- Cap at 5.5 if limited structural complexity due to brevity
-
-Pronunciation (0-9):
-- Consistency of pronunciation throughout the entire test
-- Intelligibility across all parts and question types
-- Impact on communication across the full performance
-
-CRITICAL REQUIREMENTS:
-1. Provide specific examples from DIFFERENT parts of the test in your feedback
-2. Show how performance varied or remained consistent across parts
-3. Give a truly holistic assessment, not just based on one question
-4. Reference patterns observed across the complete test
-5. Apply appropriate caps based on response length and substance
-
-Final Score Calculation Rules:
-1. Calculate the average of the four criteria scores
-2. Apply official IELTS rounding rules:
-   - .25 → round UP to next half-band (6.25 → 6.5)
-   - .75 → round UP to next whole band (6.75 → 7.0)
-   - All other values round to nearest half-band
-
 Please return your assessment in this format:
 
 FLUENCY & COHERENCE: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
@@ -324,14 +295,14 @@ OVERALL BAND SCORE: [Final calculated score following rounding rules]
 COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, specific examples from different sections, and improvement recommendations based on complete performance]`;
     }
 
-    const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${deepseekApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -342,7 +313,8 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, sp
             content: comprehensivePrompt
           }
         ],
-        max_completion_tokens: 1500,
+        max_tokens: 1500,
+        temperature: 0.3
       }),
     });
 
@@ -369,22 +341,17 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, sp
         analysisType: "comprehensive_full_test",
         success: true
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Enhanced speech analysis error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error).message,
         success: false 
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

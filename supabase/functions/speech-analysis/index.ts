@@ -6,87 +6,95 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function transcribeWithAssemblyAI(audioBase64: string): Promise<string> {
+  const assemblyApiKey = Deno.env.get('ASSEMBLYAI_API_KEY');
+  if (!assemblyApiKey) {
+    throw new Error('AssemblyAI API key not configured');
+  }
+
+  // Upload audio to AssemblyAI
+  const audioBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+  const uploadResponse = await fetch('https://api.assemblyai.com/v2/upload', {
+    method: 'POST',
+    headers: {
+      'authorization': assemblyApiKey,
+      'content-type': 'application/octet-stream',
+    },
+    body: audioBytes,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(`AssemblyAI upload failed: ${await uploadResponse.text()}`);
+  }
+
+  const { upload_url } = await uploadResponse.json();
+
+  // Start transcription
+  const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
+    method: 'POST',
+    headers: {
+      'authorization': assemblyApiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      audio_url: upload_url,
+      language_code: 'en'
+    }),
+  });
+
+  if (!transcriptResponse.ok) {
+    throw new Error(`AssemblyAI transcript request failed: ${await transcriptResponse.text()}`);
+  }
+
+  const { id } = await transcriptResponse.json();
+
+  // Poll for completion
+  let transcriptData;
+  do {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const statusResponse = await fetch(`https://api.assemblyai.com/v2/transcript/${id}`, {
+      headers: { 'authorization': assemblyApiKey },
+    });
+    transcriptData = await statusResponse.json();
+  } while (transcriptData.status === 'queued' || transcriptData.status === 'processing');
+
+  if (transcriptData.status === 'error') {
+    throw new Error(`AssemblyAI transcription failed: ${transcriptData.error}`);
+  }
+
+  return transcriptData.text || '';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Check if OpenAI API key is configured
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      console.error('❌ OpenAI API key not configured for speech analysis. Available env vars:', Object.keys(Deno.env.toObject()));
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Speech analysis service temporarily unavailable. Please try again in a moment.',
-        details: 'OpenAI API key not configured'
-      }), {
-        status: 503,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('✅ OpenAI API key found for speech analysis, length:', OPENAI_API_KEY.length);
-
     const { audio, prompt, speakingPart, questionTranscription } = await req.json();
 
     if (!audio) {
       throw new Error('No audio data provided');
     }
 
-    // First, transcribe the audio
-    const formData = new FormData();
-    const binaryString = atob(audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    const blob = new Blob([bytes], { type: 'audio/webm' });
-    formData.append('file', blob, 'speech.webm');
-    formData.append('model', 'whisper-1');
-    // Force English-only transcription to prevent incorrect language auto-detection
-    formData.append('language', 'en');
-    formData.append('temperature', '0');
-    formData.append('prompt', 'Transcribe strictly in English (en-US). This is an IELTS Speaking test answer. Ignore non-English words and output the best English interpretation.');
-
-    const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: formData,
-    });
-
-    if (!transcriptionResponse.ok) {
-      throw new Error(`Transcription failed: ${await transcriptionResponse.text()}`);
-    }
-
-    const transcriptionResult = await transcriptionResponse.json();
-    let transcription = transcriptionResult.text || '';
-
-    // Retry guard: if Hangul characters detected, retry with stronger English bias
-    const hangulRegex = /[\u3131-\u318E\uAC00-\uD7A3]/;
-    if (hangulRegex.test(transcription)) {
-      console.warn('⚠️ Hangul detected in transcription; retrying with stronger English bias');
-      const retryForm = new FormData();
-      retryForm.append('file', blob, 'speech.webm');
-      retryForm.append('model', 'whisper-1');
-      retryForm.append('language', 'en');
-      retryForm.append('temperature', '0');
-      retryForm.append('prompt', 'TRANSCRIBE ONLY IN ENGLISH (en-US). This is an IELTS Speaking test; even if audio includes non-English sounds, output the closest English words only.');
-      const retryResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-        body: retryForm,
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!deepseekApiKey) {
+      console.error('❌ DeepSeek API key not configured for speech analysis. Available env vars:', Object.keys(Deno.env.toObject()));
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Speech analysis service temporarily unavailable. Please try again in a moment.',
+        details: 'DeepSeek API key not configured'
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-      if (retryResp.ok) {
-        const retryJson = await retryResp.json();
-        if (retryJson?.text) transcription = retryJson.text;
-      } else {
-        console.error('Retry transcription failed:', await retryResp.text());
-      }
     }
+
+    console.log('✅ DeepSeek API key found for speech analysis, length:', deepseekApiKey.length);
+
+    // Transcribe the audio using AssemblyAI
+    console.log('🎤 Transcribing audio...');
+    const transcription = await transcribeWithAssemblyAI(audio);
 
     // Analyze the transcription with advanced prompting
     const analysisPrompt = `You are a senior, highly experienced IELTS examiner. Your goal is to provide a holistic and accurate assessment based *only* on the official IELTS band descriptors and scoring rules provided below. Evaluate the student's response against these criteria and justify your feedback by referencing them.
@@ -168,14 +176,14 @@ Please return your assessment in the following structured format:
 
 Be specific, constructive, and provide actionable feedback that helps achieve higher band scores.`;
 
-    const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${deepseekApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -186,7 +194,8 @@ Be specific, constructive, and provide actionable feedback that helps achieve hi
             content: analysisPrompt
           }
         ],
-        max_completion_tokens: 1000,
+        max_tokens: 1000,
+        temperature: 0.7
       }),
     });
 

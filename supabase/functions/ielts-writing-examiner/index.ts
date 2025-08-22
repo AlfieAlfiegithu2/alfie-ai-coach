@@ -322,7 +322,6 @@ Please retake the IELTS Writing test to receive an accurate assessment of your w
 *This is an automated technical report. The scores shown are not indicative of actual writing performance.*`
         };
         console.log('✅ Comprehensive fallback data created with detailed explanations');
-        }
       }
     }
 

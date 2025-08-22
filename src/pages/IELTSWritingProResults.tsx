@@ -15,6 +15,25 @@ import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ScoreSpiderChart from "@/components/ScoreSpiderChart";
+
+// Component for the task analysis loading animation
+const TaskAnalysisLoading = ({ task }: { task: string }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+      <div className="w-32 h-32">
+        <dotlottie-wc
+          src="https://lottie.host/176d02bf-8830-4f49-b39c-a086f2b8a012/SS6Qka9MRV.lottie"
+          style={{ width: '100%', height: '100%' }}
+          speed="1"
+          autoplay
+          loop
+        />
+      </div>
+      <div className="text-sm font-medium text-text-primary">Analyzing {task}...</div>
+      <div className="text-caption text-text-secondary">Please wait while we analyze your writing</div>
+    </div>
+  );
+};
 interface Criterion {
   band: number;
   justification?: string;
@@ -757,7 +776,7 @@ const TaskSection = ({
 
                   {/* Correction Display */}
                   <div>
-                    {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
+                    {t1Loading && <TaskAnalysisLoading task="Task 1" />}
                     {t1Error && <div className="status-error">{t1Error}</div>}
                       {t1CorrData && (
                         <>
@@ -836,7 +855,7 @@ const TaskSection = ({
 
                   {/* Correction Display */}
                   <div>
-                    {t2Loading && <div className="status-warning">Analyzing Task 2…</div>}
+                    {t2Loading && <TaskAnalysisLoading task="Task 2" />}
                     {t2Error && <div className="status-error">{t2Error}</div>}
                     {t2CorrData && (
                       <>

@@ -231,8 +231,20 @@ Output STRICTLY this JSON structure (no markdown or commentary):
       }
     }
 
-    if (!json || !Array.isArray(json.original_spans) || !Array.isArray(json.corrected_spans)) {
-      throw new Error('AI did not return the expected JSON structure.');
+    if (!json) {
+      console.error('❌ Could not parse AI response as JSON. Raw content:', content.substring(0, 500));
+      throw new Error('AI did not return valid JSON.');
+    }
+
+    // Ensure required arrays exist, initialize with fallbacks if missing
+    if (!Array.isArray(json.original_spans)) {
+      console.warn('⚠️ original_spans missing, using fallback');
+      json.original_spans = [{ text: userSubmission, status: 'neutral' }];
+    }
+    
+    if (!Array.isArray(json.corrected_spans)) {
+      console.warn('⚠️ corrected_spans missing, using fallback');
+      json.corrected_spans = [{ text: userSubmission, status: 'neutral' }];
     }
 
     // Ensure corrections array exists, even if empty

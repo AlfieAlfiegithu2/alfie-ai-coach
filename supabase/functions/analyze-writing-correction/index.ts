@@ -148,14 +148,21 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are an efficient IELTS writing feedback specialist. Focus on clear, actionable improvements.
+    const system = `You are an efficient IELTS writing feedback specialist. Focus on precise, word-level corrections.
+
+CRITICAL: Create spans that highlight ONLY the exact words/phrases that need correction:
+- Mark ONLY the specific error words as "error" (red highlighting)
+- Mark ONLY the specific improvement words as "improvement" (green highlighting)  
+- Keep surrounding correct text as "neutral"
+- Be precise - don't highlight entire sentences when only 1-2 words need fixing
+
 Find 3-8 key areas for enhancement:
 - Grammar and punctuation corrections
 - Vocabulary improvements (more precise/sophisticated terms)
 - Sentence structure refinements
 - Coherence and flow enhancements
 
-Be concise but thorough. Return ONLY valid JSON as specified. No markdown blocks, no extra text.`;
+Return ONLY valid JSON as specified. No markdown blocks, no extra text.`;
 
     const user = `Context (IELTS prompt):
 ${questionPrompt || 'N/A'}

@@ -148,21 +148,37 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are an IELTS writing correction specialist. Your job is to create precise word-level highlighting that shows EXACTLY what needs to be corrected.
+    const system = `You are an expert IELTS writing corrector. Analyze the student's writing and create two versions:
+1. Original text with errors marked in RED (status: "error")  
+2. Corrected text with improvements marked in GREEN (status: "improvement")
 
-SPAN CREATION RULES (CRITICAL):
-1. ONLY mark specific error words/phrases as "error" status (will show as RED)
-2. ONLY mark specific improved words/phrases as "improvement" status (will show as GREEN)  
-3. Keep all other text as "neutral" status (regular text)
-4. DO NOT highlight entire sentences - be word-specific
-5. If "the student writes" → "the student wrote", only mark "writes" as error and "wrote" as improvement
+CRITICAL RULES:
+- Mark specific incorrect words/phrases as "error" status (RED highlighting)
+- Mark the corrected replacements as "improvement" status (GREEN highlighting)  
+- Keep unchanged text as "neutral" status
+- Be precise - don't mark entire sentences, just the specific errors/corrections
 
-EXAMPLE CORRECTIONS:
-Original: "I am agree with this opinion because it is make sense."
-- original_spans: [{"text":"I am ","status":"neutral"},{"text":"agree","status":"error"},{"text":" with this opinion because it ","status":"neutral"},{"text":"is make","status":"error"},{"text":" sense.","status":"neutral"}]
-- corrected_spans: [{"text":"I ","status":"neutral"},{"text":"agree","status":"improvement"},{"text":" with this opinion because it ","status":"neutral"},{"text":"makes","status":"improvement"},{"text":" sense.","status":"neutral"}]
+EXAMPLE:
+Input: "I am agree because it make sense"
+Output:
+{
+  "original_spans": [
+    {"text":"I ","status":"neutral"},
+    {"text":"am agree","status":"error"},
+    {"text":" because it ","status":"neutral"},
+    {"text":"make","status":"error"}, 
+    {"text":" sense","status":"neutral"}
+  ],
+  "corrected_spans": [
+    {"text":"I ","status":"neutral"},
+    {"text":"agree","status":"improvement"},
+    {"text":" because it ","status":"neutral"},
+    {"text":"makes","status":"improvement"},
+    {"text":" sense","status":"neutral"}
+  ]
+}
 
-Find 3-8 specific word-level errors and improvements. Return ONLY valid JSON.`;
+Always find at least 2-3 errors to correct. Return ONLY valid JSON.`;
 
     const user = `Context (IELTS prompt):
 ${questionPrompt || 'N/A'}
@@ -287,27 +303,38 @@ Output STRICTLY this JSON structure (no markdown or commentary):
       };
     }
 
-    // Simplified processing - use AI output directly if valid, otherwise create minimal fallback
+    // Use AI output directly if available, with better validation
     let originalSpans: Span[];
     let correctedSpans: Span[];
     
     if (json.original_spans?.length > 0 && json.corrected_spans?.length > 0) {
-      // Use AI output directly for faster processing
-      originalSpans = json.original_spans.filter(s => s && typeof s.text === 'string');
-      correctedSpans = json.corrected_spans.filter(s => s && typeof s.text === 'string');
+      // Filter and validate spans
+      originalSpans = json.original_spans.filter(s => s && typeof s.text === 'string' && s.text.length > 0);
+      correctedSpans = json.corrected_spans.filter(s => s && typeof s.text === 'string' && s.text.length > 0);
       
-      // Only run diff if spans seem incomplete or broken
-      const originalText = originalSpans.map(s => s.text).join('');
-      const correctedText = correctedSpans.map(s => s.text).join('');
+      console.log('🔍 AI spans validation:', {
+        originalSpansCount: originalSpans.length,
+        correctedSpansCount: correctedSpans.length,
+        hasErrors: originalSpans.some(s => s.status === 'error'),
+        hasImprovements: correctedSpans.some(s => s.status === 'improvement')
+      });
       
-      if (Math.abs(originalText.length - userSubmission.length) > userSubmission.length * 0.1) {
-        // Fallback to diff processing only if spans are significantly different
-        const { originalSpans: diffOriginal, correctedSpans: diffCorrected } = buildSpansFromDiff(originalText, correctedText);
-        originalSpans = diffOriginal;
-        correctedSpans = diffCorrected;
+      // If we have valid spans, use them
+      if (originalSpans.length > 0 && correctedSpans.length > 0) {
+        // Check if AI actually provided corrections
+        const hasErrors = originalSpans.some(s => s.status === 'error');
+        const hasImprovements = correctedSpans.some(s => s.status === 'improvement');
+        
+        if (!hasErrors && !hasImprovements) {
+          console.warn('⚠️ AI provided spans but no errors/improvements marked');
+        }
+      } else {
+        console.warn('⚠️ AI spans failed validation, using fallback');
+        originalSpans = [{ text: userSubmission, status: 'neutral' }];
+        correctedSpans = [{ text: userSubmission, status: 'neutral' }];
       }
     } else {
-      // Fallback: create neutral spans if AI output is unusable
+      console.warn('⚠️ No valid spans from AI, using fallback');
       originalSpans = [{ text: userSubmission, status: 'neutral' }];
       correctedSpans = [{ text: userSubmission, status: 'neutral' }];
     }

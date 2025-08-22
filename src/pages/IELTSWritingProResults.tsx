@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
-import { ArrowLeft, Copy } from "lucide-react";
+import { ArrowLeft, Copy, HelpCircle } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
 import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/CorrectionVisualizer";
@@ -12,6 +12,7 @@ import SentenceCompare from "@/components/SentenceCompare";
 import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 interface Criterion {
   band: number;
   justification?: string;
@@ -125,6 +126,11 @@ export default function IELTSWritingProResults() {
   } | null>(null);
   const [t1SentenceView, setT1SentenceView] = useState(false);
   const [t2SentenceView, setT2SentenceView] = useState(false);
+  const [learnMoreModal, setLearnMoreModal] = useState<{
+    open: boolean;
+    criterion: string;
+    title: string;
+  }>({ open: false, criterion: '', title: '' });
 
   // Try to get data from location state first, then fallback to database
   useEffect(() => {
@@ -348,6 +354,37 @@ const t2Counts = {
   errors: t2CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
   improvements: t2CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
 };
+
+// Helper function to copy highlighted text as HTML
+const copyWithHighlights = (correctedSpans: CorrectionSpan[], taskNumber: number) => {
+  const html = correctedSpans.map(span => {
+    if (span.status === 'improvement') {
+      return `<strong style="background-color: #22c55e; color: white; padding: 2px 4px; border-radius: 4px;">${span.text}</strong>`;
+    }
+    return span.text;
+  }).join('');
+
+  const htmlContent = `<!DOCTYPE html><html><body>${html}</body></html>`;
+  
+  if (navigator.clipboard && navigator.clipboard.write) {
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const clipboardItem = new ClipboardItem({ 'text/html': blob });
+    navigator.clipboard.write([clipboardItem]).then(() => {
+      toast({
+        title: "Copied with highlights",
+        description: `Task ${taskNumber} text copied with improvements highlighted. Paste into Google Docs, Word, or Notion to see highlights.`
+      });
+    }).catch(() => {
+      // Fallback to plain text
+      const plainText = correctedSpans.map(s => s.text).join('');
+      navigator.clipboard.writeText(plainText);
+      toast({
+        title: "Copied as plain text",
+        description: "Highlights not supported on this device. Plain text copied instead."
+      });
+    });
+  }
+};
 const TaskSection = ({
     title,
     task,
@@ -414,10 +451,36 @@ const TaskSection = ({
             {items.map((it) => (
               <div key={it.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium text-text-primary">{it.label}</p>
-                  <Badge variant="outline" className="rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Dialog open={learnMoreModal.open && learnMoreModal.criterion === it.label} onOpenChange={(open) => setLearnMoreModal(prev => ({ ...prev, open }))}>
+                      <DialogTrigger asChild>
+                        <button 
+                          className="font-medium text-text-primary hover:text-primary transition-colors underline decoration-dotted cursor-pointer flex items-center gap-1"
+                          onClick={() => setLearnMoreModal({ open: true, criterion: it.label, title: it.label })}
+                        >
+                          {it.label}
+                          <HelpCircle className="w-3 h-3 opacity-60" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl">{it.label} - Learning Guide</DialogTitle>
+                        </DialogHeader>
+                        <div className="mt-4 space-y-4">
+                          <p className="text-text-secondary">
+                            This pop-up will explain the '{it.label}' criterion and provide tips on how to improve your score.
+                          </p>
+                          <p className="text-sm text-text-tertiary">
+                            Educational content for this criterion will be added here, including detailed explanations, 
+                            scoring rubrics, examples, and actionable improvement strategies.
+                          </p>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <div className="bg-primary/10 text-primary font-bold text-lg px-3 py-1.5 rounded-full border border-primary/20">
                     {typeof it.value === "number" ? roundIELTS(it.value).toFixed(1) : "-"}
-                  </Badge>
+                  </div>
                 </div>
                 {it.just ? (
                   <div className="mt-2">
@@ -523,8 +586,11 @@ const TaskSection = ({
               <PenguinClapAnimation size="md" className="shrink-0" />
               <div className="text-center md:text-left">
                 <p className="text-caption uppercase tracking-wide text-text-secondary mb-1">Overall Band</p>
-                <div className="text-6xl font-bold mb-3 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+                <div className="text-6xl font-bold mb-2 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
                   {overallBand.toFixed(1)}
+                </div>
+                <div className="text-sm text-text-secondary mb-3">
+                  Task 1: {!Number.isNaN(t1OverallComputed) ? roundIELTS(t1OverallComputed).toFixed(1) : "N/A"} | Task 2: {!Number.isNaN(t2OverallComputed) ? roundIELTS(t2OverallComputed).toFixed(1) : "N/A"}
                 </div>
                 <div className="flex items-center gap-3 justify-center md:justify-start">
                   <Badge variant="outline" className={`text-base px-3 py-1.5 rounded-2xl ${overallMeta.color}`}>
@@ -575,6 +641,12 @@ const TaskSection = ({
                 }}>
                       <Copy className="w-4 h-4 mr-2" /> Copy corrected text
                     </Button>
+                    <Button variant="outline" size="sm" className="rounded-xl" onClick={() => {
+                  if (!t1CorrData?.corrected_spans) return;
+                  copyWithHighlights(t1CorrData.corrected_spans, 1);
+                }}>
+                      <Copy className="w-4 h-4 mr-2" /> Copy with Highlights
+                    </Button>
                   </div>
                 </div>
                 <div>
@@ -608,7 +680,7 @@ const TaskSection = ({
                     <Toggle pressed={t2SentenceView} onPressedChange={setT2SentenceView} className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue" aria-label="Toggle sentence-by-sentence view">
                       Sentence-by-sentence view
                     </Toggle>
-                    <Button variant="outline" size="sm" className="rounded-xl" onClick={() => {
+                     <Button variant="outline" size="sm" className="rounded-xl" onClick={() => {
                   if (!t2CorrData?.corrected_spans) return;
                   const txt = t2CorrData.corrected_spans.map(s => s.text).join("");
                   navigator.clipboard.writeText(txt);
@@ -618,6 +690,12 @@ const TaskSection = ({
                   });
                 }}>
                       <Copy className="w-4 h-4 mr-2" /> Copy corrected text
+                    </Button>
+                    <Button variant="outline" size="sm" className="rounded-xl" onClick={() => {
+                  if (!t2CorrData?.corrected_spans) return;
+                  copyWithHighlights(t2CorrData.corrected_spans, 2);
+                }}>
+                      <Copy className="w-4 h-4 mr-2" /> Copy with Highlights
                     </Button>
                   </div>
                 </div>

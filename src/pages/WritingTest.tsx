@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, PenTool, Loader2, BookOpen } from "lucide-react";
+import { ArrowLeft, Clock, PenTool, BookOpen } from "lucide-react";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
 const WritingTest = () => {
   const navigate = useNavigate();
@@ -398,10 +399,9 @@ const WritingTest = () => {
                   className="w-full btn-primary"
                 >
                   {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing Writing...
-                    </>
+                    <div className="flex items-center justify-center">
+                      <LottieLoadingAnimation size="sm" message="Analyzing Writing..." />
+                    </div>
                   ) : (
                     "Get AI Feedback & IELTS Band Score"
                   )}

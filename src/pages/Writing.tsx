@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { PenTool, Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { PenTool, Clock, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
 const Writing = () => {
   const navigate = useNavigate();
@@ -167,10 +168,9 @@ const Writing = () => {
                   className="w-full"
                 >
                   {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing Writing...
-                    </>
+                    <div className="flex items-center justify-center">
+                      <LottieLoadingAnimation size="sm" message="Analyzing Writing..." />
+                    </div>
                   ) : (
                     "Get AI Feedback"
                   )}

@@ -13,6 +13,28 @@ interface Span {
   status: 'error' | 'improvement' | 'neutral';
 }
 
+interface EnhancedCorrection {
+  id: string;
+  originalText: string;
+  correctedText: string;
+  category: 'grammar' | 'vocabulary' | 'style' | 'punctuation' | 'structure';
+  severity: 'minor' | 'moderate' | 'major';
+  explanation: string;
+  example?: string;
+  position: { start: number; end: number };
+}
+
+interface EnhancedCorrectionResult {
+  original_spans: Span[];
+  corrected_spans: Span[];
+  corrections: EnhancedCorrection[];
+  summary: {
+    totalCorrections: number;
+    byCategory: Record<string, number>;
+    bySeverity: Record<string, number>;
+  };
+}
+
 interface AnalyzeRequest {
   userSubmission: string;
   questionPrompt?: string;
@@ -132,7 +154,40 @@ Be decisive: actively rephrase awkward or informal sentences to formal, natural 
 Focus on: (1) sophisticated lexical resource, (2) varied sentence structures, (3) precise grammar & punctuation, (4) clear cohesion.
 Return ONLY valid JSON as specified. No extra prose.`;
 
-    const user = `Context (IELTS prompt):\n${questionPrompt || 'N/A'}\n\nStudent submission (verbatim):\n"""\n${userSubmission}\n"""\n\nYour tasks:\n1) Create original_spans by splitting the ORIGINAL text into ordered spans whose concatenation exactly reconstructs the input (preserve all spaces and punctuation). Mark status:\n   - "error" for spans that contain grammar/spelling/usage/collocation issues or awkward phrasing\n   - "neutral" for correctly written or acceptable segments\n   Keep spans small (a few words) to localize issues precisely; avoid whole-sentence spans unless every part is problematic.\n\n2) Produce a fully improved, Band 7.5+ CORRECTED text that uses advanced vocabulary, more natural academic phrasing, and varied sentence structures. Then split it into corrected_spans. Mark status:\n   - "improvement" ONLY for spans that reflect a meaningful change (lexical sophistication, grammar correctness, or sentence restructuring); keep spans tight around the changed words/phrases, not the whole sentence.\n   - "neutral" for unchanged/identical segments.\n   Do NOT mark trivial punctuation-only changes as improvements unless they fix a genuine error.\n\nOutput STRICTLY this JSON (no markdown or commentary):\n{\n  "original_spans": [ {"text": string, "status": "error"|"neutral"}, ... ],\n  "corrected_spans": [ {"text": string, "status": "improvement"|"neutral"}, ... ]\n}`;
+    const user = `Context (IELTS prompt):
+${questionPrompt || 'N/A'}
+
+Student submission (verbatim):
+"""
+${userSubmission}
+"""
+
+Your tasks:
+1) Create original_spans and corrected_spans as before
+2) Provide detailed corrections array with categorized feedback
+
+Output STRICTLY this JSON structure (no markdown or commentary):
+{
+  "original_spans": [ {"text": string, "status": "error"|"neutral"}, ... ],
+  "corrected_spans": [ {"text": string, "status": "improvement"|"neutral"}, ... ],
+  "corrections": [
+    {
+      "id": "unique_id",
+      "originalText": "text that was changed",
+      "correctedText": "improved text", 
+      "category": "grammar|vocabulary|style|punctuation|structure",
+      "severity": "minor|moderate|major",
+      "explanation": "Clear explanation of why this change improves the writing",
+      "example": "Optional: additional example or context",
+      "position": {"start": number, "end": number}
+    }
+  ],
+  "summary": {
+    "totalCorrections": number,
+    "byCategory": {"grammar": number, "vocabulary": number, "style": number, "punctuation": number, "structure": number},
+    "bySeverity": {"minor": number, "moderate": number, "major": number}
+  }
+}`;
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -159,7 +214,7 @@ Return ONLY valid JSON as specified. No extra prose.`;
     const data = await response.json();
     let content: string = data?.choices?.[0]?.message?.content ?? '';
 
-    let json: { original_spans: Span[]; corrected_spans: Span[] } | null = null;
+    let json: EnhancedCorrectionResult | null = null;
     try {
       json = JSON.parse(content);
     } catch {
@@ -171,6 +226,20 @@ Return ONLY valid JSON as specified. No extra prose.`;
 
     if (!json || !Array.isArray(json.original_spans) || !Array.isArray(json.corrected_spans)) {
       throw new Error('AI did not return the expected JSON structure.');
+    }
+
+    // Ensure corrections array exists, even if empty
+    if (!Array.isArray(json.corrections)) {
+      json.corrections = [];
+    }
+
+    // Ensure summary exists with defaults
+    if (!json.summary) {
+      json.summary = {
+        totalCorrections: json.corrections.length,
+        byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+        bySeverity: { minor: 0, moderate: 0, major: 0 }
+      };
     }
 
     // Reconstruct full texts from AI output
@@ -189,6 +258,12 @@ Return ONLY valid JSON as specified. No extra prose.`;
     return new Response(JSON.stringify({
       original_spans: originalSpans,
       corrected_spans: correctedSpans,
+      corrections: json.corrections || [],
+      summary: json.summary || {
+        totalCorrections: 0,
+        byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+        bySeverity: { minor: 0, moderate: 0, major: 0 }
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

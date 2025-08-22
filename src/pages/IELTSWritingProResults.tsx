@@ -7,8 +7,11 @@ import LightRays from "@/components/animations/LightRays";
 import { ArrowLeft, Copy } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
-import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/CorrectionVisualizer";
+import CorrectionVisualizer, { Span } from "@/components/CorrectionVisualizer";
 import SentenceCompare from "@/components/SentenceCompare";
+import { CorrectionsByCategory } from "@/components/corrections/CorrectionsByCategory";
+import { CorrectionSummary } from "@/components/corrections/CorrectionSummary";
+import { EnhancedCorrection } from "@/components/corrections/CorrectionItem";
 import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -117,15 +120,29 @@ export default function IELTSWritingProResults() {
   const [t1Error, setT1Error] = useState<string | null>(null);
   const [t2Error, setT2Error] = useState<string | null>(null);
   const [t1CorrData, setT1CorrData] = useState<{
-    original_spans: CorrectionSpan[];
-    corrected_spans: CorrectionSpan[];
+    original_spans: Span[];
+    corrected_spans: Span[];
+    corrections: EnhancedCorrection[];
+    summary: {
+      totalCorrections: number;
+      byCategory: Record<string, number>;
+      bySeverity: Record<string, number>;
+    };
   } | null>(null);
   const [t2CorrData, setT2CorrData] = useState<{
-    original_spans: CorrectionSpan[];
-    corrected_spans: CorrectionSpan[];
+    original_spans: Span[];
+    corrected_spans: Span[];
+    corrections: EnhancedCorrection[];
+    summary: {
+      totalCorrections: number;
+      byCategory: Record<string, number>;
+      bySeverity: Record<string, number>;
+    };
   } | null>(null);
   const [t1SentenceView, setT1SentenceView] = useState(false);
   const [t2SentenceView, setT2SentenceView] = useState(false);
+  const [t1ViewMode, setT1ViewMode] = useState<'highlights' | 'categories' | 'sentence'>('categories');
+  const [t2ViewMode, setT2ViewMode] = useState<'highlights' | 'categories' | 'sentence'>('categories');
 
   // Try to get data from location state first, then fallback to database
   useEffect(() => {
@@ -342,7 +359,13 @@ export default function IELTSWritingProResults() {
           if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
             setT1CorrData({
               original_spans: data.original_spans,
-              corrected_spans: data.corrected_spans
+              corrected_spans: data.corrected_spans,
+              corrections: data.corrections || [],
+              summary: data.summary || {
+                totalCorrections: 0,
+                byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+                bySeverity: { minor: 0, moderate: 0, major: 0 }
+              }
             });
           } else {
             setT1Error('No correction data returned for Task 1.');
@@ -366,7 +389,13 @@ export default function IELTSWritingProResults() {
           if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
             setT2CorrData({
               original_spans: data.original_spans,
-              corrected_spans: data.corrected_spans
+              corrected_spans: data.corrected_spans,
+              corrections: data.corrections || [],
+              summary: data.summary || {
+                totalCorrections: 0,
+                byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+                bySeverity: { minor: 0, moderate: 0, major: 0 }
+              }
             });
           } else {
             setT2Error('No correction data returned for Task 2.');
@@ -684,30 +713,45 @@ const TaskSection = ({
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="mb-4 flex flex-col gap-4">
+                <div className="space-y-6">
+                  {/* Summary Card */}
+                  {t1CorrData && (
+                    <CorrectionSummary summary={t1CorrData.summary} />
+                  )}
+
+                  {/* View Mode Controls */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-medium text-text-primary">Your Answer with AI Corrections</div>
-                      <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
-                        <span className="inline-flex items-center gap-1">
-                          <span className="w-3 h-3 rounded-sm bg-brand-red/40 border border-brand-red/60" /> Error
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="w-3 h-3 rounded-sm bg-brand-green/40 border border-brand-green/60" /> Improvement
-                        </span>
-                        <Badge variant="outline" className="rounded-xl">{t1Counts.improvements} improvements</Badge>
-                        <Badge variant="outline" className="rounded-xl">{t1Counts.errors} errors</Badge>
+                      <div className="text-sm font-medium text-text-primary">Detailed Corrections Analysis</div>
+                      <div className="text-caption text-text-secondary mt-1">
+                        Choose how you'd like to view your corrections
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Toggle 
-                        pressed={t1SentenceView} 
-                        onPressedChange={setT1SentenceView} 
-                        className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue" 
-                        aria-label="Toggle sentence-by-sentence view"
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant={t1ViewMode === 'categories' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT1ViewMode('categories')}
                       >
-                        Sentence-by-sentence view
-                      </Toggle>
+                        By Category
+                      </Button>
+                      <Button 
+                        variant={t1ViewMode === 'highlights' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT1ViewMode('highlights')}
+                      >
+                        Text Highlights
+                      </Button>
+                      <Button 
+                        variant={t1ViewMode === 'sentence' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT1ViewMode('sentence')}
+                      >
+                        Sentence View
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -722,17 +766,27 @@ const TaskSection = ({
                           });
                         }}
                       >
-                        <Copy className="w-4 h-4 mr-2" /> Copy corrected text
+                        <Copy className="w-4 h-4 mr-2" /> Copy Text
                       </Button>
                     </div>
                   </div>
+
+                  {/* Correction Display */}
                   <div>
                     {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
                     {t1Error && <div className="status-error">{t1Error}</div>}
                     {t1CorrData && (
-                      t1SentenceView ? 
-                        <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} /> : 
-                        <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                      <>
+                        {t1ViewMode === 'categories' && (
+                          <CorrectionsByCategory corrections={t1CorrData.corrections} />
+                        )}
+                        {t1ViewMode === 'highlights' && (
+                          <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                        )}
+                        {t1ViewMode === 'sentence' && (
+                          <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                        )}
+                      </>
                     )}
                     {!t1Loading && !t1Error && !t1CorrData && (
                       <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
@@ -754,30 +808,45 @@ const TaskSection = ({
                 <CardTitle className="text-heading-4">Task 2 – AI Corrections</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="mb-4 flex flex-col gap-4">
+                <div className="space-y-6">
+                  {/* Summary Card */}
+                  {t2CorrData && (
+                    <CorrectionSummary summary={t2CorrData.summary} />
+                  )}
+
+                  {/* View Mode Controls */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-medium text-text-primary">Your Answer with AI Corrections</div>
-                      <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
-                        <span className="inline-flex items-center gap-1">
-                          <span className="w-3 h-3 rounded-sm bg-brand-red/40 border border-brand-red/60" /> Error
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="w-3 h-3 rounded-sm bg-brand-green/40 border border-brand-green/60" /> Improvement
-                        </span>
-                        <Badge variant="outline" className="rounded-xl">{t2Counts.improvements} improvements</Badge>
-                        <Badge variant="outline" className="rounded-xl">{t2Counts.errors} errors</Badge>
+                      <div className="text-sm font-medium text-text-primary">Detailed Corrections Analysis</div>
+                      <div className="text-caption text-text-secondary mt-1">
+                        Choose how you'd like to view your corrections
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Toggle 
-                        pressed={t2SentenceView} 
-                        onPressedChange={setT2SentenceView} 
-                        className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue" 
-                        aria-label="Toggle sentence-by-sentence view"
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant={t2ViewMode === 'categories' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT2ViewMode('categories')}
                       >
-                        Sentence-by-sentence view
-                      </Toggle>
+                        By Category
+                      </Button>
+                      <Button 
+                        variant={t2ViewMode === 'highlights' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT2ViewMode('highlights')}
+                      >
+                        Text Highlights
+                      </Button>
+                      <Button 
+                        variant={t2ViewMode === 'sentence' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT2ViewMode('sentence')}
+                      >
+                        Sentence View
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -792,17 +861,27 @@ const TaskSection = ({
                           });
                         }}
                       >
-                        <Copy className="w-4 h-4 mr-2" /> Copy corrected text
+                        <Copy className="w-4 h-4 mr-2" /> Copy Text
                       </Button>
                     </div>
                   </div>
+
+                  {/* Correction Display */}
                   <div>
                     {t2Loading && <div className="status-warning">Analyzing Task 2…</div>}
                     {t2Error && <div className="status-error">{t2Error}</div>}
                     {t2CorrData && (
-                      t2SentenceView ? 
-                        <SentenceCompare originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} /> : 
-                        <CorrectionVisualizer originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                      <>
+                        {t2ViewMode === 'categories' && (
+                          <CorrectionsByCategory corrections={t2CorrData.corrections} />
+                        )}
+                        {t2ViewMode === 'highlights' && (
+                          <CorrectionVisualizer originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                        )}
+                        {t2ViewMode === 'sentence' && (
+                          <SentenceCompare originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                        )}
+                      </>
                     )}
                     {!t2Loading && !t2Error && !t2CorrData && (
                       <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>

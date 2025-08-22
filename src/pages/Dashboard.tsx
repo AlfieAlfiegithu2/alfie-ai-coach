@@ -115,19 +115,96 @@ const Dashboard = () => {
         } = await supabase.from('test_results').select('*').eq('user_id', user.id).order('created_at', {
           ascending: false
         }).limit(10);
-        if (results) {
-          setTestResults(results);
 
-          // Calculate user stats from test results
-          const totalTests = results.length;
-          const avgScore = results.length > 0 ? results.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / results.length : 0;
-          setUserStats({
-            totalTests,
-            avgScore: Math.round(avgScore),
-            recentImprovement: totalTests > 1 ? Math.round((results[0]?.score_percentage || 0) - (results[1]?.score_percentage || 0)) : 0,
-            weeklyProgress: 15 // Placeholder
+        // Fetch writing test results separately
+        const {
+          data: writingResults
+        } = await supabase.from('writing_test_results').select('*').eq('user_id', user.id).order('created_at', {
+          ascending: false
+        }).limit(10);
+
+        // Combine results for display
+        const allResults = [...(results || [])];
+        
+        // Add writing results as synthetic test results for dashboard display
+        if (writingResults) {
+          // Group writing results by test_result_id or date
+          const writingByTest: { [key: string]: any[] } = {};
+          writingResults.forEach(result => {
+            const key = result.test_result_id || result.created_at?.split('T')[0] || 'standalone';
+            if (!writingByTest[key]) {
+              writingByTest[key] = [];
+            }
+            writingByTest[key].push(result);
+          });
+
+          // Create synthetic test results for writing tests
+          Object.entries(writingByTest).forEach(([key, results]) => {
+            if (key !== 'standalone' && allResults.some(r => r.id === key)) {
+              // Already have main test result, skip
+              return;
+            }
+
+            // Calculate overall writing score
+            const task1Result = results.find(r => r.task_number === 1);
+            const task2Result = results.find(r => r.task_number === 2);
+            let overallScore = 70; // Default 7.0 band
+
+            if (task1Result && task2Result) {
+              const extractBandFromResult = (result: any): number => {
+                if (result.band_scores && typeof result.band_scores === 'object') {
+                  const bands = Object.values(result.band_scores).filter(v => typeof v === 'number') as number[];
+                  if (bands.length > 0) {
+                    return bands.reduce((a, b) => a + b, 0) / bands.length;
+                  }
+                }
+                return 7.0;
+              };
+
+              const task1Band = extractBandFromResult(task1Result);
+              const task2Band = extractBandFromResult(task2Result);
+              const overallBand = ((task1Band * 1) + (task2Band * 2)) / 3;
+              overallScore = Math.round(overallBand * 10); // Convert to percentage-like score
+            }
+
+            allResults.push({
+              id: key === 'standalone' ? `writing-${Date.now()}` : key,
+              user_id: user.id,
+              test_type: 'writing',
+              score_percentage: overallScore,
+              created_at: results[0].created_at,
+              test_data: { writingResults: results },
+              // Required fields for test_results table structure
+              section_number: null,
+              total_questions: results.length,
+              correct_answers: null,
+              time_taken: null,
+              completed_at: results[0].created_at,
+              audio_retention_expires_at: null,
+              detailed_feedback: null,
+              question_analysis: null,
+              performance_metrics: null,
+              skill_breakdown: null,
+              cambridge_book: null,
+              audio_urls: null
+            } as any);
           });
         }
+
+        // Sort all results by date
+        allResults.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        setTestResults(allResults);
+
+        // Calculate user stats from all test results
+        const totalTests = allResults.length;
+        const avgScore = allResults.length > 0 ? allResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / allResults.length : 0;
+        setUserStats({
+          totalTests,
+          avgScore: Math.round(avgScore),
+          recentImprovement: totalTests > 1 ? Math.round((allResults[0]?.score_percentage || 0) - (allResults[1]?.score_percentage || 0)) : 0,
+          weeklyProgress: 15 // Placeholder
+        });
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {

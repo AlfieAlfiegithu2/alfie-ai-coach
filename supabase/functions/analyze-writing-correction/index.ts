@@ -148,18 +148,14 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are a meticulous IELTS examiner and professional academic editor.
-Your goal is to provide comprehensive feedback and improvements to reach Band 8.5+ quality.
-Even for high-quality writing (Band 7+), identify opportunities for enhancement:
-- Upgrade vocabulary to more sophisticated alternatives
-- Refine sentence structures for better flow and variety
-- Polish grammar and punctuation for perfect accuracy
-- Enhance cohesion and coherence
-- Improve precision and academic tone
+    const system = `You are an efficient IELTS writing feedback specialist. Focus on clear, actionable improvements.
+Find 3-8 key areas for enhancement:
+- Grammar and punctuation corrections
+- Vocabulary improvements (more precise/sophisticated terms)
+- Sentence structure refinements
+- Coherence and flow enhancements
 
-Be thorough: find at least 5-10 areas for improvement in any text, even if it's already strong.
-Focus on: (1) lexical sophistication, (2) syntactic complexity, (3) precision, (4) academic register, (5) cohesive devices.
-Return ONLY valid JSON as specified. No extra prose.`;
+Be concise but thorough. Return ONLY valid JSON as specified. No markdown blocks, no extra text.`;
 
     const user = `Context (IELTS prompt):
 ${questionPrompt || 'N/A'}
@@ -196,7 +192,7 @@ Output STRICTLY this JSON structure (no markdown or commentary):
   }
 }`;
 
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${deepSeekApiKey}`,
@@ -208,7 +204,7 @@ Output STRICTLY this JSON structure (no markdown or commentary):
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        max_tokens: 2200,
+        max_tokens: 1500,
         temperature: 0.2,
       }),
     });
@@ -222,12 +218,35 @@ Output STRICTLY this JSON structure (no markdown or commentary):
     let content: string = data?.choices?.[0]?.message?.content ?? '';
 
     let json: EnhancedCorrectionResult | null = null;
+    
+    // Enhanced JSON parsing with multiple fallback strategies
     try {
+      // First try direct parsing
       json = JSON.parse(content);
     } catch {
-      const match = content.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { json = JSON.parse(match[0]); } catch {}
+      try {
+        // Remove markdown code blocks if present
+        const cleanContent = content.replace(/```json\s*\n?|```\s*\n?/g, '').trim();
+        json = JSON.parse(cleanContent);
+      } catch {
+        try {
+          // Extract JSON object from mixed content
+          const match = content.match(/\{[\s\S]*\}/);
+          if (match) {
+            json = JSON.parse(match[0]);
+          }
+        } catch {
+          // Try to find and fix common JSON issues
+          const fixedContent = content
+            .replace(/```json\s*\n?|```\s*\n?/g, '')
+            .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+            .trim();
+          try {
+            json = JSON.parse(fixedContent);
+          } catch {
+            console.error('❌ All JSON parsing strategies failed. Content preview:', content.substring(0, 200));
+          }
+        }
       }
     }
 
@@ -261,12 +280,30 @@ Output STRICTLY this JSON structure (no markdown or commentary):
       };
     }
 
-    // Reconstruct full texts from AI output
-    const originalFull = json.original_spans.map(s => (typeof s?.text === 'string' ? s.text : '')).join('');
-    const correctedFull = json.corrected_spans.map(s => (typeof s?.text === 'string' ? s.text : '')).join('');
-
-    // Post-process with diff to ensure ONLY actual changed tokens are marked green
-    const { originalSpans, correctedSpans } = buildSpansFromDiff(originalFull, correctedFull);
+    // Simplified processing - use AI output directly if valid, otherwise create minimal fallback
+    let originalSpans: Span[];
+    let correctedSpans: Span[];
+    
+    if (json.original_spans?.length > 0 && json.corrected_spans?.length > 0) {
+      // Use AI output directly for faster processing
+      originalSpans = json.original_spans.filter(s => s && typeof s.text === 'string');
+      correctedSpans = json.corrected_spans.filter(s => s && typeof s.text === 'string');
+      
+      // Only run diff if spans seem incomplete or broken
+      const originalText = originalSpans.map(s => s.text).join('');
+      const correctedText = correctedSpans.map(s => s.text).join('');
+      
+      if (Math.abs(originalText.length - userSubmission.length) > userSubmission.length * 0.1) {
+        // Fallback to diff processing only if spans are significantly different
+        const { originalSpans: diffOriginal, correctedSpans: diffCorrected } = buildSpansFromDiff(originalText, correctedText);
+        originalSpans = diffOriginal;
+        correctedSpans = diffCorrected;
+      }
+    } else {
+      // Fallback: create neutral spans if AI output is unusable
+      originalSpans = [{ text: userSubmission, status: 'neutral' }];
+      correctedSpans = [{ text: userSubmission, status: 'neutral' }];
+    }
 
     console.log('✅ analyze-writing-correction: spans generated', {
       originalCount: originalSpans.length,

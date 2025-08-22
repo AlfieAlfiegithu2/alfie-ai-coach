@@ -150,6 +150,13 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
 
     let content = data.choices?.[0]?.message?.content ?? '';
     console.log('🔍 Raw API response content length:', content.length);
+    
+    // Check if content is empty or too short
+    if (!content || content.length < 10) {
+      console.error('❌ API response content is empty or too short:', content);
+      throw new Error('API returned empty or invalid response');
+    }
+    
     console.log('🔍 Raw API response first 500 chars:', content.substring(0, 500));
     console.log('🔍 Raw API response last 500 chars:', content.substring(content.length - 500));
 

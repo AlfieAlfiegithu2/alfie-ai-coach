@@ -12,6 +12,7 @@ import SentenceCompare from "@/components/SentenceCompare";
 import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import ScoreSpiderChart from "@/components/ScoreSpiderChart";
 interface Criterion {
   band: number;
   justification?: string;
@@ -634,20 +635,35 @@ const TaskSection = ({
             <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
           </CardHeader>
           <CardContent className="py-6">
-            <div className="flex flex-col md:flex-row items-center md:items-center justify-center gap-6 md:gap-10">
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8">
               <PenguinClapAnimation size="md" className="shrink-0" />
-              <div className="text-center md:text-left">
+              <div className="text-center lg:text-left">
                 <p className="text-caption uppercase tracking-wide text-text-secondary mb-1">Overall Band</p>
                 <div className="text-6xl font-bold mb-3 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
                   {overallBand.toFixed(1)}
                 </div>
-                <div className="flex items-center gap-3 justify-center md:justify-start">
+                <div className="flex items-center gap-3 justify-center lg:justify-start">
                   <Badge variant="outline" className={`text-base px-3 py-1.5 rounded-2xl ${overallMeta.color}`}>
                     {overallMeta.label} Performance
                   </Badge>
                   {testName ? <span className="text-caption text-text-secondary">{testName}</span> : null}
                 </div>
               </div>
+              <ScoreSpiderChart 
+                task1Scores={{
+                  task_achievement: structured?.task1?.criteria?.task_achievement?.band,
+                  coherence_and_cohesion: structured?.task1?.criteria?.coherence_and_cohesion?.band,
+                  lexical_resource: structured?.task1?.criteria?.lexical_resource?.band,
+                  grammatical_range_and_accuracy: structured?.task1?.criteria?.grammatical_range_and_accuracy?.band
+                }}
+                task2Scores={{
+                  task_response: structured?.task2?.criteria?.task_response?.band,
+                  coherence_and_cohesion: structured?.task2?.criteria?.coherence_and_cohesion?.band,
+                  lexical_resource: structured?.task2?.criteria?.lexical_resource?.band,
+                  grammatical_range_and_accuracy: structured?.task2?.criteria?.grammatical_range_and_accuracy?.band
+                }}
+                className="w-full max-w-sm lg:w-80 shrink-0"
+              />
             </div>
           </CardContent>
         </Card>

@@ -30,6 +30,9 @@ verify_jwt = true
 [functions.openai-chat]
 verify_jwt = true
 
+[functions.ielts-writing-examiner]
+verify_jwt = true
+
 [functions.daily-challenge-generator]
 verify_jwt = false
 

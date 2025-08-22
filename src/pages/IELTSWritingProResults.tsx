@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import CorrectionVisualizer, { Span } from "@/components/CorrectionVisualizer";
 import SentenceCompare from "@/components/SentenceCompare";
 import { CorrectionsByCategory } from "@/components/corrections/CorrectionsByCategory";
-import { CorrectionSummary } from "@/components/corrections/CorrectionSummary";
 import { EnhancedCorrection } from "@/components/corrections/CorrectionItem";
 import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
@@ -661,7 +660,7 @@ const TaskSection = ({
 
       <div className="container mx-auto px-6 space-section">
         <Card className="card-elevated mb-8 overflow-hidden">
-          <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 py-4">
+          <CardHeader className="text-center py-6">
             <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
           </CardHeader>
           <CardContent className="py-6">
@@ -711,13 +710,8 @@ const TaskSection = ({
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-6">
-                  {/* Summary Card */}
-                  {t1CorrData && (
-                    <CorrectionSummary summary={t1CorrData.summary} />
-                  )}
-
-                  {/* View Mode Controls */}
+                 <div className="space-y-6">
+                   {/* View Mode Controls */}
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-text-primary">Detailed Corrections Analysis</div>
@@ -795,13 +789,8 @@ const TaskSection = ({
                 <CardTitle className="text-heading-4">Task 2 – AI Corrections</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-6">
-                  {/* Summary Card */}
-                  {t2CorrData && (
-                    <CorrectionSummary summary={t2CorrData.summary} />
-                  )}
-
-                  {/* View Mode Controls */}
+                 <div className="space-y-6">
+                   {/* View Mode Controls */}
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-text-primary">Detailed Corrections Analysis</div>

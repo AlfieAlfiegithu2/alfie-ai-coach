@@ -11,6 +11,7 @@ import CorrectionVisualizer, { Span as CorrectionSpan } from "@/components/Corre
 import SentenceCompare from "@/components/SentenceCompare";
 import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 interface Criterion {
   band: number;
   justification?: string;
@@ -95,6 +96,112 @@ const computeTaskOverall = (task?: TaskAssessment, type?: 'task1' | 'task2'): nu
 export default function IELTSWritingProResults() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [resultsData, setResultsData] = useState<{
+    structured?: StructuredResult;
+    testName?: string;
+    task1Data?: any;
+    task2Data?: any;
+    task1Answer?: string;
+    task2Answer?: string;
+  }>({});
+
+  // Try to get data from location state first, then fallback to database
+  useEffect(() => {
+    const stateData = location.state as any;
+    
+    if (stateData && stateData.structured) {
+      // Use data from navigation state
+      setResultsData(stateData);
+    } else if (stateData?.submissionId && user) {
+      // Fetch from database using submission ID
+      fetchResultsFromDatabase(stateData.submissionId);
+    } else {
+      // No valid data source
+      setResultsData({});
+    }
+  }, [location.state, user]);
+
+  const fetchResultsFromDatabase = async (submissionId: string) => {
+    setLoading(true);
+    try {
+      // Get test result
+      const { data: testResult, error: testError } = await supabase
+        .from('test_results')
+        .select('*')
+        .eq('id', submissionId)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (testError) throw testError;
+
+      // Get writing results
+      const { data: writingResults, error: writingError } = await supabase
+        .from('writing_test_results')
+        .select('*')
+        .eq('test_result_id', submissionId)
+        .eq('user_id', user?.id)
+        .order('task_number');
+
+      if (writingError) throw writingError;
+
+      if (!writingResults || writingResults.length !== 2) {
+        throw new Error('Incomplete test results found');
+      }
+
+      const task1Result = writingResults.find(r => r.task_number === 1);
+      const task2Result = writingResults.find(r => r.task_number === 2);
+
+      // Reconstruct structured data from database
+      const reconstructedData = {
+        structured: {
+          task1: {
+            criteria: (task1Result?.band_scores as any) || {},
+            feedback_markdown: task1Result?.detailed_feedback || '',
+            feedback: {
+              improvements: task1Result?.improvement_suggestions || []
+            }
+          },
+          task2: {
+            criteria: (task2Result?.band_scores as any) || {},
+            feedback_markdown: task2Result?.detailed_feedback || '',
+            feedback: {
+              improvements: task2Result?.improvement_suggestions || []
+            }
+          },
+          overall: {
+            band: (testResult as any).overall_score || 7.0
+          }
+        },
+        testName: testResult.test_type || 'IELTS Writing Test',
+        task1Answer: task1Result?.user_response || '',
+        task2Answer: task2Result?.user_response || '',
+        task1Data: {
+          title: 'Task 1',
+          instructions: task1Result?.prompt_text || ''
+        },
+        task2Data: {
+          title: 'Task 2', 
+          instructions: task2Result?.prompt_text || ''
+        }
+      };
+
+      setResultsData(reconstructedData);
+    } catch (error) {
+      console.error('Error fetching results:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load test results",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const {
     structured,
     testName,
@@ -102,14 +209,7 @@ export default function IELTSWritingProResults() {
     task2Data,
     task1Answer,
     task2Answer
-  } = (location.state || {}) as {
-    structured?: StructuredResult;
-    testName?: string;
-    task1Data?: any;
-    task2Data?: any;
-    task1Answer?: string;
-    task2Answer?: string;
-  };
+  } = resultsData;
   useEffect(() => {
     document.title = `IELTS Writing Results – ${testName || "Assessment"}`;
     const meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
@@ -235,7 +335,6 @@ const overallBand = denom > 0
   ? roundIELTS(((Number.isNaN(t1OverallComputed) ? 0 : roundIELTS(t1OverallComputed)) + 2 * (Number.isNaN(t2OverallComputed) ? 0 : roundIELTS(t2OverallComputed))) / denom)
   : 0;
 const overallMeta = bandToDesc(overallBand);
-const { toast } = useToast();
   const [t1SentenceView, setT1SentenceView] = useState(false);
   const [t2SentenceView, setT2SentenceView] = useState(false);
   const t1Counts = {

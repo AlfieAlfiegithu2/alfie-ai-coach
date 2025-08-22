@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
 import { Bot, BookOpen, ListTree, Clock, FileText, PenTool } from "lucide-react";
@@ -30,6 +31,7 @@ const IELTSWritingTestInterface = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [test, setTest] = useState<any>(null);
   const [task1, setTask1] = useState<Task | null>(null);
@@ -63,6 +65,7 @@ const IELTSWritingTestInterface = () => {
   // Timer states
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [timerStarted, setTimerStarted] = useState(false);
+  const [totalTimeSpent, setTotalTimeSpent] = useState<number>(0);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -97,6 +100,7 @@ const IELTSWritingTestInterface = () => {
           }
           return prev - 1;
         });
+        setTotalTimeSpent(prev => prev + 1000); // Track total time spent
       }, 1000);
     }
     return () => {
@@ -316,19 +320,74 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
       if (examinerResponse.error) throw examinerResponse.error;
 
-      // Navigate to the enhanced results page
+      const { structured, feedback, task1WordCount, task2WordCount } = examinerResponse.data;
+
+      // Save main test result
+      const { data: testResult, error: testError } = await supabase
+        .from('test_results')
+        .insert({
+          user_id: user?.id,
+          test_id: testId,
+          test_type: 'IELTS',
+          skill_category: 'Writing',
+          module: 'academic',
+          overall_score: structured?.overall?.band || 7.0,
+          time_taken_seconds: Math.floor(totalTimeSpent / 1000),
+          completed: true
+        })
+        .select()
+        .single();
+
+      if (testError) throw testError;
+
+      // Save Task 1 results
+      const { error: task1Error } = await supabase
+        .from('writing_test_results')
+        .insert({
+          user_id: user?.id,
+          test_result_id: testResult.id,
+          task_number: 1,
+          prompt_text: task1?.instructions || task1?.title || '',
+          user_response: task1Answer,
+          word_count: task1WordCount,
+          band_scores: structured?.task1?.criteria || null,
+          detailed_feedback: structured?.task1?.feedback_markdown || '',
+          improvement_suggestions: structured?.task1?.feedback?.improvements || []
+        });
+
+      if (task1Error) throw task1Error;
+
+      // Save Task 2 results  
+      const { error: task2Error } = await supabase
+        .from('writing_test_results')
+        .insert({
+          user_id: user?.id,
+          test_result_id: testResult.id,
+          task_number: 2,
+          prompt_text: task2?.instructions || task2?.title || '',
+          user_response: task2Answer,
+          word_count: task2WordCount,
+          band_scores: structured?.task2?.criteria || null,
+          detailed_feedback: structured?.task2?.feedback_markdown || '',
+          improvement_suggestions: structured?.task2?.feedback?.improvements || []
+        });
+
+      if (task2Error) throw task2Error;
+
+      // Navigate to the enhanced results page with both state and DB persistence
       navigate('/ielts-writing-results-pro', {
         state: {
           testName: test?.test_name,
           testId: testId,
+          submissionId: testResult.id,
           task1Answer,
           task2Answer,
-          feedback: examinerResponse.data.feedback,
-          structured: examinerResponse.data.structured,
+          feedback,
+          structured,
           task1Data: task1,
           task2Data: task2,
-          task1WordCount: examinerResponse.data.task1WordCount,
-          task2WordCount: examinerResponse.data.task2WordCount
+          task1WordCount,
+          task2WordCount
         }
       });
     } catch (error: any) {

@@ -96,10 +96,11 @@ const computeTaskOverall = (task?: TaskAssessment, type?: 'task1' | 'task2'): nu
 export default function IELTSWritingProResults() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-
+  
+  // All hooks must be at the top of the component
+  const [loading, setLoading] = useState(false);
   const [resultsData, setResultsData] = useState<{
     structured?: StructuredResult;
     testName?: string;
@@ -108,6 +109,22 @@ export default function IELTSWritingProResults() {
     task1Answer?: string;
     task2Answer?: string;
   }>({});
+
+  // Correction analysis state
+  const [t1Loading, setT1Loading] = useState<boolean>(false);
+  const [t2Loading, setT2Loading] = useState<boolean>(false);
+  const [t1Error, setT1Error] = useState<string | null>(null);
+  const [t2Error, setT2Error] = useState<string | null>(null);
+  const [t1CorrData, setT1CorrData] = useState<{
+    original_spans: CorrectionSpan[];
+    corrected_spans: CorrectionSpan[];
+  } | null>(null);
+  const [t2CorrData, setT2CorrData] = useState<{
+    original_spans: CorrectionSpan[];
+    corrected_spans: CorrectionSpan[];
+  } | null>(null);
+  const [t1SentenceView, setT1SentenceView] = useState(false);
+  const [t2SentenceView, setT2SentenceView] = useState(false);
 
   // Try to get data from location state first, then fallback to database
   useEffect(() => {
@@ -210,6 +227,7 @@ export default function IELTSWritingProResults() {
     task1Answer,
     task2Answer
   } = resultsData;
+  
   useEffect(() => {
     document.title = `IELTS Writing Results – ${testName || "Assessment"}`;
     const meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
@@ -223,19 +241,6 @@ export default function IELTSWritingProResults() {
     }
   }, [testName]);
 
-  // Parallel correction analysis for Task 1 and Task 2
-  const [t1Loading, setT1Loading] = useState<boolean>(false);
-  const [t2Loading, setT2Loading] = useState<boolean>(false);
-  const [t1Error, setT1Error] = useState<string | null>(null);
-  const [t2Error, setT2Error] = useState<string | null>(null);
-  const [t1CorrData, setT1CorrData] = useState<{
-    original_spans: CorrectionSpan[];
-    corrected_spans: CorrectionSpan[];
-  } | null>(null);
-  const [t2CorrData, setT2CorrData] = useState<{
-    original_spans: CorrectionSpan[];
-    corrected_spans: CorrectionSpan[];
-  } | null>(null);
   useEffect(() => {
     const run = async () => {
       const tasks: Promise<any>[] = [];
@@ -335,16 +340,14 @@ const overallBand = denom > 0
   ? roundIELTS(((Number.isNaN(t1OverallComputed) ? 0 : roundIELTS(t1OverallComputed)) + 2 * (Number.isNaN(t2OverallComputed) ? 0 : roundIELTS(t2OverallComputed))) / denom)
   : 0;
 const overallMeta = bandToDesc(overallBand);
-  const [t1SentenceView, setT1SentenceView] = useState(false);
-  const [t2SentenceView, setT2SentenceView] = useState(false);
-  const t1Counts = {
-    errors: t1CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
-    improvements: t1CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
-  };
-  const t2Counts = {
-    errors: t2CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
-    improvements: t2CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
-  };
+const t1Counts = {
+  errors: t1CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
+  improvements: t1CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
+};
+const t2Counts = {
+  errors: t2CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
+  improvements: t2CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
+};
 const TaskSection = ({
     title,
     task,

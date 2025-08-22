@@ -405,7 +405,17 @@ export default function IELTSWritingProResults() {
             Array.isArray((existingData as any).corrected_spans)) {
           console.log('✅ Found existing Task 1 correction data in database');
           const typedData = existingData as any;
-          setT1CorrData({
+    // Add debugging for correction data
+    console.log('🔍 Task 1 correction data loaded:', {
+      hasData: !!typedData,
+      originalSpansCount: typedData?.original_spans?.length || 0,
+      correctedSpansCount: typedData?.corrected_spans?.length || 0,
+      errorSpansCount: typedData?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+      improvementSpansCount: typedData?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+      correctionsCount: typedData?.corrections?.length || 0
+    });
+    
+    setT1CorrData({
             original_spans: typedData.original_spans,
             corrected_spans: typedData.corrected_spans,
             corrections: typedData.corrections || [],
@@ -430,6 +440,15 @@ export default function IELTSWritingProResults() {
             error
           }) => {
             if (error) throw error;
+            console.log('🔍 Task 1 AI correction analysis result:', {
+              hasData: !!data,
+              originalSpansCount: data?.original_spans?.length || 0,
+              correctedSpansCount: data?.corrected_spans?.length || 0,
+              errorSpansCount: data?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+              improvementSpansCount: data?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+              correctionsCount: data?.corrections?.length || 0
+            });
+            
             if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
               setT1CorrData({
                 original_spans: data.original_spans,
@@ -486,8 +505,27 @@ export default function IELTSWritingProResults() {
             error
           }) => {
             if (error) throw error;
+            console.log('🔍 Task 2 AI correction analysis result:', {
+              hasData: !!data,
+              originalSpansCount: data?.original_spans?.length || 0,
+              correctedSpansCount: data?.corrected_spans?.length || 0,
+              errorSpansCount: data?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+              improvementSpansCount: data?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+              correctionsCount: data?.corrections?.length || 0
+            });
+            
             if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
-              setT2CorrData({
+    // Add debugging for Task 2 correction data
+    console.log('🔍 Task 2 correction data loaded:', {
+      hasData: !!data,
+      originalSpansCount: data?.original_spans?.length || 0,
+      correctedSpansCount: data?.corrected_spans?.length || 0,
+      errorSpansCount: data?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+      improvementSpansCount: data?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+      correctionsCount: data?.corrections?.length || 0
+    });
+    
+    setT2CorrData({
                 original_spans: data.original_spans,
                 corrected_spans: data.corrected_spans,
                 corrections: data.corrections || [],

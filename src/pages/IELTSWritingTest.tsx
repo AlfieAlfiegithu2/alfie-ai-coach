@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
 import { Bot, BookOpen, ListTree, Clock, FileText, PenTool } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
-import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
+import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 
 interface Task {
   id: string;
@@ -717,11 +717,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {isSubmitting && (
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="bg-card p-8 rounded-3xl shadow-xl border border-border">
-              <CatLoadingAnimation 
-                size="lg" 
+               <DotLottieLoadingAnimation 
                 message="Analyzing your writing with AI examiner..."
-                className="text-center"
-              />
+                subMessage="Please wait while we evaluate your IELTS writing"
+                size={200}
+               />
             </div>
           </div>
         )}

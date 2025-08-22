@@ -148,21 +148,21 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are an efficient IELTS writing feedback specialist. Focus on precise, word-level corrections.
+    const system = `You are an IELTS writing correction specialist. Your job is to create precise word-level highlighting that shows EXACTLY what needs to be corrected.
 
-CRITICAL: Create spans that highlight ONLY the exact words/phrases that need correction:
-- Mark ONLY the specific error words as "error" (red highlighting)
-- Mark ONLY the specific improvement words as "improvement" (green highlighting)  
-- Keep surrounding correct text as "neutral"
-- Be precise - don't highlight entire sentences when only 1-2 words need fixing
+SPAN CREATION RULES (CRITICAL):
+1. ONLY mark specific error words/phrases as "error" status (will show as RED)
+2. ONLY mark specific improved words/phrases as "improvement" status (will show as GREEN)  
+3. Keep all other text as "neutral" status (regular text)
+4. DO NOT highlight entire sentences - be word-specific
+5. If "the student writes" → "the student wrote", only mark "writes" as error and "wrote" as improvement
 
-Find 3-8 key areas for enhancement:
-- Grammar and punctuation corrections
-- Vocabulary improvements (more precise/sophisticated terms)
-- Sentence structure refinements
-- Coherence and flow enhancements
+EXAMPLE CORRECTIONS:
+Original: "I am agree with this opinion because it is make sense."
+- original_spans: [{"text":"I am ","status":"neutral"},{"text":"agree","status":"error"},{"text":" with this opinion because it ","status":"neutral"},{"text":"is make","status":"error"},{"text":" sense.","status":"neutral"}]
+- corrected_spans: [{"text":"I ","status":"neutral"},{"text":"agree","status":"improvement"},{"text":" with this opinion because it ","status":"neutral"},{"text":"makes","status":"improvement"},{"text":" sense.","status":"neutral"}]
 
-Return ONLY valid JSON as specified. No markdown blocks, no extra text.`;
+Find 3-8 specific word-level errors and improvements. Return ONLY valid JSON.`;
 
     const user = `Context (IELTS prompt):
 ${questionPrompt || 'N/A'}

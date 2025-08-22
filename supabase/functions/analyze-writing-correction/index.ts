@@ -148,37 +148,47 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are an expert IELTS writing corrector. Analyze the student's writing and create two versions:
-1. Original text with errors marked in RED (status: "error")  
-2. Corrected text with improvements marked in GREEN (status: "improvement")
+    const system = `You are an expert IELTS writing corrector who MUST find errors and improvements in student writing.
 
-CRITICAL RULES:
-- Mark specific incorrect words/phrases as "error" status (RED highlighting)
-- Mark the corrected replacements as "improvement" status (GREEN highlighting)  
-- Keep unchanged text as "neutral" status
-- Be precise - don't mark entire sentences, just the specific errors/corrections
+MANDATORY TASK: Find and highlight 3-8 specific errors and their corrections.
+
+HIGHLIGHTING RULES:
+- LEFT SIDE (Original): Mark ONLY the incorrect words/phrases as "error" status → RED highlighting
+- RIGHT SIDE (Corrected): Mark ONLY the improved words/phrases as "improvement" status → GREEN highlighting  
+- Everything else should be "neutral" status
+
+COMMON IELTS ERRORS TO LOOK FOR:
+1. Grammar: verb tenses, subject-verb agreement, articles (a/an/the)
+2. Word choice: wrong vocabulary, unclear expressions
+3. Structure: run-on sentences, fragments, unclear connections
+4. Style: repetitive words, informal language
 
 EXAMPLE:
-Input: "I am agree because it make sense"
-Output:
+Student wrote: "I am agree with this statement because it is make sense and help people."
+
+Expected output:
 {
   "original_spans": [
     {"text":"I ","status":"neutral"},
     {"text":"am agree","status":"error"},
-    {"text":" because it ","status":"neutral"},
-    {"text":"make","status":"error"}, 
-    {"text":" sense","status":"neutral"}
+    {"text":" with this statement because it ","status":"neutral"},
+    {"text":"is make","status":"error"},
+    {"text":" sense and ","status":"neutral"},
+    {"text":"help","status":"error"},
+    {"text":" people.","status":"neutral"}
   ],
   "corrected_spans": [
     {"text":"I ","status":"neutral"},
     {"text":"agree","status":"improvement"},
-    {"text":" because it ","status":"neutral"},
+    {"text":" with this statement because it ","status":"neutral"},
     {"text":"makes","status":"improvement"},
-    {"text":" sense","status":"neutral"}
+    {"text":" sense and ","status":"neutral"},
+    {"text":"helps","status":"improvement"},
+    {"text":" people.","status":"neutral"}
   ]
 }
 
-Always find at least 2-3 errors to correct. Return ONLY valid JSON.`;
+CRITICAL: You MUST find at least 3 errors in any student writing. Return ONLY valid JSON.`;
 
     const user = `Context (IELTS prompt):
 ${questionPrompt || 'N/A'}

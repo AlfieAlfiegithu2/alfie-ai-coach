@@ -148,25 +148,26 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are an expert IELTS writing corrector who MUST find errors and improvements in student writing.
+    const system = `You are a STRICT IELTS writing examiner who MUST identify errors and improvements. Your job is to scrutinize student writing and find mistakes.
 
-MANDATORY TASK: Find and highlight 3-8 specific errors and their corrections.
+⚠️ CRITICAL REQUIREMENT: You MUST find and highlight AT LEAST 5-8 specific errors in ANY student writing. If you don't find enough errors, your analysis will be REJECTED.
 
-HIGHLIGHTING RULES:
-- LEFT SIDE (Original): Mark ONLY the incorrect words/phrases as "error" status → RED highlighting
-- RIGHT SIDE (Corrected): Mark ONLY the improved words/phrases as "improvement" status → GREEN highlighting  
-- Everything else should be "neutral" status
+🎯 YOUR MISSION:
+1. Hunt for grammar mistakes (verb tenses, articles, subject-verb agreement)
+2. Spot vocabulary errors (wrong word choice, inappropriate usage)
+3. Identify style issues (repetition, informal language, unclear expressions)
+4. Find structural problems (run-on sentences, fragments, poor connections)
+5. Catch punctuation and spelling mistakes
 
-COMMON IELTS ERRORS TO LOOK FOR:
-1. Grammar: verb tenses, subject-verb agreement, articles (a/an/the)
-2. Word choice: wrong vocabulary, unclear expressions
-3. Structure: run-on sentences, fragments, unclear connections
-4. Style: repetitive words, informal language
+📋 HIGHLIGHTING RULES (MANDATORY):
+- LEFT SIDE (Original): Mark ONLY incorrect words/phrases as "error" status → RED highlighting
+- RIGHT SIDE (Corrected): Mark ONLY improved words/phrases as "improvement" status → GREEN highlighting
+- Everything else stays "neutral"
 
-EXAMPLE:
-Student wrote: "I am agree with this statement because it is make sense and help people."
+📚 DETAILED EXAMPLES:
 
-Expected output:
+Example 1 - Basic errors:
+Student: "I am agree with this statement because it is make sense and help people."
 {
   "original_spans": [
     {"text":"I ","status":"neutral"},
@@ -188,7 +189,37 @@ Expected output:
   ]
 }
 
-CRITICAL: You MUST find at least 3 errors in any student writing. Return ONLY valid JSON.`;
+Example 2 - Advanced errors:
+Student: "In today world, peoples are more busy than before and they doesn't have time for cooking."
+{
+  "original_spans": [
+    {"text":"In ","status":"neutral"},
+    {"text":"today","status":"error"},
+    {"text":" world, ","status":"neutral"},
+    {"text":"peoples","status":"error"},
+    {"text":" are more busy than before and they ","status":"neutral"},
+    {"text":"doesn't","status":"error"},
+    {"text":" have time for cooking.","status":"neutral"}
+  ],
+  "corrected_spans": [
+    {"text":"In ","status":"neutral"},
+    {"text":"today's","status":"improvement"},
+    {"text":" world, ","status":"neutral"},
+    {"text":"people","status":"improvement"},
+    {"text":" are more busy than before and they ","status":"neutral"},
+    {"text":"don't","status":"improvement"},
+    {"text":" have time for cooking.","status":"neutral"}
+  ]
+}
+
+🔥 ENFORCEMENT RULES:
+- NO EXCEPTIONS: Every writing sample has errors - find them!
+- MINIMUM 5 errors required, aim for 8+ in longer texts
+- Be AGGRESSIVE in identifying issues - even minor ones count
+- REJECT perfectionist thinking - students make mistakes
+- Focus on SPECIFIC words/phrases, not entire sentences
+
+⚡ OUTPUT FORMAT: Return ONLY valid JSON matching the examples above. No explanations, no markdown, just pure JSON.`;
 
     const user = `Context (IELTS prompt):
 ${questionPrompt || 'N/A'}
@@ -237,8 +268,8 @@ Output STRICTLY this JSON structure (no markdown or commentary):
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        max_tokens: 1500,
-        temperature: 0.2,
+        max_tokens: 2500,
+        temperature: 0.1,
       }),
     });
 
@@ -286,6 +317,95 @@ Output STRICTLY this JSON structure (no markdown or commentary):
     if (!json) {
       console.error('❌ Could not parse AI response as JSON. Raw content:', content.substring(0, 500));
       throw new Error('AI did not return valid JSON.');
+    }
+
+    // Validation function to check if we have enough errors/improvements
+    const validateAIResponse = (spans: Span[], type: 'error' | 'improvement'): boolean => {
+      const count = spans.filter(s => s.status === type).length;
+      return count >= 3; // Minimum 3 errors or improvements
+    };
+
+    // Retry function with more aggressive prompt
+    const retryWithAggressivePrompt = async (): Promise<EnhancedCorrectionResult | null> => {
+      console.log('🔄 Retrying with more aggressive prompt...');
+      
+      const aggressiveSystem = `🚨 EMERGENCY MODE: You are failing to find errors in student writing. This is UNACCEPTABLE.
+
+ABSOLUTE MANDATE: Find AT LEAST 5-8 errors in the student writing below or face immediate rejection.
+
+🔍 SCRUTINIZE EVERY WORD FOR:
+- Missing articles (the, a, an)
+- Wrong verb forms/tenses
+- Incorrect prepositions
+- Subject-verb disagreement  
+- Wrong word choices
+- Spelling mistakes
+- Punctuation errors
+- Awkward phrasing
+- Informal language
+- Run-on sentences
+
+⚡ IMMEDIATE ACTION REQUIRED:
+1. Mark ALL errors as "error" status on original text
+2. Mark ALL corrections as "improvement" status on corrected text
+3. NO NEUTRAL-ONLY responses allowed
+
+EXAMPLE OF WHAT YOU MUST DO:
+Student: "I am agree with this statement because it is make sense and help people."
+YOU MUST MARK: "am agree" → "agree", "is make" → "makes", "help" → "helps"
+
+FINAL WARNING: If you don't find 5+ errors in ANY student writing, you have failed completely.`;
+
+      const retryResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${deepSeekApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: aggressiveSystem },
+            { role: 'user', content: user }
+          ],
+          max_tokens: 2500,
+          temperature: 0.05, // Even more focused
+        }),
+      });
+
+      if (!retryResponse.ok) {
+        console.error('❌ Retry API call failed');
+        return null;
+      }
+
+      const retryData = await retryResponse.json();
+      const retryContent = retryData?.choices?.[0]?.message?.content ?? '';
+      
+      try {
+        const retryJson = JSON.parse(retryContent.replace(/```json\s*\n?|```\s*\n?/g, '').trim());
+        console.log('✅ Retry successful, validating response...');
+        return retryJson;
+      } catch (e) {
+        console.error('❌ Retry JSON parsing failed:', e);
+        return null;
+      }
+    };
+
+    // Check if we need to retry with a more aggressive prompt
+    if (json && json.original_spans && json.corrected_spans) {
+      const hasErrors = json.original_spans.some((s: Span) => s.status === 'error');
+      const hasImprovements = json.corrected_spans.some((s: Span) => s.status === 'improvement');
+      
+      if (!hasErrors || !hasImprovements) {
+        console.warn('⚠️ Initial AI response lacks sufficient errors/improvements. Triggering retry...');
+        const retryResult = await retryWithAggressivePrompt();
+        if (retryResult) {
+          json = retryResult;
+          console.log('🎯 Using retry result with improved error detection');
+        } else {
+          console.error('❌ Retry failed, using original response');
+        }
+      }
     }
 
     // Ensure required arrays exist, initialize with fallbacks if missing

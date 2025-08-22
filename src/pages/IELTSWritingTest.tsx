@@ -327,13 +327,16 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         .from('test_results')
         .insert({
           user_id: user?.id,
-          test_id: testId,
-          test_type: 'IELTS',
-          skill_category: 'Writing',
-          module: 'academic',
-          overall_score: structured?.overall?.band || 7.0,
-          time_taken_seconds: Math.floor(totalTimeSpent / 1000),
-          completed: true
+          test_type: 'IELTS Writing',
+          time_taken: Math.floor(totalTimeSpent / 1000),
+          completed_at: new Date().toISOString(),
+          test_data: {
+            task1Data: task1,
+            task2Data: task2,
+            task1Answer,
+            task2Answer,
+            overall_band: structured?.overall?.band || 7.0
+          }
         })
         .select()
         .single();

@@ -462,18 +462,345 @@ const TaskSection = ({
                           <HelpCircle className="w-3 h-3 opacity-60" />
                         </button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
+                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle className="text-xl">{it.label} - Learning Guide</DialogTitle>
                         </DialogHeader>
-                        <div className="mt-4 space-y-4">
-                          <p className="text-text-secondary">
-                            This pop-up will explain the '{it.label}' criterion and provide tips on how to improve your score.
-                          </p>
-                          <p className="text-sm text-text-tertiary">
-                            Educational content for this criterion will be added here, including detailed explanations, 
-                            scoring rubrics, examples, and actionable improvement strategies.
-                          </p>
+                        <div className="mt-4 space-y-6">
+                          {it.label === "Task Achievement" && (
+                            <>
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">What is Task Achievement?</h3>
+                                <p className="text-text-secondary mb-4">
+                                  Task Achievement measures how well you address the specific requirements of Task 1. This includes accurately describing visual information, identifying key trends, and presenting data clearly and logically.
+                                </p>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Band Score Criteria</h3>
+                                <div className="space-y-3">
+                                  <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                                    <strong className="text-green-800">Band 9-8:</strong> Fully satisfies all requirements, clearly presents and highlights key features with relevant, extended and supported ideas
+                                  </div>
+                                  <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
+                                    <strong className="text-blue-800">Band 7-6:</strong> Covers requirements adequately, presents key features clearly with some extension and support
+                                  </div>
+                                  <div className="bg-orange-50 p-3 rounded-lg border-l-4 border-orange-500">
+                                    <strong className="text-orange-800">Band 5-4:</strong> Generally addresses requirements, presents but inadequately covers key features
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Key Improvement Strategies</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li><strong>Identify the main trends:</strong> Always start by identifying the most significant patterns or changes in the data</li>
+                                  <li><strong>Use specific data:</strong> Include precise figures, percentages, and dates from the visual</li>
+                                  <li><strong>Group similar information:</strong> Organize data logically rather than describing every detail</li>
+                                  <li><strong>Write a clear overview:</strong> Summarize 2-3 main features in your overview paragraph</li>
+                                  <li><strong>Stay objective:</strong> Describe what you see without giving opinions or explanations</li>
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Common Mistakes to Avoid</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li>Copying the question word-for-word in your introduction</li>
+                                  <li>Including irrelevant information not shown in the visual</li>
+                                  <li>Describing every single detail instead of focusing on key features</li>
+                                  <li>Adding personal opinions or explanations for the data</li>
+                                  <li>Writing under 150 words or significantly over 200 words</li>
+                                </ul>
+                              </div>
+                            </>
+                          )}
+
+                          {it.label === "Task Response" && (
+                            <>
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">What is Task Response?</h3>
+                                <p className="text-text-secondary mb-4">
+                                  Task Response evaluates how well you address the Task 2 question. This includes presenting a clear position, developing arguments with relevant examples, and covering all parts of the question appropriately.
+                                </p>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Band Score Criteria</h3>
+                                <div className="space-y-3">
+                                  <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                                    <strong className="text-green-800">Band 9-8:</strong> Fully addresses all parts with well-developed response, clear position throughout, relevant and extended ideas
+                                  </div>
+                                  <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
+                                    <strong className="text-blue-800">Band 7-6:</strong> Addresses all parts, clear position and main ideas, mostly relevant ideas with some development
+                                  </div>
+                                  <div className="bg-orange-50 p-3 rounded-lg border-l-4 border-orange-500">
+                                    <strong className="text-orange-800">Band 5-4:</strong> Addresses the task partially, unclear position, limited development of ideas
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Key Improvement Strategies</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li><strong>Analyze the question carefully:</strong> Identify exactly what you're being asked to do (discuss, agree/disagree, advantages/disadvantages, etc.)</li>
+                                  <li><strong>Take a clear position:</strong> State your opinion clearly in the introduction and maintain it throughout</li>
+                                  <li><strong>Address all parts:</strong> Make sure you respond to every aspect of the question</li>
+                                  <li><strong>Develop your ideas:</strong> Support each main point with explanations, examples, or evidence</li>
+                                  <li><strong>Use relevant examples:</strong> Include specific, realistic examples that support your arguments</li>
+                                  <li><strong>Write 250+ words:</strong> Ensure you meet the minimum word requirement with well-developed content</li>
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Question Types & Approaches</h3>
+                                <div className="space-y-3">
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong>Opinion Essays:</strong> State your position clearly and provide 2-3 supporting arguments
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong>Discussion Essays:</strong> Present both sides fairly, then give your own view
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong>Advantage/Disadvantage:</strong> Discuss both sides with specific examples
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong>Problem/Solution:</strong> Identify causes clearly, then propose realistic solutions
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                          {it.label === "Coherence & Cohesion" && (
+                            <>
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">What is Coherence & Cohesion?</h3>
+                                <p className="text-text-secondary mb-4">
+                                  Coherence refers to how logically your ideas flow and connect, while cohesion involves the language devices (linking words, pronouns, etc.) that bind your text together. Together, they make your writing easy to follow and understand.
+                                </p>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Band Score Criteria</h3>
+                                <div className="space-y-3">
+                                  <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                                    <strong className="text-green-800">Band 9-8:</strong> Logically sequences information, uses cohesive devices effectively, clear paragraphing
+                                  </div>
+                                  <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
+                                    <strong className="text-blue-800">Band 7-6:</strong> Information logically arranged, good use of cohesive devices, clear central topic in paragraphs
+                                  </div>
+                                  <div className="bg-orange-50 p-3 rounded-lg border-l-4 border-orange-500">
+                                    <strong className="text-orange-800">Band 5-4:</strong> Some organization present, limited cohesive devices, unclear paragraphing
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Essential Linking Words & Phrases</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Addition:</strong>
+                                    <p className="text-sm">Furthermore, Moreover, Additionally, In addition, Also</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Contrast:</strong>
+                                    <p className="text-sm">However, Nevertheless, On the other hand, Conversely, Despite</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Examples:</strong>
+                                    <p className="text-sm">For instance, For example, Such as, Namely, Particularly</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Conclusion:</strong>
+                                    <p className="text-sm">Therefore, Consequently, As a result, In conclusion, Overall</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Paragraph Structure Tips</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li><strong>Clear topic sentences:</strong> Start each paragraph with a sentence that introduces the main idea</li>
+                                  <li><strong>Logical progression:</strong> Arrange supporting sentences in a logical order</li>
+                                  <li><strong>Use pronouns effectively:</strong> Replace repeated nouns with appropriate pronouns (this, these, they, it)</li>
+                                  <li><strong>Vary your transitions:</strong> Don't overuse the same linking words; use a variety</li>
+                                  <li><strong>Reference previous ideas:</strong> Connect new information to what you've already discussed</li>
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Common Coherence Issues</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li>Ideas that don't connect logically to each other</li>
+                                  <li>Overusing simple connectors like "and," "but," "so"</li>
+                                  <li>Paragraphs without clear central ideas</li>
+                                  <li>Jumping between topics without smooth transitions</li>
+                                  <li>Unclear pronoun references</li>
+                                </ul>
+                              </div>
+                            </>
+                          )}
+
+                          {it.label === "Lexical Resource" && (
+                            <>
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">What is Lexical Resource?</h3>
+                                <p className="text-text-secondary mb-4">
+                                  Lexical Resource evaluates your vocabulary range, accuracy, and appropriateness. This includes using varied vocabulary, precise word choices, correct collocations, and appropriate formal/informal register.
+                                </p>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Band Score Criteria</h3>
+                                <div className="space-y-3">
+                                  <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                                    <strong className="text-green-800">Band 9-8:</strong> Wide range of vocabulary, natural and sophisticated usage, rare minor errors
+                                  </div>
+                                  <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
+                                    <strong className="text-blue-800">Band 7-6:</strong> Good range of vocabulary, some awareness of style and collocation, occasional errors
+                                  </div>
+                                  <div className="bg-orange-50 p-3 rounded-lg border-l-4 border-orange-500">
+                                    <strong className="text-orange-800">Band 5-4:</strong> Limited range, errors in word choice and formation may impede meaning
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Improvement Strategies</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li><strong>Learn collocations:</strong> Study word combinations (make progress, take measures, strong possibility)</li>
+                                  <li><strong>Use synonyms appropriately:</strong> Avoid repeating key words, but ensure synonyms fit the context</li>
+                                  <li><strong>Learn topic-specific vocabulary:</strong> Build vocabulary around common IELTS topics (environment, technology, education)</li>
+                                  <li><strong>Practice paraphrasing:</strong> Rephrase ideas using different vocabulary and structures</li>
+                                  <li><strong>Use precise word forms:</strong> Ensure correct noun/adjective/verb forms (economy/economic/economical)</li>
+                                  <li><strong>Avoid overly complex words:</strong> Use sophisticated vocabulary only when you're confident it's correct</li>
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Useful Academic Vocabulary</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Trend Description:</strong>
+                                    <p className="text-sm">Increase: surge, soar, climb, escalate</p>
+                                    <p className="text-sm">Decrease: plummet, decline, drop, diminish</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Opinion Expression:</strong>
+                                    <p className="text-sm">Assert, contend, maintain, advocate, propose</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Cause & Effect:</strong>
+                                    <p className="text-sm">Trigger, generate, stem from, result in, contribute to</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-3 rounded-lg">
+                                    <strong className="text-primary">Emphasis:</strong>
+                                    <p className="text-sm">Particularly, notably, significantly, considerably, substantially</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Common Lexical Errors</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li><strong>Word formation errors:</strong> "Increasement" instead of "increase"</li>
+                                  <li><strong>Wrong collocations:</strong> "Do a mistake" instead of "make a mistake"</li>
+                                  <li><strong>Inappropriate register:</strong> Using informal words in formal essays</li>
+                                  <li><strong>Overusing basic words:</strong> "Good," "bad," "big" instead of precise alternatives</li>
+                                  <li><strong>Incorrect prepositions:</strong> "Depend from" instead of "depend on"</li>
+                                </ul>
+                              </div>
+                            </>
+                          )}
+
+                          {it.label === "Grammar Range & Accuracy" && (
+                            <>
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">What is Grammatical Range & Accuracy?</h3>
+                                <p className="text-text-secondary mb-4">
+                                  This criterion evaluates both the variety of grammatical structures you use and how accurately you use them. Higher bands require complex structures used correctly, while lower bands may have simpler structures with more errors.
+                                </p>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Band Score Criteria</h3>
+                                <div className="space-y-3">
+                                  <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                                    <strong className="text-green-800">Band 9-8:</strong> Wide range of structures, majority error-free, errors are rare and minor
+                                  </div>
+                                  <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
+                                    <strong className="text-blue-800">Band 7-6:</strong> Good range of complex structures, many error-free sentences, good control overall
+                                  </div>
+                                  <div className="bg-orange-50 p-3 rounded-lg border-l-4 border-orange-500">
+                                    <strong className="text-orange-800">Band 5-4:</strong> Limited range, attempts complex structures, errors may impede communication
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Essential Complex Structures</h3>
+                                <div className="space-y-4">
+                                  <div className="bg-surface-3 p-4 rounded-lg">
+                                    <strong className="text-primary">Conditional Sentences:</strong>
+                                    <p className="text-sm mt-1">"If governments invested more in education, literacy rates would improve significantly."</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-4 rounded-lg">
+                                    <strong className="text-primary">Relative Clauses:</strong>
+                                    <p className="text-sm mt-1">"People who work from home often report higher job satisfaction."</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-4 rounded-lg">
+                                    <strong className="text-primary">Passive Voice:</strong>
+                                    <p className="text-sm mt-1">"The data was collected over a five-year period by researchers."</p>
+                                  </div>
+                                  <div className="bg-surface-3 p-4 rounded-lg">
+                                    <strong className="text-primary">Participle Clauses:</strong>
+                                    <p className="text-sm mt-1">"Having analyzed the trends, we can conclude that technology usage is increasing."</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Grammar Improvement Tips</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li><strong>Master tense consistency:</strong> Keep tenses logical and consistent throughout your essay</li>
+                                  <li><strong>Use a variety of sentence lengths:</strong> Mix simple, compound, and complex sentences</li>
+                                  <li><strong>Practice advanced structures:</strong> Incorporate conditionals, relative clauses, and passive voice naturally</li>
+                                  <li><strong>Check subject-verb agreement:</strong> Ensure singular/plural agreement, especially with complex subjects</li>
+                                  <li><strong>Use modal verbs effectively:</strong> Should, could, might, may for expressing probability and necessity</li>
+                                  <li><strong>Proofread carefully:</strong> Check for articles (a, an, the), prepositions, and word order</li>
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Common Grammar Errors to Avoid</h3>
+                                <div className="space-y-3">
+                                  <div className="bg-red-50 p-3 rounded-lg border-l-4 border-red-400">
+                                    <strong className="text-red-800">Article Errors:</strong> Missing "the" before specific nouns, unnecessary articles
+                                  </div>
+                                  <div className="bg-red-50 p-3 rounded-lg border-l-4 border-red-400">
+                                    <strong className="text-red-800">Subject-Verb Agreement:</strong> "The number of students are" should be "The number of students is"
+                                  </div>
+                                  <div className="bg-red-50 p-3 rounded-lg border-l-4 border-red-400">
+                                    <strong className="text-red-800">Incomplete Sentences:</strong> Fragments without main verbs or subjects
+                                  </div>
+                                  <div className="bg-red-50 p-3 rounded-lg border-l-4 border-red-400">
+                                    <strong className="text-red-800">Run-on Sentences:</strong> Multiple ideas without proper punctuation or conjunctions
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 text-primary">Practice Exercises</h3>
+                                <ul className="list-disc pl-6 space-y-2 text-text-secondary">
+                                  <li>Write sentences using different conditional forms (first, second, third conditional)</li>
+                                  <li>Practice combining simple sentences into complex ones using relative pronouns</li>
+                                  <li>Convert active sentences to passive voice and vice versa</li>
+                                  <li>Write paragraphs focusing on one grammar structure at a time</li>
+                                  <li>Use grammar checking tools to identify patterns in your errors</li>
+                                </ul>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </DialogContent>
                     </Dialog>

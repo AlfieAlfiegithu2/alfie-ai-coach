@@ -6,30 +6,80 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function callDeepSeek(messages: any[], apiKey: string) {
-  console.log('🚀 Attempting DeepSeek API call...');
-  const response = await fetch('https://api.deepseek.com/chat/completions', {
+async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/3)...`);
+  
+  try {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages,
+        max_tokens: 4000,
+        temperature: 0.1, // Lower temperature for more consistent JSON
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DeepSeek API Error:', errorText);
+      throw new Error(`DeepSeek API failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ DeepSeek API call successful');
+    console.log('🔍 DeepSeek response structure:', {
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length || 0,
+      hasContent: !!data.choices?.[0]?.message?.content,
+      contentLength: data.choices?.[0]?.message?.content?.length || 0
+    });
+    
+    return data;
+  } catch (error) {
+    console.error(`❌ DeepSeek attempt ${retryCount + 1} failed:`, error.message);
+    
+    if (retryCount < 2) {
+      console.log(`🔄 Retrying DeepSeek API call in 1 second...`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return callDeepSeek(messages, apiKey, retryCount + 1);
+    }
+    
+    throw error;
+  }
+}
+
+async function callOpenAI(messages: any[], apiKey: string) {
+  console.log('🚀 Attempting OpenAI API call as backup...');
+  
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'gpt-4.1-2025-04-14',
       messages,
-      max_tokens: 2000,
-      temperature: 0.7,
+      max_completion_tokens: 4000,
+      // Note: no temperature for newer models
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('❌ DeepSeek API Error:', errorText);
-    throw new Error(`DeepSeek API failed: ${response.status} - ${errorText}`);
+    console.error('❌ OpenAI API Error:', errorText);
+    throw new Error(`OpenAI API failed: ${response.status} - ${errorText}`);
   }
 
-  console.log('✅ DeepSeek API call successful');
-  return response.json();
+  const data = await response.json();
+  console.log('✅ OpenAI API call successful');
+  return data;
 }
 
 serve(async (req) => {
@@ -39,15 +89,18 @@ serve(async (req) => {
 
   try {
     const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     
     console.log('🔍 API Keys status:', {
       hasDeepSeek: !!deepSeekApiKey,
+      hasOpenAI: !!openAIApiKey,
       deepSeekLength: deepSeekApiKey?.length || 0,
+      openAILength: openAIApiKey?.length || 0,
     });
     
-    if (!deepSeekApiKey) {
-      console.error('❌ DeepSeek API key not found');
-      throw new Error('DeepSeek API key not configured');
+    if (!deepSeekApiKey && !openAIApiKey) {
+      console.error('❌ No API keys found');
+      throw new Error('No AI API keys configured');
     }
 
     const { task1Answer, task2Answer, task1Data, task2Data } = await req.json();
@@ -61,71 +114,78 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `You are a senior IELTS Writing examiner.\n\nReturn ONLY a single JSON object (no extra prose). Use this exact schema:\n{\n  "task1": {\n    "criteria": {\n      "task_achievement": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string\n  },\n  "task2": {\n    "criteria": {\n      "task_response": { "band": number, "justification": string },\n      "coherence_and_cohesion": { "band": number, "justification": string },\n      "lexical_resource": { "band": number, "justification": string },\n      "grammatical_range_and_accuracy": { "band": number, "justification": string }\n    },\n    "overall_band": number,\n    "overall_reason": string,\n    "feedback": {\n      "strengths": string[],\n      "improvements": string[]\n    },\n    "feedback_markdown": string\n  },\n  "overall": {\n    "band": number,\n    "calculation": string,\n    "feedback_markdown": string\n  },\n  "full_report_markdown": string\n}\n\nRules:\n- Bands must be whole or half only: 0, 0.5, 1.0, …, 9.0.\n- Avoid giving identical bands across all criteria unless explicitly justified with concrete textual evidence; prefer nuanced differentiation when warranted.\n- For each task, compute overall_band by averaging the four criteria and rounding to nearest 0.5 using IELTS rules (.25→.5, .75→next whole).\n- Compute overall.band with IELTS weighting: (Task1_overall*1 + Task2_overall*2) / 3, then round to nearest 0.5. Provide the exact calculation string in overall.calculation.\n- For each task, provide at least 3 concise "strengths" and 3 "improvements" bullets in the feedback object.\n- Keep feedback_markdown fields as clean, sectioned reports suitable for display. full_report_markdown should combine everything nicely for display.\n\nTASK 1 DETAILS:\nPrompt: ${task1Data?.title || 'Task 1'}\nInstructions: ${task1Data?.instructions || ''}\n${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}\n${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}\n\nSTUDENT TASK 1 RESPONSE:\n"${task1Answer}"\n\nTASK 2 DETAILS:\nPrompt: ${task2Data?.title || 'Task 2'}\nInstructions: ${task2Data?.instructions || ''}\n\nSTUDENT TASK 2 RESPONSE:\n"${task2Answer}"\n`;
+    const examinerPrompt = `TASK 1 DETAILS:
+Prompt: ${task1Data?.title || 'Task 1'}
+Instructions: ${task1Data?.instructions || ''}
+${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}
+${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}
+
+STUDENT TASK 1 RESPONSE:
+"${task1Answer}"
+
+TASK 2 DETAILS:
+Prompt: ${task2Data?.title || 'Task 2'}
+Instructions: ${task2Data?.instructions || ''}
+
+STUDENT TASK 2 RESPONSE:
+"${task2Answer}"
+
+IMPORTANT: You must return ONLY a valid JSON object. Do not include any text before or after the JSON.`;
 
 
 
     const messages = [
       {
         role: 'system',
-        content: `You are "Examiner-7," a senior, Cambridge-certified IELTS examiner. Your assessments must be decisive, accurate, and strictly based on the official band descriptors.
+        content: `You are a senior IELTS Writing examiner. You must return ONLY a valid JSON object with no additional text.
 
-New Guiding Principle: Do not be overly cautious. If a response fully and expertly meets the criteria for a Band 9, you must award a Band 9. Do not invent minor flaws to justify a lower score.
-
-New Feedback Requirement (CRITICAL): Your feedback must be extremely specific and actionable. For every "Area for Improvement" you identify, provide:
-- issue: a short label of the problem
-- sentence_quote: a direct quote from the student's own writing
-- improved_version: a stronger, revised version of that exact sentence/fragment
-- explanation: a brief rationale
-
-Return ONLY a single JSON object using this exact schema:
+JSON SCHEMA (MANDATORY):
 {
   "task1": {
     "criteria": {
-      "task_achievement": { "band": number, "justification": string },
-      "coherence_and_cohesion": { "band": number, "justification": string },
-      "lexical_resource": { "band": number, "justification": string },
-      "grammatical_range_and_accuracy": { "band": number, "justification": string }
+      "task_achievement": { "band": 7.5, "justification": "Clear explanation here..." },
+      "coherence_and_cohesion": { "band": 8.0, "justification": "Clear explanation here..." },
+      "lexical_resource": { "band": 7.0, "justification": "Clear explanation here..." },
+      "grammatical_range_and_accuracy": { "band": 7.5, "justification": "Clear explanation here..." }
     },
-    "overall_band": number,
-    "overall_reason": string,
+    "overall_band": 7.5,
+    "overall_reason": "Averaged from criteria scores",
     "feedback": {
-      "strengths": string[],
-      "improvements": string[]
+      "strengths": ["Strength 1", "Strength 2", "Strength 3"],
+      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"]
     },
-    "feedback_markdown": string
+    "feedback_markdown": "Detailed Task 1 feedback here..."
   },
   "task2": {
     "criteria": {
-      "task_response": { "band": number, "justification": string },
-      "coherence_and_cohesion": { "band": number, "justification": string },
-      "lexical_resource": { "band": number, "justification": string },
-      "grammatical_range_and_accuracy": { "band": number, "justification": string }
+      "task_response": { "band": 8.0, "justification": "Clear explanation here..." },
+      "coherence_and_cohesion": { "band": 7.5, "justification": "Clear explanation here..." },
+      "lexical_resource": { "band": 7.0, "justification": "Clear explanation here..." },
+      "grammatical_range_and_accuracy": { "band": 7.5, "justification": "Clear explanation here..." }
     },
-    "overall_band": number,
-    "overall_reason": string,
+    "overall_band": 7.5,
+    "overall_reason": "Averaged from criteria scores",
     "feedback": {
-      "strengths": string[],
-      "improvements": string[]
+      "strengths": ["Strength 1", "Strength 2", "Strength 3"],
+      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"]
     },
-    "feedback_markdown": string
+    "feedback_markdown": "Detailed Task 2 feedback here..."
   },
   "overall": {
-    "band": number,
-    "calculation": string,
-    "feedback_markdown": string
+    "band": 7.5,
+    "calculation": "(7.5 * 1 + 7.5 * 2) / 3 = 7.5",
+    "feedback_markdown": "Overall assessment here..."
   },
-  "full_report_markdown": string
+  "full_report_markdown": "Complete report here..."
 }
 
-Scoring & Rules:
-- Bands must be whole or half only: 0, 0.5, …, 9.0.
-- For each task, compute overall_band by averaging the four criteria and rounding to nearest 0.5 using IELTS rules (.25→.5, .75→next whole).
-- Compute overall.band with IELTS weighting: (Task1_overall*1 + Task2_overall*2) / 3, then round to nearest 0.5. Provide the exact calculation in overall.calculation.
-- Provide at least 3 "strengths" and 3 "improvements" for each task.
-- Be confident awarding Band 9 where fully deserved; do not downgrade for invented minor flaws.
-
-Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
+CRITICAL RULES:
+- Return ONLY the JSON object, no other text
+- Bands must be whole or half numbers: 0, 0.5, 1.0, ..., 9.0
+- Calculate overall_band by averaging criteria and rounding to nearest 0.5
+- Calculate overall.band using: (Task1_overall*1 + Task2_overall*2) / 3, then round to 0.5
+- Provide exactly 3 strengths and 3 improvements for each task
+- Be accurate and fair in your assessment`
       },
       {
         role: 'user',
@@ -136,14 +196,41 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
     let data;
     let apiUsed = 'deepseek';
     
-    // Use DeepSeek as primary API
-    console.log('🔄 Using DeepSeek API as primary...');
-    try {
-      data = await callDeepSeek(messages, deepSeekApiKey);
-      console.log('✅ DeepSeek API call completed successfully');
-    } catch (deepSeekError) {
-      console.error('❌ DeepSeek API failed:', deepSeekError.message);
-      throw new Error(`DeepSeek API failed: ${deepSeekError.message}`);
+    // Try DeepSeek first, then OpenAI as backup
+    if (deepSeekApiKey) {
+      console.log('🔄 Using DeepSeek API as primary...');
+      try {
+        data = await callDeepSeek(messages, deepSeekApiKey);
+        console.log('✅ DeepSeek API call completed successfully');
+      } catch (deepSeekError) {
+        console.error('❌ DeepSeek API failed:', deepSeekError.message);
+        
+        if (openAIApiKey) {
+          console.log('🔄 Falling back to OpenAI API...');
+          try {
+            data = await callOpenAI(messages, openAIApiKey);
+            apiUsed = 'openai';
+            console.log('✅ OpenAI fallback succeeded');
+          } catch (openAIError) {
+            console.error('❌ OpenAI fallback also failed:', openAIError.message);
+            throw new Error(`Both APIs failed - DeepSeek: ${deepSeekError.message}, OpenAI: ${openAIError.message}`);
+          }
+        } else {
+          throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
+        }
+      }
+    } else if (openAIApiKey) {
+      console.log('🔄 Using OpenAI API (DeepSeek not available)...');
+      try {
+        data = await callOpenAI(messages, openAIApiKey);
+        apiUsed = 'openai';
+        console.log('✅ OpenAI API call completed successfully');
+      } catch (openAIError) {
+        console.error('❌ OpenAI API failed:', openAIError.message);
+        throw new Error(`OpenAI API failed: ${openAIError.message}`);
+      }
+    } else {
+      throw new Error('No API keys available');
     }
 
     console.log(`✅ AI Examiner response generated using ${apiUsed.toUpperCase()}`);
@@ -170,30 +257,69 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
       // Advanced JSON extraction and cleaning
       let jsonMatch = null;
       
-      // More comprehensive cleaning function
+      // Enhanced cleaning function with more robust patterns
       const cleanJson = (str: string) => {
-        return str
+        let cleaned = str
           .replace(/^\s*```json\s*/i, '')  // Remove starting ```json
-          .replace(/\s*```\s*$/, '')       // Remove ending ```
+          .replace(/^\s*```\s*/i, '')      // Remove starting ```
+          .replace(/\s*```\s*$/i, '')      // Remove ending ```
           .replace(/^\s*[\s\S]*?(\{)/, '$1')  // Remove everything before first {
-          .replace(/(\})\s*[\s\S]*?$/, '$1')  // Remove everything after last }
+          .replace(/(\})\s*[\s\S]*?$/s, '$1')  // Remove everything after last }
           .replace(/,(\s*[}\]])/g, '$1')   // Remove trailing commas
           .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":') // Quote unquoted keys
           .replace(/:\s*'([^']*)'/g, ': "$1"')  // Replace single quotes with double
+          .replace(/\t/g, ' ')             // Replace tabs with spaces
+          .replace(/\r\n/g, '\n')          // Normalize line endings
           .replace(/\n\s*/g, ' ')          // Replace newlines with space
           .replace(/\s+/g, ' ')            // Normalize whitespace
+          .replace(/([{}])\s+/g, '$1')     // Remove spaces after braces
+          .replace(/\s+([{}])/g, '$1')     // Remove spaces before braces
           .trim();
+        
+        // Try to fix common JSON issues
+        try {
+          // Attempt to balance braces
+          const openBraces = (cleaned.match(/\{/g) || []).length;
+          const closeBraces = (cleaned.match(/\}/g) || []).length;
+          if (openBraces > closeBraces) {
+            cleaned += '}';
+          }
+        } catch (e) {
+          console.log('❌ Error in brace balancing:', e.message);
+        }
+        
+        return cleaned;
       };
 
-      // Multiple extraction patterns
+      // Enhanced extraction patterns - order matters (most specific first)
       const patterns = [
-        /(\{[\s\S]*\})/,  // Most greedy - entire JSON
-        /```json\s*(\{[\s\S]*?\})\s*```/gi,  // JSON in code blocks
-        /```\s*(\{[\s\S]*?\})\s*```/gi,      // JSON in plain code blocks
-        /"task1"\s*:\s*\{[\s\S]*?"overall"[\s\S]*?\}/i,  // From task1 to overall
-        /\{[\s\S]*?"task1"[\s\S]*?"overall"[\s\S]*?\}/i,  // Contains both task1 and overall
-        /\{[\s\S]*?"overall"[\s\S]*?\}/i,    // Contains overall
-        /\{[\s\S]*?"task[12]"[\s\S]*?\}/i    // Contains task1 or task2
+        // 1. Complete JSON structure with all required fields
+        /\{[\s\S]*?"task1"[\s\S]*?"criteria"[\s\S]*?"task2"[\s\S]*?"criteria"[\s\S]*?"overall"[\s\S]*?\}/i,
+        
+        // 2. Standard code block formats
+        /```json\s*(\{[\s\S]*?\})\s*```/gi,
+        /```\s*(\{[\s\S]*?\})\s*```/gi,
+        
+        // 3. Look for largest complete JSON object
+        /(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/g,
+        
+        // 4. Capture from first { to last }
+        /(\{[\s\S]*\})/,
+        
+        // 5. Any object containing task1 and overall
+        /\{[\s\S]*?"task1"[\s\S]*?"overall"[\s\S]*?\}/i,
+        
+        // 6. Any object containing task2 and overall  
+        /\{[\s\S]*?"task2"[\s\S]*?"overall"[\s\S]*?\}/i,
+        
+        // 7. Any large object (500+ chars)
+        /\{[\s\S]{500,}\}/i,
+        
+        // 8. Any object with criteria
+        /\{[\s\S]*?"criteria"[\s\S]*?\}/i,
+        
+        // 9. Fallback - any JSON-like structure
+        /\{[\s\S]*?\}/
       ];
       
       console.log('🔄 Trying', patterns.length, 'extraction patterns...');

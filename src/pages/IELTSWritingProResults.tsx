@@ -141,8 +141,8 @@ export default function IELTSWritingProResults() {
   } | null>(null);
   const [t1SentenceView, setT1SentenceView] = useState(false);
   const [t2SentenceView, setT2SentenceView] = useState(false);
-  const [t1ViewMode, setT1ViewMode] = useState<'highlights' | 'categories' | 'sentence'>('categories');
-  const [t2ViewMode, setT2ViewMode] = useState<'highlights' | 'categories' | 'sentence'>('categories');
+  const [t1ViewMode, setT1ViewMode] = useState<'highlights' | 'sentence'>('highlights');
+  const [t2ViewMode, setT2ViewMode] = useState<'highlights' | 'sentence'>('highlights');
 
   // Try to get data from location state first, then fallback to database
   useEffect(() => {
@@ -654,7 +654,6 @@ const TaskSection = ({
             </Button>
             <div>
               <h1 className="text-heading-2">IELTS Writing Results</h1>
-              <p className="text-caption">{testName}</p>
             </div>
           </div>
         </div>
@@ -677,7 +676,6 @@ const TaskSection = ({
                   <Badge variant="outline" className={`text-base px-3 py-1.5 rounded-2xl ${overallMeta.color}`}>
                     {overallMeta.label} Performance
                   </Badge>
-                  {testName ? <span className="text-caption text-text-secondary">{testName}</span> : null}
                 </div>
               </div>
               <ScoreSpiderChart 
@@ -729,14 +727,6 @@ const TaskSection = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <Button 
-                        variant={t1ViewMode === 'categories' ? 'default' : 'outline'}
-                        size="sm" 
-                        className="rounded-xl text-xs"
-                        onClick={() => setT1ViewMode('categories')}
-                      >
-                        By Category
-                      </Button>
-                      <Button 
                         variant={t1ViewMode === 'highlights' ? 'default' : 'outline'}
                         size="sm" 
                         className="rounded-xl text-xs"
@@ -775,19 +765,16 @@ const TaskSection = ({
                   <div>
                     {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
                     {t1Error && <div className="status-error">{t1Error}</div>}
-                    {t1CorrData && (
-                      <>
-                        {t1ViewMode === 'categories' && (
-                          <CorrectionsByCategory corrections={t1CorrData.corrections} />
-                        )}
-                        {t1ViewMode === 'highlights' && (
-                          <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
-                        )}
-                        {t1ViewMode === 'sentence' && (
-                          <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
-                        )}
-                      </>
-                    )}
+                      {t1CorrData && (
+                        <>
+                          {t1ViewMode === 'highlights' && (
+                            <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                          )}
+                          {t1ViewMode === 'sentence' && (
+                            <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                          )}
+                        </>
+                      )}
                     {!t1Loading && !t1Error && !t1CorrData && (
                       <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
                     )}
@@ -823,14 +810,6 @@ const TaskSection = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant={t2ViewMode === 'categories' ? 'default' : 'outline'}
-                        size="sm" 
-                        className="rounded-xl text-xs"
-                        onClick={() => setT2ViewMode('categories')}
-                      >
-                        By Category
-                      </Button>
                       <Button 
                         variant={t2ViewMode === 'highlights' ? 'default' : 'outline'}
                         size="sm" 
@@ -872,9 +851,6 @@ const TaskSection = ({
                     {t2Error && <div className="status-error">{t2Error}</div>}
                     {t2CorrData && (
                       <>
-                        {t2ViewMode === 'categories' && (
-                          <CorrectionsByCategory corrections={t2CorrData.corrections} />
-                        )}
                         {t2ViewMode === 'highlights' && (
                           <CorrectionVisualizer originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
                         )}

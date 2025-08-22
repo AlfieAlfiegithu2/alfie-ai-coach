@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from 'recharts';
 
 interface ScoreSpiderChartProps {
   task1Scores?: {
@@ -63,7 +63,7 @@ export default function ScoreSpiderChart({ task1Scores, task2Scores, className =
   
   if (!hasValidData) {
     return (
-      <div className={`flex items-center justify-center bg-surface-3/50 rounded-lg border border-border/50 ${className}`}>
+      <div className={`flex items-center justify-center rounded-lg ${className}`}>
         <div className="text-center p-4">
           <div className="text-text-secondary text-sm">
             Criteria analysis
@@ -87,14 +87,14 @@ export default function ScoreSpiderChart({ task1Scores, task2Scores, className =
   };
 
   return (
-    <div className={`bg-surface-3/30 rounded-lg border border-border/30 p-4 ${className}`}>
+    <div className={`p-4 ${className}`}>
       <div className="text-center mb-4">
         <div className="text-sm font-medium text-text-primary mb-1">Criteria Analysis</div>
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart 
           data={data} 
-          margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+          margin={{ top: 30, right: 10, left: 10, bottom: 10 }}
           barCategoryGap="20%"
         >
           <XAxis 
@@ -127,23 +127,18 @@ export default function ScoreSpiderChart({ task1Scores, task2Scores, className =
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={getBarColor(index)} />
             ))}
+            <LabelList 
+              dataKey="score" 
+              position="top" 
+              style={{ 
+                fill: 'hsl(var(--text-primary))', 
+                fontSize: '12px', 
+                fontWeight: 'bold' 
+              }} 
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-        {data.map((item, index) => (
-          <div key={item.criterion} className="flex justify-between items-center p-2 rounded-lg bg-surface-2/50">
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-sm" 
-                style={{ backgroundColor: getBarColor(index) }}
-              />
-              <span className="text-text-secondary font-medium">{item.criterion}</span>
-            </div>
-            <span className="text-text-primary font-semibold">{item.score}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

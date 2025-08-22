@@ -150,6 +150,8 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
 
     let content = data.choices?.[0]?.message?.content ?? '';
     console.log('🔍 Raw API response content length:', content.length);
+    console.log('🔍 Raw API response first 500 chars:', content.substring(0, 500));
+    console.log('🔍 Raw API response last 500 chars:', content.substring(content.length - 500));
 
     let structured: any = null;
     try {
@@ -158,34 +160,60 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
     } catch (_e) {
       console.log('⚠️ Failed to parse JSON directly, trying multiple extraction strategies...');
       
-      // Strategy 1: Find complete JSON object with balanced braces
+      // Advanced JSON extraction and cleaning
       let jsonMatch = null;
+      
+      // More comprehensive cleaning function
+      const cleanJson = (str: string) => {
+        return str
+          .replace(/^\s*```json\s*/i, '')  // Remove starting ```json
+          .replace(/\s*```\s*$/, '')       // Remove ending ```
+          .replace(/^\s*[\s\S]*?(\{)/, '$1')  // Remove everything before first {
+          .replace(/(\})\s*[\s\S]*?$/, '$1')  // Remove everything after last }
+          .replace(/,(\s*[}\]])/g, '$1')   // Remove trailing commas
+          .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":') // Quote unquoted keys
+          .replace(/:\s*'([^']*)'/g, ': "$1"')  // Replace single quotes with double
+          .replace(/\n\s*/g, ' ')          // Replace newlines with space
+          .replace(/\s+/g, ' ')            // Normalize whitespace
+          .trim();
+      };
+
+      // Multiple extraction patterns
       const patterns = [
-        /\{[\s\S]*\}/,  // Original pattern
-        /```json\s*(\{[\s\S]*?\})\s*```/i,  // JSON in code blocks
-        /"?(?:task1|overall)"?\s*:\s*\{[\s\S]*\}/i,  // Starting with task1 or overall
-        /(\{[\s\S]*?"overall"[\s\S]*?\})/i  // Contains "overall"
+        /(\{[\s\S]*\})/,  // Most greedy - entire JSON
+        /```json\s*(\{[\s\S]*?\})\s*```/gi,  // JSON in code blocks
+        /```\s*(\{[\s\S]*?\})\s*```/gi,      // JSON in plain code blocks
+        /"task1"\s*:\s*\{[\s\S]*?"overall"[\s\S]*?\}/i,  // From task1 to overall
+        /\{[\s\S]*?"task1"[\s\S]*?"overall"[\s\S]*?\}/i,  // Contains both task1 and overall
+        /\{[\s\S]*?"overall"[\s\S]*?\}/i,    // Contains overall
+        /\{[\s\S]*?"task[12]"[\s\S]*?\}/i    // Contains task1 or task2
       ];
       
-      for (const pattern of patterns) {
-        const match = content.match(pattern);
-        if (match) {
-          const jsonStr = match[1] || match[0];
-          try {
-            // Clean up common JSON issues
-            let cleanedJson = jsonStr
-              .replace(/,\s*}/g, '}')  // Remove trailing commas
-              .replace(/,\s*]/g, ']')   // Remove trailing commas in arrays
-              .replace(/\n|\r/g, ' ')   // Replace newlines with spaces
-              .replace(/\s+/g, ' ');    // Normalize whitespace
+      console.log('🔄 Trying', patterns.length, 'extraction patterns...');
+      
+      for (let i = 0; i < patterns.length; i++) {
+        const pattern = patterns[i];
+        const matches = content.match(pattern);
+        
+        if (matches) {
+          for (const match of Array.isArray(matches) ? matches : [matches]) {
+            const jsonStr = match[1] || match[0] || match;
+            console.log(`🔍 Pattern ${i + 1} found potential JSON (length: ${jsonStr.length})`);
             
-            structured = JSON.parse(cleanedJson);
-            console.log(`✅ Successfully parsed JSON using pattern ${patterns.indexOf(pattern) + 1}`);
-            jsonMatch = true;
-            break;
-          } catch (e) {
-            console.log(`❌ Pattern ${patterns.indexOf(pattern) + 1} failed:`, e.message);
+            try {
+              const cleanedJson = cleanJson(jsonStr);
+              console.log(`🧹 Cleaned JSON first 200 chars:`, cleanedJson.substring(0, 200));
+              
+              structured = JSON.parse(cleanedJson);
+              console.log(`✅ Successfully parsed JSON using pattern ${i + 1}`);
+              jsonMatch = true;
+              break;
+            } catch (e) {
+              console.log(`❌ Pattern ${i + 1} failed:`, e.message.substring(0, 100));
+            }
           }
+          
+          if (jsonMatch) break;
         }
       }
       

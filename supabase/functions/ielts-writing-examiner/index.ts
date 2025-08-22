@@ -156,99 +156,173 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
       structured = JSON.parse(content);
       console.log('✅ Successfully parsed structured response');
     } catch (_e) {
-      console.log('⚠️ Failed to parse JSON directly, trying regex extraction...');
-      const match = content.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { 
-          structured = JSON.parse(match[0]); 
-          console.log('✅ Successfully extracted and parsed JSON from text');
-        } catch (_e2) {
-          console.error('❌ Failed to parse extracted JSON:', _e2.message);
-          console.log('🔧 Creating fallback structured data...');
-          
-          // Create fallback structured data when JSON parsing completely fails
-          structured = {
-            task1: {
-              criteria: {
-                task_achievement: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." },
-                coherence_and_cohesion: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." },
-                lexical_resource: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." },
-                grammatical_range_and_accuracy: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." }
-              },
-              overall_band: 7.0,
-              overall_reason: "Fallback assessment due to parsing issues",
-              feedback: {
-                strengths: ["Response provided", "Attempt made at task completion", "Content demonstrates effort"],
-                improvements: ["Please retake test for detailed analysis", "Technical issue prevented full assessment", "Contact support if issue persists"]
-              },
-              feedback_markdown: "### Assessment Notice\n\nDue to technical processing issues, a detailed assessment could not be completed. Please retake the test for comprehensive feedback."
-            },
-            task2: {
-              criteria: {
-                task_response: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." },
-                coherence_and_cohesion: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." },
-                lexical_resource: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." },
-                grammatical_range_and_accuracy: { band: 7.0, justification: "Assessment based on text analysis due to parsing issues." }
-              },
-              overall_band: 7.0,
-              overall_reason: "Fallback assessment due to parsing issues",
-              feedback: {
-                strengths: ["Response provided", "Attempt made at task completion", "Content demonstrates effort"],
-                improvements: ["Please retake test for detailed analysis", "Technical issue prevented full assessment", "Contact support if issue persists"]
-              },
-              feedback_markdown: "### Assessment Notice\n\nDue to technical processing issues, a detailed assessment could not be completed. Please retake the test for comprehensive feedback."
-            },
-            overall: {
-              band: 7.0,
-              calculation: "(7.0 * 1 + 7.0 * 2) / 3 = 7.0",
-              feedback_markdown: "### Overall Assessment\n\nTechnical processing issues prevented detailed analysis. Overall band score calculated using fallback values. Please retake the test for accurate assessment."
-            },
-            full_report_markdown: content || "Technical issue prevented detailed assessment. Please retake the test."
-          };
+      console.log('⚠️ Failed to parse JSON directly, trying multiple extraction strategies...');
+      
+      // Strategy 1: Find complete JSON object with balanced braces
+      let jsonMatch = null;
+      const patterns = [
+        /\{[\s\S]*\}/,  // Original pattern
+        /```json\s*(\{[\s\S]*?\})\s*```/i,  // JSON in code blocks
+        /"?(?:task1|overall)"?\s*:\s*\{[\s\S]*\}/i,  // Starting with task1 or overall
+        /(\{[\s\S]*?"overall"[\s\S]*?\})/i  // Contains "overall"
+      ];
+      
+      for (const pattern of patterns) {
+        const match = content.match(pattern);
+        if (match) {
+          const jsonStr = match[1] || match[0];
+          try {
+            // Clean up common JSON issues
+            let cleanedJson = jsonStr
+              .replace(/,\s*}/g, '}')  // Remove trailing commas
+              .replace(/,\s*]/g, ']')   // Remove trailing commas in arrays
+              .replace(/\n|\r/g, ' ')   // Replace newlines with spaces
+              .replace(/\s+/g, ' ');    // Normalize whitespace
+            
+            structured = JSON.parse(cleanedJson);
+            console.log(`✅ Successfully parsed JSON using pattern ${patterns.indexOf(pattern) + 1}`);
+            jsonMatch = true;
+            break;
+          } catch (e) {
+            console.log(`❌ Pattern ${patterns.indexOf(pattern) + 1} failed:`, e.message);
+          }
         }
-      } else {
-        console.error('❌ No JSON structure found in response');
-        console.log('🔧 Creating fallback structured data...');
-        
-        // Create fallback when no JSON structure is found at all
+      }
+      
+      if (!jsonMatch) {
+        console.error('❌ All JSON extraction strategies failed');
+        console.log('🔧 Creating comprehensive fallback structured data...');
+          
+        // Create comprehensive fallback structured data when JSON parsing completely fails
+        const fallbackBand = 6.5; // More conservative fallback
         structured = {
           task1: {
             criteria: {
-              task_achievement: { band: 7.0, justification: "Assessment unavailable due to technical issues." },
-              coherence_and_cohesion: { band: 7.0, justification: "Assessment unavailable due to technical issues." },
-              lexical_resource: { band: 7.0, justification: "Assessment unavailable due to technical issues." },
-              grammatical_range_and_accuracy: { band: 7.0, justification: "Assessment unavailable due to technical issues." }
+              task_achievement: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              },
+              coherence_and_cohesion: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              },
+              lexical_resource: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              },
+              grammatical_range_and_accuracy: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              }
             },
-            overall_band: 7.0,
-            overall_reason: "Fallback assessment",
+            overall_band: fallbackBand,
+            overall_reason: "Fallback assessment - technical processing issue occurred",
             feedback: {
-              strengths: ["Response submitted successfully", "Effort demonstrated", "Task completion attempted"],
-              improvements: ["Retake test for detailed feedback", "Technical issue occurred", "Contact support if needed"]
+              strengths: [
+                "Response was submitted successfully",
+                "Writing attempt demonstrates engagement with the task",
+                "Content was provided for both required elements"
+              ],
+              improvements: [
+                "Technical issue prevented detailed feedback - please retake the test",
+                "For accurate assessment, we recommend trying the test again",
+                "Contact support if this issue continues to occur"
+              ]
             },
-            feedback_markdown: "### Technical Issue\n\nDetailed assessment could not be completed. Please retake the test."
+            feedback_markdown: `### Technical Processing Issue
+
+Due to a technical processing issue, we were unable to provide detailed feedback for this Task 1 response. 
+
+**What happened:** The AI assessment system encountered a parsing error while analyzing your response.
+
+**Fallback score:** ${fallbackBand} (This is not your actual performance level)
+
+**Next steps:** Please retake the test for an accurate assessment of your writing skills.`
           },
           task2: {
             criteria: {
-              task_response: { band: 7.0, justification: "Assessment unavailable due to technical issues." },
-              coherence_and_cohesion: { band: 7.0, justification: "Assessment unavailable due to technical issues." },
-              lexical_resource: { band: 7.0, justification: "Assessment unavailable due to technical issues." },
-              grammatical_range_and_accuracy: { band: 7.0, justification: "Assessment unavailable due to technical issues." }
+              task_response: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              },
+              coherence_and_cohesion: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              },
+              lexical_resource: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              },
+              grammatical_range_and_accuracy: { 
+                band: fallbackBand, 
+                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
+              }
             },
-            overall_band: 7.0,
-            overall_reason: "Fallback assessment",
+            overall_band: fallbackBand,
+            overall_reason: "Fallback assessment - technical processing issue occurred",
             feedback: {
-              strengths: ["Response submitted successfully", "Effort demonstrated", "Task completion attempted"],
-              improvements: ["Retake test for detailed feedback", "Technical issue occurred", "Contact support if needed"]
+              strengths: [
+                "Response was submitted successfully",
+                "Writing attempt demonstrates engagement with the task", 
+                "Content was provided for both required elements"
+              ],
+              improvements: [
+                "Technical issue prevented detailed feedback - please retake the test",
+                "For accurate assessment, we recommend trying the test again", 
+                "Contact support if this issue continues to occur"
+              ]
             },
-            feedback_markdown: "### Technical Issue\n\nDetailed assessment could not be completed. Please retake the test."
+            feedback_markdown: `### Technical Processing Issue
+
+Due to a technical processing issue, we were unable to provide detailed feedback for this Task 2 response.
+
+**What happened:** The AI assessment system encountered a parsing error while analyzing your response.
+
+**Fallback score:** ${fallbackBand} (This is not your actual performance level)
+
+**Next steps:** Please retake the test for an accurate assessment of your writing skills.`
           },
           overall: {
-            band: 7.0,
-            calculation: "(7.0 * 1 + 7.0 * 2) / 3 = 7.0",
-            feedback_markdown: "### Technical Issue\n\nAssessment could not be completed due to processing issues. Please retake the test for accurate evaluation."
+            band: fallbackBand,
+            calculation: `(${fallbackBand} * 1 + ${fallbackBand} * 2) / 3 = ${fallbackBand}`,
+            feedback_markdown: `### Technical Processing Issue - Overall Assessment
+
+**Overall Band Score:** ${fallbackBand} (Fallback Score)
+
+Due to technical processing issues, we were unable to provide a detailed analysis of your IELTS Writing performance. This score is a fallback value and does not reflect your actual writing ability.
+
+**What this means:**
+- The AI assessment system encountered errors while processing your responses
+- Your actual performance may be higher or lower than this fallback score  
+- This technical issue is temporary and should not reflect on your writing skills
+
+**Recommended actions:**
+1. Retake the IELTS Writing test for an accurate assessment
+2. Contact support if this issue persists
+3. Your responses have been saved and can be reviewed manually if needed
+
+We apologize for the inconvenience and appreciate your patience.`
           },
-          full_report_markdown: content || "Technical assessment issue occurred. Please retake the test for detailed feedback."
+          full_report_markdown: `# IELTS Writing Assessment - Technical Issue Report
+
+## Summary
+A technical processing error prevented the completion of your IELTS Writing assessment. This report contains fallback scores that do not reflect your actual writing performance.
+
+## Technical Details
+- **Issue Type:** JSON parsing error in AI assessment system
+- **Fallback Score Applied:** ${fallbackBand} for all criteria
+- **Raw AI Response Length:** ${content.length} characters
+- **Processing Status:** Failed with fallback data generated
+
+## Next Steps
+Please retake the IELTS Writing test to receive an accurate assessment of your writing skills. If you continue to experience technical issues, please contact our support team.
+
+---
+
+*This is an automated technical report. The scores shown are not indicative of actual writing performance.*`
         };
+        console.log('✅ Comprehensive fallback data created with detailed explanations');
+        }
       }
     }
 

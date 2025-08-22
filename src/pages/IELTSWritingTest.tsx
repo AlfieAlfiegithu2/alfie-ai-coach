@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
 import { Bot, BookOpen, ListTree, Clock, FileText, PenTool } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
+import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
 
 interface Task {
   id: string;
@@ -331,8 +332,20 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           time_taken: Math.floor(totalTimeSpent / 1000),
           completed_at: new Date().toISOString(),
           test_data: {
-            task1Data: task1,
-            task2Data: task2,
+            task1Data: task1 ? {
+              id: task1.id,
+              title: task1.title,
+              instructions: task1.instructions,
+              imageUrl: task1.imageUrl,
+              imageContext: task1.imageContext,
+              modelAnswer: task1.modelAnswer
+            } : null,
+            task2Data: task2 ? {
+              id: task2.id,
+              title: task2.title,
+              instructions: task2.instructions,
+              modelAnswer: task2.modelAnswer
+            } : null,
             task1Answer,
             task2Answer,
             overall_band: structured?.overall?.band || 7.0
@@ -676,6 +689,19 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           imageContext={currentTaskData?.imageContext}
           initialPosition={{ x: Math.max(0, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 420), y: Math.max(0, (typeof window !== 'undefined' ? window.innerHeight : 800) - 520) }}
         />
+
+        {/* Loading Overlay */}
+        {isSubmitting && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-card p-8 rounded-3xl shadow-xl border border-border">
+              <CatLoadingAnimation 
+                size="lg" 
+                message="Analyzing your writing with AI examiner..."
+                className="text-center"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </StudentLayout>
   );

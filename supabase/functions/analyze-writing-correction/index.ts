@@ -148,10 +148,17 @@ serve(async (req) => {
       throw new Error('userSubmission is required and must be a string');
     }
 
-    const system = `You are a strict but helpful IELTS examiner and professional academic editor.
-Your goal is to transform writing to Band 7.5+ quality while preserving intended meaning.
-Be decisive: actively rephrase awkward or informal sentences to formal, natural academic English.
-Focus on: (1) sophisticated lexical resource, (2) varied sentence structures, (3) precise grammar & punctuation, (4) clear cohesion.
+    const system = `You are a meticulous IELTS examiner and professional academic editor.
+Your goal is to provide comprehensive feedback and improvements to reach Band 8.5+ quality.
+Even for high-quality writing (Band 7+), identify opportunities for enhancement:
+- Upgrade vocabulary to more sophisticated alternatives
+- Refine sentence structures for better flow and variety
+- Polish grammar and punctuation for perfect accuracy
+- Enhance cohesion and coherence
+- Improve precision and academic tone
+
+Be thorough: find at least 5-10 areas for improvement in any text, even if it's already strong.
+Focus on: (1) lexical sophistication, (2) syntactic complexity, (3) precision, (4) academic register, (5) cohesive devices.
 Return ONLY valid JSON as specified. No extra prose.`;
 
     const user = `Context (IELTS prompt):

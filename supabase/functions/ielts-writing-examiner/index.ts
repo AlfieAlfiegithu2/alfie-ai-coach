@@ -6,6 +6,58 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function callOpenAI(messages: any[], apiKey: string) {
+  console.log('🚀 Attempting OpenAI API call...');
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini', // Using legacy model that supports max_tokens and temperature
+      messages,
+      max_tokens: 2000,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ OpenAI API Error:', errorText);
+    throw new Error(`OpenAI API failed: ${response.status} - ${errorText}`);
+  }
+
+  console.log('✅ OpenAI API call successful');
+  return response.json();
+}
+
+async function callDeepSeek(messages: any[], apiKey: string) {
+  console.log('🚀 Attempting DeepSeek API call...');
+  const response = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages,
+      max_tokens: 2000,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ DeepSeek API Error:', errorText);
+    throw new Error(`DeepSeek API failed: ${response.status} - ${errorText}`);
+  }
+
+  console.log('✅ DeepSeek API call successful');
+  return response.json();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,19 +65,18 @@ serve(async (req) => {
 
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     
-    // Enhanced debugging
-    console.log('🔍 Environment check:', {
-      hasOpenAIKey: !!openAIApiKey,
-      keyLength: openAIApiKey?.length || 0,
-      availableEnvVars: Object.keys(Deno.env.toObject()).filter(key => 
-        key.includes('OPENAI') || key.includes('API') || key.includes('KEY')
-      )
+    console.log('🔍 API Keys status:', {
+      hasOpenAI: !!openAIApiKey,
+      hasDeepSeek: !!deepSeekApiKey,
+      openAILength: openAIApiKey?.length || 0,
+      deepSeekLength: deepSeekApiKey?.length || 0,
     });
     
-    if (!openAIApiKey) {
-      console.error('❌ OpenAI API key not found in environment');
-      throw new Error('OpenAI API key not configured');
+    if (!openAIApiKey && !deepSeekApiKey) {
+      console.error('❌ No API keys found');
+      throw new Error('No AI API keys configured');
     }
 
     const { task1Answer, task2Answer, task1Data, task2Data } = await req.json();
@@ -43,18 +94,10 @@ serve(async (req) => {
 
 
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: `You are "Examiner-7," a senior, Cambridge-certified IELTS examiner. Your assessments must be decisive, accurate, and strictly based on the official band descriptors.
+    const messages = [
+      {
+        role: 'system',
+        content: `You are "Examiner-7," a senior, Cambridge-certified IELTS examiner. Your assessments must be decisive, accurate, and strictly based on the official band descriptors.
 
 New Guiding Principle: Do not be overly cautious. If a response fully and expertly meets the criteria for a Band 9, you must award a Band 9. Do not invent minor flaws to justify a lower score.
 
@@ -63,9 +106,6 @@ New Feedback Requirement (CRITICAL): Your feedback must be extremely specific an
 - sentence_quote: a direct quote from the student's own writing
 - improved_version: a stronger, revised version of that exact sentence/fragment
 - explanation: a brief rationale
-
-Example:
-In your sentence, "Technology is a valuable tool that provides significant benefits to people," the word "people" is general. Better: "Technology is a valuable tool that provides significant benefits to modern society."
 
 Return ONLY a single JSON object using this exact schema:
 {
@@ -80,10 +120,7 @@ Return ONLY a single JSON object using this exact schema:
     "overall_reason": string,
     "feedback": {
       "strengths": string[],
-      "improvements": string[],
-      "improvements_detailed": [
-        { "issue": string, "sentence_quote": string, "improved_version": string, "explanation": string }
-      ]
+      "improvements": string[]
     },
     "feedback_markdown": string
   },
@@ -98,10 +135,7 @@ Return ONLY a single JSON object using this exact schema:
     "overall_reason": string,
     "feedback": {
       "strengths": string[],
-      "improvements": string[],
-      "improvements_detailed": [
-        { "issue": string, "sentence_quote": string, "improved_version": string, "explanation": string }
-      ]
+      "improvements": string[]
     },
     "feedback_markdown": string
   },
@@ -117,68 +151,52 @@ Scoring & Rules:
 - Bands must be whole or half only: 0, 0.5, …, 9.0.
 - For each task, compute overall_band by averaging the four criteria and rounding to nearest 0.5 using IELTS rules (.25→.5, .75→next whole).
 - Compute overall.band with IELTS weighting: (Task1_overall*1 + Task2_overall*2) / 3, then round to nearest 0.5. Provide the exact calculation in overall.calculation.
-- Provide at least 3 "strengths" and 3 "improvements". Include at least 3 items in "improvements_detailed" with quotes and improved versions.
+- Provide at least 3 "strengths" and 3 "improvements" for each task.
 - Be confident awarding Band 9 where fully deserved; do not downgrade for invented minor flaws.
 
-OFFICIAL IELTS WRITING BAND DESCRIPTORS (reference):
+Return ONLY JSON. Do not output any markdown or prose outside the JSON.`
+      },
+      {
+        role: 'user',
+        content: examinerPrompt
+      }
+    ];
 
-Task Achievement (Task 1) / Task Response (Task 2)
-Band 9: Fully satisfies all parts of the task; presents a fully developed response.
-Band 8: Sufficiently covers all parts of the task; presents a well-developed response.
-Band 7: Covers all requirements of the task; presents a clear overview/purpose.
-Band 6: Addresses all parts of the task, though some may be more fully covered than others.
-Band 5: Addresses the task only partially; format may be inappropriate.
-Band 4: Responds to the task only in a minimal way; content is tangential.
-Band 3: Does not address the task; content is irrelevant.
-Band 2: Barely responds to the task; content is barely related.
-
-Coherence and Cohesion
-Band 9: Uses cohesion in such a way that it attracts no attention; skillfully manages paragraphing.
-Band 8: Sequences information and ideas logically; manages all aspects of cohesion well; uses paragraphing sufficiently and appropriately.
-Band 7: Logically organizes information and ideas; there is a clear progression throughout; uses a range of cohesive devices appropriately.
-Band 6: Arranges information and ideas coherently; there is a clear overall progression; uses cohesive devices effectively, but may have some errors.
-Band 5: Presents information with some organization but there may be a lack of overall progression; makes inadequate, inaccurate or overuse of cohesive devices.
-Band 4: Presents information and ideas but these are not logically organized and may be difficult to follow.
-Band 3: Does not organize ideas logically.
-Band 2: Has very little control of organizational features.
-
-Lexical Resource (Vocabulary)
-Band 9: Uses a wide range of vocabulary with very natural and sophisticated control; rare minor errors occur only as 'slips'.
-Band 8: Uses a wide vocabulary resource readily and flexibly; skillfully uses less common items; produces rare errors in spelling/word formation.
-Band 7: Uses a sufficient range of vocabulary to allow some flexibility and precision; uses some less common lexical items with some awareness of style and collocation; may produce occasional errors in word choice or spelling.
-Band 6: Uses an adequate range of vocabulary for the task; attempts to use less common vocabulary but with some inaccuracy; makes some errors in spelling/word formation, but they do not impede communication.
-Band 5: Uses a limited range of vocabulary, but this is minimally adequate for the task; may make noticeable errors in spelling/word formation that may cause some difficulty for the reader.
-Band 4: Uses only basic vocabulary which may be used repetitively or which may be inappropriate for the task.
-Band 3: Uses only a very limited range of words and expressions with very limited control.
-Band 2: Uses only isolated words.
-
-Grammatical Range and Accuracy
-Band 9: Uses a wide range of structures with full flexibility and accuracy; rare minor 'slips'.
-Band 8: Uses a wide range of structures; the majority of sentences are error-free; makes only very occasional errors or inappropriacies.
-Band 7: Uses a variety of complex structures; produces frequent error-free sentences; has good control of grammar and punctuation but may make a few errors.
-Band 6: Uses a mix of simple and complex sentence forms; makes some errors in grammar and punctuation but they rarely reduce communication.
-Band 5: Uses only a limited range of structures; attempts complex sentences but these tend to be less accurate than simple sentences; makes frequent grammatical errors that can cause some difficulty for the reader.
-Band 4: Uses only very basic sentence structures and makes frequent errors that cause comprehension problems.
-Band 3: Cannot use sentence forms except in memorised phrases.
-Band 2: Cannot produce basic sentence forms.
-
-Return ONLY JSON. Do not output any markdown or prose outside the JSON. Begin your assessment.`
-          },
-          {
-            role: 'user',
-            content: examinerPrompt
+    let data;
+    let apiUsed = 'none';
+    
+    // Try OpenAI first if available
+    if (openAIApiKey) {
+      try {
+        console.log('🔄 Trying OpenAI API...');
+        data = await callOpenAI(messages, openAIApiKey);
+        apiUsed = 'openai';
+      } catch (openAIError) {
+        console.warn('⚠️ OpenAI failed, trying DeepSeek fallback:', openAIError.message);
+        if (deepSeekApiKey) {
+          try {
+            data = await callDeepSeek(messages, deepSeekApiKey);
+            apiUsed = 'deepseek';
+          } catch (deepSeekError) {
+            console.error('❌ Both APIs failed');
+            throw new Error(`Both APIs failed. OpenAI: ${openAIError.message}, DeepSeek: ${deepSeekError.message}`);
           }
-        ],
-        max_completion_tokens: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+        } else {
+          throw new Error(`OpenAI failed and no DeepSeek fallback: ${openAIError.message}`);
+        }
+      }
+    } else if (deepSeekApiKey) {
+      console.log('🔄 Using DeepSeek API (OpenAI not available)...');
+      try {
+        data = await callDeepSeek(messages, deepSeekApiKey);
+        apiUsed = 'deepseek';
+      } catch (deepSeekError) {
+        throw new Error(`DeepSeek API failed: ${deepSeekError.message}`);
+      }
     }
 
-    const data = await response.json();
+    console.log(`✅ AI Examiner response generated using ${apiUsed.toUpperCase()}`);
+
     let content = data.choices?.[0]?.message?.content ?? '';
 
     let structured: any = null;
@@ -202,12 +220,11 @@ Return ONLY JSON. Do not output any markdown or prose outside the JSON. Begin yo
     if (structured) clampBands(structured);
     const feedback = structured?.full_report_markdown || content;
 
-    console.log('✅ AI Examiner Response generated successfully');
-
     return new Response(JSON.stringify({ 
       success: true, 
       feedback,
       structured,
+      apiUsed,
       task1WordCount: task1Answer.trim().split(/\s+/).length,
       task2WordCount: task2Answer.trim().split(/\s+/).length
     }), {

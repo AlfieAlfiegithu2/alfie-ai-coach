@@ -185,6 +185,18 @@ CRITICAL RULES:
 - Calculate overall_band by averaging criteria and rounding to nearest 0.5
 - Calculate overall.band using: (Task1_overall*1 + Task2_overall*2) / 3, then round to 0.5
 - Provide exactly 3 strengths and 3 improvements for each task
+
+JUSTIFICATION REQUIREMENTS (CRITICAL):
+Each justification must be detailed and convincing with specific evidence:
+1. Quote direct examples from the student's writing as evidence
+2. Explain why this specific band was awarded (not higher/lower)
+3. Reference band descriptors where relevant
+4. Be comprehensive (2-4 sentences minimum)
+5. Provide specific examples of strengths or weaknesses
+6. Never just state facts - explain the reasoning behind the score
+
+Example good justification: "Band 7.0 - Demonstrates good range of vocabulary with sophisticated items like 'unprecedented technological advancements' and attempts at less common words. However, shows some errors in word choice ('make a research' should be 'conduct research') and occasional awkwardness in phrasing. The vocabulary is generally appropriate for the task but lacks the precision and natural flexibility required for Band 8, while showing more sophistication than typical Band 6 responses."
+
 - Be accurate and fair in your assessment`
       },
       {

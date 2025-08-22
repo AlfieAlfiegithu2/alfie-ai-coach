@@ -537,8 +537,10 @@ const TaskSection = ({
                 </div>
                 {it.just ? (
                   <div className="mt-2">
-                    <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Criteria-specific feedback</p>
-                    <p className="text-sm text-text-secondary">{it.just}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Assessment Reasoning</p>
+                    <div className="text-sm text-text-secondary bg-surface-2/50 rounded-lg p-3 border border-border/50">
+                      {it.just}
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -668,99 +670,149 @@ const TaskSection = ({
           </CardContent>
         </Card>
 
-        <TaskSection title="Task 1 Assessment" task={structured?.task1} type="task1" computedOverall={t1OverallComputed} />
-        <TaskSection title="Task 2 Assessment" task={structured?.task2} type="task2" computedOverall={t2OverallComputed} />
-
-        {task1Answer ? <Card className="card-elevated mb-8 border-2 border-brand-blue/20">
-            <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
-              <CardTitle className="text-heading-3">Task 1 – AI Corrections</CardTitle>
-              <div className="text-caption text-text-secondary mt-1">
-                {task1Data?.title ? <div className="font-medium text-text-primary">{task1Data.title}</div> : null}
-                {task1Data?.instructions ? <div>{task1Data.instructions}</div> : null}
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="mb-4 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-text-primary">Your Answer (AI corrections)</div>
-                    <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
-                      
-                      
-                      
-                      
+        {/* Task 1 Combined Section */}
+        <div className="mb-8">
+          <TaskSection title="Task 1 Assessment" task={structured?.task1} type="task1" computedOverall={t1OverallComputed} />
+          
+          {task1Answer && (
+            <Card className="card-elevated border-2 border-brand-blue/20 -mt-6">
+              <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+                <CardTitle className="text-heading-4">Task 1 – AI Corrections</CardTitle>
+                <div className="text-caption text-text-secondary mt-1">
+                  {task1Data?.title ? <div className="font-medium text-text-primary">{task1Data.title}</div> : null}
+                  {task1Data?.instructions ? <div>{task1Data.instructions}</div> : null}
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="mb-4 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-text-primary">Your Answer with AI Corrections</div>
+                      <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-sm bg-brand-red/40 border border-brand-red/60" /> Error
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-sm bg-brand-green/40 border border-brand-green/60" /> Improvement
+                        </span>
+                        <Badge variant="outline" className="rounded-xl">{t1Counts.improvements} improvements</Badge>
+                        <Badge variant="outline" className="rounded-xl">{t1Counts.errors} errors</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Toggle 
+                        pressed={t1SentenceView} 
+                        onPressedChange={setT1SentenceView} 
+                        className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue" 
+                        aria-label="Toggle sentence-by-sentence view"
+                      >
+                        Sentence-by-sentence view
+                      </Toggle>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl" 
+                        onClick={() => {
+                          if (!t1CorrData?.corrected_spans) return;
+                          const txt = t1CorrData.corrected_spans.map(s => s.text).join("");
+                          navigator.clipboard.writeText(txt);
+                          toast({
+                            title: "Copied corrected text",
+                            description: "The improved version is in your clipboard."
+                          });
+                        }}
+                      >
+                        <Copy className="w-4 h-4 mr-2" /> Copy corrected text
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Toggle pressed={t1SentenceView} onPressedChange={setT1SentenceView} className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue" aria-label="Toggle sentence-by-sentence view">
-                      Sentence-by-sentence view
-                    </Toggle>
-                    <Button variant="outline" size="sm" className="rounded-xl" onClick={() => {
-                  if (!t1CorrData?.corrected_spans) return;
-                  const txt = t1CorrData.corrected_spans.map(s => s.text).join("");
-                  navigator.clipboard.writeText(txt);
-                  toast({
-                    title: "Copied corrected text",
-                    description: "The improved version is in your clipboard."
-                  });
-                }}>
-                      <Copy className="w-4 h-4 mr-2" /> Copy corrected text
-                    </Button>
+                  <div>
+                    {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
+                    {t1Error && <div className="status-error">{t1Error}</div>}
+                    {t1CorrData && (
+                      t1SentenceView ? 
+                        <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} /> : 
+                        <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                    )}
+                    {!t1Loading && !t1Error && !t1CorrData && (
+                      <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
+                    )}
                   </div>
                 </div>
-                <div>
-                  {t1Loading && <div className="status-warning">Analyzing Task 1…</div>}
-                  {t1Error && <div className="status-error">{t1Error}</div>}
-                  {t1CorrData && (t1SentenceView ? <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} /> : <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />)}
-                  {!t1Loading && !t1Error && !t1CorrData && <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>}
-                </div>
-              </div>
-            </CardContent>
-          </Card> : null}
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
-        {task2Answer ? <Card className="card-elevated mb-8 border-2 border-brand-green/20">
-            <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
-              <CardTitle className="text-heading-3">Task 2 – AI Corrections</CardTitle>
-              
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="mb-4 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-text-primary">Your Answer (AI corrections)</div>
-                    <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
-                      <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand-red/40 border border-brand-red/60" /> Error</span>
-                      <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand-green/40 border border-brand-green/60" /> Improvement</span>
-                      <Badge variant="outline" className="rounded-xl">{t2Counts.improvements} improvements</Badge>
-                      <Badge variant="outline" className="rounded-xl">{t2Counts.errors} errors</Badge>
+        {/* Task 2 Combined Section */}
+        <div className="mb-8">
+          <TaskSection title="Task 2 Assessment" task={structured?.task2} type="task2" computedOverall={t2OverallComputed} />
+          
+          {task2Answer && (
+            <Card className="card-elevated border-2 border-brand-green/20 -mt-6">
+              <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
+                <CardTitle className="text-heading-4">Task 2 – AI Corrections</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="mb-4 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-text-primary">Your Answer with AI Corrections</div>
+                      <div className="text-caption text-text-secondary flex flex-wrap items-center gap-3 mt-1">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-sm bg-brand-red/40 border border-brand-red/60" /> Error
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-sm bg-brand-green/40 border border-brand-green/60" /> Improvement
+                        </span>
+                        <Badge variant="outline" className="rounded-xl">{t2Counts.improvements} improvements</Badge>
+                        <Badge variant="outline" className="rounded-xl">{t2Counts.errors} errors</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Toggle 
+                        pressed={t2SentenceView} 
+                        onPressedChange={setT2SentenceView} 
+                        className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue" 
+                        aria-label="Toggle sentence-by-sentence view"
+                      >
+                        Sentence-by-sentence view
+                      </Toggle>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl" 
+                        onClick={() => {
+                          if (!t2CorrData?.corrected_spans) return;
+                          const txt = t2CorrData.corrected_spans.map(s => s.text).join("");
+                          navigator.clipboard.writeText(txt);
+                          toast({
+                            title: "Copied corrected text",
+                            description: "The improved version is in your clipboard."
+                          });
+                        }}
+                      >
+                        <Copy className="w-4 h-4 mr-2" /> Copy corrected text
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Toggle pressed={t2SentenceView} onPressedChange={setT2SentenceView} className="rounded-xl data-[state=on]:bg-brand-blue/20 data-[state=on]:text-brand-blue" aria-label="Toggle sentence-by-sentence view">
-                      Sentence-by-sentence view
-                    </Toggle>
-                    <Button variant="outline" size="sm" className="rounded-xl" onClick={() => {
-                  if (!t2CorrData?.corrected_spans) return;
-                  const txt = t2CorrData.corrected_spans.map(s => s.text).join("");
-                  navigator.clipboard.writeText(txt);
-                  toast({
-                    title: "Copied corrected text",
-                    description: "The improved version is in your clipboard."
-                  });
-                }}>
-                      <Copy className="w-4 h-4 mr-2" /> Copy corrected text
-                    </Button>
+                  <div>
+                    {t2Loading && <div className="status-warning">Analyzing Task 2…</div>}
+                    {t2Error && <div className="status-error">{t2Error}</div>}
+                    {t2CorrData && (
+                      t2SentenceView ? 
+                        <SentenceCompare originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} /> : 
+                        <CorrectionVisualizer originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                    )}
+                    {!t2Loading && !t2Error && !t2CorrData && (
+                      <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
+                    )}
                   </div>
                 </div>
-                <div>
-                  {t2Loading && <div className="status-warning">Analyzing Task 2…</div>}
-                  {t2Error && <div className="status-error">{t2Error}</div>}
-                  {t2CorrData && (t2SentenceView ? <SentenceCompare originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} /> : <CorrectionVisualizer originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />)}
-                  {!t2Loading && !t2Error && !t2CorrData && <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>}
-                </div>
-              </div>
-            </CardContent>
-          </Card> : null}
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
 
 

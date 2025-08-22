@@ -9,6 +9,7 @@ import { Lock, Star, CheckCircle, Play, ArrowRight, HelpCircle } from 'lucide-re
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
 
 interface SkillTest {
   id: string;
@@ -264,12 +265,7 @@ const GrammarMapView = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <CardContent>
-            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-lg">Loading your grammar journey...</p>
-          </CardContent>
-        </Card>
+        <LottieLoadingAnimation size="lg" message="Loading your grammar journey..." />
       </div>
     );
   }

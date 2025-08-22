@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { MessageCircle, X, Send, Bot, User, Minimize2, Languages } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
 interface Message {
   id: string;
   text: string;
@@ -262,14 +263,7 @@ const MinimalisticChatbot: React.FC<MinimalisticChatbotProps> = ({
                     </div>}
                 </div>)}
               {isLoading && <div className="flex gap-2 justify-start">
-                  <Bot className="h-6 w-6 text-brand-blue" />
-                  <div className="glass-effect border border-border/30 p-3 rounded-2xl">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-brand-blue rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-brand-blue rounded-full animate-bounce delay-100"></div>
-                      <div className="w-2 h-2 bg-brand-blue rounded-full animate-bounce delay-200"></div>
-                    </div>
-                  </div>
+                  <LottieLoadingAnimation size="sm" message="" />
                 </div>}
               <div ref={messagesEndRef} />
             </div>

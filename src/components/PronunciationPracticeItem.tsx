@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -185,7 +185,7 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
         </div>
         {loading && (
           <div className="flex justify-center animate-fade-in">
-            <CatLoadingAnimation />
+            <LottieLoadingAnimation size="md" message="Analyzing pronunciation..." />
           </div>
         )}
       </div>

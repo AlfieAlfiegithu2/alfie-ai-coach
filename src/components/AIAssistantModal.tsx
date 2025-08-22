@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Sparkles, BookOpen, Target, Zap } from "lucide-react";
+import { Sparkles, BookOpen, Target, Zap } from "lucide-react";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -210,10 +211,7 @@ Please provide helpful, specific advice for answering this IELTS Speaking questi
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    Getting personalized assistance...
-                  </span>
+                  <LottieLoadingAnimation size="sm" message="Getting personalized assistance..." />
                 </div>
               ) : (
                 <Card className="bg-green-50 border-green-200">

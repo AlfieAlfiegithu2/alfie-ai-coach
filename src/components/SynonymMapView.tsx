@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
 
 interface SkillTest {
   id: string;

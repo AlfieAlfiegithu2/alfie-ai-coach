@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Play, Pause, Loader2 } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
+import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -95,7 +96,7 @@ export const ElevenLabsVoiceOptimized = ({
       className={className}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
+        <LottieLoadingAnimation size="sm" message="" />
       ) : isPlaying ? (
         <Pause className="w-4 h-4" />
       ) : (

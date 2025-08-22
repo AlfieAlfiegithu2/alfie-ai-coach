@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, BookPlus, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
 
 interface TranslationHelperProps {
   selectedText: string;
@@ -248,7 +249,9 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
               </p>
               {isLoading ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 border border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                                 <div className="w-3 h-3 mr-2">
+                                   <LottieLoadingAnimation size="sm" message="" />
+                                 </div>
                   <span className="text-xs text-text-secondary">Translating...</span>
                 </div>
               ) : translationResult ? (
@@ -300,7 +303,9 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
               >
                 {isSaving ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-3 h-3 mr-2">
+                      <LottieLoadingAnimation size="sm" message="" />
+                    </div>
                     <span>Saving...</span>
                   </div>
                 ) : isSaved ? (

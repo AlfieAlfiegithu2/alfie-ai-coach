@@ -1,4 +1,4 @@
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 
 interface ScoreSpiderChartProps {
   task1Scores?: {
@@ -76,57 +76,71 @@ export default function ScoreSpiderChart({ task1Scores, task2Scores, className =
     );
   }
 
+  const getBarColor = (index: number) => {
+    const colors = [
+      'hsl(var(--brand-blue))',
+      'hsl(var(--brand-green))', 
+      'hsl(var(--brand-purple))',
+      'hsl(var(--brand-orange))'
+    ];
+    return colors[index % colors.length];
+  };
+
   return (
-    <div className={`bg-surface-3/30 rounded-lg border border-border/30 p-3 ${className}`}>
-      <div className="text-center mb-2">
-        <div className="text-xs font-medium text-text-primary mb-1">Criteria Analysis</div>
+    <div className={`bg-surface-3/30 rounded-lg border border-border/30 p-4 ${className}`}>
+      <div className="text-center mb-4">
+        <div className="text-sm font-medium text-text-primary mb-1">Criteria Analysis</div>
       </div>
-      <ResponsiveContainer width="100%" height={180}>
-        <RadarChart data={data}>
-          <PolarGrid 
-            gridType="polygon"
-            className="stroke-border/30"
-          />
-          <PolarAngleAxis 
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart 
+          data={data} 
+          margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+          barCategoryGap="20%"
+        >
+          <XAxis 
             dataKey="criterion" 
+            axisLine={false}
+            tickLine={false}
             tick={{ 
-              fontSize: 11, 
+              fontSize: 12, 
               fontWeight: 500,
               fill: 'hsl(var(--text-primary))' 
             }}
-            className="text-text-primary"
           />
-          <PolarRadiusAxis 
-            domain={[0, 9]} 
-            angle={90}
+          <YAxis 
+            domain={[0, 9]}
+            axisLine={false}
+            tickLine={false}
             tick={{ 
-              fontSize: 9, 
+              fontSize: 10, 
               fill: 'hsl(var(--text-muted))' 
             }}
             tickCount={5}
-            className="text-text-muted"
           />
-          <Radar
-            name="IELTS Scores"
-            dataKey="score"
-            stroke="hsl(var(--primary))"
-            fill="hsl(var(--primary))"
-            fillOpacity={0.15}
-            strokeWidth={2}
-            dot={{ 
-              fill: 'hsl(var(--primary))', 
-              strokeWidth: 2, 
-              r: 3,
-              stroke: 'hsl(var(--background))'
-            }}
-          />
-        </RadarChart>
+          <Bar 
+            dataKey="score" 
+            radius={[4, 4, 0, 0]}
+            animationBegin={0}
+            animationDuration={1200}
+            animationEasing="ease-out"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={getBarColor(index)} />
+            ))}
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
-      <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
-        {data.map((item) => (
-          <div key={item.criterion} className="flex justify-between items-center">
-            <span className="text-text-secondary font-medium">{item.criterion}:</span>
-            <span className="text-primary font-semibold">{item.score}</span>
+      <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+        {data.map((item, index) => (
+          <div key={item.criterion} className="flex justify-between items-center p-2 rounded-lg bg-surface-2/50">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-3 h-3 rounded-sm" 
+                style={{ backgroundColor: getBarColor(index) }}
+              />
+              <span className="text-text-secondary font-medium">{item.criterion}</span>
+            </div>
+            <span className="text-text-primary font-semibold">{item.score}</span>
           </div>
         ))}
       </div>

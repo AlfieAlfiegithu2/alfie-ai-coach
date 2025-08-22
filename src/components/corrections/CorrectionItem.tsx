@@ -67,18 +67,22 @@ export const CorrectionItem: React.FC<CorrectionItemProps> = ({ correction }) =>
               </Badge>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-text-tertiary">Original:</span>
-                <span className="px-2 py-1 bg-brand-red/10 text-brand-red rounded border border-brand-red/30 font-mono text-xs">
-                  {correction.originalText}
-                </span>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <span className="text-text-tertiary text-sm font-medium">Original:</span>
+                <div className="px-3 py-2 bg-brand-red/10 text-brand-red rounded-lg border border-brand-red/30">
+                  <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                    {correction.originalText}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-text-tertiary">Improved:</span>
-                <span className="px-2 py-1 bg-brand-green/10 text-brand-green rounded border border-brand-green/30 font-mono text-xs">
-                  {correction.correctedText}
-                </span>
+              <div className="space-y-2">
+                <span className="text-text-tertiary text-sm font-medium">Improved:</span>
+                <div className="px-3 py-2 bg-brand-green/10 text-brand-green rounded-lg border border-brand-green/30">
+                  <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                    {correction.correctedText}
+                  </p>
+                </div>
               </div>
               
               <div className="text-sm text-text-secondary">

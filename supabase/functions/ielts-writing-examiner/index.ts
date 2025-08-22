@@ -252,105 +252,69 @@ CRITICAL RULES:
       structured = JSON.parse(content);
       console.log('✅ Successfully parsed structured response');
     } catch (_e) {
-      console.log('⚠️ Failed to parse JSON directly, trying multiple extraction strategies...');
+      console.log('⚠️ Failed to parse JSON directly, attempting extraction...');
       
-      // Advanced JSON extraction and cleaning
-      let jsonMatch = null;
+      // Simple but effective JSON extraction
+      let extractedJson = '';
       
-      // Enhanced cleaning function with more robust patterns
-      const cleanJson = (str: string) => {
-        let cleaned = str
-          .replace(/^\s*```json\s*/i, '')  // Remove starting ```json
-          .replace(/^\s*```\s*/i, '')      // Remove starting ```
-          .replace(/\s*```\s*$/i, '')      // Remove ending ```
-          .replace(/^\s*[\s\S]*?(\{)/, '$1')  // Remove everything before first {
-          .replace(/(\})\s*[\s\S]*?$/s, '$1')  // Remove everything after last }
-          .replace(/,(\s*[}\]])/g, '$1')   // Remove trailing commas
-          .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":') // Quote unquoted keys
-          .replace(/:\s*'([^']*)'/g, ': "$1"')  // Replace single quotes with double
-          .replace(/\t/g, ' ')             // Replace tabs with spaces
-          .replace(/\r\n/g, '\n')          // Normalize line endings
-          .replace(/\n\s*/g, ' ')          // Replace newlines with space
-          .replace(/\s+/g, ' ')            // Normalize whitespace
-          .replace(/([{}])\s+/g, '$1')     // Remove spaces after braces
-          .replace(/\s+([{}])/g, '$1')     // Remove spaces before braces
-          .trim();
-        
-        // Try to fix common JSON issues
-        try {
-          // Attempt to balance braces
-          const openBraces = (cleaned.match(/\{/g) || []).length;
-          const closeBraces = (cleaned.match(/\}/g) || []).length;
-          if (openBraces > closeBraces) {
-            cleaned += '}';
-          }
-        } catch (e) {
-          console.log('❌ Error in brace balancing:', e.message);
-        }
-        
-        return cleaned;
-      };
-
-      // Enhanced extraction patterns - order matters (most specific first)
-      const patterns = [
-        // 1. Complete JSON structure with all required fields
-        /\{[\s\S]*?"task1"[\s\S]*?"criteria"[\s\S]*?"task2"[\s\S]*?"criteria"[\s\S]*?"overall"[\s\S]*?\}/i,
-        
-        // 2. Standard code block formats
-        /```json\s*(\{[\s\S]*?\})\s*```/gi,
-        /```\s*(\{[\s\S]*?\})\s*```/gi,
-        
-        // 3. Look for largest complete JSON object
-        /(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/g,
-        
-        // 4. Capture from first { to last }
-        /(\{[\s\S]*\})/,
-        
-        // 5. Any object containing task1 and overall
-        /\{[\s\S]*?"task1"[\s\S]*?"overall"[\s\S]*?\}/i,
-        
-        // 6. Any object containing task2 and overall  
-        /\{[\s\S]*?"task2"[\s\S]*?"overall"[\s\S]*?\}/i,
-        
-        // 7. Any large object (500+ chars)
-        /\{[\s\S]{500,}\}/i,
-        
-        // 8. Any object with criteria
-        /\{[\s\S]*?"criteria"[\s\S]*?\}/i,
-        
-        // 9. Fallback - any JSON-like structure
-        /\{[\s\S]*?\}/
-      ];
+      // Step 1: Remove markdown code blocks
+      let cleaned = content.trim();
       
-      console.log('🔄 Trying', patterns.length, 'extraction patterns...');
-      
-      for (let i = 0; i < patterns.length; i++) {
-        const pattern = patterns[i];
-        const matches = content.match(pattern);
-        
-        if (matches) {
-          for (const match of Array.isArray(matches) ? matches : [matches]) {
-            const jsonStr = match[1] || match[0] || match;
-            console.log(`🔍 Pattern ${i + 1} found potential JSON (length: ${jsonStr.length})`);
-            
-            try {
-              const cleanedJson = cleanJson(jsonStr);
-              console.log(`🧹 Cleaned JSON first 200 chars:`, cleanedJson.substring(0, 200));
-              
-              structured = JSON.parse(cleanedJson);
-              console.log(`✅ Successfully parsed JSON using pattern ${i + 1}`);
-              jsonMatch = true;
-              break;
-            } catch (e) {
-              console.log(`❌ Pattern ${i + 1} failed:`, e.message.substring(0, 100));
-            }
-          }
-          
-          if (jsonMatch) break;
-        }
+      // Remove ```json at start and ``` at end
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.substring(7);
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.substring(3);
       }
       
-      if (!jsonMatch) {
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.substring(0, cleaned.length - 3);
+      }
+      
+      cleaned = cleaned.trim();
+      
+      // Step 2: Find the main JSON object
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        extractedJson = cleaned.substring(firstBrace, lastBrace + 1);
+        
+        console.log('🔍 Extracted JSON length:', extractedJson.length);
+        console.log('🔍 Extracted JSON first 200 chars:', extractedJson.substring(0, 200));
+        console.log('🔍 Extracted JSON last 200 chars:', extractedJson.substring(extractedJson.length - 200));
+        
+        try {
+          structured = JSON.parse(extractedJson);
+          console.log('✅ Successfully parsed extracted JSON');
+        } catch (parseError) {
+          console.log('❌ Failed to parse extracted JSON:', parseError.message);
+          
+          // Step 3: Try to fix common JSON issues
+          try {
+            // Remove any trailing commas
+            let fixedJson = extractedJson.replace(/,(\s*[}\]])/g, '$1');
+            
+            // Try to balance braces if needed
+            const openBraces = (fixedJson.match(/\{/g) || []).length;
+            const closeBraces = (fixedJson.match(/\}/g) || []).length;
+            
+            if (openBraces > closeBraces) {
+              fixedJson += '}'.repeat(openBraces - closeBraces);
+            }
+            
+            console.log('🔧 Attempting to parse fixed JSON...');
+            structured = JSON.parse(fixedJson);
+            console.log('✅ Successfully parsed fixed JSON');
+          } catch (fixError) {
+            console.log('❌ Final parsing attempt failed:', fixError.message);
+          }
+        }
+      } else {
+        console.log('❌ Could not find valid JSON structure in response');
+      }
+      
+      if (!structured) {
         console.error('❌ All JSON extraction strategies failed');
         console.log('🔧 Creating comprehensive fallback structured data...');
           

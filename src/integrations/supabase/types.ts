@@ -1450,39 +1450,6 @@ export type Database = {
         }
         Relationships: []
       }
-      writing_analysis_cache: {
-        Row: {
-          access_count: number | null
-          analysis_result: Json
-          content_hash: string
-          created_at: string | null
-          id: string
-          last_accessed: string | null
-          question_prompt: string | null
-          user_submission: string
-        }
-        Insert: {
-          access_count?: number | null
-          analysis_result: Json
-          content_hash: string
-          created_at?: string | null
-          id?: string
-          last_accessed?: string | null
-          question_prompt?: string | null
-          user_submission: string
-        }
-        Update: {
-          access_count?: number | null
-          analysis_result?: Json
-          content_hash?: string
-          created_at?: string | null
-          id?: string
-          last_accessed?: string | null
-          question_prompt?: string | null
-          user_submission?: string
-        }
-        Relationships: []
-      }
       writing_prompts: {
         Row: {
           band_criteria: Json | null
@@ -1617,10 +1584,6 @@ export type Database = {
         Returns: undefined
       }
       cleanup_old_rate_limits: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_writing_analysis_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

@@ -469,16 +469,16 @@ export default function IELTSWritingProResults() {
             }
             
             const analysisResult = result.data;
-            if (!analysisResult || !analysisResult.original_spans || !analysisResult.enhanced_spans) {
+            if (!analysisResult || !analysisResult.originalSpans || !analysisResult.enhancedSpans) {
               throw new Error('Invalid analysis result structure');
             }
             
             console.log('🔍 Task 1 AI correction analysis result:', {
               hasData: true,
-              originalSpansCount: analysisResult?.original_spans?.length || 0,
-              enhancedSpansCount: analysisResult?.enhanced_spans?.length || 0,
-              suggestionSpansCount: analysisResult?.original_spans?.filter(s => s.status === 'suggestion')?.length || 0,
-              enhancementSpansCount: analysisResult?.enhanced_spans?.filter(s => s.status === 'enhancement')?.length || 0,
+              originalSpansCount: analysisResult?.originalSpans?.length || 0,
+              enhancedSpansCount: analysisResult?.enhancedSpans?.length || 0,
+              suggestionSpansCount: analysisResult?.originalSpans?.filter(s => s.status === 'suggestion')?.length || 0,
+              enhancementSpansCount: analysisResult?.enhancedSpans?.filter(s => s.status === 'enhancement')?.length || 0,
               correctionsCount: analysisResult?.suggestions?.length || 0
             });
             
@@ -488,8 +488,8 @@ export default function IELTSWritingProResults() {
             if (!isMounted) return;
             
             setT1CorrData({
-              original_spans: analysisResult.original_spans,
-              enhanced_spans: analysisResult.enhanced_spans,
+              original_spans: analysisResult.originalSpans,
+              enhanced_spans: analysisResult.enhancedSpans,
               suggestions: analysisResult.suggestions || [],
               summary: analysisResult.summary || {
                 totalSuggestions: analysisResult.suggestions?.length || 0,
@@ -566,16 +566,16 @@ export default function IELTSWritingProResults() {
             }
             
             const analysisResult = result.data;
-            if (!analysisResult || !analysisResult.original_spans || !analysisResult.enhanced_spans) {
+            if (!analysisResult || !analysisResult.originalSpans || !analysisResult.enhancedSpans) {
               throw new Error('Invalid analysis result structure');
             }
             
             console.log('🔍 Task 2 AI correction analysis result:', {
               hasData: true,
-              originalSpansCount: analysisResult?.original_spans?.length || 0,
-              enhancedSpansCount: analysisResult?.enhanced_spans?.length || 0,
-              suggestionSpansCount: analysisResult?.original_spans?.filter(s => s.status === 'suggestion')?.length || 0,
-              enhancementSpansCount: analysisResult?.enhanced_spans?.filter(s => s.status === 'enhancement')?.length || 0,
+              originalSpansCount: analysisResult?.originalSpans?.length || 0,
+              enhancedSpansCount: analysisResult?.enhancedSpans?.length || 0,
+              suggestionSpansCount: analysisResult?.originalSpans?.filter(s => s.status === 'suggestion')?.length || 0,
+              enhancementSpansCount: analysisResult?.enhancedSpans?.filter(s => s.status === 'enhancement')?.length || 0,
               correctionsCount: analysisResult?.suggestions?.length || 0
             });
             
@@ -585,8 +585,8 @@ export default function IELTSWritingProResults() {
             if (!isMounted) return;
             
             setT2CorrData({
-              original_spans: analysisResult.original_spans,
-              enhanced_spans: analysisResult.enhanced_spans,
+              original_spans: analysisResult.originalSpans,
+              enhanced_spans: analysisResult.enhancedSpans,
               suggestions: analysisResult.suggestions || [],
               summary: analysisResult.summary || {
                 totalSuggestions: analysisResult.suggestions?.length || 0,

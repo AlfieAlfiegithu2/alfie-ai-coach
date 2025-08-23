@@ -357,159 +357,75 @@ export default function IELTSWritingProResults() {
     }
   }, [testName]);
 
-  // Function to fetch existing correction data from database
-  const fetchExistingCorrectionData = async (submissionId: string, taskNumber: number) => {
-    try {
-      const { data, error } = await supabase
-        .from('writing_test_results')
-        .select('correction_analysis')
-        .eq('test_result_id', submissionId)
-        .eq('task_number', taskNumber)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching existing correction data:', error);
-        return null;
-      }
-
-      return data?.correction_analysis || null;
-    } catch (error) {
-      console.error('Error in fetchExistingCorrectionData:', error);
-      return null;
-    }
-  };
-
   useEffect(() => {
     const run = async () => {
       const tasks: Promise<any>[] = [];
-      
-      // Get submissionId from location state
-      const stateData = location.state as any;
-      const currentSubmissionId = stateData?.submissionId;
-      
-      if (!currentSubmissionId) {
-        console.warn('⚠️ No submissionId available for fetching correction data');
-        return;
-      }
-      
-      // Task 1 corrections analysis
       if (task1Answer && !t1CorrData && !t1Loading) {
         setT1Loading(true);
         setT1Error(null);
-        
-        // First, try to fetch existing correction data from database
-        const existingData = await fetchExistingCorrectionData(currentSubmissionId, 1);
-        
-        if (existingData && typeof existingData === 'object' && 
-            Array.isArray((existingData as any).original_spans) && 
-            Array.isArray((existingData as any).corrected_spans)) {
-          console.log('✅ Found existing Task 1 correction data in database');
-          const typedData = existingData as any;
-          setT1CorrData({
-            original_spans: typedData.original_spans,
-            corrected_spans: typedData.corrected_spans,
-            corrections: typedData.corrections || [],
-            summary: typedData.summary || {
-              totalCorrections: 0,
-              byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-              bySeverity: { minor: 0, moderate: 0, major: 0 }
-            }
-          });
-          setT1Loading(false);
-        } else {
-          // If no existing data, run AI analysis as fallback
-          console.log('⚠️ No existing Task 1 correction data found, running AI analysis...');
-          const prompt1 = `${task1Data?.title ? `Title: ${task1Data.title}\n` : ''}${task1Data?.instructions ? `Instructions: ${task1Data.instructions}` : ''}`.trim();
-          tasks.push(supabase.functions.invoke('analyze-writing-correction', {
-            body: {
-              userSubmission: task1Answer,
-              questionPrompt: prompt1
-            }
-          }).then(({
-            data,
-            error
-          }) => {
-            if (error) throw error;
-            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
-              setT1CorrData({
-                original_spans: data.original_spans,
-                corrected_spans: data.corrected_spans,
-                corrections: data.corrections || [],
-                summary: data.summary || {
-                  totalCorrections: 0,
-                  byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-                  bySeverity: { minor: 0, moderate: 0, major: 0 }
-                }
-              });
-            } else {
-              setT1Error('No correction data returned for Task 1.');
-            }
-          }).catch((e: any) => setT1Error(e?.message || 'Failed to analyze Task 1')).finally(() => setT1Loading(false)));
-        }
+        const prompt1 = `${task1Data?.title ? `Title: ${task1Data.title}\n` : ''}${task1Data?.instructions ? `Instructions: ${task1Data.instructions}` : ''}`.trim();
+        tasks.push(supabase.functions.invoke('analyze-writing-correction', {
+          body: {
+            userSubmission: task1Answer,
+            questionPrompt: prompt1
+          }
+        }).then(({
+          data,
+          error
+        }) => {
+          if (error) throw error;
+          if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+            setT1CorrData({
+              original_spans: data.original_spans,
+              corrected_spans: data.corrected_spans,
+              corrections: data.corrections || [],
+              summary: data.summary || {
+                totalCorrections: 0,
+                byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+                bySeverity: { minor: 0, moderate: 0, major: 0 }
+              }
+            });
+          } else {
+            setT1Error('No correction data returned for Task 1.');
+          }
+        }).catch((e: any) => setT1Error(e?.message || 'Failed to analyze Task 1')).finally(() => setT1Loading(false)));
       }
-      
-      // Task 2 corrections analysis
       if (task2Answer && !t2CorrData && !t2Loading) {
         setT2Loading(true);
         setT2Error(null);
-        
-        // First, try to fetch existing correction data from database
-        const existingData = await fetchExistingCorrectionData(currentSubmissionId, 2);
-        
-        if (existingData && typeof existingData === 'object' && 
-            Array.isArray((existingData as any).original_spans) && 
-            Array.isArray((existingData as any).corrected_spans)) {
-          console.log('✅ Found existing Task 2 correction data in database');
-          const typedData = existingData as any;
-          setT2CorrData({
-            original_spans: typedData.original_spans,
-            corrected_spans: typedData.corrected_spans,
-            corrections: typedData.corrections || [],
-            summary: typedData.summary || {
-              totalCorrections: 0,
-              byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-              bySeverity: { minor: 0, moderate: 0, major: 0 }
-            }
-          });
-          setT2Loading(false);
-        } else {
-          // If no existing data, run AI analysis as fallback
-          console.log('⚠️ No existing Task 2 correction data found, running AI analysis...');
-          const prompt2 = `${task2Data?.title ? `Title: ${task2Data.title}\n` : ''}${task2Data?.instructions ? `Instructions: ${task2Data.instructions}` : ''}`.trim();
-          tasks.push(supabase.functions.invoke('analyze-writing-correction', {
-            body: {
-              userSubmission: task2Answer,
-              questionPrompt: prompt2
-            }
-          }).then(({
-            data,
-            error
-          }) => {
-            if (error) throw error;
-            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
-              setT2CorrData({
-                original_spans: data.original_spans,
-                corrected_spans: data.corrected_spans,
-                corrections: data.corrections || [],
-                summary: data.summary || {
-                  totalCorrections: 0,
-                  byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-                  bySeverity: { minor: 0, moderate: 0, major: 0 }
-                }
-              });
-            } else {
-              setT2Error('No correction data returned for Task 2.');
-            }
-          }).catch((e: any) => setT2Error(e?.message || 'Failed to analyze Task 2')).finally(() => setT2Loading(false)));
-        }
+        const prompt2 = `${task2Data?.title ? `Title: ${task2Data.title}\n` : ''}${task2Data?.instructions ? `Instructions: ${task2Data.instructions}` : ''}`.trim();
+        tasks.push(supabase.functions.invoke('analyze-writing-correction', {
+          body: {
+            userSubmission: task2Answer,
+            questionPrompt: prompt2
+          }
+        }).then(({
+          data,
+          error
+        }) => {
+          if (error) throw error;
+          if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+            setT2CorrData({
+              original_spans: data.original_spans,
+              corrected_spans: data.corrected_spans,
+              corrections: data.corrections || [],
+              summary: data.summary || {
+                totalCorrections: 0,
+                byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+                bySeverity: { minor: 0, moderate: 0, major: 0 }
+              }
+            });
+          } else {
+            setT2Error('No correction data returned for Task 2.');
+          }
+        }).catch((e: any) => setT2Error(e?.message || 'Failed to analyze Task 2')).finally(() => setT2Loading(false)));
       }
-      
       if (tasks.length) {
         await Promise.allSettled(tasks);
       }
     };
     run();
-  }, [task1Answer, task2Answer, task1Data, task2Data, t1CorrData, t2CorrData, t1Loading, t2Loading, location.state]);
+  }, [task1Answer, task2Answer, task1Data, task2Data, t1CorrData, t2CorrData, t1Loading, t2Loading]);
 
 // Add validation for structured data with fallback
 const hasValidData = structured && (structured.task1 || structured.task2);

@@ -299,23 +299,23 @@ const IELTSPortal = () => {
                   const progress = ieltsSkillProgress[skill.id];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
-                  // Animal photos for skills
-                  const skillAnimalPhotos = [
-                    '/panda.png',    // Reading
-                    '/koala.png',    // Listening  
-                    '/cat.png',      // Writing
-                    '/puppy.png'     // Speaking
+                  // Skill-specific images
+                  const skillImages = [
+                    '/reading.png',    // Reading
+                    '/listening.png',  // Listening  
+                    '/writing.png',    // Writing
+                    '/speaking.png'    // Speaking
                   ];
                   
-                  const animalImage = skillAnimalPhotos[index];
+                  const skillImage = skillImages[index];
                   
                   return (
                     <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-3 mb-2">
                           <img 
-                            src={animalImage} 
-                            alt={`${skill.title} mascot`}
+                            src={skillImage} 
+                            alt={`${skill.title} icon`}
                             className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
                           />
                           <CardTitle className="text-base md:text-lg flex-1">

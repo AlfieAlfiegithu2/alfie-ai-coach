@@ -70,11 +70,12 @@ STUDENT'S WRITING:
 ${userSubmission}
 
 INSTRUCTIONS:
-1. Break down the original text into spans (words/phrases)
+1. Break down the original text into SHORT spans (1-3 words each) for better processing
 2. Mark each span as "neutral", "error" if it contains mistakes
 3. Create an improved version with sophisticated vocabulary, better grammar, and enhanced clarity
 4. Mark improvements in the corrected version as "improvement"
 5. Provide sentence-by-sentence pairs for detailed comparison
+6. CRITICAL: Keep spans short to avoid exceeding token limits
 
 Return your analysis as a JSON object with this EXACT structure:
 {
@@ -109,6 +110,10 @@ CRITICAL REQUIREMENTS:
 
     console.log('🚀 Making DeepSeek API call...');
 
+    // Add timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -120,17 +125,20 @@ CRITICAL REQUIREMENTS:
         messages: [
           {
             role: 'system',
-            content: 'You are an expert IELTS examiner. Provide detailed writing corrections in the exact JSON format requested. Always return valid JSON.'
+            content: 'You are an expert IELTS examiner. Provide detailed writing corrections in the exact JSON format requested. Always return valid JSON. Keep text spans short and focused - ideally 1-3 words per span to avoid token limits.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 6000,
-        temperature: 0.2,
+        max_tokens: 8000,
+        temperature: 0.1,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error('❌ DeepSeek API error:', response.status, response.statusText);

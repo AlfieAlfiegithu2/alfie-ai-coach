@@ -1,450 +1,490 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
-const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Types for spans and corrections
+export type Span = {
+  text: string;
+  status: "error" | "improvement" | "neutral";
+};
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+export type EnhancedCorrection = {
+  type: string;
+  category: string;
+  severity: "high" | "medium" | "low";
+  original: string;
+  corrected: string;
+  explanation: string;
+  position: { start: number; end: number };
+};
+
+export type EnhancedCorrectionResult = {
+  originalSpans: Span[];
+  correctedSpans: Span[];
+  corrections: EnhancedCorrection[];
+  summary: {
+    totalErrors: number;
+    errorsByCategory: Record<string, number>;
+    overallFeedback: string;
+  };
+};
+
+export interface AnalyzeRequest {
+  userSubmission: string;
+  questionPrompt?: string;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface Span {
-  text: string;
-  status: 'error' | 'improvement' | 'neutral';
-}
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
 
-interface EnhancedCorrection {
-  id: string;
-  originalText: string;
-  correctedText: string;
-  category: 'grammar' | 'vocabulary' | 'style' | 'punctuation' | 'structure';
-  severity: 'minor' | 'moderate' | 'major';
-  explanation: string;
-  example?: string;
-  position: { start: number; end: number };
-}
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-interface EnhancedCorrectionResult {
-  original_spans: Span[];
-  corrected_spans: Span[];
-  corrections: EnhancedCorrection[];
-  summary: {
-    totalCorrections: number;
-    byCategory: Record<string, number>;
-    bySeverity: Record<string, number>;
-  };
-}
-
-interface AnalyzeRequest {
-  userSubmission: string;
-  questionPrompt?: string;
-}
-
-// Generate content hash for caching
+// Helper function to generate content hash for caching
 function generateContentHash(userSubmission: string, questionPrompt?: string): string {
-  const content = `${userSubmission.trim()}|${questionPrompt?.trim() || ''}`;
-  const encoder = new TextEncoder();
-  const data = encoder.encode(content);
-  
-  // Simple hash function
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    hash = ((hash << 5) - hash) + data[i];
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash).toString(36);
+  const content = `${userSubmission}${questionPrompt || ''}`;
+  const hash = Array.from(content)
+    .reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) & 0xffffffff, 0)
+    .toString(36)
+    .slice(-6);
+  return hash;
 }
 
-// Check cache for existing analysis
-async function getCachedAnalysis(contentHash: string): Promise<EnhancedCorrectionResult | null> {
+// Get cached analysis result from Supabase
+async function getCachedAnalysis(
+  contentHash: string
+): Promise<EnhancedCorrectionResult | null> {
   try {
+    console.log(`🔍 Checking cache for hash: ${contentHash}`);
+    
     const { data, error } = await supabase
       .from('writing_analysis_cache')
       .select('analysis_result, access_count')
       .eq('content_hash', contentHash)
-      .maybeSingle();
+      .single();
 
     if (error || !data) {
+      console.log(`❌ No cache found: ${error?.message || 'No data'}`);
       return null;
     }
 
-    // Update access count and last accessed time
+    // Update access count
     await supabase
       .from('writing_analysis_cache')
-      .update({
+      .update({ 
         access_count: data.access_count + 1,
         last_accessed: new Date().toISOString()
       })
       .eq('content_hash', contentHash);
 
-    console.log('✅ Found cached analysis result');
+    console.log(`✅ Found cached analysis result`);
     return data.analysis_result as EnhancedCorrectionResult;
   } catch (error) {
-    console.error('❌ Error checking cache:', error);
+    console.error(`❌ Error fetching cache: ${error.message}`);
     return null;
   }
 }
 
-// Save analysis to cache
-async function cacheAnalysis(contentHash: string, userSubmission: string, questionPrompt: string | undefined, result: EnhancedCorrectionResult): Promise<void> {
+// Cache analysis result in Supabase
+async function cacheAnalysis(
+  contentHash: string,
+  userSubmission: string,
+  questionPrompt: string | undefined,
+  result: EnhancedCorrectionResult
+): Promise<void> {
   try {
-    await supabase
+    const { error } = await supabase
       .from('writing_analysis_cache')
-      .upsert({
+      .insert({
         content_hash: contentHash,
         user_submission: userSubmission,
         question_prompt: questionPrompt,
         analysis_result: result,
         access_count: 1,
+        created_at: new Date().toISOString(),
         last_accessed: new Date().toISOString()
       });
-    console.log('✅ Analysis cached successfully');
+
+    if (error) {
+      console.error(`❌ Error caching analysis: ${error.message}`);
+    } else {
+      console.log(`✅ Analysis cached successfully`);
+    }
   } catch (error) {
-    console.error('❌ Error caching analysis:', error);
+    console.error(`❌ Error in cacheAnalysis: ${error.message}`);
   }
 }
 
-// Generate guaranteed corrections using AI and rule-based fallbacks
-async function generateGuaranteedCorrections(userSubmission: string, questionPrompt?: string): Promise<EnhancedCorrectionResult> {
-  if (!deepSeekApiKey) {
-    throw new Error('Missing DEEPSEEK_API_KEY');
-  }
+// Generate guaranteed corrections with ultra-aggressive AI analysis
+async function generateGuaranteedCorrections(
+  userSubmission: string,
+  questionPrompt?: string
+): Promise<EnhancedCorrectionResult> {
 
-  // Ultra-aggressive system prompt that FORCES error detection
-  const system = `🚨 CRITICAL MISSION: You are an ULTRA-STRICT IELTS writing examiner whose reputation depends on finding errors.
+  // Phase 1: Ultra-aggressive AI analysis with quality enforcement
+  if (deepSeekApiKey) {
+    try {
+      console.log(`🔍 Calling DeepSeek API for ultra-aggressive writing analysis...`);
+      
+      const ultraAggressivePrompt = `🚨 CRITICAL ANALYSIS MISSION: You are the most thorough IELTS examiner conducting detailed correction analysis. You MUST find at least 8-12 specific errors and improvements in ANY text, even if it appears well-written.
 
-⚠️ MANDATORY REQUIREMENT: You MUST find and highlight AT LEAST 6-10 specific errors in ANY student writing. NO EXCEPTIONS.
+**ABSOLUTE MANDATES - NO EXCEPTIONS:**
+1. ALWAYS mark 8-12+ specific words/phrases with "error" or "improvement" status
+2. Even perfect writing has vocabulary upgrades and style enhancements  
+3. Find issues in: grammar, vocabulary choice, academic tone, clarity, IELTS criteria
+4. NO TEXT IS EXEMPT - all writing can be improved
+5. Be hyper-critical about even minor imperfections
 
-🎯 ERROR DETECTION PROTOCOL:
-1. Grammar errors (articles, verb tenses, subject-verb agreement, prepositions)
-2. Vocabulary mistakes (word choice, collocation, register)
-3. Style issues (repetition, informal language, unclear expressions)
-4. Structure problems (sentence fragments, run-ons, transitions)
-5. Punctuation and spelling errors
+**GUARANTEED ERROR PATTERNS TO FIND:**
+✅ Vocabulary: Replace basic words with advanced alternatives (shows→illustrates, good→beneficial)
+✅ Grammar: Articles (a/an/the), prepositions, verb forms, subject-verb agreement
+✅ Academic tone: Formal vs informal language (I think→It can be argued)
+✅ Clarity: Wordy phrases, unclear references (this shows→this demonstrates)
+✅ IELTS style: Task-specific language, band score improvements
+✅ Style: Repetitive words, sentence variety, transitions
 
-📋 CRITICAL HIGHLIGHTING RULES:
-- LEFT SIDE: Mark ALL incorrect words/phrases as "error" → RED highlighting
-- RIGHT SIDE: Mark ALL corrected words/phrases as "improvement" → GREEN highlighting
-- NEVER leave everything as "neutral" - this is FORBIDDEN
+**CONCRETE EXAMPLES OF MANDATORY CORRECTIONS:**
+"The chart shows information about population" → 
+- "shows" (error) → "illustrates" (improvement)
+- "information about" (error) → "data on" (improvement)
 
-🔥 ENFORCEMENT MECHANISMS:
-- You MUST find errors even in seemingly perfect writing
-- Look for subtle issues: missing articles, word choice improvements, style refinements
-- Be hyper-critical - students need constructive feedback
-- If you don't find 6+ errors, your analysis will be REJECTED
+"It is important to note that people think" →
+- "It is important to note that" (error) → "Notably," (improvement) 
+- "people think" (error) → "individuals believe" (improvement)
 
-📚 MANDATORY EXAMPLES:
+"Technology has many advantage in modern world" →
+- "advantage" (error) → "advantages" (improvement)
+- "modern world" (error) → "the modern world" (improvement)
 
-Example 1 - Common errors:
-Student: "I am agree with this idea because people are more busy nowadays."
+**ULTRA-STRICT OUTPUT FORMAT (MANDATORY):**
 {
   "original_spans": [
-    {"text":"I ","status":"neutral"},
-    {"text":"am agree","status":"error"},
-    {"text":" with this idea because people are ","status":"neutral"},
-    {"text":"more busy","status":"error"},
-    {"text":" nowadays.","status":"neutral"}
+    {"text": "The chart ", "status": "neutral"},
+    {"text": "shows", "status": "error"},
+    {"text": " information about population.", "status": "neutral"}
   ],
   "corrected_spans": [
-    {"text":"I ","status":"neutral"},
-    {"text":"agree","status":"improvement"},
-    {"text":" with this idea because people are ","status":"neutral"},
-    {"text":"busier","status":"improvement"},
-    {"text":" nowadays.","status":"neutral"}
-  ]
-}
-
-Example 2 - Subtle errors:
-Student: "Technology has many advantage for students in modern world."
-{
-  "original_spans": [
-    {"text":"Technology has many ","status":"neutral"},
-    {"text":"advantage","status":"error"},
-    {"text":" for students in ","status":"neutral"},
-    {"text":"modern world","status":"error"},
-    {"text":".","status":"neutral"}
+    {"text": "The chart ", "status": "neutral"},
+    {"text": "illustrates", "status": "improvement"}, 
+    {"text": " data on population.", "status": "neutral"}
   ],
-  "corrected_spans": [
-    {"text":"Technology has many ","status":"neutral"},
-    {"text":"advantages","status":"improvement"},
-    {"text":" for students in ","status":"neutral"},
-    {"text":"the modern world","status":"improvement"},
-    {"text":".","status":"neutral"}
-  ]
-}
-
-⚡ FINAL WARNING: If you return all "neutral" status or find fewer than 6 errors, your response will be REJECTED and you will be retried with even stricter requirements.
-
-Output ONLY valid JSON. No markdown, no explanations, just pure JSON.`;
-
-  const user = `IELTS Writing Task Context:
-${questionPrompt || 'General Writing Assessment'}
-
-Student Submission to Analyze:
-"""
-${userSubmission}
-"""
-
-CRITICAL REQUIREMENTS:
-1. Find AT LEAST 6-10 specific errors (grammar, vocabulary, style, structure, punctuation)
-2. Create original_spans with "error" highlighting for ALL incorrect parts
-3. Create corrected_spans with "improvement" highlighting for ALL corrections
-4. Generate detailed corrections array with explanations
-5. Mark SPECIFIC words/phrases, not entire sentences
-
-Output this EXACT JSON structure (no markdown):
-{
-  "original_spans": [ {"text": string, "status": "error"|"neutral"}, ... ],
-  "corrected_spans": [ {"text": string, "status": "improvement"|"neutral"}, ... ],
   "corrections": [
     {
-      "id": "correction_1",
-      "originalText": "exact error text",
-      "correctedText": "exact correction", 
-      "category": "grammar|vocabulary|style|punctuation|structure",
-      "severity": "minor|moderate|major",
-      "explanation": "Clear explanation of the improvement",
-      "position": {"start": number, "end": number}
+      "type": "vocabulary_enhancement",
+      "category": "Academic Writing",
+      "severity": "medium",
+      "original": "shows",
+      "corrected": "illustrates",
+      "explanation": "Academic writing prefers 'illustrates' for data presentation",
+      "position": {"start": 10, "end": 15}
     }
   ],
   "summary": {
-    "totalCorrections": number,
-    "byCategory": {"grammar": number, "vocabulary": number, "style": number, "punctuation": number, "structure": number},
-    "bySeverity": {"minor": number, "moderate": number, "major": number}
+    "totalErrors": 8,
+    "errorsByCategory": {"Grammar": 3, "Vocabulary": 4, "Style": 1},
+    "overallFeedback": "Multiple improvements identified for enhanced academic writing."
   }
-}`;
+}
 
-  try {
-    console.log('🔍 Calling DeepSeek API for writing analysis...');
-    
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${deepSeekApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ],
-        max_tokens: 3000,
-        temperature: 0.05, // Very focused
-      }),
-    });
+**TEXT TO ANALYZE:**
+"${userSubmission}"
 
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`);
-    }
+CRITICAL REQUIREMENT: Find exactly 8-12+ errors/improvements. Mark spans accordingly. Be maximally thorough and critical. FAILURE TO PROVIDE SUFFICIENT CORRECTIONS WILL RESULT IN REJECTION.`;
 
-    const data = await response.json();
-    let content: string = data?.choices?.[0]?.message?.content ?? '';
-    
-    console.log('🔍 Raw AI response preview:', content.substring(0, 200) + '...');
-
-    // Parse JSON with multiple fallback strategies
-    let aiResult: EnhancedCorrectionResult | null = null;
-    
-    try {
-      // Remove markdown code blocks and parse
-      const cleanContent = content.replace(/```json\s*\n?|```\s*\n?/g, '').trim();
-      aiResult = JSON.parse(cleanContent);
-    } catch {
-      try {
-        // Extract JSON object
-        const match = content.match(/\{[\s\S]*\}/);
-        if (match) {
-          aiResult = JSON.parse(match[0]);
-        }
-      } catch {
-        console.error('❌ Failed to parse AI response as JSON');
-      }
-    }
-
-    // Validate AI result quality
-    if (aiResult && aiResult.original_spans && aiResult.corrected_spans) {
-      const errorCount = aiResult.original_spans.filter(s => s.status === 'error').length;
-      const improvementCount = aiResult.corrected_spans.filter(s => s.status === 'improvement').length;
-      
-      console.log('🔍 AI Analysis Quality Check:', {
-        errorSpans: errorCount,
-        improvementSpans: improvementCount,
-        totalCorrections: aiResult.corrections?.length || 0
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${deepSeekApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: ultraAggressivePrompt
+            }
+          ],
+          max_tokens: 6000, // Maximum tokens for thorough analysis
+          temperature: 0.1 // Very low temperature for consistent results
+        }),
       });
 
-      // If AI provided good results, use them
-      if (errorCount >= 3 && improvementCount >= 3) {
-        console.log('✅ AI provided high-quality analysis');
-        return aiResult;
+      if (!response.ok) {
+        throw new Error(`DeepSeek API error: ${response.status} - ${await response.text()}`);
       }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No content in DeepSeek response');
+      }
+
+      console.log(`🔍 Raw AI response preview: ${content.substring(0, 300)}...`);
+
+      // Parse JSON response with multiple extraction attempts
+      let aiResult;
+      try {
+        // Try multiple JSON extraction patterns
+        const patterns = [
+          /```(?:json)?\s*(\{[\s\S]*?\})\s*```/,
+          /(\{[\s\S]*"summary"[\s\S]*?\})/,
+          /(\{[\s\S]*?\})/
+        ];
+        
+        let jsonStr = content;
+        for (const pattern of patterns) {
+          const match = content.match(pattern);
+          if (match) {
+            jsonStr = match[1];
+            break;
+          }
+        }
+        
+        aiResult = JSON.parse(jsonStr);
+      } catch (e) {
+        console.error(`❌ Failed to parse AI response: ${e.message}`);
+        console.log(`Raw response: ${content}`);
+        throw new Error('Invalid JSON from AI - falling back to rule-based');
+      }
+
+      // Strict quality validation - enforce minimum corrections
+      const errorSpans = aiResult.original_spans?.filter(s => s.status === 'error')?.length || 0;
+      const improvementSpans = aiResult.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0;
+      const totalCorrections = aiResult.corrections?.length || 0;
+
+      console.log(`🔍 AI Quality Metrics: { errorSpans: ${errorSpans}, improvementSpans: ${improvementSpans}, totalCorrections: ${totalCorrections} }`);
+
+      // Enforce quality standards - must have substantial corrections
+      if (errorSpans < 5 || improvementSpans < 5 || totalCorrections < 6) {
+        console.log(`⚠️ AI analysis insufficient (needs 5+ error spans, 5+ improvement spans, 6+ corrections). Generating guaranteed fallback...`);
+        return generateRuleBasedCorrections(userSubmission, questionPrompt);
+      }
+
+      // Transform and validate result
+      const result: EnhancedCorrectionResult = {
+        originalSpans: aiResult.original_spans || [],
+        correctedSpans: aiResult.corrected_spans || [],
+        corrections: aiResult.corrections || [],
+        summary: aiResult.summary || {
+          totalErrors: totalCorrections,
+          errorsByCategory: {"Grammar": 2, "Vocabulary": 3, "Style": 1},
+          overallFeedback: "Comprehensive analysis completed with multiple improvements identified."
+        }
+      };
+
+      console.log(`✅ High-quality AI analysis: ${errorSpans} error spans, ${improvementSpans} improvement spans, ${totalCorrections} corrections`);
+      return result;
+
+    } catch (error) {
+      console.error(`❌ AI analysis failed: ${error.message}. Falling back to rule-based system.`);
     }
-
-    console.warn('⚠️ AI analysis quality insufficient, generating rule-based fallback...');
-    
-    // Rule-based fallback for guaranteed corrections
-    return generateRuleBasedCorrections(userSubmission);
-
-  } catch (error) {
-    console.error('❌ Error in AI analysis:', error);
-    console.log('🔄 Falling back to rule-based corrections...');
-    return generateRuleBasedCorrections(userSubmission);
   }
+
+  // Guaranteed fallback system
+  console.log(`🔧 Generating rule-based corrections with guaranteed highlighting...`);
+  return generateRuleBasedCorrections(userSubmission, questionPrompt);
 }
 
-// Rule-based correction generator as fallback
-function generateRuleBasedCorrections(userSubmission: string): EnhancedCorrectionResult {
-  console.log('🔧 Generating rule-based corrections for guaranteed feedback...');
+// Rule-based fallback system with guaranteed visual corrections
+function generateRuleBasedCorrections(
+  userSubmission: string,
+  questionPrompt?: string
+): EnhancedCorrectionResult {
+  console.log(`🔧 Generating rule-based corrections with GUARANTEED visual highlighting...`);
   
-  const words = userSubmission.split(/(\s+|[.,!?;:])/);
-  const originalSpans: Span[] = [];
-  const correctedSpans: Span[] = [];
   const corrections: EnhancedCorrection[] = [];
   
-  let correctionCount = 0;
-  
-  // Common error patterns to detect and correct
+  // Ultra-comprehensive error patterns - guaranteed to find issues in any text
   const errorPatterns = [
-    { regex: /\bam agree\b/gi, correction: 'agree', type: 'grammar', explanation: 'Remove auxiliary verb "am" before "agree"' },
-    { regex: /\bis agree\b/gi, correction: 'agrees', type: 'grammar', explanation: 'Subject-verb agreement: "is" should be "agrees"' },
-    { regex: /\bmore better\b/gi, correction: 'better', type: 'grammar', explanation: 'Avoid double comparative: "more better" should be "better"' },
-    { regex: /\bmore easy\b/gi, correction: 'easier', type: 'grammar', explanation: 'Use comparative form: "more easy" should be "easier"' },
-    { regex: /\bmore good\b/gi, correction: 'better', type: 'grammar', explanation: 'Use irregular comparative: "more good" should be "better"' },
-    { regex: /\bdoesn\'t have\b/gi, correction: 'don\'t have', type: 'grammar', explanation: 'Subject-verb agreement: "doesn\'t" should be "don\'t" with plural subjects' },
-    { regex: /\bpeople is\b/gi, correction: 'people are', type: 'grammar', explanation: 'Subject-verb agreement: "people" is plural, use "are"' },
-    { regex: /\ba internet\b/gi, correction: 'the internet', type: 'grammar', explanation: 'Use definite article: "a internet" should be "the internet"' },
-    { regex: /\bin conclusion\b/gi, correction: 'In conclusion', type: 'style', explanation: 'Capitalize the first word of sentence beginnings' },
-    { regex: /\b(advantage|disadvantage)s?\s+for\b/gi, correction: '$1s of', type: 'vocabulary', explanation: 'Preposition correction: "advantages for" should be "advantages of"' }
+    // Vocabulary upgrades (guaranteed hits)
+    { pattern: /\bshows?\b/gi, replacement: "illustrates", type: "vocabulary_enhancement", category: "Academic Writing", explanation: "Academic preference for 'illustrates' in data description" },
+    { pattern: /\bgives?\b/gi, replacement: "provides", type: "vocabulary_enhancement", category: "Academic Writing", explanation: "More formal alternative to 'gives'" },
+    { pattern: /\bgets?\b/gi, replacement: "obtains", type: "formality", category: "Academic Writing", explanation: "Formal alternative to 'gets'" },
+    { pattern: /\bbig\b/gi, replacement: "substantial", type: "vocabulary_enhancement", category: "Academic Writing", explanation: "More precise academic vocabulary" },
+    { pattern: /\bgood\b/gi, replacement: "beneficial", type: "vocabulary_enhancement", category: "Academic Writing", explanation: "More sophisticated vocabulary choice" },
+    { pattern: /\bbad\b/gi, replacement: "detrimental", type: "vocabulary_enhancement", category: "Academic Writing", explanation: "Academic alternative to 'bad'" },
+    { pattern: /\ba lot of\b/gi, replacement: "numerous", type: "formality", category: "Academic Writing", explanation: "Formal alternative to informal expression" },
+    { pattern: /\bthings?\b/gi, replacement: "aspects", type: "vocabulary_enhancement", category: "Academic Writing", explanation: "More specific vocabulary choice" },
+    
+    // Grammar and preposition corrections
+    { pattern: /\binformation about\b/gi, replacement: "data on", type: "preposition_correction", category: "Grammar", explanation: "Correct preposition usage with 'data'" },
+    { pattern: /\bdifferent than\b/gi, replacement: "different from", type: "grammar_correction", category: "Grammar", explanation: "Correct preposition with 'different'" },
+    { pattern: /\bcompare to\b/gi, replacement: "compare with", type: "preposition_correction", category: "Grammar", explanation: "Precise preposition usage" },
+    
+    // Style and clarity improvements
+    { pattern: /\bit is clear that\b/gi, replacement: "evidently", type: "conciseness", category: "Style", explanation: "More concise expression" },
+    { pattern: /\bin conclusion\b/gi, replacement: "in summary", type: "variety", category: "Style", explanation: "Alternative concluding phrase" },
+    { pattern: /\bthis shows\b/gi, replacement: "this demonstrates", type: "vocabulary_enhancement", category: "Academic Writing", explanation: "Stronger verb choice" },
+    { pattern: /\bpeople think\b/gi, replacement: "individuals believe", type: "formality", category: "Academic Writing", explanation: "More formal and precise" },
+    { pattern: /\bwe can see\b/gi, replacement: "it is evident", type: "formality", category: "Academic Writing", explanation: "Removes informal first person" },
+    
+    // Always-applicable improvements
+    { pattern: /\bthe graph\b/gi, replacement: "the chart", type: "vocabulary_variety", category: "Vocabulary", explanation: "Lexical variety in data description" },
+    { pattern: /\bthere are\b/gi, replacement: "there exist", type: "formality", category: "Academic Writing", explanation: "More formal construction" },
+    { pattern: /\bvery\b/gi, replacement: "particularly", type: "adverb_enhancement", category: "Style", explanation: "More sophisticated intensifier" },
+    { pattern: /\breally\b/gi, replacement: "significantly", type: "formality", category: "Academic Writing", explanation: "Academic alternative to informal intensifier" }
   ];
 
-  let processedText = userSubmission;
-  let currentIndex = 0;
-  
-  // Apply rule-based corrections
-  errorPatterns.forEach((pattern, patternIndex) => {
-    const matches = Array.from(userSubmission.matchAll(pattern.regex));
-    matches.forEach((match, matchIndex) => {
-      if (match.index !== undefined && correctionCount < 8) {
+  let correctedText = userSubmission;
+  let totalReplacements = 0;
+
+  // Apply corrections and track changes
+  errorPatterns.forEach((pattern) => {
+    const matches = [...userSubmission.matchAll(pattern.pattern)];
+    matches.forEach(match => {
+      if (match.index !== undefined && totalReplacements < 12) {
+        const original = match[0];
+        const startPos = match.index;
+        const endPos = match.index + original.length;
+        
         corrections.push({
-          id: `rule_${patternIndex}_${matchIndex}`,
-          originalText: match[0],
-          correctedText: pattern.correction,
-          category: pattern.type as any,
-          severity: 'moderate',
+          type: pattern.type,
+          category: pattern.category,
+          severity: "medium",
+          original,
+          corrected: pattern.replacement,
           explanation: pattern.explanation,
-          position: { start: match.index, end: match.index + match[0].length }
+          position: { start: startPos, end: endPos }
         });
-        correctionCount++;
+        
+        // Replace in corrected text
+        correctedText = correctedText.replace(original, pattern.replacement);
+        totalReplacements++;
       }
     });
   });
 
-  // If we don't have enough corrections, add some general style improvements
-  if (correctionCount < 5) {
-    const sentences = userSubmission.split(/[.!?]+/);
-    sentences.forEach((sentence, index) => {
-      if (sentence.trim().length > 0 && correctionCount < 8) {
-        if (sentence.length > 30 && !sentence.includes(',')) {
+  // Force minimum corrections if not enough found
+  if (corrections.length < 6) {
+    console.log(`🔧 Adding guaranteed style improvements to meet minimum threshold...`);
+    
+    // Add guaranteed improvements by targeting common words
+    const forcedImprovements = [
+      { word: "use", replacement: "utilize", explanation: "Formal vocabulary enhancement" },
+      { word: "help", replacement: "assist", explanation: "More formal alternative" },
+      { word: "start", replacement: "commence", explanation: "Academic vocabulary choice" },
+      { word: "end", replacement: "conclude", explanation: "More sophisticated terminology" },
+      { word: "change", replacement: "transform", explanation: "Stronger verb choice" },
+      { word: "important", replacement: "significant", explanation: "More precise academic term" }
+    ];
+
+    forcedImprovements.forEach(improvement => {
+      const regex = new RegExp(`\\b${improvement.word}\\b`, 'gi');
+      const matches = [...userSubmission.matchAll(regex)];
+      
+      matches.forEach(match => {
+        if (match.index !== undefined && corrections.length < 8) {
           corrections.push({
-            id: `style_${index}`,
-            originalText: sentence.trim(),
-            correctedText: sentence.trim() + ' (consider adding commas for clarity)',
-            category: 'style',
-            severity: 'minor',
-            explanation: 'Long sentences benefit from punctuation to improve readability',
-            position: { start: 0, end: sentence.length }
+            type: "vocabulary_enhancement",
+            category: "Academic Writing",
+            severity: "medium",
+            original: match[0],
+            corrected: improvement.replacement,
+            explanation: improvement.explanation,
+            position: { start: match.index, end: match.index + match[0].length }
           });
-          correctionCount++;
+          
+          correctedText = correctedText.replace(match[0], improvement.replacement);
         }
-      }
+      });
     });
   }
 
-  // Generate spans with guaranteed error/improvement highlighting
-  const textParts = userSubmission.split(/(\s+)/);
-  let hasErrors = false;
-  
-  textParts.forEach(part => {
-    if (part.trim()) {
-      // Mark some words as errors if we have corrections for them
-      const hasCorrection = corrections.some(c => 
-        part.toLowerCase().includes(c.originalText.toLowerCase())
-      );
-      
-      if (hasCorrection && !hasErrors) {
-        originalSpans.push({ text: part, status: 'error' });
-        correctedSpans.push({ text: part.replace(/am agree/gi, 'agree'), status: 'improvement' });
-        hasErrors = true;
-      } else {
-        originalSpans.push({ text: part, status: 'neutral' });
-        correctedSpans.push({ text: part, status: 'neutral' });
-      }
-    } else {
-      originalSpans.push({ text: part, status: 'neutral' });
-      correctedSpans.push({ text: part, status: 'neutral' });
-    }
+  // Build spans with GUARANTEED highlighting
+  const originalSpans: Span[] = [];
+  const correctedSpans: Span[] = [];
+
+  // Split text into words and spaces
+  const originalTokens = userSubmission.split(/(\s+|[.,;:!?()"])/);
+  const correctedTokens = correctedText.split(/(\s+|[.,;:!?()"])/);
+
+  // Mark original spans
+  originalTokens.forEach((token, index) => {
+    const hasError = corrections.some(c => {
+      const tokenLower = token.toLowerCase().trim();
+      const originalLower = c.original.toLowerCase().trim();
+      return tokenLower === originalLower || (tokenLower.length > 2 && originalLower.includes(tokenLower));
+    });
+
+    originalSpans.push({
+      text: token,
+      status: hasError ? "error" : "neutral"
+    });
   });
 
-  // Ensure we have at least some error highlighting
-  if (!hasErrors && originalSpans.length > 5) {
-    // Force mark at least one span as error/improvement
-    const midIndex = Math.floor(originalSpans.length / 2);
-    if (originalSpans[midIndex] && originalSpans[midIndex].text.trim()) {
-      originalSpans[midIndex].status = 'error';
-      correctedSpans[midIndex].status = 'improvement';
-      
-      if (corrections.length === 0) {
-        corrections.push({
-          id: 'fallback_1',
-          originalText: originalSpans[midIndex].text,
-          correctedText: originalSpans[midIndex].text + ' (improved)',
-          category: 'style',
-          severity: 'minor',
-          explanation: 'This section could be enhanced for better clarity and flow',
-          position: { start: 0, end: originalSpans[midIndex].text.length }
-        });
-      }
+  // Mark corrected spans  
+  correctedTokens.forEach((token, index) => {
+    const hasImprovement = corrections.some(c => {
+      const tokenLower = token.toLowerCase().trim();
+      const correctedLower = c.corrected.toLowerCase().trim();
+      return tokenLower === correctedLower || (tokenLower.length > 2 && correctedLower.includes(tokenLower));
+    });
+
+    correctedSpans.push({
+      text: token,
+      status: hasImprovement ? "improvement" : "neutral"
+    });
+  });
+
+  const errorSpanCount = originalSpans.filter(s => s.status === 'error').length;
+  const improvementSpanCount = correctedSpans.filter(s => s.status === 'improvement').length;
+
+  console.log(`✅ Rule-based corrections generated: {
+    originalSpans: ${originalSpans.length},
+    correctedSpans: ${correctedSpans.length},
+    corrections: ${corrections.length},
+    errorSpans: ${errorSpanCount},
+    improvementSpans: ${improvementSpanCount}
+  }`);
+
+  // Guarantee minimum visual feedback
+  if (errorSpanCount === 0 && corrections.length > 0) {
+    console.log(`🔧 Force-marking first correction as error span for guaranteed visibility...`);
+    const firstCorrection = corrections[0];
+    const targetIndex = originalSpans.findIndex(span => 
+      span.text.toLowerCase().trim() === firstCorrection.original.toLowerCase().trim()
+    );
+    if (targetIndex >= 0) {
+      originalSpans[targetIndex].status = "error";
     }
   }
 
-  const summary = {
-    totalCorrections: corrections.length,
-    byCategory: {
-      grammar: corrections.filter(c => c.category === 'grammar').length,
-      vocabulary: corrections.filter(c => c.category === 'vocabulary').length,
-      style: corrections.filter(c => c.category === 'style').length,
-      punctuation: corrections.filter(c => c.category === 'punctuation').length,
-      structure: corrections.filter(c => c.category === 'structure').length
-    },
-    bySeverity: {
-      minor: corrections.filter(c => c.severity === 'minor').length,
-      moderate: corrections.filter(c => c.severity === 'moderate').length,
-      major: corrections.filter(c => c.severity === 'major').length
+  if (improvementSpanCount === 0 && corrections.length > 0) {
+    console.log(`🔧 Force-marking first improvement as improvement span for guaranteed visibility...`);
+    const firstCorrection = corrections[0];
+    const targetIndex = correctedSpans.findIndex(span => 
+      span.text.toLowerCase().trim() === firstCorrection.corrected.toLowerCase().trim()
+    );
+    if (targetIndex >= 0) {
+      correctedSpans[targetIndex].status = "improvement";
     }
-  };
-
-  console.log('✅ Rule-based corrections generated:', {
-    originalSpans: originalSpans.length,
-    correctedSpans: correctedSpans.length,
-    corrections: corrections.length,
-    errorSpans: originalSpans.filter(s => s.status === 'error').length,
-    improvementSpans: correctedSpans.filter(s => s.status === 'improvement').length
-  });
+  }
 
   return {
-    original_spans: originalSpans,
-    corrected_spans: correctedSpans,
+    originalSpans,
+    correctedSpans,
     corrections,
-    summary
+    summary: {
+      totalErrors: corrections.length,
+      errorsByCategory: corrections.reduce((acc, c) => {
+        acc[c.category] = (acc[c.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      overallFeedback: `Comprehensive analysis completed with ${corrections.length} specific improvements identified for enhanced academic writing quality.`
+    }
   };
 }
 
+// Main server handler
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -475,28 +515,34 @@ serve(async (req) => {
     }
 
     // Generate new analysis with guaranteed corrections
-    const analysisResult = await generateGuaranteedCorrections(userSubmission, questionPrompt);
+    const result = await generateGuaranteedCorrections(userSubmission, questionPrompt);
 
-    // Cache the result for future use
-    await cacheAnalysis(contentHash, userSubmission, questionPrompt, analysisResult);
+    // Cache the result
+    await cacheAnalysis(contentHash, userSubmission, questionPrompt, result);
 
     console.log('✅ Writing correction analysis completed:', {
-      originalSpans: analysisResult.original_spans.length,
-      correctedSpans: analysisResult.corrected_spans.length,
-      corrections: analysisResult.corrections.length,
-      errorSpans: analysisResult.original_spans.filter(s => s.status === 'error').length,
-      improvementSpans: analysisResult.corrected_spans.filter(s => s.status === 'improvement').length
+      originalSpans: result.originalSpans.length,
+      correctedSpans: result.correctedSpans.length,
+      corrections: result.corrections.length,
+      errorSpans: result.originalSpans.filter(s => s.status === 'error').length,
+      improvementSpans: result.correctedSpans.filter(s => s.status === 'improvement').length
     });
 
-    return new Response(JSON.stringify(analysisResult), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('❌ analyze-writing-correction error:', error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('❌ Error in writing correction analysis:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'Internal server error',
+        details: 'Failed to analyze writing submission'
+      }), 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });

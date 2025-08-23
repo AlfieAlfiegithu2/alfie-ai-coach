@@ -139,22 +139,20 @@ export default function IELTSWritingProResults() {
   const [t2Error, setT2Error] = useState<string | null>(null);
   const [t1CorrData, setT1CorrData] = useState<{
     original_spans: Span[];
-    corrected_spans: Span[];
-    corrections: EnhancedCorrection[];
+    enhanced_spans: Span[];
+    suggestions: EnhancedCorrection[];
     summary: {
-      totalCorrections: number;
-      byCategory: Record<string, number>;
-      bySeverity: Record<string, number>;
+      totalSuggestions: number;
+      suggestionsByCategory: Record<string, number>;
     };
   } | null>(null);
   const [t2CorrData, setT2CorrData] = useState<{
     original_spans: Span[];
-    corrected_spans: Span[];
-    corrections: EnhancedCorrection[];
+    enhanced_spans: Span[];
+    suggestions: EnhancedCorrection[];
     summary: {
-      totalCorrections: number;
-      byCategory: Record<string, number>;
-      bySeverity: Record<string, number>;
+      totalSuggestions: number;
+      suggestionsByCategory: Record<string, number>;
     };
   } | null>(null);
   const [t1SentenceView, setT1SentenceView] = useState(false);
@@ -421,7 +419,7 @@ export default function IELTSWritingProResults() {
         
         if (existingData && typeof existingData === 'object' && 
             Array.isArray((existingData as any).original_spans) && 
-            Array.isArray((existingData as any).corrected_spans)) {
+            Array.isArray((existingData as any).enhanced_spans)) {
           console.log('✅ Found existing Task 1 correction data in database');
           const typedData = existingData as any;
     // Add debugging for correction data
@@ -436,12 +434,11 @@ export default function IELTSWritingProResults() {
     
     setT1CorrData({
             original_spans: typedData.original_spans,
-            corrected_spans: typedData.corrected_spans,
-            corrections: typedData.corrections || [],
+            enhanced_spans: typedData.enhanced_spans || typedData.corrected_spans, // Fallback for old data
+            suggestions: typedData.suggestions || typedData.corrections || [],
             summary: typedData.summary || {
-              totalCorrections: 0,
-              byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-              bySeverity: { minor: 0, moderate: 0, major: 0 }
+              totalSuggestions: 0,
+              suggestionsByCategory: { vocabulary: 0, style: 0, clarity: 0, academic_tone: 0 }
             }
           });
           setT1Loading(false);
@@ -468,15 +465,14 @@ export default function IELTSWritingProResults() {
               correctionsCount: data?.corrections?.length || 0
             });
             
-            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+            if (data && Array.isArray(data.originalSpans) && Array.isArray(data.enhancedSpans)) {
               setT1CorrData({
-                original_spans: data.original_spans,
-                corrected_spans: data.corrected_spans,
-                corrections: data.corrections || [],
+                original_spans: data.originalSpans,
+                enhanced_spans: data.enhancedSpans,
+                suggestions: data.suggestions || [],
                 summary: data.summary || {
-                  totalCorrections: 0,
-                  byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-                  bySeverity: { minor: 0, moderate: 0, major: 0 }
+                  totalSuggestions: 0,
+                  suggestionsByCategory: { vocabulary: 0, style: 0, clarity: 0, academic_tone: 0 }
                 }
               });
             } else {
@@ -496,17 +492,16 @@ export default function IELTSWritingProResults() {
         
         if (existingData && typeof existingData === 'object' && 
             Array.isArray((existingData as any).original_spans) && 
-            Array.isArray((existingData as any).corrected_spans)) {
+            Array.isArray((existingData as any).enhanced_spans)) {
           console.log('✅ Found existing Task 2 correction data in database');
           const typedData = existingData as any;
           setT2CorrData({
             original_spans: typedData.original_spans,
-            corrected_spans: typedData.corrected_spans,
-            corrections: typedData.corrections || [],
+            enhanced_spans: typedData.enhanced_spans || typedData.corrected_spans, // Fallback for old data
+            suggestions: typedData.suggestions || typedData.corrections || [],
             summary: typedData.summary || {
-              totalCorrections: 0,
-              byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-              bySeverity: { minor: 0, moderate: 0, major: 0 }
+              totalSuggestions: 0,
+              suggestionsByCategory: { vocabulary: 0, style: 0, clarity: 0, academic_tone: 0 }
             }
           });
           setT2Loading(false);
@@ -533,25 +528,14 @@ export default function IELTSWritingProResults() {
               correctionsCount: data?.corrections?.length || 0
             });
             
-            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
-    // Add debugging for Task 2 correction data
-    console.log('🔍 Task 2 correction data loaded:', {
-      hasData: !!data,
-      originalSpansCount: data?.original_spans?.length || 0,
-      correctedSpansCount: data?.corrected_spans?.length || 0,
-      errorSpansCount: data?.original_spans?.filter(s => s.status === 'error')?.length || 0,
-      improvementSpansCount: data?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
-      correctionsCount: data?.corrections?.length || 0
-    });
-    
+            if (data && Array.isArray(data.originalSpans) && Array.isArray(data.enhancedSpans)) {
     setT2CorrData({
-                original_spans: data.original_spans,
-                corrected_spans: data.corrected_spans,
-                corrections: data.corrections || [],
+                original_spans: data.originalSpans,
+                enhanced_spans: data.enhancedSpans,
+                suggestions: data.suggestions || [],
                 summary: data.summary || {
-                  totalCorrections: 0,
-                  byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
-                  bySeverity: { minor: 0, moderate: 0, major: 0 }
+                  totalSuggestions: 0,
+                  suggestionsByCategory: { vocabulary: 0, style: 0, clarity: 0, academic_tone: 0 }
                 }
               });
             } else {
@@ -645,12 +629,12 @@ const overallBand = denom > 0
   : 0;
 const overallMeta = bandToDesc(overallBand);
 const t1Counts = {
-  errors: t1CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
-  improvements: t1CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
+  suggestions: t1CorrData?.original_spans.filter(s => s.status === 'suggestion').length ?? 0,
+  enhancements: t1CorrData?.enhanced_spans.filter(s => s.status === 'enhancement').length ?? 0
 };
 const t2Counts = {
-  errors: t2CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
-  improvements: t2CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
+  suggestions: t2CorrData?.original_spans.filter(s => s.status === 'suggestion').length ?? 0,
+  enhancements: t2CorrData?.enhanced_spans.filter(s => s.status === 'enhancement').length ?? 0
 };
 const TaskSection = ({
     title,
@@ -901,11 +885,11 @@ const TaskSection = ({
                         size="sm" 
                         className="rounded-xl" 
                         onClick={() => {
-                          if (!t1CorrData?.corrected_spans) return;
-                          const txt = t1CorrData.corrected_spans.map(s => s.text).join("");
+                          if (!t1CorrData?.enhanced_spans) return;
+                          const txt = t1CorrData.enhanced_spans.map(s => s.text).join("");
                           navigator.clipboard.writeText(txt);
                           toast({
-                            title: "Copied corrected text",
+                            title: "Copied enhanced text",
                             description: "The improved version is in your clipboard."
                           });
                         }}
@@ -922,10 +906,10 @@ const TaskSection = ({
                       {t1CorrData && (
                         <>
                           {t1ViewMode === 'highlights' && (
-                            <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                            <CorrectionVisualizer originalSpans={t1CorrData.original_spans} enhancedSpans={t1CorrData.enhanced_spans} />
                           )}
                           {t1ViewMode === 'sentence' && (
-                            <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                            <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.enhanced_spans} />
                           )}
                         </>
                       )}
@@ -980,11 +964,11 @@ const TaskSection = ({
                         size="sm" 
                         className="rounded-xl" 
                         onClick={() => {
-                          if (!t2CorrData?.corrected_spans) return;
-                          const txt = t2CorrData.corrected_spans.map(s => s.text).join("");
+                          if (!t2CorrData?.enhanced_spans) return;
+                          const txt = t2CorrData.enhanced_spans.map(s => s.text).join("");
                           navigator.clipboard.writeText(txt);
                           toast({
-                            title: "Copied corrected text",
+                            title: "Copied enhanced text",
                             description: "The improved version is in your clipboard."
                           });
                         }}
@@ -1001,10 +985,10 @@ const TaskSection = ({
                     {t2CorrData && (
                       <>
                         {t2ViewMode === 'highlights' && (
-                          <CorrectionVisualizer originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                          <CorrectionVisualizer originalSpans={t2CorrData.original_spans} enhancedSpans={t2CorrData.enhanced_spans} />
                         )}
                         {t2ViewMode === 'sentence' && (
-                          <SentenceCompare originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                          <SentenceCompare originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.enhanced_spans} />
                         )}
                       </>
                     )}

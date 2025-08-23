@@ -22,7 +22,6 @@ interface CorrectionResponse {
   summary: {
     total_corrections: number;
     error_types: string[];
-    improvement_areas: string[];
   };
 }
 
@@ -97,8 +96,7 @@ Return your analysis as a JSON object with this EXACT structure:
   ],
   "summary": {
     "total_corrections": number,
-    "error_types": ["grammar", "vocabulary", "clarity", etc.],
-    "improvement_areas": ["description of major improvements"]
+    "error_types": ["grammar", "vocabulary", "clarity", etc.]
   }
 }
 
@@ -129,8 +127,8 @@ CRITICAL REQUIREMENTS:
             content: prompt
           }
         ],
-        max_tokens: 4000,
-        temperature: 0.3,
+        max_tokens: 6000,
+        temperature: 0.2,
       }),
     });
 
@@ -180,8 +178,7 @@ CRITICAL REQUIREMENTS:
         ],
         summary: {
           total_corrections: 0,
-          error_types: [],
-          improvement_areas: ['AI analysis will be available shortly']
+          error_types: []
         }
       };
     }

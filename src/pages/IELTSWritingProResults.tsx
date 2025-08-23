@@ -596,7 +596,7 @@ export default function IELTSWritingProResults() {
         <TaskSection title="Task 1 Assessment" task={structured?.task1} type="task1" computedOverall={t1OverallComputed} />
         
         {/* Task 1 AI Correction */}
-        {task1Answer && task1Answer.trim().length > 10 && (
+        {task1Answer && task1Answer.trim().length > 50 && (
           <AIWritingCorrection
             userSubmission={task1Answer}
             taskTitle="Task 1"
@@ -607,7 +607,7 @@ export default function IELTSWritingProResults() {
         <TaskSection title="Task 2 Assessment" task={structured?.task2} type="task2" computedOverall={t2OverallComputed} />
         
         {/* Task 2 AI Correction */}
-        {task2Answer && task2Answer.trim().length > 10 && (
+        {task2Answer && task2Answer.trim().length > 50 && (
           <AIWritingCorrection
             userSubmission={task2Answer}
             taskTitle="Task 2"

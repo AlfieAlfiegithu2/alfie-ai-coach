@@ -457,8 +457,8 @@ export default function IELTSWritingProResults() {
             
             const result = await supabase.functions.invoke('analyze-writing-correction', {
               body: {
-                submission: task1Answer,
-                prompt: prompt1
+                userSubmission: task1Answer,
+                questionPrompt: prompt1
               }
             });
             
@@ -554,8 +554,8 @@ export default function IELTSWritingProResults() {
             
             const result = await supabase.functions.invoke('analyze-writing-correction', {
               body: {
-                submission: task2Answer,
-                prompt: prompt2
+                userSubmission: task2Answer,
+                questionPrompt: prompt2
               }
             });
             

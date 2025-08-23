@@ -1450,6 +1450,39 @@ export type Database = {
         }
         Relationships: []
       }
+      writing_analysis_cache: {
+        Row: {
+          access_count: number | null
+          analysis_result: Json
+          content_hash: string
+          created_at: string | null
+          id: string
+          last_accessed: string | null
+          question_prompt: string | null
+          user_submission: string
+        }
+        Insert: {
+          access_count?: number | null
+          analysis_result: Json
+          content_hash: string
+          created_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          question_prompt?: string | null
+          user_submission: string
+        }
+        Update: {
+          access_count?: number | null
+          analysis_result?: Json
+          content_hash?: string
+          created_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          question_prompt?: string | null
+          user_submission?: string
+        }
+        Relationships: []
+      }
       writing_prompts: {
         Row: {
           band_criteria: Json | null
@@ -1504,6 +1537,7 @@ export type Database = {
       writing_test_results: {
         Row: {
           band_scores: Json | null
+          correction_analysis: Json | null
           created_at: string | null
           detailed_feedback: string | null
           id: string
@@ -1518,6 +1552,7 @@ export type Database = {
         }
         Insert: {
           band_scores?: Json | null
+          correction_analysis?: Json | null
           created_at?: string | null
           detailed_feedback?: string | null
           id?: string
@@ -1532,6 +1567,7 @@ export type Database = {
         }
         Update: {
           band_scores?: Json | null
+          correction_analysis?: Json | null
           created_at?: string | null
           detailed_feedback?: string | null
           id?: string
@@ -1581,6 +1617,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_writing_analysis_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

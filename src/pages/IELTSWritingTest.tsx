@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
 import { Bot, BookOpen, ListTree, Clock, FileText, PenTool } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
-import CatLoadingAnimation from "@/components/animations/CatLoadingAnimation";
+import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 
 interface Task {
   id: string;
@@ -309,19 +309,40 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
     setIsSubmitting(true);
     try {
-      // Use the new AI Examiner for comprehensive assessment
-      const examinerResponse = await supabase.functions.invoke('ielts-writing-examiner', {
-        body: {
-          task1Answer,
-          task2Answer,
-          task1Data: task1,
-          task2Data: task2
-        }
-      });
+      // Run both AI assessments in parallel for better performance
+      const [examinerResponse, task1CorrectionResponse, task2CorrectionResponse] = await Promise.all([
+        // AI Examiner for comprehensive assessment
+        supabase.functions.invoke('ielts-writing-examiner', {
+          body: {
+            task1Answer,
+            task2Answer,
+            task1Data: task1,
+            task2Data: task2
+          }
+        }),
+        // Task 1 detailed corrections analysis
+        supabase.functions.invoke('analyze-writing-correction', {
+          body: {
+            userSubmission: task1Answer,
+            questionPrompt: task1?.instructions || task1?.title || ''
+          }
+        }),
+        // Task 2 detailed corrections analysis
+        supabase.functions.invoke('analyze-writing-correction', {
+          body: {
+            userSubmission: task2Answer,
+            questionPrompt: task2?.instructions || task2?.title || ''
+          }
+        })
+      ]);
 
       if (examinerResponse.error) throw examinerResponse.error;
 
       const { structured, feedback, task1WordCount, task2WordCount } = examinerResponse.data;
+
+      // Extract correction data (handle potential errors gracefully)
+      const task1CorrectionData = task1CorrectionResponse.error ? null : task1CorrectionResponse.data;
+      const task2CorrectionData = task2CorrectionResponse.error ? null : task2CorrectionResponse.data;
 
       // Save main test result
       const { data: testResult, error: testError } = await supabase
@@ -356,7 +377,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
       if (testError) throw testError;
 
-      // Save Task 1 results
+      // Save Task 1 results with correction analysis
       const { error: task1Error } = await supabase
         .from('writing_test_results')
         .insert({
@@ -368,12 +389,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           word_count: task1WordCount,
           band_scores: structured?.task1?.criteria || null,
           detailed_feedback: structured?.task1?.feedback_markdown || '',
-          improvement_suggestions: structured?.task1?.feedback?.improvements || []
+          improvement_suggestions: structured?.task1?.feedback?.improvements || [],
+          correction_analysis: task1CorrectionData
         });
 
       if (task1Error) throw task1Error;
 
-      // Save Task 2 results  
+      // Save Task 2 results with correction analysis
       const { error: task2Error } = await supabase
         .from('writing_test_results')
         .insert({
@@ -385,7 +407,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           word_count: task2WordCount,
           band_scores: structured?.task2?.criteria || null,
           detailed_feedback: structured?.task2?.feedback_markdown || '',
-          improvement_suggestions: structured?.task2?.feedback?.improvements || []
+          improvement_suggestions: structured?.task2?.feedback?.improvements || [],
+          correction_analysis: task2CorrectionData
         });
 
       if (task2Error) throw task2Error;
@@ -694,11 +717,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {isSubmitting && (
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="bg-card p-8 rounded-3xl shadow-xl border border-border">
-              <CatLoadingAnimation 
-                size="lg" 
+               <DotLottieLoadingAnimation 
                 message="Analyzing your writing with AI examiner..."
-                className="text-center"
-              />
+                subMessage="Please wait while we evaluate your IELTS writing"
+                size={200}
+               />
             </div>
           </div>
         )}

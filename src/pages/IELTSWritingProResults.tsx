@@ -379,6 +379,25 @@ export default function IELTSWritingProResults() {
     }
   };
 
+  // Function to save correction analysis to database for caching
+  const saveCorrectionAnalysis = async (submissionId: string, taskNumber: number, analysisData: any) => {
+    try {
+      const { error } = await supabase
+        .from('writing_test_results')
+        .update({ correction_analysis: analysisData })
+        .eq('test_result_id', submissionId)
+        .eq('task_number', taskNumber);
+
+      if (error) {
+        console.error('Error saving correction analysis:', error);
+      } else {
+        console.log('✅ Correction analysis saved to database');
+      }
+    } catch (error) {
+      console.error('Error in saveCorrectionAnalysis:', error);
+    }
+  };
+
   useEffect(() => {
     const run = async () => {
       const tasks: Promise<any>[] = [];

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ScoreSpiderChart from "@/components/ScoreSpiderChart";
+import AIWritingCorrection from "@/components/AIWritingCorrection";
 
 interface Criterion {
   band: number;
@@ -593,9 +594,25 @@ export default function IELTSWritingProResults() {
 
         {/* Task 1 Section */}
         <TaskSection title="Task 1 Assessment" task={structured?.task1} type="task1" computedOverall={t1OverallComputed} />
+        
+        {/* Task 1 AI Correction */}
+        {task1Answer && task1Answer.trim().length > 10 && (
+          <AIWritingCorrection
+            userSubmission={task1Answer}
+            taskTitle="Task 1"
+          />
+        )}
 
         {/* Task 2 Section */}
         <TaskSection title="Task 2 Assessment" task={structured?.task2} type="task2" computedOverall={t2OverallComputed} />
+        
+        {/* Task 2 AI Correction */}
+        {task2Answer && task2Answer.trim().length > 10 && (
+          <AIWritingCorrection
+            userSubmission={task2Answer}
+            taskTitle="Task 2"
+          />
+        )}
 
         <div className="flex justify-center gap-4">
           <Button onClick={() => navigate("/ielts-portal")} className="btn-primary rounded-xl">Take Another Test</Button>

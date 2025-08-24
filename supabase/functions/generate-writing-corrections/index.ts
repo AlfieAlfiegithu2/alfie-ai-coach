@@ -26,7 +26,6 @@ interface CorrectionResponse {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -46,7 +45,6 @@ serve(async (req) => {
 
     const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!deepSeekApiKey) {
-      console.error('❌ DEEPSEEK_API_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'AI service not configured' }),
         { 
@@ -56,63 +54,40 @@ serve(async (req) => {
       );
     }
 
-    console.log('🎯 Starting correction analysis for submission length:', userSubmission.length);
+    console.log('🎯 Starting simple correction analysis for submission:', userSubmission.substring(0, 100));
 
-    const prompt = `You are an expert IELTS examiner and writing coach. Analyze the student's writing and create a high-quality improved version that would score Band 9.
+    // Simple prompt focusing on quick corrections
+    const prompt = `Analyze this IELTS writing and provide corrections in JSON format:
 
-TASK: For the given text, provide:
-1. Word-level analysis of the original text, marking errors
-2. An improved version with corrections and enhancements
-3. Sentence-by-sentence comparison
-4. Summary of improvements
+TEXT: ${userSubmission}
 
-STUDENT'S WRITING:
-${userSubmission}
-
-INSTRUCTIONS:
-1. Break down the original text into SHORT spans (1-3 words each) for better processing
-2. Mark each span as "neutral", "error" if it contains mistakes
-3. Create an improved version with sophisticated vocabulary, better grammar, and enhanced clarity
-4. Mark improvements in the corrected version as "improvement"
-5. Provide sentence-by-sentence pairs for detailed comparison
-6. CRITICAL: Keep spans short to avoid exceeding token limits
-
-Return your analysis as a JSON object with this EXACT structure:
+Provide ONLY a valid JSON response with this structure:
 {
-  "original_spans": [
-    {"text": "word or phrase", "status": "neutral|error"},
-    ...
-  ],
-  "corrected_spans": [
-    {"text": "improved word or phrase", "status": "neutral|improvement"},
-    ...
-  ],
+  "original_spans": [{"text": "word ", "status": "neutral"}],
+  "corrected_spans": [{"text": "word ", "status": "neutral"}], 
   "sentence_pairs": [
     {
       "original": "original sentence",
-      "corrected": "improved sentence", 
-      "changes_made": ["description of changes"]
-    },
-    ...
+      "corrected": "improved sentence",
+      "changes_made": ["brief change description"]
+    }
   ],
   "summary": {
-    "total_corrections": number,
-    "error_types": ["grammar", "vocabulary", "clarity", etc.]
+    "total_corrections": 3,
+    "error_types": ["grammar", "vocabulary"]
   }
 }
 
-CRITICAL REQUIREMENTS:
-- Maintain the original meaning and content
-- Focus on IELTS band 9 criteria: Task Achievement, Coherence & Cohesion, Lexical Resource, Grammar
-- Be thorough but not overly critical
-- Ensure JSON is valid and parseable
-- Mark substantial improvements, not just corrections`;
+Rules:
+- Keep spans simple (1-2 words max)
+- Mark errors as "error", improvements as "improvement", rest as "neutral"
+- Focus on major grammar/vocabulary issues only
+- Keep it concise and fast`;
 
     console.log('🚀 Making DeepSeek API call...');
 
-    // Add timeout handling
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
@@ -125,15 +100,15 @@ CRITICAL REQUIREMENTS:
         messages: [
           {
             role: 'system',
-            content: 'You are an expert IELTS examiner. Provide detailed writing corrections in the exact JSON format requested. Always return valid JSON. Keep text spans short and focused - ideally 1-3 words per span to avoid token limits.'
+            content: 'You are an IELTS examiner. Return only valid JSON. Be quick and concise.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 8000,
-        temperature: 0.1,
+        max_tokens: 2000,
+        temperature: 0.2,
       }),
       signal: controller.signal,
     });
@@ -141,24 +116,20 @@ CRITICAL REQUIREMENTS:
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error('❌ DeepSeek API error:', response.status, response.statusText);
+      console.error('❌ DeepSeek API error:', response.status);
       throw new Error(`DeepSeek API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('✅ DeepSeek API response received');
+    console.log('✅ DeepSeek response received');
 
     if (!data.choices || data.choices.length === 0) {
       throw new Error('No response from AI');
     }
 
-    let content = data.choices[0].message.content;
-    console.log('🔍 Raw AI response length:', content.length);
-
-    // Clean and parse JSON
-    content = content.trim();
+    let content = data.choices[0].message.content.trim();
     
-    // Remove markdown code blocks if present
+    // Clean JSON
     if (content.startsWith('```json')) {
       content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     } else if (content.startsWith('```')) {
@@ -169,10 +140,9 @@ CRITICAL REQUIREMENTS:
     try {
       correctionData = JSON.parse(content);
     } catch (parseError) {
-      console.error('❌ Failed to parse AI response as JSON:', parseError);
-      console.log('🔍 Content that failed to parse:', content.substring(0, 500));
+      console.error('❌ Parse error, using fallback');
       
-      // Fallback: create a basic correction structure
+      // Simple fallback
       const words = userSubmission.split(/\s+/);
       correctionData = {
         original_spans: words.map(word => ({ text: word + ' ', status: 'neutral' as const })),
@@ -181,7 +151,7 @@ CRITICAL REQUIREMENTS:
           {
             original: userSubmission,
             corrected: userSubmission,
-            changes_made: ['AI analysis temporarily unavailable']
+            changes_made: ['Analysis temporarily unavailable']
           }
         ],
         summary: {
@@ -191,17 +161,12 @@ CRITICAL REQUIREMENTS:
       };
     }
 
-    // Validate the structure
+    // Ensure structure exists
     if (!correctionData.original_spans || !correctionData.corrected_spans) {
-      throw new Error('Invalid correction data structure');
+      throw new Error('Invalid correction structure');
     }
 
-    console.log('✅ Correction analysis completed:', {
-      original_spans: correctionData.original_spans.length,
-      corrected_spans: correctionData.corrected_spans.length,
-      sentence_pairs: correctionData.sentence_pairs?.length || 0,
-      total_corrections: correctionData.summary?.total_corrections || 0
-    });
+    console.log('✅ Analysis completed successfully');
 
     return new Response(
       JSON.stringify(correctionData),
@@ -211,7 +176,7 @@ CRITICAL REQUIREMENTS:
     );
 
   } catch (error) {
-    console.error('❌ Error in generate-writing-corrections:', error);
+    console.error('❌ Error:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to generate corrections',

@@ -58,61 +58,25 @@ serve(async (req) => {
 
     console.log('🎯 Starting correction analysis for submission length:', userSubmission.length);
 
-    const prompt = `You are an expert IELTS examiner and writing coach. Analyze the student's writing and create a high-quality improved version that would score Band 9.
+    const prompt = `Analyze this IELTS writing and provide corrections in JSON format:
 
-TASK: For the given text, provide:
-1. Word-level analysis of the original text, marking errors
-2. An improved version with corrections and enhancements
-3. Sentence-by-sentence comparison
-4. Summary of improvements
+"${userSubmission}"
 
-STUDENT'S WRITING:
-${userSubmission}
-
-INSTRUCTIONS:
-1. Break down the original text into SHORT spans (1-3 words each) for better processing
-2. Mark each span as "neutral", "error" if it contains mistakes
-3. Create an improved version with sophisticated vocabulary, better grammar, and enhanced clarity
-4. Mark improvements in the corrected version as "improvement"
-5. Provide sentence-by-sentence pairs for detailed comparison
-6. CRITICAL: Keep spans short to avoid exceeding token limits
-
-Return your analysis as a JSON object with this EXACT structure:
+Provide ONLY valid JSON in this format:
 {
-  "original_spans": [
-    {"text": "word or phrase", "status": "neutral|error"},
-    ...
-  ],
-  "corrected_spans": [
-    {"text": "improved word or phrase", "status": "neutral|improvement"},
-    ...
-  ],
-  "sentence_pairs": [
-    {
-      "original": "original sentence",
-      "corrected": "improved sentence", 
-      "changes_made": ["description of changes"]
-    },
-    ...
-  ],
-  "summary": {
-    "total_corrections": number,
-    "error_types": ["grammar", "vocabulary", "clarity", etc.]
-  }
+  "original_spans": [{"text": "word ", "status": "neutral"}, {"text": "error ", "status": "error"}],
+  "corrected_spans": [{"text": "word ", "status": "neutral"}, {"text": "improvement ", "status": "improvement"}],
+  "sentence_pairs": [{"original": "sentence", "corrected": "better sentence", "changes_made": ["fix"]}],
+  "summary": {"total_corrections": 3, "error_types": ["grammar"]}
 }
 
-CRITICAL REQUIREMENTS:
-- Maintain the original meaning and content
-- Focus on IELTS band 9 criteria: Task Achievement, Coherence & Cohesion, Lexical Resource, Grammar
-- Be thorough but not overly critical
-- Ensure JSON is valid and parseable
-- Mark substantial improvements, not just corrections`;
+Rules: Keep spans 1-2 words max. Mark errors and improvements only. Be concise.`;
 
     console.log('🚀 Making DeepSeek API call...');
 
     // Add timeout handling
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
 
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
@@ -132,8 +96,8 @@ CRITICAL REQUIREMENTS:
             content: prompt
           }
         ],
-        max_tokens: 8000,
-        temperature: 0.1,
+        max_tokens: 4000,
+        temperature: 0.0,
       }),
       signal: controller.signal,
     });

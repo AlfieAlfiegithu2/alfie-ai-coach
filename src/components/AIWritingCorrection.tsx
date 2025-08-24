@@ -83,9 +83,9 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
       let statusClasses = "";
       
       if (span.status === "error") {
-        statusClasses = "bg-destructive/10 text-destructive border-b-2 border-destructive/50";
+        statusClasses = "bg-red-100 text-red-800 border-b-2 border-red-300 dark:bg-red-900/20 dark:text-red-200 dark:border-red-600";
       } else if (span.status === "improvement") {
-        statusClasses = "bg-brand-green/10 text-brand-green border-b-2 border-brand-green/50";
+        statusClasses = "bg-green-100 text-green-800 border-b-2 border-green-300 dark:bg-green-900/20 dark:text-green-200 dark:border-green-600";
       }
 
       return (
@@ -99,10 +99,10 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
   const renderFullTextView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Original Text */}
-      <Card className="border-2 border-destructive/30">
-        <CardHeader className="bg-destructive/5 pb-3">
+      <Card className="border-2 border-red-200 dark:border-red-800">
+        <CardHeader className="bg-red-50 dark:bg-red-950/30 pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-destructive" />
+            <AlertTriangle className="w-5 h-5 text-red-600" />
             Your Answer (Errors highlighted)
           </CardTitle>
         </CardHeader>
@@ -114,10 +114,10 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
       </Card>
 
       {/* Corrected Text */}
-      <Card className="border-2 border-brand-green/30">
-        <CardHeader className="bg-brand-green/5 pb-3">
+      <Card className="border-2 border-green-200 dark:border-green-800">
+        <CardHeader className="bg-green-50 dark:bg-green-950/30 pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-brand-green" />
+            <CheckCircle className="w-5 h-5 text-green-600" />
             Improved Version (Enhancements highlighted)
           </CardTitle>
         </CardHeader>
@@ -133,17 +133,17 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
   const renderSentenceView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Original Text Column */}
-      <Card className="border-2 border-destructive/30">
-        <CardHeader className="bg-destructive/5 pb-3">
+      <Card className="border-2 border-red-200 dark:border-red-800">
+        <CardHeader className="bg-red-50 dark:bg-red-950/30 pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-destructive" />
+            <AlertTriangle className="w-5 h-5 text-red-600" />
             Your Answer (Sentence by Sentence)
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {correctionData?.sentence_pairs?.map((pair, index) => (
-            <div key={index} className="p-3 bg-destructive/5 rounded-lg border border-destructive/20">
-              <div className="text-xs font-medium text-destructive mb-1">Sentence {index + 1}</div>
+            <div key={index} className="p-3 bg-red-50/50 dark:bg-red-950/10 rounded-lg border border-red-200/50 dark:border-red-800/50">
+              <div className="text-xs font-medium text-red-600 mb-1">Sentence {index + 1}</div>
               <p className="text-sm leading-relaxed">{pair.original}</p>
             </div>
           ))}
@@ -151,23 +151,23 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
       </Card>
 
       {/* Corrected Text Column */}
-      <Card className="border-2 border-brand-green/30">
-        <CardHeader className="bg-brand-green/5 pb-3">
+      <Card className="border-2 border-green-200 dark:border-green-800">
+        <CardHeader className="bg-green-50 dark:bg-green-950/30 pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-brand-green" />
+            <CheckCircle className="w-5 h-5 text-green-600" />
             Improved Version (Sentence by Sentence)
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {correctionData?.sentence_pairs?.map((pair, index) => (
             <div key={index} className="space-y-2">
-              <div className="p-3 bg-brand-green/5 rounded-lg border border-brand-green/20">
-                <div className="text-xs font-medium text-brand-green mb-1">Sentence {index + 1}</div>
+              <div className="p-3 bg-green-50/50 dark:bg-green-950/10 rounded-lg border border-green-200/50 dark:border-green-800/50">
+                <div className="text-xs font-medium text-green-600 mb-1">Sentence {index + 1}</div>
                 <p className="text-sm leading-relaxed">{pair.corrected}</p>
               </div>
               {pair.changes_made && pair.changes_made.length > 0 && (
                 <div className="text-xs">
-                  <span className="font-medium text-brand-blue">Changes: </span>
+                  <span className="font-medium text-blue-600">Changes: </span>
                   {pair.changes_made.join(', ')}
                 </div>
               )}
@@ -190,8 +190,8 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
         <CardContent>
           <div className="flex items-center justify-center py-12">
             <div className="text-center space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-blue" />
-              <p className="text-sm text-text-secondary">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+              <p className="text-sm text-muted-foreground">
                 Analyzing your writing and generating improvements...
               </p>
             </div>
@@ -228,10 +228,10 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
       <Card className="mt-6">
         <CardContent className="pt-6">
           <div className="text-center py-8 space-y-4">
-            <CheckCircle className="w-12 h-12 mx-auto text-brand-blue" />
+            <CheckCircle className="w-12 h-12 mx-auto text-blue-600" />
             <div>
               <p className="font-medium">AI Writing Corrections Available</p>
-              <p className="text-sm text-text-secondary mt-1">Get detailed corrections and improvements for your {taskTitle}</p>
+              <p className="text-sm text-muted-foreground mt-1">Get detailed corrections and improvements for your {taskTitle}</p>
             </div>
             <Button onClick={generateCorrections} className="mt-4">
               Generate AI Corrections
@@ -251,7 +251,7 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-brand-blue" />
+            <CheckCircle className="w-5 h-5 text-blue-600" />
             AI Correction Analysis for {taskTitle}
           </CardTitle>
           
@@ -281,11 +281,11 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
         {/* Summary Stats */}
         {correctionData.summary && (
           <div className="flex flex-wrap gap-2 mt-3">
-            <Badge variant="outline" className="bg-brand-blue/10 text-brand-blue border-brand-blue/30">
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20">
               {correctionData.summary.total_corrections} corrections made
             </Badge>
             {correctionData.summary.error_types?.map((type, index) => (
-              <Badge key={index} variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+              <Badge key={index} variant="outline" className="bg-red-50 dark:bg-red-950/20">
                 {type}
               </Badge>
             ))}

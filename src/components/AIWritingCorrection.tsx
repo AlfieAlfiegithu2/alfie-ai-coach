@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, CheckCircle, Eye, List, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface CorrectionSpan {
   text: string;
@@ -42,23 +43,34 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"full" | "sentences">("full");
   const [hasGenerated, setHasGenerated] = useState(false);
+  const { toast } = useToast();
 
   const generateCorrections = async () => {
+    if (!userSubmission?.trim()) {
+      toast({
+        title: "Error",
+        description: "No text to analyze",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setHasGenerated(true);
     
     try {
-      console.log('🎯 Generating corrections for:', taskTitle);
+      console.log('🎯 Starting AI correction analysis...');
       
       const { data, error: functionError } = await supabase.functions.invoke(
         'generate-writing-corrections',
         {
-          body: { userSubmission },
+          body: { userSubmission: userSubmission.trim() },
         }
       );
 
       if (functionError) {
+        console.error('Function error:', functionError);
         throw new Error(functionError.message || 'Failed to generate corrections');
       }
 
@@ -66,12 +78,23 @@ const AIWritingCorrection: React.FC<AIWritingCorrectionProps> = ({
         throw new Error('No correction data received');
       }
 
-      console.log('✅ Corrections generated successfully:', data);
+      console.log('✅ Corrections received:', data);
       setCorrectionData(data);
       onGenerate?.();
+      
+      toast({
+        title: "Success",
+        description: "AI corrections generated successfully",
+      });
     } catch (err: any) {
       console.error('❌ Error generating corrections:', err);
-      setError(err.message || 'Failed to generate corrections');
+      const errorMessage = err.message || 'Failed to generate corrections';
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

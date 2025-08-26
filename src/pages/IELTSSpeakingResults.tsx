@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles, RotateCcw } from "lucide-react";
+import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles, RotateCcw, BarChart3 } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
 import { ElevenLabsVoiceOptimized } from "@/components/ElevenLabsVoiceOptimized";
+import SpeechAnalysisChart from "@/components/SpeechAnalysisChart";
+import DeepSeekSuggestionGenerator from "@/components/DeepSeekSuggestionGenerator";
 
 interface QuestionAnalysis {
   part: string;
@@ -20,6 +22,15 @@ interface QuestionAnalysis {
   transcription: string;
   audio_url: string;
   feedback: string;
+  audioFeatures?: {
+    confidence: number;
+    audioInsights: {
+      speakingRate: number;
+      pauseCount: number;
+      totalPauseDuration: number;
+      averageConfidence: number;
+    };
+  };
 }
 
 interface AISuggestion {
@@ -695,36 +706,35 @@ const IELTSSpeakingResults = () => {
                     </span>
                   </div>
 
-                  {/* AI Suggested Better Answer - directly under audio response */}
-                  {(() => {
-                    const questionKey = `${analysis.part}_${analysis.questionIndex}`;
-                    const suggestion = aiSuggestions[questionKey];
-                    if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
-                      return (
-                        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-                          <h4 className="font-medium mb-3 flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4" />
-                            AI Suggested Better Answer:
-                          </h4>
-                          <SuggestionVisualizer
-                            originalSpans={suggestion.original_spans}
-                            suggestedSpans={suggestion.suggested_spans}
-                            dimNeutral={false}
-                            hideOriginal={false}
-                          />
-                          <div className="mt-3 flex justify-end">
-                            <ElevenLabsVoiceOptimized 
-                              text={suggestion.suggested_spans?.map(span => span?.text || '').filter(Boolean).join('') || ''}
-                              className="text-xs"
-                              questionId={`suggestion_${analysis.part}_${analysis.questionIndex}`}
-                            />
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                  {/* DeepSeek AI Suggestion Generator */}
+                  <div className="mt-4">
+                    <DeepSeekSuggestionGenerator
+                      questionText={analysis.questionText}
+                      userTranscription={analysis.transcription}
+                      part={analysis.part}
+                      questionIndex={analysis.questionIndex}
+                      audioFeatures={analysis.audioFeatures}
+                      onSuggestionGenerated={(originalSpans, suggestedSpans) => {
+                        const questionKey = `${analysis.part}_${analysis.questionIndex}`;
+                        setAiSuggestions(prev => ({
+                          ...prev,
+                          [questionKey]: { original_spans: originalSpans, suggested_spans: suggestedSpans }
+                        }));
+                      }}
+                    />
+                  </div>
                 </div>
+
+                {/* Speech Analysis Visualization */}
+                {analysis.audioFeatures && (
+                  <div className="mt-4">
+                    <SpeechAnalysisChart
+                      audioFeatures={analysis.audioFeatures}
+                      transcription={analysis.transcription}
+                      part={analysis.part}
+                    />
+                  </div>
+                )}
 
                 {/* Advanced AI Feedback */}
                 <div>

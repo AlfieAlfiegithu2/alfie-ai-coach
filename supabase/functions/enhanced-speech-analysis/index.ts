@@ -129,6 +129,153 @@ async function transcribeWithAdvancedAssemblyAI(audioBase64: string): Promise<{
   };
 }
 
+// Handle DeepSeek-specific suggestion generation
+async function handleDeepSeekSuggestion(req: Request, deepseekApiKey: string) {
+  const { questionText, userTranscription, part, questionIndex, audioFeatures } = await req.json();
+  
+  console.log('🤖 Generating DeepSeek suggestion for:', { part, questionIndex });
+  
+  if (!userTranscription?.trim()) {
+    throw new Error('No transcription provided for suggestion generation');
+  }
+
+  // Enhanced prompt for DeepSeek to create better suggestions
+  const prompt = `You are an expert IELTS examiner providing enhanced responses for speaking practice.
+
+QUESTION: "${questionText}"
+
+STUDENT'S ORIGINAL RESPONSE: "${userTranscription}"
+
+${audioFeatures ? `
+AUDIO ANALYSIS:
+- Speech clarity: ${Math.round(audioFeatures.confidence * 100)}%
+- Speaking rate: ${Math.round(audioFeatures.audioInsights?.speakingRate || 0)} wpm
+- Pauses detected: ${audioFeatures.audioInsights?.pauseCount || 0}
+` : ''}
+
+Your task is to create an ENHANCED version that:
+1. Maintains the core ideas from the original
+2. Uses more sophisticated vocabulary and expressions
+3. Improves grammatical structures and complexity
+4. Enhances coherence and fluency
+5. Adds relevant details and examples where appropriate
+6. Demonstrates higher-level IELTS speaking skills
+
+Return STRICT JSON format:
+{
+  "original_spans": [
+    {"text": "word or phrase from original", "status": "error"|"neutral"},
+    ...
+  ],
+  "suggested_spans": [
+    {"text": "improved word or phrase", "status": "improvement"|"neutral"},
+    ...
+  ],
+  "improvement_notes": "Brief explanation of key improvements made"
+}
+
+Rules:
+- Mark problematic areas in original_spans as "error", good parts as "neutral"
+- All suggested_spans improvements should be marked as "improvement" or "neutral"
+- Ensure the enhanced response is 20-40% longer than the original
+- Focus on IELTS band 7-8 level language and structures`;
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${deepseekApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert IELTS examiner. Always respond with valid JSON only, no additional text.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.7
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ DeepSeek API error:', errorText);
+      throw new Error(`DeepSeek API error: ${errorText}`);
+    }
+
+    const result = await response.json();
+    const content = result.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No content received from DeepSeek API');
+    }
+
+    // Parse the JSON response
+    let parsedResult;
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
+    } catch (parseError) {
+      console.error('❌ Failed to parse DeepSeek response:', content);
+      throw new Error('Invalid JSON response from DeepSeek');
+    }
+
+    // Validate the response structure
+    if (!parsedResult.original_spans || !parsedResult.suggested_spans) {
+      throw new Error('Invalid response structure from DeepSeek');
+    }
+
+    console.log('✅ DeepSeek suggestion generated successfully:', {
+      originalSpansCount: parsedResult.original_spans.length,
+      suggestedSpansCount: parsedResult.suggested_spans.length,
+      hasNotes: !!parsedResult.improvement_notes
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      original_spans: parsedResult.original_spans,
+      suggested_spans: parsedResult.suggested_spans,
+      improvement_notes: parsedResult.improvement_notes || 'Response enhanced with improved vocabulary and structure'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('❌ DeepSeek suggestion generation failed:', error);
+    
+    // Return fallback suggestion if DeepSeek fails
+    const words = userTranscription.split(/\s+/).filter(word => word.length > 0);
+    const originalSpans = words.map((word, index) => ({
+      text: index < words.length - 1 ? word + ' ' : word,
+      status: 'neutral'
+    }));
+    
+    const suggestedSpans = [
+      ...originalSpans,
+      { text: '. Additionally, I would like to elaborate that ', status: 'improvement' },
+      { text: 'this topic presents interesting perspectives ', status: 'improvement' },
+      { text: 'worth further consideration.', status: 'improvement' }
+    ];
+
+    return new Response(JSON.stringify({
+      success: true,
+      original_spans: originalSpans,
+      suggested_spans: suggestedSpans,
+      improvement_notes: 'Fallback enhancement applied due to processing error',
+      error: error.message
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -142,7 +289,12 @@ serve(async (req) => {
       throw new Error('DeepSeek API key not configured');
     }
 
-    const { allRecordings, testData, analysisType = "comprehensive" } = await req.json();
+    const { allRecordings, testData, analysisType = "comprehensive", action } = await req.json();
+    
+    // Handle DeepSeek suggestion generation specifically
+    if (action === 'generate_suggestion') {
+      return await handleDeepSeekSuggestion(req, deepseekApiKey);
+    }
     
     console.log('📊 Received data:', {
       recordingsCount: allRecordings?.length || 0,

@@ -54,33 +54,47 @@ async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
   }
 }
 
-async function callOpenAI(messages: any[], apiKey: string, preferNano = false) {
-  const model = preferNano ? 'gpt-5-nano-2025-08-07' : 'gpt-5-2025-08-07';
-  console.log(`🚀 Attempting OpenAI API call with ${model}...`);
+// Function to call OpenAI API with fallback models
+async function callOpenAI(messages: any[], apiKey: string, preferMini = false) {
+  console.log(`🚀 Attempting OpenAI API call (preferMini: ${preferMini})...`);
   
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_completion_tokens: 4000,
-      // Note: no temperature for GPT-5 models
-    }),
-  });
+  // Use stable GPT-4.1 models - Mini first for cost efficiency, then regular
+  const models = preferMini ? ['gpt-4.1-mini-2025-04-14', 'gpt-4.1-2025-04-14'] : ['gpt-4.1-2025-04-14', 'gpt-4.1-mini-2025-04-14'];
+  
+  for (const model of models) {
+    try {
+      console.log(`🔄 Trying ${model}...`);
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,
+          max_tokens: 4000,
+          temperature: 0.1,
+        }),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ OpenAI API Error:', errorText);
-    throw new Error(`OpenAI API failed: ${response.status} - ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`❌ ${model} failed:`, response.status, errorText);
+        continue;
+      }
+
+      const data = await response.json();
+      console.log(`✅ ${model} succeeded`);
+      return { data, model };
+    } catch (error) {
+      console.log(`❌ ${model} error:`, error);
+      continue;
+    }
   }
-
-  const data = await response.json();
-  console.log(`✅ OpenAI API call successful with ${model}`);
-  return data;
+  
+  throw new Error('All OpenAI models failed');
 }
 
 serve(async (req) => {
@@ -235,63 +249,68 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
       }
     ];
 
-    let data;
-    let apiUsed = 'deepseek';
+    // Try DeepSeek first (if available), then OpenAI as fallback
+    let aiResponse;
+    let modelUsed = 'unknown';
     
-    // Try DeepSeek first, then OpenAI as backup
     if (deepSeekApiKey) {
       console.log('🔄 Using DeepSeek API as primary...');
       try {
-        data = await callDeepSeek(messages, deepSeekApiKey);
-        console.log('✅ DeepSeek API call completed successfully');
+        const deepSeekResult = await callDeepSeek(messages, deepSeekApiKey);
+        aiResponse = deepSeekResult;
+        modelUsed = 'deepseek-chat';
+        console.log('✅ DeepSeek API succeeded');
       } catch (deepSeekError) {
-        console.error('❌ DeepSeek API failed:', deepSeekError.message);
+        console.log('❌ DeepSeek failed, falling back to OpenAI:', deepSeekError);
         
         if (openAIApiKey) {
-          console.log('🔄 Falling back to OpenAI GPT-5...');
           try {
-            data = await callOpenAI(messages, openAIApiKey, false);
-            apiUsed = 'openai-gpt5';
-            console.log('✅ OpenAI GPT-5 fallback succeeded');
+            const openAIResult = await callOpenAI(messages, openAIApiKey, true); // Use Mini first for cost efficiency
+            aiResponse = openAIResult.data;
+            modelUsed = openAIResult.model;
+            console.log('✅ OpenAI Mini fallback succeeded');
           } catch (openAIError) {
-            console.log('🔄 Trying OpenAI GPT-5 Nano as final fallback...');
+            console.log('❌ OpenAI Mini failed, trying OpenAI regular:', openAIError);
             try {
-              data = await callOpenAI(messages, openAIApiKey, true);
-              apiUsed = 'openai-gpt5-nano';
-              console.log('✅ OpenAI GPT-5 Nano fallback succeeded');
-            } catch (nanoError) {
-              console.error('❌ All OpenAI models failed:', nanoError.message);
-              throw new Error(`All APIs failed - DeepSeek: ${deepSeekError.message}, OpenAI GPT-5: ${openAIError.message}, GPT-5 Nano: ${nanoError.message}`);
+              const openAIRegularResult = await callOpenAI(messages, openAIApiKey, false);
+              aiResponse = openAIRegularResult.data;
+              modelUsed = openAIRegularResult.model;
+              console.log('✅ OpenAI regular fallback succeeded');
+            } catch (regularError) {
+              console.error('❌ All AI services failed:', regularError);
+              throw new Error('All AI services are currently unavailable');
             }
           }
         } else {
-          throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
+          throw new Error('OpenAI API key not configured and DeepSeek failed');
         }
       }
     } else if (openAIApiKey) {
-      console.log('🔄 Using OpenAI GPT-5 (DeepSeek not available)...');
+      console.log('🔄 Using OpenAI API as primary (DeepSeek not configured)...');
       try {
-        data = await callOpenAI(messages, openAIApiKey, false);
-        apiUsed = 'openai-gpt5';
-        console.log('✅ OpenAI GPT-5 call completed successfully');
+        const openAIResult = await callOpenAI(messages, openAIApiKey, true); // Use Mini first for cost efficiency
+        aiResponse = openAIResult.data;
+        modelUsed = openAIResult.model;
+        console.log('✅ OpenAI Mini primary succeeded');
       } catch (openAIError) {
-        console.log('🔄 Trying OpenAI GPT-5 Nano as fallback...');
+        console.log('❌ OpenAI Mini failed, trying OpenAI regular:', openAIError);
         try {
-          data = await callOpenAI(messages, openAIApiKey, true);
-          apiUsed = 'openai-gpt5-nano';
-          console.log('✅ OpenAI GPT-5 Nano completed successfully');
-        } catch (nanoError) {
-          console.error('❌ All OpenAI models failed:', nanoError.message);
-          throw new Error(`All OpenAI models failed - GPT-5: ${openAIError.message}, GPT-5 Nano: ${nanoError.message}`);
+          const openAIRegularResult = await callOpenAI(messages, openAIApiKey, false);
+          aiResponse = openAIRegularResult.data;
+          modelUsed = openAIRegularResult.model;
+          console.log('✅ OpenAI regular fallback succeeded');
+        } catch (regularError) {
+          console.error('❌ All OpenAI models failed:', regularError);
+          throw new Error('OpenAI API is currently unavailable');
         }
       }
     } else {
-      throw new Error('No API keys available');
+      throw new Error('No AI API keys configured');
     }
 
-    console.log(`✅ AI Examiner response generated using ${apiUsed.toUpperCase()}`);
+    console.log(`✅ AI Examiner response generated using ${modelUsed.toUpperCase()}`);
 
-    let content = data.choices?.[0]?.message?.content ?? '';
+    let content = aiResponse.choices?.[0]?.message?.content ?? '';
     console.log('🔍 Raw API response content length:', content.length);
     
     // Check if content is empty or too short

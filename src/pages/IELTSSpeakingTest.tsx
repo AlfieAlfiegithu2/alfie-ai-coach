@@ -513,7 +513,19 @@ const IELTSSpeakingTest = () => {
 
   const submitTest = async () => {
     try {
+      console.log('🎤 Starting test submission with recordings:', Object.keys(recordings));
       const recordingEntries = Object.entries(recordings);
+      
+      if (recordingEntries.length === 0) {
+        toast({
+          title: "No Recordings Found",
+          description: "Please record your answers before submitting the test.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log('📊 Processing recordings for parts:', recordingEntries.map(([key]) => key));
       const uploadPromises = recordingEntries.map(async ([key, blob]) => {
         const fileName = `speaking_${testData?.id}_${key}_${Date.now()}.webm`;
         const { data, error } = await supabase.storage
@@ -1014,6 +1026,34 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     )}
                     {currentPart === 3 && currentQuestion < testData.part3_prompts.length - 1 && (
                       <>Continue to Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 3 && currentQuestion === testData.part3_prompts.length - 1 && (
+                      <>Submit Test <Upload className="w-4 h-4 ml-2" /></>
+                    )}
+                  </Button>
+                </div>
+              )}
+              
+              {/* Always show Continue/Submit button if no recording yet, but different style */}
+              {!recordings[`part${currentPart}_q${currentQuestion}`] && (
+                <div className="flex space-x-3">
+                  {/* Skip button for current question if no recording */}
+                  <Button
+                    onClick={nextQuestion}
+                    variant="outline"
+                    className="rounded-xl border-orange-300 text-orange-700 hover:bg-orange-50"
+                  >
+                    {currentPart === 1 && currentQuestion < testData.part1_prompts.length - 1 && (
+                      <>Skip to Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 1 && currentQuestion === testData.part1_prompts.length - 1 && (
+                      <>Skip to Part 2 <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 2 && (
+                      <>Skip to Part 3 <ArrowRight className="w-4 h-4 ml-2" /></>
+                    )}
+                    {currentPart === 3 && currentQuestion < testData.part3_prompts.length - 1 && (
+                      <>Skip to Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
                     )}
                     {currentPart === 3 && currentQuestion === testData.part3_prompts.length - 1 && (
                       <>Submit Test <Upload className="w-4 h-4 ml-2" /></>

@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
-  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/3)...`);
+  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2)...`);
   
   try {
     const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -20,7 +20,7 @@ async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
         model: 'deepseek-chat',
         messages,
         max_tokens: 4000,
-        temperature: 0.1, // Lower temperature for more consistent JSON
+        temperature: 0.1,
         stream: false,
       }),
     });
@@ -33,68 +33,18 @@ async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
 
     const data = await response.json();
     console.log('✅ DeepSeek API call successful');
-    console.log('🔍 DeepSeek response structure:', {
-      hasChoices: !!data.choices,
-      choicesLength: data.choices?.length || 0,
-      hasContent: !!data.choices?.[0]?.message?.content,
-      contentLength: data.choices?.[0]?.message?.content?.length || 0
-    });
-    
     return data;
   } catch (error) {
     console.error(`❌ DeepSeek attempt ${retryCount + 1} failed:`, error.message);
     
-    if (retryCount < 2) {
-      console.log(`🔄 Retrying DeepSeek API call in 1 second...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying DeepSeek API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
       return callDeepSeek(messages, apiKey, retryCount + 1);
     }
     
     throw error;
   }
-}
-
-// Function to call OpenAI API with fallback models
-async function callOpenAI(messages: any[], apiKey: string, preferMini = false) {
-  console.log(`🚀 Attempting OpenAI API call (preferMini: ${preferMini})...`);
-  
-  // Use stable GPT-4.1 models - Mini first for cost efficiency, then regular
-  const models = preferMini ? ['gpt-4.1-mini-2025-04-14', 'gpt-4.1-2025-04-14'] : ['gpt-4.1-2025-04-14', 'gpt-4.1-mini-2025-04-14'];
-  
-  for (const model of models) {
-    try {
-      console.log(`🔄 Trying ${model}...`);
-      
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          max_tokens: 4000,
-          temperature: 0.1,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log(`❌ ${model} failed:`, response.status, errorText);
-        continue;
-      }
-
-      const data = await response.json();
-      console.log(`✅ ${model} succeeded`);
-      return { data, model };
-    } catch (error) {
-      console.log(`❌ ${model} error:`, error);
-      continue;
-    }
-  }
-  
-  throw new Error('All OpenAI models failed');
 }
 
 serve(async (req) => {
@@ -104,18 +54,10 @@ serve(async (req) => {
 
   try {
     const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    console.log('🔍 API Keys status:', {
-      hasDeepSeek: !!deepSeekApiKey,
-      hasOpenAI: !!openAIApiKey,
-      deepSeekLength: deepSeekApiKey?.length || 0,
-      openAILength: openAIApiKey?.length || 0,
-    });
-    
-    if (!deepSeekApiKey && !openAIApiKey) {
-      console.error('❌ No API keys found');
-      throw new Error('No AI API keys configured');
+    if (!deepSeekApiKey) {
+      console.error('❌ No DeepSeek API key found');
+      throw new Error('DeepSeek API key is required');
     }
 
     const { task1Answer, task2Answer, task1Data, task2Data } = await req.json();
@@ -249,66 +191,11 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
       }
     ];
 
-    // Try DeepSeek first (if available), then OpenAI as fallback
-    let aiResponse;
-    let modelUsed = 'unknown';
-    
-    if (deepSeekApiKey) {
-      console.log('🔄 Using DeepSeek API as primary...');
-      try {
-        const deepSeekResult = await callDeepSeek(messages, deepSeekApiKey);
-        aiResponse = deepSeekResult;
-        modelUsed = 'deepseek-chat';
-        console.log('✅ DeepSeek API succeeded');
-      } catch (deepSeekError) {
-        console.log('❌ DeepSeek failed, falling back to OpenAI:', deepSeekError);
-        
-        if (openAIApiKey) {
-          try {
-            const openAIResult = await callOpenAI(messages, openAIApiKey, true); // Use Mini first for cost efficiency
-            aiResponse = openAIResult.data;
-            modelUsed = openAIResult.model;
-            console.log('✅ OpenAI Mini fallback succeeded');
-          } catch (openAIError) {
-            console.log('❌ OpenAI Mini failed, trying OpenAI regular:', openAIError);
-            try {
-              const openAIRegularResult = await callOpenAI(messages, openAIApiKey, false);
-              aiResponse = openAIRegularResult.data;
-              modelUsed = openAIRegularResult.model;
-              console.log('✅ OpenAI regular fallback succeeded');
-            } catch (regularError) {
-              console.error('❌ All AI services failed:', regularError);
-              throw new Error('All AI services are currently unavailable');
-            }
-          }
-        } else {
-          throw new Error('OpenAI API key not configured and DeepSeek failed');
-        }
-      }
-    } else if (openAIApiKey) {
-      console.log('🔄 Using OpenAI API as primary (DeepSeek not configured)...');
-      try {
-        const openAIResult = await callOpenAI(messages, openAIApiKey, true); // Use Mini first for cost efficiency
-        aiResponse = openAIResult.data;
-        modelUsed = openAIResult.model;
-        console.log('✅ OpenAI Mini primary succeeded');
-      } catch (openAIError) {
-        console.log('❌ OpenAI Mini failed, trying OpenAI regular:', openAIError);
-        try {
-          const openAIRegularResult = await callOpenAI(messages, openAIApiKey, false);
-          aiResponse = openAIRegularResult.data;
-          modelUsed = openAIRegularResult.model;
-          console.log('✅ OpenAI regular fallback succeeded');
-        } catch (regularError) {
-          console.error('❌ All OpenAI models failed:', regularError);
-          throw new Error('OpenAI API is currently unavailable');
-        }
-      }
-    } else {
-      throw new Error('No AI API keys configured');
-    }
-
-    console.log(`✅ AI Examiner response generated using ${modelUsed.toUpperCase()}`);
+    // Use DeepSeek only
+    console.log('🔄 Using DeepSeek API...');
+    const aiResponse = await callDeepSeek(messages, deepSeekApiKey);
+    const modelUsed = 'deepseek-chat';
+    console.log('✅ DeepSeek API succeeded');
 
     let content = aiResponse.choices?.[0]?.message?.content ?? '';
     console.log('🔍 Raw API response content length:', content.length);
@@ -542,7 +429,7 @@ Please retake the IELTS Writing test to receive an accurate assessment of your w
       success: true, 
       feedback,
       structured,
-      apiUsed,
+      apiUsed: modelUsed,
       task1WordCount: task1Answer.trim().split(/\s+/).length,
       task2WordCount: task2Answer.trim().split(/\s+/).length
     }), {

@@ -152,7 +152,15 @@ JSON SCHEMA (MANDATORY):
     "overall_reason": "Averaged from criteria scores",
     "feedback": {
       "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"]
+      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"],
+      "improvements_detailed": [
+        {
+          "issue": "Grammar error - incorrect verb tense",
+          "sentence_quote": "The graph shows data that were collected last year",
+          "improved_version": "The graph shows data that was collected last year",
+          "explanation": "Data is singular, so use 'was' not 'were'"
+        }
+      ]
     },
     "feedback_markdown": "Detailed Task 1 feedback here..."
   },
@@ -167,7 +175,15 @@ JSON SCHEMA (MANDATORY):
     "overall_reason": "Averaged from criteria scores",
     "feedback": {
       "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"]
+      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"],
+      "improvements_detailed": [
+        {
+          "issue": "Vocabulary choice - word collocation error",
+          "sentence_quote": "People should make research about this topic",
+          "improved_version": "People should conduct research on this topic",
+          "explanation": "Use 'conduct research' instead of 'make research', and 'on' instead of 'about'"
+        }
+      ]
     },
     "feedback_markdown": "Detailed Task 2 feedback here..."
   },
@@ -185,6 +201,15 @@ CRITICAL RULES:
 - Calculate overall_band by averaging criteria and rounding to nearest 0.5
 - Calculate overall.band using: (Task1_overall*1 + Task2_overall*2) / 3, then round to 0.5
 - Provide exactly 3 strengths and 3 improvements for each task
+
+IMPROVEMENTS_DETAILED REQUIREMENTS:
+For both Task 1 and Task 2, provide 3-5 specific sentence-level improvements in the "improvements_detailed" array:
+1. "issue": Brief description of the error type (e.g., "Grammar error - subject-verb agreement", "Vocabulary - word choice", "Coherence - unclear pronoun reference")
+2. "sentence_quote": Extract the EXACT problematic sentence or phrase from the student's writing
+3. "improved_version": Provide a Band 9-level correction of the same sentence
+4. "explanation": Clear explanation of why the change improves the writing (1-2 sentences)
+
+Focus on the most impactful errors that would help students reach higher band scores. Include grammar, vocabulary, coherence, and task-specific issues. Quote student text exactly as written.
 
 JUSTIFICATION REQUIREMENTS (CRITICAL):
 Each justification must be detailed and convincing with specific evidence:
@@ -364,7 +389,8 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
                 "Technical issue prevented detailed feedback - please retake the test",
                 "For accurate assessment, we recommend trying the test again",
                 "Contact support if this issue continues to occur"
-              ]
+              ],
+              improvements_detailed: []
             },
             feedback_markdown: `### Technical Processing Issue
 
@@ -407,7 +433,8 @@ Due to a technical processing issue, we were unable to provide detailed feedback
                 "Technical issue prevented detailed feedback - please retake the test",
                 "For accurate assessment, we recommend trying the test again", 
                 "Contact support if this issue continues to occur"
-              ]
+              ],
+              improvements_detailed: []
             },
             feedback_markdown: `### Technical Processing Issue
 

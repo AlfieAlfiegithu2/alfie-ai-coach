@@ -6,171 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Handle DeepSeek-specific suggestion generation
-async function handleDeepSeekSuggestion(req: Request, deepseekApiKey: string) {
-  const { questionText, userTranscription, part, questionIndex, audioFeatures } = await req.json();
-  
-  console.log('🤖 Generating DeepSeek suggestion for:', { part, questionIndex });
-  
-  if (!userTranscription?.trim()) {
-    throw new Error('No transcription provided for suggestion generation');
-  }
-
-  // Enhanced prompt for DeepSeek to create better suggestions
-  const prompt = `You are an expert IELTS examiner providing enhanced responses for speaking practice.
-
-QUESTION: "${questionText}"
-
-STUDENT'S ORIGINAL RESPONSE: "${userTranscription}"
-
-${audioFeatures ? `
-AUDIO ANALYSIS:
-- Speech clarity: ${Math.round(audioFeatures.confidence * 100)}%
-- Speaking rate: ${Math.round(audioFeatures.audioInsights?.speakingRate || 0)} wpm
-- Pauses detected: ${audioFeatures.audioInsights?.pauseCount || 0}
-` : ''}
-
-Your task is to create an ENHANCED version that:
-1. Maintains the core ideas from the original
-2. Uses more sophisticated vocabulary and expressions
-3. Improves grammatical structures and complexity
-4. Enhances coherence and fluency
-5. Adds relevant details and examples where appropriate
-6. Demonstrates higher-level IELTS speaking skills
-
-Return STRICT JSON format:
-{
-  "original_spans": [
-    {"text": "word or phrase from original", "status": "error"|"neutral"},
-    ...
-  ],
-  "suggested_spans": [
-    {"text": "improved word or phrase", "status": "improvement"|"neutral"},
-    ...
-  ],
-  "improvement_notes": "Brief explanation of key improvements made"
-}
-
-Rules:
-- Mark problematic areas in original_spans as "error", good parts as "neutral"
-- All suggested_spans improvements should be marked as "improvement" or "neutral"
-- Ensure the enhanced response is 20-40% longer than the original
-- Focus on IELTS band 7-8 level language and structures`;
-
-  try {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${deepseekApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert IELTS examiner. Always respond with valid JSON only, no additional text.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 1500,
-        temperature: 0.7
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ DeepSeek API error:', errorText);
-      throw new Error(`DeepSeek API error: ${errorText}`);
-    }
-
-    const result = await response.json();
-    const content = result.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No content received from DeepSeek API');
-    }
-
-    // Parse the JSON response
-    let parsedResult;
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      parsedResult = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
-    } catch (parseError) {
-      console.error('❌ Failed to parse DeepSeek response:', content);
-      throw new Error('Invalid JSON response from DeepSeek');
-    }
-
-    // Validate the response structure
-    if (!parsedResult.original_spans || !parsedResult.suggested_spans) {
-      throw new Error('Invalid response structure from DeepSeek');
-    }
-
-    console.log('✅ DeepSeek suggestion generated successfully:', {
-      originalSpansCount: parsedResult.original_spans.length,
-      suggestedSpansCount: parsedResult.suggested_spans.length,
-      hasNotes: !!parsedResult.improvement_notes
-    });
-
-    return new Response(JSON.stringify({
-      success: true,
-      original_spans: parsedResult.original_spans,
-      suggested_spans: parsedResult.suggested_spans,
-      improvement_notes: parsedResult.improvement_notes || 'Response enhanced with improved vocabulary and structure'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('❌ DeepSeek suggestion generation failed:', error);
-    
-    // Return fallback suggestion if DeepSeek fails
-    const words = userTranscription.split(/\s+/).filter(word => word.length > 0);
-    const originalSpans = words.map((word, index) => ({
-      text: index < words.length - 1 ? word + ' ' : word,
-      status: 'neutral'
-    }));
-    
-    const suggestedSpans = [
-      ...originalSpans,
-      { text: '. Additionally, I would like to elaborate that ', status: 'improvement' },
-      { text: 'this topic presents interesting perspectives ', status: 'improvement' },
-      { text: 'worth further consideration.', status: 'improvement' }
-    ];
-
-    return new Response(JSON.stringify({
-      success: true,
-      original_spans: originalSpans,
-      suggested_spans: suggestedSpans,
-      improvement_notes: 'Fallback enhancement applied due to processing error',
-      error: error.message
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-}
-
-async function transcribeWithAdvancedAssemblyAI(audioBase64: string): Promise<{
-  transcription: string;
-  audioFeatures: {
-    confidence: number;
-    words: Array<{
-      text: string;
-      confidence: number;
-      start: number;
-      end: number;
-    }>;
-    audioInsights: {
-      speakingRate: number;
-      pauseCount: number;
-      totalPauseDuration: number;
-      averageConfidence: number;
-    };
-  };
-}> {
+async function transcribeWithAssemblyAI(audioBase64: string): Promise<string> {
   const assemblyApiKey = Deno.env.get('ASSEMBLYAI_API_KEY');
   if (!assemblyApiKey) {
     throw new Error('AssemblyAI API key not configured');
@@ -193,7 +29,7 @@ async function transcribeWithAdvancedAssemblyAI(audioBase64: string): Promise<{
 
   const { upload_url } = await uploadResponse.json();
 
-  // Start advanced transcription with audio insights
+  // Start transcription
   const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
     method: 'POST',
     headers: {
@@ -202,15 +38,7 @@ async function transcribeWithAdvancedAssemblyAI(audioBase64: string): Promise<{
     },
     body: JSON.stringify({
       audio_url: upload_url,
-      language_code: 'en',
-      // Enable advanced audio analysis features
-      speech_model: 'best', // Use the best model for accuracy
-      word_boost: ['IELTS', 'speaking', 'pronunciation'], // Boost relevant words
-      punctuate: true,
-      format_text: true,
-      disfluencies: true, // Detect filler words, stutters
-      multichannel: false,
-      dual_channel: false
+      language_code: 'en'
     }),
   });
 
@@ -234,46 +62,7 @@ async function transcribeWithAdvancedAssemblyAI(audioBase64: string): Promise<{
     throw new Error(`AssemblyAI transcription failed: ${transcriptData.error}`);
   }
 
-  const text = transcriptData.text || '';
-  const words = transcriptData.words || [];
-  
-  // Calculate audio insights for pronunciation assessment
-  let totalPauseDuration = 0;
-  let pauseCount = 0;
-  let totalConfidence = 0;
-  
-  // Analyze pauses between words for fluency assessment
-  for (let i = 1; i < words.length; i++) {
-    const prevWord = words[i - 1];
-    const currentWord = words[i];
-    const pauseDuration = currentWord.start - prevWord.end;
-    
-    // Count significant pauses (>150ms)
-    if (pauseDuration > 0.15) {
-      pauseCount++;
-      totalPauseDuration += pauseDuration;
-    }
-    
-    totalConfidence += currentWord.confidence;
-  }
-  
-  const averageConfidence = words.length > 0 ? totalConfidence / words.length : 0;
-  const totalDuration = words.length > 0 ? words[words.length - 1].end - words[0].start : 0;
-  const speakingRate = totalDuration > 0 ? words.length / totalDuration * 60 : 0; // words per minute
-  
-  return {
-    transcription: text,
-    audioFeatures: {
-      confidence: transcriptData.confidence || 0,
-      words,
-      audioInsights: {
-        speakingRate,
-        pauseCount,
-        totalPauseDuration,
-        averageConfidence
-      }
-    }
-  };
+  return transcriptData.text || '';
 }
 
 serve(async (req) => {
@@ -289,20 +78,7 @@ serve(async (req) => {
       throw new Error('DeepSeek API key not configured');
     }
 
-    const requestBody = await req.json();
-    const { allRecordings, testData, analysisType = "comprehensive", action } = requestBody;
-    
-    // Handle DeepSeek suggestion generation specifically
-    if (action === 'generate_suggestion') {
-      return await handleDeepSeekSuggestion(
-        new Request(req.url, {
-          method: req.method,
-          headers: req.headers,
-          body: JSON.stringify(requestBody)
-        }), 
-        deepseekApiKey
-      );
-    }
+    const { allRecordings, testData, analysisType = "comprehensive" } = await req.json();
     
     console.log('📊 Received data:', {
       recordingsCount: allRecordings?.length || 0,
@@ -338,17 +114,12 @@ serve(async (req) => {
         questionText: recording.questionTranscription?.substring(0, 50) + '...'
       });
 
-      // Transcribe with advanced AssemblyAI analysis
-      const { transcription, audioFeatures } = await transcribeWithAdvancedAssemblyAI(recording.audio_base64);
+      // Transcribe with AssemblyAI
+      const transcription = await transcribeWithAssemblyAI(recording.audio_base64);
 
-      console.log(`✅ Advanced transcription complete for ${recording.part}:`, {
-        text: transcription.substring(0, 100) + '...',
-        confidence: audioFeatures.confidence,
-        speakingRate: audioFeatures.audioInsights.speakingRate,
-        pauseCount: audioFeatures.audioInsights.pauseCount
-      });
+      console.log(`✅ Transcription complete for ${recording.part}:`, transcription.substring(0, 100) + '...');
 
-      // Enhanced minimal/quality checks with audio features
+      // Enhanced minimal/quality checks
       const normalize = (t: string) => t
         .toLowerCase()
         .replace(/\b(uh|um|er|mm|like|you know|ah|uh-huh|hmm)\b/gi, ' ')
@@ -357,10 +128,8 @@ serve(async (req) => {
       const cleaned = normalize(transcription || '');
       const wordCount = cleaned ? cleaned.split(/\s+/).filter(Boolean).length : 0;
 
-      // More sophisticated assessment using audio features
       const isMinimalResponse = !transcription || 
                                 wordCount < 8 ||
-                                audioFeatures.confidence < 0.3 || // Very low transcription confidence
                                 /^(silence|\.{3,}|bye\.?|mm|uh|um|er)$/i.test(transcription.trim()) ||
                                 transcription.toLowerCase().includes('silence') ||
                                 transcription.toLowerCase().includes('inaudible');
@@ -370,44 +139,12 @@ serve(async (req) => {
       let suggested_spans: any[] = [];
 
       if (isMinimalResponse) {
-        feedback = `This response shows no substantive content. Audio analysis indicates ${audioFeatures.confidence < 0.3 ? 'very unclear speech (confidence: ' + Math.round(audioFeatures.confidence * 100) + '%)' : 'minimal content'}. For IELTS Speaking, candidates must provide extended responses that address the question. A complete absence of meaningful speech results in the lowest possible scores across all criteria. To improve, practice speaking for the full allocated time with relevant content, clear pronunciation, and appropriate vocabulary.`;
+        feedback = `This response shows no substantive content. For IELTS Speaking, candidates must provide extended responses that address the question. A complete absence of meaningful speech results in the lowest possible scores across all criteria. To improve, practice speaking for the full allocated time with relevant content, clear pronunciation, and appropriate vocabulary.`;
       } else {
-        // Enhanced analysis incorporating audio features
+        // Ask for BOTH feedback bullets and suggestion spans in one call
         const prompt = {
           role: 'user' as const,
-          content: `You are a senior IELTS examiner with access to both transcription AND audio analysis data. 
-
-QUESTION: "${recording.questionTranscription || recording.prompt}"
-
-STUDENT TRANSCRIPTION: "${transcription}"
-
-AUDIO ANALYSIS DATA:
-- Overall transcription confidence: ${Math.round(audioFeatures.confidence * 100)}%
-- Speaking rate: ${Math.round(audioFeatures.audioInsights.speakingRate)} words/minute (normal: 120-180 wpm)
-- Number of significant pauses: ${audioFeatures.audioInsights.pauseCount}
-- Total pause duration: ${Math.round(audioFeatures.audioInsights.totalPauseDuration * 1000)}ms
-- Average word confidence: ${Math.round(audioFeatures.audioInsights.averageConfidence * 100)}%
-
-ASSESSMENT FOCUS:
-- PRONUNCIATION: Use transcription confidence scores to assess clarity
-- FLUENCY: Use speaking rate and pause analysis
-- INTONATION: Infer from confidence variations across words
-- DELIVERY: Consider overall speech patterns
-
-Return STRICT JSON:
-{
-  "pronunciation_score": number (1-9),
-  "fluency_score": number (1-9), 
-  "audio_feedback": string[3],
-  "original_spans": {"text": string, "status": "error"|"neutral"}[],
-  "suggested_spans": {"text": string, "status": "improvement"|"neutral"}[]
-}
-
-Rules:
-- Use AUDIO DATA to assess pronunciation and fluency more accurately
-- Consider confidence scores, speaking rate, and pause patterns
-- audio_feedback: 3 points about pronunciation, fluency, and delivery based on audio analysis
-- Incorporate both transcription and audio analysis in your assessment`,
+          content: `You are a senior IELTS examiner. Analyze the student's answer to the question: "${recording.questionTranscription || recording.prompt}"\n\nStudent transcription (may include 'inaudible' where sound is unclear):\n${transcription}\n\nReturn STRICT JSON with this shape only:{\n  "feedback_bullets": string[2..3],\n  "original_spans": {"text": string, "status": "error"|"neutral"}[],\n  "suggested_spans": {"text": string, "status": "improvement"|"neutral"}[]\n}\nRules:\n- feedback_bullets: 2-3 short, actionable points about fluency/pronunciation/intonation (audio-focused).\n- original_spans: segment the student's text; mark weak or incorrect segments as status "error"; others "neutral".\n- suggested_spans: rewrite as a higher-band answer; mark improved parts as status "improvement"; others "neutral".\n- Do NOT include explanations outside JSON.`,
         };
 
         const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -416,10 +153,10 @@ Rules:
           body: JSON.stringify({
             model: 'deepseek-chat',
             messages: [
-              { role: 'system', content: 'You are an expert IELTS examiner analyzing both transcription and audio features. Output STRICT JSON only.' },
+              { role: 'system', content: 'You are a precise IELTS examiner. Output STRICT JSON only, no prose.' },
               prompt
             ],
-            max_tokens: 1000,
+            max_tokens: 800,
             temperature: 0.7
           }),
         });
@@ -434,65 +171,17 @@ Rules:
         const content = analysisJson.choices?.[0]?.message?.content || '';
         const parsed = extractJson(content);
 
-        if (parsed && Array.isArray(parsed.audio_feedback)) {
-          feedback = parsed.audio_feedback.map((b: string) => `• ${b}`).join('\n');
+        if (parsed && Array.isArray(parsed.feedback_bullets)) {
+          feedback = parsed.feedback_bullets.map((b: string) => `• ${b}`).join('\n');
           original_spans = Array.isArray(parsed.original_spans) ? parsed.original_spans : [];
           suggested_spans = Array.isArray(parsed.suggested_spans) ? parsed.suggested_spans : [];
         } else {
-          // Fallback: create feedback from audio features AND generate basic spans
-          const rateIssue = audioFeatures.audioInsights.speakingRate < 100 ? 'speaking too slowly' : 
-                           audioFeatures.audioInsights.speakingRate > 200 ? 'speaking too quickly' : 'good speaking pace';
-          const pauseIssue = audioFeatures.audioInsights.pauseCount > 5 ? 'too many hesitations' : 'good fluency';
-          const clarityIssue = audioFeatures.confidence < 0.6 ? 'unclear pronunciation needs improvement' : 'generally clear speech';
-          
-          feedback = `• ${rateIssue}\n• ${pauseIssue}\n• ${clarityIssue}`;
-          
-          // Generate fallback spans for suggestion visualizer
-          if (transcription && transcription.trim().length > 0) {
-            const words = transcription.split(/\s+/).filter(word => word.length > 0);
-            
-            // Create original spans (mark some words as needing improvement)
-            original_spans = words.map((word, index) => ({
-              text: index < words.length - 1 ? word + ' ' : word,
-              status: (word.includes('um') || word.includes('uh') || word.includes('er') || index % 7 === 0) ? 'error' : 'neutral'
-            }));
-            
-            // Create improved version for suggestions
-            const improvedResponse = transcription
-              .replace(/\b(um|uh|er|mm|like)\b/gi, '')
-              .replace(/\s+/g, ' ')
-              .trim();
-            
-            const improvedWords = improvedResponse.split(/\s+/).filter(word => word.length > 0);
-            suggested_spans = improvedWords.map((word, index) => ({
-              text: index < improvedWords.length - 1 ? word + ' ' : word,
-              status: 'improvement'
-            }));
-            
-            // Add some enhanced vocabulary if the response is very basic
-            if (improvedWords.length < 15) {
-              suggested_spans.push(
-                { text: '. Additionally, I believe that ', status: 'improvement' },
-                { text: 'this topic requires further consideration ', status: 'improvement' },
-                { text: 'due to its complexity and importance.', status: 'improvement' }
-              );
-            }
-          }
+          // Fallback: use raw content as feedback
+          feedback = content || 'Analysis unavailable.';
         }
       }
 
-        console.log(`✅ Individual analysis complete for ${recording.part}:`, {
-          feedback: (feedback || '').substring(0, 100) + '...',
-          hasOriginalSpans: original_spans.length > 0,
-          hasSuggestedSpans: suggested_spans.length > 0,
-          spanCounts: { original: original_spans.length, suggested: suggested_spans.length },
-          parseSuccessful: parsed && Array.isArray(parsed.audio_feedback)
-        });
-        
-        // Debug log the AI response if parsing failed
-        if (!parsed || !Array.isArray(parsed.audio_feedback)) {
-          console.log('⚠️ AI parsing failed. Raw response:', content.substring(0, 300) + '...');
-        }
+      console.log(`✅ Individual analysis complete for ${recording.part}:`, (feedback || '').substring(0, 100) + '...');
         
       return {
         part: recording.part,
@@ -504,76 +193,107 @@ Rules:
         audio_url: recording.audio_url,
         original_spans,
         suggested_spans,
-        audioFeatures, // Include audio features for detailed analysis
         metrics: { word_count: wordCount, minimal: isMinimalResponse }
       };
     }));
 
     console.log(`🎉 Individual analyses complete! Generated ${individualAnalyses.length} question analyses`);
 
-    // Create overall transcriptions for comprehensive analysis with audio features
+    // Create overall transcriptions for comprehensive analysis
     const allTranscriptions = individualAnalyses.map(analysis => ({
       part: analysis.part,
       question: analysis.questionText,
       transcription: analysis.transcription,
       partNum: analysis.partNumber,
       questionIndex: analysis.questionIndex,
-      metrics: analysis.metrics,
-      audioFeatures: analysis.audioFeatures // Include audio data
+      metrics: analysis.metrics
     }));
 
-    // Enhanced scoring with caps based on response quality AND audio features
+    // Enhanced scoring with caps based on response quality
     const minimalResponses = allTranscriptions.filter(t => t.metrics?.minimal);
     const totalWordCount = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.word_count || 0), 0);
     const avgWordsPerResponse = totalWordCount / allTranscriptions.length;
     const coverageRatio = (allTranscriptions.length - minimalResponses.length) / allTranscriptions.length;
-    
-    // Calculate overall audio quality metrics
-    const avgConfidence = allTranscriptions.reduce((sum, t) => sum + (t.audioFeatures?.confidence || 0), 0) / allTranscriptions.length;
-    const avgSpeakingRate = allTranscriptions.reduce((sum, t) => sum + (t.audioFeatures?.audioInsights?.speakingRate || 0), 0) / allTranscriptions.length;
-    const totalPauses = allTranscriptions.reduce((sum, t) => sum + (t.audioFeatures?.audioInsights?.pauseCount || 0), 0);
 
-    // Standard comprehensive analysis with audio features
-    const comprehensivePrompt = `You are a senior, highly experienced IELTS examiner conducting a COMPREHENSIVE FULL-TEST ANALYSIS with access to both transcription AND audio analysis data. Your goal is to provide a holistic and accurate assessment based on the student's COMPLETE performance across ALL parts of the IELTS Speaking test.
+    let comprehensivePrompt;
+    
+    // Apply stricter caps based on response quality metrics
+    if (minimalResponses.length > allTranscriptions.length / 2) {
+      // More than half responses are minimal - very low scores
+      comprehensivePrompt = `You are a senior IELTS examiner. The student provided mostly silent or extremely minimal responses throughout the test. Most responses were either silence, single words like "bye", or no substantive content.
+
+FULL TEST TRANSCRIPT:
+${allTranscriptions.map(t => `
+${t.part} Question: ${t.question}
+Student Response: ${t.transcription}
+`).join('\n')}
+
+Given the lack of substantive responses across most of the test, you must assign very low band scores (0-2 range) for all criteria. A student who does not speak or provides only minimal responses cannot demonstrate the required speaking abilities.
+
+Please return your assessment in this format:
+
+FLUENCY & COHERENCE: [0-2] - [Explanation of why minimal/no response results in lowest scores]
+LEXICAL RESOURCE: [0-2] - [Explanation of limited/no vocabulary demonstrated]
+GRAMMATICAL RANGE & ACCURACY: [0-2] - [Explanation of lack of grammatical demonstration]
+PRONUNCIATION: [0-2] - [Explanation of minimal speech for assessment]
+OVERALL BAND SCORE: [0-2]
+COMPREHENSIVE FEEDBACK: [Brief explanation that substantive responses are required for IELTS Speaking assessment]`;
+    } else if (avgWordsPerResponse < 15 || coverageRatio < 0.7) {
+      // Low word count or many minimal responses - cap at 3.0-4.5
+      comprehensivePrompt = `You are a senior IELTS examiner. The student provided very short responses with limited content throughout the test.
+
+RESPONSE QUALITY METRICS:
+- Average words per response: ${Math.round(avgWordsPerResponse)}
+- Coverage ratio: ${Math.round(coverageRatio * 100)}% of questions had substantive answers
+- Total word count: ${totalWordCount}
+
+FULL TEST TRANSCRIPT:
+${allTranscriptions.map(t => `
+${t.part} Question: ${t.question}
+Student Response: ${t.transcription}
+`).join('\n')}
+
+CRITICAL SCORING CONSTRAINT: Due to very short responses and limited content, all criterion scores must be capped at 4.5 maximum. Short responses cannot demonstrate higher-level speaking abilities regardless of accuracy.
+
+Please return your assessment with scores between 3.0-4.5:
+
+FLUENCY & COHERENCE: [3.0-4.5] - [Explanation considering limited content]
+LEXICAL RESOURCE: [3.0-4.5] - [Explanation considering limited vocabulary range]
+GRAMMATICAL RANGE & ACCURACY: [3.0-4.5] - [Explanation considering limited complexity]
+PRONUNCIATION: [3.0-4.5] - [Explanation based on available speech]
+OVERALL BAND SCORE: [Calculate average and apply IELTS rounding]
+COMPREHENSIVE FEEDBACK: [Analysis acknowledging the limitations of short responses]`;
+    } else {
+      // Standard comprehensive analysis with some quality considerations
+      comprehensivePrompt = `You are a senior, highly experienced IELTS examiner conducting a COMPREHENSIVE FULL-TEST ANALYSIS. Your goal is to provide a holistic and accurate assessment based on the student's COMPLETE performance across ALL parts of the IELTS Speaking test.
 
 RESPONSE QUALITY METRICS:
 - Average words per response: ${Math.round(avgWordsPerResponse)}
 - Coverage ratio: ${Math.round(coverageRatio * 100)}% substantive responses
 - Total responses: ${allTranscriptions.length}
 
-AUDIO ANALYSIS METRICS (CRITICAL FOR PRONUNCIATION & FLUENCY):
-- Average transcription confidence: ${Math.round(avgConfidence * 100)}% (indicates pronunciation clarity)
-- Average speaking rate: ${Math.round(avgSpeakingRate)} words/minute (normal range: 120-180 wpm)
-- Total significant pauses: ${totalPauses} across all responses (fluency indicator)
+IMPORTANT: Base your assessment on the ENTIRE test performance, not just individual questions. Look for patterns, development, and overall communicative effectiveness across all parts.
 
-IMPORTANT: Base your assessment on the ENTIRE test performance using BOTH transcription content AND audio analysis data. The audio metrics provide crucial insights into pronunciation quality and fluency that text alone cannot capture.
+FULL TEST TRANSCRIPT:
 
-FULL TEST TRANSCRIPT WITH DETAILED AUDIO ANALYSIS:
 ${allTranscriptions.map(t => `
 ${t.part} Question: ${t.question}
 Student Response: ${t.transcription}
-Audio Analysis: 
-  - Confidence: ${Math.round((t.audioFeatures?.confidence || 0) * 100)}% (pronunciation clarity)
-  - Speaking Rate: ${Math.round(t.audioFeatures?.audioInsights?.speakingRate || 0)} words/minute
-  - Pauses: ${t.audioFeatures?.audioInsights?.pauseCount || 0} significant pauses
-  - Average Word Confidence: ${Math.round((t.audioFeatures?.audioInsights?.averageConfidence || 0) * 100)}%
 `).join('\n')}
 
 COMPREHENSIVE ANALYSIS INSTRUCTIONS:
-Use the audio confidence scores and speaking rate data to accurately assess:
-- PRONUNCIATION: Higher confidence scores indicate clearer pronunciation
-- FLUENCY: Speaking rate and pause patterns reveal natural flow
-- INTONATION: Confidence variations suggest prosodic control
-- OVERALL DELIVERY: Combine all audio metrics for holistic assessment
+
+Evaluate the student's OVERALL performance across the complete test using these criteria with appropriate caps based on response length and coverage:
 
 Please return your assessment in this format:
 
-FLUENCY & COHERENCE: [Band Score 0-9] - [Detailed justification using speaking rate, pause analysis, and examples from multiple parts]
-LEXICAL RESOURCE: [Band Score 0-9] - [Detailed justification with examples from multiple parts] 
+FLUENCY & COHERENCE: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
+LEXICAL RESOURCE: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
 GRAMMATICAL RANGE & ACCURACY: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
-PRONUNCIATION: [Band Score 0-9] - [Detailed justification using confidence scores, clarity assessment, and audio analysis data]
+PRONUNCIATION: [Band Score 0-9] - [Detailed justification with examples from multiple parts]
 OVERALL BAND SCORE: [Final calculated score following rounding rules]
-COMPREHENSIVE FEEDBACK: [Holistic analysis incorporating both transcription content and audio insights, showing patterns across all parts with specific audio-based recommendations]`;
+COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, specific examples from different sections, and improvement recommendations based on complete performance]`;
+    }
 
     const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
@@ -586,7 +306,7 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis incorporating both transcription cont
         messages: [
           {
             role: 'system',
-            content: 'You are a senior IELTS Speaking examiner with comprehensive knowledge of official band descriptors. You must analyze the COMPLETE speaking test performance holistically, providing examples from different parts to support your assessment. Follow the assessment criteria and scoring rules exactly.'
+            content: 'You are a senior IELTS Speaking examiner with comprehensive knowledge of official band descriptors. You must analyze the COMPLETE speaking test performance holistically, providing examples from different parts to support your assessment. Follow the assessment criteria and scoring rules exactly, including any caps specified based on response quality.'
           },
           {
             role: 'user',
@@ -609,15 +329,8 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis incorporating both transcription cont
       transcriptionsCount: allTranscriptions.length,
       individualAnalysesCount: individualAnalyses.length,
       hasOverallAnalysis: !!analysis,
-      qualityMetrics: { 
-        avgWordsPerResponse, 
-        coverageRatio, 
-        minimalCount: minimalResponses.length,
-        avgConfidence: Math.round(avgConfidence * 100),
-        avgSpeakingRate: Math.round(avgSpeakingRate),
-        totalPauses 
-      },
-      analysisType: "comprehensive_full_test_with_audio"
+      qualityMetrics: { avgWordsPerResponse, coverageRatio, minimalCount: minimalResponses.length },
+      analysisType: "comprehensive_full_test"
     });
 
     return new Response(
@@ -625,20 +338,18 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis incorporating both transcription cont
         transcriptions: allTranscriptions,
         individualAnalyses,
         analysis,
-        analysisType: "comprehensive_full_test_with_audio",
+        analysisType: "comprehensive_full_test",
         success: true
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('❌ Enhanced speech analysis failed:', error);
+    console.error('Enhanced speech analysis error:', error);
     return new Response(
       JSON.stringify({ 
-        success: false,
-        error: error.message,
-        individualAnalyses: [],
-        analysis: null
+        error: (error as Error).message,
+        success: false 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

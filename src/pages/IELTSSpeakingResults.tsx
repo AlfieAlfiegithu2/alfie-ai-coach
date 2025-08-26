@@ -5,14 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles, RotateCcw, BarChart3 } from "lucide-react";
+import { Award, ArrowLeft, Volume2, Play, Pause, FileText, TrendingUp, Star, Sparkles, RotateCcw } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
 import { ElevenLabsVoiceOptimized } from "@/components/ElevenLabsVoiceOptimized";
-import SpeechAnalysisChart from "@/components/SpeechAnalysisChart";
-import DeepSeekSuggestionGenerator from "@/components/DeepSeekSuggestionGenerator";
 
 interface QuestionAnalysis {
   part: string;
@@ -22,15 +20,6 @@ interface QuestionAnalysis {
   transcription: string;
   audio_url: string;
   feedback: string;
-  audioFeatures?: {
-    confidence: number;
-    audioInsights: {
-      speakingRate: number;
-      pauseCount: number;
-      totalPauseDuration: number;
-      averageConfidence: number;
-    };
-  };
 }
 
 interface AISuggestion {
@@ -55,7 +44,6 @@ const IELTSSpeakingResults = () => {
   const [overallFeedback, setOverallFeedback] = useState<OverallFeedback | null>(null);
   const [questionAnalyses, setQuestionAnalyses] = useState<QuestionAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
   
@@ -205,49 +193,6 @@ const IELTSSpeakingResults = () => {
     }
   };
 
-  const handleReassessment = async () => {
-    if (!testData || !recordings) {
-      toast({
-        title: "Error",
-        description: "Test data not available for reassessment",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsReanalyzing(true);
-    try {
-      console.log('🔄 Starting reassessment of speaking test...');
-      
-      // Clear current results first
-      setOverallFeedback(null);
-      setQuestionAnalyses([]);
-      setAiSuggestions({});
-      
-      toast({
-        title: "Reassessment Started",
-        description: "Running fresh AI analysis on your recordings...",
-      });
-
-      // Reuse the same analysis logic
-      await analyzeTestResults();
-      
-      toast({
-        title: "Assessment Complete",
-        description: "Your speaking test has been reassessed with fresh analysis!",
-      });
-    } catch (error) {
-      console.error('Error during reassessment:', error);
-      toast({
-        title: "Reassessment Failed",
-        description: "Failed to reassess your test. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsReanalyzing(false);
-    }
-  };
-
   // IELTS Band Score Rounding Rules
   const roundToIELTSBandScore = (score: number): number => {
     if (score < 0) return 0;
@@ -275,151 +220,55 @@ const IELTSSpeakingResults = () => {
   };
 
   const parseOverallAnalysis = (analysisText: string): OverallFeedback => {
-    console.log('🔍 Parsing AI analysis response:', analysisText.substring(0, 500) + '...');
-    
     // Parse the structured response from the AI - remove asterisks for cleaner parsing
-    const cleanText = analysisText.replace(/\*\*/g, '').replace(/\*/g, '');
+    const cleanText = analysisText.replace(/\*\*/g, '');
     
-    // More comprehensive regex patterns to match various AI response formats
-    const fluencyMatch = cleanText.match(/FLUENCY\s*[&]?\s*COHERENCE[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=LEXICAL|$)/is);
-    const lexicalMatch = cleanText.match(/LEXICAL\s*RESOURCE[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=GRAMMATICAL|$)/is);
-    const grammarMatch = cleanText.match(/GRAMMATICAL\s*RANGE\s*[&]?\s*ACCURACY[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=PRONUNCIATION|$)/is);
-    const pronunciationMatch = cleanText.match(/PRONUNCIATION[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=OVERALL|COMPREHENSIVE|$)/is);
-    
-    // Also try alternative parsing if main patterns fail
-    let fallbackScores: number[] = [];
-    const allScoreMatches = cleanText.match(/(?:Band\s*)?(\d+(?:\.\d+)?)/g);
-    if (allScoreMatches && allScoreMatches.length >= 4) {
-      fallbackScores = allScoreMatches.slice(0, 4).map(match => {
-        const score = match.replace(/Band\s*/i, '');
-        return parseFloat(score) || 3;
-      });
-    }
+    const fluencyMatch = cleanText.match(/FLUENCY & COHERENCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const lexicalMatch = cleanText.match(/LEXICAL RESOURCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const grammarMatch = cleanText.match(/GRAMMATICAL RANGE & ACCURACY:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const pronunciationMatch = cleanText.match(/PRONUNCIATION:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
+    const overallMatch = cleanText.match(/OVERALL BAND SCORE:\s*(\d(?:\.\d)?)/);
+    const feedbackMatch = cleanText.match(/COMPREHENSIVE FEEDBACK:\s*([^$]+)/);
 
-    console.log('📊 Parsing results:', {
-      fluencyFound: !!fluencyMatch,
-      lexicalFound: !!lexicalMatch,
-      grammarFound: !!grammarMatch,
-      pronunciationFound: !!pronunciationMatch,
-      fallbackScoresFound: fallbackScores.length,
-      rawScores: {
-        fluency: fluencyMatch ? fluencyMatch[1] : 'not found',
-        lexical: lexicalMatch ? lexicalMatch[1] : 'not found',
-        grammar: grammarMatch ? grammarMatch[1] : 'not found',
-        pronunciation: pronunciationMatch ? pronunciationMatch[1] : 'not found'
-      }
-    });
+    // Ensure scores are realistic - if parsing fails, use very low scores
+    const defaultScore = 1;
+    const defaultFeedback = "Unable to properly assess. Please retake the test with substantive responses.";
 
-    // Use matched scores or fallback scores
-    const fluencyScore = roundToIELTSBandScore(
-      fluencyMatch ? parseFloat(fluencyMatch[1]) : 
-      (fallbackScores[0] || 4)
-    );
-    
-    const lexicalScore = roundToIELTSBandScore(
-      lexicalMatch ? parseFloat(lexicalMatch[1]) : 
-      (fallbackScores[1] || 4)
-    );
-    
-    const grammarScore = roundToIELTSBandScore(
-      grammarMatch ? parseFloat(grammarMatch[1]) : 
-      (fallbackScores[2] || 4)
-    );
-    
-    const pronunciationScore = roundToIELTSBandScore(
-      pronunciationMatch ? parseFloat(pronunciationMatch[1]) : 
-      (fallbackScores[3] || 4)
-    );
+    // Calculate individual scores with rounding
+    const fluencyScore = roundToIELTSBandScore(fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore);
+    const lexicalScore = roundToIELTSBandScore(lexicalMatch ? parseFloat(lexicalMatch[1]) : defaultScore);
+    const grammarScore = roundToIELTSBandScore(grammarMatch ? parseFloat(grammarMatch[1]) : defaultScore);
+    const pronunciationScore = roundToIELTSBandScore(pronunciationMatch ? parseFloat(pronunciationMatch[1]) : defaultScore);
     
     // Calculate overall band score from individual scores (not from AI response)
     const averageScore = (fluencyScore + lexicalScore + grammarScore + pronunciationScore) / 4;
     const overallBandScore = roundToIELTSBandScore(averageScore);
 
-    // Extract feedback text more flexibly
-    const extractFeedback = (match: RegExpMatchArray | null, criterion: string): string => {
-      if (match && match[2]) {
-        let feedback = match[2].trim();
-        // Clean up feedback text
-        feedback = feedback.replace(/^\s*-\s*/, '').trim();
-        if (feedback.length > 10) return feedback;
-      }
-      
-      // Try to extract feedback for this criterion from the full text
-      const criterionRegex = new RegExp(`${criterion}[^\\n]*?([^\\n]+?)(?=[A-Z]{4,}|$)`, 'i');
-      const criterionMatch = cleanText.match(criterionRegex);
-      if (criterionMatch && criterionMatch[1] && criterionMatch[1].trim().length > 10) {
-        return criterionMatch[1].trim();
-      }
-      
-      return "Shows potential but needs focused improvement in this area. Practice regularly to develop stronger skills.";
-    };
-
-    // Extract comprehensive feedback
-    const feedbackMatch = cleanText.match(/(?:COMPREHENSIVE\s*FEEDBACK|DETAILED\s*FEEDBACK|FEEDBACK)[:\s]*([^$]+)/is);
-    let pathToHigherScore: string[] = [];
-    
-    if (feedbackMatch) {
-      pathToHigherScore = feedbackMatch[1].trim()
-        .split(/\d+\.|\n-|\n•|•|\n\n/)
-        .filter(tip => tip.trim().length > 15)
-        .map(tip => tip.trim().replace(/^[-•\s]+/, ''))
-        .slice(0, 4);
-    }
-    
-    // If no structured feedback found, extract useful sentences from the entire response
-    if (pathToHigherScore.length === 0) {
-      pathToHigherScore = analysisText
-        .split(/[.\n!]/)
-        .filter(sentence => 
-          sentence.length > 25 && 
-          (sentence.toLowerCase().includes('improve') || 
-           sentence.toLowerCase().includes('practice') ||
-           sentence.toLowerCase().includes('work on') ||
-           sentence.toLowerCase().includes('focus') ||
-           sentence.toLowerCase().includes('develop') ||
-           sentence.toLowerCase().includes('need'))
-        )
-        .slice(0, 3)
-        .map(tip => tip.trim().replace(/^To\s+/i, '').replace(/^You\s+should\s+/i, ''));
-        
-      if (pathToHigherScore.length === 0) {
-        pathToHigherScore = [
-          "Continue practicing speaking with more confidence and natural flow",
-          "Work on expanding vocabulary range and using more precise expressions", 
-          "Focus on grammatical accuracy while maintaining speaking fluency",
-          "Develop clearer pronunciation and more natural intonation patterns"
-        ];
-      }
-    }
-
-    console.log('✅ Final parsed scores:', {
-      fluency: fluencyScore,
-      lexical: lexicalScore,
-      grammar: grammarScore,
-      pronunciation: pronunciationScore,
-      overall: overallBandScore,
-      pathItemsCount: pathToHigherScore.length
-    });
-
     return {
       overall_band_score: overallBandScore,
       fluency_coherence: {
         score: fluencyScore,
-        feedback: extractFeedback(fluencyMatch, 'FLUENCY')
+        feedback: fluencyMatch ? fluencyMatch[2].trim() : defaultFeedback
       },
       lexical_resource: {
         score: lexicalScore,
-        feedback: extractFeedback(lexicalMatch, 'LEXICAL')
+        feedback: lexicalMatch ? lexicalMatch[2].trim() : defaultFeedback
       },
       grammatical_range: {
         score: grammarScore,
-        feedback: extractFeedback(grammarMatch, 'GRAMMATICAL')
+        feedback: grammarMatch ? grammarMatch[2].trim() : defaultFeedback
       },
       pronunciation: {
         score: pronunciationScore,
-        feedback: extractFeedback(pronunciationMatch, 'PRONUNCIATION')
+        feedback: pronunciationMatch ? pronunciationMatch[2].trim() : defaultFeedback
       },
-      path_to_higher_score: pathToHigherScore
+      path_to_higher_score: feedbackMatch ? 
+        feedbackMatch[1].trim().split(/\d+\.|\n-|\n•/).filter(tip => tip.trim().length > 0).map(tip => tip.trim()).slice(0, 4) :
+        [
+          "Provide substantive responses to all questions instead of silence or minimal words",
+          "Practice speaking for the full allocated time with relevant content", 
+          "Work on developing complete thoughts and explanations for each question"
+        ]
     };
   };
 
@@ -524,33 +373,11 @@ const IELTSSpeakingResults = () => {
               </div>
             </div>
             <h2 className="text-2xl font-bold mb-2 mt-4">Overall Band Score</h2>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-muted-foreground">
               {overallFeedback.overall_band_score >= 8 ? 'Excellent Performance' : 
                overallFeedback.overall_band_score >= 6.5 ? 'Good Performance' : 
                overallFeedback.overall_band_score >= 5 ? 'Competent Performance' : 'Needs Improvement'}
             </p>
-            
-            {/* Request Assess Again Button */}
-            <div className="flex justify-center">
-              <Button
-                onClick={handleReassessment}
-                disabled={isReanalyzing}
-                variant="outline"
-                className="border-primary/30 text-primary hover:bg-primary/10 disabled:opacity-50"
-              >
-                {isReanalyzing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
-                    Reassessing...
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Request Assess Again
-                  </>
-                )}
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
@@ -706,35 +533,36 @@ const IELTSSpeakingResults = () => {
                     </span>
                   </div>
 
-                  {/* DeepSeek AI Suggestion Generator */}
-                  <div className="mt-4">
-                    <DeepSeekSuggestionGenerator
-                      questionText={analysis.questionText}
-                      userTranscription={analysis.transcription}
-                      part={analysis.part}
-                      questionIndex={analysis.questionIndex}
-                      audioFeatures={analysis.audioFeatures}
-                      onSuggestionGenerated={(originalSpans, suggestedSpans) => {
-                        const questionKey = `${analysis.part}_${analysis.questionIndex}`;
-                        setAiSuggestions(prev => ({
-                          ...prev,
-                          [questionKey]: { original_spans: originalSpans, suggested_spans: suggestedSpans }
-                        }));
-                      }}
-                    />
-                  </div>
+                  {/* AI Suggested Better Answer - directly under audio response */}
+                  {(() => {
+                    const questionKey = `${analysis.part}_${analysis.questionIndex}`;
+                    const suggestion = aiSuggestions[questionKey];
+                    if (suggestion && suggestion.original_spans && suggestion.suggested_spans) {
+                      return (
+                        <div className="bg-muted/50 rounded-lg p-4 mt-4">
+                          <h4 className="font-medium mb-3 flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" />
+                            AI Suggested Better Answer:
+                          </h4>
+                          <SuggestionVisualizer
+                            originalSpans={suggestion.original_spans}
+                            suggestedSpans={suggestion.suggested_spans}
+                            dimNeutral={false}
+                            hideOriginal={false}
+                          />
+                          <div className="mt-3 flex justify-end">
+                            <ElevenLabsVoiceOptimized 
+                              text={suggestion.suggested_spans?.map(span => span?.text || '').filter(Boolean).join('') || ''}
+                              className="text-xs"
+                              questionId={`suggestion_${analysis.part}_${analysis.questionIndex}`}
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
-
-                {/* Speech Analysis Visualization */}
-                {analysis.audioFeatures && (
-                  <div className="mt-4">
-                    <SpeechAnalysisChart
-                      audioFeatures={analysis.audioFeatures}
-                      transcription={analysis.transcription}
-                      part={analysis.part}
-                    />
-                  </div>
-                )}
 
                 {/* Advanced AI Feedback */}
                 <div>

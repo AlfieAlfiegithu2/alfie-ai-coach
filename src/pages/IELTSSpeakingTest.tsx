@@ -48,13 +48,13 @@ const IELTSSpeakingTest = () => {
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
   const [showAIAssistant, setShowAIAssistant] = useState(false);
-  // Catbot chat state for speaking assistant
+  // Foxbot chat state for speaking assistant
   interface ChatMessage { id: string; type: 'user' | 'bot'; content: string; timestamp: Date; }
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       type: 'bot',
-      content: "Hello! I'm Catbot, your IELTS Speaking tutor. I can help with ideas, structure, and vocabulary. What would you like help with?",
+      content: "Hello! I'm Foxbot, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
       timestamp: new Date()
     }
   ]);
@@ -649,7 +649,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
       setChatMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending chat message:', error);
-      toast({ title: 'Error', description: 'Failed to get response from Catbot', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to get response from Foxbot', variant: 'destructive' });
     } finally {
       setIsChatLoading(false);
     }
@@ -959,8 +959,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                   ))}
                   {isChatLoading && (
                     <div className="flex gap-3 justify-start">
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1">
-                        <Bot className="w-4 h-4 text-primary" />
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1 overflow-hidden">
+                        <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-6 h-6 rounded-full object-cover" />
                       </div>
                       <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
                         <div className="flex gap-1">
@@ -1024,9 +1024,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           ) : (
             <Button
               onClick={() => setShowAIAssistant(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center p-0 overflow-hidden"
             >
-              <Bot className="w-6 h-6" />
+              <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-12 h-12 rounded-full object-cover" />
             </Button>
           )}
         </div>

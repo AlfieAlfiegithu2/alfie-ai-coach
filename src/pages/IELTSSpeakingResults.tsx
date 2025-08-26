@@ -264,19 +264,31 @@ const IELTSSpeakingResults = () => {
   };
 
   const parseOverallAnalysis = (analysisText: string): OverallFeedback => {
+    console.log('🔍 Parsing AI analysis response:', analysisText.substring(0, 500) + '...');
+    
     // Parse the structured response from the AI - remove asterisks for cleaner parsing
     const cleanText = analysisText.replace(/\*\*/g, '');
     
-    const fluencyMatch = cleanText.match(/FLUENCY & COHERENCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
-    const lexicalMatch = cleanText.match(/LEXICAL RESOURCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
-    const grammarMatch = cleanText.match(/GRAMMATICAL RANGE & ACCURACY:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
-    const pronunciationMatch = cleanText.match(/PRONUNCIATION:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/);
-    const overallMatch = cleanText.match(/OVERALL BAND SCORE:\s*(\d(?:\.\d)?)/);
-    const feedbackMatch = cleanText.match(/COMPREHENSIVE FEEDBACK:\s*([^$]+)/);
+    // More flexible regex patterns to match different AI response formats
+    const fluencyMatch = cleanText.match(/FLUENCY\s*[&]?\s*COHERENCE[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
+    const lexicalMatch = cleanText.match(/LEXICAL\s*RESOURCE[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
+    const grammarMatch = cleanText.match(/GRAMMATICAL\s*RANGE\s*[&]?\s*ACCURACY[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
+    const pronunciationMatch = cleanText.match(/PRONUNCIATION[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
+    const overallMatch = cleanText.match(/OVERALL\s*BAND\s*SCORE[:\s]*(\d+(?:\.\d+)?)/i);
+    const feedbackMatch = cleanText.match(/(?:COMPREHENSIVE\s*FEEDBACK|DETAILED\s*FEEDBACK|FEEDBACK)[:\s]*([^$]+)/i);
 
-    // Ensure scores are realistic - if parsing fails, use very low scores
-    const defaultScore = 1;
-    const defaultFeedback = "Unable to properly assess. Please retake the test with substantive responses.";
+    console.log('📊 Parsing results:', {
+      fluencyFound: !!fluencyMatch,
+      lexicalFound: !!lexicalMatch,
+      grammarFound: !!grammarMatch,
+      pronunciationFound: !!pronunciationMatch,
+      overallFound: !!overallMatch,
+      feedbackFound: !!feedbackMatch
+    });
+
+    // More realistic default scores - if no proper analysis, assume basic level
+    const defaultScore = 3;
+    const defaultFeedback = "Analysis parsing failed. Basic assessment: Focus on speaking more fluently with clearer pronunciation and expanded vocabulary.";
 
     // Calculate individual scores with rounding
     const fluencyScore = roundToIELTSBandScore(fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore);
@@ -287,6 +299,39 @@ const IELTSSpeakingResults = () => {
     // Calculate overall band score from individual scores (not from AI response)
     const averageScore = (fluencyScore + lexicalScore + grammarScore + pronunciationScore) / 4;
     const overallBandScore = roundToIELTSBandScore(averageScore);
+
+    // If AI analysis failed to parse, try to extract any meaningful feedback from the raw text
+    let pathToHigherScore: string[] = [];
+    if (feedbackMatch) {
+      pathToHigherScore = feedbackMatch[1].trim()
+        .split(/\d+\.|\n-|\n•|•/)
+        .filter(tip => tip.trim().length > 10)
+        .map(tip => tip.trim())
+        .slice(0, 4);
+    }
+    
+    // If no structured feedback found, try to extract useful tips from the entire response
+    if (pathToHigherScore.length === 0) {
+      pathToHigherScore = analysisText
+        .split(/[.\n]/)
+        .filter(sentence => 
+          sentence.length > 20 && 
+          (sentence.toLowerCase().includes('improve') || 
+           sentence.toLowerCase().includes('practice') ||
+           sentence.toLowerCase().includes('work on') ||
+           sentence.toLowerCase().includes('develop'))
+        )
+        .slice(0, 3)
+        .map(tip => tip.trim());
+        
+      if (pathToHigherScore.length === 0) {
+        pathToHigherScore = [
+          "Continue practicing speaking with more confidence and fluency",
+          "Work on expanding vocabulary and using more complex sentence structures", 
+          "Focus on pronunciation clarity and natural intonation patterns"
+        ];
+      }
+    }
 
     return {
       overall_band_score: overallBandScore,
@@ -306,13 +351,7 @@ const IELTSSpeakingResults = () => {
         score: pronunciationScore,
         feedback: pronunciationMatch ? pronunciationMatch[2].trim() : defaultFeedback
       },
-      path_to_higher_score: feedbackMatch ? 
-        feedbackMatch[1].trim().split(/\d+\.|\n-|\n•/).filter(tip => tip.trim().length > 0).map(tip => tip.trim()).slice(0, 4) :
-        [
-          "Provide substantive responses to all questions instead of silence or minimal words",
-          "Practice speaking for the full allocated time with relevant content", 
-          "Work on developing complete thoughts and explanations for each question"
-        ]
+      path_to_higher_score: pathToHigherScore
     };
   };
 

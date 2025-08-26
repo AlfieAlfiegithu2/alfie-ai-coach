@@ -289,7 +289,12 @@ Rules:
         }
       }
 
-      console.log(`✅ Individual analysis complete for ${recording.part}:`, (feedback || '').substring(0, 100) + '...');
+        console.log(`✅ Individual analysis complete for ${recording.part}:`, {
+          feedback: (feedback || '').substring(0, 100) + '...',
+          hasOriginalSpans: original_spans.length > 0,
+          hasSuggestedSpans: suggested_spans.length > 0,
+          spanCounts: { original: original_spans.length, suggested: suggested_spans.length }
+        });
         
       return {
         part: recording.part,

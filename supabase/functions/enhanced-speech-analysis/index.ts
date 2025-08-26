@@ -151,7 +151,7 @@ serve(async (req) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${openaiApiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14',
+            model: 'gpt-5-nano-2025-08-07',
             messages: [
               { role: 'system', content: 'You are a precise IELTS examiner. Output STRICT JSON only, no prose.' },
               prompt
@@ -302,7 +302,7 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, sp
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-nano-2025-08-07',
         messages: [
           {
             role: 'system',

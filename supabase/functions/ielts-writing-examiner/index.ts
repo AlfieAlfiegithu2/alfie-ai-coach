@@ -54,8 +54,9 @@ async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
   }
 }
 
-async function callOpenAI(messages: any[], apiKey: string) {
-  console.log('🚀 Attempting OpenAI API call as backup...');
+async function callOpenAI(messages: any[], apiKey: string, preferNano = false) {
+  const model = preferNano ? 'gpt-5-nano-2025-08-07' : 'gpt-5-2025-08-07';
+  console.log(`🚀 Attempting OpenAI API call with ${model}...`);
   
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -64,10 +65,10 @@ async function callOpenAI(messages: any[], apiKey: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4.1-2025-04-14',
+      model,
       messages,
       max_completion_tokens: 4000,
-      // Note: no temperature for newer models
+      // Note: no temperature for GPT-5 models
     }),
   });
 
@@ -78,7 +79,7 @@ async function callOpenAI(messages: any[], apiKey: string) {
   }
 
   const data = await response.json();
-  console.log('✅ OpenAI API call successful');
+  console.log(`✅ OpenAI API call successful with ${model}`);
   return data;
 }
 
@@ -203,13 +204,17 @@ CRITICAL RULES:
 - Provide exactly 3 strengths and 3 improvements for each task
 
 IMPROVEMENTS_DETAILED REQUIREMENTS:
-For both Task 1 and Task 2, provide 3-5 specific sentence-level improvements in the "improvements_detailed" array:
-1. "issue": Brief description of the error type (e.g., "Grammar error - subject-verb agreement", "Vocabulary - word choice", "Coherence - unclear pronoun reference")
+For both Task 1 and Task 2, provide ALL significant sentence-level improvements that would help students reach higher band scores (typically 2-15 improvements depending on writing quality):
+1. "issue": Brief description of the error type (e.g., "Grammar error - subject-verb agreement", "Vocabulary - word choice", "Coherence - unclear pronoun reference")  
 2. "sentence_quote": Extract the EXACT problematic sentence or phrase from the student's writing
 3. "improved_version": Provide a Band 9-level correction of the same sentence
 4. "explanation": Clear explanation of why the change improves the writing (1-2 sentences)
 
-Focus on the most impactful errors that would help students reach higher band scores. Include grammar, vocabulary, coherence, and task-specific issues. Quote student text exactly as written.
+DYNAMIC IMPROVEMENT STRATEGY:
+- High-quality writing (Band 7+): Focus on 2-6 sophisticated improvements for precision and naturalness
+- Medium-quality writing (Band 5-6): Provide 5-10 improvements covering grammar, vocabulary, and coherence  
+- Lower-quality writing (Band 4 and below): Provide 8-15 fundamental corrections prioritizing clarity and accuracy
+- Include grammar, vocabulary, coherence, and task-specific issues. Quote student text exactly as written.
 
 JUSTIFICATION REQUIREMENTS (CRITICAL):
 Each justification must be detailed and convincing with specific evidence:
@@ -243,28 +248,42 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
         console.error('❌ DeepSeek API failed:', deepSeekError.message);
         
         if (openAIApiKey) {
-          console.log('🔄 Falling back to OpenAI API...');
+          console.log('🔄 Falling back to OpenAI GPT-5...');
           try {
-            data = await callOpenAI(messages, openAIApiKey);
-            apiUsed = 'openai';
-            console.log('✅ OpenAI fallback succeeded');
+            data = await callOpenAI(messages, openAIApiKey, false);
+            apiUsed = 'openai-gpt5';
+            console.log('✅ OpenAI GPT-5 fallback succeeded');
           } catch (openAIError) {
-            console.error('❌ OpenAI fallback also failed:', openAIError.message);
-            throw new Error(`Both APIs failed - DeepSeek: ${deepSeekError.message}, OpenAI: ${openAIError.message}`);
+            console.log('🔄 Trying OpenAI GPT-5 Nano as final fallback...');
+            try {
+              data = await callOpenAI(messages, openAIApiKey, true);
+              apiUsed = 'openai-gpt5-nano';
+              console.log('✅ OpenAI GPT-5 Nano fallback succeeded');
+            } catch (nanoError) {
+              console.error('❌ All OpenAI models failed:', nanoError.message);
+              throw new Error(`All APIs failed - DeepSeek: ${deepSeekError.message}, OpenAI GPT-5: ${openAIError.message}, GPT-5 Nano: ${nanoError.message}`);
+            }
           }
         } else {
           throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
         }
       }
     } else if (openAIApiKey) {
-      console.log('🔄 Using OpenAI API (DeepSeek not available)...');
+      console.log('🔄 Using OpenAI GPT-5 (DeepSeek not available)...');
       try {
-        data = await callOpenAI(messages, openAIApiKey);
-        apiUsed = 'openai';
-        console.log('✅ OpenAI API call completed successfully');
+        data = await callOpenAI(messages, openAIApiKey, false);
+        apiUsed = 'openai-gpt5';
+        console.log('✅ OpenAI GPT-5 call completed successfully');
       } catch (openAIError) {
-        console.error('❌ OpenAI API failed:', openAIError.message);
-        throw new Error(`OpenAI API failed: ${openAIError.message}`);
+        console.log('🔄 Trying OpenAI GPT-5 Nano as fallback...');
+        try {
+          data = await callOpenAI(messages, openAIApiKey, true);
+          apiUsed = 'openai-gpt5-nano';
+          console.log('✅ OpenAI GPT-5 Nano completed successfully');
+        } catch (nanoError) {
+          console.error('❌ All OpenAI models failed:', nanoError.message);
+          throw new Error(`All OpenAI models failed - GPT-5: ${openAIError.message}, GPT-5 Nano: ${nanoError.message}`);
+        }
       }
     } else {
       throw new Error('No API keys available');

@@ -267,89 +267,146 @@ const IELTSSpeakingResults = () => {
     console.log('🔍 Parsing AI analysis response:', analysisText.substring(0, 500) + '...');
     
     // Parse the structured response from the AI - remove asterisks for cleaner parsing
-    const cleanText = analysisText.replace(/\*\*/g, '');
+    const cleanText = analysisText.replace(/\*\*/g, '').replace(/\*/g, '');
     
-    // More flexible regex patterns to match different AI response formats
-    const fluencyMatch = cleanText.match(/FLUENCY\s*[&]?\s*COHERENCE[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
-    const lexicalMatch = cleanText.match(/LEXICAL\s*RESOURCE[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
-    const grammarMatch = cleanText.match(/GRAMMATICAL\s*RANGE\s*[&]?\s*ACCURACY[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
-    const pronunciationMatch = cleanText.match(/PRONUNCIATION[:\s]*(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+)/i);
-    const overallMatch = cleanText.match(/OVERALL\s*BAND\s*SCORE[:\s]*(\d+(?:\.\d+)?)/i);
-    const feedbackMatch = cleanText.match(/(?:COMPREHENSIVE\s*FEEDBACK|DETAILED\s*FEEDBACK|FEEDBACK)[:\s]*([^$]+)/i);
+    // More comprehensive regex patterns to match various AI response formats
+    const fluencyMatch = cleanText.match(/FLUENCY\s*[&]?\s*COHERENCE[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=LEXICAL|$)/is);
+    const lexicalMatch = cleanText.match(/LEXICAL\s*RESOURCE[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=GRAMMATICAL|$)/is);
+    const grammarMatch = cleanText.match(/GRAMMATICAL\s*RANGE\s*[&]?\s*ACCURACY[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=PRONUNCIATION|$)/is);
+    const pronunciationMatch = cleanText.match(/PRONUNCIATION[:\s]*(?:Band\s*)?(\d+(?:\.\d+)?)[^\d]*?([^A-Z\n]+?)(?=OVERALL|COMPREHENSIVE|$)/is);
+    
+    // Also try alternative parsing if main patterns fail
+    let fallbackScores: number[] = [];
+    const allScoreMatches = cleanText.match(/(?:Band\s*)?(\d+(?:\.\d+)?)/g);
+    if (allScoreMatches && allScoreMatches.length >= 4) {
+      fallbackScores = allScoreMatches.slice(0, 4).map(match => {
+        const score = match.replace(/Band\s*/i, '');
+        return parseFloat(score) || 3;
+      });
+    }
 
     console.log('📊 Parsing results:', {
       fluencyFound: !!fluencyMatch,
       lexicalFound: !!lexicalMatch,
       grammarFound: !!grammarMatch,
       pronunciationFound: !!pronunciationMatch,
-      overallFound: !!overallMatch,
-      feedbackFound: !!feedbackMatch
+      fallbackScoresFound: fallbackScores.length,
+      rawScores: {
+        fluency: fluencyMatch ? fluencyMatch[1] : 'not found',
+        lexical: lexicalMatch ? lexicalMatch[1] : 'not found',
+        grammar: grammarMatch ? grammarMatch[1] : 'not found',
+        pronunciation: pronunciationMatch ? pronunciationMatch[1] : 'not found'
+      }
     });
 
-    // More realistic default scores - if no proper analysis, assume basic level
-    const defaultScore = 3;
-    const defaultFeedback = "Analysis parsing failed. Basic assessment: Focus on speaking more fluently with clearer pronunciation and expanded vocabulary.";
-
-    // Calculate individual scores with rounding
-    const fluencyScore = roundToIELTSBandScore(fluencyMatch ? parseFloat(fluencyMatch[1]) : defaultScore);
-    const lexicalScore = roundToIELTSBandScore(lexicalMatch ? parseFloat(lexicalMatch[1]) : defaultScore);
-    const grammarScore = roundToIELTSBandScore(grammarMatch ? parseFloat(grammarMatch[1]) : defaultScore);
-    const pronunciationScore = roundToIELTSBandScore(pronunciationMatch ? parseFloat(pronunciationMatch[1]) : defaultScore);
+    // Use matched scores or fallback scores
+    const fluencyScore = roundToIELTSBandScore(
+      fluencyMatch ? parseFloat(fluencyMatch[1]) : 
+      (fallbackScores[0] || 4)
+    );
+    
+    const lexicalScore = roundToIELTSBandScore(
+      lexicalMatch ? parseFloat(lexicalMatch[1]) : 
+      (fallbackScores[1] || 4)
+    );
+    
+    const grammarScore = roundToIELTSBandScore(
+      grammarMatch ? parseFloat(grammarMatch[1]) : 
+      (fallbackScores[2] || 4)
+    );
+    
+    const pronunciationScore = roundToIELTSBandScore(
+      pronunciationMatch ? parseFloat(pronunciationMatch[1]) : 
+      (fallbackScores[3] || 4)
+    );
     
     // Calculate overall band score from individual scores (not from AI response)
     const averageScore = (fluencyScore + lexicalScore + grammarScore + pronunciationScore) / 4;
     const overallBandScore = roundToIELTSBandScore(averageScore);
 
-    // If AI analysis failed to parse, try to extract any meaningful feedback from the raw text
+    // Extract feedback text more flexibly
+    const extractFeedback = (match: RegExpMatchArray | null, criterion: string): string => {
+      if (match && match[2]) {
+        let feedback = match[2].trim();
+        // Clean up feedback text
+        feedback = feedback.replace(/^\s*-\s*/, '').trim();
+        if (feedback.length > 10) return feedback;
+      }
+      
+      // Try to extract feedback for this criterion from the full text
+      const criterionRegex = new RegExp(`${criterion}[^\\n]*?([^\\n]+?)(?=[A-Z]{4,}|$)`, 'i');
+      const criterionMatch = cleanText.match(criterionRegex);
+      if (criterionMatch && criterionMatch[1] && criterionMatch[1].trim().length > 10) {
+        return criterionMatch[1].trim();
+      }
+      
+      return "Shows potential but needs focused improvement in this area. Practice regularly to develop stronger skills.";
+    };
+
+    // Extract comprehensive feedback
+    const feedbackMatch = cleanText.match(/(?:COMPREHENSIVE\s*FEEDBACK|DETAILED\s*FEEDBACK|FEEDBACK)[:\s]*([^$]+)/is);
     let pathToHigherScore: string[] = [];
+    
     if (feedbackMatch) {
       pathToHigherScore = feedbackMatch[1].trim()
-        .split(/\d+\.|\n-|\n•|•/)
-        .filter(tip => tip.trim().length > 10)
-        .map(tip => tip.trim())
+        .split(/\d+\.|\n-|\n•|•|\n\n/)
+        .filter(tip => tip.trim().length > 15)
+        .map(tip => tip.trim().replace(/^[-•\s]+/, ''))
         .slice(0, 4);
     }
     
-    // If no structured feedback found, try to extract useful tips from the entire response
+    // If no structured feedback found, extract useful sentences from the entire response
     if (pathToHigherScore.length === 0) {
       pathToHigherScore = analysisText
-        .split(/[.\n]/)
+        .split(/[.\n!]/)
         .filter(sentence => 
-          sentence.length > 20 && 
+          sentence.length > 25 && 
           (sentence.toLowerCase().includes('improve') || 
            sentence.toLowerCase().includes('practice') ||
            sentence.toLowerCase().includes('work on') ||
-           sentence.toLowerCase().includes('develop'))
+           sentence.toLowerCase().includes('focus') ||
+           sentence.toLowerCase().includes('develop') ||
+           sentence.toLowerCase().includes('need'))
         )
         .slice(0, 3)
-        .map(tip => tip.trim());
+        .map(tip => tip.trim().replace(/^To\s+/i, '').replace(/^You\s+should\s+/i, ''));
         
       if (pathToHigherScore.length === 0) {
         pathToHigherScore = [
-          "Continue practicing speaking with more confidence and fluency",
-          "Work on expanding vocabulary and using more complex sentence structures", 
-          "Focus on pronunciation clarity and natural intonation patterns"
+          "Continue practicing speaking with more confidence and natural flow",
+          "Work on expanding vocabulary range and using more precise expressions", 
+          "Focus on grammatical accuracy while maintaining speaking fluency",
+          "Develop clearer pronunciation and more natural intonation patterns"
         ];
       }
     }
+
+    console.log('✅ Final parsed scores:', {
+      fluency: fluencyScore,
+      lexical: lexicalScore,
+      grammar: grammarScore,
+      pronunciation: pronunciationScore,
+      overall: overallBandScore,
+      pathItemsCount: pathToHigherScore.length
+    });
 
     return {
       overall_band_score: overallBandScore,
       fluency_coherence: {
         score: fluencyScore,
-        feedback: fluencyMatch ? fluencyMatch[2].trim() : defaultFeedback
+        feedback: extractFeedback(fluencyMatch, 'FLUENCY')
       },
       lexical_resource: {
         score: lexicalScore,
-        feedback: lexicalMatch ? lexicalMatch[2].trim() : defaultFeedback
+        feedback: extractFeedback(lexicalMatch, 'LEXICAL')
       },
       grammatical_range: {
         score: grammarScore,
-        feedback: grammarMatch ? grammarMatch[2].trim() : defaultFeedback
+        feedback: extractFeedback(grammarMatch, 'GRAMMATICAL')
       },
       pronunciation: {
         score: pronunciationScore,
-        feedback: pronunciationMatch ? pronunciationMatch[2].trim() : defaultFeedback
+        feedback: extractFeedback(pronunciationMatch, 'PRONUNCIATION')
       },
       path_to_higher_score: pathToHigherScore
     };

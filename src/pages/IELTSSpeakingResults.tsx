@@ -44,6 +44,7 @@ const IELTSSpeakingResults = () => {
   const [overallFeedback, setOverallFeedback] = useState<OverallFeedback | null>(null);
   const [questionAnalyses, setQuestionAnalyses] = useState<QuestionAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
   
@@ -190,6 +191,49 @@ const IELTSSpeakingResults = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleReassessment = async () => {
+    if (!testData || !recordings) {
+      toast({
+        title: "Error",
+        description: "Test data not available for reassessment",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsReanalyzing(true);
+    try {
+      console.log('🔄 Starting reassessment of speaking test...');
+      
+      // Clear current results first
+      setOverallFeedback(null);
+      setQuestionAnalyses([]);
+      setAiSuggestions({});
+      
+      toast({
+        title: "Reassessment Started",
+        description: "Running fresh AI analysis on your recordings...",
+      });
+
+      // Reuse the same analysis logic
+      await analyzeTestResults();
+      
+      toast({
+        title: "Assessment Complete",
+        description: "Your speaking test has been reassessed with fresh analysis!",
+      });
+    } catch (error) {
+      console.error('Error during reassessment:', error);
+      toast({
+        title: "Reassessment Failed",
+        description: "Failed to reassess your test. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsReanalyzing(false);
     }
   };
 
@@ -373,11 +417,33 @@ const IELTSSpeakingResults = () => {
               </div>
             </div>
             <h2 className="text-2xl font-bold mb-2 mt-4">Overall Band Score</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               {overallFeedback.overall_band_score >= 8 ? 'Excellent Performance' : 
                overallFeedback.overall_band_score >= 6.5 ? 'Good Performance' : 
                overallFeedback.overall_band_score >= 5 ? 'Competent Performance' : 'Needs Improvement'}
             </p>
+            
+            {/* Request Assess Again Button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={handleReassessment}
+                disabled={isReanalyzing}
+                variant="outline"
+                className="border-primary/30 text-primary hover:bg-primary/10 disabled:opacity-50"
+              >
+                {isReanalyzing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                    Reassessing...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Request Assess Again
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

@@ -236,54 +236,55 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
     ];
 
     let data;
-    let apiUsed = 'deepseek';
+    let apiUsed = 'openai-gpt5-nano';
     
-    // Try DeepSeek first, then OpenAI as backup
-    if (deepSeekApiKey) {
-      console.log('🔄 Using DeepSeek API as primary...');
+    // Try GPT-5 Nano first, then DeepSeek, then GPT-5 as final fallback
+    if (openAIApiKey) {
+      console.log('🔄 Using OpenAI GPT-5 Nano as primary...');
       try {
-        data = await callDeepSeek(messages, deepSeekApiKey);
-        console.log('✅ DeepSeek API call completed successfully');
-      } catch (deepSeekError) {
-        console.error('❌ DeepSeek API failed:', deepSeekError.message);
+        data = await callOpenAI(messages, openAIApiKey, true);
+        console.log('✅ OpenAI GPT-5 Nano call completed successfully');
+      } catch (nanoError) {
+        console.error('❌ OpenAI GPT-5 Nano failed:', nanoError.message);
         
-        if (openAIApiKey) {
-          console.log('🔄 Falling back to OpenAI GPT-5...');
+        if (deepSeekApiKey) {
+          console.log('🔄 Falling back to DeepSeek...');
+          try {
+            data = await callDeepSeek(messages, deepSeekApiKey);
+            apiUsed = 'deepseek';
+            console.log('✅ DeepSeek fallback succeeded');
+          } catch (deepSeekError) {
+            console.log('🔄 Trying OpenAI GPT-5 as final fallback...');
+            try {
+              data = await callOpenAI(messages, openAIApiKey, false);
+              apiUsed = 'openai-gpt5';
+              console.log('✅ OpenAI GPT-5 final fallback succeeded');
+            } catch (gpt5Error) {
+              console.error('❌ All models failed:', gpt5Error.message);
+              throw new Error(`All APIs failed - GPT-5 Nano: ${nanoError.message}, DeepSeek: ${deepSeekError.message}, GPT-5: ${gpt5Error.message}`);
+            }
+          }
+        } else {
+          console.log('🔄 Trying OpenAI GPT-5 as fallback (DeepSeek not available)...');
           try {
             data = await callOpenAI(messages, openAIApiKey, false);
             apiUsed = 'openai-gpt5';
             console.log('✅ OpenAI GPT-5 fallback succeeded');
-          } catch (openAIError) {
-            console.log('🔄 Trying OpenAI GPT-5 Nano as final fallback...');
-            try {
-              data = await callOpenAI(messages, openAIApiKey, true);
-              apiUsed = 'openai-gpt5-nano';
-              console.log('✅ OpenAI GPT-5 Nano fallback succeeded');
-            } catch (nanoError) {
-              console.error('❌ All OpenAI models failed:', nanoError.message);
-              throw new Error(`All APIs failed - DeepSeek: ${deepSeekError.message}, OpenAI GPT-5: ${openAIError.message}, GPT-5 Nano: ${nanoError.message}`);
-            }
+          } catch (gpt5Error) {
+            console.error('❌ All OpenAI models failed:', gpt5Error.message);
+            throw new Error(`All OpenAI models failed - GPT-5 Nano: ${nanoError.message}, GPT-5: ${gpt5Error.message}`);
           }
-        } else {
-          throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
         }
       }
-    } else if (openAIApiKey) {
-      console.log('🔄 Using OpenAI GPT-5 (DeepSeek not available)...');
+    } else if (deepSeekApiKey) {
+      console.log('🔄 Using DeepSeek (OpenAI not available)...');
       try {
-        data = await callOpenAI(messages, openAIApiKey, false);
-        apiUsed = 'openai-gpt5';
-        console.log('✅ OpenAI GPT-5 call completed successfully');
-      } catch (openAIError) {
-        console.log('🔄 Trying OpenAI GPT-5 Nano as fallback...');
-        try {
-          data = await callOpenAI(messages, openAIApiKey, true);
-          apiUsed = 'openai-gpt5-nano';
-          console.log('✅ OpenAI GPT-5 Nano completed successfully');
-        } catch (nanoError) {
-          console.error('❌ All OpenAI models failed:', nanoError.message);
-          throw new Error(`All OpenAI models failed - GPT-5: ${openAIError.message}, GPT-5 Nano: ${nanoError.message}`);
-        }
+        data = await callDeepSeek(messages, deepSeekApiKey);
+        apiUsed = 'deepseek';
+        console.log('✅ DeepSeek call completed successfully');
+      } catch (deepSeekError) {
+        console.error('❌ DeepSeek failed and no OpenAI key available:', deepSeekError.message);
+        throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
       }
     } else {
       throw new Error('No API keys available');

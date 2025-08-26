@@ -54,8 +54,8 @@ async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
   }
 }
 
-async function callOpenAI(messages: any[], apiKey: string, preferNano = false) {
-  const model = preferNano ? 'gpt-5-nano-2025-08-07' : 'gpt-5-2025-08-07';
+async function callOpenAI(messages: any[], apiKey: string, preferMini = false) {
+  const model = preferMini ? 'gpt-4.1-mini-2025-04-14' : 'gpt-4.1-2025-04-14';
   console.log(`🚀 Attempting OpenAI API call with ${model}...`);
   
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -67,8 +67,8 @@ async function callOpenAI(messages: any[], apiKey: string, preferNano = false) {
     body: JSON.stringify({
       model,
       messages,
-      max_completion_tokens: 4000,
-      // Note: no temperature for GPT-5 models
+      max_tokens: 4000,
+      temperature: 0.1, // GPT-4.1 supports temperature
     }),
   });
 
@@ -236,55 +236,54 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
     ];
 
     let data;
-    let apiUsed = 'openai-gpt5-nano';
+    let apiUsed = 'deepseek';
     
-    // Try GPT-5 Nano first, then DeepSeek, then GPT-5 as final fallback
-    if (openAIApiKey) {
-      console.log('🔄 Using OpenAI GPT-5 Nano as primary...');
+    // Try DeepSeek first, then GPT-4.1 Mini, then GPT-4.1 as final fallback
+    if (deepSeekApiKey) {
+      console.log('🔄 Using DeepSeek as primary...');
       try {
-        data = await callOpenAI(messages, openAIApiKey, true);
-        console.log('✅ OpenAI GPT-5 Nano call completed successfully');
-      } catch (nanoError) {
-        console.error('❌ OpenAI GPT-5 Nano failed:', nanoError.message);
+        data = await callDeepSeek(messages, deepSeekApiKey);
+        console.log('✅ DeepSeek API call completed successfully');
+      } catch (deepSeekError) {
+        console.error('❌ DeepSeek API failed:', deepSeekError.message);
         
-        if (deepSeekApiKey) {
-          console.log('🔄 Falling back to DeepSeek...');
+        if (openAIApiKey) {
+          console.log('🔄 Falling back to OpenAI GPT-4.1 Mini...');
           try {
-            data = await callDeepSeek(messages, deepSeekApiKey);
-            apiUsed = 'deepseek';
-            console.log('✅ DeepSeek fallback succeeded');
-          } catch (deepSeekError) {
-            console.log('🔄 Trying OpenAI GPT-5 as final fallback...');
+            data = await callOpenAI(messages, openAIApiKey, true);
+            apiUsed = 'openai-gpt41-mini';
+            console.log('✅ OpenAI GPT-4.1 Mini fallback succeeded');
+          } catch (miniError) {
+            console.log('🔄 Trying OpenAI GPT-4.1 as final fallback...');
             try {
               data = await callOpenAI(messages, openAIApiKey, false);
-              apiUsed = 'openai-gpt5';
-              console.log('✅ OpenAI GPT-5 final fallback succeeded');
-            } catch (gpt5Error) {
-              console.error('❌ All models failed:', gpt5Error.message);
-              throw new Error(`All APIs failed - GPT-5 Nano: ${nanoError.message}, DeepSeek: ${deepSeekError.message}, GPT-5: ${gpt5Error.message}`);
+              apiUsed = 'openai-gpt41';
+              console.log('✅ OpenAI GPT-4.1 final fallback succeeded');
+            } catch (gpt41Error) {
+              console.error('❌ All models failed:', gpt41Error.message);
+              throw new Error(`All APIs failed - DeepSeek: ${deepSeekError.message}, GPT-4.1 Mini: ${miniError.message}, GPT-4.1: ${gpt41Error.message}`);
             }
           }
         } else {
-          console.log('🔄 Trying OpenAI GPT-5 as fallback (DeepSeek not available)...');
-          try {
-            data = await callOpenAI(messages, openAIApiKey, false);
-            apiUsed = 'openai-gpt5';
-            console.log('✅ OpenAI GPT-5 fallback succeeded');
-          } catch (gpt5Error) {
-            console.error('❌ All OpenAI models failed:', gpt5Error.message);
-            throw new Error(`All OpenAI models failed - GPT-5 Nano: ${nanoError.message}, GPT-5: ${gpt5Error.message}`);
-          }
+          throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
         }
       }
-    } else if (deepSeekApiKey) {
-      console.log('🔄 Using DeepSeek (OpenAI not available)...');
+    } else if (openAIApiKey) {
+      console.log('🔄 Using OpenAI GPT-4.1 Mini (DeepSeek not available)...');
       try {
-        data = await callDeepSeek(messages, deepSeekApiKey);
-        apiUsed = 'deepseek';
-        console.log('✅ DeepSeek call completed successfully');
-      } catch (deepSeekError) {
-        console.error('❌ DeepSeek failed and no OpenAI key available:', deepSeekError.message);
-        throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
+        data = await callOpenAI(messages, openAIApiKey, true);
+        apiUsed = 'openai-gpt41-mini';
+        console.log('✅ OpenAI GPT-4.1 Mini call completed successfully');
+      } catch (miniError) {
+        console.log('🔄 Trying OpenAI GPT-4.1 as fallback...');
+        try {
+          data = await callOpenAI(messages, openAIApiKey, false);
+          apiUsed = 'openai-gpt41';
+          console.log('✅ OpenAI GPT-4.1 fallback succeeded');
+        } catch (gpt41Error) {
+          console.error('❌ All OpenAI models failed:', gpt41Error.message);
+          throw new Error(`All OpenAI models failed - GPT-4.1 Mini: ${miniError.message}, GPT-4.1: ${gpt41Error.message}`);
+        }
       }
     } else {
       throw new Error('No API keys available');

@@ -36,15 +36,41 @@ const IELTSSpeakingTest = () => {
   const { toast } = useToast();
   
   const [testData, setTestData] = useState<TestData | null>(null);
-  const [currentPart, setCurrentPart] = useState(1);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  
+  // Load saved progress from localStorage
+  const getStorageKey = (suffix: string) => `ielts_speaking_${testName}_${suffix}`;
+  
+  const [currentPart, setCurrentPart] = useState(() => {
+    try {
+      const saved = localStorage.getItem(getStorageKey('currentPart'));
+      return saved ? parseInt(saved) : 1;
+    } catch {
+      return 1;
+    }
+  });
+  
+  const [currentQuestion, setCurrentQuestion] = useState(() => {
+    try {
+      const saved = localStorage.getItem(getStorageKey('currentQuestion'));
+      return saved ? parseInt(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [preparationTime, setPreparationTime] = useState(60);
   const [recordings, setRecordings] = useState<{[key: string]: Blob}>({});
-  const [part2Notes, setPart2Notes] = useState("");
+  const [part2Notes, setPart2Notes] = useState(() => {
+    try {
+      return localStorage.getItem(getStorageKey('part2Notes')) || "";
+    } catch {
+      return "";
+    }
+  });
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
   const [showAIAssistant, setShowAIAssistant] = useState(false);
@@ -81,10 +107,28 @@ const IELTSSpeakingTest = () => {
 
   useEffect(() => {
     loadTestData();
+    loadSavedRecordings();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [testName]);
+
+  // Save progress whenever key state changes
+  useEffect(() => {
+    if (testData) {
+      localStorage.setItem(getStorageKey('currentPart'), currentPart.toString());
+    }
+  }, [currentPart, testName, testData]);
+
+  useEffect(() => {
+    if (testData) {
+      localStorage.setItem(getStorageKey('currentQuestion'), currentQuestion.toString());
+    }
+  }, [currentQuestion, testName, testData]);
+
+  useEffect(() => {
+    localStorage.setItem(getStorageKey('part2Notes'), part2Notes);
+  }, [part2Notes, testName]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -124,6 +168,48 @@ const IELTSSpeakingTest = () => {
       }
     }
   }, [testData, currentPart, currentQuestion]);
+
+  const loadSavedRecordings = async () => {
+    try {
+      const savedRecordingsData = localStorage.getItem(getStorageKey('recordings'));
+      if (savedRecordingsData) {
+        const recordingUrls = JSON.parse(savedRecordingsData);
+        const restoredRecordings: {[key: string]: Blob} = {};
+        
+        // Convert back to Blobs if possible (for this session)
+        for (const [key, base64Data] of Object.entries(recordingUrls)) {
+          if (typeof base64Data === 'string') {
+            try {
+              const response = await fetch(base64Data as string);
+              const blob = await response.blob();
+              restoredRecordings[key] = blob;
+            } catch (error) {
+              console.log(`Could not restore recording ${key}, user will need to re-record`);
+            }
+          }
+        }
+        
+        if (Object.keys(restoredRecordings).length > 0) {
+          setRecordings(restoredRecordings);
+          console.log(`📱 Restored ${Object.keys(restoredRecordings).length} recordings from previous session`);
+        }
+      }
+    } catch (error) {
+      console.log('Could not load saved recordings:', error);
+    }
+  };
+
+  const clearSavedProgress = () => {
+    try {
+      localStorage.removeItem(getStorageKey('currentPart'));
+      localStorage.removeItem(getStorageKey('currentQuestion'));
+      localStorage.removeItem(getStorageKey('recordings'));
+      localStorage.removeItem(getStorageKey('part2Notes'));
+      console.log('🧹 Cleared saved speaking test progress');
+    } catch (error) {
+      console.log('Could not clear saved progress:', error);
+    }
+  };
 
   const loadTestData = async () => {
     if (!testName) return;
@@ -277,6 +363,18 @@ const IELTSSpeakingTest = () => {
         setRecordings(prev => {
           const updated = { ...prev, [recordingKey]: blob };
           console.log(`📱 Recordings updated:`, Object.keys(updated));
+          
+          // Save recordings to localStorage for persistence
+          try {
+            const recordingUrls: {[key: string]: string} = {};
+            Object.entries(updated).forEach(([key, recordingBlob]) => {
+              recordingUrls[key] = URL.createObjectURL(recordingBlob);
+            });
+            localStorage.setItem(getStorageKey('recordings'), JSON.stringify(recordingUrls));
+          } catch (error) {
+            console.log('Could not save recordings to localStorage:', error);
+          }
+          
           return updated;
         });
         
@@ -493,6 +591,9 @@ const IELTSSpeakingTest = () => {
           }
 
           console.log('✅ Speaking test results saved successfully');
+          
+          // Clear saved progress after successful submission
+          clearSavedProgress();
         }
       } catch (saveError) {
         console.error('Error saving speaking results:', saveError);
@@ -674,6 +775,21 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
     <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold font-georgia">🎙️ IELTS Speaking Test</h1>
+              <Badge variant="outline" className="text-lg px-3 py-1">
+                {testData?.test_name || 'Loading...'}
+              </Badge>
+              {(currentPart > 1 || currentQuestion > 0) && (
+                <Badge variant="secondary" className="text-sm">
+                  Resuming from Part {currentPart}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Progress */}
         <Card className="card-modern">

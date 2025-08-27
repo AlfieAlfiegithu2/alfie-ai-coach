@@ -157,11 +157,47 @@ Band 0 (No Attempt): Wrote nothing.
 Required Output Format - You MUST return a JSON object with ALL these fields:
 
 {
+  "structured": {
+    "task1": {
+      "criteria": {
+        "task_achievement": 6.5,
+        "coherence_and_cohesion": 6.0,
+        "lexical_resource": 6.0,
+        "grammatical_range_and_accuracy": 6.5
+      },
+      "overall_band": 6.0,
+      "feedback_markdown": "### Task 1 Assessment\\n\\n**Band Score: 6.0**\\n\\n...",
+      "feedback": {
+        "strengths": ["Clear data presentation", "Appropriate structure"],
+        "improvements": ["Use more sophisticated vocabulary", "Improve cohesion"]
+      }
+    },
+    "task2": {
+      "criteria": {
+        "task_response": 7.0,
+        "coherence_and_cohesion": 6.5,
+        "lexical_resource": 6.5,
+        "grammatical_range_and_accuracy": 7.0
+      },
+      "overall_band": 6.5,
+      "feedback_markdown": "### Task 2 Assessment\\n\\n**Band Score: 6.5**\\n\\n...",
+      "feedback": {
+        "strengths": ["Clear position", "Well-developed ideas"],
+        "improvements": ["Better paragraphing", "More examples"]
+      }
+    },
+    "overall": {
+      "band": 6.5,
+      "calculation": "Task 1: 6.0, Task 2: 6.5 (weighted average)",
+      "feedback_markdown": "### Overall Assessment\\n\\n**Overall Band: 6.5**\\n\\n..."
+    },
+    "full_report_markdown": "# IELTS Writing Assessment Report\\n\\n## Overall Band Score: 6.5\\n\\n..."
+  },
   "sentence_comparisons": [
     {
       "original": "The graph shows population data.",
       "improved": "The chart illustrates comprehensive demographic trends.",
-      "explanation": "Enhanced vocabulary by replacing 'shows' with 'illustrates' and added 'comprehensive demographic trends' for precision."
+      "explanation": "Enhanced vocabulary by replacing 'shows' with 'illustrates'."
     }
   ],
   "originalSpans": [
@@ -177,22 +213,25 @@ Required Output Format - You MUST return a JSON object with ALL these fields:
   "improvementSuggestions": [
     {
       "original": "shows",
-      "suggested": "illustrates",
+      "suggested": "illustrates", 
       "explanation": "More sophisticated academic vocabulary"
     }
   ]
 }
 
 CRITICAL RULES:
-- Return ONLY valid JSON with ALL four required fields
-- originalSpans: Mark words that need improvement with "suggestion" status
+- Return ONLY valid JSON with ALL required fields
+- structured: Traditional IELTS assessment with band scores (0-9 scale, half points allowed)
+- sentence_comparisons: Sentence-by-sentence improvements
+- originalSpans: Mark words needing improvement with "suggestion" status
 - correctedSpans: Mark improvements with "enhancement" status
 - Include "neutral" status for unchanged text
-- Ensure spans cover the complete text without gaps
-- Every sentence must be in sentence_comparisons
-- Correct factual errors using image context
+- Ensure spans cover complete text without gaps
+- Calculate overall band as weighted average: Task 1 (33%) + Task 2 (67%)
+- Provide detailed markdown feedback for each task and overall
+- Use the band descriptors above to assign accurate scores
 
-The frontend expects all four fields to display improvements properly.`
+The frontend requires both structures: traditional IELTS scores AND sentence improvements.`
       },
       {
         role: 'user',

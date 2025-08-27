@@ -17,6 +17,14 @@ interface WritingComparisonViewProps {
     improved_version?: string;
     explanation?: string;
   }>;
+  originalSpans?: ComparisonSpan[];
+  correctedSpans?: ComparisonSpan[];
+  sentenceComparisons?: Array<{
+    original: string;
+    improved: string;
+    issue?: string;
+    explanation?: string;
+  }>;
   title: string;
 }
 
@@ -133,14 +141,21 @@ const processTextForComparison = (
 export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
   originalText,
   improvementSuggestions,
+  originalSpans: providedOriginalSpans,
+  correctedSpans: providedCorrectedSpans,
+  sentenceComparisons: providedSentenceComparisons,
   title
 }) => {
   const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
   
-  const { originalSpans, improvedSpans, sentences } = processTextForComparison(
-    originalText,
-    improvementSuggestions
-  );
+  // Use provided spans if available, otherwise fallback to processing
+  const { originalSpans, improvedSpans, sentences } = providedOriginalSpans && providedCorrectedSpans && providedSentenceComparisons
+    ? {
+        originalSpans: providedOriginalSpans,
+        improvedSpans: providedCorrectedSpans,
+        sentences: providedSentenceComparisons
+      }
+    : processTextForComparison(originalText, improvementSuggestions);
 
   if (!originalText.trim()) {
     return null;

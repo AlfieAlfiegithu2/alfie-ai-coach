@@ -143,6 +143,26 @@ JSON SCHEMA (MANDATORY):
         }
       ]
     },
+    "original_spans": [
+      {"text": "The graph shows ", "status": "neutral"},
+      {"text": "general information", "status": "error"},
+      {"text": " about demographics.", "status": "neutral"}
+    ],
+    "corrected_spans": [
+      {"text": "The graph ", "status": "neutral"},
+      {"text": "illustrates specific demographic trends", "status": "improvement"},
+      {"text": " across ", "status": "neutral"},
+      {"text": "three distinct time periods", "status": "improvement"},
+      {"text": ".", "status": "neutral"}
+    ],
+    "sentence_comparisons": [
+      {
+        "original": "The graph shows general information about demographics.",
+        "improved": "The graph illustrates specific demographic trends across three distinct time periods.",
+        "issue": "Ideas - vague example needs specificity",
+        "explanation": "Added concrete details and precise academic vocabulary to strengthen the description"
+      }
+    ],
     "feedback_markdown": "Detailed Task 1 feedback here..."
   },
   "task2": {
@@ -166,6 +186,23 @@ JSON SCHEMA (MANDATORY):
         }
       ]
     },
+    "original_spans": [
+      {"text": "People should make research. ", "status": "error"},
+      {"text": "Technology is important.", "status": "error"}
+    ],
+    "corrected_spans": [
+      {"text": "Comprehensive research is essential to understand how technology ", "status": "improvement"},
+      {"text": "fundamentally transforms", "status": "improvement"},
+      {"text": " social interactions.", "status": "neutral"}
+    ],
+    "sentence_comparisons": [
+      {
+        "original": "People should make research. Technology is important.",
+        "improved": "Comprehensive research is essential to understand how technology fundamentally transforms social interactions.",
+        "issue": "Logic - weak transition between ideas",
+        "explanation": "Combined sentences with sophisticated linking and elevated vocabulary to improve logical flow"
+      }
+    ],
     "feedback_markdown": "Detailed Task 2 feedback here..."
   },
   "overall": {
@@ -189,6 +226,20 @@ For both Task 1 and Task 2, provide comprehensive sentence-level improvements fo
 2. "sentence_quote": Extract the EXACT problematic sentence or phrase from the student's writing
 3. "improved_version": Provide an ambitious rewrite that elevates ideas, logic, structure, and language
 4. "explanation": Clear explanation of how this improves ideas, flow, or sophistication (1-2 sentences)
+
+WORD-LEVEL HIGHLIGHTING REQUIREMENTS (CRITICAL):
+You must also provide "original_spans" and "corrected_spans" arrays for precise word-level highlighting:
+- "original_spans": Break down the student's original text into spans. Mark problematic words/phrases with status: "error", neutral text with status: "neutral"
+- "corrected_spans": Break down your improved version. ONLY mark the specific words/phrases you changed/improved with status: "improvement", everything else should be status: "neutral"
+
+IMPORTANT: When you create the corrected_spans for your improved version, you must be very precise. Do not mark the entire rewritten sentence with status: 'improvement'. Only mark the specific words or short phrases that you have changed, added, or significantly improved. The rest of the sentence, even if it's part of the rewritten version, should have status: 'neutral'.
+
+SENTENCE COMPARISONS REQUIREMENT:
+You must also provide a "sentence_comparisons" array. Each object in this array must contain the full original sentence and the full corresponding improved sentence:
+- "original": Complete original sentence from student's writing
+- "improved": Complete improved version of that sentence  
+- "issue": Brief description of the improvement type
+- "explanation": Clear explanation of the improvement
 
 What qualifies as a meaningful improvement:
 - Idea Improvement: Adding more specific details or clarifying vague points

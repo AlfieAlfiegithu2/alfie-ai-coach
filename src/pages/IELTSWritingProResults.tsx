@@ -42,6 +42,20 @@ interface TaskAssessment {
   overall_reason?: string;
   feedback?: TaskFeedback;
   feedback_markdown?: string;
+  original_spans?: Array<{
+    text: string;
+    status: "error" | "neutral";
+  }>;
+  corrected_spans?: Array<{
+    text: string;
+    status: "improvement" | "neutral";
+  }>;
+  sentence_comparisons?: Array<{
+    original: string;
+    improved: string;
+    issue?: string;
+    explanation?: string;
+  }>;
 }
 
 interface StructuredResult {
@@ -539,6 +553,9 @@ export default function IELTSWritingProResults() {
             <WritingComparisonView
               originalText={userAnswer}
               improvementSuggestions={task.feedback?.improvements_detailed}
+              originalSpans={task.original_spans}
+              correctedSpans={task.corrected_spans}
+              sentenceComparisons={task.sentence_comparisons}
               title={title}
             />
           )}

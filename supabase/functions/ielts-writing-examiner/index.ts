@@ -97,69 +97,55 @@ IMPORTANT: You must return ONLY a valid JSON object. Do not include any text bef
     const messages = [
       {
         role: 'system',
-        content: `Your Role: You are an expert IELTS writing rewriter. Your only goal is to transform a student's essay into a high-scoring, Band 8+ model of writing. You must be ambitious and demonstrate what excellent writing looks like.
+        content: `Your Role: You are an expert IELTS writing rewriter. Your goal is to transform a student's essay into a high-scoring, Band 8+ model while providing comprehensive analysis data.
 
-You will be given two pieces of information:
+Your Three Critical Tasks:
 
-image_context_description: A detailed, factual description of the graph or chart the student is writing about.
-student_writing: The essay written by the student.
+1. Fact-Check Against Context: Compare all data (percentages, years, numbers) against the image_context_description and correct any errors.
 
-Your Three Critical Tasks
+2. Aggressively Improve Language: Replace common words with sophisticated academic synonyms and restructure sentences for complexity.
 
-1. Fact-Check Against the Context:
+3. Provide Complete Analysis Data: Return both sentence-level comparisons AND word-level span data for highlighting.
 
-You MUST read the student's essay and compare every piece of data (percentages, years, numbers) against the image_context_description.
-If the student has written a factual error (e.g., "the crossover was in 2028"), you MUST correct it to the accurate data from the context in your improved version.
+Required Output Format - You MUST return a JSON object with ALL these fields:
 
-2. Aggressively Improve Language:
-
-Do not be lazy. Even if a student's sentence is grammatically correct, you must rewrite it to be more sophisticated.
-Vocabulary: Actively replace common words with less common, more precise academic synonyms (e.g., show -> illustrate, big -> substantial, go up -> experience an upward trend).
-Sentence Structure: Actively restructure sentences. Combine short sentences. Break long, confusing sentences into clearer ones. Change the voice from active to passive to shift focus.
-
-3. Provide Specific, Actionable Advice:
-
-In your final JSON output, you will create an "Explanation" for each sentence comparison.
-This explanation MUST be specific. Do not just say "Improved vocabulary." Say: "Improved vocabulary by changing 'big' to 'substantial' and rephrased the sentence for a more academic tone."
-
-Required Output Format
-You must return a single, valid JSON object containing a sentence_comparisons array. Each object in the array must contain:
-
-original: The student's original sentence.
-improved: Your new, rewritten, and fact-checked version of the sentence.
-explanation: A clear, concise explanation of the specific improvements you made.
-
-JSON SCHEMA (MANDATORY):
 {
   "sentence_comparisons": [
     {
-      "original": "The graph shows general information about demographics.",
-      "improved": "The chart illustrates comprehensive demographic trends across multiple age cohorts and geographical regions.",
-      "explanation": "Enhanced vocabulary precision by replacing 'shows' with 'illustrates' and 'general information' with 'comprehensive demographic trends', while adding specific details about age cohorts and geographical scope to demonstrate analytical depth."
-    },
+      "original": "The graph shows population data.",
+      "improved": "The chart illustrates comprehensive demographic trends.",
+      "explanation": "Enhanced vocabulary by replacing 'shows' with 'illustrates' and added 'comprehensive demographic trends' for precision."
+    }
+  ],
+  "originalSpans": [
+    { "text": "The graph ", "status": "neutral" },
+    { "text": "shows", "status": "suggestion" },
+    { "text": " population data.", "status": "neutral" }
+  ],
+  "correctedSpans": [
+    { "text": "The chart ", "status": "neutral" },
+    { "text": "illustrates comprehensive demographic", "status": "enhancement" },
+    { "text": " trends.", "status": "neutral" }
+  ],
+  "improvementSuggestions": [
     {
-      "original": "China has more people than India.",
-      "improved": "China's population significantly exceeds that of India, with approximately 1.41 billion inhabitants compared to India's 1.38 billion as of the data presented.",
-      "explanation": "Transformed a simplistic comparison into a sophisticated analysis by incorporating precise statistical data, using formal academic language ('significantly exceeds', 'inhabitants'), and providing contextual timeframe."
+      "original": "shows",
+      "suggested": "illustrates",
+      "explanation": "More sophisticated academic vocabulary"
     }
   ]
 }
 
 CRITICAL RULES:
-- Return ONLY the JSON object, no other text
-- Every sentence in the student's writing must have a corresponding entry in sentence_comparisons
-- Focus on aggressive vocabulary enhancement and structural sophistication
-- Correct any factual errors using the provided image context
-- Each explanation must be specific about what was improved and why
+- Return ONLY valid JSON with ALL four required fields
+- originalSpans: Mark words that need improvement with "suggestion" status
+- correctedSpans: Mark improvements with "enhancement" status
+- Include "neutral" status for unchanged text
+- Ensure spans cover the complete text without gaps
+- Every sentence must be in sentence_comparisons
+- Correct factual errors using image context
 
-IMPROVEMENT PRIORITIES:
-1. Vocabulary Enhancement: Replace basic words with sophisticated academic alternatives
-2. Sentence Complexity: Transform simple structures into complex, nuanced constructions
-3. Precision: Add specific details and quantitative data where appropriate
-4. Academic Tone: Elevate the register to match Band 8+ writing standards
-5. Factual Accuracy: Ensure all data points match the image context description
-
-You are transforming student writing into exemplary IELTS Task 1 responses that demonstrate the highest levels of linguistic competence and analytical sophistication.`
+The frontend expects all four fields to display improvements properly.`
       },
       {
         role: 'user',
@@ -389,6 +375,86 @@ Please retake the IELTS Writing test to receive an accurate assessment of your w
         };
         console.log('✅ Comprehensive fallback data created with detailed explanations');
       }
+    }
+
+    // Validate and process the AI response for frontend compatibility
+    if (structured && structured.sentence_comparisons) {
+      console.log('🔍 Processing AI response for frontend compatibility...');
+      
+      // Ensure all required fields exist, generate missing ones if needed
+      if (!structured.originalSpans || !structured.correctedSpans || !structured.improvementSuggestions) {
+        console.log('⚠️ Missing span data, generating from sentence comparisons...');
+        
+        // Generate span data from sentence comparisons
+        const originalSpans = [];
+        const correctedSpans = [];
+        const improvementSuggestions = [];
+        
+        let originalText = '';
+        let correctedText = '';
+        
+        for (const comparison of structured.sentence_comparisons) {
+          if (comparison.original && comparison.improved) {
+            originalText += (originalText ? ' ' : '') + comparison.original;
+            correctedText += (correctedText ? ' ' : '') + comparison.improved;
+            
+            // Create improvement suggestions from explanations
+            if (comparison.explanation) {
+              improvementSuggestions.push({
+                original: comparison.original,
+                suggested: comparison.improved,
+                explanation: comparison.explanation
+              });
+            }
+          }
+        }
+        
+        // Generate spans with basic word-level analysis
+        if (originalText && correctedText) {
+          const originalWords = originalText.split(' ');
+          const correctedWords = correctedText.split(' ');
+          
+          // Simple heuristic: mark words that are different as suggestions/enhancements
+          originalWords.forEach((word, index) => {
+            const isChanged = correctedWords[index] && word !== correctedWords[index];
+            originalSpans.push({
+              text: word + (index < originalWords.length - 1 ? ' ' : ''),
+              status: isChanged ? 'suggestion' : 'neutral'
+            });
+          });
+          
+          correctedWords.forEach((word, index) => {
+            const isChanged = originalWords[index] && word !== originalWords[index];
+            correctedSpans.push({
+              text: word + (index < correctedWords.length - 1 ? ' ' : ''),
+              status: isChanged ? 'enhancement' : 'neutral'
+            });
+          });
+        }
+        
+        // Add generated data to structured response
+        structured.originalSpans = originalSpans.length > 0 ? originalSpans : [{ text: originalText || 'No text available', status: 'neutral' }];
+        structured.correctedSpans = correctedSpans.length > 0 ? correctedSpans : [{ text: correctedText || 'No text available', status: 'neutral' }];
+        structured.improvementSuggestions = improvementSuggestions;
+        
+        console.log('✅ Generated span data from sentence comparisons');
+      }
+      
+      // Validate that we have meaningful data
+      const hasValidData = structured.sentence_comparisons.length > 0 || 
+                          (structured.originalSpans && structured.originalSpans.length > 0);
+      
+      if (!hasValidData) {
+        console.log('⚠️ AI response lacks meaningful improvement data, adding fallback...');
+        structured.sentence_comparisons = structured.sentence_comparisons || [];
+        structured.originalSpans = structured.originalSpans || [{ text: 'Analysis unavailable', status: 'neutral' }];
+        structured.correctedSpans = structured.correctedSpans || [{ text: 'Analysis unavailable', status: 'neutral' }];
+        structured.improvementSuggestions = structured.improvementSuggestions || [];
+      }
+      
+      console.log('✅ AI response validated and processed for frontend compatibility');
+    } else {
+      console.log('⚠️ AI response missing sentence_comparisons, using fallback structure...');
     }
 
     const clampBands = (obj: any) => {

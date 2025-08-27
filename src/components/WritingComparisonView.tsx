@@ -148,14 +148,29 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
   
-  // Use provided spans if available, otherwise fallback to processing
-  const { originalSpans, improvedSpans, sentences } = providedOriginalSpans && providedCorrectedSpans && providedSentenceComparisons
-    ? {
+  // Always ensure we show the complete original text
+  const { originalSpans, improvedSpans, sentences } = (() => {
+    // If we have AI-provided spans, use them but validate they contain the full text
+    if (providedOriginalSpans && providedCorrectedSpans) {
+      const originalSpansText = providedOriginalSpans.map(span => span.text).join('');
+      const correctedSpansText = providedCorrectedSpans.map(span => span.text).join('');
+      
+      // If the spans don't contain the full original text, fall back to processing
+      if (originalSpansText.trim() !== originalText.trim()) {
+        console.warn('⚠️ AI-provided spans incomplete, falling back to full text processing');
+        return processTextForComparison(originalText, improvementSuggestions);
+      }
+      
+      return {
         originalSpans: providedOriginalSpans,
         improvedSpans: providedCorrectedSpans,
-        sentences: providedSentenceComparisons
-      }
-    : processTextForComparison(originalText, improvementSuggestions);
+        sentences: providedSentenceComparisons || []
+      };
+    }
+    
+    // Fall back to processing the full text
+    return processTextForComparison(originalText, improvementSuggestions);
+  })();
 
   if (!originalText.trim()) {
     return null;

@@ -51,44 +51,57 @@ const processTextForComparison = (
     explanation?: string;
   }>
 ) => {
-  if (!suggestions || suggestions.length === 0) {
-    return {
-      originalSpans: [{ text: originalText, status: "neutral" as const }],
-      improvedSpans: [{ text: originalText, status: "neutral" as const }],
-      sentences: []
-    };
-  }
-
+  // Split text into sentences for processing
   const sentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const sentenceComparisons = [];
   
   let processedOriginal = originalText;
   let processedImproved = originalText;
 
-  // Process suggestions to create highlighted spans
-  suggestions.forEach((suggestion) => {
-    if (suggestion.sentence_quote && suggestion.improved_version) {
-      const quote = suggestion.sentence_quote.trim();
-      const improved = suggestion.improved_version.trim();
-      
-      // Replace in improved version
-      processedImproved = processedImproved.replace(quote, improved);
-      
-      // Find sentence that contains this quote
-      const matchingSentence = sentences.find(s => s.includes(quote));
-      if (matchingSentence) {
+  if (suggestions && suggestions.length > 0) {
+    // Process suggestions to create highlighted spans
+    suggestions.forEach((suggestion) => {
+      if (suggestion.sentence_quote && suggestion.improved_version) {
+        const quote = suggestion.sentence_quote.trim();
+        const improved = suggestion.improved_version.trim();
+        
+        // Replace in improved version
+        processedImproved = processedImproved.replace(quote, improved);
+        
+        // Find sentence that contains this quote
+        const matchingSentence = sentences.find(s => s.includes(quote));
+        if (matchingSentence) {
+          sentenceComparisons.push({
+            original: matchingSentence.trim() + ".",
+            improved: matchingSentence.replace(quote, improved).trim() + ".",
+            issue: suggestion.issue || "Enhancement suggestion",
+            explanation: suggestion.explanation
+          });
+        }
+      }
+    });
+  } else {
+    // If no suggestions, create sentence comparisons from original sentences
+    // This ensures sentence-by-sentence view always has content
+    sentences.forEach((sentence, index) => {
+      const cleanSentence = sentence.trim();
+      if (cleanSentence) {
         sentenceComparisons.push({
-          original: matchingSentence.trim() + ".",
-          improved: matchingSentence.replace(quote, improved).trim() + ".",
-          issue: suggestion.issue || "Enhancement suggestion",
-          explanation: suggestion.explanation
+          original: cleanSentence + ".",
+          improved: cleanSentence + ".", // Same as original since no improvements
+          issue: `Sentence ${index + 1}`,
+          explanation: "No specific improvements suggested for this sentence."
         });
       }
-    }
-  });
+    });
+  }
 
   // Create spans for highlighting
   const createSpans = (text: string, isImproved: boolean): ComparisonSpan[] => {
+    if (!suggestions || suggestions.length === 0) {
+      return [{ text, status: "neutral" }];
+    }
+
     const spans: ComparisonSpan[] = [];
     let currentText = text;
     

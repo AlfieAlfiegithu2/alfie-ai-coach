@@ -6,41 +6,44 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
-  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2)...`);
+async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2)...`);
   
   try {
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages,
-        max_tokens: 4000,
-        temperature: 0.1,
-        stream: false,
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 4000
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ DeepSeek API Error:', errorText);
-      throw new Error(`DeepSeek API failed: ${response.status} - ${errorText}`);
+      console.error('❌ Gemini API Error:', errorText);
+      throw new Error(`Gemini API failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('✅ DeepSeek API call successful');
+    console.log('✅ Gemini API call successful');
     return data;
   } catch (error) {
-    console.error(`❌ DeepSeek attempt ${retryCount + 1} failed:`, error.message);
+    console.error(`❌ Gemini attempt ${retryCount + 1} failed:`, error.message);
     
     if (retryCount < 1) {
-      console.log(`🔄 Retrying DeepSeek API call in 500ms...`);
+      console.log(`🔄 Retrying Gemini API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callDeepSeek(messages, apiKey, retryCount + 1);
+      return callGemini(prompt, apiKey, retryCount + 1);
     }
     
     throw error;
@@ -53,11 +56,11 @@ serve(async (req) => {
   }
 
   try {
-    const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     
-    if (!deepSeekApiKey) {
-      console.error('❌ No DeepSeek API key found');
-      throw new Error('DeepSeek API key is required');
+    if (!geminiApiKey) {
+      console.error('❌ No Gemini API key found');
+      throw new Error('Gemini API key is required');
     }
 
     const { task1Answer, task2Answer, task1Data, task2Data } = await req.json();
@@ -191,13 +194,14 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
       }
     ];
 
-    // Use DeepSeek only
-    console.log('🔄 Using DeepSeek API...');
-    const aiResponse = await callDeepSeek(messages, deepSeekApiKey);
-    const modelUsed = 'deepseek-chat';
-    console.log('✅ DeepSeek API succeeded');
+    // Use Gemini only
+    console.log('🔄 Using Gemini API...');
+    const fullPrompt = `${messages[0].content}\n\n${messages[1].content}`;
+    const aiResponse = await callGemini(fullPrompt, geminiApiKey);
+    const modelUsed = 'gemini-2.0-flash-exp';
+    console.log('✅ Gemini API succeeded');
 
-    let content = aiResponse.choices?.[0]?.message?.content ?? '';
+    let content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     console.log('🔍 Raw API response content length:', content.length);
     
     // Check if content is empty or too short

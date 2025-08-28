@@ -74,22 +74,61 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `You are a senior IELTS examiner. Analyze the following writing tasks and provide accurate band scores.
+    const task1WordCount = task1Answer.trim().split(/\s+/).length;
+    const task2WordCount = task2Answer.trim().split(/\s+/).length;
 
-TASK 1:
-Prompt: ${task1Data?.title || 'Task 1'}
-Instructions: ${task1Data?.instructions || ''}
-${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}
+    const examinerPrompt = `You are an experienced IELTS examiner certified to assess IELTS Academic Writing. Follow official IELTS band descriptors precisely.
 
-Student Response: "${task1Answer}"
+ASSESSMENT DATA:
+TASK 1 (Academic Report Writing):
+Title: ${task1Data?.title || 'Academic Task 1'}
+Instructions: ${task1Data?.instructions || 'Summarize the information shown in the visual data'}
+${task1Data?.imageContext ? `Visual Data Description: ${task1Data.imageContext}` : ''}
+Word Count: ${task1WordCount} words (Target: 150+ words)
 
-TASK 2:
-Prompt: ${task2Data?.title || 'Task 2'}
-Instructions: ${task2Data?.instructions || ''}
+Student Response:
+"${task1Answer}"
 
-Student Response: "${task2Answer}"
+TASK 2 (Essay Writing):
+Title: ${task2Data?.title || 'Academic Task 2'}  
+Instructions: ${task2Data?.instructions || 'Write an essay responding to the given prompt'}
+Word Count: ${task2WordCount} words (Target: 250+ words)
 
-Provide your assessment as a JSON object with this EXACT structure:
+Student Response:
+"${task2Answer}"
+
+OFFICIAL IELTS SCORING CRITERIA:
+
+TASK 1 CRITERIA:
+- Task Achievement (25%): Covers all requirements, presents clear overview, accurately describes data, highlights key features
+- Coherence & Cohesion (25%): Logical organization, clear progression, appropriate linking, paragraphing
+- Lexical Resource (25%): Range of vocabulary, accuracy, appropriateness, spelling
+- Grammatical Range & Accuracy (25%): Range of structures, accuracy, punctuation
+
+TASK 2 CRITERIA:
+- Task Response (25%): Addresses all parts, clear position, develops arguments, relevant ideas
+- Coherence & Cohesion (25%): Logical organization, clear progression, cohesive devices, paragraphing
+- Lexical Resource (25%): Range of vocabulary, accuracy, appropriateness, collocation, spelling  
+- Grammatical Range & Accuracy (25%): Range of structures, accuracy, complex sentences, punctuation
+
+BAND SCORE GUIDELINES:
+Band 9: Expert user - fully operational command
+Band 8: Very good user - fully operational with occasional inaccuracies
+Band 7: Good user - operational command with occasional inaccuracies
+Band 6: Competent user - generally effective despite inaccuracies
+Band 5: Modest user - partial command, frequent problems but conveys meaning
+Band 4: Limited user - basic competence, frequent breakdowns
+Band 3-1: Lower levels with increasing limitations
+
+WORD COUNT PENALTIES:
+- Task 1 under 150 words: reduce Task Achievement by 1 band
+- Task 2 under 250 words: reduce Task Response by 1 band
+
+CALCULATE OVERALL BAND:
+Overall Writing Band = (Task 1 Overall × 0.33) + (Task 2 Overall × 0.67)
+Round to nearest 0.5
+
+Return ONLY this JSON structure with no additional text:
 
 {
   "structured": {
@@ -101,10 +140,10 @@ Provide your assessment as a JSON object with this EXACT structure:
         "grammatical_range_and_accuracy": 6.5
       },
       "overall_band": 6.0,
-      "feedback_markdown": "### Task 1 Assessment\\n\\nProvide detailed feedback here...",
+      "feedback_markdown": "### Task 1 Assessment (${task1WordCount} words)\\n\\n**Task Achievement:** [Specific feedback]\\n\\n**Coherence & Cohesion:** [Specific feedback]\\n\\n**Lexical Resource:** [Specific feedback]\\n\\n**Grammatical Range & Accuracy:** [Specific feedback]",
       "feedback": {
-        "strengths": ["List specific strengths"],
-        "improvements": ["List specific improvements needed"]
+        "strengths": ["Specific strength 1", "Specific strength 2"],
+        "improvements": ["Specific improvement 1", "Specific improvement 2"]
       }
     },
     "task2": {
@@ -115,26 +154,19 @@ Provide your assessment as a JSON object with this EXACT structure:
         "grammatical_range_and_accuracy": 7.0
       },
       "overall_band": 6.5,
-      "feedback_markdown": "### Task 2 Assessment\\n\\nProvide detailed feedback here...",
+      "feedback_markdown": "### Task 2 Assessment (${task2WordCount} words)\\n\\n**Task Response:** [Specific feedback]\\n\\n**Coherence & Cohesion:** [Specific feedback]\\n\\n**Lexical Resource:** [Specific feedback]\\n\\n**Grammatical Range & Accuracy:** [Specific feedback]",
       "feedback": {
-        "strengths": ["List specific strengths"],
-        "improvements": ["List specific improvements needed"]
+        "strengths": ["Specific strength 1", "Specific strength 2"],
+        "improvements": ["Specific improvement 1", "Specific improvement 2"]
       }
     },
     "overall": {
       "band": 6.5,
-      "calculation": "Task 1: 6.0, Task 2: 6.5 (weighted average)",
-      "feedback_markdown": "### Overall Assessment\\n\\nProvide overall feedback here..."
+      "calculation": "Task 1: 6.0 (33%) + Task 2: 6.5 (67%) = 6.5",
+      "feedback_markdown": "### Overall Writing Assessment\\n\\n**Final Band Score: 6.5**\\n\\n[Overall performance summary and key recommendations]"
     }
   }
-}
-
-SCORING GUIDELINES:
-- Use IELTS band scores 0-9 (half points allowed: 5.5, 6.0, 6.5, etc.)
-- Task 1: Assess task_achievement, coherence_and_cohesion, lexical_resource, grammatical_range_and_accuracy
-- Task 2: Assess task_response, coherence_and_cohesion, lexical_resource, grammatical_range_and_accuracy
-- Overall band = Task 1 (33%) + Task 2 (67%)
-- Return ONLY the JSON object, no other text.`;
+}`;
 
     // Use Gemini only
     console.log('🔄 Using Gemini API...');
@@ -186,32 +218,77 @@ SCORING GUIDELINES:
       throw new Error('Failed to parse AI response as valid JSON');
     }
 
-    // Validate required structure
-    if (!structured?.structured?.task1 || !structured?.structured?.task2) {
-      console.error('❌ Missing required task data in structured response');
-      throw new Error('AI response missing required task assessment data');
-    }
-
-    // Clamp band scores to valid range (0-9)
-    const clampBands = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
-      for (const k in obj) {
-        const v = (obj as any)[k];
-        if (k === 'band' && typeof v === 'number') (obj as any)[k] = Math.min(9, Math.max(0, v));
-        else if (typeof v === 'object') clampBands(v);
+    // Enhanced validation and scoring accuracy
+    const validateAndNormalize = (structured: any) => {
+      if (!structured?.structured?.task1 || !structured?.structured?.task2) {
+        throw new Error('AI response missing required task assessment data');
       }
+
+      // Validate and clamp all band scores to valid IELTS range (0-9, 0.5 increments)
+      const roundToHalf = (score: number) => Math.round(score * 2) / 2;
+      const clampScore = (score: number) => Math.min(9, Math.max(0, roundToHalf(score)));
+
+      // Task 1 validation and normalization
+      const task1 = structured.structured.task1;
+      if (task1.criteria) {
+        task1.criteria.task_achievement = clampScore(task1.criteria.task_achievement || 0);
+        task1.criteria.coherence_and_cohesion = clampScore(task1.criteria.coherence_and_cohesion || 0);
+        task1.criteria.lexical_resource = clampScore(task1.criteria.lexical_resource || 0);
+        task1.criteria.grammatical_range_and_accuracy = clampScore(task1.criteria.grammatical_range_and_accuracy || 0);
+        
+        // Calculate Task 1 overall band (average of 4 criteria)
+        const task1Average = (
+          task1.criteria.task_achievement +
+          task1.criteria.coherence_and_cohesion +
+          task1.criteria.lexical_resource +
+          task1.criteria.grammatical_range_and_accuracy
+        ) / 4;
+        task1.overall_band = clampScore(task1Average);
+      }
+
+      // Task 2 validation and normalization
+      const task2 = structured.structured.task2;
+      if (task2.criteria) {
+        task2.criteria.task_response = clampScore(task2.criteria.task_response || 0);
+        task2.criteria.coherence_and_cohesion = clampScore(task2.criteria.coherence_and_cohesion || 0);
+        task2.criteria.lexical_resource = clampScore(task2.criteria.lexical_resource || 0);
+        task2.criteria.grammatical_range_and_accuracy = clampScore(task2.criteria.grammatical_range_and_accuracy || 0);
+        
+        // Calculate Task 2 overall band (average of 4 criteria)
+        const task2Average = (
+          task2.criteria.task_response +
+          task2.criteria.coherence_and_cohesion +
+          task2.criteria.lexical_resource +
+          task2.criteria.grammatical_range_and_accuracy
+        ) / 4;
+        task2.overall_band = clampScore(task2Average);
+      }
+
+      // Calculate accurate overall band: Task 1 (33.33%) + Task 2 (66.67%)
+      const overallRaw = (task1.overall_band * 0.3333) + (task2.overall_band * 0.6667);
+      const overallBand = clampScore(overallRaw);
+      
+      structured.structured.overall.band = overallBand;
+      structured.structured.overall.calculation = `Task 1: ${task1.overall_band} (33%) + Task 2: ${task2.overall_band} (67%) = ${overallBand}`;
+
+      console.log('✅ Validated and normalized all band scores');
+      console.log(`📊 Final Scores - Task 1: ${task1.overall_band}, Task 2: ${task2.overall_band}, Overall: ${overallBand}`);
+      
+      return structured;
     };
-    clampBands(structured);
+
+    // Validate required structure and normalize scores
+    const normalizedStructured = validateAndNormalize(structured);
 
     const feedback = structured?.structured?.full_report_markdown || content;
 
     return new Response(JSON.stringify({ 
       success: true, 
-      feedback,
-      structured,
+      feedback: normalizedStructured?.structured?.overall?.feedback_markdown || content,
+      structured: normalizedStructured,
       apiUsed: modelUsed,
-      task1WordCount: task1Answer.trim().split(/\s+/).length,
-      task2WordCount: task2Answer.trim().split(/\s+/).length
+      task1WordCount,
+      task2WordCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -50,20 +50,96 @@ async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
   }
 }
 
+async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting OpenAI API call (attempt ${retryCount + 1}/2)...`);
+  
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are "Foxbot," an expert IELTS examiner and a world-class writing coach. Your primary goal is to help students elevate their entire essays—not just their grammar. You must analyze their writing on four levels: Ideas, Logic, Structure, and Language. Your rewritten "Improved" versions must demonstrate improvements across all these areas.
+
+Your Guiding Principles:
+
+1. Analyze the Core Idea (Task Response):
+First, assess the student's main argument and supporting examples. Are they relevant, well-developed, and persuasive?
+In your rewritten version, you must strengthen their ideas. Do not change their core opinion, but you can and should make their examples more specific, their reasoning clearer, and their position more robust.
+Example: If a student writes, "Technology helps people," your improved version might be, "Specifically, communication technology like video conferencing helps bridge geographical divides for families and professional teams."
+
+2. Enhance the Logic and Flow (Coherence & Cohesion):
+Analyze how the student connects their sentences and paragraphs. Is the argument easy to follow?
+In your rewritten version, you must improve the logical flow. This means using more sophisticated and varied transition signals (e.g., replacing a simple "Also..." with "Furthermore, a compelling argument can be made that..."). Ensure each sentence logically follows the one before it.
+
+3. Elevate the Language (Lexical Resource & Grammar):
+This is your final polish. Upgrade the student's vocabulary and sentence structures to a Band 8+ level.
+Vocabulary: Replace common words with more precise, academic synonyms (e.g., problem -> challenge or issue; show -> illustrate or demonstrate; good/bad -> beneficial/detrimental).
+Grammar: Rephrase simple sentences into more complex, sophisticated structures (e.g., combine two simple sentences into one complex sentence using a subordinate clause; change active voice to passive voice to shift focus).
+
+4. Be an Ambitious Re-writer, Not a Passive Editor:
+Do not be afraid to completely restructure a student's sentence if it improves the clarity, logic, or sophistication. The "Improved" version should be a clear and significant upgrade, demonstrating what high-level writing looks like.
+
+You MUST return ONLY a valid JSON object with no additional text.`
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.1
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenAI API Error:', errorText);
+      throw new Error(`OpenAI API failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ OpenAI API call successful');
+    return data;
+  } catch (error) {
+    console.error(`❌ OpenAI attempt ${retryCount + 1} failed:`, error.message);
+    
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying OpenAI API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callOpenAI(prompt, apiKey, retryCount + 1);
+    }
+    
+    throw error;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const { task1Answer, task2Answer, task1Data, task2Data, apiProvider = 'gemini' } = await req.json();
+
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    if (!geminiApiKey) {
+    if (apiProvider === 'gemini' && !geminiApiKey) {
       console.error('❌ No Gemini API key found');
       throw new Error('Gemini API key is required');
     }
-
-    const { task1Answer, task2Answer, task1Data, task2Data } = await req.json();
+    
+    if (apiProvider === 'openai' && !openaiApiKey) {
+      console.error('❌ No OpenAI API key found');
+      throw new Error('OpenAI API key is required');
+    }
 
     if (!task1Answer || !task2Answer) {
       throw new Error('Both Task 1 and Task 2 answers are required');
@@ -264,14 +340,26 @@ Each justification must analyze Ideas, Logic, Structure, and Language with speci
       }
     ];
 
-    // Use Gemini only
-    console.log('🔄 Using Gemini API...');
-    const fullPrompt = `${messages[0].content}\n\n${messages[1].content}`;
-    const aiResponse = await callGemini(fullPrompt, geminiApiKey);
-    const modelUsed = 'gemini-2.0-flash-exp';
-    console.log('✅ Gemini API succeeded');
+    // Use selected API provider
+    let aiResponse: any;
+    let modelUsed: string;
+    let content: string;
 
-    let content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    if (apiProvider === 'openai') {
+      console.log('🔄 Using OpenAI API...');
+      aiResponse = await callOpenAI(examinerPrompt, openaiApiKey);
+      modelUsed = 'gpt-4o';
+      content = aiResponse.choices?.[0]?.message?.content ?? '';
+      console.log('✅ OpenAI API succeeded');
+    } else {
+      console.log('🔄 Using Gemini API...');
+      const fullPrompt = `${messages[0].content}\n\n${messages[1].content}`;
+      aiResponse = await callGemini(fullPrompt, geminiApiKey);
+      modelUsed = 'gemini-2.0-flash-exp';
+      content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      console.log('✅ Gemini API succeeded');
+    }
+
     console.log('🔍 Raw API response content length:', content.length);
     
     // Check if content is empty or too short

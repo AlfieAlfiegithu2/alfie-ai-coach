@@ -132,7 +132,19 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const masterExaminerPrompt = `Your Role and Core Instruction:
+    const masterExaminerPrompt = `Core Principles & Directives
+
+You are an expert IELTS examiner and writing coach. You must adhere to the following core principles at all times.
+
+1. Preserve the Student's Original Ideas and Arguments:
+This is your most important rule. You must never change the core meaning, opinion, or arguments of the student's essay.
+Your role is to improve how the ideas are expressed, not what the ideas are. You will elevate their language, grammar, and structure, but the student's original voice and perspective must remain intact.
+
+2. Implement Precise, Word-for-Word Highlighting:
+When you generate the sentence_comparisons and the improvements array, your feedback must be granular.
+For the side-by-side correction view, you will generate original_spans and corrected_spans. In these arrays, you must isolate and tag only the specific words or short phrases that have been changed. Do not highlight entire sentences if only a few words were improved. This precision is essential.
+
+Your Role and Core Instruction:
 
 You are an expert IELTS examiner with 15+ years of experience. Your task is to provide a comprehensive, fair, and accurate assessment of an IELTS Writing submission (both Task 1 and Task 2).
 
@@ -202,6 +214,25 @@ Handle Word Count: You must check if the essays are under the word count (150 fo
 
 Provide Overall Feedback: Based on your analysis, provide a bulleted list of 2-3 "Key Strengths" and 2-3 "Specific, Actionable Improvements."
 
+CRITICAL: Identify and Detail Multiple Areas for Improvement
+
+After you have completed the band score assessment, you must generate comprehensive feedback for each task.
+
+For EACH task (Task 1 and Task 2), you must analyze the submission and identify at least 3 to 5 distinct areas for improvement. Each area of improvement you identify must create a separate object in the improvements array.
+
+Each object in the improvements array MUST contain the following four keys:
+- issue: A short title for the problem area (e.g., "Repetitive Vocabulary," "Simple Sentence Structure," "Unsupported Idea").
+- original: The exact quote from the student's writing that demonstrates this issue.
+- improved: Your rewritten, high-scoring version of that specific sentence or phrase, making sure to preserve the student's original idea.
+- explanation: A clear, concise explanation of why your improved version is better.
+
+Requirements for improvements:
+- Minimum 3 improvements per task
+- Maximum 5 improvements per task (to avoid overwhelming students)
+- Each improvement should address different aspects of writing (grammar, vocabulary, coherence, task response)
+- Focus on the most impactful changes that would raise the band score
+- Always preserve the student's original ideas and arguments
+
 Task 1:
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
@@ -237,10 +268,22 @@ JSON SCHEMA:
     "feedback": {
       "improvements": [
         {
-          "issue": "Task 1 specific issue description",
-          "original": "Quote from Task 1 student writing",
-          "improved": "Improved Task 1 version",
-          "explanation": "Why this Task 1 improvement helps with the data description/chart analysis"
+          "issue": "Word Choice & Sophistication",
+          "original": "The graph shows a big increase in sales.",
+          "improved": "The provided chart illustrates a substantial growth in sales revenue.",
+          "explanation": "Using more academic words like 'illustrates' and 'substantial growth' instead of simple words like 'shows' and 'big' makes your writing more sophisticated (improves Lexical Resource)."
+        },
+        {
+          "issue": "Data Description Precision",
+          "original": "The numbers went up a lot.",
+          "improved": "The figures demonstrated a significant upward trend, rising from X to Y over the period shown.",
+          "explanation": "Specific data references and precise vocabulary like 'demonstrated' and 'upward trend' improve Task Achievement by providing accurate data interpretation."
+        },
+        {
+          "issue": "Sentence Structure Variety",
+          "original": "Sales increased. Profits also increased.",
+          "improved": "Not only did sales increase substantially, but profits also rose correspondingly.",
+          "explanation": "Combining simple sentences with complex structures using phrases like 'Not only...but also' demonstrates better Grammatical Range and improves flow (Coherence)."
         }
       ],
       "feedback_markdown": "## Task 1 Detailed Feedback\n\n**Strengths:** List specific Task 1 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 1 feedback here with specific examples."
@@ -270,10 +313,28 @@ JSON SCHEMA:
     "feedback": {
       "improvements": [
         {
-          "issue": "Task 2 specific issue description",
-          "original": "Quote from Task 2 student writing",
-          "improved": "Improved Task 2 version",
-          "explanation": "Why this Task 2 improvement helps with the essay structure/argument"
+          "issue": "Sentence Structure & Flow",
+          "original": "The company was successful. It made a lot of profit.",
+          "improved": "As a result of its successful strategy, the company generated significant profits.",
+          "explanation": "Combining two simple sentences into one complex sentence using a phrase like 'As a result of...' demonstrates better grammatical range and improves the flow (Coherence). The core idea that success led to profit is preserved."
+        },
+        {
+          "issue": "Idea Development",
+          "original": "Pollution is a major problem for cities.",
+          "improved": "Urban pollution, particularly from vehicle emissions, has become a critical issue affecting public health in major metropolitan areas.",
+          "explanation": "This improvement keeps your original idea but makes it stronger by adding specific details ('from vehicle emissions', 'affecting public health'). This demonstrates better development of ideas (improves Task Response)."
+        },
+        {
+          "issue": "Argumentative Structure",
+          "original": "I think this is good because people like it.",
+          "improved": "This approach proves beneficial as it addresses the fundamental needs of the target population.",
+          "explanation": "Replacing informal language ('I think', 'people like it') with formal academic expressions ('proves beneficial', 'fundamental needs') strengthens your argument and improves Lexical Resource."
+        },
+        {
+          "issue": "Cohesive Devices",
+          "original": "First, education is important. Second, health is important too.",
+          "improved": "While education remains paramount, healthcare infrastructure is equally crucial for societal development.",
+          "explanation": "Using sophisticated linking phrases like 'While...remains paramount' and 'equally crucial' creates better flow between ideas and demonstrates advanced Coherence and Cohesion."
         }
       ],
       "feedback_markdown": "## Task 2 Detailed Feedback\n\n**Strengths:** List specific Task 2 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 2 feedback here with specific examples."

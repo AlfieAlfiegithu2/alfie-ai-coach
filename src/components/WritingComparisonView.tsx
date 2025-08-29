@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, List } from "lucide-react";
+import { Eye, List, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export type ComparisonSpan = {
   text: string;
@@ -162,9 +164,80 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
   title
 }) => {
   const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch AI analysis when sentence comparisons are not available
+  useEffect(() => {
+    const needsAiAnalysis = !providedSentenceComparisons && 
+                           originalText.trim().length > 10 && 
+                           !aiAnalysis && 
+                           !isLoadingAnalysis;
+    
+    if (needsAiAnalysis) {
+      fetchAiAnalysis();
+    }
+  }, [originalText, providedSentenceComparisons]);
+
+  const fetchAiAnalysis = async () => {
+    if (originalText.trim().length < 10) return;
+
+    setIsLoadingAnalysis(true);
+    try {
+      console.log('🔍 Fetching AI writing analysis...');
+      const { data, error } = await supabase.functions.invoke('writing-feedback', {
+        body: {
+          writing: originalText,
+          prompt: `Analyze this ${title} writing sample`,
+          taskType: title
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('✅ AI analysis received:', data);
+      if (data.structured?.sentence_comparisons) {
+        setAiAnalysis(data.structured);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching AI analysis:', error);
+      toast({
+        title: "Analysis Error",
+        description: "Could not fetch AI writing analysis. Using basic comparison.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
   
   // Always ensure we show the complete original text
   const { originalSpans, improvedSpans, sentences } = (() => {
+    // First check if we have AI analysis data
+    if (aiAnalysis?.sentence_comparisons) {
+      console.log('🎯 Using AI analysis data');
+      // Convert AI sentence comparisons to our format
+      const aiSentences = aiAnalysis.sentence_comparisons.map((comparison: any, index: number) => ({
+        original_spans: comparison.original_spans,
+        corrected_spans: comparison.corrected_spans,
+        original: comparison.original_spans?.map((s: any) => s.text).join('') || '',
+        improved: comparison.corrected_spans?.map((s: any) => s.text).join('') || '',
+        issue: `Sentence ${index + 1}`,
+        explanation: 'AI-enhanced version with improved vocabulary and grammar.'
+      }));
+
+      // Create whole-view spans from all sentence spans
+      const allOriginalSpans = aiAnalysis.sentence_comparisons.flatMap((comp: any) => comp.original_spans || []);
+      const allCorrectedSpans = aiAnalysis.sentence_comparisons.flatMap((comp: any) => comp.corrected_spans || []);
+
+      return {
+        originalSpans: allOriginalSpans,
+        improvedSpans: allCorrectedSpans,
+        sentences: aiSentences
+      };
+    }
+
     // If we have AI-provided spans, use them but validate they contain the full text
     if (providedOriginalSpans && providedCorrectedSpans) {
       const originalSpansText = providedOriginalSpans.map(span => span.text).join('');
@@ -201,6 +274,7 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
             size="sm"
             onClick={() => setViewMode("whole")}
             className="flex items-center gap-2"
+            disabled={isLoadingAnalysis}
           >
             <Eye className="w-4 h-4" />
             Whole View
@@ -210,12 +284,24 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
             size="sm"
             onClick={() => setViewMode("sentence")}
             className="flex items-center gap-2"
+            disabled={isLoadingAnalysis}
           >
             <List className="w-4 h-4" />
             Sentence by Sentence
           </Button>
         </div>
       </div>
+
+      {isLoadingAnalysis && (
+        <Card className="border border-border">
+          <CardContent className="py-6">
+            <div className="flex items-center justify-center gap-2 text-text-secondary">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Analyzing your writing with AI...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {viewMode === "whole" ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

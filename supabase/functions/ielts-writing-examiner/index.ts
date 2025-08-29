@@ -120,8 +120,12 @@ serve(async (req) => {
       throw new Error('OpenAI API key is required');
     }
 
-    if (!task1Answer || !task2Answer) {
-      throw new Error('Both Task 1 and Task 2 answers are required');
+    // Allow single task submissions - check for meaningful content
+    const hasTask1 = task1Answer && task1Answer.trim() !== '' && task1Answer !== 'Not completed';
+    const hasTask2 = task2Answer && task2Answer.trim() !== '' && task2Answer !== 'Not completed';
+    
+    if (!hasTask1 && !hasTask2) {
+      throw new Error('At least one task answer is required');
     }
 
     console.log('🔍 AI Examiner Request:', { 

@@ -6,6 +6,103 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Official IELTS Band Descriptors
+const IELTS_BAND_DESCRIPTORS = {
+  task_achievement: {
+    9: "Fully addresses all parts of the task with very natural and sophisticated response. Covers all requirements with fully extended and well-supported ideas.",
+    8: "Covers all requirements with well-developed response. Presents clearly relevant ideas which are well-extended and supported.",
+    7: "Covers requirements with sufficiently developed response. Presents relevant main ideas but some may be inadequately developed.",
+    6: "Addresses requirements but development is not always clear. Some irrelevant or inadequately supported ideas may be present.",
+    5: "Generally addresses the task with some development of ideas. Limited development with irrelevant detail or repetition.",
+    4: "Attempts to address the task but does not cover all key features. Ideas lack development and support."
+  },
+  task_response: {
+    9: "Fully addresses all parts with comprehensive development. Clear position throughout with fully extended and well-supported ideas.",
+    8: "Sufficiently addresses all parts with well-developed ideas. Clear position with relevant, extended and supported ideas.",
+    7: "Addresses all parts though some parts may be more fully covered. Clear position with main ideas extended and supported.",
+    6: "Addresses all parts but some parts may be inadequately covered. Relevant position but conclusions may be unclear.",
+    5: "Addresses the task only partially. Limited development of ideas with unclear position and weak conclusion.",
+    4: "Minimal addressing of the task. Few ideas developed with unclear position and little support."
+  },
+  coherence_cohesion: {
+    9: "Uses cohesion naturally and effectively. Clear progression with wide range of cohesive devices. Paragraphing is logical and well-managed.",
+    8: "Sequences information logically with clear progression. Wide range of cohesive devices with generally good paragraphing.",
+    7: "Logically organizes information with clear progression. Range of cohesive devices though some may be over/under-used.",
+    6: "Generally coherent with clear progression. Some cohesive devices used effectively but may lack clarity or be repetitive.",
+    5: "Organization evident but not wholly logical. Some cohesive devices but may be inadequate or inaccurate.",
+    4: "Information and ideas not always clearly connected. Limited range of cohesive devices with some inaccuracy."
+  },
+  lexical_resource: {
+    9: "Wide range of vocabulary used naturally and accurately. Rare minor errors as slips. Full awareness of style and collocation.",
+    8: "Wide range of vocabulary used fluently and flexibly. Occasional inaccuracies in word choice and collocation.",
+    7: "Sufficient range with some flexibility. Generally appropriate word choice with some awareness of style and collocation.",
+    6: "Adequate range for the task. Some inaccuracies in word choice but meaning is clear. Some awareness of style.",
+    5: "Limited range but minimally adequate. Noticeable errors in word choice may cause difficulty for reader.",
+    4: "Limited range with frequent repetition. Errors in word choice may impede meaning and cause strain for reader."
+  },
+  grammatical_range: {
+    9: "Wide range of structures used accurately and appropriately. Rare minor errors. Full control of grammar and punctuation.",
+    8: "Wide range of structures used flexibly and accurately. Most sentences error-free with only occasional errors.",
+    7: "Range of complex structures with frequent error-free sentences. Generally good control despite some errors.",
+    6: "Mix of simple and complex structures. Some errors but they rarely reduce communication.",
+    5: "Limited range of structures with frequent errors that may reduce clarity. Complex structures attempted but often inaccurate.",
+    4: "Limited range with frequent errors. Simple structures may be accurate but complex attempts have errors."
+  }
+};
+
+// Common error patterns that should trigger lower scores
+const ERROR_PATTERNS = {
+  basic_vocabulary: ['bad', 'good', 'big', 'small', 'very', 'a lot', 'many people', 'nowadays', 'in my opinion'],
+  weak_openings: ['I agree that', 'I disagree that', 'In my opinion', 'I think that', 'I believe that'],
+  repetitive_connectors: ['also', 'and', 'but', 'so', 'because'],
+  grammar_errors: ['have effect', 'make research', 'give opinion', 'do mistake', 'make crime'],
+  informal_language: ['gonna', 'wanna', 'can\'t', 'don\'t', 'won\'t', 'it\'s', 'there\'s']
+};
+
+function analyzeWordCount(text: string, minWords: number): { penalty: number; message: string } {
+  const wordCount = text.trim().split(/\s+/).length;
+  if (wordCount < minWords) {
+    const shortfall = minWords - wordCount;
+    const penalty = shortfall <= 20 ? 0.5 : 1.0;
+    return {
+      penalty,
+      message: `Essay is ${shortfall} words below minimum (${wordCount}/${minWords}). Band score reduced by ${penalty}.`
+    };
+  }
+  return { penalty: 0, message: '' };
+}
+
+function detectErrorPatterns(text: string): string[] {
+  const detectedErrors: string[] = [];
+  const lowerText = text.toLowerCase();
+  
+  // Check for basic vocabulary
+  const basicVocabFound = ERROR_PATTERNS.basic_vocabulary.filter(word => 
+    lowerText.includes(word.toLowerCase())
+  );
+  if (basicVocabFound.length > 2) {
+    detectedErrors.push(`Over-reliance on basic vocabulary: ${basicVocabFound.slice(0, 3).join(', ')}`);
+  }
+  
+  // Check for weak openings
+  const weakOpenings = ERROR_PATTERNS.weak_openings.filter(phrase => 
+    lowerText.includes(phrase.toLowerCase())
+  );
+  if (weakOpenings.length > 0) {
+    detectedErrors.push(`Weak essay opening: "${weakOpenings[0]}"`);
+  }
+  
+  // Check for grammar patterns
+  const grammarErrors = ERROR_PATTERNS.grammar_errors.filter(error => 
+    lowerText.includes(error.toLowerCase())
+  );
+  if (grammarErrors.length > 0) {
+    detectedErrors.push(`Grammar errors detected: ${grammarErrors.join(', ')}`);
+  }
+  
+  return detectedErrors;
+}
+
 async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
   console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2)...`);
   
@@ -65,28 +162,7 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
         messages: [
           {
             role: 'system',
-            content: `You are "Foxbot," an expert IELTS examiner and a world-class writing coach. Your primary goal is to help students elevate their entire essays—not just their grammar. You must analyze their writing on four levels: Ideas, Logic, Structure, and Language. Your rewritten "Improved" versions must demonstrate improvements across all these areas.
-
-Your Guiding Principles:
-
-1. Analyze the Core Idea (Task Response):
-First, assess the student's main argument and supporting examples. Are they relevant, well-developed, and persuasive?
-In your rewritten version, you must strengthen their ideas. Do not change their core opinion, but you can and should make their examples more specific, their reasoning clearer, and their position more robust.
-Example: If a student writes, "Technology helps people," your improved version might be, "Specifically, communication technology like video conferencing helps bridge geographical divides for families and professional teams."
-
-2. Enhance the Logic and Flow (Coherence & Cohesion):
-Analyze how the student connects their sentences and paragraphs. Is the argument easy to follow?
-In your rewritten version, you must improve the logical flow. This means using more sophisticated and varied transition signals (e.g., replacing a simple "Also..." with "Furthermore, a compelling argument can be made that..."). Ensure each sentence logically follows the one before it.
-
-3. Elevate the Language (Lexical Resource & Grammar):
-This is your final polish. Upgrade the student's vocabulary and sentence structures to a Band 8+ level.
-Vocabulary: Replace common words with more precise, academic synonyms (e.g., problem -> challenge or issue; show -> illustrate or demonstrate; good/bad -> beneficial/detrimental).
-Grammar: Rephrase simple sentences into more complex, sophisticated structures (e.g., combine two simple sentences into one complex sentence using a subordinate clause; change active voice to passive voice to shift focus).
-
-4. Be an Ambitious Re-writer, Not a Passive Editor:
-Do not be afraid to completely restructure a student's sentence if it improves the clarity, logic, or sophistication. The "Improved" version should be a clear and significant upgrade, demonstrating what high-level writing looks like.
-
-You MUST return ONLY a valid JSON object with no additional text.`
+            content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
           },
           {
             role: 'user',
@@ -150,195 +226,167 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `TASK 1 DETAILS:
+    // Analyze word counts and detect error patterns
+    const task1WordAnalysis = analyzeWordCount(task1Answer, 150);
+    const task2WordAnalysis = analyzeWordCount(task2Answer, 250);
+    const task1Errors = detectErrorPatterns(task1Answer);
+    const task2Errors = detectErrorPatterns(task2Answer);
+
+    console.log('📊 Analysis Results:', {
+      task1Words: task1Answer.trim().split(/\s+/).length,
+      task2Words: task2Answer.trim().split(/\s+/).length,
+      task1Penalty: task1WordAnalysis.penalty,
+      task2Penalty: task2WordAnalysis.penalty,
+      task1Errors: task1Errors.length,
+      task2Errors: task2Errors.length
+    });
+
+    const improvedExaminerPrompt = `You are an expert IELTS examiner with 15+ years of experience. Use the official IELTS band descriptors to provide accurate, evidence-based scoring.
+
+**OFFICIAL IELTS BAND DESCRIPTORS:**
+
+**Task Achievement (Task 1):**
+- Band 9: ${IELTS_BAND_DESCRIPTORS.task_achievement[9]}
+- Band 8: ${IELTS_BAND_DESCRIPTORS.task_achievement[8]}
+- Band 7: ${IELTS_BAND_DESCRIPTORS.task_achievement[7]}
+- Band 6: ${IELTS_BAND_DESCRIPTORS.task_achievement[6]}
+- Band 5: ${IELTS_BAND_DESCRIPTORS.task_achievement[5]}
+
+**Task Response (Task 2):**
+- Band 9: ${IELTS_BAND_DESCRIPTORS.task_response[9]}
+- Band 8: ${IELTS_BAND_DESCRIPTORS.task_response[8]}
+- Band 7: ${IELTS_BAND_DESCRIPTORS.task_response[7]}
+- Band 6: ${IELTS_BAND_DESCRIPTORS.task_response[6]}
+- Band 5: ${IELTS_BAND_DESCRIPTORS.task_response[5]}
+
+**Coherence & Cohesion:**
+- Band 9: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[9]}
+- Band 8: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[8]}
+- Band 7: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[7]}
+- Band 6: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[6]}
+- Band 5: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[5]}
+
+**Lexical Resource:**
+- Band 9: ${IELTS_BAND_DESCRIPTORS.lexical_resource[9]}
+- Band 8: ${IELTS_BAND_DESCRIPTORS.lexical_resource[8]}
+- Band 7: ${IELTS_BAND_DESCRIPTORS.lexical_resource[7]}
+- Band 6: ${IELTS_BAND_DESCRIPTORS.lexical_resource[6]}
+- Band 5: ${IELTS_BAND_DESCRIPTORS.lexical_resource[5]}
+
+**Grammatical Range & Accuracy:**
+- Band 9: ${IELTS_BAND_DESCRIPTORS.grammatical_range[9]}
+- Band 8: ${IELTS_BAND_DESCRIPTORS.grammatical_range[8]}
+- Band 7: ${IELTS_BAND_DESCRIPTORS.grammatical_range[7]}
+- Band 6: ${IELTS_BAND_DESCRIPTORS.grammatical_range[6]}
+- Band 5: ${IELTS_BAND_DESCRIPTORS.grammatical_range[5]}
+
+**WORD COUNT ANALYSIS:**
+- Task 1: ${task1Answer.trim().split(/\s+/).length} words (minimum: 150) ${task1WordAnalysis.message}
+- Task 2: ${task2Answer.trim().split(/\s+/).length} words (minimum: 250) ${task2WordAnalysis.message}
+
+**ERROR PATTERNS DETECTED:**
+Task 1 Issues: ${task1Errors.length > 0 ? task1Errors.join('; ') : 'None detected'}
+Task 2 Issues: ${task2Errors.length > 0 ? task2Errors.join('; ') : 'None detected'}
+
+**SCORING GUIDELINES:**
+- Use the exact band descriptors above to justify your scores
+- Quote specific examples from student writing as evidence
+- Apply word count penalties: ${task1WordAnalysis.penalty + task2WordAnalysis.penalty} total penalty
+- Basic vocabulary (bad/good) should lower Lexical Resource to Band 5-6
+- Weak openings ("I agree that") should impact Task Response
+- Grammar errors should significantly reduce Grammatical Range scores
+
+**TASK DETAILS:**
+
+**Task 1:**
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
-${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}
-${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}
+${task1Data?.imageContext ? `Visual Data: ${task1Data.imageContext}` : ''}
 
-STUDENT TASK 1 RESPONSE:
-"${task1Answer}"
+Student Response: "${task1Answer}"
 
-TASK 2 DETAILS:
+**Task 2:**
 Prompt: ${task2Data?.title || 'Task 2'}
 Instructions: ${task2Data?.instructions || ''}
 
-STUDENT TASK 2 RESPONSE:
-"${task2Answer}"
+Student Response: "${task2Answer}"
 
-IMPORTANT: You must return ONLY a valid JSON object. Do not include any text before or after the JSON.`;
+**CRITICAL REQUIREMENTS:**
+1. Return ONLY valid JSON, no additional text
+2. Use bands: 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0
+3. Quote exact text from student writing in justifications
+4. Apply penalties for word count shortfalls
+5. Lower scores for detected error patterns
+6. Provide specific, actionable improvements
 
-
-
-    const messages = [
-      {
-        role: 'system',
-        content: `You are "Foxbot," an expert IELTS examiner and a world-class writing coach. Your primary goal is to help students elevate their entire essays—not just their grammar. You must analyze their writing on four levels: Ideas, Logic, Structure, and Language. Your rewritten "Improved" versions must demonstrate improvements across all these areas.
-
-Your Guiding Principles:
-
-1. Analyze the Core Idea (Task Response):
-First, assess the student's main argument and supporting examples. Are they relevant, well-developed, and persuasive?
-In your rewritten version, you must strengthen their ideas. Do not change their core opinion, but you can and should make their examples more specific, their reasoning clearer, and their position more robust.
-Example: If a student writes, "Technology helps people," your improved version might be, "Specifically, communication technology like video conferencing helps bridge geographical divides for families and professional teams."
-
-2. Enhance the Logic and Flow (Coherence & Cohesion):
-Analyze how the student connects their sentences and paragraphs. Is the argument easy to follow?
-In your rewritten version, you must improve the logical flow. This means using more sophisticated and varied transition signals (e.g., replacing a simple "Also..." with "Furthermore, a compelling argument can be made that..."). Ensure each sentence logically follows the one before it.
-
-3. Elevate the Language (Lexical Resource & Grammar):
-This is your final polish. Upgrade the student's vocabulary and sentence structures to a Band 8+ level.
-Vocabulary: Replace common words with more precise, academic synonyms (e.g., problem -> challenge or issue; show -> illustrate or demonstrate; good/bad -> beneficial/detrimental).
-Grammar: Rephrase simple sentences into more complex, sophisticated structures (e.g., combine two simple sentences into one complex sentence using a subordinate clause; change active voice to passive voice to shift focus).
-
-4. Be an Ambitious Re-writer, Not a Passive Editor:
-Do not be afraid to completely restructure a student's sentence if it improves the clarity, logic, or sophistication. The "Improved" version should be a clear and significant upgrade, demonstrating what high-level writing looks like.
-
-You MUST return ONLY a valid JSON object with no additional text.
-
-JSON SCHEMA (MANDATORY):
+**JSON SCHEMA:**
 {
   "task1": {
     "criteria": {
-      "task_achievement": { "band": 7.5, "justification": "Clear explanation here..." },
-      "coherence_and_cohesion": { "band": 8.0, "justification": "Clear explanation here..." },
-      "lexical_resource": { "band": 7.0, "justification": "Clear explanation here..." },
-      "grammatical_range_and_accuracy": { "band": 7.5, "justification": "Clear explanation here..." }
-    },
-    "overall_band": 7.5,
-    "overall_reason": "Averaged from criteria scores",
-    "feedback": {
-      "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"],
-      "improvements_detailed": [
-        {
-          "issue": "Ideas - vague example needs specificity",
-          "sentence_quote": "The graph shows general information",
-          "improved_version": "The graph illustrates specific demographic trends across three distinct time periods",
-          "explanation": "Added concrete details and precise academic vocabulary to strengthen the description"
-        }
-      ]
-    },
-    "original_spans": [
-      {"text": "The graph shows ", "status": "neutral"},
-      {"text": "general information", "status": "error"},
-      {"text": " about demographics.", "status": "neutral"}
-    ],
-    "corrected_spans": [
-      {"text": "The graph ", "status": "neutral"},
-      {"text": "illustrates specific demographic trends", "status": "improvement"},
-      {"text": " across ", "status": "neutral"},
-      {"text": "three distinct time periods", "status": "improvement"},
-      {"text": ".", "status": "neutral"}
-    ],
-    "sentence_comparisons": [
-      {
-        "original": "The graph shows general information about demographics.",
-        "improved": "The graph illustrates specific demographic trends across three distinct time periods.",
-        "issue": "Ideas - vague example needs specificity",
-        "explanation": "Added concrete details and precise academic vocabulary to strengthen the description"
+      "task_achievement": { 
+        "band": 6.5, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "coherence_and_cohesion": { 
+        "band": 6.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "lexical_resource": { 
+        "band": 5.5, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "grammatical_range_and_accuracy": { 
+        "band": 6.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
-    ],
-    "feedback_markdown": "Detailed Task 1 feedback here..."
+    },
+    "overall_band": 6.0,
+    "word_count": ${task1Answer.trim().split(/\s+/).length},
+    "word_count_penalty": ${task1WordAnalysis.penalty}
   },
   "task2": {
     "criteria": {
-      "task_response": { "band": 8.0, "justification": "Clear explanation here..." },
-      "coherence_and_cohesion": { "band": 7.5, "justification": "Clear explanation here..." },
-      "lexical_resource": { "band": 7.0, "justification": "Clear explanation here..." },
-      "grammatical_range_and_accuracy": { "band": 7.5, "justification": "Clear explanation here..." }
-    },
-    "overall_band": 7.5,
-    "overall_reason": "Averaged from criteria scores",
-    "feedback": {
-      "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"],
-      "improvements_detailed": [
-        {
-          "issue": "Logic - weak transition between ideas",
-          "sentence_quote": "People should make research. Technology is important.",
-          "improved_version": "Comprehensive research is essential to understand how technology fundamentally transforms social interactions.",
-          "explanation": "Combined sentences with sophisticated linking and elevated vocabulary to improve logical flow"
-        }
-      ]
-    },
-    "original_spans": [
-      {"text": "People should make research. ", "status": "error"},
-      {"text": "Technology is important.", "status": "error"}
-    ],
-    "corrected_spans": [
-      {"text": "Comprehensive research is essential to understand how technology ", "status": "improvement"},
-      {"text": "fundamentally transforms", "status": "improvement"},
-      {"text": " social interactions.", "status": "neutral"}
-    ],
-    "sentence_comparisons": [
-      {
-        "original": "People should make research. Technology is important.",
-        "improved": "Comprehensive research is essential to understand how technology fundamentally transforms social interactions.",
-        "issue": "Logic - weak transition between ideas",
-        "explanation": "Combined sentences with sophisticated linking and elevated vocabulary to improve logical flow"
+      "task_response": { 
+        "band": 6.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "coherence_and_cohesion": { 
+        "band": 6.5, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "lexical_resource": { 
+        "band": 5.5, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "grammatical_range_and_accuracy": { 
+        "band": 6.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
-    ],
-    "feedback_markdown": "Detailed Task 2 feedback here..."
+    },
+    "overall_band": 6.0,
+    "word_count": ${task2Answer.trim().split(/\s+/).length},
+    "word_count_penalty": ${task2WordAnalysis.penalty}
   },
   "overall": {
-    "band": 7.5,
-    "calculation": "(7.5 * 1 + 7.5 * 2) / 3 = 7.5",
-    "feedback_markdown": "Overall assessment here..."
+    "band": 6.0,
+    "calculation": "(6.0 * 1 + 6.0 * 2) / 3 = 6.0"
   },
-  "full_report_markdown": "Complete report here..."
-}
-
-CRITICAL RULES:
-- Return ONLY the JSON object, no other text
-- Bands must be whole or half numbers: 0, 0.5, 1.0, ..., 9.0
-- Calculate overall_band by averaging criteria and rounding to nearest 0.5
-- Calculate overall.band using: (Task1_overall*1 + Task2_overall*2) / 3, then round to 0.5
-- Provide exactly 3 strengths and 3 improvements for each task
-
-IMPROVEMENTS_DETAILED REQUIREMENTS:
-For both Task 1 and Task 2, provide comprehensive sentence-level improvements focusing on Ideas, Logic, Structure, and Language:
-1. "issue": Brief description of improvement type (e.g., "Ideas - vague example needs specificity", "Logic - weak transition", "Structure - sentence complexity", "Language - vocabulary precision")  
-2. "sentence_quote": Extract the EXACT problematic sentence or phrase from the student's writing
-3. "improved_version": Provide an ambitious rewrite that elevates ideas, logic, structure, and language
-4. "explanation": Clear explanation of how this improves ideas, flow, or sophistication (1-2 sentences)
-
-WORD-LEVEL HIGHLIGHTING REQUIREMENTS (CRITICAL):
-You must also provide "original_spans" and "corrected_spans" arrays for precise word-level highlighting:
-- "original_spans": Break down the student's original text into spans. Mark problematic words/phrases with status: "error", neutral text with status: "neutral"
-- "corrected_spans": Break down your improved version. ONLY mark the specific words/phrases you changed/improved with status: "improvement", everything else should be status: "neutral"
-
-IMPORTANT: When you create the corrected_spans for your improved version, you must be very precise. Do not mark the entire rewritten sentence with status: 'improvement'. Only mark the specific words or short phrases that you have changed, added, or significantly improved. The rest of the sentence, even if it's part of the rewritten version, should have status: 'neutral'.
-
-SENTENCE COMPARISONS REQUIREMENT:
-You must also provide a "sentence_comparisons" array. Each object in this array must contain the full original sentence and the full corresponding improved sentence:
-- "original": Complete original sentence from student's writing
-- "improved": Complete improved version of that sentence  
-- "issue": Brief description of the improvement type
-- "explanation": Clear explanation of the improvement
-
-What qualifies as a meaningful improvement:
-- Idea Improvement: Adding more specific details or clarifying vague points
-- Logical Improvement: Better transition words or reordering ideas for clearer flow
-- Vocabulary Improvement: Replacing simple words with sophisticated, academic synonyms
-- Structural Improvement: Rewriting simple sentences as more complex ones
-
-JUSTIFICATION REQUIREMENTS (CRITICAL):
-Each justification must analyze Ideas, Logic, Structure, and Language with specific evidence:
-1. Quote direct examples from the student's writing as evidence
-2. Explain why this specific band was awarded based on idea quality, logical flow, structural sophistication, and language precision
-3. Reference band descriptors where relevant
-4. Be comprehensive (2-4 sentences minimum)
-5. Provide specific examples of strengths or weaknesses across all four levels
-6. Never just state facts - explain the reasoning behind the score
-
-- Be accurate and fair in your assessment while focusing on comprehensive writing improvement`
-      },
-      {
-        role: 'user',
-        content: examinerPrompt
-      }
-    ];
+  "specific_improvements": [
+    {
+      "issue": "Weak vocabulary - replace 'bad' with sophisticated alternatives",
+      "original": "bad effect",
+      "improved": "detrimental/adverse impact",
+      "explanation": "Academic writing requires precise, sophisticated vocabulary"
+    },
+    {
+      "issue": "Weak opening - avoid basic stance statements",
+      "original": "I agree that technology has a bad effect",
+      "improved": "While technology undoubtedly transforms social interactions, its impact proves predominantly beneficial",
+      "explanation": "Strong openings present nuanced positions rather than simple agreement"
+    }
+  ],
+  "error_patterns_found": ${JSON.stringify([...task1Errors, ...task2Errors])}
+}`;
 
     // Use selected API provider
     let aiResponse: any;
@@ -347,22 +395,20 @@ Each justification must analyze Ideas, Logic, Structure, and Language with speci
 
     if (apiProvider === 'openai') {
       console.log('🔄 Using OpenAI API...');
-      aiResponse = await callOpenAI(examinerPrompt, openaiApiKey);
-      modelUsed = 'gpt-4o';
+      aiResponse = await callOpenAI(improvedExaminerPrompt, openaiApiKey);
+      modelUsed = 'OpenAI GPT-4o';
       content = aiResponse.choices?.[0]?.message?.content ?? '';
       console.log('✅ OpenAI API succeeded');
     } else {
       console.log('🔄 Using Gemini API...');
-      const fullPrompt = `${messages[0].content}\n\n${messages[1].content}`;
-      aiResponse = await callGemini(fullPrompt, geminiApiKey);
-      modelUsed = 'gemini-2.0-flash-exp';
+      aiResponse = await callGemini(improvedExaminerPrompt, geminiApiKey);
+      modelUsed = 'Google Gemini AI';
       content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
       console.log('✅ Gemini API succeeded');
     }
 
     console.log('🔍 Raw API response content length:', content.length);
     
-    // Check if content is empty or too short
     if (!content || content.length < 10) {
       console.error('❌ API response content is empty or too short:', content);
       throw new Error('API returned empty or invalid response');
@@ -378,13 +424,10 @@ Each justification must analyze Ideas, Logic, Structure, and Language with speci
     } catch (_e) {
       console.log('⚠️ Failed to parse JSON directly, attempting extraction...');
       
-      // Simple but effective JSON extraction
       let extractedJson = '';
-      
-      // Step 1: Remove markdown code blocks
       let cleaned = content.trim();
       
-      // Remove ```json at start and ``` at end
+      // Remove markdown code blocks
       if (cleaned.startsWith('```json')) {
         cleaned = cleaned.substring(7);
       } else if (cleaned.startsWith('```')) {
@@ -397,7 +440,7 @@ Each justification must analyze Ideas, Logic, Structure, and Language with speci
       
       cleaned = cleaned.trim();
       
-      // Step 2: Find the main JSON object
+      // Find the main JSON object
       const firstBrace = cleaned.indexOf('{');
       const lastBrace = cleaned.lastIndexOf('}');
       
@@ -414,12 +457,11 @@ Each justification must analyze Ideas, Logic, Structure, and Language with speci
         } catch (parseError) {
           console.log('❌ Failed to parse extracted JSON:', parseError.message);
           
-          // Step 3: Try to fix common JSON issues
+          // Try to fix common JSON issues
           try {
-            // Remove any trailing commas
             let fixedJson = extractedJson.replace(/,(\s*[}\]])/g, '$1');
             
-            // Try to balance braces if needed
+            // Balance braces if needed
             const openBraces = (fixedJson.match(/\{/g) || []).length;
             const closeBraces = (fixedJson.match(/\}/g) || []).length;
             
@@ -434,158 +476,32 @@ Each justification must analyze Ideas, Logic, Structure, and Language with speci
             console.log('❌ Final parsing attempt failed:', fixError.message);
           }
         }
-      } else {
-        console.log('❌ Could not find valid JSON structure in response');
-      }
-      
-      if (!structured) {
-        console.error('❌ All JSON extraction strategies failed');
-        console.log('🔧 Creating comprehensive fallback structured data...');
-          
-        // Create comprehensive fallback structured data when JSON parsing completely fails
-        const fallbackBand = 6.5; // More conservative fallback
-        structured = {
-          task1: {
-            criteria: {
-              task_achievement: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              coherence_and_cohesion: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              lexical_resource: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              grammatical_range_and_accuracy: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              }
-            },
-            overall_band: fallbackBand,
-            overall_reason: "Fallback assessment - technical processing issue occurred",
-            feedback: {
-              strengths: [
-                "Response was submitted successfully",
-                "Writing attempt demonstrates engagement with the task",
-                "Content was provided for both required elements"
-              ],
-              improvements: [
-                "Technical issue prevented detailed feedback - please retake the test",
-                "For accurate assessment, we recommend trying the test again",
-                "Contact support if this issue continues to occur"
-              ],
-              improvements_detailed: []
-            },
-            feedback_markdown: `### Technical Processing Issue
-
-Due to a technical processing issue, we were unable to provide detailed feedback for this Task 1 response. 
-
-**What happened:** The AI assessment system encountered a parsing error while analyzing your response.
-
-**Fallback score:** ${fallbackBand} (This is not your actual performance level)
-
-**Next steps:** Please retake the test for an accurate assessment of your writing skills.`
-          },
-          task2: {
-            criteria: {
-              task_response: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              coherence_and_cohesion: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              lexical_resource: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              grammatical_range_and_accuracy: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              }
-            },
-            overall_band: fallbackBand,
-            overall_reason: "Fallback assessment - technical processing issue occurred",
-            feedback: {
-              strengths: [
-                "Response was submitted successfully",
-                "Writing attempt demonstrates engagement with the task", 
-                "Content was provided for both required elements"
-              ],
-              improvements: [
-                "Technical issue prevented detailed feedback - please retake the test",
-                "For accurate assessment, we recommend trying the test again", 
-                "Contact support if this issue continues to occur"
-              ],
-              improvements_detailed: []
-            },
-            feedback_markdown: `### Technical Processing Issue
-
-Due to a technical processing issue, we were unable to provide detailed feedback for this Task 2 response.
-
-**What happened:** The AI assessment system encountered a parsing error while analyzing your response.
-
-**Fallback score:** ${fallbackBand} (This is not your actual performance level)
-
-**Next steps:** Please retake the test for an accurate assessment of your writing skills.`
-          },
-          overall: {
-            band: fallbackBand,
-            calculation: `(${fallbackBand} * 1 + ${fallbackBand} * 2) / 3 = ${fallbackBand}`,
-            feedback_markdown: `### Technical Processing Issue - Overall Assessment
-
-**Overall Band Score:** ${fallbackBand} (Fallback Score)
-
-Due to technical processing issues, we were unable to provide a detailed analysis of your IELTS Writing performance. This score is a fallback value and does not reflect your actual writing ability.
-
-**What this means:**
-- The AI assessment system encountered errors while processing your responses
-- Your actual performance may be higher or lower than this fallback score  
-- This technical issue is temporary and should not reflect on your writing skills
-
-**Recommended actions:**
-1. Retake the IELTS Writing test for an accurate assessment
-2. Contact support if this issue persists
-3. Your responses have been saved and can be reviewed manually if needed
-
-We apologize for the inconvenience and appreciate your patience.`
-          },
-          full_report_markdown: `# IELTS Writing Assessment - Technical Issue Report
-
-## Summary
-A technical processing error prevented the completion of your IELTS Writing assessment. This report contains fallback scores that do not reflect your actual writing performance.
-
-## Technical Details
-- **Issue Type:** JSON parsing error in AI assessment system
-- **Fallback Score Applied:** ${fallbackBand} for all criteria
-- **Raw AI Response Length:** ${content.length} characters
-- **Processing Status:** Failed with fallback data generated
-
-## Next Steps
-Please retake the IELTS Writing test to receive an accurate assessment of your writing skills. If you continue to experience technical issues, please contact our support team.
-
----
-
-*This is an automated technical report. The scores shown are not indicative of actual writing performance.*`
-        };
-        console.log('✅ Comprehensive fallback data created with detailed explanations');
       }
     }
 
-    const clampBands = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
-      for (const k in obj) {
-        const v = (obj as any)[k];
-        if (k === 'band' && typeof v === 'number') (obj as any)[k] = Math.min(9, Math.max(0, v));
-        else if (typeof v === 'object') clampBands(v);
+    // Apply word count penalties to final scores
+    if (structured && (task1WordAnalysis.penalty > 0 || task2WordAnalysis.penalty > 0)) {
+      console.log('⚠️ Applying word count penalties');
+      
+      if (structured.task1?.overall_band) {
+        structured.task1.overall_band = Math.max(4.0, structured.task1.overall_band - task1WordAnalysis.penalty);
       }
-    };
-    if (structured) clampBands(structured);
-    const feedback = structured?.full_report_markdown || content;
+      
+      if (structured.task2?.overall_band) {
+        structured.task2.overall_band = Math.max(4.0, structured.task2.overall_band - task2WordAnalysis.penalty);
+      }
+      
+      // Recalculate overall band
+      if (structured.overall && structured.task1?.overall_band && structured.task2?.overall_band) {
+        const newOverall = (structured.task1.overall_band * 1 + structured.task2.overall_band * 2) / 3;
+        structured.overall.band = Math.round(newOverall * 2) / 2; // Round to nearest 0.5
+        structured.overall.calculation = `(${structured.task1.overall_band} * 1 + ${structured.task2.overall_band} * 2) / 3 = ${structured.overall.band}`;
+      }
+    }
+
+    const feedback = structured ? 
+      `# IELTS Writing Assessment Results\n\n**Overall Band Score: ${structured.overall?.band || 6.0}**\n\n${JSON.stringify(structured, null, 2)}` : 
+      content;
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -593,7 +509,12 @@ Please retake the IELTS Writing test to receive an accurate assessment of your w
       structured,
       apiUsed: modelUsed,
       task1WordCount: task1Answer.trim().split(/\s+/).length,
-      task2WordCount: task2Answer.trim().split(/\s+/).length
+      task2WordCount: task2Answer.trim().split(/\s+/).length,
+      wordCountPenalties: {
+        task1: task1WordAnalysis.penalty,
+        task2: task2WordAnalysis.penalty
+      },
+      errorPatternsDetected: [...task1Errors, ...task2Errors]
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

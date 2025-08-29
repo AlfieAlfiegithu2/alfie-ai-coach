@@ -126,7 +126,6 @@ export default function IELTSWritingProResults() {
     task2Data?: any;
     task1Answer?: string;
     task2Answer?: string;
-    apiProvider?: string;
   }>({});
 
   // Try to get data from location state first, then fallback to database
@@ -285,8 +284,7 @@ export default function IELTSWritingProResults() {
         task2Data: {
           title: 'Task 2', 
           instructions: task2Result?.prompt_text || 'Task 2 Instructions'
-        },
-        apiProvider: testData?.apiProvider || 'Unknown'
+        }
       };
 
       console.log('✅ Reconstructed data:', reconstructedData);
@@ -309,8 +307,7 @@ export default function IELTSWritingProResults() {
     task1Data,
     task2Data,
     task1Answer,
-    task2Answer,
-    apiProvider
+    task2Answer
   } = resultsData;
   
   useEffect(() => {
@@ -510,12 +507,12 @@ export default function IELTSWritingProResults() {
                   </p>
                   <div className="space-y-3">
                     {task.feedback.improvements_detailed.map((ex, i) => (
-                      <div key={i} className="space-y-2">
+                      <div key={i} className="rounded-xl border border-border bg-surface-3 p-3">
                         {ex.issue ? (
-                          <div className="text-sm font-medium text-text-primary">{ex.issue}</div>
+                          <div className="text-sm font-medium text-text-primary mb-1">{ex.issue}</div>
                         ) : null}
                         {ex.sentence_quote ? (
-                          <div>
+                          <div className="mb-2">
                             <div className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Original</div>
                             <blockquote className="text-sm text-text-secondary border-l-2 border-brand-blue/40 pl-3 italic">
                               "{ex.sentence_quote}"
@@ -523,13 +520,13 @@ export default function IELTSWritingProResults() {
                           </div>
                         ) : null}
                         {ex.improved_version ? (
-                          <div className="text-sm">
+                          <div className="text-sm mt-1">
                             <span className="text-[11px] uppercase tracking-wide text-text-tertiary mr-1">Improved</span>
                             <span className="font-medium text-text-primary">{ex.improved_version}</span>
                           </div>
                         ) : null}
                         {ex.explanation ? (
-                          <p className="text-caption text-text-secondary">{ex.explanation}</p>
+                          <p className="text-caption text-text-secondary mt-1">{ex.explanation}</p>
                         ) : null}
                       </div>
                     ))}
@@ -551,6 +548,17 @@ export default function IELTSWritingProResults() {
             </div>
           )}
 
+          {/* Writing Comparison View */}
+          {userAnswer && (
+            <WritingComparisonView
+              originalText={userAnswer}
+              improvementSuggestions={task.feedback?.improvements_detailed}
+              originalSpans={task.original_spans}
+              correctedSpans={task.corrected_spans}
+              sentenceComparisons={task.sentence_comparisons}
+              title={title}
+            />
+          )}
         </CardContent>
       </Card>
     );
@@ -569,9 +577,6 @@ export default function IELTSWritingProResults() {
             </Button>
             <div>
               <h1 className="text-heading-2">IELTS Writing Results</h1>
-              {apiProvider && (
-                <p className="text-sm text-text-tertiary">Assessed by: {apiProvider === 'gemini' ? 'Google Gemini AI' : 'OpenAI GPT'}</p>
-              )}
             </div>
           </div>
         </div>

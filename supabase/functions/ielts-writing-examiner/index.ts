@@ -234,6 +234,17 @@ JSON SCHEMA:
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
     },
+    "feedback": {
+      "improvements": [
+        {
+          "issue": "Task 1 specific issue description",
+          "original": "Quote from Task 1 student writing",
+          "improved": "Improved Task 1 version",
+          "explanation": "Why this Task 1 improvement helps with the data description/chart analysis"
+        }
+      ],
+      "feedback_markdown": "## Task 1 Detailed Feedback\n\n**Strengths:** List specific Task 1 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 1 feedback here with specific examples."
+    },
     "overall_band": 0.0,
     "word_count": ${task1Answer.trim().split(/\s+/).length}
   },
@@ -256,6 +267,17 @@ JSON SCHEMA:
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
     },
+    "feedback": {
+      "improvements": [
+        {
+          "issue": "Task 2 specific issue description",
+          "original": "Quote from Task 2 student writing",
+          "improved": "Improved Task 2 version",
+          "explanation": "Why this Task 2 improvement helps with the essay structure/argument"
+        }
+      ],
+      "feedback_markdown": "## Task 2 Detailed Feedback\n\n**Strengths:** List specific Task 2 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 2 feedback here with specific examples."
+    },
     "overall_band": 0.0,
     "word_count": ${task2Answer.trim().split(/\s+/).length}
   },
@@ -264,15 +286,7 @@ JSON SCHEMA:
     "calculation": "Calculation explanation"
   },
   "key_strengths": [
-    "List 2-3 specific strengths from the writing"
-  ],
-  "specific_improvements": [
-    {
-      "issue": "Description of the issue",
-      "original": "Quote from student writing",
-      "improved": "Improved version",
-      "explanation": "Why this improvement helps"
-    }
+    "List 2-3 specific strengths from both tasks"
   ]
 }`;
 
@@ -380,6 +394,57 @@ JSON SCHEMA:
     }
 
     // AI handles all scoring and word count considerations internally
+
+    // Validate and add fallback data for frontend compatibility
+    if (structured) {
+      // Ensure task1 feedback structure exists
+      if (!structured.task1?.feedback) {
+        structured.task1 = structured.task1 || {};
+        structured.task1.feedback = {
+          improvements: [],
+          feedback_markdown: "## Task 1 Feedback\n\nNo specific improvements available."
+        };
+      }
+      
+      // Ensure task2 feedback structure exists
+      if (!structured.task2?.feedback) {
+        structured.task2 = structured.task2 || {};
+        structured.task2.feedback = {
+          improvements: [],
+          feedback_markdown: "## Task 2 Feedback\n\nNo specific improvements available."
+        };
+      }
+      
+      // Migrate legacy specific_improvements to task-specific feedback if needed
+      if (structured.specific_improvements && Array.isArray(structured.specific_improvements)) {
+        console.log('🔄 Migrating legacy specific_improvements to task-specific format...');
+        
+        // Split improvements between tasks based on content analysis
+        const task1Improvements = [];
+        const task2Improvements = [];
+        
+        structured.specific_improvements.forEach((improvement) => {
+          // Simple heuristic: if original text appears in task1Answer, assign to task1, otherwise task2
+          if (task1Answer.includes(improvement.original?.substring(0, 50) || '')) {
+            task1Improvements.push(improvement);
+          } else {
+            task2Improvements.push(improvement);
+          }
+        });
+        
+        if (task1Improvements.length > 0) {
+          structured.task1.feedback.improvements = task1Improvements;
+        }
+        if (task2Improvements.length > 0) {
+          structured.task2.feedback.improvements = task2Improvements;
+        }
+        
+        // Remove legacy field
+        delete structured.specific_improvements;
+      }
+      
+      console.log('✅ Response structure validated and enhanced');
+    }
 
     const feedback = structured ? 
       `# IELTS Writing Assessment Results\n\n**Overall Band Score: ${structured.overall?.band || 6.0}**\n\n${JSON.stringify(structured, null, 2)}` : 

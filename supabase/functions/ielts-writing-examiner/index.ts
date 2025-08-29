@@ -6,103 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Official IELTS Band Descriptors
-const IELTS_BAND_DESCRIPTORS = {
-  task_achievement: {
-    9: "Fully addresses all parts of the task with very natural and sophisticated response. Covers all requirements with fully extended and well-supported ideas.",
-    8: "Covers all requirements with well-developed response. Presents clearly relevant ideas which are well-extended and supported.",
-    7: "Covers requirements with sufficiently developed response. Presents relevant main ideas but some may be inadequately developed.",
-    6: "Addresses requirements but development is not always clear. Some irrelevant or inadequately supported ideas may be present.",
-    5: "Generally addresses the task with some development of ideas. Limited development with irrelevant detail or repetition.",
-    4: "Attempts to address the task but does not cover all key features. Ideas lack development and support."
-  },
-  task_response: {
-    9: "Fully addresses all parts with comprehensive development. Clear position throughout with fully extended and well-supported ideas.",
-    8: "Sufficiently addresses all parts with well-developed ideas. Clear position with relevant, extended and supported ideas.",
-    7: "Addresses all parts though some parts may be more fully covered. Clear position with main ideas extended and supported.",
-    6: "Addresses all parts but some parts may be inadequately covered. Relevant position but conclusions may be unclear.",
-    5: "Addresses the task only partially. Limited development of ideas with unclear position and weak conclusion.",
-    4: "Minimal addressing of the task. Few ideas developed with unclear position and little support."
-  },
-  coherence_cohesion: {
-    9: "Uses cohesion naturally and effectively. Clear progression with wide range of cohesive devices. Paragraphing is logical and well-managed.",
-    8: "Sequences information logically with clear progression. Wide range of cohesive devices with generally good paragraphing.",
-    7: "Logically organizes information with clear progression. Range of cohesive devices though some may be over/under-used.",
-    6: "Generally coherent with clear progression. Some cohesive devices used effectively but may lack clarity or be repetitive.",
-    5: "Organization evident but not wholly logical. Some cohesive devices but may be inadequate or inaccurate.",
-    4: "Information and ideas not always clearly connected. Limited range of cohesive devices with some inaccuracy."
-  },
-  lexical_resource: {
-    9: "Wide range of vocabulary used naturally and accurately. Rare minor errors as slips. Full awareness of style and collocation.",
-    8: "Wide range of vocabulary used fluently and flexibly. Occasional inaccuracies in word choice and collocation.",
-    7: "Sufficient range with some flexibility. Generally appropriate word choice with some awareness of style and collocation.",
-    6: "Adequate range for the task. Some inaccuracies in word choice but meaning is clear. Some awareness of style.",
-    5: "Limited range but minimally adequate. Noticeable errors in word choice may cause difficulty for reader.",
-    4: "Limited range with frequent repetition. Errors in word choice may impede meaning and cause strain for reader."
-  },
-  grammatical_range: {
-    9: "Wide range of structures used accurately and appropriately. Rare minor errors. Full control of grammar and punctuation.",
-    8: "Wide range of structures used flexibly and accurately. Most sentences error-free with only occasional errors.",
-    7: "Range of complex structures with frequent error-free sentences. Generally good control despite some errors.",
-    6: "Mix of simple and complex structures. Some errors but they rarely reduce communication.",
-    5: "Limited range of structures with frequent errors that may reduce clarity. Complex structures attempted but often inaccurate.",
-    4: "Limited range with frequent errors. Simple structures may be accurate but complex attempts have errors."
-  }
-};
-
-// Common error patterns that should trigger lower scores
-const ERROR_PATTERNS = {
-  basic_vocabulary: ['bad', 'good', 'big', 'small', 'very', 'a lot', 'many people', 'nowadays', 'in my opinion'],
-  weak_openings: ['I agree that', 'I disagree that', 'In my opinion', 'I think that', 'I believe that'],
-  repetitive_connectors: ['also', 'and', 'but', 'so', 'because'],
-  grammar_errors: ['have effect', 'make research', 'give opinion', 'do mistake', 'make crime'],
-  informal_language: ['gonna', 'wanna', 'can\'t', 'don\'t', 'won\'t', 'it\'s', 'there\'s']
-};
-
-function analyzeWordCount(text: string, minWords: number): { penalty: number; message: string } {
-  const wordCount = text.trim().split(/\s+/).length;
-  if (wordCount < minWords) {
-    const shortfall = minWords - wordCount;
-    const penalty = shortfall <= 20 ? 0.5 : 1.0;
-    return {
-      penalty,
-      message: `Essay is ${shortfall} words below minimum (${wordCount}/${minWords}). Band score reduced by ${penalty}.`
-    };
-  }
-  return { penalty: 0, message: '' };
-}
-
-function detectErrorPatterns(text: string): string[] {
-  const detectedErrors: string[] = [];
-  const lowerText = text.toLowerCase();
-  
-  // Check for basic vocabulary
-  const basicVocabFound = ERROR_PATTERNS.basic_vocabulary.filter(word => 
-    lowerText.includes(word.toLowerCase())
-  );
-  if (basicVocabFound.length > 2) {
-    detectedErrors.push(`Over-reliance on basic vocabulary: ${basicVocabFound.slice(0, 3).join(', ')}`);
-  }
-  
-  // Check for weak openings
-  const weakOpenings = ERROR_PATTERNS.weak_openings.filter(phrase => 
-    lowerText.includes(phrase.toLowerCase())
-  );
-  if (weakOpenings.length > 0) {
-    detectedErrors.push(`Weak essay opening: "${weakOpenings[0]}"`);
-  }
-  
-  // Check for grammar patterns
-  const grammarErrors = ERROR_PATTERNS.grammar_errors.filter(error => 
-    lowerText.includes(error.toLowerCase())
-  );
-  if (grammarErrors.length > 0) {
-    detectedErrors.push(`Grammar errors detected: ${grammarErrors.join(', ')}`);
-  }
-  
-  return detectedErrors;
-}
-
 async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
   console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2)...`);
   
@@ -226,166 +129,148 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    // Analyze word counts and detect error patterns
-    const task1WordAnalysis = analyzeWordCount(task1Answer, 150);
-    const task2WordAnalysis = analyzeWordCount(task2Answer, 250);
-    const task1Errors = detectErrorPatterns(task1Answer);
-    const task2Errors = detectErrorPatterns(task2Answer);
+    const masterExaminerPrompt = `Your Role and Core Instruction:
 
-    console.log('📊 Analysis Results:', {
-      task1Words: task1Answer.trim().split(/\s+/).length,
-      task2Words: task2Answer.trim().split(/\s+/).length,
-      task1Penalty: task1WordAnalysis.penalty,
-      task2Penalty: task2WordAnalysis.penalty,
-      task1Errors: task1Errors.length,
-      task2Errors: task2Errors.length
-    });
+You are an expert IELTS examiner with 15+ years of experience. Your task is to provide a comprehensive, fair, and accurate assessment of an IELTS Writing submission (both Task 1 and Task 2).
 
-    const improvedExaminerPrompt = `You are an expert IELTS examiner with 15+ years of experience. Use the official IELTS band descriptors to provide accurate, evidence-based scoring.
+Your entire analysis must be based on the Official IELTS Band Descriptors provided below. You will first form a holistic, overall impression of the work, and then you will use the specific criteria to justify your scores.
 
-**OFFICIAL IELTS BAND DESCRIPTORS:**
+You must perform all analysis yourself. Your expert judgment is the only thing that matters.
 
-**Task Achievement (Task 1):**
-- Band 9: ${IELTS_BAND_DESCRIPTORS.task_achievement[9]}
-- Band 8: ${IELTS_BAND_DESCRIPTORS.task_achievement[8]}
-- Band 7: ${IELTS_BAND_DESCRIPTORS.task_achievement[7]}
-- Band 6: ${IELTS_BAND_DESCRIPTORS.task_achievement[6]}
-- Band 5: ${IELTS_BAND_DESCRIPTORS.task_achievement[5]}
+Official IELTS Band Descriptors (Complete 0-9 Scale)
 
-**Task Response (Task 2):**
-- Band 9: ${IELTS_BAND_DESCRIPTORS.task_response[9]}
-- Band 8: ${IELTS_BAND_DESCRIPTORS.task_response[8]}
-- Band 7: ${IELTS_BAND_DESCRIPTORS.task_response[7]}
-- Band 6: ${IELTS_BAND_DESCRIPTORS.task_response[6]}
-- Band 5: ${IELTS_BAND_DESCRIPTORS.task_response[5]}
+Task Achievement (Task 1) / Task Response (Task 2):
+9: Fully satisfies all requirements. A fully developed and comprehensive response.
+8: Sufficiently covers all requirements. A well-developed response.
+7: Addresses all parts of the prompt, though some may be more developed than others.
+6: Addresses the prompt, but the treatment is more general and may be underdeveloped.
+5: Partially addresses the prompt. Ideas are limited and not well-supported.
+4: Responds to the task only in a minimal way. Content is often irrelevant.
+3: Fails to address the task. Ideas are largely irrelevant to the prompt.
+2: Response is barely related to the task. The writer has failed to understand the prompt.
+1: Fails to attend to the task at all. The content has no relation to the question.
+0: Did not attend, or wrote a response that is completely memorized and unrelated.
 
-**Coherence & Cohesion:**
-- Band 9: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[9]}
-- Band 8: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[8]}
-- Band 7: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[7]}
-- Band 6: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[6]}
-- Band 5: ${IELTS_BAND_DESCRIPTORS.coherence_cohesion[5]}
+Coherence & Cohesion:
+9: Uses cohesion seamlessly and naturally. Paragraphing is flawless.
+8: Information is sequenced logically. Paragraphing is well-managed.
+7: Logically organized with clear progression. Uses a range of cohesive devices.
+6: Organization is apparent but can be mechanical or repetitive.
+5: Some organization, but not logical. Paragraphing is confusing. Causes significant difficulty for the reader.
+4: Not logically organized. Very limited and incorrect use of linking words.
+3: Ideas are disconnected. No logical progression.
+2: Has very little control of organizational features.
+1: Fails to communicate any message.
+0: Did not attend.
 
-**Lexical Resource:**
-- Band 9: ${IELTS_BAND_DESCRIPTORS.lexical_resource[9]}
-- Band 8: ${IELTS_BAND_DESCRIPTORS.lexical_resource[8]}
-- Band 7: ${IELTS_BAND_DESCRIPTORS.lexical_resource[7]}
-- Band 6: ${IELTS_BAND_DESCRIPTORS.lexical_resource[6]}
-- Band 5: ${IELTS_BAND_DESCRIPTORS.lexical_resource[5]}
+Lexical Resource (Vocabulary):
+9: Wide range of vocabulary used with very natural and sophisticated control.
+8: Wide vocabulary used fluently and flexibly. Skillfully uses less common vocabulary.
+7: Sufficient range of vocabulary with some flexibility. Attempts less common vocabulary.
+6: Vocabulary is adequate for the task. Errors do not generally impede communication.
+5: Limited and repetitive vocabulary. Frequent errors cause difficulty for the reader.
+4: Uses only very basic vocabulary. Errors cause severe difficulty.
+3: Extremely limited vocabulary. Severe errors distort meaning.
+2: Can only use isolated words.
+1: No evidence of any vocabulary knowledge.
+0: Did not attend.
 
-**Grammatical Range & Accuracy:**
-- Band 9: ${IELTS_BAND_DESCRIPTORS.grammatical_range[9]}
-- Band 8: ${IELTS_BAND_DESCRIPTORS.grammatical_range[8]}
-- Band 7: ${IELTS_BAND_DESCRIPTORS.grammatical_range[7]}
-- Band 6: ${IELTS_BAND_DESCRIPTORS.grammatical_range[6]}
-- Band 5: ${IELTS_BAND_DESCRIPTORS.grammatical_range[5]}
+Grammatical Range and Accuracy:
+9: Wide range of structures used with full flexibility and accuracy. Almost entirely error-free.
+8: Wide range of structures. The majority of sentences are error-free.
+7: Uses a variety of complex sentence structures, but with some errors.
+6: Uses a mix of simple and complex sentences. Some errors, but they rarely reduce communication.
+5: Limited range of structures. Frequent errors cause some difficulty for the reader.
+4: Uses only very basic sentence structures. Frequent errors cause significant confusion.
+3: Cannot produce basic sentence forms.
+2: Cannot write in sentences at all.
+1: No evidence of sentence structure.
+0: Did not attend.
 
-**WORD COUNT ANALYSIS:**
-- Task 1: ${task1Answer.trim().split(/\s+/).length} words (minimum: 150) ${task1WordAnalysis.message}
-- Task 2: ${task2Answer.trim().split(/\s+/).length} words (minimum: 250) ${task2WordAnalysis.message}
+Your Required Tasks & Output Format
 
-**ERROR PATTERNS DETECTED:**
-Task 1 Issues: ${task1Errors.length > 0 ? task1Errors.join('; ') : 'None detected'}
-Task 2 Issues: ${task2Errors.length > 0 ? task2Errors.join('; ') : 'None detected'}
+After analyzing the provided Task 1 and Task 2 essays, you must return a single, valid JSON object.
 
-**SCORING GUIDELINES:**
-- Use the exact band descriptors above to justify your scores
-- Quote specific examples from student writing as evidence
-- Apply word count penalties: ${task1WordAnalysis.penalty + task2WordAnalysis.penalty} total penalty
-- Basic vocabulary (bad/good) should lower Lexical Resource to Band 5-6
-- Weak openings ("I agree that") should impact Task Response
-- Grammar errors should significantly reduce Grammatical Range scores
+Score Each Criterion: For both Task 1 and Task 2, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
 
-**TASK DETAILS:**
+Write Justifications: For each score, you must write a 2-3 sentence justification, quoting specific examples from the student's writing as evidence.
 
-**Task 1:**
+Handle Word Count: You must check if the essays are under the word count (150 for Task 1, 250 for Task 2). If an essay is significantly under length, you must state that this will lower the Task Achievement/Response score and reflect this in your scoring.
+
+Provide Overall Feedback: Based on your analysis, provide a bulleted list of 2-3 "Key Strengths" and 2-3 "Specific, Actionable Improvements."
+
+Task 1:
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
 ${task1Data?.imageContext ? `Visual Data: ${task1Data.imageContext}` : ''}
-
 Student Response: "${task1Answer}"
 
-**Task 2:**
+Task 2:
 Prompt: ${task2Data?.title || 'Task 2'}
 Instructions: ${task2Data?.instructions || ''}
-
 Student Response: "${task2Answer}"
 
-**CRITICAL REQUIREMENTS:**
-1. Return ONLY valid JSON, no additional text
-2. Use bands: 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0
-3. Quote exact text from student writing in justifications
-4. Apply penalties for word count shortfalls
-5. Lower scores for detected error patterns
-6. Provide specific, actionable improvements
-
-**JSON SCHEMA:**
+JSON SCHEMA:
 {
   "task1": {
     "criteria": {
       "task_achievement": { 
-        "band": 6.5, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "coherence_and_cohesion": { 
-        "band": 6.0, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "lexical_resource": { 
-        "band": 5.5, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "grammatical_range_and_accuracy": { 
-        "band": 6.0, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
     },
-    "overall_band": 6.0,
-    "word_count": ${task1Answer.trim().split(/\s+/).length},
-    "word_count_penalty": ${task1WordAnalysis.penalty}
+    "overall_band": 0.0,
+    "word_count": ${task1Answer.trim().split(/\s+/).length}
   },
   "task2": {
     "criteria": {
       "task_response": { 
-        "band": 6.0, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "coherence_and_cohesion": { 
-        "band": 6.5, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "lexical_resource": { 
-        "band": 5.5, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "grammatical_range_and_accuracy": { 
-        "band": 6.0, 
+        "band": 0.0, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
     },
-    "overall_band": 6.0,
-    "word_count": ${task2Answer.trim().split(/\s+/).length},
-    "word_count_penalty": ${task2WordAnalysis.penalty}
+    "overall_band": 0.0,
+    "word_count": ${task2Answer.trim().split(/\s+/).length}
   },
   "overall": {
-    "band": 6.0,
-    "calculation": "(6.0 * 1 + 6.0 * 2) / 3 = 6.0"
+    "band": 0.0,
+    "calculation": "Calculation explanation"
   },
+  "key_strengths": [
+    "List 2-3 specific strengths from the writing"
+  ],
   "specific_improvements": [
     {
-      "issue": "Weak vocabulary - replace 'bad' with sophisticated alternatives",
-      "original": "bad effect",
-      "improved": "detrimental/adverse impact",
-      "explanation": "Academic writing requires precise, sophisticated vocabulary"
-    },
-    {
-      "issue": "Weak opening - avoid basic stance statements",
-      "original": "I agree that technology has a bad effect",
-      "improved": "While technology undoubtedly transforms social interactions, its impact proves predominantly beneficial",
-      "explanation": "Strong openings present nuanced positions rather than simple agreement"
+      "issue": "Description of the issue",
+      "original": "Quote from student writing",
+      "improved": "Improved version",
+      "explanation": "Why this improvement helps"
     }
-  ],
-  "error_patterns_found": ${JSON.stringify([...task1Errors, ...task2Errors])}
+  ]
 }`;
 
     // Use selected API provider
@@ -395,13 +280,13 @@ Student Response: "${task2Answer}"
 
     if (apiProvider === 'openai') {
       console.log('🔄 Using OpenAI API...');
-      aiResponse = await callOpenAI(improvedExaminerPrompt, openaiApiKey);
+      aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
       modelUsed = 'OpenAI GPT-4o';
       content = aiResponse.choices?.[0]?.message?.content ?? '';
       console.log('✅ OpenAI API succeeded');
     } else {
       console.log('🔄 Using Gemini API...');
-      aiResponse = await callGemini(improvedExaminerPrompt, geminiApiKey);
+      aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
       modelUsed = 'Google Gemini AI';
       content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
       console.log('✅ Gemini API succeeded');
@@ -479,25 +364,7 @@ Student Response: "${task2Answer}"
       }
     }
 
-    // Apply word count penalties to final scores
-    if (structured && (task1WordAnalysis.penalty > 0 || task2WordAnalysis.penalty > 0)) {
-      console.log('⚠️ Applying word count penalties');
-      
-      if (structured.task1?.overall_band) {
-        structured.task1.overall_band = Math.max(4.0, structured.task1.overall_band - task1WordAnalysis.penalty);
-      }
-      
-      if (structured.task2?.overall_band) {
-        structured.task2.overall_band = Math.max(4.0, structured.task2.overall_band - task2WordAnalysis.penalty);
-      }
-      
-      // Recalculate overall band
-      if (structured.overall && structured.task1?.overall_band && structured.task2?.overall_band) {
-        const newOverall = (structured.task1.overall_band * 1 + structured.task2.overall_band * 2) / 3;
-        structured.overall.band = Math.round(newOverall * 2) / 2; // Round to nearest 0.5
-        structured.overall.calculation = `(${structured.task1.overall_band} * 1 + ${structured.task2.overall_band} * 2) / 3 = ${structured.overall.band}`;
-      }
-    }
+    // AI handles all scoring and word count considerations internally
 
     const feedback = structured ? 
       `# IELTS Writing Assessment Results\n\n**Overall Band Score: ${structured.overall?.band || 6.0}**\n\n${JSON.stringify(structured, null, 2)}` : 
@@ -509,12 +376,7 @@ Student Response: "${task2Answer}"
       structured,
       apiUsed: modelUsed,
       task1WordCount: task1Answer.trim().split(/\s+/).length,
-      task2WordCount: task2Answer.trim().split(/\s+/).length,
-      wordCountPenalties: {
-        task1: task1WordAnalysis.penalty,
-        task2: task2WordAnalysis.penalty
-      },
-      errorPatternsDetected: [...task1Errors, ...task2Errors]
+      task2WordCount: task2Answer.trim().split(/\s+/).length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

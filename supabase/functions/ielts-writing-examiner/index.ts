@@ -61,7 +61,7 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
@@ -72,8 +72,7 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
             content: prompt
           }
         ],
-        max_tokens: 4000,
-        temperature: 0.1
+        max_completion_tokens: 4000
       }),
     });
 
@@ -285,7 +284,7 @@ JSON SCHEMA:
     if (apiProvider === 'openai') {
       console.log('🔄 Using OpenAI API...');
       aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
-      modelUsed = 'OpenAI GPT-4o';
+      modelUsed = 'OpenAI GPT-4.1';
       content = aiResponse.choices?.[0]?.message?.content ?? '';
       console.log('✅ OpenAI API succeeded');
     } else {
@@ -302,7 +301,7 @@ JSON SCHEMA:
         }
         console.log('🔄 Fallback: Using OpenAI API...');
         aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
-        modelUsed = 'OpenAI GPT-4o (Fallback)';
+        modelUsed = 'OpenAI GPT-4.1 (Fallback)';
         content = aiResponse.choices?.[0]?.message?.content ?? '';
         console.log('✅ OpenAI fallback succeeded');
       }

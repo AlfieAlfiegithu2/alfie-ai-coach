@@ -308,52 +308,25 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     }
 
     setIsSubmitting(true);
-    let structured = null;
-    let feedback = null;
-    let task1WordCount = task1Answer.trim().split(/\s+/).filter(word => word.length > 0).length;
-    let task2WordCount = task2Answer.trim().split(/\s+/).filter(word => word.length > 0).length;
-    let aiAnalysisAvailable = false;
-
     try {
-      // Attempt AI examiner assessment with graceful fallback
-      console.log('🔍 Attempting AI analysis...');
-      const examinerResponse = await supabase.functions.invoke('ielts-writing-examiner', {
-        body: {
-          task1Answer,
-          task2Answer,
-          task1Data: task1,
-          task2Data: task2
-        }
-      });
+      // Run AI examiner assessment only (corrections will be generated on-demand in results page)
+      const [examinerResponse] = await Promise.all([
+        // AI Examiner for comprehensive assessment
+        supabase.functions.invoke('ielts-writing-examiner', {
+          body: {
+            task1Answer,
+            task2Answer,
+            task1Data: task1,
+            task2Data: task2
+          }
+        })
+      ]);
 
-      if (examinerResponse.error) {
-        console.warn('⚠️ AI analysis failed, proceeding without it:', examinerResponse.error);
-        toast({
-          title: "AI Analysis Unavailable",
-          description: "Your test will be submitted, but detailed AI feedback is temporarily unavailable.",
-          variant: "default"
-        });
-      } else {
-        const aiData = examinerResponse.data;
-        structured = aiData.structured;
-        feedback = aiData.feedback;
-        task1WordCount = aiData.task1WordCount || task1WordCount;
-        task2WordCount = aiData.task2WordCount || task2WordCount;
-        aiAnalysisAvailable = true;
-        console.log('✅ AI analysis successful');
-      }
-    } catch (error) {
-      console.warn('⚠️ AI analysis failed, proceeding without it:', error);
-      toast({
-        title: "AI Analysis Unavailable", 
-        description: "Your test will be submitted, but detailed AI feedback is temporarily unavailable.",
-        variant: "default"
-      });
-    }
+      if (examinerResponse.error) throw examinerResponse.error;
 
-    try {
+      const { structured, feedback, task1WordCount, task2WordCount } = examinerResponse.data;
 
-      // Save main test result (even without AI analysis)
+      // Save main test result
       const { data: testResult, error: testError } = await supabase
         .from('test_results')
         .insert({
@@ -378,8 +351,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             } : null,
             task1Answer,
             task2Answer,
-            overall_band: structured?.overall?.band || null,
-            aiAnalysisAvailable
+            overall_band: structured?.overall?.band || 7.0
           }
         })
         .select()
@@ -434,28 +406,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           task1Data: task1,
           task2Data: task2,
           task1WordCount,
-          task2WordCount,
-          aiAnalysisAvailable
+          task2WordCount
         }
       });
-
-      // Clear drafts after successful submission
-      localStorage.removeItem(`ielts-writing-draft-${testId}-task1`);
-      localStorage.removeItem(`ielts-writing-draft-${testId}-task2`);
-
-      toast({
-        title: "Test Submitted Successfully",
-        description: aiAnalysisAvailable 
-          ? "Your test has been submitted and analyzed by AI."
-          : "Your test has been submitted. AI analysis will be available when the service is restored.",
-        variant: "default"
-      });
-
     } catch (error: any) {
       console.error('Error submitting test:', error);
       toast({
-        title: "Submission Failed",
-        description: "Failed to submit your test. Please try again or contact support.",
+        title: "Error",
+        description: "Failed to submit test for evaluation",
         variant: "destructive"
       });
     } finally {

@@ -309,7 +309,14 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
                   {sentence.explanation && (
                     <div className="p-3 bg-surface-2 border border-border rounded-lg">
                       <p className="text-xs uppercase tracking-wide text-text-tertiary mb-1">Explanation</p>
-                      <p className="text-sm text-text-secondary">{sentence.explanation}</p>
+                      <p className="text-sm text-text-secondary">
+                        {typeof sentence.explanation === 'string' 
+                          ? sentence.explanation 
+                          : typeof sentence.explanation === 'object' && sentence.explanation.explanation
+                          ? sentence.explanation.explanation
+                          : 'Improvement suggestion available.'
+                        }
+                      </p>
                     </div>
                   )}
                 </CardContent>

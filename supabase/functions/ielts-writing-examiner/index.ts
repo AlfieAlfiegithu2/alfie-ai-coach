@@ -277,7 +277,7 @@ JSON SCHEMA:
   ]
 }`;
 
-    // Use selected API provider
+    // Use selected API provider with fallback
     let aiResponse: any;
     let modelUsed: string;
     let content: string;
@@ -289,11 +289,23 @@ JSON SCHEMA:
       content = aiResponse.choices?.[0]?.message?.content ?? '';
       console.log('✅ OpenAI API succeeded');
     } else {
-      console.log('🔄 Using Gemini API...');
-      aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
-      modelUsed = 'Google Gemini AI';
-      content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      console.log('✅ Gemini API succeeded');
+      try {
+        console.log('🔄 Using Gemini API...');
+        aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
+        modelUsed = 'Google Gemini AI';
+        content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+        console.log('✅ Gemini API succeeded');
+      } catch (geminiError) {
+        console.log('⚠️ Gemini failed, falling back to OpenAI:', geminiError.message);
+        if (!openaiApiKey) {
+          throw new Error('Gemini quota exceeded and no OpenAI API key available for fallback');
+        }
+        console.log('🔄 Fallback: Using OpenAI API...');
+        aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
+        modelUsed = 'OpenAI GPT-4o (Fallback)';
+        content = aiResponse.choices?.[0]?.message?.content ?? '';
+        console.log('✅ OpenAI fallback succeeded');
+      }
     }
 
     console.log('🔍 Raw API response content length:', content.length);

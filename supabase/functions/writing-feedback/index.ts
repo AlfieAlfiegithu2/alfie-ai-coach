@@ -152,11 +152,10 @@ Final Goal: The AI feedback is now extremely precise. The student sees their ori
       }
     };
     if (structured) clampBands(structured);
-    const feedbackText = structured?.feedback_markdown || generatedText;
 
     return new Response(
       JSON.stringify({
-        feedback: feedbackText,
+        feedback: structured ? "Writing analysis completed" : generatedText,
         wordCount: writing.trim().split(/\s+/).length,
         structured,
         success: true

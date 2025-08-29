@@ -51,8 +51,16 @@ interface TaskAssessment {
     status: "improvement" | "neutral";
   }>;
   sentence_comparisons?: Array<{
-    original: string;
-    improved: string;
+    original_spans?: Array<{
+      text: string;
+      status: "error" | "neutral";
+    }>;
+    corrected_spans?: Array<{
+      text: string;
+      status: "improvement" | "neutral";
+    }>;
+    original?: string;
+    improved?: string;
     issue?: string;
     explanation?: string;
   }>;

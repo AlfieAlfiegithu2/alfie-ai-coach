@@ -20,10 +20,12 @@ interface WritingComparisonViewProps {
   originalSpans?: ComparisonSpan[];
   correctedSpans?: ComparisonSpan[];
   sentenceComparisons?: Array<{
-    original: string;
-    improved: string;
+    original?: string;
+    improved?: string;
     issue?: string;
     explanation?: string;
+    original_spans?: ComparisonSpan[];
+    corrected_spans?: ComparisonSpan[];
   }>;
   title: string;
 }
@@ -266,7 +268,7 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
               <Card key={i} className="border border-border">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-text-primary">
-                    {sentence.issue}
+                    {sentence.issue || `Sentence ${i + 1}`}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -274,13 +276,33 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
                     <div className="space-y-2">
                       <p className="text-xs uppercase tracking-wide text-text-tertiary">Original</p>
                       <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-                        <p className="text-sm leading-relaxed">{sentence.original}</p>
+                        <div className="text-sm leading-relaxed">
+                          {sentence.original_spans ? (
+                            sentence.original_spans.map((span, spanI) => (
+                              <span key={`orig-${spanI}`} className={spanClass(span.status, "original")}>
+                                {span.text}
+                              </span>
+                            ))
+                          ) : (
+                            sentence.original
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <p className="text-xs uppercase tracking-wide text-text-tertiary">Improved</p>
                       <div className="p-3 bg-brand-green/5 border border-brand-green/20 rounded-lg">
-                        <p className="text-sm leading-relaxed">{sentence.improved}</p>
+                        <div className="text-sm leading-relaxed">
+                          {sentence.corrected_spans ? (
+                            sentence.corrected_spans.map((span, spanI) => (
+                              <span key={`corr-${spanI}`} className={spanClass(span.status, "improved")}>
+                                {span.text}
+                              </span>
+                            ))
+                          ) : (
+                            sentence.improved
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

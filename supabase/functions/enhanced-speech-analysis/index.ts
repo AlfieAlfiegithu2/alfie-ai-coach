@@ -73,9 +73,9 @@ serve(async (req) => {
   try {
     console.log('🚀 Enhanced speech analysis started');
     
-    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-    if (!deepseekApiKey) {
-      throw new Error('DeepSeek API key not configured');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
     }
 
     const { allRecordings, testData, analysisType = "comprehensive" } = await req.json();
@@ -147,17 +147,17 @@ serve(async (req) => {
           content: `You are a senior IELTS examiner. Analyze the student's answer to the question: "${recording.questionTranscription || recording.prompt}"\n\nStudent transcription (may include 'inaudible' where sound is unclear):\n${transcription}\n\nReturn STRICT JSON with this shape only:{\n  "feedback_bullets": string[2..3],\n  "original_spans": {"text": string, "status": "error"|"neutral"}[],\n  "suggested_spans": {"text": string, "status": "improvement"|"neutral"}[]\n}\nRules:\n- feedback_bullets: 2-3 short, actionable points about fluency/pronunciation/intonation (audio-focused).\n- original_spans: segment the student's text; mark weak or incorrect segments as status "error"; others "neutral".\n- suggested_spans: rewrite as a higher-band answer; mark improved parts as status "improvement"; others "neutral".\n- Do NOT include explanations outside JSON.`,
         };
 
-        const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${deepseekApiKey}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': `Bearer ${openaiApiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'deepseek-chat',
+            model: 'gpt-5-nano-2025-08-07',
             messages: [
               { role: 'system', content: 'You are a precise IELTS examiner. Output STRICT JSON only, no prose.' },
               prompt
             ],
-            max_tokens: 800,
-            temperature: 0.7
+            max_completion_tokens: 800,
+            response_format: { type: 'json_object' }
           }),
         });
 
@@ -295,14 +295,14 @@ OVERALL BAND SCORE: [Final calculated score following rounding rules]
 COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, specific examples from different sections, and improvement recommendations based on complete performance]`;
     }
 
-    const analysisResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${deepseekApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'gpt-5-nano-2025-08-07',
         messages: [
           {
             role: 'system',
@@ -313,8 +313,7 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis showing patterns across all parts, sp
             content: comprehensivePrompt
           }
         ],
-        max_tokens: 1500,
-        temperature: 0.3
+        max_completion_tokens: 1500
       }),
     });
 

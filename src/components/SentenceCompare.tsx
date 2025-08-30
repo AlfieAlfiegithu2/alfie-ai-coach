@@ -140,10 +140,10 @@ function sliceSpans(spans: Span[], start: number, end: number): Span[] {
 
 const spanClass = (status: Span['status'], side: 'left' | 'right', dimNeutral = false) => {
   if (side === 'left') {
-    if (status === 'error') return 'bg-brand-red/10 text-brand-red border-b-2 border-brand-red/50';
+    if (status === 'suggestion') return 'bg-brand-blue/10 text-brand-blue border-b-2 border-brand-blue/50';
     return dimNeutral ? 'text-text-primary opacity-50' : 'text-text-primary';
   }
-  if (status === 'improvement') return 'bg-brand-green/10 text-brand-green border-b-2 border-brand-green/50';
+  if (status === 'enhancement') return 'bg-brand-green/10 text-brand-green border-b-2 border-brand-green/50';
   return dimNeutral ? 'text-text-primary opacity-50' : 'text-text-primary';
 };
 

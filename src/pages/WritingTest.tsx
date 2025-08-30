@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, PenTool, BookOpen } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +27,7 @@ const WritingTest = () => {
   const [wordCount, setWordCount] = useState(0);
   const [selectedTask, setSelectedTask] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+  const [selectedAPI, setSelectedAPI] = useState<'gemini' | 'openai'>('gemini');
 
   // Get URL parameters for specific test/book - support both search params and URL params
   const cambridgeBook = params.book || searchParams.get('book') || 'C19';
@@ -137,13 +140,20 @@ const WritingTest = () => {
     try {
       console.log('🤖 Requesting AI feedback for writing...');
       
-      const { data, error } = await supabase.functions.invoke('writing-feedback', {
+      const { data, error } = await supabase.functions.invoke('ielts-writing-examiner', {
         body: {
-          writing: writingText,
-          prompt: currentPrompt?.prompt_text || '',
-          taskType: currentPrompt?.task_type || 'task1',
-          wordLimit: currentPrompt?.word_limit || 250,
-          criteriaMode: 'ielts_bands' // Request IELTS band scoring (0-9 with halves)
+          task1Answer: currentPrompt?.task_type === 'task1' ? writingText : 'Not completed',
+          task2Answer: currentPrompt?.task_type === 'task2' ? writingText : 'Not completed',
+          task1Data: currentPrompt?.task_type === 'task1' ? {
+            title: currentPrompt?.title || 'Task 1',
+            instructions: currentPrompt?.prompt_text || '',
+            imageUrl: currentPrompt?.image_url
+          } : {},
+          task2Data: currentPrompt?.task_type === 'task2' ? {
+            title: currentPrompt?.title || 'Task 2',
+            instructions: currentPrompt?.prompt_text || ''
+          } : {},
+          apiProvider: selectedAPI
         }
       });
 
@@ -393,6 +403,29 @@ const WritingTest = () => {
                   disabled={isAnalyzing}
                 />
 
+                {/* API Selection */}
+                <div className="space-y-3 p-4 border border-border/50 rounded-lg bg-surface-2">
+                  <Label className="text-sm font-medium">Choose AI Provider:</Label>
+                  <RadioGroup 
+                    value={selectedAPI} 
+                    onValueChange={(value: 'gemini' | 'openai') => setSelectedAPI(value)}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="gemini" id="gemini" />
+                      <Label htmlFor="gemini" className="cursor-pointer">
+                        Google Gemini
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="openai" id="openai" />
+                      <Label htmlFor="openai" className="cursor-pointer">
+                        OpenAI GPT
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
                 <Button 
                   onClick={handleGetFeedback}
                   disabled={isAnalyzing || writingText.trim().length < 50}
@@ -400,10 +433,10 @@ const WritingTest = () => {
                 >
                   {isAnalyzing ? (
                     <div className="flex items-center justify-center">
-                      <LottieLoadingAnimation size="sm" message="Analyzing Writing..." />
+                      <LottieLoadingAnimation size="sm" message={`Analyzing with ${selectedAPI === 'gemini' ? 'Gemini' : 'OpenAI'}...`} />
                     </div>
                   ) : (
-                    "Get AI Feedback & IELTS Band Score"
+                    `Get AI Feedback & IELTS Band Score (${selectedAPI === 'gemini' ? 'Gemini' : 'OpenAI'})`
                   )}
                 </Button>
               </div>

@@ -6,80 +6,96 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function callDeepSeek(messages: any[], apiKey: string, retryCount = 0) {
-  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/3)...`);
+async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2)...`);
   
   try {
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages,
-        max_tokens: 4000,
-        temperature: 0.1, // Lower temperature for more consistent JSON
-        stream: false,
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 4000
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ DeepSeek API Error:', errorText);
-      throw new Error(`DeepSeek API failed: ${response.status} - ${errorText}`);
+      console.error('❌ Gemini API Error:', errorText);
+      throw new Error(`Gemini API failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('✅ DeepSeek API call successful');
-    console.log('🔍 DeepSeek response structure:', {
-      hasChoices: !!data.choices,
-      choicesLength: data.choices?.length || 0,
-      hasContent: !!data.choices?.[0]?.message?.content,
-      contentLength: data.choices?.[0]?.message?.content?.length || 0
-    });
-    
+    console.log('✅ Gemini API call successful');
     return data;
   } catch (error) {
-    console.error(`❌ DeepSeek attempt ${retryCount + 1} failed:`, error.message);
+    console.error(`❌ Gemini attempt ${retryCount + 1} failed:`, error.message);
     
-    if (retryCount < 2) {
-      console.log(`🔄 Retrying DeepSeek API call in 1 second...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return callDeepSeek(messages, apiKey, retryCount + 1);
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying Gemini API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callGemini(prompt, apiKey, retryCount + 1);
     }
     
     throw error;
   }
 }
 
-async function callOpenAI(messages: any[], apiKey: string) {
-  console.log('🚀 Attempting OpenAI API call as backup...');
+async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting OpenAI API call (attempt ${retryCount + 1}/2)...`);
   
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4.1-2025-04-14',
-      messages,
-      max_completion_tokens: 4000,
-      // Note: no temperature for newer models
-    }),
-  });
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-2025-04-14',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_completion_tokens: 4000
+      }),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ OpenAI API Error:', errorText);
-    throw new Error(`OpenAI API failed: ${response.status} - ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenAI API Error:', errorText);
+      throw new Error(`OpenAI API failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ OpenAI API call successful');
+    return data;
+  } catch (error) {
+    console.error(`❌ OpenAI attempt ${retryCount + 1} failed:`, error.message);
+    
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying OpenAI API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callOpenAI(prompt, apiKey, retryCount + 1);
+    }
+    
+    throw error;
   }
-
-  const data = await response.json();
-  console.log('✅ OpenAI API call successful');
-  return data;
 }
 
 serve(async (req) => {
@@ -88,25 +104,27 @@ serve(async (req) => {
   }
 
   try {
-    const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const { task1Answer, task2Answer, task1Data, task2Data, apiProvider = 'gemini' } = await req.json();
+
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    console.log('🔍 API Keys status:', {
-      hasDeepSeek: !!deepSeekApiKey,
-      hasOpenAI: !!openAIApiKey,
-      deepSeekLength: deepSeekApiKey?.length || 0,
-      openAILength: openAIApiKey?.length || 0,
-    });
+    if (apiProvider === 'gemini' && !geminiApiKey) {
+      console.error('❌ No Gemini API key found');
+      throw new Error('Gemini API key is required');
+    }
     
-    if (!deepSeekApiKey && !openAIApiKey) {
-      console.error('❌ No API keys found');
-      throw new Error('No AI API keys configured');
+    if (apiProvider === 'openai' && !openaiApiKey) {
+      console.error('❌ No OpenAI API key found');
+      throw new Error('OpenAI API key is required');
     }
 
-    const { task1Answer, task2Answer, task1Data, task2Data } = await req.json();
-
-    if (!task1Answer || !task2Answer) {
-      throw new Error('Both Task 1 and Task 2 answers are required');
+    // Allow single task submissions - check for meaningful content
+    const hasTask1 = task1Answer && task1Answer.trim() !== '' && task1Answer !== 'Not completed';
+    const hasTask2 = task2Answer && task2Answer.trim() !== '' && task2Answer !== 'Not completed';
+    
+    if (!hasTask1 && !hasTask2) {
+      throw new Error('At least one task answer is required');
     }
 
     console.log('🔍 AI Examiner Request:', { 
@@ -114,143 +132,258 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const examinerPrompt = `TASK 1 DETAILS:
+    const masterExaminerPrompt = `Core Principles & Directives
+
+You are an expert IELTS examiner and writing coach. You must adhere to the following core principles at all times.
+
+1. Preserve the Student's Original Ideas and Arguments:
+This is your most important rule. You must never change the core meaning, opinion, or arguments of the student's essay.
+Your role is to improve how the ideas are expressed, not what the ideas are. You will elevate their language, grammar, and structure, but the student's original voice and perspective must remain intact.
+
+2. Implement Precise, Word-for-Word Highlighting:
+When you generate the sentence_comparisons and the improvements array, your feedback must be granular.
+For the side-by-side correction view, you will generate original_spans and corrected_spans. In these arrays, you must isolate and tag only the specific words or short phrases that have been changed. Do not highlight entire sentences if only a few words were improved. This precision is essential.
+
+Your Role and Core Instruction:
+
+You are an expert IELTS examiner with 15+ years of experience. Your task is to provide a comprehensive, fair, and accurate assessment of an IELTS Writing submission (both Task 1 and Task 2).
+
+Your entire analysis must be based on the Official IELTS Band Descriptors provided below. You will first form a holistic, overall impression of the work, and then you will use the specific criteria to justify your scores.
+
+You must perform all analysis yourself. Your expert judgment is the only thing that matters.
+
+Official IELTS Band Descriptors (Complete 0-9 Scale)
+
+Task Achievement (Task 1) / Task Response (Task 2):
+9: Fully satisfies all requirements. A fully developed and comprehensive response.
+8: Sufficiently covers all requirements. A well-developed response.
+7: Addresses all parts of the prompt, though some may be more developed than others.
+6: Addresses the prompt, but the treatment is more general and may be underdeveloped.
+5: Partially addresses the prompt. Ideas are limited and not well-supported.
+4: Responds to the task only in a minimal way. Content is often irrelevant.
+3: Fails to address the task. Ideas are largely irrelevant to the prompt.
+2: Response is barely related to the task. The writer has failed to understand the prompt.
+1: Fails to attend to the task at all. The content has no relation to the question.
+0: Did not attend, or wrote a response that is completely memorized and unrelated.
+
+Coherence & Cohesion:
+9: Uses cohesion seamlessly and naturally. Paragraphing is flawless.
+8: Information is sequenced logically. Paragraphing is well-managed.
+7: Logically organized with clear progression. Uses a range of cohesive devices.
+6: Organization is apparent but can be mechanical or repetitive.
+5: Some organization, but not logical. Paragraphing is confusing. Causes significant difficulty for the reader.
+4: Not logically organized. Very limited and incorrect use of linking words.
+3: Ideas are disconnected. No logical progression.
+2: Has very little control of organizational features.
+1: Fails to communicate any message.
+0: Did not attend.
+
+Lexical Resource (Vocabulary):
+9: Wide range of vocabulary used with very natural and sophisticated control.
+8: Wide vocabulary used fluently and flexibly. Skillfully uses less common vocabulary.
+7: Sufficient range of vocabulary with some flexibility. Attempts less common vocabulary.
+6: Vocabulary is adequate for the task. Errors do not generally impede communication.
+5: Limited and repetitive vocabulary. Frequent errors cause difficulty for the reader.
+4: Uses only very basic vocabulary. Errors cause severe difficulty.
+3: Extremely limited vocabulary. Severe errors distort meaning.
+2: Can only use isolated words.
+1: No evidence of any vocabulary knowledge.
+0: Did not attend.
+
+Grammatical Range and Accuracy:
+9: Wide range of structures used with full flexibility and accuracy. Almost entirely error-free.
+8: Wide range of structures. The majority of sentences are error-free.
+7: Uses a variety of complex sentence structures, but with some errors.
+6: Uses a mix of simple and complex sentences. Some errors, but they rarely reduce communication.
+5: Limited range of structures. Frequent errors cause some difficulty for the reader.
+4: Uses only very basic sentence structures. Frequent errors cause significant confusion.
+3: Cannot produce basic sentence forms.
+2: Cannot write in sentences at all.
+1: No evidence of sentence structure.
+0: Did not attend.
+
+Your Required Tasks & Output Format
+
+After analyzing the provided Task 1 and Task 2 essays, you must return a single, valid JSON object.
+
+Score Each Criterion: For both Task 1 and Task 2, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
+
+Write Justifications: For each score, you must write a 2-3 sentence justification, quoting specific examples from the student's writing as evidence.
+
+Handle Word Count: You must check if the essays are under the word count (150 for Task 1, 250 for Task 2). If an essay is significantly under length, you must state that this will lower the Task Achievement/Response score and reflect this in your scoring.
+
+Provide Overall Feedback: Based on your analysis, provide a bulleted list of 2-3 "Key Strengths" and 2-3 "Specific, Actionable Improvements."
+
+CRITICAL: Identify and Detail Multiple Areas for Improvement
+
+After you have completed the band score assessment, you must generate comprehensive feedback for each task.
+
+For EACH task (Task 1 and Task 2), you must analyze the submission and identify at least 3 to 5 distinct areas for improvement. Each area of improvement you identify must create a separate object in the improvements array.
+
+Each object in the improvements array MUST contain the following four keys:
+- issue: A short title for the problem area (e.g., "Repetitive Vocabulary," "Simple Sentence Structure," "Unsupported Idea").
+- original: The exact quote from the student's writing that demonstrates this issue.
+- improved: Your rewritten, high-scoring version of that specific sentence or phrase, making sure to preserve the student's original idea.
+- explanation: A clear, concise explanation of why your improved version is better.
+
+Requirements for improvements:
+- Minimum 3 improvements per task
+- Maximum 5 improvements per task (to avoid overwhelming students)
+- Each improvement should address different aspects of writing (grammar, vocabulary, coherence, task response)
+- Focus on the most impactful changes that would raise the band score
+- Always preserve the student's original ideas and arguments
+
+Task 1:
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
-${task1Data?.imageContext ? `Image Description: ${task1Data.imageContext}` : ''}
-${task1Data?.imageUrl ? `Visual Data Present: Yes` : 'Visual Data Present: No'}
+${task1Data?.imageContext ? `Visual Data: ${task1Data.imageContext}` : ''}
+Student Response: "${task1Answer}"
 
-STUDENT TASK 1 RESPONSE:
-"${task1Answer}"
-
-TASK 2 DETAILS:
+Task 2:
 Prompt: ${task2Data?.title || 'Task 2'}
 Instructions: ${task2Data?.instructions || ''}
+Student Response: "${task2Answer}"
 
-STUDENT TASK 2 RESPONSE:
-"${task2Answer}"
-
-IMPORTANT: You must return ONLY a valid JSON object. Do not include any text before or after the JSON.`;
-
-
-
-    const messages = [
-      {
-        role: 'system',
-        content: `You are a senior IELTS Writing examiner. You must return ONLY a valid JSON object with no additional text.
-
-JSON SCHEMA (MANDATORY):
+JSON SCHEMA:
 {
   "task1": {
     "criteria": {
-      "task_achievement": { "band": 7.5, "justification": "Clear explanation here..." },
-      "coherence_and_cohesion": { "band": 8.0, "justification": "Clear explanation here..." },
-      "lexical_resource": { "band": 7.0, "justification": "Clear explanation here..." },
-      "grammatical_range_and_accuracy": { "band": 7.5, "justification": "Clear explanation here..." }
+      "task_achievement": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "coherence_and_cohesion": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "lexical_resource": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "grammatical_range_and_accuracy": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      }
     },
-    "overall_band": 7.5,
-    "overall_reason": "Averaged from criteria scores",
     "feedback": {
-      "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"]
+      "improvements": [
+        {
+          "issue": "Word Choice & Sophistication",
+          "original": "The graph shows a big increase in sales.",
+          "improved": "The provided chart illustrates a substantial growth in sales revenue.",
+          "explanation": "Using more academic words like 'illustrates' and 'substantial growth' instead of simple words like 'shows' and 'big' makes your writing more sophisticated (improves Lexical Resource)."
+        },
+        {
+          "issue": "Data Description Precision",
+          "original": "The numbers went up a lot.",
+          "improved": "The figures demonstrated a significant upward trend, rising from X to Y over the period shown.",
+          "explanation": "Specific data references and precise vocabulary like 'demonstrated' and 'upward trend' improve Task Achievement by providing accurate data interpretation."
+        },
+        {
+          "issue": "Sentence Structure Variety",
+          "original": "Sales increased. Profits also increased.",
+          "improved": "Not only did sales increase substantially, but profits also rose correspondingly.",
+          "explanation": "Combining simple sentences with complex structures using phrases like 'Not only...but also' demonstrates better Grammatical Range and improves flow (Coherence)."
+        }
+      ],
+      "feedback_markdown": "## Task 1 Detailed Feedback\n\n**Strengths:** List specific Task 1 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 1 feedback here with specific examples."
     },
-    "feedback_markdown": "Detailed Task 1 feedback here..."
+    "overall_band": 0.0,
+    "word_count": ${task1Answer.trim().split(/\s+/).length}
   },
   "task2": {
     "criteria": {
-      "task_response": { "band": 8.0, "justification": "Clear explanation here..." },
-      "coherence_and_cohesion": { "band": 7.5, "justification": "Clear explanation here..." },
-      "lexical_resource": { "band": 7.0, "justification": "Clear explanation here..." },
-      "grammatical_range_and_accuracy": { "band": 7.5, "justification": "Clear explanation here..." }
+      "task_response": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "coherence_and_cohesion": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "lexical_resource": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "grammatical_range_and_accuracy": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      }
     },
-    "overall_band": 7.5,
-    "overall_reason": "Averaged from criteria scores",
     "feedback": {
-      "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-      "improvements": ["Improvement 1", "Improvement 2", "Improvement 3"]
+      "improvements": [
+        {
+          "issue": "Sentence Structure & Flow",
+          "original": "The company was successful. It made a lot of profit.",
+          "improved": "As a result of its successful strategy, the company generated significant profits.",
+          "explanation": "Combining two simple sentences into one complex sentence using a phrase like 'As a result of...' demonstrates better grammatical range and improves the flow (Coherence). The core idea that success led to profit is preserved."
+        },
+        {
+          "issue": "Idea Development",
+          "original": "Pollution is a major problem for cities.",
+          "improved": "Urban pollution, particularly from vehicle emissions, has become a critical issue affecting public health in major metropolitan areas.",
+          "explanation": "This improvement keeps your original idea but makes it stronger by adding specific details ('from vehicle emissions', 'affecting public health'). This demonstrates better development of ideas (improves Task Response)."
+        },
+        {
+          "issue": "Argumentative Structure",
+          "original": "I think this is good because people like it.",
+          "improved": "This approach proves beneficial as it addresses the fundamental needs of the target population.",
+          "explanation": "Replacing informal language ('I think', 'people like it') with formal academic expressions ('proves beneficial', 'fundamental needs') strengthens your argument and improves Lexical Resource."
+        },
+        {
+          "issue": "Cohesive Devices",
+          "original": "First, education is important. Second, health is important too.",
+          "improved": "While education remains paramount, healthcare infrastructure is equally crucial for societal development.",
+          "explanation": "Using sophisticated linking phrases like 'While...remains paramount' and 'equally crucial' creates better flow between ideas and demonstrates advanced Coherence and Cohesion."
+        }
+      ],
+      "feedback_markdown": "## Task 2 Detailed Feedback\n\n**Strengths:** List specific Task 2 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 2 feedback here with specific examples."
     },
-    "feedback_markdown": "Detailed Task 2 feedback here..."
+    "overall_band": 0.0,
+    "word_count": ${task2Answer.trim().split(/\s+/).length}
   },
   "overall": {
-    "band": 7.5,
-    "calculation": "(7.5 * 1 + 7.5 * 2) / 3 = 7.5",
-    "feedback_markdown": "Overall assessment here..."
+    "band": 0.0,
+    "calculation": "Calculation explanation"
   },
-  "full_report_markdown": "Complete report here..."
-}
+  "key_strengths": [
+    "List 2-3 specific strengths from both tasks"
+  ]
+}`;
 
-CRITICAL RULES:
-- Return ONLY the JSON object, no other text
-- Bands must be whole or half numbers: 0, 0.5, 1.0, ..., 9.0
-- Calculate overall_band by averaging criteria and rounding to nearest 0.5
-- Calculate overall.band using: (Task1_overall*1 + Task2_overall*2) / 3, then round to 0.5
-- Provide exactly 3 strengths and 3 improvements for each task
+    // Use selected API provider with fallback
+    let aiResponse: any;
+    let modelUsed: string;
+    let content: string;
 
-JUSTIFICATION REQUIREMENTS (CRITICAL):
-Each justification must be detailed and convincing with specific evidence:
-1. Quote direct examples from the student's writing as evidence
-2. Explain why this specific band was awarded (not higher/lower)
-3. Reference band descriptors where relevant
-4. Be comprehensive (2-4 sentences minimum)
-5. Provide specific examples of strengths or weaknesses
-6. Never just state facts - explain the reasoning behind the score
-
-Example good justification: "Band 7.0 - Demonstrates good range of vocabulary with sophisticated items like 'unprecedented technological advancements' and attempts at less common words. However, shows some errors in word choice ('make a research' should be 'conduct research') and occasional awkwardness in phrasing. The vocabulary is generally appropriate for the task but lacks the precision and natural flexibility required for Band 8, while showing more sophistication than typical Band 6 responses."
-
-- Be accurate and fair in your assessment`
-      },
-      {
-        role: 'user',
-        content: examinerPrompt
-      }
-    ];
-
-    let data;
-    let apiUsed = 'deepseek';
-    
-    // Try DeepSeek first, then OpenAI as backup
-    if (deepSeekApiKey) {
-      console.log('🔄 Using DeepSeek API as primary...');
-      try {
-        data = await callDeepSeek(messages, deepSeekApiKey);
-        console.log('✅ DeepSeek API call completed successfully');
-      } catch (deepSeekError) {
-        console.error('❌ DeepSeek API failed:', deepSeekError.message);
-        
-        if (openAIApiKey) {
-          console.log('🔄 Falling back to OpenAI API...');
-          try {
-            data = await callOpenAI(messages, openAIApiKey);
-            apiUsed = 'openai';
-            console.log('✅ OpenAI fallback succeeded');
-          } catch (openAIError) {
-            console.error('❌ OpenAI fallback also failed:', openAIError.message);
-            throw new Error(`Both APIs failed - DeepSeek: ${deepSeekError.message}, OpenAI: ${openAIError.message}`);
-          }
-        } else {
-          throw new Error(`DeepSeek failed and no OpenAI key available: ${deepSeekError.message}`);
-        }
-      }
-    } else if (openAIApiKey) {
-      console.log('🔄 Using OpenAI API (DeepSeek not available)...');
-      try {
-        data = await callOpenAI(messages, openAIApiKey);
-        apiUsed = 'openai';
-        console.log('✅ OpenAI API call completed successfully');
-      } catch (openAIError) {
-        console.error('❌ OpenAI API failed:', openAIError.message);
-        throw new Error(`OpenAI API failed: ${openAIError.message}`);
-      }
+    if (apiProvider === 'openai') {
+      console.log('🔄 Using OpenAI API...');
+      aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
+      modelUsed = 'OpenAI GPT-4.1';
+      content = aiResponse.choices?.[0]?.message?.content ?? '';
+      console.log('✅ OpenAI API succeeded');
     } else {
-      throw new Error('No API keys available');
+      try {
+        console.log('🔄 Using Gemini API...');
+        aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
+        modelUsed = 'Google Gemini AI';
+        content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+        console.log('✅ Gemini API succeeded');
+      } catch (geminiError) {
+        console.log('⚠️ Gemini failed, falling back to OpenAI:', geminiError.message);
+        if (!openaiApiKey) {
+          throw new Error('Gemini quota exceeded and no OpenAI API key available for fallback');
+        }
+        console.log('🔄 Fallback: Using OpenAI API...');
+        aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
+        modelUsed = 'OpenAI GPT-4.1 (Fallback)';
+        content = aiResponse.choices?.[0]?.message?.content ?? '';
+        console.log('✅ OpenAI fallback succeeded');
+      }
     }
 
-    console.log(`✅ AI Examiner response generated using ${apiUsed.toUpperCase()}`);
-
-    let content = data.choices?.[0]?.message?.content ?? '';
     console.log('🔍 Raw API response content length:', content.length);
     
-    // Check if content is empty or too short
     if (!content || content.length < 10) {
       console.error('❌ API response content is empty or too short:', content);
       throw new Error('API returned empty or invalid response');
@@ -266,13 +399,10 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
     } catch (_e) {
       console.log('⚠️ Failed to parse JSON directly, attempting extraction...');
       
-      // Simple but effective JSON extraction
       let extractedJson = '';
-      
-      // Step 1: Remove markdown code blocks
       let cleaned = content.trim();
       
-      // Remove ```json at start and ``` at end
+      // Remove markdown code blocks
       if (cleaned.startsWith('```json')) {
         cleaned = cleaned.substring(7);
       } else if (cleaned.startsWith('```')) {
@@ -285,7 +415,7 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
       
       cleaned = cleaned.trim();
       
-      // Step 2: Find the main JSON object
+      // Find the main JSON object
       const firstBrace = cleaned.indexOf('{');
       const lastBrace = cleaned.lastIndexOf('}');
       
@@ -302,12 +432,11 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
         } catch (parseError) {
           console.log('❌ Failed to parse extracted JSON:', parseError.message);
           
-          // Step 3: Try to fix common JSON issues
+          // Try to fix common JSON issues
           try {
-            // Remove any trailing commas
             let fixedJson = extractedJson.replace(/,(\s*[}\]])/g, '$1');
             
-            // Try to balance braces if needed
+            // Balance braces if needed
             const openBraces = (fixedJson.match(/\{/g) || []).length;
             const closeBraces = (fixedJson.match(/\}/g) || []).length;
             
@@ -322,162 +451,71 @@ Example good justification: "Band 7.0 - Demonstrates good range of vocabulary wi
             console.log('❌ Final parsing attempt failed:', fixError.message);
           }
         }
-      } else {
-        console.log('❌ Could not find valid JSON structure in response');
-      }
-      
-      if (!structured) {
-        console.error('❌ All JSON extraction strategies failed');
-        console.log('🔧 Creating comprehensive fallback structured data...');
-          
-        // Create comprehensive fallback structured data when JSON parsing completely fails
-        const fallbackBand = 6.5; // More conservative fallback
-        structured = {
-          task1: {
-            criteria: {
-              task_achievement: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              coherence_and_cohesion: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              lexical_resource: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              grammatical_range_and_accuracy: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              }
-            },
-            overall_band: fallbackBand,
-            overall_reason: "Fallback assessment - technical processing issue occurred",
-            feedback: {
-              strengths: [
-                "Response was submitted successfully",
-                "Writing attempt demonstrates engagement with the task",
-                "Content was provided for both required elements"
-              ],
-              improvements: [
-                "Technical issue prevented detailed feedback - please retake the test",
-                "For accurate assessment, we recommend trying the test again",
-                "Contact support if this issue continues to occur"
-              ]
-            },
-            feedback_markdown: `### Technical Processing Issue
-
-Due to a technical processing issue, we were unable to provide detailed feedback for this Task 1 response. 
-
-**What happened:** The AI assessment system encountered a parsing error while analyzing your response.
-
-**Fallback score:** ${fallbackBand} (This is not your actual performance level)
-
-**Next steps:** Please retake the test for an accurate assessment of your writing skills.`
-          },
-          task2: {
-            criteria: {
-              task_response: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              coherence_and_cohesion: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              lexical_resource: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              },
-              grammatical_range_and_accuracy: { 
-                band: fallbackBand, 
-                justification: "Technical processing issue prevented detailed assessment. This is a fallback score." 
-              }
-            },
-            overall_band: fallbackBand,
-            overall_reason: "Fallback assessment - technical processing issue occurred",
-            feedback: {
-              strengths: [
-                "Response was submitted successfully",
-                "Writing attempt demonstrates engagement with the task", 
-                "Content was provided for both required elements"
-              ],
-              improvements: [
-                "Technical issue prevented detailed feedback - please retake the test",
-                "For accurate assessment, we recommend trying the test again", 
-                "Contact support if this issue continues to occur"
-              ]
-            },
-            feedback_markdown: `### Technical Processing Issue
-
-Due to a technical processing issue, we were unable to provide detailed feedback for this Task 2 response.
-
-**What happened:** The AI assessment system encountered a parsing error while analyzing your response.
-
-**Fallback score:** ${fallbackBand} (This is not your actual performance level)
-
-**Next steps:** Please retake the test for an accurate assessment of your writing skills.`
-          },
-          overall: {
-            band: fallbackBand,
-            calculation: `(${fallbackBand} * 1 + ${fallbackBand} * 2) / 3 = ${fallbackBand}`,
-            feedback_markdown: `### Technical Processing Issue - Overall Assessment
-
-**Overall Band Score:** ${fallbackBand} (Fallback Score)
-
-Due to technical processing issues, we were unable to provide a detailed analysis of your IELTS Writing performance. This score is a fallback value and does not reflect your actual writing ability.
-
-**What this means:**
-- The AI assessment system encountered errors while processing your responses
-- Your actual performance may be higher or lower than this fallback score  
-- This technical issue is temporary and should not reflect on your writing skills
-
-**Recommended actions:**
-1. Retake the IELTS Writing test for an accurate assessment
-2. Contact support if this issue persists
-3. Your responses have been saved and can be reviewed manually if needed
-
-We apologize for the inconvenience and appreciate your patience.`
-          },
-          full_report_markdown: `# IELTS Writing Assessment - Technical Issue Report
-
-## Summary
-A technical processing error prevented the completion of your IELTS Writing assessment. This report contains fallback scores that do not reflect your actual writing performance.
-
-## Technical Details
-- **Issue Type:** JSON parsing error in AI assessment system
-- **Fallback Score Applied:** ${fallbackBand} for all criteria
-- **Raw AI Response Length:** ${content.length} characters
-- **Processing Status:** Failed with fallback data generated
-
-## Next Steps
-Please retake the IELTS Writing test to receive an accurate assessment of your writing skills. If you continue to experience technical issues, please contact our support team.
-
----
-
-*This is an automated technical report. The scores shown are not indicative of actual writing performance.*`
-        };
-        console.log('✅ Comprehensive fallback data created with detailed explanations');
       }
     }
 
-    const clampBands = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
-      for (const k in obj) {
-        const v = (obj as any)[k];
-        if (k === 'band' && typeof v === 'number') (obj as any)[k] = Math.min(9, Math.max(0, v));
-        else if (typeof v === 'object') clampBands(v);
+    // AI handles all scoring and word count considerations internally
+
+    // Validate and add fallback data for frontend compatibility
+    if (structured) {
+      // Ensure task1 feedback structure exists
+      if (!structured.task1?.feedback) {
+        structured.task1 = structured.task1 || {};
+        structured.task1.feedback = {
+          improvements: [],
+          feedback_markdown: "## Task 1 Feedback\n\nNo specific improvements available."
+        };
       }
-    };
-    if (structured) clampBands(structured);
-    const feedback = structured?.full_report_markdown || content;
+      
+      // Ensure task2 feedback structure exists
+      if (!structured.task2?.feedback) {
+        structured.task2 = structured.task2 || {};
+        structured.task2.feedback = {
+          improvements: [],
+          feedback_markdown: "## Task 2 Feedback\n\nNo specific improvements available."
+        };
+      }
+      
+      // Migrate legacy specific_improvements to task-specific feedback if needed
+      if (structured.specific_improvements && Array.isArray(structured.specific_improvements)) {
+        console.log('🔄 Migrating legacy specific_improvements to task-specific format...');
+        
+        // Split improvements between tasks based on content analysis
+        const task1Improvements = [];
+        const task2Improvements = [];
+        
+        structured.specific_improvements.forEach((improvement) => {
+          // Simple heuristic: if original text appears in task1Answer, assign to task1, otherwise task2
+          if (task1Answer.includes(improvement.original?.substring(0, 50) || '')) {
+            task1Improvements.push(improvement);
+          } else {
+            task2Improvements.push(improvement);
+          }
+        });
+        
+        if (task1Improvements.length > 0) {
+          structured.task1.feedback.improvements = task1Improvements;
+        }
+        if (task2Improvements.length > 0) {
+          structured.task2.feedback.improvements = task2Improvements;
+        }
+        
+        // Remove legacy field
+        delete structured.specific_improvements;
+      }
+      
+      console.log('✅ Response structure validated and enhanced');
+    }
+
+    const feedback = structured ? 
+      `# IELTS Writing Assessment Results\n\n**Overall Band Score: ${structured.overall?.band || 6.0}**\n\n${JSON.stringify(structured, null, 2)}` : 
+      content;
 
     return new Response(JSON.stringify({ 
       success: true, 
       feedback,
       structured,
-      apiUsed,
+      apiUsed: modelUsed,
       task1WordCount: task1Answer.trim().split(/\s+/).length,
       task2WordCount: task2Answer.trim().split(/\s+/).length
     }), {

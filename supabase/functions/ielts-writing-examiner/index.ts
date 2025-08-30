@@ -132,72 +132,224 @@ serve(async (req) => {
       task2Length: task2Answer.length 
     });
 
-    const masterExaminerPrompt = `Your Role & Core Instruction
+    const masterExaminerPrompt = `Core Principles & Directives
 
-You are an expert IELTS writing analyst and a master rewriter. You will be given a student's essay. Your task is to perform a complete and exhaustive sentence-by-sentence analysis of the entire text. You must not skip any sentences. For every single sentence the student writes, you will provide an improved, higher-scoring version and a clear explanation of the changes.
+You are an expert IELTS examiner and writing coach. You must adhere to the following core principles at all times.
 
-Your Guiding Principles for Improvement
+1. Preserve the Student's Original Ideas and Arguments:
+This is your most important rule. You must never change the core meaning, opinion, or arguments of the student's essay.
+Your role is to improve how the ideas are expressed, not what the ideas are. You will elevate their language, grammar, and structure, but the student's original voice and perspective must remain intact.
 
-For each sentence, you must analyze it and improve it based on all four of these dimensions:
+2. Implement Precise, Word-for-Word Highlighting:
+When you generate the sentence_comparisons and the improvements array, your feedback must be granular.
+For the side-by-side correction view, you will generate original_spans and corrected_spans. In these arrays, you must isolate and tag only the specific words or short phrases that have been changed. Do not highlight entire sentences if only a few words were improved. This precision is essential.
 
-1. Idea & Clarity: Is the student's idea clear? Can you make it more specific, more persuasive, or more directly relevant to the essay question?
-2. Logic & Flow: Does the sentence connect logically to the one before it? Can you add a better transition word or rephrase it to improve the overall flow of the argument?
-3. Vocabulary (Lexical Resource): Can you replace common words with more precise, academic, or sophisticated synonyms to elevate the tone?
-4. Grammar & Structure: Can you fix grammatical errors or rewrite a simple sentence into a more complex and impressive structure?
+Your Role and Core Instruction:
 
-You must be an ambitious rewriter. Even if a sentence is grammatically correct, you are required to find a way to make it better, clearer, or more sophisticated.
+You are an expert IELTS examiner with 15+ years of experience. Your task is to provide a comprehensive, fair, and accurate assessment of an IELTS Writing submission (both Task 1 and Task 2).
 
-CRITICAL: Required JSON Output Structure
+Your entire analysis must be based on the Official IELTS Band Descriptors provided below. You will first form a holistic, overall impression of the work, and then you will use the specific criteria to justify your scores.
 
-Your final output MUST be a single, valid JSON object containing a single key: sentence_by_sentence_analysis. This will be an array of objects. Do not include any other text before or after the JSON.
+You must perform all analysis yourself. Your expert judgment is the only thing that matters.
 
-You will create one object in the array for every sentence in the student's original text. Each object must contain three keys:
+Official IELTS Band Descriptors (Complete 0-9 Scale)
 
-1. original_spans: An array of spans breaking down the student's original sentence. Tag any specific words or phrases with clear errors or weaknesses with status: "error". The rest should be status: "neutral".
+Task Achievement (Task 1) / Task Response (Task 2):
+9: Fully satisfies all requirements. A fully developed and comprehensive response.
+8: Sufficiently covers all requirements. A well-developed response.
+7: Addresses all parts of the prompt, though some may be more developed than others.
+6: Addresses the prompt, but the treatment is more general and may be underdeveloped.
+5: Partially addresses the prompt. Ideas are limited and not well-supported.
+4: Responds to the task only in a minimal way. Content is often irrelevant.
+3: Fails to address the task. Ideas are largely irrelevant to the prompt.
+2: Response is barely related to the task. The writer has failed to understand the prompt.
+1: Fails to attend to the task at all. The content has no relation to the question.
+0: Did not attend, or wrote a response that is completely memorized and unrelated.
 
-2. improved_spans: An array of spans breaking down your new, improved sentence. Only the specific words or short phrases that you changed or added for improvement should have status: "improvement". The rest should be status: "neutral".
+Coherence & Cohesion:
+9: Uses cohesion seamlessly and naturally. Paragraphing is flawless.
+8: Information is sequenced logically. Paragraphing is well-managed.
+7: Logically organized with clear progression. Uses a range of cohesive devices.
+6: Organization is apparent but can be mechanical or repetitive.
+5: Some organization, but not logical. Paragraphing is confusing. Causes significant difficulty for the reader.
+4: Not logically organized. Very limited and incorrect use of linking words.
+3: Ideas are disconnected. No logical progression.
+2: Has very little control of organizational features.
+1: Fails to communicate any message.
+0: Did not attend.
 
-3. explanation: A clear, concise explanation of the key improvements you made in that sentence, covering ideas, logic, or language.
+Lexical Resource (Vocabulary):
+9: Wide range of vocabulary used with very natural and sophisticated control.
+8: Wide vocabulary used fluently and flexibly. Skillfully uses less common vocabulary.
+7: Sufficient range of vocabulary with some flexibility. Attempts less common vocabulary.
+6: Vocabulary is adequate for the task. Errors do not generally impede communication.
+5: Limited and repetitive vocabulary. Frequent errors cause difficulty for the reader.
+4: Uses only very basic vocabulary. Errors cause severe difficulty.
+3: Extremely limited vocabulary. Severe errors distort meaning.
+2: Can only use isolated words.
+1: No evidence of any vocabulary knowledge.
+0: Did not attend.
 
-Combined Essay Text for Analysis:
+Grammatical Range and Accuracy:
+9: Wide range of structures used with full flexibility and accuracy. Almost entirely error-free.
+8: Wide range of structures. The majority of sentences are error-free.
+7: Uses a variety of complex sentence structures, but with some errors.
+6: Uses a mix of simple and complex sentences. Some errors, but they rarely reduce communication.
+5: Limited range of structures. Frequent errors cause some difficulty for the reader.
+4: Uses only very basic sentence structures. Frequent errors cause significant confusion.
+3: Cannot produce basic sentence forms.
+2: Cannot write in sentences at all.
+1: No evidence of sentence structure.
+0: Did not attend.
 
-${hasTask1 ? `Task 1 Essay:
-${task1Answer}
+Your Required Tasks & Output Format
 
-` : ''}${hasTask2 ? `Task 2 Essay:
-${task2Answer}` : ''}
+After analyzing the provided Task 1 and Task 2 essays, you must return a single, valid JSON object.
 
-You must return a JSON object with the following structure:
+Score Each Criterion: For both Task 1 and Task 2, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
 
+Write Justifications: For each score, you must write a 2-3 sentence justification, quoting specific examples from the student's writing as evidence.
+
+Handle Word Count: You must check if the essays are under the word count (150 for Task 1, 250 for Task 2). If an essay is significantly under length, you must state that this will lower the Task Achievement/Response score and reflect this in your scoring.
+
+Provide Overall Feedback: Based on your analysis, provide a bulleted list of 2-3 "Key Strengths" and 2-3 "Specific, Actionable Improvements."
+
+CRITICAL: Identify and Detail Multiple Areas for Improvement
+
+After you have completed the band score assessment, you must generate comprehensive feedback for each task.
+
+For EACH task (Task 1 and Task 2), you must analyze the submission and identify at least 3 to 5 distinct areas for improvement. Each area of improvement you identify must create a separate object in the improvements array.
+
+Each object in the improvements array MUST contain the following four keys:
+- issue: A short title for the problem area (e.g., "Repetitive Vocabulary," "Simple Sentence Structure," "Unsupported Idea").
+- original: The exact quote from the student's writing that demonstrates this issue.
+- improved: Your rewritten, high-scoring version of that specific sentence or phrase, making sure to preserve the student's original idea.
+- explanation: A clear, concise explanation of why your improved version is better.
+
+Requirements for improvements:
+- Minimum 3 improvements per task
+- Maximum 5 improvements per task (to avoid overwhelming students)
+- Each improvement should address different aspects of writing (grammar, vocabulary, coherence, task response)
+- Focus on the most impactful changes that would raise the band score
+- Always preserve the student's original ideas and arguments
+
+Task 1:
+Prompt: ${task1Data?.title || 'Task 1'}
+Instructions: ${task1Data?.instructions || ''}
+${task1Data?.imageContext ? `Visual Data: ${task1Data.imageContext}` : ''}
+Student Response: "${task1Answer}"
+
+Task 2:
+Prompt: ${task2Data?.title || 'Task 2'}
+Instructions: ${task2Data?.instructions || ''}
+Student Response: "${task2Answer}"
+
+JSON SCHEMA:
 {
-  "sentence_by_sentence_analysis": [
-    {
-      "original_spans": [
-        { "text": "This is a ", "status": "neutral" },
-        { "text": "big problem for social life", "status": "error" },
-        { "text": " in the family.", "status": "neutral" }
-      ],
-      "improved_spans": [
-        { "text": "This presents a ", "status": "neutral" },
-        { "text": "significant challenge to social cohesion", "status": "improvement" },
-        { "text": " within the family unit.", "status": "neutral" }
-      ],
-      "explanation": "Improved vocabulary by replacing 'big problem' with 'significant challenge' and 'social life' with the more precise term 'social cohesion'."
+  "task1": {
+    "criteria": {
+      "task_achievement": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "coherence_and_cohesion": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "lexical_resource": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "grammatical_range_and_accuracy": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      }
     },
-    {
-      "original_spans": [
-        { "text": "Another important reason is that people don't meet face-to-face anymore.", "status": "neutral" }
+    "feedback": {
+      "improvements": [
+        {
+          "issue": "Word Choice & Sophistication",
+          "original": "The graph shows a big increase in sales.",
+          "improved": "The provided chart illustrates a substantial growth in sales revenue.",
+          "explanation": "Using more academic words like 'illustrates' and 'substantial growth' instead of simple words like 'shows' and 'big' makes your writing more sophisticated (improves Lexical Resource)."
+        },
+        {
+          "issue": "Data Description Precision",
+          "original": "The numbers went up a lot.",
+          "improved": "The figures demonstrated a significant upward trend, rising from X to Y over the period shown.",
+          "explanation": "Specific data references and precise vocabulary like 'demonstrated' and 'upward trend' improve Task Achievement by providing accurate data interpretation."
+        },
+        {
+          "issue": "Sentence Structure Variety",
+          "original": "Sales increased. Profits also increased.",
+          "improved": "Not only did sales increase substantially, but profits also rose correspondingly.",
+          "explanation": "Combining simple sentences with complex structures using phrases like 'Not only...but also' demonstrates better Grammatical Range and improves flow (Coherence)."
+        }
       ],
-      "improved_spans": [
-        { "text": "Furthermore, a ", "status": "improvement" },
-        { "text": "decline in face-to-face interaction", "status": "improvement" },
-        { "text": " represents another critical factor.", "status": "neutral" }
+      "feedback_markdown": "## Task 1 Detailed Feedback\n\n**Strengths:** List specific Task 1 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 1 feedback here with specific examples."
+    },
+    "overall_band": 0.0,
+    "word_count": ${task1Answer.trim().split(/\s+/).length}
+  },
+  "task2": {
+    "criteria": {
+      "task_response": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "coherence_and_cohesion": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "lexical_resource": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      },
+      "grammatical_range_and_accuracy": { 
+        "band": 0.0, 
+        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+      }
+    },
+    "feedback": {
+      "improvements": [
+        {
+          "issue": "Sentence Structure & Flow",
+          "original": "The company was successful. It made a lot of profit.",
+          "improved": "As a result of its successful strategy, the company generated significant profits.",
+          "explanation": "Combining two simple sentences into one complex sentence using a phrase like 'As a result of...' demonstrates better grammatical range and improves the flow (Coherence). The core idea that success led to profit is preserved."
+        },
+        {
+          "issue": "Idea Development",
+          "original": "Pollution is a major problem for cities.",
+          "improved": "Urban pollution, particularly from vehicle emissions, has become a critical issue affecting public health in major metropolitan areas.",
+          "explanation": "This improvement keeps your original idea but makes it stronger by adding specific details ('from vehicle emissions', 'affecting public health'). This demonstrates better development of ideas (improves Task Response)."
+        },
+        {
+          "issue": "Argumentative Structure",
+          "original": "I think this is good because people like it.",
+          "improved": "This approach proves beneficial as it addresses the fundamental needs of the target population.",
+          "explanation": "Replacing informal language ('I think', 'people like it') with formal academic expressions ('proves beneficial', 'fundamental needs') strengthens your argument and improves Lexical Resource."
+        },
+        {
+          "issue": "Cohesive Devices",
+          "original": "First, education is important. Second, health is important too.",
+          "improved": "While education remains paramount, healthcare infrastructure is equally crucial for societal development.",
+          "explanation": "Using sophisticated linking phrases like 'While...remains paramount' and 'equally crucial' creates better flow between ideas and demonstrates advanced Coherence and Cohesion."
+        }
       ],
-      "explanation": "Restructured the sentence for a more academic tone and used a better transition word ('Furthermore') instead of starting with 'Another'."
-    }
+      "feedback_markdown": "## Task 2 Detailed Feedback\n\n**Strengths:** List specific Task 2 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 2 feedback here with specific examples."
+    },
+    "overall_band": 0.0,
+    "word_count": ${task2Answer.trim().split(/\s+/).length}
+  },
+  "overall": {
+    "band": 0.0,
+    "calculation": "Calculation explanation"
+  },
+  "key_strengths": [
+    "List 2-3 specific strengths from both tasks"
   ]
-}
-`;
+}`;
 
     // Use selected API provider with fallback
     let aiResponse: any;
@@ -302,15 +454,61 @@ You must return a JSON object with the following structure:
       }
     }
 
-    // Validate the new sentence-by-sentence structure
-    if (structured && structured.sentence_by_sentence_analysis) {
-      console.log('✅ Sentence-by-sentence analysis found:', structured.sentence_by_sentence_analysis.length, 'sentences');
-    } else {
-      console.log('⚠️ No sentence-by-sentence analysis found in response');
+    // AI handles all scoring and word count considerations internally
+
+    // Validate and add fallback data for frontend compatibility
+    if (structured) {
+      // Ensure task1 feedback structure exists
+      if (!structured.task1?.feedback) {
+        structured.task1 = structured.task1 || {};
+        structured.task1.feedback = {
+          improvements: [],
+          feedback_markdown: "## Task 1 Feedback\n\nNo specific improvements available."
+        };
+      }
+      
+      // Ensure task2 feedback structure exists
+      if (!structured.task2?.feedback) {
+        structured.task2 = structured.task2 || {};
+        structured.task2.feedback = {
+          improvements: [],
+          feedback_markdown: "## Task 2 Feedback\n\nNo specific improvements available."
+        };
+      }
+      
+      // Migrate legacy specific_improvements to task-specific feedback if needed
+      if (structured.specific_improvements && Array.isArray(structured.specific_improvements)) {
+        console.log('🔄 Migrating legacy specific_improvements to task-specific format...');
+        
+        // Split improvements between tasks based on content analysis
+        const task1Improvements = [];
+        const task2Improvements = [];
+        
+        structured.specific_improvements.forEach((improvement) => {
+          // Simple heuristic: if original text appears in task1Answer, assign to task1, otherwise task2
+          if (task1Answer.includes(improvement.original?.substring(0, 50) || '')) {
+            task1Improvements.push(improvement);
+          } else {
+            task2Improvements.push(improvement);
+          }
+        });
+        
+        if (task1Improvements.length > 0) {
+          structured.task1.feedback.improvements = task1Improvements;
+        }
+        if (task2Improvements.length > 0) {
+          structured.task2.feedback.improvements = task2Improvements;
+        }
+        
+        // Remove legacy field
+        delete structured.specific_improvements;
+      }
+      
+      console.log('✅ Response structure validated and enhanced');
     }
 
-    const feedback = structured && structured.sentence_by_sentence_analysis ? 
-      `# IELTS Writing Analysis - Sentence-by-Sentence Feedback\n\n**${structured.sentence_by_sentence_analysis.length} sentences analyzed**\n\n${JSON.stringify(structured, null, 2)}` : 
+    const feedback = structured ? 
+      `# IELTS Writing Assessment Results\n\n**Overall Band Score: ${structured.overall?.band || 6.0}**\n\n${JSON.stringify(structured, null, 2)}` : 
       content;
 
     return new Response(JSON.stringify({ 

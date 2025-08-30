@@ -12,132 +12,155 @@ serve(async (req) => {
   }
 
   try {
-    // Check if Gemini API key is configured
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      console.error('❌ Gemini API key not configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
+    // Check if DeepSeek API key is configured
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!deepseekApiKey) {
+      console.error('❌ DeepSeek API key not configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Writing feedback service temporarily unavailable. Please try again in a moment.',
-        details: 'Gemini API key not configured'
+        details: 'DeepSeek API key not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ Gemini API key found for writing feedback, length:', geminiApiKey.length);
+    console.log('✅ DeepSeek API key found for writing feedback, length:', deepseekApiKey.length);
 
     const { writing, prompt, taskType } = await req.json();
 
-    console.log('📝 Writing analysis request:', {
-      writingLength: writing?.length || 0,
-      promptPresent: !!prompt,
-      taskType
-    });
-
-    if (!writing || typeof writing !== 'string' || writing.trim().length < 10) {
-      return new Response(JSON.stringify({
-        error: 'Please provide substantial writing content (at least 10 characters) for analysis.',
-        success: false
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!writing || !prompt) {
+      throw new Error('Writing content and prompt are required');
     }
 
-    const feedbackPrompt = `TASK DETAILS:
-Type: ${taskType || 'General Writing'}
-Original Prompt: ${prompt || 'Not provided'}
+    const feedbackPrompt = `You are a senior, highly experienced IELTS examiner. Your goal is to provide a holistic and accurate assessment based *only* on the official IELTS band descriptors and scoring rules provided below. Evaluate the student's response against these criteria and justify your feedback by referencing them.
 
-STUDENT WRITING TO ANALYZE:
+Focus on overall communicative effectiveness. Do not just count errors; explain their impact on the band score for a specific criterion.
+
+You will first provide a whole number band score (0-9) for each of the four criteria. Then, you will calculate the Overall Band Score according to the specific rounding rules provided at the end.
+
+ADDITIONALLY, provide detailed inline corrections by identifying specific errors in the text and marking them for display with corrections.
+
+Now, please assess the following submission against the relevant band descriptors:
+
+TASK PROMPT: ${prompt}
+
+STUDENT RESPONSE:
 "${writing}"
 
-Please analyze this writing and provide constructive feedback.`;
+[-- IELTS WRITING BAND DESCRIPTORS --]
 
-    const systemPrompt = `Your Role & Core Instruction
-You are an expert IELTS writing analyst and rewriter. You will be given a piece of student writing. Your task is to perform a sentence-by-sentence analysis and rewrite. Your primary goal is to identify specific errors in the original text and provide a rewritten version with specific, high-value improvements.
+Task Achievement / Response:
 
-Your Guiding Principles for Analysis
-Preserve Core Meaning: You must keep the student's original ideas intact. You are improving how they express their ideas, not what their ideas are.
-Identify Specific Errors: In the student's original text, you must identify precise words or phrases that are grammatically incorrect, use basic vocabulary, or are phrased awkwardly.
-Rewrite for Sophistication: In your improved version, you must demonstrate higher-level writing. Replace simple words with academic synonyms, and rephrase sentences for better grammatical structure and flow.
+Band 9: Fully addresses all parts of the task with a fully developed response.
+Band 8: Sufficiently covers all parts of the task.
+Band 7: Covers all requirements of the task; presents a clear overview/purpose.
+Band 6: Addresses all parts of the task, though some may be more fully covered than others.
+Band 5: Addresses the task only partially.
+Band 4: Responds to the task only in a minimal way.
+Band 3: Does not address the task.
+Band 2: Barely responds to the task.
 
-CRITICAL: Required JSON Output Structure
-Your final output MUST be a single, valid JSON object containing a single key: sentence_comparisons. This will be an array of objects. Do not include any text before or after the JSON.
+Coherence and Cohesion:
 
-For each sentence in the student's original text, you will create one object in the array. Each object must contain two arrays of spans: original_spans and corrected_spans.
+Band 9: Skillful use of cohesion; seamless paragraphing.
+Band 8: Manages all aspects of cohesion well.
+Band 7: Logically organizes information; clear progression; uses a range of cohesive devices appropriately.
+Band 6: Arranges information coherently; clear overall progression.
+Band 5: Some organization, but lack of overall progression; inadequate or repetitive use of cohesive devices.
+Band 4: Information is not logically organized.
+Band 3: Does not organize ideas logically.
+Band 2: Little control of organizational features.
 
-original_spans: This array breaks down the student's original sentence.
-- Any part with a clear error should have status: "error".
-- The rest of the text should have status: "neutral".
+Lexical Resource (Vocabulary):
 
-corrected_spans: This array breaks down your new, improved sentence.
-- Only the specific words or short phrases that represent a significant improvement (new vocabulary, corrected grammar) should have status: "improvement".
-- The rest of the sentence should have status: "neutral".
+Band 9: Wide range of vocabulary with natural and sophisticated control.
+Band 8: Wide range of vocabulary; skillfully uses less common items.
+Band 7: Sufficient range of vocabulary; uses some less common items.
+Band 6: Adequate range of vocabulary for the task.
+Band 5: Limited range of vocabulary; noticeable errors.
+Band 4: Uses only basic vocabulary; frequent errors.
+Band 3: Uses only a very limited range of words.
+Band 2: Uses only isolated words.
 
-This structure is mandatory. You must break down both sentences into spans.
+Grammatical Range and Accuracy:
 
-JSON SCHEMA:
-{
-  "sentence_comparisons": [
-    {
-      "original_spans": [
-        { "text": "In 2000, China ", "status": "neutral" },
-        { "text": "had the larger", "status": "error" },
-        { "text": " population, at approximately 1.25 billion.", "status": "neutral" }
-      ],
-      "corrected_spans": [
-        { "text": "In the year 2000, China ", "status": "neutral" },
-        { "text": "possessed a significantly greater", "status": "improvement" },
-        { "text": " population, standing at approximately 1.25 billion.", "status": "neutral" }
-      ]
-    }
-  ]
-}
+Band 9: Wide range of structures with full flexibility and accuracy.
+Band 8: Wide range of structures; the majority of sentences are error-free.
+Band 7: Uses a variety of complex structures; produces frequent error-free sentences.
+Band 6: Uses a mix of simple and complex sentences; some errors in grammar.
+Band 5: Uses only a limited range of structures; frequent grammatical errors.
+Band 4: Uses only very basic sentence structures with frequent errors.
+Band 3: Cannot use sentence forms.
+Band 2: Cannot produce basic sentence forms.
 
-Final Goal: The AI feedback is now extremely precise. The student sees their original sentence with only the specific incorrect or weak phrases highlighted in red. Next to it, they see an improved sentence with only the new, high-level words highlighted in green. This makes the feedback focused, easy to understand, and highly effective for learning.`;
+**Final Score Calculation Rules (CRITICAL):**
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
+After you have determined the individual band scores (whole numbers from 0-9) for each of the four criteria, you must calculate the Overall Band Score.
+
+1. Calculate the average of the four criteria scores.
+2. You must then apply the official IELTS rounding rules to this average:
+   * If the average ends in .25, you must round it UP to the next half-band (e.g., an average of 6.25 becomes an Overall Score of 6.5).
+   * If the average ends in .75, you must round it UP to the next whole band (e.g., an average of 6.75 becomes an Overall Score of 7.0).
+   * For all other values, round to the nearest whole or half-band as normal.
+
+Please return your assessment in the following structured format:
+
+**TASK ACHIEVEMENT/RESPONSE**: [Band Score 0-9 with detailed justification]
+**COHERENCE & COHESION**: [Band Score 0-9 with detailed justification]
+**LEXICAL RESOURCE**: [Band Score 0-9 with detailed justification]
+**GRAMMATICAL RANGE & ACCURACY**: [Band Score 0-9 with detailed justification]
+**OVERALL BAND SCORE**: [Final calculated score following the rounding rules above]
+**DETAILED FEEDBACK**: [Comprehensive analysis with specific examples and improvement recommendations]
+
+Be specific, constructive, and provide actionable feedback that helps achieve higher band scores.`;
+
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${deepseekApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `${systemPrompt}\n\n${feedbackPrompt}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2000
-        }
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: `You are "Examiner-7," a senior, Cambridge-certified IELTS examiner. Be decisive and strictly follow the official band descriptors. New Guiding Principle: if the response fully meets Band 9, award Band 9—do not invent minor flaws.
+
+CRITICAL feedback requirement: For each area for improvement, include a direct quote from the student's writing and a stronger improved version, plus a brief explanation. Provide these in feedback.improvements_detailed as an array of objects with keys: issue, sentence_quote, improved_version, explanation.
+
+ADDITIONAL REQUIREMENT: Provide inline corrections for display. Create two versions of the text:
+1. "annotated_original": Original text with <error data-type="[error_type]" data-explanation="[brief explanation]">error text</error> tags around errors
+2. "annotated_corrected": Corrected text with <correction data-type="[error_type]">corrected text</correction> tags around fixes
+3. "corrections": Array of correction objects with: original_text, corrected_text, start_index, end_index, error_type, explanation
+
+Return ONLY JSON. Use whole or half bands only (0, 0.5, …, 9). Apply IELTS rounding rules where averages are used.`
+          },
+          {
+            role: 'user',
+            content: feedbackPrompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.3
       }),
     });
 
-    const data = await response.json();
-    
     if (!response.ok) {
-      console.error('❌ Gemini API Error:', data);
-      throw new Error(`Gemini API request failed: ${data.error?.message || 'Unknown error'}`);
+      throw new Error(`Writing analysis failed: ${await response.text()}`);
     }
 
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!generatedText) {
-      console.error('❌ No content returned from Gemini API');
-      throw new Error('No content returned from writing analysis');
-    }
-
-    console.log('✅ Writing analysis completed, response length:', generatedText.length);
+    const result = await response.json();
+    let content = result.choices?.[0]?.message?.content ?? '';
 
     let structured: any = null;
     try {
-      structured = JSON.parse(generatedText);
+      structured = JSON.parse(content);
     } catch (_e) {
       // Attempt to extract JSON blob if any wrapping text leaked
-      const match = generatedText.match(/\{[\s\S]*\}/);
+      const match = content.match(/\{[\s\S]*\}/);
       if (match) {
         try { structured = JSON.parse(match[0]); } catch (_e2) {}
       }
@@ -152,7 +175,7 @@ Final Goal: The AI feedback is now extremely precise. The student sees their ori
       }
     };
     if (structured) clampBands(structured);
-    const feedbackText = structured?.feedback_markdown || generatedText;
+    const feedbackText = structured?.feedback_markdown || content;
 
     return new Response(
       JSON.stringify({

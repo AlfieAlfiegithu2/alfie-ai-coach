@@ -2,7 +2,7 @@ import React from "react";
 
 export type Span = {
   text: string;
-  status: "suggestion" | "enhancement" | "neutral";
+  status: "error" | "improvement" | "neutral";
 };
 
 interface SuggestionVisualizerProps {
@@ -15,13 +15,13 @@ interface SuggestionVisualizerProps {
 const spanClass = (status: Span["status"], side: "left" | "right", dimNeutral = false) => {
   // Use semantic brand tokens from the design system
   if (side === "left") {
-    if (status === "suggestion") {
-      return "bg-brand-blue/10 text-brand-blue border-b-2 border-brand-blue/50";
+    if (status === "error") {
+      return "bg-brand-red/10 text-brand-red border-b-2 border-brand-red/50";
     }
     return dimNeutral ? "text-text-primary opacity-50" : "text-text-primary";
   }
   // right side
-  if (status === "enhancement") {
+  if (status === "improvement") {
     return "bg-brand-green/10 text-brand-green border-b-2 border-brand-green/50";
   }
   return dimNeutral ? "text-text-primary opacity-50" : "text-text-primary";
@@ -38,7 +38,7 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
         {/* Original transcription with red highlights for errors */}
         {!hideOriginal && (
           <div>
-            <div className="text-caption mb-2 text-text-tertiary">Your Writing (enhancement opportunities in blue)</div>
+            <div className="text-caption mb-2 text-text-tertiary">Your Transcription (improvements in red)</div>
             <div className="text-sm leading-relaxed text-text-secondary">
               {originalSpans.map((s, i) => (
                 <span key={`o-${i}`} className={spanClass(s.status, "left", dimNeutral)}>{sanitize(s.text)}</span>
@@ -46,9 +46,9 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
             </div>
           </div>
         )}
-        {/* Enhanced version below in same container */}
+        {/* Suggested answer below in same container */}
         <div>
-          <div className="text-caption mb-2 text-text-tertiary">Enhanced Version (improvements highlighted in green)</div>
+          <div className="text-caption mb-2 text-text-tertiary">AI Suggested Answer (improvements highlighted)</div>
           <div className="text-sm leading-relaxed text-text-secondary">
             {suggestedSpans.map((s, i) => (
               <span key={`c-${i}`} className={spanClass(s.status, "right", dimNeutral)}>{sanitize(s.text)}</span>

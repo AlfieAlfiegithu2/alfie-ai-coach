@@ -54,17 +54,8 @@ verify_jwt = false
 [functions.pronunciation-analysis]
 verify_jwt = true
 
-[functions.generate-writing-corrections]
+[functions.analyze-writing-correction]
 verify_jwt = true
 
 [functions.smart-vocabulary]
-verify_jwt = true
-
-[functions.enhanced-speech-analysis]
-verify_jwt = true
-
-[functions.audio-cleanup]
-verify_jwt = false
-
-[functions.add-to-word-book]
 verify_jwt = true

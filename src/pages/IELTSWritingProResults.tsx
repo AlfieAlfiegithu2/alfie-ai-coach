@@ -4,39 +4,51 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LightRays from "@/components/animations/LightRays";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
+import CorrectionVisualizer, { Span } from "@/components/CorrectionVisualizer";
+import SentenceCompare from "@/components/SentenceCompare";
+import { CorrectionsByCategory } from "@/components/corrections/CorrectionsByCategory";
+import { EnhancedCorrection } from "@/components/corrections/CorrectionItem";
+import { Toggle } from "@/components/ui/toggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ScoreSpiderChart from "@/components/ScoreSpiderChart";
-import WritingComparisonView from "@/components/WritingComparisonView";
 
+// Component for the task analysis loading animation
+const TaskAnalysisLoading = ({ task }: { task: string }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+      <div className="w-32 h-32">
+        <dotlottie-wc
+          src="https://lottie.host/176d02bf-8830-4f49-b39c-a086f2b8a012/SS6Qka9MRV.lottie"
+          style={{ width: '100%', height: '100%' }}
+          speed="1"
+          autoplay
+          loop
+        />
+      </div>
+      <div className="text-sm font-medium text-text-primary">Analyzing {task}...</div>
+      <div className="text-caption text-text-secondary">Please wait while we analyze your writing</div>
+    </div>
+  );
+};
 interface Criterion {
   band: number;
   justification?: string;
 }
-
 interface ImprovementExample {
   issue: string;
   sentence_quote: string;
   improved_version: string;
   explanation?: string;
 }
-
 interface TaskFeedback {
   strengths?: string[];
-  improvements?: (string | {
-    issue?: string;
-    original?: string;
-    sentence_quote?: string;
-    improved?: string;
-    improved_version?: string;
-    explanation?: string;
-  })[];
+  improvements?: string[];
   improvements_detailed?: ImprovementExample[];
 }
-
 interface TaskAssessment {
   criteria: {
     task_achievement?: Criterion;
@@ -49,30 +61,7 @@ interface TaskAssessment {
   overall_reason?: string;
   feedback?: TaskFeedback;
   feedback_markdown?: string;
-  original_spans?: Array<{
-    text: string;
-    status: "error" | "neutral";
-  }>;
-  corrected_spans?: Array<{
-    text: string;
-    status: "improvement" | "neutral";
-  }>;
-  sentence_comparisons?: Array<{
-    original_spans?: Array<{
-      text: string;
-      status: "error" | "neutral";
-    }>;
-    corrected_spans?: Array<{
-      text: string;
-      status: "improvement" | "neutral";
-    }>;
-    original?: string;
-    improved?: string;
-    issue?: string;
-    explanation?: string;
-  }>;
 }
-
 interface StructuredResult {
   task1?: TaskAssessment;
   task2?: TaskAssessment;
@@ -83,7 +72,6 @@ interface StructuredResult {
   };
   full_report_markdown?: string;
 }
-
 const bandToDesc = (score: number) => {
   if (score >= 8.5) return {
     label: "Excellent",
@@ -133,6 +121,7 @@ export default function IELTSWritingProResults() {
   const { user } = useAuth();
   const { toast } = useToast();
   
+  // All hooks must be at the top of the component
   const [loading, setLoading] = useState(false);
   const [resultsData, setResultsData] = useState<{
     structured?: StructuredResult;
@@ -142,6 +131,36 @@ export default function IELTSWritingProResults() {
     task1Answer?: string;
     task2Answer?: string;
   }>({});
+
+  // Correction analysis state
+  const [t1Loading, setT1Loading] = useState<boolean>(false);
+  const [t2Loading, setT2Loading] = useState<boolean>(false);
+  const [t1Error, setT1Error] = useState<string | null>(null);
+  const [t2Error, setT2Error] = useState<string | null>(null);
+  const [t1CorrData, setT1CorrData] = useState<{
+    original_spans: Span[];
+    corrected_spans: Span[];
+    corrections: EnhancedCorrection[];
+    summary: {
+      totalCorrections: number;
+      byCategory: Record<string, number>;
+      bySeverity: Record<string, number>;
+    };
+  } | null>(null);
+  const [t2CorrData, setT2CorrData] = useState<{
+    original_spans: Span[];
+    corrected_spans: Span[];
+    corrections: EnhancedCorrection[];
+    summary: {
+      totalCorrections: number;
+      byCategory: Record<string, number>;
+      bySeverity: Record<string, number>;
+    };
+  } | null>(null);
+  const [t1SentenceView, setT1SentenceView] = useState(false);
+  const [t2SentenceView, setT2SentenceView] = useState(false);
+  const [t1ViewMode, setT1ViewMode] = useState<'highlights' | 'sentence'>('highlights');
+  const [t2ViewMode, setT2ViewMode] = useState<'highlights' | 'sentence'>('highlights');
 
   // Try to get data from location state first, then fallback to database
   useEffect(() => {
@@ -338,95 +357,311 @@ export default function IELTSWritingProResults() {
     }
   }, [testName]);
 
-  // Add validation for structured data with fallback
-  const hasValidData = structured && (structured.task1 || structured.task2);
+  // Function to fetch existing correction data from database
+  const fetchExistingCorrectionData = async (submissionId: string, taskNumber: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('writing_test_results')
+        .select('correction_analysis')
+        .eq('test_result_id', submissionId)
+        .eq('task_number', taskNumber)
+        .maybeSingle();
 
-  // Add fallback structured data if needed
-  if (!hasValidData && structured) {
-    console.warn('⚠️ Structured data exists but lacks task data, creating minimal fallback');
-    structured.task1 = structured.task1 || {
-      criteria: {
-        task_achievement: { band: 6.5, justification: "Minimal assessment available" },
-        coherence_and_cohesion: { band: 6.5, justification: "Minimal assessment available" },
-        lexical_resource: { band: 6.5, justification: "Minimal assessment available" },
-        grammatical_range_and_accuracy: { band: 6.5, justification: "Minimal assessment available" }
-      },
-      overall_band: 6.5,
-      feedback: {
-        strengths: ["Response provided"],
-        improvements: ["Retake for detailed feedback"]
-      },
-      feedback_markdown: "Assessment data incomplete."
+      if (error) {
+        console.error('Error fetching existing correction data:', error);
+        return null;
+      }
+
+      return data?.correction_analysis || null;
+    } catch (error) {
+      console.error('Error in fetchExistingCorrectionData:', error);
+      return null;
+    }
+  };
+
+  // Function to save correction analysis to database for caching
+  const saveCorrectionAnalysis = async (submissionId: string, taskNumber: number, analysisData: any) => {
+    try {
+      const { error } = await supabase
+        .from('writing_test_results')
+        .update({ correction_analysis: analysisData })
+        .eq('test_result_id', submissionId)
+        .eq('task_number', taskNumber);
+
+      if (error) {
+        console.error('Error saving correction analysis:', error);
+      } else {
+        console.log('✅ Correction analysis saved to database');
+      }
+    } catch (error) {
+      console.error('Error in saveCorrectionAnalysis:', error);
+    }
+  };
+
+  useEffect(() => {
+    const run = async () => {
+      const tasks: Promise<any>[] = [];
+      
+      // Get submissionId from location state
+      const stateData = location.state as any;
+      const currentSubmissionId = stateData?.submissionId;
+      
+      if (!currentSubmissionId) {
+        console.warn('⚠️ No submissionId available for fetching correction data');
+        return;
+      }
+      
+      // Task 1 corrections analysis
+      if (task1Answer && !t1CorrData && !t1Loading) {
+        setT1Loading(true);
+        setT1Error(null);
+        
+        // First, try to fetch existing correction data from database
+        const existingData = await fetchExistingCorrectionData(currentSubmissionId, 1);
+        
+        if (existingData && typeof existingData === 'object' && 
+            Array.isArray((existingData as any).original_spans) && 
+            Array.isArray((existingData as any).corrected_spans)) {
+          console.log('✅ Found existing Task 1 correction data in database');
+          const typedData = existingData as any;
+    // Add debugging for correction data
+    console.log('🔍 Task 1 correction data loaded:', {
+      hasData: !!typedData,
+      originalSpansCount: typedData?.original_spans?.length || 0,
+      correctedSpansCount: typedData?.corrected_spans?.length || 0,
+      errorSpansCount: typedData?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+      improvementSpansCount: typedData?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+      correctionsCount: typedData?.corrections?.length || 0
+    });
+    
+    setT1CorrData({
+            original_spans: typedData.original_spans,
+            corrected_spans: typedData.corrected_spans,
+            corrections: typedData.corrections || [],
+            summary: typedData.summary || {
+              totalCorrections: 0,
+              byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+              bySeverity: { minor: 0, moderate: 0, major: 0 }
+            }
+          });
+          setT1Loading(false);
+        } else {
+          // If no existing data, run AI analysis as fallback
+          console.log('⚠️ No existing Task 1 correction data found, running AI analysis...');
+          const prompt1 = `${task1Data?.title ? `Title: ${task1Data.title}\n` : ''}${task1Data?.instructions ? `Instructions: ${task1Data.instructions}` : ''}`.trim();
+          tasks.push(supabase.functions.invoke('analyze-writing-correction', {
+            body: {
+              userSubmission: task1Answer,
+              questionPrompt: prompt1
+            }
+          }).then(({
+            data,
+            error
+          }) => {
+            if (error) throw error;
+            console.log('🔍 Task 1 AI correction analysis result:', {
+              hasData: !!data,
+              originalSpansCount: data?.original_spans?.length || 0,
+              correctedSpansCount: data?.corrected_spans?.length || 0,
+              errorSpansCount: data?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+              improvementSpansCount: data?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+              correctionsCount: data?.corrections?.length || 0
+            });
+            
+            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+              setT1CorrData({
+                original_spans: data.original_spans,
+                corrected_spans: data.corrected_spans,
+                corrections: data.corrections || [],
+                summary: data.summary || {
+                  totalCorrections: 0,
+                  byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+                  bySeverity: { minor: 0, moderate: 0, major: 0 }
+                }
+              });
+            } else {
+              setT1Error('No correction data returned for Task 1.');
+            }
+          }).catch((e: any) => setT1Error(e?.message || 'Failed to analyze Task 1')).finally(() => setT1Loading(false)));
+        }
+      }
+      
+      // Task 2 corrections analysis
+      if (task2Answer && !t2CorrData && !t2Loading) {
+        setT2Loading(true);
+        setT2Error(null);
+        
+        // First, try to fetch existing correction data from database
+        const existingData = await fetchExistingCorrectionData(currentSubmissionId, 2);
+        
+        if (existingData && typeof existingData === 'object' && 
+            Array.isArray((existingData as any).original_spans) && 
+            Array.isArray((existingData as any).corrected_spans)) {
+          console.log('✅ Found existing Task 2 correction data in database');
+          const typedData = existingData as any;
+          setT2CorrData({
+            original_spans: typedData.original_spans,
+            corrected_spans: typedData.corrected_spans,
+            corrections: typedData.corrections || [],
+            summary: typedData.summary || {
+              totalCorrections: 0,
+              byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+              bySeverity: { minor: 0, moderate: 0, major: 0 }
+            }
+          });
+          setT2Loading(false);
+        } else {
+          // If no existing data, run AI analysis as fallback
+          console.log('⚠️ No existing Task 2 correction data found, running AI analysis...');
+          const prompt2 = `${task2Data?.title ? `Title: ${task2Data.title}\n` : ''}${task2Data?.instructions ? `Instructions: ${task2Data.instructions}` : ''}`.trim();
+          tasks.push(supabase.functions.invoke('analyze-writing-correction', {
+            body: {
+              userSubmission: task2Answer,
+              questionPrompt: prompt2
+            }
+          }).then(({
+            data,
+            error
+          }) => {
+            if (error) throw error;
+            console.log('🔍 Task 2 AI correction analysis result:', {
+              hasData: !!data,
+              originalSpansCount: data?.original_spans?.length || 0,
+              correctedSpansCount: data?.corrected_spans?.length || 0,
+              errorSpansCount: data?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+              improvementSpansCount: data?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+              correctionsCount: data?.corrections?.length || 0
+            });
+            
+            if (data && Array.isArray(data.original_spans) && Array.isArray(data.corrected_spans)) {
+    // Add debugging for Task 2 correction data
+    console.log('🔍 Task 2 correction data loaded:', {
+      hasData: !!data,
+      originalSpansCount: data?.original_spans?.length || 0,
+      correctedSpansCount: data?.corrected_spans?.length || 0,
+      errorSpansCount: data?.original_spans?.filter(s => s.status === 'error')?.length || 0,
+      improvementSpansCount: data?.corrected_spans?.filter(s => s.status === 'improvement')?.length || 0,
+      correctionsCount: data?.corrections?.length || 0
+    });
+    
+    setT2CorrData({
+                original_spans: data.original_spans,
+                corrected_spans: data.corrected_spans,
+                corrections: data.corrections || [],
+                summary: data.summary || {
+                  totalCorrections: 0,
+                  byCategory: { grammar: 0, vocabulary: 0, style: 0, punctuation: 0, structure: 0 },
+                  bySeverity: { minor: 0, moderate: 0, major: 0 }
+                }
+              });
+            } else {
+              setT2Error('No correction data returned for Task 2.');
+            }
+          }).catch((e: any) => setT2Error(e?.message || 'Failed to analyze Task 2')).finally(() => setT2Loading(false)));
+        }
+      }
+      
+      if (tasks.length) {
+        await Promise.allSettled(tasks);
+      }
     };
-    structured.task2 = structured.task2 || {
-      criteria: {
-        task_response: { band: 6.5, justification: "Minimal assessment available" },
-        coherence_and_cohesion: { band: 6.5, justification: "Minimal assessment available" },
-        lexical_resource: { band: 6.5, justification: "Minimal assessment available" },
-        grammatical_range_and_accuracy: { band: 6.5, justification: "Minimal assessment available" }
-      },
-      overall_band: 6.5,
-      feedback: {
-        strengths: ["Response provided"],
-        improvements: ["Retake for detailed feedback"]
-      },
-      feedback_markdown: "Assessment data incomplete."
-    };
-  }
+    run();
+  }, [task1Answer, task2Answer, task1Data, task2Data, t1CorrData, t2CorrData, t1Loading, t2Loading, location.state]);
 
-  const finalHasValidData = structured && (structured.task1 || structured.task2);
+// Add validation for structured data with fallback
+const hasValidData = structured && (structured.task1 || structured.task2);
 
-  // Early return with error UI if no structured data
-  if (!finalHasValidData) {
-    return (
-      <div className="min-h-screen bg-surface-2 flex items-center justify-center">
-        <Card className="max-w-md mx-4">
-          <CardHeader className="text-center">
-            <CardTitle className="text-heading-3 text-destructive">Results Not Available</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-text-secondary">
-              We couldn't find your test results. This usually happens when:
-            </p>
-            <ul className="text-sm text-text-secondary text-left space-y-1">
-              <li>• You navigated directly to this page</li>
-              <li>• You refreshed the page</li>
-              <li>• The test session expired</li>
-            </ul>
-            <div className="flex flex-col gap-2 pt-4">
-              <Button onClick={() => navigate('/ielts-portal')} className="w-full">
-                Take New Test
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/dashboard')} className="w-full">
-                Back to Dashboard
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+// Add fallback structured data if needed
+if (!hasValidData && structured) {
+  console.warn('⚠️ Structured data exists but lacks task data, creating minimal fallback');
+  structured.task1 = structured.task1 || {
+    criteria: {
+      task_achievement: { band: 6.5, justification: "Minimal assessment available" },
+      coherence_and_cohesion: { band: 6.5, justification: "Minimal assessment available" },
+      lexical_resource: { band: 6.5, justification: "Minimal assessment available" },
+      grammatical_range_and_accuracy: { band: 6.5, justification: "Minimal assessment available" }
+    },
+    overall_band: 6.5,
+    feedback: {
+      strengths: ["Response provided"],
+      improvements: ["Retake for detailed feedback"]
+    },
+    feedback_markdown: "Assessment data incomplete."
+  };
+  structured.task2 = structured.task2 || {
+    criteria: {
+      task_response: { band: 6.5, justification: "Minimal assessment available" },
+      coherence_and_cohesion: { band: 6.5, justification: "Minimal assessment available" },
+      lexical_resource: { band: 6.5, justification: "Minimal assessment available" },
+      grammatical_range_and_accuracy: { band: 6.5, justification: "Minimal assessment available" }
+    },
+    overall_band: 6.5,
+    feedback: {
+      strengths: ["Response provided"],
+      improvements: ["Retake for detailed feedback"]
+    },
+    feedback_markdown: "Assessment data incomplete."
+  };
+}
 
-  const t1OverallComputed = computeTaskOverall(structured?.task1, 'task1');
-  const t2OverallComputed = computeTaskOverall(structured?.task2, 'task2');
-  const denom = (Number.isNaN(t1OverallComputed) ? 0 : 1) + (Number.isNaN(t2OverallComputed) ? 0 : 2);
-  const overallBand = denom > 0
-    ? roundIELTS(((Number.isNaN(t1OverallComputed) ? 0 : roundIELTS(t1OverallComputed)) + 2 * (Number.isNaN(t2OverallComputed) ? 0 : roundIELTS(t2OverallComputed))) / denom)
-    : 0;
-  const overallMeta = bandToDesc(overallBand);
+const finalHasValidData = structured && (structured.task1 || structured.task2);
 
-  const TaskSection = ({
+// Early return with error UI if no structured data
+if (!finalHasValidData) {
+  return (
+    <div className="min-h-screen bg-surface-2 flex items-center justify-center">
+      <Card className="max-w-md mx-4">
+        <CardHeader className="text-center">
+          <CardTitle className="text-heading-3 text-destructive">Results Not Available</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <p className="text-text-secondary">
+            We couldn't find your test results. This usually happens when:
+          </p>
+          <ul className="text-sm text-text-secondary text-left space-y-1">
+            <li>• You navigated directly to this page</li>
+            <li>• You refreshed the page</li>
+            <li>• The test session expired</li>
+          </ul>
+          <div className="flex flex-col gap-2 pt-4">
+            <Button onClick={() => navigate('/ielts-portal')} className="w-full">
+              Take New Test
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')} className="w-full">
+              Back to Dashboard
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+const t1OverallComputed = computeTaskOverall(structured?.task1, 'task1');
+const t2OverallComputed = computeTaskOverall(structured?.task2, 'task2');
+const denom = (Number.isNaN(t1OverallComputed) ? 0 : 1) + (Number.isNaN(t2OverallComputed) ? 0 : 2);
+const overallBand = denom > 0
+  ? roundIELTS(((Number.isNaN(t1OverallComputed) ? 0 : roundIELTS(t1OverallComputed)) + 2 * (Number.isNaN(t2OverallComputed) ? 0 : roundIELTS(t2OverallComputed))) / denom)
+  : 0;
+const overallMeta = bandToDesc(overallBand);
+const t1Counts = {
+  errors: t1CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
+  improvements: t1CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
+};
+const t2Counts = {
+  errors: t2CorrData?.original_spans.filter(s => s.status === 'error').length ?? 0,
+  improvements: t2CorrData?.corrected_spans.filter(s => s.status === 'improvement').length ?? 0
+};
+const TaskSection = ({
     title,
     task,
     type,
     computedOverall,
-    userAnswer,
   }: {
     title: string;
     task?: TaskAssessment;
     type: "task1" | "task2";
     computedOverall?: number;
-    userAnswer?: string;
   }) => {
     if (!task) return null;
     const crit = task.criteria || {};
@@ -530,7 +765,7 @@ export default function IELTSWritingProResults() {
                           <div className="mb-2">
                             <div className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Original</div>
                             <blockquote className="text-sm text-text-secondary border-l-2 border-brand-blue/40 pl-3 italic">
-                              "{ex.sentence_quote}"
+                              “{ex.sentence_quote}”
                             </blockquote>
                           </div>
                         ) : null}
@@ -553,64 +788,20 @@ export default function IELTSWritingProResults() {
                   <p className="text-caption text-text-secondary mb-2">
                     Include concrete examples, target structures, and one improved sentence.
                   </p>
-                   <ul className="list-disc pl-5 space-y-1 text-text-secondary">
-                     {task.feedback.improvements.map((s, i) => (
-                       <li key={i}>
-                         {typeof s === 'string' ? s : 
-                          typeof s === 'object' && s ? 
-                            (s.explanation || s.improved_version || s.issue || 'Improvement suggestion') :
-                            'Improvement suggestion'
-                         }
-                       </li>
-                     ))}
-                   </ul>
+                  <ul className="list-disc pl-5 space-y-1 text-text-secondary">
+                    {task.feedback.improvements.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
                 </div>
               ) : null}
             </div>
           )}
-
-          {/* Writing Comparison View */}
-           {userAnswer && (
-             <WritingComparisonView
-               originalText={userAnswer}
-               improvementSuggestions={task.feedback?.improvements?.map((improvement) => {
-                 // Handle both string improvements and object improvements
-                 if (typeof improvement === 'string') {
-                   return {
-                     issue: "General Improvement",
-                     sentence_quote: "",
-                     improved_version: improvement,
-                     explanation: improvement
-                   };
-                 } else if (improvement && typeof improvement === 'object') {
-                   // If it's already an object, use it directly
-                   return {
-                     issue: improvement.issue || "Improvement",
-                     sentence_quote: improvement.original || improvement.sentence_quote || "",
-                     improved_version: improvement.improved || improvement.improved_version || "",
-                     explanation: improvement.explanation || "Suggested improvement"
-                   };
-                 }
-                 return {
-                   issue: "Improvement",
-                   sentence_quote: "",
-                   improved_version: String(improvement || ""),
-                   explanation: String(improvement || "")
-                 };
-               }) || task.feedback?.improvements_detailed || []}
-               originalSpans={task.original_spans}
-               correctedSpans={task.corrected_spans}
-               sentenceComparisons={task.sentence_comparisons}
-               title={title}
-             />
-           )}
         </CardContent>
       </Card>
     );
   };
-
-  return (
-    <div className="min-h-screen bg-surface-2 relative">
+  return <div className="min-h-screen bg-surface-2 relative">
       <LightRays raysOrigin="top-center" raysColor="#4F46E5" raysSpeed={0.5} lightSpread={2} rayLength={1.5} pulsating={false} fadeDistance={1.2} saturation={0.8} followMouse={true} mouseInfluence={0.05} noiseAmount={0.1} distortion={0.2} />
 
       <div className="bg-surface-1 border-b border-border sticky top-0 z-10">
@@ -665,29 +856,174 @@ export default function IELTSWritingProResults() {
           </CardContent>
         </Card>
 
-        {/* Task 1 Section */}
-        <TaskSection 
-          title="Task 1 Assessment" 
-          task={structured?.task1} 
-          type="task1" 
-          computedOverall={t1OverallComputed}
-          userAnswer={task1Answer}
-        />
-        
-        {/* Task 2 Section */}
-        <TaskSection 
-          title="Task 2 Assessment" 
-          task={structured?.task2} 
-          type="task2" 
-          computedOverall={t2OverallComputed}
-          userAnswer={task2Answer}
-        />
+        {/* Task 1 Combined Section */}
+        <div className="mb-8">
+          <TaskSection title="Task 1 Assessment" task={structured?.task1} type="task1" computedOverall={t1OverallComputed} />
+          
+          {task1Answer && (
+            <Card className="card-elevated border-2 border-brand-blue/20 -mt-6">
+              <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+                <CardTitle className="text-heading-4">Task 1 – AI Corrections</CardTitle>
+                <div className="text-caption text-text-secondary mt-1">
+                  {task1Data?.title ? <div className="font-medium text-text-primary">{task1Data.title}</div> : null}
+                  {task1Data?.instructions ? <div>{task1Data.instructions}</div> : null}
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                 <div className="space-y-6">
+                   {/* View Mode Controls */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-text-primary">Detailed Corrections Analysis</div>
+                      <div className="text-caption text-text-secondary mt-1">
+                        Choose how you'd like to view your corrections
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant={t1ViewMode === 'highlights' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT1ViewMode('highlights')}
+                      >
+                        Text Highlights
+                      </Button>
+                      <Button 
+                        variant={t1ViewMode === 'sentence' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT1ViewMode('sentence')}
+                      >
+                        Sentence View
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl" 
+                        onClick={() => {
+                          if (!t1CorrData?.corrected_spans) return;
+                          const txt = t1CorrData.corrected_spans.map(s => s.text).join("");
+                          navigator.clipboard.writeText(txt);
+                          toast({
+                            title: "Copied corrected text",
+                            description: "The improved version is in your clipboard."
+                          });
+                        }}
+                      >
+                        <Copy className="w-4 h-4 mr-2" /> Copy Text
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Correction Display */}
+                  <div>
+                    {t1Loading && <TaskAnalysisLoading task="Task 1" />}
+                    {t1Error && <div className="status-error">{t1Error}</div>}
+                      {t1CorrData && (
+                        <>
+                          {t1ViewMode === 'highlights' && (
+                            <CorrectionVisualizer originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                          )}
+                          {t1ViewMode === 'sentence' && (
+                            <SentenceCompare originalSpans={t1CorrData.original_spans} correctedSpans={t1CorrData.corrected_spans} />
+                          )}
+                        </>
+                      )}
+                    {!t1Loading && !t1Error && !t1CorrData && (
+                      <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Task 2 Combined Section */}
+        <div className="mb-8">
+          <TaskSection title="Task 2 Assessment" task={structured?.task2} type="task2" computedOverall={t2OverallComputed} />
+          
+          {task2Answer && (
+            <Card className="card-elevated border-2 border-brand-green/20 -mt-6">
+              <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
+                <CardTitle className="text-heading-4">Task 2 – AI Corrections</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                 <div className="space-y-6">
+                   {/* View Mode Controls */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-text-primary">Detailed Corrections Analysis</div>
+                      <div className="text-caption text-text-secondary mt-1">
+                        Choose how you'd like to view your corrections
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant={t2ViewMode === 'highlights' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT2ViewMode('highlights')}
+                      >
+                        Text Highlights
+                      </Button>
+                      <Button 
+                        variant={t2ViewMode === 'sentence' ? 'default' : 'outline'}
+                        size="sm" 
+                        className="rounded-xl text-xs"
+                        onClick={() => setT2ViewMode('sentence')}
+                      >
+                        Sentence View
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl" 
+                        onClick={() => {
+                          if (!t2CorrData?.corrected_spans) return;
+                          const txt = t2CorrData.corrected_spans.map(s => s.text).join("");
+                          navigator.clipboard.writeText(txt);
+                          toast({
+                            title: "Copied corrected text",
+                            description: "The improved version is in your clipboard."
+                          });
+                        }}
+                      >
+                        <Copy className="w-4 h-4 mr-2" /> Copy Text
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Correction Display */}
+                  <div>
+                    {t2Loading && <TaskAnalysisLoading task="Task 2" />}
+                    {t2Error && <div className="status-error">{t2Error}</div>}
+                    {t2CorrData && (
+                      <>
+                        {t2ViewMode === 'highlights' && (
+                          <CorrectionVisualizer originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                        )}
+                        {t2ViewMode === 'sentence' && (
+                          <SentenceCompare originalSpans={t2CorrData.original_spans} correctedSpans={t2CorrData.corrected_spans} />
+                        )}
+                      </>
+                    )}
+                    {!t2Loading && !t2Error && !t2CorrData && (
+                      <div className="text-caption text-text-secondary">Corrections will appear here after analysis.</div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+
 
         <div className="flex justify-center gap-4">
           <Button onClick={() => navigate("/ielts-portal")} className="btn-primary rounded-xl">Take Another Test</Button>
           <Button variant="outline" onClick={() => navigate("/dashboard")} className="rounded-xl">Return to Dashboard</Button>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }

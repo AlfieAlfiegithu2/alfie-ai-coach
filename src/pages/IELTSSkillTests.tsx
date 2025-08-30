@@ -136,7 +136,7 @@ const IELTSSkillTests = () => {
       // For writing, navigate to IELTS Writing Test interface
       navigate(`/ielts-writing-test/${test.id}`);
     } else if (skill === 'speaking') {
-      navigate(`/ielts-speaking-test/${test.test_name}`);
+      navigate(`/speaking-test/${test.id}`);
     } else {
       // Fallback to general test modules
       navigate(`/ielts-test-modules/${test.id}`);

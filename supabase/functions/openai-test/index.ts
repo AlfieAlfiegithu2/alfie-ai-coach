@@ -12,36 +12,41 @@ serve(async (req) => {
   }
 
   try {
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('🧪 Testing OpenAI API connectivity...');
     
-    if (!openaiApiKey) {
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    
+    console.log('🔑 API Keys status:', {
+      hasOpenAI: !!openAIApiKey,
+      openAILength: openAIApiKey?.length || 0,
+      hasDeepSeek: !!deepSeekApiKey,
+      deepSeekLength: deepSeekApiKey?.length || 0,
+    });
+
+    if (!openAIApiKey) {
       throw new Error('OpenAI API key not found');
     }
 
-    console.log('🚀 Testing OpenAI API...');
-    
+    // Test OpenAI API with simple request
+    console.log('📡 Making OpenAI API request...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o-mini',
         messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant. Respond with exactly: "OpenAI API is working correctly!"'
-          },
-          {
-            role: 'user',
-            content: 'Test message'
-          }
+          { role: 'user', content: 'Say "Hello, OpenAI API is working!" in exactly those words.' }
         ],
-        max_completion_tokens: 50
+        max_tokens: 50,
       }),
     });
 
+    console.log('📊 OpenAI Response status:', response.status);
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ OpenAI API Error:', errorText);
@@ -49,24 +54,26 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const result = data.choices?.[0]?.message?.content || 'No response';
+    const message = data.choices?.[0]?.message?.content || 'No response content';
     
-    console.log('✅ OpenAI API test successful:', result);
-    
+    console.log('✅ OpenAI API Test Success:', message);
+
     return new Response(JSON.stringify({ 
       success: true, 
-      result,
-      model: 'gpt-4.1-2025-04-14',
-      apiKeyPresent: !!openaiApiKey
+      message,
+      apiKeyStatus: 'valid',
+      model: 'gpt-4o-mini'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('❌ OpenAI API test failed:', error);
+    console.error('❌ OpenAI Test Error:', error.message);
+    
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: error.message,
+      apiKeyStatus: 'invalid'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

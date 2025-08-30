@@ -1537,6 +1537,7 @@ export type Database = {
       writing_test_results: {
         Row: {
           band_scores: Json | null
+          correction_analysis: Json | null
           created_at: string | null
           detailed_feedback: string | null
           id: string
@@ -1551,6 +1552,7 @@ export type Database = {
         }
         Insert: {
           band_scores?: Json | null
+          correction_analysis?: Json | null
           created_at?: string | null
           detailed_feedback?: string | null
           id?: string
@@ -1565,6 +1567,7 @@ export type Database = {
         }
         Update: {
           band_scores?: Json | null
+          correction_analysis?: Json | null
           created_at?: string | null
           detailed_feedback?: string | null
           id?: string

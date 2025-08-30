@@ -214,26 +214,24 @@ Handle Word Count: You must check if the essays are under the word count (150 fo
 
 Provide Overall Feedback: Based on your analysis, provide a bulleted list of 2-3 "Key Strengths" and 2-3 "Specific, Actionable Improvements."
 
-CRITICAL: Comprehensive Sentence-by-Sentence Analysis
+CRITICAL: Identify and Detail Multiple Areas for Improvement
 
 After you have completed the band score assessment, you must generate comprehensive feedback for each task.
 
-For EACH task (Task 1 and Task 2), you must analyze EVERY SINGLE SENTENCE in the submission and provide improvement suggestions for each sentence that needs enhancement. Do not limit yourself to only 3-5 improvements - analyze from beginning to end.
+For EACH task (Task 1 and Task 2), you must analyze the submission and identify at least 3 to 5 distinct areas for improvement. Each area of improvement you identify must create a separate object in the improvements array.
 
 Each object in the improvements array MUST contain the following four keys:
-- issue: A short title for the problem area (e.g., "Repetitive Vocabulary," "Simple Sentence Structure," "Unsupported Idea," "Weak Introduction," "Unclear Transition," "Imprecise Data Description," "Informal Tone," "Redundant Phrasing," "Missing Concession," "Weak Conclusion," "Poor Linking," "Vague Language," "Overuse of Basic Words," "Comma Splicing," "Subject-Verb Disagreement," "Article Misuse," "Preposition Error," "Tense Inconsistency," "Pronoun Ambiguity," "Passive Voice Overuse," "Fragment Sentence," "Run-on Sentence," "Paragraph Transition," "Evidence Integration," "Counter-argument Development," "Thesis Clarity," "Topic Sentence Strength," "Supporting Detail Quality," "Citation Format," "Academic Register").
-- original: The exact quote from the student's writing that demonstrates this issue (single sentence or specific phrase only).
-- improved: Your rewritten, high-scoring version of that specific sentence or phrase, making sure to preserve the student's original idea completely.
-- explanation: A clear, concise explanation of why your improved version is better and which IELTS criterion it addresses.
+- issue: A short title for the problem area (e.g., "Repetitive Vocabulary," "Simple Sentence Structure," "Unsupported Idea").
+- original: The exact quote from the student's writing that demonstrates this issue.
+- improved: Your rewritten, high-scoring version of that specific sentence or phrase, making sure to preserve the student's original idea.
+- explanation: A clear, concise explanation of why your improved version is better.
 
-Requirements for comprehensive analysis:
-- Analyze EVERY sentence in both tasks
-- Provide improvements for all sentences that can be enhanced
-- No maximum limit on number of improvements
-- Categories include but are not limited to: Grammar (articles, prepositions, tense, subject-verb agreement, sentence fragments, run-on sentences), Vocabulary (word choice, collocations, academic register, precision, variety), Structure (sentence complexity, paragraph organization, transitions, cohesive devices), Task Response (relevance, development, examples, argumentation), Coherence (logical flow, paragraph unity, progression of ideas), Style (formal register, conciseness, clarity, sophistication), Mechanics (punctuation, capitalization, spelling)
-- Always preserve the student's original ideas, opinions, and arguments completely
-- Focus on elevating expression quality while maintaining content integrity
-- Only highlight specific words or phrases that are changed, never entire sentences
+Requirements for improvements:
+- Minimum 3 improvements per task
+- Maximum 5 improvements per task (to avoid overwhelming students)
+- Each improvement should address different aspects of writing (grammar, vocabulary, coherence, task response)
+- Focus on the most impactful changes that would raise the band score
+- Always preserve the student's original ideas and arguments
 
 Task 1:
 Prompt: ${task1Data?.title || 'Task 1'}
@@ -270,46 +268,22 @@ JSON SCHEMA:
     "feedback": {
       "improvements": [
         {
-          "issue": "Article Misuse",
-          "original": "The graph shows big increase in sales.",
-          "improved": "The graph shows a significant increase in sales.",
-          "explanation": "Added the missing article 'a' before 'significant increase' - this grammatical accuracy improves the Grammatical Range and Accuracy score."
-        },
-        {
-          "issue": "Word Choice Sophistication",
-          "original": "The graph shows a significant increase in sales.",
-          "improved": "The chart illustrates a substantial surge in sales revenue.",
-          "explanation": "Replaced basic vocabulary ('shows', 'increase') with more academic terms ('illustrates', 'surge') and specified 'sales revenue' for precision (improves Lexical Resource)."
+          "issue": "Word Choice & Sophistication",
+          "original": "The graph shows a big increase in sales.",
+          "improved": "The provided chart illustrates a substantial growth in sales revenue.",
+          "explanation": "Using more academic words like 'illustrates' and 'substantial growth' instead of simple words like 'shows' and 'big' makes your writing more sophisticated (improves Lexical Resource)."
         },
         {
           "issue": "Data Description Precision",
-          "original": "The numbers went up a lot during the period.",
-          "improved": "The figures demonstrated a marked upward trajectory, rising by 40% over the five-year period.",
-          "explanation": "Replaced vague language with specific data references and precise vocabulary, improving Task Achievement through accurate data interpretation."
+          "original": "The numbers went up a lot.",
+          "improved": "The figures demonstrated a significant upward trend, rising from X to Y over the period shown.",
+          "explanation": "Specific data references and precise vocabulary like 'demonstrated' and 'upward trend' improve Task Achievement by providing accurate data interpretation."
         },
         {
           "issue": "Sentence Structure Variety",
           "original": "Sales increased. Profits also increased.",
-          "improved": "Alongside the substantial increase in sales, profits also experienced corresponding growth.",
-          "explanation": "Combined simple sentences using sophisticated linking ('Alongside') and parallel structure, demonstrating better Grammatical Range and improving Coherence."
-        },
-        {
-          "issue": "Tense Consistency",
-          "original": "The chart shows that sales have increased in 2020.",
-          "improved": "The chart shows that sales increased significantly in 2020.",
-          "explanation": "Corrected tense from present perfect to past simple for completed actions in a specific time period, improving grammatical accuracy."
-        },
-        {
-          "issue": "Paragraph Transition",
-          "original": "Now I will look at the second part of the data.",
-          "improved": "Turning to the latter half of the timeframe, the data reveals contrasting trends.",
-          "explanation": "Replaced informal transition with sophisticated academic language that creates smooth flow between ideas (improves Coherence and Cohesion)."
-        },
-        {
-          "issue": "Conclusion Strength",
-          "original": "In conclusion, the graph shows different things.",
-          "improved": "In summary, the data demonstrates distinct patterns of growth across all measured categories.",
-          "explanation": "Enhanced conclusion with specific reference to findings and formal academic register, strengthening Task Achievement and overall clarity."
+          "improved": "Not only did sales increase substantially, but profits also rose correspondingly.",
+          "explanation": "Combining simple sentences with complex structures using phrases like 'Not only...but also' demonstrates better Grammatical Range and improves flow (Coherence)."
         }
       ],
       "feedback_markdown": "## Task 1 Detailed Feedback\n\n**Strengths:** List specific Task 1 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 1 feedback here with specific examples."
@@ -339,46 +313,28 @@ JSON SCHEMA:
     "feedback": {
       "improvements": [
         {
-          "issue": "Thesis Statement Clarity",
+          "issue": "Sentence Structure & Flow",
+          "original": "The company was successful. It made a lot of profit.",
+          "improved": "As a result of its successful strategy, the company generated significant profits.",
+          "explanation": "Combining two simple sentences into one complex sentence using a phrase like 'As a result of...' demonstrates better grammatical range and improves the flow (Coherence). The core idea that success led to profit is preserved."
+        },
+        {
+          "issue": "Idea Development",
+          "original": "Pollution is a major problem for cities.",
+          "improved": "Urban pollution, particularly from vehicle emissions, has become a critical issue affecting public health in major metropolitan areas.",
+          "explanation": "This improvement keeps your original idea but makes it stronger by adding specific details ('from vehicle emissions', 'affecting public health'). This demonstrates better development of ideas (improves Task Response)."
+        },
+        {
+          "issue": "Argumentative Structure",
           "original": "I think this is good because people like it.",
           "improved": "This approach proves beneficial as it addresses the fundamental needs of the target population.",
-          "explanation": "Replaced informal language ('I think', 'people like it') with formal academic expressions ('proves beneficial', 'fundamental needs') to create a stronger, more precise thesis (improves Task Response and Lexical Resource)."
+          "explanation": "Replacing informal language ('I think', 'people like it') with formal academic expressions ('proves beneficial', 'fundamental needs') strengthens your argument and improves Lexical Resource."
         },
         {
-          "issue": "Sentence Structure Complexity",
-          "original": "The company was successful. It made a lot of profit.",
-          "improved": "As a result of its successful operational strategy, the company generated substantial revenue streams.",
-          "explanation": "Combined simple sentences using sophisticated linking ('As a result of') and enhanced vocabulary ('operational strategy', 'revenue streams'), demonstrating better Grammatical Range and Coherence."
-        },
-        {
-          "issue": "Evidence Integration",
-          "original": "Many people agree with this idea.",
-          "improved": "Recent surveys conducted by leading research institutions consistently support this perspective.",
-          "explanation": "Replaced vague generalization with specific, credible evidence source, strengthening argument development and Task Response effectiveness."
-        },
-        {
-          "issue": "Cohesive Device Sophistication",
+          "issue": "Cohesive Devices",
           "original": "First, education is important. Second, health is important too.",
-          "improved": "While education remains paramount in societal development, healthcare infrastructure proves equally indispensable for long-term prosperity.",
-          "explanation": "Replaced basic sequencing with sophisticated contrast structure ('While...remains paramount...proves equally') that creates natural flow and demonstrates advanced Coherence and Cohesion."
-        },
-        {
-          "issue": "Counter-argument Development",
-          "original": "Some people disagree but they are wrong.",
-          "improved": "Although critics argue that alternative approaches may yield better results, this perspective fails to consider the long-term implications of such policies.",
-          "explanation": "Transformed dismissive statement into sophisticated counter-argument acknowledgment with reasoned refutation, improving argumentative structure and Task Response quality."
-        },
-        {
-          "issue": "Conclusion Synthesis",
-          "original": "In conclusion, I believe my opinion is correct.",
-          "improved": "In light of the evidence presented, it becomes apparent that this approach offers the most viable solution to contemporary challenges.",
-          "explanation": "Enhanced conclusion with evidence synthesis and formal academic register, demonstrating sophisticated reasoning and improving overall Task Response effectiveness."
-        },
-        {
-          "issue": "Preposition Accuracy",
-          "original": "People are interested for this topic.",
-          "improved": "People demonstrate considerable interest in this contemporary issue.",
-          "explanation": "Corrected preposition error ('for' to 'in') and enhanced vocabulary ('demonstrate considerable interest', 'contemporary issue'), improving grammatical accuracy and lexical sophistication."
+          "improved": "While education remains paramount, healthcare infrastructure is equally crucial for societal development.",
+          "explanation": "Using sophisticated linking phrases like 'While...remains paramount' and 'equally crucial' creates better flow between ideas and demonstrates advanced Coherence and Cohesion."
         }
       ],
       "feedback_markdown": "## Task 2 Detailed Feedback\n\n**Strengths:** List specific Task 2 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 2 feedback here with specific examples."

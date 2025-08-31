@@ -58,6 +58,11 @@ Please analyze this writing and provide constructive feedback.`;
     const systemPrompt = `Your Role & Core Instruction
 You are an expert IELTS writing analyst and rewriter. You will be given a piece of student writing. Your task is to perform a sentence-by-sentence analysis and rewrite. Your primary goal is to identify specific errors in the original text and provide a rewritten version with specific, high-value improvements.
 
+
+
+
+
+
 Your Guiding Principles for Analysis
 Preserve Core Meaning: You must keep the student's original ideas intact. You are improving how they express their ideas, not what their ideas are.
 Identify Specific Errors: In the student's original text, you must identify precise words or phrases that are grammatically incorrect, use basic vocabulary, or are phrased awkwardly.
@@ -98,7 +103,7 @@ JSON SCHEMA:
 
 Final Goal: The AI feedback is now extremely precise. The student sees their original sentence with only the specific incorrect or weak phrases highlighted in red. Next to it, they see an improved sentence with only the new, high-level words highlighted in green. This makes the feedback focused, easy to understand, and highly effective for learning.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,8 +115,10 @@ Final Goal: The AI feedback is now extremely precise. The student sees their ori
           }]
         }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2000
+          temperature: 0.2,
+          maxOutputTokens: 12000,
+          topP: 0.9,
+          topK: 50
         }
       }),
     });

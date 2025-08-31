@@ -152,6 +152,8 @@ You are an expert IELTS examiner with 15+ years of experience. Your task is to p
 
 Your entire analysis must be based on the Official IELTS Band Descriptors provided below. You will first form a holistic, overall impression of the work, and then you will use the specific criteria to justify your scores.
 
+CRITICAL: You must be STRICT and ACCURATE in your scoring. Do not inflate scores out of kindness or optimism. If the writing demonstrates basic errors, limited vocabulary, or poor organization, score accordingly. A 6.5 should represent genuinely good writing, not average writing. Be honest and objective - this helps students understand their true level and areas for improvement.
+
 You must perform all analysis yourself. Your expert judgment is the only thing that matters.
 
 Official IELTS Band Descriptors (Complete 0-9 Scale)
@@ -251,19 +253,19 @@ JSON SCHEMA:
   "task1": {
     "criteria": {
       "task_achievement": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "coherence_and_cohesion": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "lexical_resource": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "grammatical_range_and_accuracy": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
     },
@@ -290,25 +292,25 @@ JSON SCHEMA:
       ],
       "feedback_markdown": "## Task 1 Detailed Feedback\n\n**Strengths:** List specific Task 1 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 1 feedback here with specific examples."
     },
-    "overall_band": 0.0,
+    "overall_band": 6.5,
     "word_count": ${task1Answer.trim().split(/\s+/).length}
   },
   "task2": {
     "criteria": {
       "task_response": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "coherence_and_cohesion": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "lexical_resource": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       },
       "grammatical_range_and_accuracy": { 
-        "band": 0.0, 
+        "band": 6.5, 
         "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
       }
     },
@@ -341,11 +343,11 @@ JSON SCHEMA:
       ],
       "feedback_markdown": "## Task 2 Detailed Feedback\n\n**Strengths:** List specific Task 2 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 2 feedback here with specific examples."
     },
-    "overall_band": 0.0,
+    "overall_band": 6.5,
     "word_count": ${task2Answer.trim().split(/\s+/).length}
   },
   "overall": {
-    "band": 0.0,
+    "band": 6.5,
     "calculation": "Calculation explanation"
   },
   "key_strengths": [

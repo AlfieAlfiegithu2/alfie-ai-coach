@@ -324,11 +324,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
       if (examinerResponse.error) throw examinerResponse.error;
 
-      const { sentence_by_sentence_analysis } = examinerResponse.data;
-      
-      // Calculate word counts
-      const task1WordCount = task1Answer.trim().split(/\s+/).length;
-      const task2WordCount = task2Answer.trim().split(/\s+/).length;
+      const { structured, feedback, task1WordCount, task2WordCount } = examinerResponse.data;
 
       // Save main test result
       const { data: testResult, error: testError } = await supabase
@@ -355,7 +351,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             } : null,
             task1Answer,
             task2Answer,
-            overall_band: 7.0 // Default band score since we now focus on sentence analysis
+            overall_band: structured?.overall?.band || 7.0
           }
         })
         .select()
@@ -373,9 +369,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           prompt_text: task1?.instructions || task1?.title || '',
           user_response: task1Answer,
           word_count: task1WordCount,
-          band_scores: null, // Legacy field - now using sentence analysis
-          detailed_feedback: JSON.stringify({ sentence_by_sentence_analysis: sentence_by_sentence_analysis || [] }),
-          improvement_suggestions: []
+          band_scores: structured?.task1?.criteria || null,
+          detailed_feedback: structured?.task1?.feedback_markdown || '',
+          improvement_suggestions: structured?.task1?.feedback?.improvements || []
         });
 
       if (task1Error) throw task1Error;
@@ -390,9 +386,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           prompt_text: task2?.instructions || task2?.title || '',
           user_response: task2Answer,
           word_count: task2WordCount,
-          band_scores: null, // Legacy field - now using sentence analysis
-          detailed_feedback: JSON.stringify({ sentence_by_sentence_analysis: sentence_by_sentence_analysis || [] }),
-          improvement_suggestions: []
+          band_scores: structured?.task2?.criteria || null,
+          detailed_feedback: structured?.task2?.feedback_markdown || '',
+          improvement_suggestions: structured?.task2?.feedback?.improvements || []
         });
 
       if (task2Error) throw task2Error;
@@ -405,7 +401,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           submissionId: testResult.id,
           task1Answer,
           task2Answer,
-          sentence_by_sentence_analysis: sentence_by_sentence_analysis || [],
+          feedback,
+          structured,
           task1Data: task1,
           task2Data: task2,
           task1WordCount,

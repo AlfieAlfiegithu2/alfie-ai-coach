@@ -49,18 +49,6 @@ interface TaskAssessment {
   overall_reason?: string;
   feedback?: TaskFeedback;
   feedback_markdown?: string;
-  sentence_by_sentence_analysis?: Array<{
-    original_spans: Array<{
-      text: string;
-      status: "error" | "neutral";
-    }>;
-    improved_spans: Array<{
-      text: string;
-      status: "improvement" | "neutral";
-    }>;
-    explanation: string;
-  }>;
-  // Legacy fields for backward compatibility
   original_spans?: Array<{
     text: string;
     status: "error" | "neutral";
@@ -273,21 +261,10 @@ export default function IELTSWritingProResults() {
                               extractBandFromCriteria(task1Result?.band_scores) * 0.33 + 
                               extractBandFromCriteria(task2Result?.band_scores) * 0.67;
 
-      // Parse sentence analysis data from detailed_feedback
-      const parseSentenceAnalysis = (detailedFeedback: string) => {
-        try {
-          const parsed = JSON.parse(detailedFeedback);
-          return parsed.sentence_by_sentence_analysis || [];
-        } catch {
-          return [];
-        }
-      };
-
       // Reconstruct structured data from database with validation
       const reconstructedData = {
         structured: {
           task1: {
-            sentence_by_sentence_analysis: parseSentenceAnalysis(task1Result?.detailed_feedback || '{}'),
             criteria: enrichCriteria(task1Result?.band_scores, 'task1'),
             overall_band: extractBandFromCriteria(task1Result?.band_scores),
             feedback_markdown: task1Result?.detailed_feedback || '### Task 1 Assessment\n\nDetailed feedback was not available for this task.',
@@ -297,7 +274,6 @@ export default function IELTSWritingProResults() {
             }
           },
           task2: {
-            sentence_by_sentence_analysis: parseSentenceAnalysis(task2Result?.detailed_feedback || '{}'),
             criteria: enrichCriteria(task2Result?.band_scores, 'task2'),
             overall_band: extractBandFromCriteria(task2Result?.band_scores),
             feedback_markdown: task2Result?.detailed_feedback || '### Task 2 Assessment\n\nDetailed feedback was not available for this task.',
@@ -597,7 +573,34 @@ export default function IELTSWritingProResults() {
            {userAnswer && (
              <WritingComparisonView
                originalText={userAnswer}
-               sentenceAnalysis={task.sentence_by_sentence_analysis}
+               improvementSuggestions={task.feedback?.improvements?.map((improvement) => {
+                 // Handle both string improvements and object improvements
+                 if (typeof improvement === 'string') {
+                   return {
+                     issue: "General Improvement",
+                     sentence_quote: "",
+                     improved_version: improvement,
+                     explanation: improvement
+                   };
+                 } else if (improvement && typeof improvement === 'object') {
+                   // If it's already an object, use it directly
+                   return {
+                     issue: improvement.issue || "Improvement",
+                     sentence_quote: improvement.original || improvement.sentence_quote || "",
+                     improved_version: improvement.improved || improvement.improved_version || "",
+                     explanation: improvement.explanation || "Suggested improvement"
+                   };
+                 }
+                 return {
+                   issue: "Improvement",
+                   sentence_quote: "",
+                   improved_version: String(improvement || ""),
+                   explanation: String(improvement || "")
+                 };
+               }) || task.feedback?.improvements_detailed || []}
+               originalSpans={task.original_spans}
+               correctedSpans={task.corrected_spans}
+               sentenceComparisons={task.sentence_comparisons}
                title={title}
              />
            )}

@@ -11,21 +11,10 @@ export type ComparisonSpan = {
 
 interface WritingComparisonViewProps {
   originalText: string;
-  improvementSuggestions?: Array<{
-    issue?: string;
-    sentence_quote?: string;
-    improved_version?: string;
-    explanation?: string;
-  }>;
-  originalSpans?: ComparisonSpan[];
-  correctedSpans?: ComparisonSpan[];
-  sentenceComparisons?: Array<{
-    original?: string;
-    improved?: string;
-    issue?: string;
-    explanation?: string;
-    original_spans?: ComparisonSpan[];
-    corrected_spans?: ComparisonSpan[];
+  sentenceAnalysis?: Array<{
+    original_spans: ComparisonSpan[];
+    improved_spans: ComparisonSpan[];
+    explanation: string;
   }>;
   title: string;
 }
@@ -44,148 +33,56 @@ const spanClass = (status: ComparisonSpan["status"], side: "original" | "improve
   return "text-text-primary";
 };
 
-const processTextForComparison = (
+const processSentenceAnalysis = (
   originalText: string,
-  suggestions?: Array<{
-    issue?: string;
-    sentence_quote?: string;
-    improved_version?: string;
-    explanation?: string;
+  sentenceAnalysis?: Array<{
+    original_spans: ComparisonSpan[];
+    improved_spans: ComparisonSpan[];
+    explanation: string;
   }>
 ) => {
-  // Split text into sentences for processing
-  const sentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  const sentenceComparisons = [];
-  
-  let processedOriginal = originalText;
-  let processedImproved = originalText;
-
-  if (suggestions && suggestions.length > 0) {
-    // Process suggestions to create highlighted spans
-    suggestions.forEach((suggestion) => {
-      if (suggestion.sentence_quote && suggestion.improved_version) {
-        const quote = suggestion.sentence_quote.trim();
-        const improved = suggestion.improved_version.trim();
-        
-        // Replace in improved version
-        processedImproved = processedImproved.replace(quote, improved);
-        
-        // Find sentence that contains this quote
-        const matchingSentence = sentences.find(s => s.includes(quote));
-        if (matchingSentence) {
-          sentenceComparisons.push({
-            original: matchingSentence.trim() + ".",
-            improved: matchingSentence.replace(quote, improved).trim() + ".",
-            issue: suggestion.issue || "Enhancement suggestion",
-            explanation: suggestion.explanation
-          });
-        }
-      }
-    });
-  } else {
-    // If no suggestions, create sentence comparisons from original sentences
-    // This ensures sentence-by-sentence view always has content
-    sentences.forEach((sentence, index) => {
-      const cleanSentence = sentence.trim();
-      if (cleanSentence) {
-        sentenceComparisons.push({
-          original: cleanSentence + ".",
-          improved: cleanSentence + ".", // Same as original since no improvements
-          issue: `Sentence ${index + 1}`,
-          explanation: "No specific improvements suggested for this sentence."
-        });
-      }
-    });
+  if (!sentenceAnalysis || sentenceAnalysis.length === 0) {
+    // If no analysis, split text into sentences and return as neutral
+    const sentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    return {
+      originalSpans: [{ text: originalText, status: "neutral" as const }],
+      improvedSpans: [{ text: originalText, status: "neutral" as const }],
+      sentences: sentences.map((sentence, index) => ({
+        original: sentence.trim() + ".",
+        improved: sentence.trim() + ".",
+        explanation: "No specific improvements provided for this sentence."
+      }))
+    };
   }
 
-  // Create spans for highlighting
-  const createSpans = (text: string, isImproved: boolean): ComparisonSpan[] => {
-    if (!suggestions || suggestions.length === 0) {
-      return [{ text, status: "neutral" }];
-    }
+  // Combine all spans for whole text view
+  const combinedOriginalSpans = sentenceAnalysis.flatMap(analysis => analysis.original_spans);
+  const combinedImprovedSpans = sentenceAnalysis.flatMap(analysis => analysis.improved_spans);
 
-    const spans: ComparisonSpan[] = [];
-    let currentText = text;
-    
-    suggestions.forEach((suggestion) => {
-      if (suggestion.sentence_quote && suggestion.improved_version) {
-        const quote = suggestion.sentence_quote.trim();
-        const improved = suggestion.improved_version.trim();
-        const target = isImproved ? improved : quote;
-        
-        const index = currentText.indexOf(target);
-        if (index !== -1) {
-          // Add text before the target
-          if (index > 0) {
-            spans.push({
-              text: currentText.substring(0, index),
-              status: "neutral"
-            });
-          }
-          
-          // Add the target with highlighting
-          spans.push({
-            text: target,
-            status: isImproved ? "improvement" : "error"
-          });
-          
-          // Update current text to continue after the target
-          currentText = currentText.substring(index + target.length);
-        }
-      }
-    });
-    
-    // Add remaining text
-    if (currentText.length > 0) {
-      spans.push({
-        text: currentText,
-        status: "neutral"
-      });
-    }
-    
-    return spans.length > 0 ? spans : [{ text, status: "neutral" }];
-  };
+  // Create sentence-by-sentence comparisons
+  const sentences = sentenceAnalysis.map((analysis) => ({
+    original: analysis.original_spans.map(span => span.text).join(''),
+    improved: analysis.improved_spans.map(span => span.text).join(''),
+    original_spans: analysis.original_spans,
+    corrected_spans: analysis.improved_spans,
+    explanation: analysis.explanation
+  }));
 
   return {
-    originalSpans: createSpans(originalText, false),
-    improvedSpans: createSpans(processedImproved, true),
-    sentences: sentenceComparisons
+    originalSpans: combinedOriginalSpans,
+    improvedSpans: combinedImprovedSpans,
+    sentences
   };
 };
 
 export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
   originalText,
-  improvementSuggestions,
-  originalSpans: providedOriginalSpans,
-  correctedSpans: providedCorrectedSpans,
-  sentenceComparisons: providedSentenceComparisons,
+  sentenceAnalysis,
   title
 }) => {
-  const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
+  const [viewMode, setViewMode] = useState<"whole" | "sentence">("sentence");
   
-  // Always ensure we show the complete original text
-  const { originalSpans, improvedSpans, sentences } = (() => {
-    // If we have AI-provided spans, use them but validate they contain the full text
-    if (providedOriginalSpans && providedCorrectedSpans) {
-      const originalSpansText = providedOriginalSpans.map(span => span.text).join('');
-      const correctedSpansText = providedCorrectedSpans.map(span => span.text).join('');
-      
-      // If the spans don't contain the full original text, fall back to processing
-      if (originalSpansText.trim() !== originalText.trim()) {
-        console.warn('⚠️ AI-provided spans incomplete, falling back to full text processing');
-        return processTextForComparison(originalText, improvementSuggestions);
-      }
-      
-      return {
-        originalSpans: providedOriginalSpans,
-        improvedSpans: providedCorrectedSpans,
-        sentences: providedSentenceComparisons || []
-      };
-    }
-    
-    // Fall back to processing the full text
-    return processTextForComparison(originalText, improvementSuggestions);
-  })();
+  const { originalSpans, improvedSpans, sentences } = processSentenceAnalysis(originalText, sentenceAnalysis);
 
   if (!originalText.trim()) {
     return null;

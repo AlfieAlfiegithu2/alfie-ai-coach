@@ -49,6 +49,18 @@ interface TaskAssessment {
   overall_reason?: string;
   feedback?: TaskFeedback;
   feedback_markdown?: string;
+  sentence_by_sentence_analysis?: Array<{
+    original_spans: Array<{
+      text: string;
+      status: "error" | "neutral";
+    }>;
+    improved_spans: Array<{
+      text: string;
+      status: "improvement" | "neutral";
+    }>;
+    explanation: string;
+  }>;
+  // Legacy fields for backward compatibility
   original_spans?: Array<{
     text: string;
     status: "error" | "neutral";
@@ -573,34 +585,7 @@ export default function IELTSWritingProResults() {
            {userAnswer && (
              <WritingComparisonView
                originalText={userAnswer}
-               improvementSuggestions={task.feedback?.improvements?.map((improvement) => {
-                 // Handle both string improvements and object improvements
-                 if (typeof improvement === 'string') {
-                   return {
-                     issue: "General Improvement",
-                     sentence_quote: "",
-                     improved_version: improvement,
-                     explanation: improvement
-                   };
-                 } else if (improvement && typeof improvement === 'object') {
-                   // If it's already an object, use it directly
-                   return {
-                     issue: improvement.issue || "Improvement",
-                     sentence_quote: improvement.original || improvement.sentence_quote || "",
-                     improved_version: improvement.improved || improvement.improved_version || "",
-                     explanation: improvement.explanation || "Suggested improvement"
-                   };
-                 }
-                 return {
-                   issue: "Improvement",
-                   sentence_quote: "",
-                   improved_version: String(improvement || ""),
-                   explanation: String(improvement || "")
-                 };
-               }) || task.feedback?.improvements_detailed || []}
-               originalSpans={task.original_spans}
-               correctedSpans={task.corrected_spans}
-               sentenceComparisons={task.sentence_comparisons}
+               sentenceAnalysis={task.sentence_by_sentence_analysis}
                title={title}
              />
            )}

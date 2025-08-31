@@ -7,6 +7,7 @@ import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
 import Index from "./pages/Index";
 import HeroIndex from "./pages/HeroIndex";
+
 import Reading from "./pages/Reading";
 import ReadingTest from "./pages/ReadingTest";
 import Listening from "./pages/Listening";
@@ -98,6 +99,7 @@ const App = () => {
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/hero" element={<HeroIndex />} />
+
             <Route path="/reading" element={<ContentSelection />} />
             <Route path="/reading/:testId" element={<ReadingTest />} />
             <Route path="/listening" element={<ContentSelection />} />

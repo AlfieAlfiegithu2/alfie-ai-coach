@@ -82,6 +82,19 @@ const processTextForComparison = (
         }
       }
     });
+    
+    // Ensure ALL sentences are covered, even if no specific suggestions
+    sentences.forEach((sentence, index) => {
+      const cleanSentence = sentence.trim();
+      if (cleanSentence && !sentenceComparisons.some(sc => sc.original.includes(cleanSentence))) {
+        sentenceComparisons.push({
+          original: cleanSentence + ".",
+          improved: cleanSentence + ".", // Same as original if no improvement found
+          issue: `Sentence ${index + 1}`,
+          explanation: "This sentence appears to be well-written or no specific improvements were identified."
+        });
+      }
+    });
   } else {
     // If no suggestions, create sentence comparisons from original sentences
     // This ensures sentence-by-sentence view always has content
@@ -106,6 +119,7 @@ const processTextForComparison = (
 
     const spans: ComparisonSpan[] = [];
     let currentText = text;
+    let processedSuggestions = 0;
     
     suggestions.forEach((suggestion) => {
       if (suggestion.sentence_quote && suggestion.improved_version) {
@@ -131,6 +145,7 @@ const processTextForComparison = (
           
           // Update current text to continue after the target
           currentText = currentText.substring(index + target.length);
+          processedSuggestions++;
         }
       }
     });
@@ -141,6 +156,11 @@ const processTextForComparison = (
         text: currentText,
         status: "neutral"
       });
+    }
+    
+    // If no suggestions were processed, return the full text as neutral
+    if (processedSuggestions === 0) {
+      return [{ text, status: "neutral" }];
     }
     
     return spans.length > 0 ? spans : [{ text, status: "neutral" }];

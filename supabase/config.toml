@@ -25,13 +25,13 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.writing-feedback]
-verify_jwt = true
+verify_jwt = false
 
 [functions.openai-chat]
 verify_jwt = true
 
 [functions.ielts-writing-examiner]
-verify_jwt = true
+verify_jwt = false
 
 [functions.openai-test]
 verify_jwt = false

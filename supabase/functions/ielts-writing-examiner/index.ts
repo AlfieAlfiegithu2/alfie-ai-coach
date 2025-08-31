@@ -10,7 +10,7 @@ async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
   console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2)...`);
   
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -23,7 +23,9 @@ async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
         }],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 4000
+          maxOutputTokens: 8000, // Increased for comprehensive IELTS analysis
+          topP: 0.9,
+          topK: 50
         }
       }),
     });

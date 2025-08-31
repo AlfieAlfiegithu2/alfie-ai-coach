@@ -273,10 +273,21 @@ export default function IELTSWritingProResults() {
                               extractBandFromCriteria(task1Result?.band_scores) * 0.33 + 
                               extractBandFromCriteria(task2Result?.band_scores) * 0.67;
 
+      // Parse sentence analysis data from detailed_feedback
+      const parseSentenceAnalysis = (detailedFeedback: string) => {
+        try {
+          const parsed = JSON.parse(detailedFeedback);
+          return parsed.sentence_by_sentence_analysis || [];
+        } catch {
+          return [];
+        }
+      };
+
       // Reconstruct structured data from database with validation
       const reconstructedData = {
         structured: {
           task1: {
+            sentence_by_sentence_analysis: parseSentenceAnalysis(task1Result?.detailed_feedback || '{}'),
             criteria: enrichCriteria(task1Result?.band_scores, 'task1'),
             overall_band: extractBandFromCriteria(task1Result?.band_scores),
             feedback_markdown: task1Result?.detailed_feedback || '### Task 1 Assessment\n\nDetailed feedback was not available for this task.',
@@ -286,6 +297,7 @@ export default function IELTSWritingProResults() {
             }
           },
           task2: {
+            sentence_by_sentence_analysis: parseSentenceAnalysis(task2Result?.detailed_feedback || '{}'),
             criteria: enrichCriteria(task2Result?.band_scores, 'task2'),
             overall_band: extractBandFromCriteria(task2Result?.band_scores),
             feedback_markdown: task2Result?.detailed_feedback || '### Task 2 Assessment\n\nDetailed feedback was not available for this task.',

@@ -137,6 +137,7 @@ export default function IELTSWritingProResults() {
   const [resultsData, setResultsData] = useState<{
     structured?: StructuredResult;
     testName?: string;
+    submissionId?: string;
     task1Data?: any;
     task2Data?: any;
     task1Answer?: string;
@@ -315,6 +316,110 @@ export default function IELTSWritingProResults() {
       setLoading(false);
     }
   };
+
+  // On-demand feedback generation if missing in DB/response
+  useEffect(() => {
+    const generateIfMissing = async () => {
+      if (!resultsData || !user) return;
+      const submissionId = (location.state as any)?.submissionId || resultsData.submissionId;
+      const current = resultsData.structured;
+      if (!current) return;
+
+      const needsTask1 = !!resultsData.task1Answer && (
+        !current.task1?.feedback ||
+        (!current.task1.feedback.improvements?.length && !current.task1.feedback.improvements_detailed?.length && !current.task1?.sentence_comparisons?.length)
+      );
+      const needsTask2 = !!resultsData.task2Answer && (
+        !current.task2?.feedback ||
+        (!current.task2.feedback.improvements?.length && !current.task2.feedback.improvements_detailed?.length && !current.task2?.sentence_comparisons?.length)
+      );
+      if (!needsTask1 && !needsTask2) return;
+
+      try {
+        setLoading(true);
+        const updates: Partial<StructuredResult> = { ...current };
+
+        const toText = (spans?: Array<{ text: string }>) => (spans || []).map(s => s.text).join("");
+        const buildImprovementsFromComparisons = (comparisons: any[] = []) => {
+          return comparisons.map((c) => ({
+            issue: "Rewrite for clarity and accuracy",
+            sentence_quote: toText(c.original_spans),
+            improved_version: toText(c.corrected_spans),
+            explanation: "This rewrite improves grammar, vocabulary, and cohesion while preserving your original meaning."
+          }));
+        };
+
+        if (needsTask1 && resultsData.task1Answer) {
+          const { data, error } = await supabase.functions.invoke('writing-feedback', {
+            body: {
+              writing: resultsData.task1Answer,
+              prompt: resultsData.task1Data?.title || resultsData.task1Data?.instructions,
+              taskType: 'Task 1'
+            }
+          });
+          if (!error && data?.structured) {
+            updates.task1 = updates.task1 || { criteria: {} } as any;
+            updates.task1.feedback = updates.task1.feedback || {} as any;
+            updates.task1.sentence_comparisons = data.structured.sentence_comparisons || [];
+            const synthesized = buildImprovementsFromComparisons(updates.task1.sentence_comparisons as any[]);
+            updates.task1.feedback.improvements_detailed = data.structured.improvements_detailed || synthesized;
+            updates.task1.feedback.improvements = data.structured.improvements || synthesized;
+            updates.task1.feedback_markdown = data.structured.feedback_markdown || updates.task1.feedback_markdown;
+
+            // Persist to DB if we have a submissionId
+            if (submissionId) {
+              await supabase.from('writing_test_results')
+                .update({
+                  detailed_feedback: updates.task1.feedback_markdown || '',
+                  improvement_suggestions: updates.task1.feedback?.improvements || []
+                })
+                .eq('test_result_id', submissionId)
+                .eq('user_id', user.id)
+                .eq('task_number', 1);
+            }
+          }
+        }
+
+        if (needsTask2 && resultsData.task2Answer) {
+          const { data, error } = await supabase.functions.invoke('writing-feedback', {
+            body: {
+              writing: resultsData.task2Answer,
+              prompt: resultsData.task2Data?.title || resultsData.task2Data?.instructions,
+              taskType: 'Task 2'
+            }
+          });
+          if (!error && data?.structured) {
+            updates.task2 = updates.task2 || { criteria: {} } as any;
+            updates.task2.feedback = updates.task2.feedback || {} as any;
+            updates.task2.sentence_comparisons = data.structured.sentence_comparisons || [];
+            const synthesized2 = buildImprovementsFromComparisons(updates.task2.sentence_comparisons as any[]);
+            updates.task2.feedback.improvements_detailed = data.structured.improvements_detailed || synthesized2;
+            updates.task2.feedback.improvements = data.structured.improvements || synthesized2;
+            updates.task2.feedback_markdown = data.structured.feedback_markdown || updates.task2.feedback_markdown;
+
+            if (submissionId) {
+              await supabase.from('writing_test_results')
+                .update({
+                  detailed_feedback: updates.task2.feedback_markdown || '',
+                  improvement_suggestions: updates.task2.feedback?.improvements || []
+                })
+                .eq('test_result_id', submissionId)
+                .eq('user_id', user.id)
+                .eq('task_number', 2);
+            }
+          }
+        }
+
+        setResultsData(prev => ({ ...prev, structured: updates }));
+      } catch (e) {
+        console.error('⚠️ On-demand feedback generation failed:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    generateIfMissing();
+  }, [resultsData?.structured, resultsData?.task1Answer, resultsData?.task2Answer, user]);
 
   const {
     structured,

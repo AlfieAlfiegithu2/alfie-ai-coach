@@ -298,14 +298,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   };
 
   const submitTest = async () => {
-    if (!user) {
-      toast({
-        title: "Please sign in",
-        description: "You need to be logged in to submit and save your results.",
-        variant: "destructive"
-      });
-      return;
-    }
     if (!task1Answer.trim() || !task2Answer.trim()) {
       toast({
         title: "Please complete both tasks",
@@ -330,20 +322,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         })
       ]);
 
-      if (examinerResponse.error) {
-        console.error('❌ Examiner invoke error:', examinerResponse.error);
-        throw examinerResponse.error;
-      }
+      if (examinerResponse.error) throw examinerResponse.error;
 
-      const { structured, feedback, task1WordCount, task2WordCount, error: serverError } = examinerResponse.data || {};
-      if (serverError) {
-        console.error('❌ Examiner server error:', serverError);
-        throw new Error(serverError);
-      }
-      if (!structured) {
-        console.error('❌ Examiner returned no structured payload:', examinerResponse.data);
-        throw new Error('Examiner returned empty response');
-      }
+      const { structured, feedback, task1WordCount, task2WordCount } = examinerResponse.data;
 
       // Save main test result
       const { data: testResult, error: testError } = await supabase
@@ -432,7 +413,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       console.error('Error submitting test:', error);
       toast({
         title: "Error",
-        description: `Failed to submit test for evaluation${error?.message ? `: ${String(error.message)}` : ''}`,
+        description: "Failed to submit test for evaluation",
         variant: "destructive"
       });
     } finally {

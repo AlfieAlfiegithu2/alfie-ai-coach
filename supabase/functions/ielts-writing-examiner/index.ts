@@ -56,6 +56,7 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
   console.log(`🚀 Attempting OpenAI API call (attempt ${retryCount + 1}/2)...`);
   
   try {
+    const model = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -63,7 +64,7 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model,
         messages: [
           {
             role: 'system',
@@ -74,6 +75,7 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
             content: prompt
           }
         ],
+        response_format: { type: 'json_object' },
         max_completion_tokens: 4000
       }),
     });
@@ -85,10 +87,10 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
     }
 
     const data = await response.json();
-    console.log('✅ OpenAI API call successful');
+    console.log(`✅ OpenAI API call successful (model: ${model})`);
     return data;
   } catch (error) {
-    console.error(`❌ OpenAI attempt ${retryCount + 1} failed:`, error.message);
+    console.error(`❌ OpenAI attempt ${retryCount + 1} failed:`, (error as any).message);
     
     if (retryCount < 1) {
       console.log(`🔄 Retrying OpenAI API call in 500ms...`);
@@ -96,6 +98,44 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
       return callOpenAI(prompt, apiKey, retryCount + 1);
     }
     
+    throw error;
+  }
+}
+
+async function callDeepSeek(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2)...`);
+  try {
+    const model = Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner';
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: 'You are an expert IELTS examiner. Return ONLY valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 4000
+      })
+    });
+    if (!response.ok) {
+      const t = await response.text();
+      console.error('❌ DeepSeek API Error:', t);
+      throw new Error(`DeepSeek API failed: ${response.status} - ${t}`);
+    }
+    const data = await response.json();
+    console.log(`✅ DeepSeek API call successful (model: ${model})`);
+    return data;
+  } catch (error) {
+    console.error(`❌ DeepSeek attempt ${retryCount + 1} failed:`, (error as any).message);
+    if (retryCount < 1) {
+      console.log('🔄 Retrying DeepSeek API call in 500ms...');
+      await new Promise(r => setTimeout(r, 500));
+      return callDeepSeek(prompt, apiKey, retryCount + 1);
+    }
     throw error;
   }
 }
@@ -363,7 +403,7 @@ JSON SCHEMA:
     if (apiProvider === 'openai') {
       console.log('🔄 Using OpenAI API...');
       aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
-      modelUsed = 'OpenAI GPT-4.1';
+      modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'}`;
       content = aiResponse.choices?.[0]?.message?.content ?? '';
       console.log('✅ OpenAI API succeeded');
     } else {
@@ -374,15 +414,16 @@ JSON SCHEMA:
         content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
         console.log('✅ Gemini API succeeded');
       } catch (geminiError) {
-        console.log('⚠️ Gemini failed, falling back to OpenAI:', geminiError.message);
-        if (!openaiApiKey) {
-          throw new Error('Gemini quota exceeded and no OpenAI API key available for fallback');
+        console.log('⚠️ Gemini failed, falling back to DeepSeek:', (geminiError as any).message);
+        const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+        if (!deepseekKey) {
+          throw new Error('Gemini failed and no DEEPSEEK_API_KEY available for fallback');
         }
-        console.log('🔄 Fallback: Using OpenAI API...');
-        aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
-        modelUsed = 'OpenAI GPT-4.1 (Fallback)';
+        console.log('🔄 Fallback: Using DeepSeek API...');
+        aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey);
+        modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Fallback)`;
         content = aiResponse.choices?.[0]?.message?.content ?? '';
-        console.log('✅ OpenAI fallback succeeded');
+        console.log('✅ DeepSeek fallback succeeded');
       }
     }
 
@@ -460,8 +501,162 @@ JSON SCHEMA:
 
     // AI handles all scoring and word count considerations internally
 
+    // If parsing failed entirely, build a minimal, safe fallback so the UI never breaks
+    if (!structured) {
+      console.warn('⚠️ No structured JSON parsed; building minimal fallback structure');
+      structured = {
+        task1: {
+          criteria: {},
+          feedback: {
+            improvements: [],
+            feedback_markdown: '### Task 1 Assessment\n\nThe AI response could not be parsed into structured JSON.\n\nRaw summary (truncated):\n' + (content || '').slice(0, 800)
+          },
+          word_count: task1Answer.trim().split(/\s+/).length
+        },
+        task2: {
+          criteria: {},
+          feedback: {
+            improvements: [],
+            feedback_markdown: '### Task 2 Assessment\n\nThe AI response could not be parsed into structured JSON.\n\nRaw summary (truncated):\n' + (content || '').slice(0, 800)
+          },
+          word_count: task2Answer.trim().split(/\s+/).length
+        },
+        overall: {
+          band: 6.0,
+          calculation: 'Fallback default because structured JSON was unavailable.'
+        }
+      };
+    }
+
+    // Helper: round to IELTS 0.5 steps and clamp 0..9
+    const roundIELTS = (n: number) => Math.min(9, Math.max(0, Math.round(n * 2) / 2));
+
     // Validate and add fallback data for frontend compatibility
     if (structured) {
+      const ensureCriteria = (task: any, type: 'task1' | 'task2') => {
+        const overall = typeof task?.overall_band === 'number' ? task.overall_band : (typeof structured?.overall?.band === 'number' ? structured.overall.band : 6.5);
+        task.criteria = task.criteria || {};
+        if (type === 'task1') {
+          task.criteria.task_achievement = task.criteria.task_achievement || { band: overall, justification: 'Auto-filled from overall score.' };
+        } else {
+          task.criteria.task_response = task.criteria.task_response || { band: overall, justification: 'Auto-filled from overall score.' };
+        }
+        task.criteria.coherence_and_cohesion = task.criteria.coherence_and_cohesion || { band: overall, justification: 'Auto-filled from overall score.' };
+        task.criteria.lexical_resource = task.criteria.lexical_resource || { band: overall, justification: 'Auto-filled from overall score.' };
+        task.criteria.grammatical_range_and_accuracy = task.criteria.grammatical_range_and_accuracy || { band: overall, justification: 'Auto-filled from overall score.' };
+      };
+
+      ensureCriteria(structured.task1 || (structured.task1 = {}), 'task1');
+      ensureCriteria(structured.task2 || (structured.task2 = {}), 'task2');
+
+      const isValidBand = (n: any) => typeof n === 'number' && n >= 0 && n <= 9 && (n * 2) % 1 === 0;
+      const getTaskBands = (task: any, type: 'task1' | 'task2') => {
+        const c = task?.criteria || {};
+        const b1 = type === 'task1' ? c?.task_achievement?.band : c?.task_response?.band;
+        const b2 = c?.coherence_and_cohesion?.band;
+        const b3 = c?.lexical_resource?.band;
+        const b4 = c?.grammatical_range_and_accuracy?.band;
+        return [b1, b2, b3, b4];
+      };
+
+      const bandsMissingOrAutoFilled = (task: any, type: 'task1' | 'task2', overall: number) => {
+        const c = task?.criteria || {};
+        const justs = [
+          type === 'task1' ? c?.task_achievement?.justification : c?.task_response?.justification,
+          c?.coherence_and_cohesion?.justification,
+          c?.lexical_resource?.justification,
+          c?.grammatical_range_and_accuracy?.justification,
+        ];
+        const bands = getTaskBands(task, type);
+        const incomplete = bands.some((b) => typeof b !== 'number');
+        const allEqualOverall = bands.every((b) => typeof b === 'number' && b === overall);
+        const autoFilled = justs.every((j) => typeof j === 'string' && j.includes('Auto-filled'));
+        return incomplete || allEqualOverall || autoFilled;
+      };
+
+      const maybeRescore = async () => {
+        const overall = typeof structured?.overall?.band === 'number' ? structured.overall.band : 6.5;
+        const needsTask1 = bandsMissingOrAutoFilled(structured.task1, 'task1', overall);
+        const needsTask2 = bandsMissingOrAutoFilled(structured.task2, 'task2', overall);
+        if (!needsTask1 && !needsTask2) return;
+
+        const scoringPrompt = `Return ONLY JSON with numeric bands (.0 or .5). No explanations.\nSchema:\n{\n  "task1": {"task_achievement": 0.0, "coherence_and_cohesion": 0.0, "lexical_resource": 0.0, "grammatical_range_and_accuracy": 0.0},\n  "task2": {"task_response": 0.0, "coherence_and_cohesion": 0.0, "lexical_resource": 0.0, "grammatical_range_and_accuracy": 0.0}\n}\nRules: Use official IELTS descriptors.\nTask 1: ${task1Answer}\nTask 2: ${task2Answer}`;
+
+        const tryRescore = async (): Promise<any | null> => {
+          try {
+            if (geminiApiKey) {
+              const scoreResp = await callGemini(scoringPrompt, geminiApiKey);
+              const scoreText = scoreResp.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+              return JSON.parse((scoreText.match(/\{[\s\S]*\}/) || [scoreText])[0]);
+            }
+          } catch (e) {
+            console.log('⚠️ Rescore via Gemini failed:', (e as any)?.message);
+          }
+          try {
+            const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+            if (deepseekKey) {
+              const ds = await callDeepSeek(scoringPrompt, deepseekKey);
+              const text = ds.choices?.[0]?.message?.content ?? '';
+              return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
+            }
+          } catch (e2) {
+            console.log('⚠️ Rescore via DeepSeek failed:', (e2 as any)?.message);
+          }
+          try {
+            if (openaiApiKey) {
+              const oa = await callOpenAI(`You must return ONLY JSON in the schema above. ${scoringPrompt}`, openaiApiKey);
+              const text = oa.choices?.[0]?.message?.content ?? '';
+              return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
+            }
+          } catch (e3) {
+            console.log('❌ Rescore via OpenAI failed:', (e3 as any)?.message);
+          }
+          return null;
+        };
+
+        const parsed = await tryRescore();
+        if (parsed) {
+          if (needsTask1 && parsed?.task1) {
+            structured.task1.criteria.task_achievement.band = parsed.task1.task_achievement ?? structured.task1.criteria.task_achievement.band;
+            structured.task1.criteria.coherence_and_cohesion.band = parsed.task1.coherence_and_cohesion ?? structured.task1.criteria.coherence_and_cohesion.band;
+            structured.task1.criteria.lexical_resource.band = parsed.task1.lexical_resource ?? structured.task1.criteria.lexical_resource.band;
+            structured.task1.criteria.grammatical_range_and_accuracy.band = parsed.task1.grammatical_range_and_accuracy ?? structured.task1.criteria.grammatical_range_and_accuracy.band;
+            structured.task1.criteria.task_achievement.justification = structured.task1.criteria.task_achievement.justification || 'Rescored numerically.';
+            structured.task1.criteria.coherence_and_cohesion.justification = structured.task1.criteria.coherence_and_cohesion.justification || 'Rescored numerically.';
+            structured.task1.criteria.lexical_resource.justification = structured.task1.criteria.lexical_resource.justification || 'Rescored numerically.';
+            structured.task1.criteria.grammatical_range_and_accuracy.justification = structured.task1.criteria.grammatical_range_and_accuracy.justification || 'Rescored numerically.';
+          }
+          if (needsTask2 && parsed?.task2) {
+            structured.task2.criteria.task_response.band = parsed.task2.task_response ?? structured.task2.criteria.task_response.band;
+            structured.task2.criteria.coherence_and_cohesion.band = parsed.task2.coherence_and_cohesion ?? structured.task2.criteria.coherence_and_cohesion.band;
+            structured.task2.criteria.lexical_resource.band = parsed.task2.lexical_resource ?? structured.task2.criteria.lexical_resource.band;
+            structured.task2.criteria.grammatical_range_and_accuracy.band = parsed.task2.grammatical_range_and_accuracy ?? structured.task2.criteria.grammatical_range_and_accuracy.band;
+            structured.task2.criteria.task_response.justification = structured.task2.criteria.task_response.justification || 'Rescored numerically.';
+            structured.task2.criteria.coherence_and_cohesion.justification = structured.task2.criteria.coherence_and_cohesion.justification || 'Rescored numerically.';
+            structured.task2.criteria.lexical_resource.justification = structured.task2.criteria.lexical_resource.justification || 'Rescored numerically.';
+            structured.task2.criteria.grammatical_range_and_accuracy.justification = structured.task2.criteria.grammatical_range_and_accuracy.justification || 'Rescored numerically.';
+          }
+
+          // Recalculate per-task and overall if not provided
+          const t1 = getTaskBands(structured.task1, 'task1').filter((b) => typeof b === 'number') as number[];
+          const t2 = getTaskBands(structured.task2, 'task2').filter((b) => typeof b === 'number') as number[];
+          if (t1.length === 4) {
+            structured.task1.overall_band = roundIELTS((t1[0] + t1[1] + t1[2] + t1[3]) / 4);
+          }
+          if (t2.length === 4) {
+            structured.task2.overall_band = roundIELTS((t2[0] + t2[1] + t2[2] + t2[3]) / 4);
+          }
+          if (typeof structured.task1?.overall_band === 'number' && typeof structured.task2?.overall_band === 'number') {
+            const overallWeighted = roundIELTS((structured.task1.overall_band + 2 * structured.task2.overall_band) / 3);
+            structured.overall = structured.overall || {};
+            structured.overall.band = overallWeighted;
+            structured.overall.calculation = 'Weighted average (Task 1 x1, Task 2 x2)';
+          }
+        }
+      };
+
+      await maybeRescore();
+
       // Ensure task1 feedback structure exists
       if (!structured.task1?.feedback) {
         structured.task1 = structured.task1 || {};

@@ -28,6 +28,7 @@ interface WritingComparisonViewProps {
     corrected_spans?: ComparisonSpan[];
   }>;
   title: string;
+  loading?: boolean;
 }
 
 const spanClass = (status: ComparisonSpan["status"], side: "original" | "improved") => {
@@ -53,6 +54,53 @@ const processTextForComparison = (
     explanation?: string;
   }>
 ) => {
+  // Helper: very simple word-diff to highlight only changed words
+  const diffToSpans = (orig: string, imp: string): { origSpans: ComparisonSpan[]; impSpans: ComparisonSpan[] } => {
+    const o = orig.split(/\s+/);
+    const p = imp.split(/\s+/);
+    const n = o.length; const m = p.length;
+    const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) {
+      for (let j = m - 1; j >= 0; j--) {
+        dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    // Reconstruct LCS path
+    const keepO: boolean[] = Array(n).fill(false);
+    const keepP: boolean[] = Array(m).fill(false);
+    let i = 0, j = 0;
+    while (i < n && j < m) {
+      if (o[i] === p[j]) { keepO[i] = true; keepP[j] = true; i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++;
+    }
+    const origSpans: ComparisonSpan[] = [];
+    const impSpans: ComparisonSpan[] = [];
+    const pushChunk = (arr: ComparisonSpan[], text: string, status: ComparisonSpan["status"]) => {
+      if (text.length === 0) return;
+      const t = text.replace(/\s+/g, ' ').trim();
+      if (!t) return;
+      arr.push({ text: t + ' ', status });
+    };
+    // Build spans for original
+    let buf = ''; let cur: ComparisonSpan["status"] = 'neutral';
+    for (let k = 0; k < n; k++) {
+      const nextStatus: ComparisonSpan["status"] = keepO[k] ? 'neutral' : 'error';
+      if (k === 0) { cur = nextStatus; }
+      if (nextStatus !== cur) { pushChunk(origSpans, buf, cur); buf = ''; cur = nextStatus; }
+      buf += (buf ? ' ' : '') + o[k];
+    }
+    pushChunk(origSpans, buf, cur);
+    // Build spans for improved
+    buf = ''; cur = 'neutral';
+    for (let k = 0; k < m; k++) {
+      const nextStatus: ComparisonSpan["status"] = keepP[k] ? 'neutral' : 'improvement';
+      if (k === 0) { cur = nextStatus; }
+      if (nextStatus !== cur) { pushChunk(impSpans, buf, cur); buf = ''; cur = nextStatus; }
+      buf += (buf ? ' ' : '') + p[k];
+    }
+    pushChunk(impSpans, buf, cur);
+    return { origSpans: origSpans.length ? origSpans : [{ text: orig, status: 'neutral' }], impSpans: impSpans.length ? impSpans : [{ text: imp, status: 'neutral' }] };
+  };
   // Split text into sentences for processing
   const sentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const sentenceComparisons = [];
@@ -73,9 +121,14 @@ const processTextForComparison = (
         // Find sentence that contains this quote
         const matchingSentence = sentences.find(s => s.includes(quote));
         if (matchingSentence) {
+          const originalSentence = matchingSentence.trim() + ".";
+          const improvedSentence = matchingSentence.replace(quote, improved).trim() + ".";
+          const d = diffToSpans(originalSentence, improvedSentence);
           sentenceComparisons.push({
-            original: matchingSentence.trim() + ".",
-            improved: matchingSentence.replace(quote, improved).trim() + ".",
+            original: originalSentence,
+            improved: improvedSentence,
+            original_spans: d.origSpans,
+            corrected_spans: d.impSpans,
             issue: suggestion.issue || "Enhancement suggestion",
             explanation: suggestion.explanation
           });
@@ -179,7 +232,8 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
   originalSpans: providedOriginalSpans,
   correctedSpans: providedCorrectedSpans,
   sentenceComparisons: providedSentenceComparisons,
-  title
+  title,
+  loading
 }) => {
   const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
   
@@ -207,8 +261,54 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
     return processTextForComparison(originalText, improvementSuggestions);
   })();
 
+  // Build sentence view from whole view if missing
+  const buildSentencesFromWhole = (): any[] => {
+    const improvedWhole = improvedSpans.map(s => s.text).join("").trim();
+    const origSentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => s.trim() + ".");
+    const impSentences = improvedWhole.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => s.trim() + ".");
+    const pairs = Math.min(origSentences.length, impSentences.length);
+    const built: any[] = [];
+    for (let k = 0; k < pairs; k++) {
+      const a = origSentences[k];
+      const b = impSentences[k];
+      // quick diff (same logic as in processTextForComparison, inlined)
+      const oa = a.split(/\s+/), pb = b.split(/\s+/);
+      const n = oa.length, m = pb.length;
+      const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = oa[i] === pb[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
+      let i = 0, j = 0; while (i < n && j < m) { if (oa[i] === pb[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+      const orig: ComparisonSpan[] = [], imp: ComparisonSpan[] = [];
+      const push = (arr: ComparisonSpan[], text: string, status: ComparisonSpan["status"]) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
+      let buf = '', cur: ComparisonSpan["status"] = 'neutral';
+      for (let t = 0; t < n; t++) { const ns: ComparisonSpan["status"] = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(orig, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + oa[t]; }
+      push(orig, buf, cur);
+      buf = ''; cur = 'neutral';
+      for (let t = 0; t < m; t++) { const ns: ComparisonSpan["status"] = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(imp, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + pb[t]; }
+      push(imp, buf, cur);
+      built.push({ original: a, improved: b, original_spans: orig, corrected_spans: imp });
+    }
+    return built;
+  };
+
+  const effectiveSentences = (providedSentenceComparisons && providedSentenceComparisons.length > 0)
+    ? providedSentenceComparisons
+    : (sentences.length > 0 ? sentences : buildSentencesFromWhole());
+
   if (!originalText.trim()) {
     return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="mt-6">
+        <div className="animate-pulse h-6 w-48 bg-surface-3 rounded mb-4" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="h-40 bg-surface-3 rounded border border-border" />
+          <div className="h-40 bg-surface-3 rounded border border-border" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -250,12 +350,27 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm leading-relaxed">
-                {originalSpans.map((span, i) => (
-                  <span key={`original-${i}`} className={spanClass(span.status, "original")}>
-                    {span.text}
-                  </span>
-                ))}
+              <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                {effectiveSentences.length > 0 ? (
+                  effectiveSentences.map((s: any, i: number) => (
+                    <p key={`whole-orig-${i}`} className="mb-3">
+                      {(s.original_spans && s.original_spans.length
+                        ? s.original_spans
+                        : [{ text: s.original || "", status: "neutral" }]
+                      ).map((span: any, spanI: number) => (
+                        <span key={`whole-orig-span-${i}-${spanI}`} className={spanClass(span.status, "original")}>
+                          {span.text}
+                        </span>
+                      ))}
+                    </p>
+                  ))
+                ) : (
+                  originalSpans.map((span, i) => (
+                    <span key={`original-${i}`} className={spanClass(span.status, "original")}>
+                      {span.text}
+                    </span>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -271,34 +386,45 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm leading-relaxed">
-                {improvedSpans.map((span, i) => (
-                  <span key={`improved-${i}`} className={spanClass(span.status, "improved")}>
-                    {span.text}
-                  </span>
-                ))}
+              <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                {effectiveSentences.length > 0 ? (
+                  effectiveSentences.map((s: any, i: number) => (
+                    <p key={`whole-imp-${i}`} className="mb-3">
+                      {(s.corrected_spans && s.corrected_spans.length
+                        ? s.corrected_spans
+                        : [{ text: s.improved || "", status: "neutral" }]
+                      ).map((span: any, spanI: number) => (
+                        <span key={`whole-imp-span-${i}-${spanI}`} className={spanClass(span.status, "improved")}>
+                          {span.text}
+                        </span>
+                      ))}
+                    </p>
+                  ))
+                ) : (
+                  improvedSpans.map((span, i) => (
+                    <span key={`improved-${i}`} className={spanClass(span.status, "improved")}>
+                      {span.text}
+                    </span>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       ) : (
         <div className="space-y-4">
-          {sentences.length > 0 ? (
-            sentences.map((sentence, i) => (
+          {effectiveSentences.length > 0 ? (
+            effectiveSentences.map((sentence, i) => (
               <Card key={i} className="border border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-text-primary">
-                    {sentence.issue || `Sentence ${i + 1}`}
-                  </CardTitle>
-                </CardHeader>
+                {/* Header removed per request: no "Sentence 1" labels */}
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <p className="text-xs uppercase tracking-wide text-text-tertiary">Original</p>
                       <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-                        <div className="text-sm leading-relaxed">
+                        <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                           {sentence.original_spans ? (
-                            sentence.original_spans.map((span, spanI) => (
+                            sentence.original_spans.map((span: any, spanI: number) => (
                               <span key={`orig-${spanI}`} className={spanClass(span.status, "original")}>
                                 {span.text}
                               </span>
@@ -312,9 +438,9 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
                     <div className="space-y-2">
                       <p className="text-xs uppercase tracking-wide text-text-tertiary">Improved</p>
                       <div className="p-3 bg-brand-green/5 border border-brand-green/20 rounded-lg">
-                        <div className="text-sm leading-relaxed">
+                        <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                           {sentence.corrected_spans ? (
-                            sentence.corrected_spans.map((span, spanI) => (
+                            sentence.corrected_spans.map((span: any, spanI: number) => (
                               <span key={`corr-${spanI}`} className={spanClass(span.status, "improved")}>
                                 {span.text}
                               </span>

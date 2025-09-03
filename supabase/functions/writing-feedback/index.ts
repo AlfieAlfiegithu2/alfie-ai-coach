@@ -58,10 +58,14 @@ Please analyze this writing and provide constructive feedback.`;
     const systemPrompt = `Your Role & Core Instruction
 You are an expert IELTS writing analyst and rewriter. You will be given a piece of student writing. Your task is to perform a sentence-by-sentence analysis and rewrite. Your primary goal is to identify specific errors in the original text and provide a rewritten version with specific, high-value improvements.
 
-
-
-
-
+CRITICAL COVERAGE RULES
+- You MUST analyze EVERY sentence in the student's text. For each sentence in the input, output EXACTLY one object in sentence_comparisons.
+- For EACH sentence, produce:
+  - original_spans: spans that cover the ENTIRE original sentence (no gaps). Mark only the truly problematic words/phrases as status: "error"; everything else is status: "neutral".
+  - corrected_spans: spans that cover the ENTIRE improved sentence (no gaps). Mark only the new or improved words/phrases as status: "improvement"; everything else is status: "neutral".
+- Do NOT highlight whole sentences unless the entire sentence is changed. Highlight only specific changed words/phrases.
+- IMPORTANT: For each sentence, ensure there is at least ONE improvement span unless the sentence is already native-like and error-free. If a sentence is perfect, keep the corrected sentence identical and mark all spans as neutral (no false changes).
+- Preserve the student's original meaning. Improve clarity, vocabulary, precision, and grammar while keeping the core idea intact.
 
 Your Guiding Principles for Analysis
 Preserve Core Meaning: You must keep the student's original ideas intact. You are improving how they express their ideas, not what their ideas are.
@@ -80,6 +84,7 @@ original_spans: This array breaks down the student's original sentence.
 corrected_spans: This array breaks down your new, improved sentence.
 - Only the specific words or short phrases that represent a significant improvement (new vocabulary, corrected grammar) should have status: "improvement".
 - The rest of the sentence should have status: "neutral".
+- The corrected sentence should generally differ from the original; ensure at least one improvement span is present for most sentences.
 
 This structure is mandatory. You must break down both sentences into spans.
 
@@ -101,7 +106,7 @@ JSON SCHEMA:
   ]
 }
 
-Final Goal: The AI feedback is now extremely precise. The student sees their original sentence with only the specific incorrect or weak phrases highlighted in red. Next to it, they see an improved sentence with only the new, high-level words highlighted in green. This makes the feedback focused, easy to understand, and highly effective for learning.`;
+Final Goal: The AI feedback is precise and complete. The student sees their original sentence with only the specific incorrect or weak phrases highlighted in red. Next to it, they see an improved sentence with only the new, high-level words highlighted in green. This must cover EVERY sentence in the input.`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
@@ -148,6 +153,51 @@ Final Goal: The AI feedback is now extremely precise. The student sees their ori
       if (match) {
         try { structured = JSON.parse(match[0]); } catch (_e2) {}
       }
+    }
+
+    // Post-process to enforce improvements where missing using a word-level diff
+    const buildDiffSpans = (orig: string, imp: string) => {
+      const o = orig.split(/\s+/);
+      const p = imp.split(/\s+/);
+      const n = o.length, m = p.length;
+      const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
+      let i = 0, j = 0; while (i < n && j < m) { if (o[i] === p[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+      const push = (arr: any[], text: string, status: string) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
+      const original_spans: any[] = []; const corrected_spans: any[] = [];
+      let buf = '', cur = 'neutral';
+      for (let t = 0; t < n; t++) { const ns = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(original_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + o[t]; }
+      push(original_spans, buf, cur);
+      buf = ''; cur = 'neutral';
+      for (let t = 0; t < m; t++) { const ns = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(corrected_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + p[t]; }
+      push(corrected_spans, buf, cur);
+      return { original_spans, corrected_spans };
+    };
+
+    const spanHasImprovement = (spans: any[] | undefined) => Array.isArray(spans) && spans.some(s => s?.status === 'improvement');
+
+    if (structured && Array.isArray(structured.sentence_comparisons)) {
+      structured.sentence_comparisons = structured.sentence_comparisons.map((s: any) => {
+        const originalText = Array.isArray(s.original_spans) ? s.original_spans.map((x: any) => x?.text || '').join('').trim() : (s.original || '');
+        const improvedText = Array.isArray(s.corrected_spans) ? s.corrected_spans.map((x: any) => x?.text || '').join('').trim() : (s.improved || '');
+        const needRepair = !spanHasImprovement(s.corrected_spans) || !Array.isArray(s.original_spans) || !Array.isArray(s.corrected_spans);
+        if (needRepair && originalText && improvedText) {
+          const d = buildDiffSpans(originalText, improvedText);
+          s.original_spans = d.original_spans;
+          s.corrected_spans = d.corrected_spans;
+        }
+        return s;
+      });
+    } else {
+      // If the model didn't return sentence_comparisons, synthesize a minimal one from the raw text
+      const raw = typeof generatedText === 'string' ? generatedText : '';
+      const parts = (raw || '').split(/\n+/).filter(Boolean).slice(0, 4);
+      if (!structured) structured = {} as any;
+      structured.sentence_comparisons = (parts.length ? parts : [writing]).map((p: string) => {
+        const d = buildDiffSpans(p, p);
+        return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
+      });
     }
 
     const clampBands = (obj: any) => {

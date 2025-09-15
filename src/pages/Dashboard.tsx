@@ -265,7 +265,7 @@ const Dashboard = () => {
     if (percentage >= 20) return "1.5";
     return "1.0";
   };
-  if (loading || !imageLoaded) {
+  if (loading) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
       </div>;
@@ -321,6 +321,41 @@ const Dashboard = () => {
                 </div>
               </button>
             </ProfilePhotoSelector>
+
+            {/* Reset Results Button */}
+            <Button
+              onClick={async () => {
+                if (!user) return;
+                const confirmed = window.confirm('This will permanently delete all your saved test results (writing + overall). Continue?');
+                if (!confirmed) return;
+                try {
+                  // Delete detailed writing results first (FKs may refer to test_results)
+                  const { error: wErr } = await supabase.from('writing_test_results').delete().eq('user_id', user.id);
+                  if (wErr) console.warn('writing_test_results delete warning', wErr);
+
+                  // Delete other skill-specific tables if present (best-effort)
+                  try { await (supabase as any).from('speaking_test_results').delete().eq('user_id', user.id); } catch {}
+                  try { await (supabase as any).from('reading_results').delete().eq('user_id', user.id); } catch {}
+                  try { await (supabase as any).from('listening_results').delete().eq('user_id', user.id); } catch {}
+
+                  const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
+                  if (tErr) throw tErr;
+                  // Immediately clear local state for instant UI feedback
+                  setTestResults([]);
+                  setUserStats({ totalTests: 0, avgScore: 0, recentImprovement: 0, weeklyProgress: 0 });
+                  toast({ title: 'Results reset', description: 'All your saved results have been removed.' });
+                  setRefreshKey(prev => prev + 1);
+                } catch (e: any) {
+                  console.error('Failed to reset results', e);
+                  toast({ title: 'Error', description: 'Failed to reset results. Please try again.', variant: 'destructive' });
+                }
+              }}
+              variant="ghost"
+              size="sm"
+              className="hidden lg:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700"
+            >
+              Reset Results
+            </Button>
           </div>
         </header>
 
@@ -382,7 +417,7 @@ const Dashboard = () => {
               </div>
 
               {/* Test Results Chart */}
-              <TestResultsChart selectedSkill={selectedSkill} selectedTestType={selectedTestType} />
+              <TestResultsChart key={refreshKey} selectedSkill={selectedSkill} selectedTestType={selectedTestType} />
               
               {/* Countdown Timer */}
               <CountdownTimer targetDate={userPreferences?.target_deadline || null} />

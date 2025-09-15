@@ -9,10 +9,12 @@ import LightRays from "@/components/animations/LightRays";
 import AnnotatedWritingText from "@/components/AnnotatedWritingText";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const IELTSWritingResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const {
     testName,
@@ -64,10 +66,91 @@ const IELTSWritingResults = () => {
     fetchModelAnswers();
   }, [testId]);
 
-  if (!feedback) {
-    navigate('/dashboard');
-    return null;
-  }
+  // Fallback loader: if opened without navigation state, fetch latest writing result
+  const [fallback, setFallback] = useState<{
+    feedback?: string;
+    structured?: any;
+    task1Answer?: string;
+    task2Answer?: string;
+    task1Data?: any;
+    task2Data?: any;
+    testName?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const loadLatest = async () => {
+      if (feedback || !user) return;
+      try {
+        const { data: tests } = await supabase
+          .from('test_results')
+          .select('*')
+          .eq('user_id', user.id)
+          .ilike('test_type', '%writing%')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const latest = tests?.[0];
+        if (!latest) return;
+
+        const { data: writingRows } = await supabase
+          .from('writing_test_results')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('test_result_id', latest.id)
+          .order('task_number');
+        const t1 = writingRows?.find(r => r.task_number === 1);
+        const t2 = writingRows?.find(r => r.task_number === 2);
+
+        const toNum = (n: any) => typeof n === 'number' ? n : Number(n);
+        const safe = (n: any, d = 6.5) => Number.isFinite(toNum(n)) ? toNum(n) : d;
+
+        const t1c: any = {
+          task_achievement: { band: safe(t1?.band_scores?.task_achievement) },
+          coherence_and_cohesion: { band: safe(t1?.band_scores?.coherence_and_cohesion) },
+          lexical_resource: { band: safe(t1?.band_scores?.lexical_resource) },
+          grammatical_range_and_accuracy: { band: safe(t1?.band_scores?.grammatical_range_and_accuracy) },
+        };
+        const t2c: any = {
+          task_response: { band: safe(t2?.band_scores?.task_response) },
+          coherence_and_cohesion: { band: safe(t2?.band_scores?.coherence_and_cohesion) },
+          lexical_resource: { band: safe(t2?.band_scores?.lexical_resource) },
+          grammatical_range_and_accuracy: { band: safe(t2?.band_scores?.grammatical_range_and_accuracy) },
+        };
+        const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
+        const t1Overall = Math.round(avg(Object.values(t1c).map((x: any) => x.band)) * 2) / 2;
+        const t2Overall = Math.round(avg(Object.values(t2c).map((x: any) => x.band)) * 2) / 2;
+        const overall = Math.round(((t1Overall + 2 * t2Overall) / 3) * 2) / 2;
+
+        const structuredLatest = {
+          task1: { criteria: t1c, overall_band: t1Overall },
+          task2: { criteria: t2c, overall_band: t2Overall },
+          overall: { band: overall }
+        };
+
+        const combinedFeedback = `TASK 1 ASSESSMENT\nBand Score: ${t1Overall}\n\n${t1?.detailed_feedback || ''}\n\nTASK 2 ASSESSMENT\nBand Score: ${t2Overall}\n\n${t2?.detailed_feedback || ''}\n\nOVERALL WRITING ASSESSMENT\nOverall Writing Band Score: ${overall}`;
+
+        setFallback({
+          feedback: combinedFeedback,
+          structured: structuredLatest,
+          task1Answer: t1?.user_response || '',
+          task2Answer: t2?.user_response || '',
+          task1Data: { title: 'Task 1', instructions: t1?.prompt_text || '' },
+          task2Data: { title: 'Task 2', instructions: t2?.prompt_text || '' },
+          testName: latest.test_type || 'IELTS Writing Test',
+        });
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadLatest();
+  }, [feedback, user]);
+
+  const effFeedback = feedback || fallback?.feedback;
+  const effStructured = structured || fallback?.structured;
+  const effTask1Answer = task1Answer || fallback?.task1Answer;
+  const effTask2Answer = task2Answer || fallback?.task2Answer;
+  const effTask1Data = task1Data || fallback?.task1Data;
+  const effTask2Data = task2Data || fallback?.task2Data;
+  const effTestName = testName || fallback?.testName;
 
   const roundToValidBandScore = (score: number) => {
     return Math.round(score * 2) / 2; // Rounds to nearest 0.5
@@ -215,7 +298,7 @@ const IELTSWritingResults = () => {
               </Button>
               <div>
                 <h1 className="text-heading-2">Test Results</h1>
-                <p className="text-caption">{testName}</p>
+                <p className="text-caption">{fallback?.testName || testName}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -261,7 +344,7 @@ const IELTSWritingResults = () => {
         </Card>
 
         {/* Overall Score */}
-        <Card className="card-elevated mb-6 overflow-hidden">
+        <Card className="bg-surface-1 rounded-3xl shadow-lg mb-6 overflow-hidden">
           <CardHeader className="text-center bg-gradient-to-r from-brand-blue/10 to-brand-purple/10 py-3">
             <div className="flex items-center justify-center gap-2">
               <div className="p-2 rounded-xl bg-brand-blue/10">
@@ -383,7 +466,7 @@ const IELTSWritingResults = () => {
 
         {/* Task 2 Question */}
         {task2Data && (
-          <Card className="mb-6 card-elevated border-2 border-brand-purple/20">
+          <Card className="mb-6 bg-surface-1 rounded-3xl shadow-lg border-2 border-brand-purple/20">
             <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-purple/5">
               <CardTitle className="flex items-center gap-2 text-brand-purple">
                 <div className="p-2 rounded-xl bg-brand-purple/10">
@@ -404,7 +487,7 @@ const IELTSWritingResults = () => {
         )}
 
         {/* Criteria Breakdown - Task 2 */}
-        <Card className="mb-8 card-elevated border-2 border-brand-purple/20">
+        <Card className="mb-8 bg-surface-1 rounded-3xl shadow-lg border-2 border-brand-purple/20">
           <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-purple/5">
             <CardTitle className="flex items-center gap-2 text-brand-purple">
               <div className="p-2 rounded-xl bg-brand-purple/10">
@@ -459,7 +542,7 @@ const IELTSWritingResults = () => {
         </Card>
 
         {/* AI Examiner Report */}
-        <Card className="mb-8 card-elevated border-2 border-brand-blue/20">
+        <Card className="mb-8 bg-surface-1 rounded-3xl shadow-lg border-2 border-brand-blue/20">
           <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
             <CardTitle className="flex items-center gap-2 text-brand-blue">
               <div className="p-2 rounded-xl bg-brand-blue/10">
@@ -475,7 +558,7 @@ const IELTSWritingResults = () => {
             <div 
               className="prose prose-lg max-w-none text-text-primary"
               dangerouslySetInnerHTML={{
-                __html: feedback
+                __html: (fallback?.feedback || feedback)
                   .replace(/^(TASK [12] ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-blue mt-8 mb-6 border-b-2 border-brand-blue/20 pb-3">$1</h2>')
                   .replace(/^(OVERALL WRITING ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-purple mt-8 mb-6 border-b-2 border-brand-purple/20 pb-3">$1</h2>')
                   .replace(/^(Task Achievement|Task Response|Coherence and Cohesion|Lexical Resource|Grammatical Range and Accuracy|Your Path to a Higher Score)$/gm, '<h3 class="text-xl font-semibold text-text-primary mt-6 mb-4 bg-surface-3 p-3 rounded-xl">$1</h3>')
@@ -517,7 +600,7 @@ const IELTSWritingResults = () => {
         {/* Model Answers Section */}
         {(modelAnswers.task1 || modelAnswers.task2) && (
           <div className="mb-8">
-            <Card className="border-2 border-brand-green/20 card-elevated">
+            <Card className="border-2 border-brand-green/20 bg-surface-1 rounded-3xl shadow-lg">
               <CardHeader className="bg-gradient-to-r from-brand-green/10 to-brand-blue/10">
                 <CardTitle className="flex items-center gap-2 text-brand-green">
                   <div className="p-2 rounded-xl bg-brand-green/10">

@@ -331,7 +331,16 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         .from('test_results')
         .insert({
           user_id: user?.id,
-          test_type: 'IELTS Writing',
+          // Use canonical key so dashboards pick it up consistently
+          test_type: 'writing',
+          // Persist a percentage for charts (band × 10)
+          score_percentage: Math.round(
+            (
+              (structured?.overall?.band ?? (
+                ((structured?.task1?.overall_band ?? 7.0) + 2 * (structured?.task2?.overall_band ?? 7.0)) / 3
+              )) * 10
+            )
+          ),
           time_taken: Math.floor(totalTimeSpent / 1000),
           completed_at: new Date().toISOString(),
           test_data: {
@@ -369,7 +378,13 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           prompt_text: task1?.instructions || task1?.title || '',
           user_response: task1Answer,
           word_count: task1WordCount,
-          band_scores: structured?.task1?.criteria || null,
+          // Store numeric bands for dashboard/history aggregation
+          band_scores: {
+            task_achievement: structured?.task1?.criteria?.task_achievement?.band ?? null,
+            coherence_and_cohesion: structured?.task1?.criteria?.coherence_and_cohesion?.band ?? null,
+            lexical_resource: structured?.task1?.criteria?.lexical_resource?.band ?? null,
+            grammatical_range_and_accuracy: structured?.task1?.criteria?.grammatical_range_and_accuracy?.band ?? null,
+          },
           detailed_feedback: structured?.task1?.feedback_markdown || '',
           improvement_suggestions: structured?.task1?.feedback?.improvements || []
         });
@@ -386,7 +401,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           prompt_text: task2?.instructions || task2?.title || '',
           user_response: task2Answer,
           word_count: task2WordCount,
-          band_scores: structured?.task2?.criteria || null,
+          band_scores: {
+            task_response: structured?.task2?.criteria?.task_response?.band ?? null,
+            coherence_and_cohesion: structured?.task2?.criteria?.coherence_and_cohesion?.band ?? null,
+            lexical_resource: structured?.task2?.criteria?.lexical_resource?.band ?? null,
+            grammatical_range_and_accuracy: structured?.task2?.criteria?.grammatical_range_and_accuracy?.band ?? null,
+          },
           detailed_feedback: structured?.task2?.feedback_markdown || '',
           improvement_suggestions: structured?.task2?.feedback?.improvements || []
         });

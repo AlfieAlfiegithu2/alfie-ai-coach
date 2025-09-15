@@ -416,6 +416,14 @@ const IELTSSpeakingTest = () => {
   const submitTest = async () => {
     try {
       const recordingEntries = Object.entries(recordings);
+      if (recordingEntries.length === 0) {
+        toast({
+          title: 'No recordings found',
+          description: 'Please record answers before submitting.',
+          variant: 'destructive'
+        });
+        return;
+      }
       const uploadPromises = recordingEntries.map(async ([key, blob]) => {
         const fileName = `speaking_${testData?.id}_${key}_${Date.now()}.webm`;
         const { data, error } = await supabase.storage
@@ -435,6 +443,10 @@ const IELTSSpeakingTest = () => {
       });
 
       const uploadedRecordings = await Promise.all(uploadPromises);
+      if (uploadedRecordings.length === 0) {
+        toast({ title: 'Upload error', description: 'No audio files were uploaded.', variant: 'destructive' });
+        return;
+      }
 
       // Save speaking test result with 30-day audio retention
       try {
@@ -449,8 +461,8 @@ const IELTSSpeakingTest = () => {
               user_id: user.id,
               test_type: 'speaking',
               total_questions: uploadedRecordings.length,
-              correct_answers: uploadedRecordings.length, // Speaking is subjectively scored
-              score_percentage: 75, // Placeholder
+              correct_answers: null,
+              score_percentage: 0, // scored later
               time_taken: 15 * 60, // Approximate speaking test duration
               audio_urls: audioUrls,
               audio_retention_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
@@ -493,9 +505,12 @@ const IELTSSpeakingTest = () => {
           }
 
           console.log('✅ Speaking test results saved successfully');
+          // Clear local recordings after successful save
+          setRecordings({});
         }
       } catch (saveError) {
         console.error('Error saving speaking results:', saveError);
+        toast({ title: 'Save error', description: 'Failed to save speaking results.', variant: 'destructive' });
       }
 
       // Navigate to results page with recordings data and test prompts for transcriptions

@@ -293,12 +293,14 @@ export default function IELTSWritingProResults() {
         task1Answer: task1Result?.user_response || '',
         task2Answer: task2Result?.user_response || '',
         task1Data: {
-          title: 'Task 1',
-          instructions: task1Result?.prompt_text || 'Task 1 Instructions'
+          title: testData?.task1Data?.title || 'Task 1',
+          instructions: task1Result?.prompt_text || testData?.task1Data?.instructions || 'Task 1 Instructions',
+          imageUrl: testData?.task1Data?.imageUrl || null,
+          imageContext: testData?.task1Data?.imageContext || null
         },
         task2Data: {
-          title: 'Task 2', 
-          instructions: task2Result?.prompt_text || 'Task 2 Instructions'
+          title: testData?.task2Data?.title || 'Task 2', 
+          instructions: task2Result?.prompt_text || testData?.task2Data?.instructions || 'Task 2 Instructions'
         }
       };
 
@@ -576,7 +578,7 @@ export default function IELTSWritingProResults() {
         : (NaN as unknown as number);
 
     return (
-      <Card className="card-elevated border-2 border-brand-blue/20 mb-8">
+      <Card className="bg-surface-1 border-2 border-brand-blue/20 rounded-3xl shadow-lg mb-8">
         <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
           <CardTitle className="text-heading-3 flex items-center justify-between">
             <span>{title}</span>
@@ -686,7 +688,7 @@ export default function IELTSWritingProResults() {
       </div>
 
       <div className="container mx-auto px-6 space-section">
-        <Card className="card-elevated mb-8 overflow-hidden">
+        <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8 overflow-hidden">
           <CardHeader className="text-center py-6">
             <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
           </CardHeader>
@@ -731,6 +733,27 @@ export default function IELTSWritingProResults() {
           computedOverall={t1OverallComputed}
           userAnswer={task1Answer}
         />
+        {(task1Data?.instructions || task1Data?.imageUrl) && (
+          <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8">
+            <CardHeader>
+              <CardTitle className="text-heading-4">Task 1 Prompt</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {task1Data?.imageUrl && (
+                  <div className="rounded-xl overflow-hidden border border-border bg-white p-2 flex items-center justify-center">
+                    <img src={task1Data.imageUrl} alt="Task 1 visual" className="max-h-64 object-contain" />
+                  </div>
+                )}
+                {task1Data?.instructions && (
+                  <div className="text-sm text-text-secondary bg-surface-3 p-4 rounded-lg border border-border whitespace-pre-wrap">
+                    {task1Data.instructions}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {/* Task 2 Section */}
         <TaskSection 
@@ -740,6 +763,18 @@ export default function IELTSWritingProResults() {
           computedOverall={t2OverallComputed}
           userAnswer={task2Answer}
         />
+        {task2Data?.instructions && (
+          <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8">
+            <CardHeader>
+              <CardTitle className="text-heading-4">Task 2 Prompt</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-text-secondary bg-surface-3 p-4 rounded-lg border border-border whitespace-pre-wrap">
+                {task2Data.instructions}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-center gap-4">
           <Button onClick={() => navigate("/ielts-portal")} className="btn-primary rounded-xl">Take Another Test</Button>

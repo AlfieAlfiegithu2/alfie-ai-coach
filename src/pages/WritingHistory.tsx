@@ -147,14 +147,14 @@ const WritingHistory = () => {
 
   const getTestDisplayName = (results: any[]): string => {
     if (!results || results.length === 0) return 'IELTS Writing Test';
-    
     const task1 = results.find(r => r.task_number === 1);
     const task2 = results.find(r => r.task_number === 2);
-    
-    const task1Title = task1?.prompt_text?.substring(0, 30) + '...' || 'Task 1';
-    const task2Title = task2?.prompt_text?.substring(0, 30) + '...' || 'Task 2';
-    
-    return `${task1Title} | ${task2Title}`;
+    const prefix = 'IELTS Writing';
+    const t1 = task1?.prompt_text ? task1.prompt_text.replace(/\s+/g, ' ').trim() : '';
+    const t2 = task2?.prompt_text ? task2.prompt_text.replace(/\s+/g, ' ').trim() : '';
+    const t1Short = t1 ? `Task 1: ${t1.substring(0, 40)}${t1.length > 40 ? '…' : ''}` : 'Task 1';
+    const t2Short = t2 ? `Task 2: ${t2.substring(0, 40)}${t2.length > 40 ? '…' : ''}` : 'Task 2';
+    return `${prefix} • ${t1Short} | ${t2Short}`;
   };
 
   const handleViewSubmission = async (submission: WritingSubmission) => {

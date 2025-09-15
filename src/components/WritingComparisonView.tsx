@@ -45,6 +45,37 @@ const spanClass = (status: ComparisonSpan["status"], side: "original" | "improve
   return "text-text-primary";
 };
 
+// Keep highlights light: only emphasize key words (not whole phrases)
+const STOPWORDS = new Set([
+  'the','a','an','and','or','but','if','then','so','because','as','of','to','in','on','at','by','for','with','about','into','over','after','before','from','is','are','was','were','be','been','being','it','its','this','that','these','those','their','there','here','also','very','much','more','most','many','few','some','any','than','both','either','neither','not','no','do','does','did','can','could','should','would','may','might','will','shall','i','you','he','she','we','they','one','two','three'
+]);
+
+const isKeyword = (word: string) => {
+  const w = word.toLowerCase().replace(/[^a-z'-]/g, '');
+  if (!w) return false;
+  if (STOPWORDS.has(w)) return false;
+  return w.length >= 4; // focus on meaningful tokens
+};
+
+const refineSpansForKeywords = (spans: ComparisonSpan[], side: 'original' | 'improved'): ComparisonSpan[] => {
+  const needsRefine = (s: ComparisonSpan) => (s.status === 'improvement' || s.status === 'error') && s.text.trim().split(/\s+/).length >= 4;
+  const out: ComparisonSpan[] = [];
+  for (const s of spans) {
+    if (!needsRefine(s)) { out.push(s); continue; }
+    // Split while keeping non-word separators
+    const parts = s.text.split(/(\b[^\s]+\b)/g).filter(p => p.length > 0);
+    for (const p of parts) {
+      const isWord = /\b[^\s]+\b/.test(p);
+      if (isWord && isKeyword(p)) {
+        out.push({ text: p, status: s.status });
+      } else {
+        out.push({ text: p, status: 'neutral' });
+      }
+    }
+  }
+  return out;
+};
+
 const processTextForComparison = (
   originalText: string,
   suggestions?: Array<{
@@ -261,6 +292,15 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
     return processTextForComparison(originalText, improvementSuggestions);
   })();
 
+  // Make highlights less dense: only keywords
+  const refinedOriginalSpans = refineSpansForKeywords(originalSpans, 'original');
+  const refinedImprovedSpans = refineSpansForKeywords(improvedSpans, 'improved');
+  const refinedSentences = (sentences || []).map((s: any) => ({
+    ...s,
+    original_spans: s.original_spans ? refineSpansForKeywords(s.original_spans, 'original') : s.original_spans,
+    corrected_spans: s.corrected_spans ? refineSpansForKeywords(s.corrected_spans, 'improved') : s.corrected_spans,
+  }));
+
   // Build sentence view from whole view if missing
   const buildSentencesFromWhole = (): any[] => {
     const improvedWhole = improvedSpans.map(s => s.text).join("").trim();
@@ -292,8 +332,25 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
   };
 
   const effectiveSentences = (providedSentenceComparisons && providedSentenceComparisons.length > 0)
-    ? providedSentenceComparisons
-    : (sentences.length > 0 ? sentences : buildSentencesFromWhole());
+    ? providedSentenceComparisons.map((s: any) => ({
+        ...s,
+        original_spans: s.original_spans ? refineSpansForKeywords(s.original_spans, 'original') : s.original_spans,
+        corrected_spans: s.corrected_spans ? refineSpansForKeywords(s.corrected_spans, 'improved') : s.corrected_spans,
+      }))
+    : (refinedSentences.length > 0 ? refinedSentences : buildSentencesFromWhole());
+
+  // Group sentences into intro / body / conclusion for clearer spacing
+  const groupSentences = (items: any[]) => {
+    const n = items.length;
+    if (n <= 3) return [items];
+    const introCount = Math.min(2, Math.max(1, Math.floor(n * 0.2)));
+    const conclCount = Math.min(2, Math.max(1, Math.floor(n * 0.2)));
+    const intro = items.slice(0, introCount);
+    const body = items.slice(introCount, Math.max(introCount, n - conclCount));
+    const concl = items.slice(Math.max(introCount, n - conclCount));
+    return [intro, body, concl].filter(g => g.length > 0);
+  };
+  const grouped = groupSentences(effectiveSentences);
 
   if (!originalText.trim()) {
     return null;
@@ -339,7 +396,7 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
 
       {viewMode === "whole" ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card className="border border-destructive/20">
+          <Card className="border border-destructive/20 bg-surface-1 rounded-3xl shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="w-3 h-3 bg-destructive/20 rounded-full"></span>
@@ -350,32 +407,28 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                {effectiveSentences.length > 0 ? (
-                  effectiveSentences.map((s: any, i: number) => (
-                    <p key={`whole-orig-${i}`} className="mb-3">
-                      {(s.original_spans && s.original_spans.length
-                        ? s.original_spans
-                        : [{ text: s.original || "", status: "neutral" }]
-                      ).map((span: any, spanI: number) => (
-                        <span key={`whole-orig-span-${i}-${spanI}`} className={spanClass(span.status, "original")}>
-                          {span.text}
-                        </span>
-                      ))}
-                    </p>
-                  ))
-                ) : (
-                  originalSpans.map((span, i) => (
-                    <span key={`original-${i}`} className={spanClass(span.status, "original")}>
-                      {span.text}
-                    </span>
-                  ))
-                )}
+              <div className="text-sm whitespace-pre-wrap break-words space-y-6">
+                {grouped.map((group, gi) => (
+                  <div key={`orig-group-${gi}`} className="space-y-2">
+                    {group.map((s: any, i: number) => (
+                      <p key={`whole-orig-${gi}-${i}`} className="leading-relaxed">
+                        {(s.original_spans && s.original_spans.length
+                          ? s.original_spans
+                          : [{ text: s.original || "", status: "neutral" }]
+                        ).map((span: any, spanI: number) => (
+                          <span key={`whole-orig-span-${gi}-${i}-${spanI}`} className={spanClass(span.status, "original")}>
+                            {span.text}
+                          </span>
+                        ))}
+                      </p>
+                    ))}
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-brand-green/20">
+          <Card className="border border-brand-green/20 bg-surface-1 rounded-3xl shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="w-3 h-3 bg-brand-green/20 rounded-full"></span>
@@ -386,27 +439,23 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                {effectiveSentences.length > 0 ? (
-                  effectiveSentences.map((s: any, i: number) => (
-                    <p key={`whole-imp-${i}`} className="mb-3">
-                      {(s.corrected_spans && s.corrected_spans.length
-                        ? s.corrected_spans
-                        : [{ text: s.improved || "", status: "neutral" }]
-                      ).map((span: any, spanI: number) => (
-                        <span key={`whole-imp-span-${i}-${spanI}`} className={spanClass(span.status, "improved")}>
-                          {span.text}
-                        </span>
-                      ))}
-                    </p>
-                  ))
-                ) : (
-                  improvedSpans.map((span, i) => (
-                    <span key={`improved-${i}`} className={spanClass(span.status, "improved")}>
-                      {span.text}
-                    </span>
-                  ))
-                )}
+              <div className="text-sm whitespace-pre-wrap break-words space-y-6">
+                {grouped.map((group, gi) => (
+                  <div key={`imp-group-${gi}`} className="space-y-2">
+                    {group.map((s: any, i: number) => (
+                      <p key={`whole-imp-${gi}-${i}`} className="leading-relaxed">
+                        {(s.corrected_spans && s.corrected_spans.length
+                          ? s.corrected_spans
+                          : [{ text: s.improved || "", status: "neutral" }]
+                        ).map((span: any, spanI: number) => (
+                          <span key={`whole-imp-span-${gi}-${i}-${spanI}`} className={spanClass(span.status, "improved")}>
+                            {span.text}
+                          </span>
+                        ))}
+                      </p>
+                    ))}
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -420,7 +469,6 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-wide text-text-tertiary">Original</p>
                       <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
                         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                           {sentence.original_spans ? (
@@ -436,7 +484,6 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-wide text-text-tertiary">Improved</p>
                       <div className="p-3 bg-brand-green/5 border border-brand-green/20 rounded-lg">
                         <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                           {sentence.corrected_spans ? (

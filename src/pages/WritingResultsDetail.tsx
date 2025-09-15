@@ -55,7 +55,7 @@ const WritingResultsDetail = () => {
       const { data: writingResults, error: writingError } = await supabase
         .from('writing_test_results')
         .select('*')
-        .or(`test_result_id.eq.${submissionId},created_at.gte.${submissionId}`)
+        .eq('test_result_id', submissionId)
         .eq('user_id', user?.id)
         .order('task_number');
 

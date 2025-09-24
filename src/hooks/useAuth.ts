@@ -119,7 +119,8 @@ export function useAuth(): UseAuthReturn {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
+      const redirectUrl = `${siteUrl}/`;
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -149,7 +150,7 @@ export function useAuth(): UseAuthReturn {
 
   const signInWithGoogle = async () => {
     try {
-      const redirectTo = `${window.location.origin}`; // keep within allowed Site URL
+      const redirectTo = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || `${window.location.origin}`; // prefer configured site URL
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -194,8 +195,9 @@ export function useAuth(): UseAuthReturn {
 
   const resetPassword = async (email: string) => {
     try {
+      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: `${siteUrl}/reset-password`
       });
 
       if (error) {

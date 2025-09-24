@@ -50,6 +50,11 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   }, [user]);
 
   useEffect(() => {
+    // Only enable translation selection for authenticated users
+    if (!user) {
+      setShowHelper(false);
+      return;
+    }
     const handleMouseUp = (e: MouseEvent) => {
       // Clear any existing timeout
       if (selectionTimeoutRef.current) {
@@ -116,7 +121,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
         clearTimeout(selectionTimeoutRef.current);
       }
     };
-  }, [isSaving]); // Add isSaving as dependency
+  }, [isSaving, user]); // Add user dependency
 
   // Function to determine if content is selectable for translation
   const isSelectableContent = (element: Element): boolean => {

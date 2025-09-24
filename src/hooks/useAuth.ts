@@ -195,6 +195,18 @@ export function useAuth(): UseAuthReturn {
 
   const resetPassword = async (email: string) => {
     try {
+      // First check if the email exists to avoid confusing success messages
+      const { data: userByEmail, error: lookupError } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('id', '%')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (lookupError || !userByEmail) {
+        return { error: 'No account found for this email.' };
+      }
+
       const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${siteUrl}/reset-password`
@@ -205,8 +217,8 @@ export function useAuth(): UseAuthReturn {
       }
 
       toast({
-        title: "Password reset email sent",
-        description: "Please check your email for password reset instructions."
+        title: "If the account exists, check your email",
+        description: "We've sent password reset instructions to the address provided if it's associated with an account."
       });
 
       return {};

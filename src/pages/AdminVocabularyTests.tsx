@@ -59,6 +59,19 @@ const AdminVocabularyTests = () => {
       <section className="space-y-4">
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">Download Sample CSV (Vocabulary Book)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button variant="secondary" asChild>
+              <a href="/examples/vocabulary-sample.csv" download>
+                Download Example CSV
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">+ Add New Vocabulary Test</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-2 items-center">

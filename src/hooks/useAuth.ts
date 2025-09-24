@@ -149,15 +149,20 @@ export function useAuth(): UseAuthReturn {
 
   const signInWithGoogle = async () => {
     try {
+      const redirectTo = `${window.location.origin}`; // keep within allowed Site URL
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo,
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'online'
+          }
         }
       });
 
       if (error) {
-        return { error: error.message };
+      return { error: error.message };
       }
 
       return {};

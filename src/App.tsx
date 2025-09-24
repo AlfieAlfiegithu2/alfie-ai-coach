@@ -64,6 +64,7 @@ import AdminSkillsPractice from "./pages/AdminSkillsPractice";
 import AdminSkillManager from "./pages/AdminSkillManager";
 import SkillPractice from "./pages/SkillPractice";
 import AdminVocabularyTests from "./pages/AdminVocabularyTests";
+import AdminVocabBook from "./pages/AdminVocabBook";
 import AdminVocabularyTestDetail from "./pages/AdminVocabularyTestDetail";
 import VocabularyQuiz from "./pages/VocabularyQuiz";
 import AdminGrammarTests from "./pages/AdminGrammarTests";
@@ -81,6 +82,7 @@ import AdminListeningForDetailsTests from "./pages/AdminListeningForDetailsTests
 import AdminListeningForDetailsTestDetail from "./pages/AdminListeningForDetailsTestDetail";
 import ListeningQuiz from "./pages/ListeningQuiz";
 import VocabularyMap from "./pages/VocabularyMap";
+import VocabularyBook from "./pages/VocabularyBook";
 import VocabularyMapView from "./components/VocabularyMapView";
 import WritingHistory from "./pages/WritingHistory";
 import WritingResultsDetail from "./pages/WritingResultsDetail";
@@ -156,6 +158,7 @@ const App = () => {
             {/* Skills Practice Admin */}
             <Route path="/admin/skills" element={<AdminSkillsPractice />} />
             <Route path="/admin/skills/vocabulary/tests" element={<AdminVocabularyTests />} />
+            <Route path="/admin/vocab-book" element={<AdminVocabBook />} />
             <Route path="/admin/skills/vocabulary/tests/:id" element={<AdminVocabularyTestDetail />} />
             {/* aliases for direct access */}
             <Route path="/admin/skills/vocabulary-builder" element={<AdminVocabularyTests />} />
@@ -230,6 +233,7 @@ const App = () => {
             <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />
             <Route path="/skills/vocabulary-builder" element={<VocabularyMapView />} />
+            <Route path="/vocabulary/book" element={<VocabularyBook />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />
             <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />

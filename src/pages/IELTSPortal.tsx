@@ -44,19 +44,35 @@ const IELTSPortal = () => {
   const [skillBands, setSkillBands] = useState<Record<string, string>>({});
   const [skillProgress, setSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
+  const [vocabProgress, setVocabProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   useEffect(() => {
     loadAvailableTests();
 
     if (user) {
       loadSkillBands();
       loadSkillProgress();
-      loadIeltsSkillProgress();
     }
 
     // Preload the background image
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png';
+  }, [user]);
+
+  // Recompute IELTS skill progress whenever tests load or user changes
+  useEffect(() => {
+    if (user) {
+      loadIeltsSkillProgress();
+    }
+  }, [user, availableTests]);
+
+  useEffect(() => {
+    if (user) {
+      loadVocabularyProgress();
+    } else {
+      // load totals even if not logged in
+      loadVocabularyProgress();
+    }
   }, [user]);
 
   const loadAvailableTests = async () => {
@@ -94,26 +110,46 @@ const IELTSPortal = () => {
         throw speakingError;
       }
 
-      // Group questions by test and check module availability
+      // Seed module availability from tests table metadata and names
       const testModules = new Map();
+      testsData?.forEach(t => {
+        if (!testModules.has(t.id)) testModules.set(t.id, new Set());
+        const mod = (t.module || '').toLowerCase();
+        if (['reading','listening','writing'].includes(mod)) {
+          testModules.get(t.id).add(mod);
+        }
+        const name = (t.test_name || '').toLowerCase();
+        if (name.includes('reading')) testModules.get(t.id).add('reading');
+        if (name.includes('listening')) testModules.get(t.id).add('listening');
+        if (name.includes('writing')) testModules.get(t.id).add('writing');
+      });
+
+      // Augment with question-based detection (only listening/reading to avoid false writing positives)
       questionsData?.forEach(q => {
-        if (q.test_id) {
-          if (!testModules.has(q.test_id)) {
-            testModules.set(q.test_id, new Set());
-          }
-          // Determine module based on question structure - this is a better approach
-          if (q.part_number <= 3) {
-            testModules.get(q.test_id).add('reading');
-          } else {
-            testModules.get(q.test_id).add('writing');
-          }
+        if (!q.test_id) return;
+        if (!testModules.has(q.test_id)) {
+          testModules.set(q.test_id, new Set());
+        }
+
+        // Heuristics:
+        // - Listening: has audio
+        // - Reading: has choices/options
+        if (q.audio_url) {
+          testModules.get(q.test_id).add('listening');
+        }
+        if (q.choices) {
+          testModules.get(q.test_id).add('reading');
         }
       });
 
       // Add speaking tests
       speakingData?.forEach(sp => {
         // Find corresponding test by name
-        const matchingTest = testsData?.find(t => t.test_name === sp.test_number?.toString() || t.test_name.includes(sp.test_number?.toString() || '') || sp.cambridge_book?.includes(t.test_name));
+        const matchingTest = testsData?.find(t =>
+          t.test_name === (sp.test_number?.toString() || '') ||
+          t.test_name.includes(sp.test_number?.toString() || '') ||
+          (!!sp.cambridge_book && (t.test_name === sp.cambridge_book || t.test_name.includes(sp.cambridge_book)))
+        );
         if (matchingTest) {
           if (!testModules.has(matchingTest.id)) {
             testModules.set(matchingTest.id, new Set());
@@ -144,6 +180,35 @@ const IELTSPortal = () => {
       setAvailableTests([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadVocabularyProgress = async () => {
+    try {
+      // Total tests for vocabulary builder
+      const { data: tests } = await supabase
+        .from('skill_tests')
+        .select('id')
+        .eq('skill_slug', 'vocabulary-builder');
+
+      const total = tests?.length || 0;
+
+      let completed = 0;
+      if (user && total > 0) {
+        // Completed defined by user_test_progress.status === 'completed' for those tests
+        const testIds = (tests || []).map(t => t.id);
+        const { data: progress } = await supabase
+          .from('user_test_progress')
+          .select('test_id,status,completed_score')
+          .eq('user_id', user.id);
+        const setIds = new Set(testIds);
+        completed = (progress || []).filter(p => setIds.has(p.test_id) && p.status === 'completed').length;
+      }
+
+      setVocabProgress({ completed: Math.min(completed, total), total });
+    } catch (e) {
+      console.error('Error loading vocabulary progress', e);
+      setVocabProgress({ completed: 0, total: 0 });
     }
   };
 
@@ -233,23 +298,47 @@ const IELTSPortal = () => {
     if (!user) return;
     try {
       const progress: Record<string, { completed: number; total: number }> = {};
-      
-      for (const skill of IELTS_SKILLS) {
-        // Get completed tests for this IELTS skill
-        const { data: completedTests } = await supabase
-          .from('test_results')
-          .select('id')
-          .eq('user_id', user.id)
-          .ilike('test_type', `%${skill.id}%`);
 
-        // For total, we can estimate or use a fixed number
-        // You might want to adjust this based on actual available content
-        const completed = completedTests?.length || 0;
-        const total = 20; // Assuming 20 total levels/tests per skill
-        
-        progress[skill.id] = { completed, total };
+      // Determine actual totals per skill from availableTests' modules
+      const totalsBySkill: Record<string, number> = { reading: 0, listening: 0, writing: 0, speaking: 0 };
+      for (const t of availableTests) {
+        const modules: string[] = t.modules || [];
+        // Count each test once per skill; writing must be explicitly present to count
+        if (modules.includes('reading')) totalsBySkill.reading += 1;
+        if (modules.includes('listening')) totalsBySkill.listening += 1;
+        if (modules.includes('writing')) totalsBySkill.writing += 1;
+        if (modules.includes('speaking')) totalsBySkill.speaking += 1;
       }
-      
+
+      // Fetch completed distinct submissions per skill from result tables
+      const [writingRes, readingRes, listeningRes, speakingRes] = await Promise.all([
+        supabase.from('writing_test_results').select('test_result_id, user_id').eq('user_id', user.id),
+        supabase.from('reading_test_results').select('test_result_id, user_id').eq('user_id', user.id),
+        supabase.from('listening_test_results').select('test_result_id, user_id').eq('user_id', user.id),
+        supabase.from('speaking_test_results').select('test_result_id, user_id').eq('user_id', user.id)
+      ]);
+
+      const distinctCount = (rows?: { test_result_id: string | null }[]) => {
+        const s = new Set<string>();
+        rows?.forEach(r => { if (r.test_result_id) s.add(r.test_result_id); });
+        return s.size;
+      };
+
+      const writingCompleted = distinctCount(writingRes.data as any);
+      const readingCompleted = distinctCount(readingRes.data as any);
+      const listeningCompleted = distinctCount(listeningRes.data as any);
+      const speakingCompleted = distinctCount(speakingRes.data as any);
+
+      const clamp = (completed: number, total: number) => {
+        const safeTotal = Math.max(0, total);
+        return { completed: Math.min(completed, safeTotal), total: safeTotal };
+      };
+
+      progress['writing'] = clamp(writingCompleted, totalsBySkill['writing'] || 0);
+      progress['reading'] = clamp(readingCompleted, totalsBySkill['reading'] || 0);
+      progress['listening'] = clamp(listeningCompleted, totalsBySkill['listening'] || 0);
+      progress['speaking'] = clamp(speakingCompleted, totalsBySkill['speaking'] || 0);
+
       setIeltsSkillProgress(progress);
     } catch (error) {
       console.error('Error loading IELTS skill progress:', error);
@@ -294,6 +383,24 @@ const IELTSPortal = () => {
             {/* Skill Practice Quick Links */}
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
+              {/* Vocabulary Book quick card (separate from Skills' builder) */}
+              <div className="mb-4">
+                <Card className="bg-card/80 backdrop-blur-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-base md:text-lg font-semibold text-foreground">Vocabulary Book</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          ({vocabProgress.completed}/{vocabProgress.total} Completed)
+                        </div>
+                      </div>
+                      <Button size="sm" onClick={() => navigate('/vocabulary/book')}>
+                        Start Memorizing
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];

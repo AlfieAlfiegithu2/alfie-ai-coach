@@ -484,6 +484,7 @@ export type Database = {
           audio_url: string
           created_at: string
           id: string
+          accent: string | null
           order_index: number
           reference_text: string
           test_id: string
@@ -493,6 +494,7 @@ export type Database = {
           audio_url: string
           created_at?: string
           id?: string
+          accent?: string | null
           order_index?: number
           reference_text: string
           test_id: string
@@ -502,6 +504,7 @@ export type Database = {
           audio_url?: string
           created_at?: string
           id?: string
+          accent?: string | null
           order_index?: number
           reference_text?: string
           test_id?: string

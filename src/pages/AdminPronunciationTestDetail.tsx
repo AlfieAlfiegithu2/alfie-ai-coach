@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
-interface Item { id: string; reference_text: string; audio_url: string; order_index: number }
+interface Item { id: string; reference_text: string; audio_url: string; order_index: number; accent?: 'american' | 'british' }
 
 const AdminPronunciationTestDetail = () => {
   const { id } = useParams();
@@ -31,7 +31,7 @@ const AdminPronunciationTestDetail = () => {
     if (!id) return;
     const { data: it, error: ie } = await (supabase as any)
       .from("pronunciation_items")
-      .select("id,reference_text,audio_url,order_index")
+      .select("id,reference_text,audio_url,order_index,accent")
       .eq("test_id", id)
       .order("order_index", { ascending: true })
       .order("created_at", { ascending: true });
@@ -57,6 +57,8 @@ const AdminPronunciationTestDetail = () => {
     document.title = "Pronunciation Items | Admin";
     load();
   }, [id]);
+
+  const [accent, setAccent] = useState<'american' | 'british'>('american');
 
   const addItem = async () => {
     if (!id) return;
@@ -85,7 +87,7 @@ const AdminPronunciationTestDetail = () => {
       const nextOrder = items.length + 1;
       const { error: insErr } = await (supabase as any)
         .from('pronunciation_items')
-        .insert({ test_id: id, reference_text: form.reference_text.trim(), audio_url, order_index: nextOrder });
+        .insert({ test_id: id, reference_text: form.reference_text.trim(), audio_url, order_index: nextOrder, accent });
       if (insErr) throw insErr;
 
       setForm({ reference_text: "" });
@@ -165,6 +167,17 @@ const AdminPronunciationTestDetail = () => {
               <Label>Voice-over file (mp3, wav, m4a...)</Label>
               <Input ref={fileInputRef} type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)} disabled={hasReachedLimit || saving} />
             </div>
+            <div className="space-y-2">
+              <Label>Accent</Label>
+              <select className="border rounded-md px-2 py-2"
+                value={accent}
+                onChange={(e) => setAccent((e.target.value as 'american' | 'british'))}
+                disabled={hasReachedLimit || saving}
+              >
+                <option value="american">American</option>
+                <option value="british">British</option>
+              </select>
+            </div>
             <div className="flex gap-2">
               <Button onClick={addItem} disabled={saving || hasReachedLimit}>{saving ? 'Uploading...' : 'Add Item'}</Button>
               <Button variant="secondary" onClick={() => { setForm({ reference_text: "" }); setAudioFile(null); if (fileInputRef.current) fileInputRef.current.value=''; }}>Clear</Button>
@@ -187,6 +200,7 @@ const AdminPronunciationTestDetail = () => {
                   <div className="space-y-2">
                     <p className="text-sm whitespace-pre-wrap">{it.reference_text}</p>
                     <audio src={it.audio_url} controls preload="none" />
+                    <p className="text-xs text-muted-foreground">Accent: {it.accent || 'american'}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="destructive" onClick={() => deleteItem(it.id)}>Delete</Button>

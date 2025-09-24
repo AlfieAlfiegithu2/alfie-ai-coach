@@ -11,6 +11,7 @@ export interface PronItem {
   reference_text: string;
   audio_url: string;
   order_index: number;
+  accent?: 'american' | 'british';
 }
 
 interface Props {
@@ -128,6 +129,7 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
         body: {
           audio: base64,
           referenceText: item.reference_text,
+          accent: item.accent || 'american',
         },
       });
       if (fnErr) throw fnErr;

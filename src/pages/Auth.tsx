@@ -86,7 +86,7 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  placeholder="okie@dokie.com"
+                  placeholder="continuewith@google.com"
                             />
                           </div>
               <div>
@@ -114,7 +114,7 @@ const Auth = () => {
                 disabled={submitting}
                 className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-xl shadow-sm hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all"
                         >
-                {submitting ? 'Signing in…' : 'Please let me in'}
+                {submitting ? 'Signing in…' : 'I am born ready!'}
                         </button>
               <div className="relative flex items-center my-2">
                 <div className="flex-1 border-t border-border" />

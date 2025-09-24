@@ -40,16 +40,9 @@ const Signup = () => {
     }
     try {
       setVerifying(true);
-      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${siteUrl}/signup` }
-      });
-      if (error) {
-        setVerifyMsg(error.message);
-      } else {
-        setVerifyMsg('Verification email sent. Please check your inbox.');
-      }
+      const { data, error } = await supabase.functions.invoke('send-magic-link', { body: { email } });
+      if (error || !data?.success) setVerifyMsg(error?.message || data?.error || 'Failed to send email');
+      else setVerifyMsg('Verification email sent. Please check your inbox.');
     } finally {
       setVerifying(false);
     }

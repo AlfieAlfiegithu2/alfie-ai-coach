@@ -83,6 +83,7 @@ import AdminListeningForDetailsTestDetail from "./pages/AdminListeningForDetails
 import ListeningQuiz from "./pages/ListeningQuiz";
 import VocabularyMap from "./pages/VocabularyMap";
 import VocabularyBook from "./pages/VocabularyBook";
+import Signup from "./pages/Signup";
 import VocabularyMapView from "./components/VocabularyMapView";
 import WritingHistory from "./pages/WritingHistory";
 import WritingResultsDetail from "./pages/WritingResultsDetail";
@@ -234,6 +235,7 @@ const App = () => {
             <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />
             <Route path="/skills/vocabulary-builder" element={<VocabularyMapView />} />
             <Route path="/vocabulary/book" element={<VocabularyBook />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />
             <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />

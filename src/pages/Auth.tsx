@@ -129,7 +129,9 @@ const Auth = () => {
                             >
                 <GoogleIcon /> Continue with Google
                             </button>
-              {/* Removed contact admin line as requested */}
+              <div className="text-center text-sm text-muted-foreground mt-2">
+                New to English Aidol? <a className="text-primary font-medium hover:underline" href="/signup">Create account</a>
+              </div>
             </form>
           ) : (
             <form onSubmit={onReset} className="space-y-5">

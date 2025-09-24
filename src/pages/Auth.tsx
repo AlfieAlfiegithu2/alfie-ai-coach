@@ -73,7 +73,7 @@ const Auth = () => {
           {/* Single panel (centered) */}
           <div className="p-6 md:p-8 bg-card">
             {/* Minimal section heading */}
-            <h3 className="text-xl font-semibold text-foreground text-center mb-4">Sign in</h3>
+            <h3 className="text-xl font-semibold text-foreground text-center mb-4">Are we ready?</h3>
 
             {!resetMode ? (
             <form onSubmit={onSubmit} className="space-y-5">
@@ -114,7 +114,7 @@ const Auth = () => {
                 disabled={submitting}
                 className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-xl shadow-sm hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all"
                         >
-                {submitting ? 'Signing in…' : 'Sign in'}
+                {submitting ? 'Signing in…' : 'Please let me in'}
                         </button>
               <div className="relative flex items-center my-2">
                 <div className="flex-1 border-t border-border" />

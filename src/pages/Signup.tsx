@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Signup = () => {
   const { user, signUp, loading } = useAuth();
@@ -10,6 +11,8 @@ const Signup = () => {
   const [confirm, setConfirm] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
 
   if (user && !loading) return <Navigate to="/dashboard" replace />;
 
@@ -24,6 +27,32 @@ const Signup = () => {
     const { error } = await signUp(email, password, fullName);
     if (error) setError(error);
     setSubmitting(false);
+  };
+
+  const isEmailValid = (value: string) => /\S+@\S+\.\S+/.test(value);
+
+  const verifyEmail = async () => {
+    setVerifyMsg(null);
+    setError(null);
+    if (!isEmailValid(email)) {
+      setVerifyMsg('Please enter a valid email address.');
+      return;
+    }
+    try {
+      setVerifying(true);
+      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${siteUrl}/signup` }
+      });
+      if (error) {
+        setVerifyMsg(error.message);
+      } else {
+        setVerifyMsg('Verification email sent. Please check your inbox.');
+      }
+    } finally {
+      setVerifying(false);
+    }
   };
 
   if (loading) {
@@ -49,7 +78,7 @@ const Signup = () => {
 
             <form onSubmit={onSubmit} className="space-y-5">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-2">Full name</label>
+                <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-2">You can be creative here</label>
                 <input
                   id="name"
                   type="text"
@@ -62,15 +91,26 @@ const Signup = () => {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-2">Email address</label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  placeholder="okie@dokie.com"
-                />
+                <div className="flex gap-2">
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    placeholder="okie@dokie.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={verifyEmail}
+                    disabled={verifying || !email}
+                    className="px-4 rounded-xl border border-border bg-card text-foreground hover:bg-accent/40"
+                  >
+                    {verifying ? 'Sending…' : 'Verify'}
+                  </button>
+                </div>
+                {verifyMsg && <p className="mt-1 text-xs text-muted-foreground">{verifyMsg}</p>}
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-2">Password</label>

@@ -19,6 +19,7 @@ const Auth = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetMode, setResetMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (user && !loading) return <Navigate to="/dashboard" replace />;
 
@@ -91,16 +92,26 @@ const Auth = () => {
                           </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-2">Password</label>
-                            <input
-                  id="password"
-                  type="password"
-                              required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  placeholder="••••••••"
-                />
-                        </div>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all pr-12"
+                    placeholder="It's just better"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute inset-y-0 right-0 px-3 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
                         <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center text-muted-foreground cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 rounded mr-2 border-border text-primary focus:ring-primary/30" />

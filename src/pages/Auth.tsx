@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 // Inline Google brand icon (multi-color)
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -100,15 +101,15 @@ const Auth = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all pr-12"
-                    placeholder="It's just better"
+                    placeholder={showPassword ? "It's just better" : ''}
                   />
                   <button
                     type="button"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPassword((p) => !p)}
-                    className="absolute inset-y-0 right-0 px-3 text-xs text-muted-foreground hover:text-foreground"
+                    className="absolute inset-y-0 right-0 px-3 text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>

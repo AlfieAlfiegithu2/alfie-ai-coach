@@ -484,7 +484,6 @@ export type Database = {
           audio_url: string
           created_at: string
           id: string
-          accent: string | null
           order_index: number
           reference_text: string
           test_id: string
@@ -494,7 +493,6 @@ export type Database = {
           audio_url: string
           created_at?: string
           id?: string
-          accent?: string | null
           order_index?: number
           reference_text: string
           test_id: string
@@ -504,7 +502,6 @@ export type Database = {
           audio_url?: string
           created_at?: string
           id?: string
-          accent?: string | null
           order_index?: number
           reference_text?: string
           test_id?: string
@@ -1433,6 +1430,7 @@ export type Database = {
           part_of_speech: string | null
           translations: string[] | null
           user_id: string
+          vocabulary_word_id: string | null
           word: string
         }
         Insert: {
@@ -1441,6 +1439,7 @@ export type Database = {
           part_of_speech?: string | null
           translations?: string[] | null
           user_id: string
+          vocabulary_word_id?: string | null
           word: string
         }
         Update: {
@@ -1449,6 +1448,48 @@ export type Database = {
           part_of_speech?: string | null
           translations?: string[] | null
           user_id?: string
+          vocabulary_word_id?: string | null
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_vocabulary_vocabulary_word_id_fkey"
+            columns: ["vocabulary_word_id"]
+            isOneToOne: false
+            referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabulary_words: {
+        Row: {
+          created_at: string
+          id: string
+          language_code: string
+          translation: string
+          updated_at: string
+          usage_count: number
+          verified: boolean
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language_code: string
+          translation: string
+          updated_at?: string
+          usage_count?: number
+          verified?: boolean
+          word: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language_code?: string
+          translation?: string
+          updated_at?: string
+          usage_count?: number
+          verified?: boolean
           word?: string
         }
         Relationships: []

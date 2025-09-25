@@ -21,7 +21,7 @@ export default function VocabularyBook() {
     const load = async () => {
       setLoading(true);
       // Pull up to 5,000 entries for selected language
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("vocabulary_words")
         .select("id,word,language_code,translation")
         .eq("language_code", lang)
@@ -40,7 +40,7 @@ export default function VocabularyBook() {
 
   const saveWord = async (row: VocabRow) => {
     if (!user) return;
-    await supabase.from("user_vocabulary").upsert({ user_id: user.id, vocabulary_word_id: row.id }, { onConflict: "user_id,vocabulary_word_id" });
+    await (supabase as any).from("user_vocabulary").upsert({ user_id: user.id, vocabulary_word_id: row.id }, { onConflict: "user_id,vocabulary_word_id" });
   };
 
   const progress = 0; // future: compute from user_vocabulary count

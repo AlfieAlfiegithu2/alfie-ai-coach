@@ -94,7 +94,7 @@ const IELTSPortal = () => {
       const {
         data: questionsData,
         error: questionsError
-      } = await supabase.from('questions').select('test_id, part_number, id');
+      } = await supabase.from('questions').select('test_id, part_number, id, audio_url, choices');
       if (questionsError) {
         console.error('Error fetching questions:', questionsError);
         throw questionsError;

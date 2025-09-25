@@ -322,7 +322,7 @@ export default function IELTSWritingProResults() {
   useEffect(() => {
     const generateIfMissing = async () => {
       if (!resultsData || !user) return;
-      const submissionId = (location.state as any)?.submissionId || resultsData.submissionId;
+      const submissionId = (location.state as any)?.submissionId || (resultsData as any)?.submissionId;
       const current = resultsData.structured;
       if (!current) return;
 
@@ -368,7 +368,7 @@ export default function IELTSWritingProResults() {
               await supabase.from('writing_test_results')
                 .update({
                   detailed_feedback: updates.task1.feedback_markdown || '',
-                  improvement_suggestions: updates.task1.feedback?.improvements || []
+                  improvement_suggestions: (updates.task1.feedback?.improvements || []).filter((imp: any) => typeof imp === 'string')
                 })
                 .eq('test_result_id', submissionId)
                 .eq('user_id', user.id)
@@ -398,7 +398,7 @@ export default function IELTSWritingProResults() {
               await supabase.from('writing_test_results')
                 .update({
                   detailed_feedback: updates.task2.feedback_markdown || '',
-                  improvement_suggestions: updates.task2.feedback?.improvements || []
+                  improvement_suggestions: (updates.task2.feedback?.improvements || []).filter((imp: any) => typeof imp === 'string')
                 })
                 .eq('test_result_id', submissionId)
                 .eq('user_id', user.id)

@@ -24,7 +24,7 @@ export default function AdminVocabBook() {
   };
 
   const loadStats = async () => {
-    const { count } = await supabase.from("vocabulary_words").select("id", { count: "exact", head: true });
+    const { count } = await (supabase as any).from("vocabulary_words").select("id", { count: "exact", head: true });
     setStats({ total: count || 0 });
   };
 

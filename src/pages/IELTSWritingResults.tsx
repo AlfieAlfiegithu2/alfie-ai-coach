@@ -103,17 +103,19 @@ const IELTSWritingResults = () => {
         const toNum = (n: any) => typeof n === 'number' ? n : Number(n);
         const safe = (n: any, d = 6.5) => Number.isFinite(toNum(n)) ? toNum(n) : d;
 
+        const bandScores = t1?.band_scores as any;
         const t1c: any = {
-          task_achievement: { band: safe(t1?.band_scores?.task_achievement) },
-          coherence_and_cohesion: { band: safe(t1?.band_scores?.coherence_and_cohesion) },
-          lexical_resource: { band: safe(t1?.band_scores?.lexical_resource) },
-          grammatical_range_and_accuracy: { band: safe(t1?.band_scores?.grammatical_range_and_accuracy) },
+          task_achievement: { band: safe(bandScores?.task_achievement) },
+          coherence_and_cohesion: { band: safe(bandScores?.coherence_and_cohesion) },
+          lexical_resource: { band: safe(bandScores?.lexical_resource) },
+          grammatical_range_and_accuracy: { band: safe(bandScores?.grammatical_range_and_accuracy) },
         };
+        const t2BandScores = t2?.band_scores as any;
         const t2c: any = {
-          task_response: { band: safe(t2?.band_scores?.task_response) },
-          coherence_and_cohesion: { band: safe(t2?.band_scores?.coherence_and_cohesion) },
-          lexical_resource: { band: safe(t2?.band_scores?.lexical_resource) },
-          grammatical_range_and_accuracy: { band: safe(t2?.band_scores?.grammatical_range_and_accuracy) },
+          task_response: { band: safe(t2BandScores?.task_response) },
+          coherence_and_cohesion: { band: safe(t2BandScores?.coherence_and_cohesion) },
+          lexical_resource: { band: safe(t2BandScores?.lexical_resource) },
+          grammatical_range_and_accuracy: { band: safe(t2BandScores?.grammatical_range_and_accuracy) },
         };
         const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
         const t1Overall = Math.round(avg(Object.values(t1c).map((x: any) => x.band)) * 2) / 2;

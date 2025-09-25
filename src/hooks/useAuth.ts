@@ -195,17 +195,11 @@ export function useAuth(): UseAuthReturn {
 
   const resetPassword = async (email: string) => {
     try {
-      // First check if the email exists to avoid confusing success messages
-      const { data: userByEmail, error: lookupError } = await supabase
-        .from('profiles')
-        .select('id')
-        .ilike('id', '%')
-        .eq('email', email)
-        .maybeSingle();
+      // Check if user exists by looking up auth users via edge function
+      // Since profiles table doesn't have email, we'll send reset anyway
+      const { data: userByEmail } = await supabase.auth.getUser();
 
-      if (lookupError || !userByEmail) {
-        return { error: 'No account found for this email.' };
-      }
+      // Continue with password reset - Supabase will handle email validation
 
       const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {

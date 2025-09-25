@@ -73,7 +73,7 @@ const HeroIndex = () => {
   return <div className="min-h-screen relative overflow-hidden">
       {/* Background Image */}
       <div className="fixed inset-0 w-full h-full">
-        <img src="/lovable-uploads/c25cc620-ab6d-47a4-9dc6-32d1f6264773.png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/A_cozy_pastel-colored_digital_illustration_featur-1758809406800 (1).png" alt="Background" className="absolute inset-0 w-full h-full object-cover" />
       </div>
 
       {/* Background layers */}

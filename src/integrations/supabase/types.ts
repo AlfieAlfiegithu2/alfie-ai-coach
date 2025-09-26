@@ -1503,6 +1503,7 @@ export type Database = {
           id: string
           last_accessed: string | null
           question_prompt: string | null
+          user_id: string | null
           user_submission: string
         }
         Insert: {
@@ -1513,6 +1514,7 @@ export type Database = {
           id?: string
           last_accessed?: string | null
           question_prompt?: string | null
+          user_id?: string | null
           user_submission: string
         }
         Update: {
@@ -1523,6 +1525,7 @@ export type Database = {
           id?: string
           last_accessed?: string | null
           question_prompt?: string | null
+          user_id?: string | null
           user_submission?: string
         }
         Relationships: []

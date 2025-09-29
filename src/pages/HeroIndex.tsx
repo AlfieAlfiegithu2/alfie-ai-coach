@@ -184,7 +184,7 @@ const HeroIndex = () => {
 
       {/* Hero */}
       <section className="pt-32 pb-20 relative group">
-        <div className="-z-10 absolute top-0 right-0 bottom-0 left-0">
+        <div className="absolute inset-0 z-0 pointer-events-none">
           <img 
             className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100" 
             src="/rabbit-background.png" 
@@ -192,7 +192,7 @@ const HeroIndex = () => {
           />
         </div>
 
-        <div className="max-w-7xl mt-40 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-40">
+        <div className="relative z-10 max-w-7xl mt-40 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-40">
           <div className="max-w-3xl">
             <h1 className="sm:text-5xl md:text-7xl md:font-bold text-4xl font-semibold tracking-tight font-nunito mt-6">
               Master English with AI-Powered Learning

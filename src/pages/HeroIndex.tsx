@@ -110,7 +110,7 @@ const HeroIndex = () => {
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-semibold font-nunito">Alfie IELTS</span>
+                <span className="text-lg font-semibold font-nunito">English AIdol</span>
               </div>
 
               {/* Desktop Nav */}
@@ -188,7 +188,7 @@ const HeroIndex = () => {
           <img 
             className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100" 
             src="/Upscale_this_adorable_bunny_character_wearing_glas-1758810348175.png" 
-            alt="AI English Learning Platform" 
+            alt="English AIdol - AI English Learning Platform" 
           />
         </div>
 
@@ -453,12 +453,12 @@ const HeroIndex = () => {
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-semibold font-nunito">Alfie IELTS</span>
+                <span className="text-lg font-semibold font-nunito">English AIdol</span>
               </div>
               <p className="mt-3 text-sm text-black/70 font-nunito">AI-powered English learning platform for IELTS and General English mastery.</p>
               <div className="mt-4 flex items-center gap-3 text-sm text-black/70 font-nunito">
                 <Mail className="h-4 w-4" />
-                hello@alfieielts.com
+                hello@englishaidol.com
               </div>
               <div className="mt-2 flex items-center gap-3 text-sm text-black/70 font-nunito">
                 <Phone className="h-4 w-4" />
@@ -499,7 +499,7 @@ const HeroIndex = () => {
             </div>
           </div>
           <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 text-xs sm:flex-row border-black/10 text-black/60">
-            <p className="font-nunito">© 2024 Alfie IELTS. All rights reserved.</p>
+            <p className="font-nunito">© 2024 English AIdol. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <a className="hover:text-black font-nunito" href="/privacy">Privacy</a>
               <a className="hover:text-black font-nunito" href="/terms">Terms</a>

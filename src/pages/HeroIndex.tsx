@@ -187,7 +187,7 @@ const HeroIndex = () => {
         <div className="-z-10 absolute top-0 right-0 bottom-0 left-0">
           <img 
             className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100" 
-            src="/Upscale_this_adorable_bunny_character_wearing_glas-1758810348175.png" 
+            src="https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/social-images/social-1758811085448-Upscale_this_adorable_bunny_character_wearing_glas-1758810348175.png" 
             alt="English AIdol - AI English Learning Platform" 
           />
         </div>

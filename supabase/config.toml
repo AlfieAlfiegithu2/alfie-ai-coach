@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.add-to-word-book]
 verify_jwt = true
+
+[functions.translate-page]
+verify_jwt = false

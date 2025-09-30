@@ -449,6 +449,33 @@ export type Database = {
           },
         ]
       }
+      page_translations: {
+        Row: {
+          content: Json
+          created_at: string | null
+          id: string
+          language_code: string
+          page_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          id?: string
+          language_code: string
+          page_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          id?: string
+          language_code?: string
+          page_key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

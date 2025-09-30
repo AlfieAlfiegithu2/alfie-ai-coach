@@ -10,9 +10,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import LanguageSelector from "@/components/LanguageSelector";
+import { usePageTranslation, PageContent } from "@/hooks/usePageTranslation";
 const HeroIndex = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     toast
   } = useToast();
@@ -21,6 +22,80 @@ const HeroIndex = () => {
     loading
   } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Default English content
+  const defaultContent: PageContent = {
+    hero: {
+      title: "Master English with AI-Powered Learning",
+      subtitle: "Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English.",
+      startButton: "Start Your Journey",
+      exploreButton: "Explore Tests"
+    },
+    highlights: {
+      aiFeedback: {
+        title: "AI-Powered Feedback",
+        description: "Get instant, detailed analysis of your English skills with personalized improvement suggestions."
+      },
+      adaptive: {
+        title: "Adaptive Learning",
+        description: "Smart algorithms that adapt to your pace and focus on your weak areas for optimal progress."
+      },
+      proven: {
+        title: "Proven Results",
+        description: "95% success rate with students achieving their target scores faster than traditional methods."
+      },
+      community: {
+        title: "Expert Community",
+        description: "Connect with certified instructors and fellow learners for support and motivation."
+      }
+    },
+    programs: {
+      title: "Learning Programs",
+      subtitle: "Choose your path to English mastery with our comprehensive programs.",
+      viewProgress: "View Progress"
+    },
+    features: {
+      title: "AI-powered learning that adapts to you",
+      subtitle: "Our advanced AI technology creates personalized learning experiences that help you achieve your English goals faster and more effectively.",
+      askQuestion: "Ask a Question",
+      startLearning: "Start Learning"
+    }
+  };
+
+  const { content, isLoading: translationLoading } = usePageTranslation(
+    'hero-page',
+    defaultContent,
+    i18n.language
+  );
+  // Helper function to safely get string values
+  const getString = (path: string[]): string => {
+    let current: any = content;
+    for (const key of path) {
+      if (current && typeof current === 'object') {
+        current = current[key];
+      } else {
+        return '';
+      }
+    }
+    return typeof current === 'string' ? current : '';
+  };
+
+  const getDefault = (path: string[]): string => {
+    let current: any = defaultContent;
+    for (const key of path) {
+      if (current && typeof current === 'object') {
+        current = current[key];
+      } else {
+        return '';
+      }
+    }
+    return typeof current === 'string' ? current : '';
+  };
+
+  const getText = (path: string[]): string => {
+    return getString(path) || getDefault(path);
+  };
+
   const handleAuthAction = () => {
     if (loading) return;
     if (user) {
@@ -167,19 +242,19 @@ const HeroIndex = () => {
         <div className="relative z-10 max-w-7xl mt-40 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-40">
           <div className="max-w-3xl">
             <h1 className="sm:text-5xl md:text-7xl md:font-bold text-4xl font-semibold tracking-tight font-nunito mt-6">
-              Master English with AI-Powered Learning
+              {getText(['hero', 'title'])}
             </h1>
             <p className="sm:text-lg text-base text-black/80 font-nunito mt-4">
-              Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English.
+              {getText(['hero', 'subtitle'])}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                 <Hand className="h-4 w-4" />
-                Start Your Journey
+                {getText(['hero', 'startButton'])}
               </button>
               <button onClick={() => navigate('/ielts-portal')} className="inline-flex items-center gap-2 transition hover:bg-black/5 text-sm font-medium text-black font-nunito bg-black/0 border-black/10 border rounded-xl pt-3 pr-5 pb-3 pl-5 backdrop-blur-xl">
                 <Compass className="h-4 w-4" />
-                Explore Tests
+                {getText(['hero', 'exploreButton'])}
               </button>
             </div>
           </div>
@@ -194,29 +269,45 @@ const HeroIndex = () => {
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
                 <Brain className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">AI-Powered Feedback</h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">Get instant, detailed analysis of your English skills with personalized improvement suggestions.</p>
+              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
+                {getText(['highlights', 'aiFeedback', 'title'])}
+              </h3>
+              <p className="mt-2 text-sm text-black/70 font-nunito">
+                {getText(['highlights', 'aiFeedback', 'description'])}
+              </p>
             </div>
             <div className="rounded-2xl border p-6 border-black/10 bg-black/5">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
                 <Target className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">Adaptive Learning</h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">Smart algorithms that adapt to your pace and focus on your weak areas for optimal progress.</p>
+              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
+                {getText(['highlights', 'adaptive', 'title'])}
+              </h3>
+              <p className="mt-2 text-sm text-black/70 font-nunito">
+                {getText(['highlights', 'adaptive', 'description'])}
+              </p>
             </div>
             <div className="rounded-2xl border p-6 border-black/10 bg-black/5">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
                 <Shield className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">Proven Results</h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">95% success rate with students achieving their target scores faster than traditional methods.</p>
+              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
+                {getText(['highlights', 'proven', 'title'])}
+              </h3>
+              <p className="mt-2 text-sm text-black/70 font-nunito">
+                {getText(['highlights', 'proven', 'description'])}
+              </p>
             </div>
             <div className="rounded-2xl border p-6 border-black/10 bg-black/5">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
                 <HeartHandshake className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">Expert Community</h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">Connect with certified instructors and fellow learners for support and motivation.</p>
+              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
+                {getText(['highlights', 'community', 'title'])}
+              </h3>
+              <p className="mt-2 text-sm text-black/70 font-nunito">
+                {getText(['highlights', 'community', 'description'])}
+              </p>
             </div>
           </div>
         </div>
@@ -227,12 +318,16 @@ const HeroIndex = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between gap-6">
             <div>
-              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">Learning Programs</h2>
-              <p className="mt-2 text-sm text-black/70 font-nunito">Choose your path to English mastery with our comprehensive programs.</p>
+              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
+                {getText(['programs', 'title'])}
+              </h2>
+              <p className="mt-2 text-sm text-black/70 font-nunito">
+                {getText(['programs', 'subtitle'])}
+              </p>
             </div>
             <button onClick={() => navigate('/dashboard')} className="hidden sm:inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black hover:bg-black/5 font-nunito">
               <Map className="h-4 w-4" />
-              View Progress
+              {getText(['programs', 'viewProgress'])}
             </button>
           </div>
 
@@ -265,8 +360,12 @@ const HeroIndex = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div className="order-2 lg:order-1">
-              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">AI-powered learning that adapts to you</h2>
-              <p className="mt-3 text-sm text-black/70 font-nunito">Our advanced AI technology creates personalized learning experiences that help you achieve your English goals faster and more effectively.</p>
+              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
+                {getText(['features', 'title'])}
+              </h2>
+              <p className="mt-3 text-sm text-black/70 font-nunito">
+                {getText(['features', 'subtitle'])}
+              </p>
               <ul className="mt-6 grid gap-3 text-sm">
                 {features.map((feature, index) => <li key={index} className="inline-flex items-start gap-3 font-nunito">
                     <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-md bg-black text-neutral-100">
@@ -281,11 +380,11 @@ const HeroIndex = () => {
               <div className="mt-8 flex flex-wrap gap-3">
                 <button onClick={() => navigate('/contact')} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition border-black/10 bg-black/0 text-black hover:bg-black/5 font-nunito">
                   <MessageCircle className="h-4 w-4" />
-                  Ask a Question
+                  {getText(['features', 'askQuestion'])}
                 </button>
                 <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                   <DoorOpen className="h-4 w-4" />
-                  Start Learning
+                  {getText(['features', 'startLearning'])}
                 </button>
               </div>
             </div>

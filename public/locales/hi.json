@@ -1,0 +1,48 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "डैशबोर्ड",
+    "signIn": "साइन इन",
+    "startFreeTrial": "मुफ्त ट्रायल शुरू करें",
+    "continueLearning": "सीखना जारी रखें",
+    "language": "भाषा"
+  },
+  "hero": {
+    "title": "एआई के साथ अंग्रेजी में महारत हासिल करें",
+    "subtitle": "हर स्तर के लिए वैयक्तिकृत सीखना",
+    "cta": "अभी शुरू करें",
+    "features": {
+      "aiTutor": "एआई शिक्षक",
+      "practiceTests": "अभ्यास परीक्षण",
+      "progressTracking": "प्रगति ट्रैकिंग"
+    }
+  },
+  "auth": {
+    "signIn": "साइन इन",
+    "signUp": "साइन अप",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "rememberMe": "मुझे याद रखें",
+    "continueWithGoogle": "Google के साथ जारी रखें",
+    "createAccount": "खाता बनाएं",
+    "alreadyHaveAccount": "क्या आपके पास पहले से खाता है?"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "success": "सफलता",
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "delete": "मिटाएं",
+    "edit": "संपादित करें",
+    "back": "वापस",
+    "next": "अगला",
+    "previous": "पिछला",
+    "close": "बंद करें",
+    "submit": "सबमिट करें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "sort": "क्रमबद्ध करें"
+  }
+}

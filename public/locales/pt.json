@@ -1,0 +1,48 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "Painel",
+    "signIn": "Entrar",
+    "startFreeTrial": "Começar Teste Gratuito",
+    "continueLearning": "Continuar Aprendendo",
+    "language": "Idioma"
+  },
+  "hero": {
+    "title": "Domine o Inglês com IA",
+    "subtitle": "Aprendizado personalizado para todos os níveis",
+    "cta": "Começar Agora",
+    "features": {
+      "aiTutor": "Tutor IA",
+      "practiceTests": "Testes de Prática",
+      "progressTracking": "Acompanhamento de Progresso"
+    }
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Cadastrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "forgotPassword": "Esqueceu a senha?",
+    "rememberMe": "Lembrar de mim",
+    "continueWithGoogle": "Continuar com Google",
+    "createAccount": "Criar conta",
+    "alreadyHaveAccount": "Já tem uma conta?"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "close": "Fechar",
+    "submit": "Enviar",
+    "search": "Pesquisar",
+    "filter": "Filtrar",
+    "sort": "Ordenar"
+  }
+}

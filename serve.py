@@ -22,12 +22,16 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             self.path = '/index.html'
             return super().do_GET()
 
-        # Check if it's a request for a file that exists
-        if os.path.exists(os.path.join('dist', path.lstrip('/'))) and os.path.isfile(os.path.join('dist', path.lstrip('/'))):
-            # Serve the actual file
-            return super().do_GET()
+        # Check if it's a request for a static file that exists
+        # Handle common static file extensions
+        static_extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp4', '.webm', '.ogg', '.json']
+        if any(path.endswith(ext) for ext in static_extensions):
+            file_path = path.lstrip('/')
+            if os.path.exists(os.path.join('dist', file_path)) and os.path.isfile(os.path.join('dist', file_path)):
+                # Serve the actual file
+                return super().do_GET()
 
-        # For all other routes (including /hero), serve index.html
+        # For all other routes (including /hero, /hero/, /auth, etc.), serve index.html
         # This allows React Router to handle client-side routing
         self.path = '/index.html'
         return super().do_GET()
@@ -36,9 +40,22 @@ if __name__ == "__main__":
     os.chdir('.')
     PORT = 8080
 
-    with socketserver.TCPServer(("", PORT), SPAHandler) as httpd:
-        print(f"Serving at http://localhost:{PORT}")
-        print("SPA mode: All routes will serve index.html for React Router")
-        print("OAuth callbacks will be handled correctly")
-        print("Static assets will be served directly from dist/")
-        httpd.serve_forever()
+    # Bind to both IPv4 and IPv6
+    try:
+        with socketserver.TCPServer(("", PORT), SPAHandler) as httpd:
+            print(f"Serving at http://localhost:{PORT}")
+            print("SPA mode: All routes will serve index.html for React Router")
+            print("OAuth callbacks will be handled correctly")
+            print("Static assets will be served directly from dist/")
+            httpd.serve_forever()
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"Port {PORT} is already in use. Trying IPv4 only...")
+            with socketserver.TCPServer(("0.0.0.0", PORT), SPAHandler) as httpd:
+                print(f"Serving at http://localhost:{PORT}")
+                print("SPA mode: All routes will serve index.html for React Router")
+                print("OAuth callbacks will be handled correctly")
+                print("Static assets will be served directly from dist/")
+                httpd.serve_forever()
+        else:
+            raise

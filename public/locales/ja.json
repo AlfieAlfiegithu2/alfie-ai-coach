@@ -1,0 +1,48 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "ダッシュボード",
+    "signIn": "サインイン",
+    "startFreeTrial": "無料トライアルを開始",
+    "continueLearning": "学習を続ける",
+    "language": "言語"
+  },
+  "hero": {
+    "title": "AIで英語をマスター",
+    "subtitle": "すべてのレベルに合わせたパーソナライズ学習",
+    "cta": "今すぐ始める",
+    "features": {
+      "aiTutor": "AIチューター",
+      "practiceTests": "練習テスト",
+      "progressTracking": "進捗追跡"
+    }
+  },
+  "auth": {
+    "signIn": "サインイン",
+    "signUp": "サインアップ",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "rememberMe": "ログイン情報を記憶する",
+    "continueWithGoogle": "Googleで続ける",
+    "createAccount": "アカウントを作成",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか？"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "success": "成功",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "back": "戻る",
+    "next": "次へ",
+    "previous": "前へ",
+    "close": "閉じる",
+    "submit": "送信",
+    "search": "検索",
+    "filter": "フィルター",
+    "sort": "並べ替え"
+  }
+}

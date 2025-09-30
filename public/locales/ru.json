@@ -1,0 +1,48 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "Панель Управления",
+    "signIn": "Войти",
+    "startFreeTrial": "Начать Бесплатную Пробную Версию",
+    "continueLearning": "Продолжить Обучение",
+    "language": "Язык"
+  },
+  "hero": {
+    "title": "Освойте Английский с ИИ",
+    "subtitle": "Персонализированное обучение для всех уровней",
+    "cta": "Начать",
+    "features": {
+      "aiTutor": "ИИ-Репетитор",
+      "practiceTests": "Практические Тесты",
+      "progressTracking": "Отслеживание Прогресса"
+    }
+  },
+  "auth": {
+    "signIn": "Войти",
+    "signUp": "Зарегистрироваться",
+    "email": "Электронная Почта",
+    "password": "Пароль",
+    "forgotPassword": "Забыли пароль?",
+    "rememberMe": "Запомнить меня",
+    "continueWithGoogle": "Продолжить с Google",
+    "createAccount": "Создать аккаунт",
+    "alreadyHaveAccount": "Уже есть аккаунт?"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успех",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "back": "Назад",
+    "next": "Далее",
+    "previous": "Предыдущий",
+    "close": "Закрыть",
+    "submit": "Отправить",
+    "search": "Поиск",
+    "filter": "Фильтр",
+    "sort": "Сортировка"
+  }
+}

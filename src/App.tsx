@@ -102,6 +102,7 @@ const App = () => {
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/hero" element={<HeroIndex />} />
+            <Route path="/hero/" element={<HeroIndex />} />
 
             <Route path="/reading" element={<ContentSelection />} />
             <Route path="/reading/:testId" element={<ReadingTest />} />

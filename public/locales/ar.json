@@ -1,0 +1,48 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "لوحة التحكم",
+    "signIn": "تسجيل الدخول",
+    "startFreeTrial": "ابدأ النسخة التجريبية المجانية",
+    "continueLearning": "متابعة التعلم",
+    "language": "اللغة"
+  },
+  "hero": {
+    "title": "إتقان الإنجليزية بالذكاء الاصطناعي",
+    "subtitle": "تعلم مخصص لكل المستويات",
+    "cta": "ابدأ الآن",
+    "features": {
+      "aiTutor": "معلم ذكي",
+      "practiceTests": "اختبارات تدريبية",
+      "progressTracking": "تتبع التقدم"
+    }
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "rememberMe": "تذكرني",
+    "continueWithGoogle": "متابعة باستخدام Google",
+    "createAccount": "إنشاء حساب",
+    "alreadyHaveAccount": "هل لديك حساب بالفعل؟"
+  },
+  "common": {
+    "loading": "جار التحميل...",
+    "error": "خطأ",
+    "success": "نجح",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "close": "إغلاق",
+    "submit": "إرسال",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب"
+  }
+}

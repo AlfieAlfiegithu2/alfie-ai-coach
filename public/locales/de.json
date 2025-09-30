@@ -1,0 +1,48 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "Dashboard",
+    "signIn": "Anmelden",
+    "startFreeTrial": "Kostenlose Testversion Starten",
+    "continueLearning": "Lernen Fortsetzen",
+    "language": "Sprache"
+  },
+  "hero": {
+    "title": "Englisch mit KI meistern",
+    "subtitle": "Personalisiertes Lernen für jedes Niveau",
+    "cta": "Jetzt Starten",
+    "features": {
+      "aiTutor": "KI-Tutor",
+      "practiceTests": "Übungstests",
+      "progressTracking": "Fortschrittsverfolgung"
+    }
+  },
+  "auth": {
+    "signIn": "Anmelden",
+    "signUp": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "forgotPassword": "Passwort vergessen?",
+    "rememberMe": "Angemeldet bleiben",
+    "continueWithGoogle": "Mit Google fortfahren",
+    "createAccount": "Konto erstellen",
+    "alreadyHaveAccount": "Haben Sie bereits ein Konto?"
+  },
+  "common": {
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "close": "Schließen",
+    "submit": "Absenden",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "sort": "Sortieren"
+  }
+}

@@ -97,6 +97,7 @@ const HeroIndex = () => {
                 <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#about">About</a>
                 <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#programs">Programs</a>
                 <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#features">Features</a>
+                <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#pricing">Pricing</a>
                 <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#stories">Stories</a>
                 <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#contact">Contact</a>
               </nav>
@@ -125,6 +126,7 @@ const HeroIndex = () => {
                   <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#about">About</a>
                   <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#programs">Programs</a>
                   <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#features">Features</a>
+                  <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#pricing">Pricing</a>
                   <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#stories">Stories</a>
                   <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#contact">Contact</a>
                   <div className="mt-2 flex gap-2">
@@ -298,6 +300,130 @@ const HeroIndex = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="sm:py-20 pt-16 pb-16" id="pricing">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">Pricing Plans</h2>
+            <p className="mt-2 text-sm text-black/70 font-nunito">Choose the perfect plan for your learning journey</p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+            {/* Starter Plan */}
+            <div className="rounded-2xl border p-8 border-black/10 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold tracking-tight font-nunito text-black">Starter</h3>
+                <p className="mt-2 text-sm text-black/70 font-nunito min-h-[40px]">Perfect for individuals and small projects.</p>
+                <div className="mt-6">
+                  <span className="text-4xl font-bold text-black font-nunito">$9</span>
+                  <span className="text-sm text-black/60 font-nunito">/mo</span>
+                </div>
+              </div>
+              
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>10GB Storage</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>1 User</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>Basic Support</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito text-black/40 line-through">
+                  <X className="h-4 w-4 text-red-600 flex-shrink-0" />
+                  <span>Advanced Analytics</span>
+                </li>
+              </ul>
+
+              <button onClick={handleAuthAction} className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                Choose Starter
+              </button>
+            </div>
+
+            {/* Pro Plan - Highlighted */}
+            <div className="rounded-2xl border-2 p-8 border-amber-500 bg-amber-50/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 scale-105">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white font-nunito">
+                  <Star className="h-3 w-3" />
+                  Most Popular
+                </span>
+              </div>
+              
+              <div className="text-center mt-2">
+                <h3 className="text-xl font-semibold tracking-tight font-nunito text-black">Pro</h3>
+                <p className="mt-2 text-sm text-black/70 font-nunito min-h-[40px]">Ideal for growing businesses and professionals.</p>
+                <div className="mt-6">
+                  <span className="text-4xl font-bold text-amber-600 font-nunito">$29</span>
+                  <span className="text-sm text-black/60 font-nunito">/mo</span>
+                </div>
+              </div>
+              
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>50GB Storage</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>5 Users</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>Priority Support</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>Advanced Analytics</span>
+                </li>
+              </ul>
+
+              <button onClick={handleAuthAction} className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-amber-600 text-white hover:bg-amber-700 font-nunito">
+                Choose Pro
+              </button>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="rounded-2xl border p-8 border-black/10 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold tracking-tight font-nunito text-black">Enterprise</h3>
+                <p className="mt-2 text-sm text-black/70 font-nunito min-h-[40px]">For large organizations with custom needs.</p>
+                <div className="mt-6">
+                  <span className="text-4xl font-bold text-black font-nunito">$79</span>
+                  <span className="text-sm text-black/60 font-nunito">/mo</span>
+                </div>
+              </div>
+              
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>Unlimited Storage</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>Unlimited Users</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>Dedicated Support</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm font-nunito">
+                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span>Custom Integrations</span>
+                </li>
+              </ul>
+
+              <button onClick={() => navigate('/contact')} className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                Contact Us
+              </button>
             </div>
           </div>
         </div>

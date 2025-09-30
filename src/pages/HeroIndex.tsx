@@ -102,7 +102,9 @@ const HeroIndex = () => {
         support: "AI support"
       },
       askQuestion: "Ask a Question",
-      startLearning: "Start Learning"
+      startLearning: "Start Learning",
+      engineTitle: "AI Learning Engine",
+      engineSubtitle: "Intelligent feedback system"
     },
     pricing: {
       title: "Pricing Plans",
@@ -271,21 +273,21 @@ const HeroIndex = () => {
     age: "All levels",
     icon: Mic
   }];
-  const features = [{
-    title: "AI-Powered Feedback",
-    description: "Get instant, personalized feedback on your performance with detailed analysis.",
+  const featureItems = [{
+    title: getText(['features', 'list', 'aiFeedback', 'title']),
+    description: getText(['features', 'list', 'aiFeedback', 'description']),
     icon: Brain
   }, {
-    title: "Adaptive Learning",
-    description: "Smart algorithm adapts to your learning pace and identifies weak areas.",
+    title: getText(['features', 'list', 'adaptive', 'title']),
+    description: getText(['features', 'list', 'adaptive', 'description']),
     icon: Target
   }, {
-    title: "Real-time Progress",
-    description: "Track your improvement with comprehensive analytics and score predictions.",
+    title: getText(['features', 'list', 'realtime', 'title']),
+    description: getText(['features', 'list', 'realtime', 'description']),
     icon: TrendingUp
   }, {
-    title: "Expert Community",
-    description: "Connect with fellow learners and certified English instructors worldwide.",
+    title: getText(['features', 'list', 'community', 'title']),
+    description: getText(['features', 'list', 'community', 'description']),
     icon: Star
   }];
   const testimonials = [{
@@ -558,7 +560,7 @@ const HeroIndex = () => {
                 {getText(['features', 'subtitle'])}
               </p>
               <ul className="mt-6 grid gap-3 text-sm">
-                {features.map((feature, index) => <li key={index} className="inline-flex items-start gap-3 font-nunito">
+                {featureItems.map((feature, index) => <li key={index} className="inline-flex items-start gap-3 font-nunito">
                     <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-md bg-black text-neutral-100">
                       <Check className="h-3.5 w-3.5" />
                     </span>
@@ -584,8 +586,8 @@ const HeroIndex = () => {
                 <div className="aspect-video w-full rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
                   <div className="text-center">
                     <Brain className="w-16 h-16 mx-auto text-black/60 mb-4" />
-                    <h3 className="text-xl font-semibold text-black font-nunito">AI Learning Engine</h3>
-                    <p className="text-sm text-black/70 font-nunito mt-2">Intelligent feedback system</p>
+                    <h3 className="text-xl font-semibold text-black font-nunito">{getText(['features', 'engineTitle'])}</h3>
+                    <p className="text-sm text-black/70 font-nunito mt-2">{getText(['features', 'engineSubtitle'])}</p>
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-3">

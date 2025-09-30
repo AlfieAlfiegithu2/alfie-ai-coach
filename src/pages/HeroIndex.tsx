@@ -99,14 +99,21 @@ const HeroIndex = () => {
 
               {/* Actions */}
               <div className="hidden md:flex items-center gap-3">
-                <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                  
-                  {user ? 'Dashboard' : 'Sign In'}
-                </button>
-                <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                  <Calendar className="h-4 w-4" />
-                  {user ? 'Continue Learning' : 'Start Free Trial'}
-                </button>
+                {user ? (
+                  <>
+                    <button onClick={() => navigate('/dashboard')} className="inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
+                      Dashboard
+                    </button>
+                    <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                      <Calendar className="h-4 w-4" />
+                      Continue Learning
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                    Log In
+                  </button>
+                )}
               </div>
 
               {/* Mobile Menu Button */}
@@ -120,14 +127,21 @@ const HeroIndex = () => {
                 <nav className="grid gap-2">
                   {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
                   <div className="mt-2 flex gap-2">
-                    <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                      <Phone className="h-4 w-4" />
-                      {user ? 'Dashboard' : 'Sign In'}
-                    </button>
-                    <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                      <Calendar className="h-4 w-4" />
-                      {user ? 'Continue' : 'Start Free'}
-                    </button>
+                    {user ? (
+                      <>
+                        <button onClick={() => navigate('/dashboard')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
+                          Dashboard
+                        </button>
+                        <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                          <Calendar className="h-4 w-4" />
+                          Continue
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                        Log In
+                      </button>
+                    )}
                   </div>
                 </nav>
               </div>}

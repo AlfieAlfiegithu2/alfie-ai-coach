@@ -67,11 +67,13 @@ export const usePageTranslation = (pageKey: string, defaultContent: PageContent,
         });
 
         if (error) {
-          console.error('Translation error:', error);
+          console.error(`Translation error for ${language}:`, error);
           setContent(defaultContent);
         } else if (data?.translation) {
+          console.log(`Successfully loaded translation for ${language}`);
           setContent(data.translation);
         } else {
+          console.warn(`No translation data returned for ${language}`);
           setContent(defaultContent);
         }
       } catch (error) {

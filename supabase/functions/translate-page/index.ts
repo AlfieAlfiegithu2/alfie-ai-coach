@@ -55,7 +55,7 @@ serve(async (req) => {
       'fr': 'French',
       'de': 'German',
       'ko': 'Korean',
-      'zh': 'Chinese',
+      'zh': 'Simplified Chinese',
       'ja': 'Japanese',
       'vi': 'Vietnamese',
       'pt': 'Portuguese',
@@ -64,7 +64,11 @@ serve(async (req) => {
       'hi': 'Hindi'
     };
 
+    console.log(`Translating page '${pageKey}' to ${languageNames[targetLanguage]} (${targetLanguage})`);
+
     const prompt = `Translate the following JSON content to ${languageNames[targetLanguage] || targetLanguage}. 
+IMPORTANT: For Chinese, use Simplified Chinese characters. For Japanese, use appropriate kanji and hiragana.
+Ensure all text is properly translated and culturally appropriate.
 Maintain the exact JSON structure. Only translate the string values, not the keys.
 Return ONLY valid JSON with the translated content.
 
@@ -89,15 +93,17 @@ ${JSON.stringify(content, null, 2)}`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
+      console.error('Gemini API error:', response.status, errorText);
       return new Response(
-        JSON.stringify({ error: 'Translation failed' }),
+        JSON.stringify({ error: 'Translation failed', details: errorText }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await response.json();
     const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    console.log(`Translation response for ${targetLanguage}: ${translatedText.substring(0, 200)}...`);
     
     // Extract JSON from markdown code blocks if present
     let translatedContent;
@@ -106,22 +112,29 @@ ${JSON.stringify(content, null, 2)}`;
                        translatedText.match(/```\s*([\s\S]*?)\s*```/);
       const jsonStr = jsonMatch ? jsonMatch[1] : translatedText;
       translatedContent = JSON.parse(jsonStr.trim());
+      console.log(`Successfully parsed translation for ${targetLanguage}`);
     } catch (e) {
-      console.error('Failed to parse translation:', e);
+      console.error('Failed to parse translation:', e, 'Raw text:', translatedText);
       return new Response(
-        JSON.stringify({ error: 'Invalid translation format' }),
+        JSON.stringify({ error: 'Invalid translation format', rawText: translatedText.substring(0, 500) }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Cache the translation
-    await supabase
+    const { error: cacheError } = await supabase
       .from('page_translations')
       .upsert({
         page_key: pageKey,
         language_code: targetLanguage,
         content: translatedContent
       });
+
+    if (cacheError) {
+      console.error('Failed to cache translation:', cacheError);
+    } else {
+      console.log(`Successfully cached translation for ${pageKey} in ${targetLanguage}`);
+    }
 
     return new Response(
       JSON.stringify({ success: true, translation: translatedContent }),

@@ -1,0 +1,82 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "Bảng Điều Khiển",
+    "signIn": "Đăng Nhập",
+    "startFreeTrial": "Bắt Đầu Dùng Thử Miễn Phí",
+    "continueLearning": "Tiếp Tục Học Tập",
+    "language": "Ngôn Ngữ"
+  },
+  "hero": {
+    "title": "Làm Chủ Tiếng Anh Với AI",
+    "subtitle": "Học tập cá nhân hóa cho mọi cấp độ",
+    "cta": "Bắt Đầu Học",
+    "features": {
+      "aiTutor": "Gia Sư AI",
+      "practiceTests": "Bài Kiểm Tra Thực Hành",
+      "progressTracking": "Theo Dõi Tiến Độ"
+    },
+    "about": {
+      "title": "Giới Thiệu",
+      "content": "Chuyển đổi kỹ năng tiếng Anh của bạn với nền tảng được hỗ trợ bởi AI. Nhận bài học cá nhân hóa, phản hồi tức thì và theo dõi tiến độ của bạn từng bước."
+    },
+    "programs": {
+      "title": "Chương Trình Học Tập",
+      "subtitle": "Chọn con đường dẫn đến việc làm chủ tiếng Anh với các chương trình toàn diện của chúng tôi.",
+      "ielts": "Chuẩn Bị IELTS",
+      "general": "Tiếng Anh Tổng Quát",
+      "business": "Tiếng Anh Kinh Doanh",
+      "academic": "Tiếng Anh Học Thuật"
+    },
+    "features": {
+      "title": "Tính Năng",
+      "aiPowered": "Học Tập Được Hỗ Trợ Bằng AI",
+      "personalized": "Chương Trình Cá Nhân Hóa",
+      "instantFeedback": "Phản Hồi Tức Thì",
+      "progressTracking": "Theo Dõi Tiến Độ"
+    },
+    "pricing": {
+      "title": "Giá Cả",
+      "subtitle": "Chọn gói phù hợp với mục tiêu học tập của bạn.",
+      "free": "Miễn Phí",
+      "premium": "Cao Cấp",
+      "enterprise": "Doanh Nghiệp"
+    },
+    "stories": {
+      "title": "Câu Chuyện Thành Công",
+      "subtitle": "Xem cách học sinh của chúng tôi đạt được mục tiêu tiếng Anh."
+    },
+    "contact": {
+      "title": "Liên Hệ",
+      "subtitle": "Liên hệ với đội ngũ hỗ trợ của chúng tôi."
+    }
+  },
+  "auth": {
+    "signIn": "Đăng Nhập",
+    "signUp": "Đăng Ký",
+    "email": "Email",
+    "password": "Mật Khẩu",
+    "forgotPassword": "Quên mật khẩu?",
+    "rememberMe": "Ghi Nhớ Đăng Nhập",
+    "continueWithGoogle": "Tiếp Tục Với Google",
+    "createAccount": "Tạo Tài Khoản",
+    "alreadyHaveAccount": "Đã Có Tài Khoản?"
+  },
+  "common": {
+    "loading": "Đang Tải...",
+    "error": "Lỗi",
+    "success": "Thành Công",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "edit": "Chỉnh Sửa",
+    "back": "Quay Lại",
+    "next": "Tiếp Theo",
+    "previous": "Trước Đó",
+    "close": "Đóng",
+    "submit": "Gửi",
+    "search": "Tìm Kiếm",
+    "filter": "Lọc",
+    "sort": "Sắp Xếp"
+  }
+}

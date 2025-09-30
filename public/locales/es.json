@@ -1,0 +1,82 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "Panel",
+    "signIn": "Iniciar Sesión",
+    "startFreeTrial": "Comenzar Prueba Gratuita",
+    "continueLearning": "Continuar Aprendiendo",
+    "language": "Idioma"
+  },
+  "hero": {
+    "title": "Domina el Inglés con IA",
+    "subtitle": "Aprendizaje personalizado para cada nivel",
+    "cta": "Comenzar",
+    "features": {
+      "aiTutor": "Tutor IA",
+      "practiceTests": "Tests de Práctica",
+      "progressTracking": "Seguimiento de Progreso"
+    },
+    "about": {
+      "title": "Acerca de",
+      "content": "Transforma tus habilidades en inglés con nuestra plataforma impulsada por IA. Obtén lecciones personalizadas, retroalimentación instantánea y sigue tu progreso en cada paso."
+    },
+    "programs": {
+      "title": "Programas de Aprendizaje",
+      "subtitle": "Elige tu camino hacia el dominio del inglés con nuestros programas integrales.",
+      "ielts": "Preparación IELTS",
+      "general": "Inglés General",
+      "business": "Inglés de Negocios",
+      "academic": "Inglés Académico"
+    },
+    "features": {
+      "title": "Características",
+      "aiPowered": "Aprendizaje Impulsado por IA",
+      "personalized": "Currículo Personalizado",
+      "instantFeedback": "Retroalimentación Instantánea",
+      "progressTracking": "Seguimiento de Progreso"
+    },
+    "pricing": {
+      "title": "Precios",
+      "subtitle": "Elige el plan que se ajuste a tus objetivos de aprendizaje.",
+      "free": "Gratis",
+      "premium": "Premium",
+      "enterprise": "Empresa"
+    },
+    "stories": {
+      "title": "Historias de Éxito",
+      "subtitle": "Ve cómo nuestros estudiantes lograron sus objetivos en inglés."
+    },
+    "contact": {
+      "title": "Contacto",
+      "subtitle": "Ponte en contacto con nuestro equipo de soporte."
+    }
+  },
+  "auth": {
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "rememberMe": "Recordarme",
+    "continueWithGoogle": "Continuar con Google",
+    "createAccount": "Crear cuenta",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "close": "Cerrar",
+    "submit": "Enviar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar"
+  }
+}

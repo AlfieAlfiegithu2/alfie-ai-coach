@@ -1,0 +1,82 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "仪表板",
+    "signIn": "登录",
+    "startFreeTrial": "开始免费试用",
+    "continueLearning": "继续学习",
+    "language": "语言"
+  },
+  "hero": {
+    "title": "用AI掌握英语",
+    "subtitle": "为每个级别提供个性化学习",
+    "cta": "开始学习",
+    "features": {
+      "aiTutor": "AI导师",
+      "practiceTests": "练习测试",
+      "progressTracking": "进度跟踪"
+    },
+    "about": {
+      "title": "关于我们",
+      "content": "用我们的人工智能平台改变您的英语技能。获得个性化的课程，即时反馈，并跟踪您的每一步进步。"
+    },
+    "programs": {
+      "title": "学习程序",
+      "subtitle": "选择通往英语精通的道路，使用我们的综合程序。",
+      "ielts": "雅思准备",
+      "general": "通用英语",
+      "business": "商务英语",
+      "academic": "学术英语"
+    },
+    "features": {
+      "title": "功能",
+      "aiPowered": "AI驱动学习",
+      "personalized": "个性化课程",
+      "instantFeedback": "即时反馈",
+      "progressTracking": "进度跟踪"
+    },
+    "pricing": {
+      "title": "定价",
+      "subtitle": "选择适合您的学习目标的计划。",
+      "free": "免费",
+      "premium": "高级",
+      "enterprise": "企业"
+    },
+    "stories": {
+      "title": "成功故事",
+      "subtitle": "看看我们的学生如何实现他们的英语目标。"
+    },
+    "contact": {
+      "title": "联系我们",
+      "subtitle": "与我们的支持团队取得联系。"
+    }
+  },
+  "auth": {
+    "signIn": "登录",
+    "signUp": "注册",
+    "email": "电子邮件",
+    "password": "密码",
+    "forgotPassword": "忘记密码？",
+    "rememberMe": "记住我",
+    "continueWithGoogle": "使用Google继续",
+    "createAccount": "创建账户",
+    "alreadyHaveAccount": "已经有账户？"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "close": "关闭",
+    "submit": "提交",
+    "search": "搜索",
+    "filter": "筛选",
+    "sort": "排序"
+  }
+}

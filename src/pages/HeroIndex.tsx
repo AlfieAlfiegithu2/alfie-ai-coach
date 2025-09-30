@@ -7,9 +7,12 @@ import { Phone, Calendar, Menu, X, Hand, Compass, Baby, GraduationCap, Shield, H
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
+import LanguageSelector from "@/components/LanguageSelector";
 const HeroIndex = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     toast
   } = useToast();
@@ -88,8 +91,8 @@ const HeroIndex = () => {
             <div className="flex items-center justify-between px-4 py-3">
               {/* Brand */}
               <div className="flex items-center gap-2">
-                
-                <span className="text-lg font-semibold font-nunito">English AIdol</span>
+
+                <span className="text-lg font-semibold font-nunito">{t('header.brand')}</span>
               </div>
 
               {/* Desktop Nav */}
@@ -99,19 +102,21 @@ const HeroIndex = () => {
 
               {/* Actions */}
               <div className="hidden md:flex items-center gap-3">
+                {/* Language Selector */}
+                <LanguageSelector />
                 {user ? (
                   <>
                     <button onClick={() => navigate('/dashboard')} className="inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                      Dashboard
+                      {t('header.dashboard')}
                     </button>
                     <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                       <Calendar className="h-4 w-4" />
-                      Continue Learning
+                      {user ? t('header.continueLearning') : t('header.startFreeTrial')}
                     </button>
                   </>
                 ) : (
                   <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                    Log In
+                    {t('header.signIn')}
                   </button>
                 )}
               </div>
@@ -125,21 +130,25 @@ const HeroIndex = () => {
             {/* Mobile Menu */}
             {mobileMenuOpen && <div className="border-t px-4 py-3 md:hidden border-black/10">
                 <nav className="grid gap-2">
+                  {/* Language Selector for Mobile */}
+                  <div className="mb-2">
+                    <LanguageSelector />
+                  </div>
                   {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
                   <div className="mt-2 flex gap-2">
                     {user ? (
                       <>
                         <button onClick={() => navigate('/dashboard')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                          Dashboard
+                          {t('header.dashboard')}
                         </button>
                         <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                           <Calendar className="h-4 w-4" />
-                          Continue
+                          {user ? t('header.continueLearning') : t('header.startFree')}
                         </button>
                       </>
                     ) : (
                       <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                        Log In
+                        {t('header.signIn')}
                       </button>
                     )}
                   </div>

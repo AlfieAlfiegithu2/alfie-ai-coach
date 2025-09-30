@@ -1,0 +1,82 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "Dashboard",
+    "signIn": "Sign In",
+    "startFreeTrial": "Start Free Trial",
+    "continueLearning": "Continue Learning",
+    "language": "Language"
+  },
+  "hero": {
+    "title": "Master English with AI",
+    "subtitle": "Personalized learning for every level",
+    "cta": "Start Learning",
+    "features": {
+      "aiTutor": "AI Tutor",
+      "practiceTests": "Practice Tests",
+      "progressTracking": "Progress Tracking"
+    },
+    "about": {
+      "title": "About",
+      "content": "Transform your English skills with our AI-powered platform. Get personalized lessons, instant feedback, and track your progress every step of the way."
+    },
+    "programs": {
+      "title": "Learning Programs",
+      "subtitle": "Choose your path to English mastery with our comprehensive programs.",
+      "ielts": "IELTS Preparation",
+      "general": "General English",
+      "business": "Business English",
+      "academic": "Academic English"
+    },
+    "features": {
+      "title": "Features",
+      "aiPowered": "AI-Powered Learning",
+      "personalized": "Personalized Curriculum",
+      "instantFeedback": "Instant Feedback",
+      "progressTracking": "Progress Tracking"
+    },
+    "pricing": {
+      "title": "Pricing",
+      "subtitle": "Choose the plan that fits your learning goals.",
+      "free": "Free",
+      "premium": "Premium",
+      "enterprise": "Enterprise"
+    },
+    "stories": {
+      "title": "Success Stories",
+      "subtitle": "See how our students achieved their English goals."
+    },
+    "contact": {
+      "title": "Contact",
+      "subtitle": "Get in touch with our support team."
+    }
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "rememberMe": "Remember me",
+    "continueWithGoogle": "Continue with Google",
+    "createAccount": "Create account",
+    "alreadyHaveAccount": "Already have an account?"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort"
+  }
+}

@@ -449,6 +449,30 @@ export type Database = {
           },
         ]
       }
+      page_content_versions: {
+        Row: {
+          content_hash: string
+          created_at: string | null
+          id: string
+          last_updated: string | null
+          page_key: string
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          page_key: string
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          page_key?: string
+        }
+        Relationships: []
+      }
       page_translations: {
         Row: {
           content: Json
@@ -1692,6 +1716,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_writing_analysis_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      invalidate_translations_on_content_change: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

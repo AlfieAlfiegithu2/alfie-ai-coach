@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import LanguageSelector from "@/components/LanguageSelector";
 import { usePageTranslation, PageContent } from "@/hooks/usePageTranslation";
+import { PricingCard } from "@/components/PricingCard";
 const HeroIndex = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -52,13 +53,140 @@ const HeroIndex = () => {
     programs: {
       title: "Learning Programs",
       subtitle: "Choose your path to English mastery with our comprehensive programs.",
-      viewProgress: "View Progress"
+      viewProgress: "View Progress",
+      cards: {
+        ielts: {
+          badge: "All levels",
+          title: "IELTS Mastery",
+          description: "Complete IELTS preparation with AI feedback",
+          learnMore: "Learn More"
+        },
+        general: {
+          badge: "Beginner to Advanced",
+          title: "General English",
+          description: "Build confident everyday English skills",
+          learnMore: "Learn More"
+        },
+        speaking: {
+          badge: "All levels",
+          title: "Speaking Practice",
+          description: "AI-powered pronunciation and fluency training",
+          learnMore: "Learn More"
+        }
+      }
     },
     features: {
       title: "AI-powered learning that adapts to you",
       subtitle: "Our advanced AI technology creates personalized learning experiences that help you achieve your English goals faster and more effectively.",
+      list: {
+        aiFeedback: {
+          title: "AI-Powered Feedback",
+          description: "Get instant, personalized feedback on your performance with detailed analysis."
+        },
+        adaptive: {
+          title: "Adaptive Learning",
+          description: "Smart algorithm adapts to your learning pace and identifies weak areas."
+        },
+        realtime: {
+          title: "Real-time Progress",
+          description: "Track your improvement with comprehensive analytics and score predictions."
+        },
+        community: {
+          title: "Expert Community",
+          description: "Connect with fellow learners and certified English instructors worldwide."
+        }
+      },
+      stats: {
+        students: "Active students",
+        success: "Success rate",
+        support: "AI support"
+      },
       askQuestion: "Ask a Question",
       startLearning: "Start Learning"
+    },
+    pricing: {
+      title: "Pricing Plans",
+      subtitle: "Choose the perfect plan for your learning journey",
+      starter: {
+        title: "Starter",
+        subtitle: "Perfect for individuals and small projects.",
+        price: "$9",
+        period: "/mo",
+        features: [
+          "10GB Storage",
+          "1 User",
+          "Basic Support",
+          "Advanced Analytics"
+        ],
+        button: "Choose Starter"
+      },
+      pro: {
+        title: "Pro",
+        subtitle: "Ideal for growing businesses and professionals.",
+        badge: "Most Popular",
+        price: "$29",
+        period: "/mo",
+        features: [
+          "50GB Storage",
+          "5 Users",
+          "Priority Support",
+          "Advanced Analytics"
+        ],
+        button: "Choose Pro"
+      },
+      enterprise: {
+        title: "Enterprise",
+        subtitle: "For large organizations with custom needs.",
+        price: "$79",
+        period: "/mo",
+        features: [
+          "Unlimited Storage",
+          "Unlimited Users",
+          "Dedicated Support",
+          "Custom Integrations"
+        ],
+        button: "Contact Us"
+      }
+    },
+    testimonials: {
+      title: "Student Success Stories",
+      subtitle: "Real achievements from learners who trusted our platform."
+    },
+    cta: {
+      badge: "Start Your English Journey",
+      title: "Ready to master English?",
+      subtitle: "Join thousands of successful students and start your personalized learning journey today.",
+      startTrial: "Start Free Trial",
+      tryTest: "Try Practice Test",
+      note: "No credit card required. Start learning immediately.",
+      successTitle: "Your Success Awaits",
+      successSubtitle: "Join the AI revolution in English learning"
+    },
+    footer: {
+      description: "AI-powered English learning platform for IELTS and General English mastery.",
+      email: "hello@englishaidol.com",
+      phone: "Available 24/7 via AI Chat",
+      learning: {
+        title: "Learning",
+        ielts: "IELTS Preparation",
+        general: "General English",
+        features: "AI Features",
+        stories: "Success Stories"
+      },
+      resources: {
+        title: "Resources",
+        practice: "Practice Tests",
+        writing: "Writing Feedback",
+        speaking: "Speaking Practice",
+        vocabulary: "Vocabulary Builder"
+      },
+      connect: {
+        title: "Connect"
+      },
+      copyright: "© 2024 English AIdol. All rights reserved.",
+      privacy: "Privacy",
+      terms: "Terms",
+      support: "Support"
     }
   };
 
@@ -94,6 +222,26 @@ const HeroIndex = () => {
 
   const getText = (path: string[]): string => {
     return getString(path) || getDefault(path);
+  };
+
+  // Helper to get arrays safely
+  const getArray = (path: string[]): string[] => {
+    let current: any = content;
+    for (const key of path) {
+      if (current && typeof current === 'object') {
+        current = current[key];
+      } else {
+        // fallback to default
+        let def: any = defaultContent;
+        for (const k of path) {
+          if (def && typeof def === 'object') {
+            def = def[k];
+          }
+        }
+        return Array.isArray(def) ? def : [];
+      }
+    }
+    return Array.isArray(current) ? current : [];
   };
 
   const handleAuthAction = () => {
@@ -332,25 +480,68 @@ const HeroIndex = () => {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-8">
-            {testTypes.map((test, index) => <article key={index} className="group overflow-hidden bg-black/5 border-black/10 border rounded-2xl shadow-xl backdrop-blur-none">
-                <div className="relative overflow-hidden">
-                  <div className="h-48 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center transition duration-500 group-hover:scale-[1.03]">
-                    <test.icon className="w-16 h-16 text-black/60" />
-                  </div>
+            {/* IELTS Mastery Card */}
+            <article className="group overflow-hidden bg-black/5 border-black/10 border rounded-2xl shadow-xl backdrop-blur-none">
+              <div className="relative overflow-hidden">
+                <div className="h-48 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center transition duration-500 group-hover:scale-[1.03]">
+                  <Trophy className="w-16 h-16 text-black/60" />
                 </div>
-                <div className="pt-6 pr-6 pb-6 pl-6">
-                  <div className="inline-flex text-[11px] font-medium text-black/80 border-black/10 border rounded-full pt-1 pr-2.5 pb-1 pl-2.5 gap-x-2 gap-y-2 items-center font-nunito">
-                    {test.age}
-                    <Star className="h-3.5 w-3.5" />
-                  </div>
-                  <h3 className="text-xl font-semibold tracking-tight font-nunito mt-3">{test.title}</h3>
-                  <p className="text-sm text-black/70 mt-2 font-nunito">{test.description}</p>
-                  <button onClick={() => navigate(test.path)} className="inline-flex items-center gap-2 hover:text-black text-sm font-medium text-black/80 mt-4 font-nunito">
-                    Learn More
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                  </button>
+              </div>
+              <div className="pt-6 pr-6 pb-6 pl-6">
+                <div className="inline-flex text-[11px] font-medium text-black/80 border-black/10 border rounded-full pt-1 pr-2.5 pb-1 pl-2.5 gap-x-2 gap-y-2 items-center font-nunito">
+                  {getText(['programs', 'cards', 'ielts', 'badge'])}
+                  <Star className="h-3.5 w-3.5" />
                 </div>
-              </article>)}
+                <h3 className="text-xl font-semibold tracking-tight font-nunito mt-3">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
+                <p className="text-sm text-black/70 mt-2 font-nunito">{getText(['programs', 'cards', 'ielts', 'description'])}</p>
+                <button onClick={() => navigate('/ielts-portal')} className="inline-flex items-center gap-2 hover:text-black text-sm font-medium text-black/80 mt-4 font-nunito">
+                  {getText(['programs', 'cards', 'ielts', 'learnMore'])}
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </article>
+
+            {/* General English Card */}
+            <article className="group overflow-hidden bg-black/5 border-black/10 border rounded-2xl shadow-xl backdrop-blur-none">
+              <div className="relative overflow-hidden">
+                <div className="h-48 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center transition duration-500 group-hover:scale-[1.03]">
+                  <Languages className="w-16 h-16 text-black/60" />
+                </div>
+              </div>
+              <div className="pt-6 pr-6 pb-6 pl-6">
+                <div className="inline-flex text-[11px] font-medium text-black/80 border-black/10 border rounded-full pt-1 pr-2.5 pb-1 pl-2.5 gap-x-2 gap-y-2 items-center font-nunito">
+                  {getText(['programs', 'cards', 'general', 'badge'])}
+                  <Star className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-xl font-semibold tracking-tight font-nunito mt-3">{getText(['programs', 'cards', 'general', 'title'])}</h3>
+                <p className="text-sm text-black/70 mt-2 font-nunito">{getText(['programs', 'cards', 'general', 'description'])}</p>
+                <button onClick={() => navigate('/general-portal')} className="inline-flex items-center gap-2 hover:text-black text-sm font-medium text-black/80 mt-4 font-nunito">
+                  {getText(['programs', 'cards', 'general', 'learnMore'])}
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </article>
+
+            {/* Speaking Practice Card */}
+            <article className="group overflow-hidden bg-black/5 border-black/10 border rounded-2xl shadow-xl backdrop-blur-none">
+              <div className="relative overflow-hidden">
+                <div className="h-48 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center transition duration-500 group-hover:scale-[1.03]">
+                  <Mic className="w-16 h-16 text-black/60" />
+                </div>
+              </div>
+              <div className="pt-6 pr-6 pb-6 pl-6">
+                <div className="inline-flex text-[11px] font-medium text-black/80 border-black/10 border rounded-full pt-1 pr-2.5 pb-1 pl-2.5 gap-x-2 gap-y-2 items-center font-nunito">
+                  {getText(['programs', 'cards', 'speaking', 'badge'])}
+                  <Star className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-xl font-semibold tracking-tight font-nunito mt-3">{getText(['programs', 'cards', 'speaking', 'title'])}</h3>
+                <p className="text-sm text-black/70 mt-2 font-nunito">{getText(['programs', 'cards', 'speaking', 'description'])}</p>
+                <button onClick={() => navigate('/speaking')} className="inline-flex items-center gap-2 hover:text-black text-sm font-medium text-black/80 mt-4 font-nunito">
+                  {getText(['programs', 'cards', 'speaking', 'learnMore'])}
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -400,15 +591,15 @@ const HeroIndex = () => {
                 <div className="mt-4 grid grid-cols-3 gap-3">
                   <div className="rounded-xl border p-4 text-center border-black/10 bg-black/5">
                     <div className="text-2xl tracking-tight font-nunito font-semibold">50K+</div>
-                    <div className="mt-1 text-[11px] text-black/60 font-nunito">Active students</div>
+                    <div className="mt-1 text-[11px] text-black/60 font-nunito">{getText(['features', 'stats', 'students'])}</div>
                   </div>
                   <div className="rounded-xl border p-4 text-center border-black/10 bg-black/5">
                     <div className="text-2xl tracking-tight font-nunito font-semibold">95%</div>
-                    <div className="mt-1 text-[11px] text-black/60 font-nunito">Success rate</div>
+                    <div className="mt-1 text-[11px] text-black/60 font-nunito">{getText(['features', 'stats', 'success'])}</div>
                   </div>
                   <div className="rounded-xl border p-4 text-center border-black/10 bg-black/5">
                     <div className="text-2xl font-semibold tracking-tight font-nunito">24/7</div>
-                    <div className="mt-1 text-[11px] text-black/60 font-nunito">AI support</div>
+                    <div className="mt-1 text-[11px] text-black/60 font-nunito">{getText(['features', 'stats', 'support'])}</div>
                   </div>
                 </div>
               </div>
@@ -421,122 +612,43 @@ const HeroIndex = () => {
       <section className="sm:py-20 pt-16 pb-16" id="pricing">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">Pricing Plans</h2>
-            <p className="mt-2 text-sm text-black/70 font-nunito">Choose the perfect plan for your learning journey</p>
+            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">{getText(['pricing', 'title'])}</h2>
+            <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['pricing', 'subtitle'])}</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
-            {/* Starter Plan */}
-            <div className="rounded-2xl border p-8 border-black/10 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="text-center">
-                <h3 className="text-xl font-semibold tracking-tight font-nunito text-black">Starter</h3>
-                <p className="mt-2 text-sm text-black/70 font-nunito min-h-[40px]">Perfect for individuals and small projects.</p>
-                <div className="mt-6">
-                  <span className="text-4xl font-bold text-black font-nunito">$9</span>
-                  <span className="text-sm text-black/60 font-nunito">/mo</span>
-                </div>
-              </div>
-              
-              <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>10GB Storage</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>1 User</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>Basic Support</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito text-black/40 line-through">
-                  <X className="h-4 w-4 text-red-600 flex-shrink-0" />
-                  <span>Advanced Analytics</span>
-                </li>
-              </ul>
-
-              <button onClick={handleAuthAction} className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                Choose Starter
-              </button>
-            </div>
-
-            {/* Pro Plan - Highlighted */}
-            <div className="relative rounded-2xl border-2 p-8 border-amber-500 bg-amber-50/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 scale-105">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white font-nunito">
-                  <Star className="h-3 w-3" />
-                  Most Popular
-                </span>
-              </div>
-              
-              <div className="text-center mt-2">
-                <h3 className="text-xl font-semibold tracking-tight font-nunito text-black">Pro</h3>
-                <p className="mt-2 text-sm text-black/70 font-nunito min-h-[40px]">Ideal for growing businesses and professionals.</p>
-                <div className="mt-6">
-                  <span className="text-4xl font-bold text-amber-600 font-nunito">$29</span>
-                  <span className="text-sm text-black/60 font-nunito">/mo</span>
-                </div>
-              </div>
-              
-              <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>50GB Storage</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>5 Users</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>Priority Support</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>Advanced Analytics</span>
-                </li>
-              </ul>
-
-              <button onClick={handleAuthAction} className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-amber-600 text-white hover:bg-amber-700 font-nunito">
-                Choose Pro
-              </button>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="rounded-2xl border p-8 border-black/10 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="text-center">
-                <h3 className="text-xl font-semibold tracking-tight font-nunito text-black">Enterprise</h3>
-                <p className="mt-2 text-sm text-black/70 font-nunito min-h-[40px]">For large organizations with custom needs.</p>
-                <div className="mt-6">
-                  <span className="text-4xl font-bold text-black font-nunito">$79</span>
-                  <span className="text-sm text-black/60 font-nunito">/mo</span>
-                </div>
-              </div>
-              
-              <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>Unlimited Storage</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>Unlimited Users</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>Dedicated Support</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm font-nunito">
-                  <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  <span>Custom Integrations</span>
-                </li>
-              </ul>
-
-              <button onClick={() => navigate('/contact')} className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                Contact Us
-              </button>
-            </div>
+            <PricingCard
+              title={getText(['pricing', 'starter', 'title'])}
+              subtitle={getText(['pricing', 'starter', 'subtitle'])}
+              price={getText(['pricing', 'starter', 'price'])}
+              period={getText(['pricing', 'starter', 'period'])}
+              features={getArray(['pricing', 'starter', 'features'])}
+              buttonText={getText(['pricing', 'starter', 'button'])}
+              onButtonClick={handleAuthAction}
+            />
+            
+            <PricingCard
+              title={getText(['pricing', 'pro', 'title'])}
+              subtitle={getText(['pricing', 'pro', 'subtitle'])}
+              price={getText(['pricing', 'pro', 'price'])}
+              period={getText(['pricing', 'pro', 'period'])}
+              features={getArray(['pricing', 'pro', 'features'])}
+              buttonText={getText(['pricing', 'pro', 'button'])}
+              onButtonClick={handleAuthAction}
+              isPopular
+              isPremium
+              badge={getText(['pricing', 'pro', 'badge'])}
+            />
+            
+            <PricingCard
+              title={getText(['pricing', 'enterprise', 'title'])}
+              subtitle={getText(['pricing', 'enterprise', 'subtitle'])}
+              price={getText(['pricing', 'enterprise', 'price'])}
+              period={getText(['pricing', 'enterprise', 'period'])}
+              features={getArray(['pricing', 'enterprise', 'features'])}
+              buttonText={getText(['pricing', 'enterprise', 'button'])}
+              onButtonClick={() => navigate('/contact')}
+            />
           </div>
         </div>
       </section>
@@ -546,8 +658,8 @@ const HeroIndex = () => {
         <div className="sm:px-6 lg:px-8 max-w-7xl mr-auto ml-auto pr-4 pl-4">
           <div className="flex items-end justify-between gap-6">
             <div>
-              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">Student Success Stories</h2>
-              <p className="mt-2 text-sm text-black/70 font-nunito">Real achievements from learners who trusted our platform.</p>
+              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">{getText(['testimonials', 'title'])}</h2>
+              <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['testimonials', 'subtitle'])}</p>
             </div>
           </div>
 
@@ -574,29 +686,29 @@ const HeroIndex = () => {
               <div className="sm:p-10 pt-8 pr-8 pb-8 pl-8">
                 <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium backdrop-blur border-black/10 bg-black/5 text-black/80 font-nunito">
                   <MapPin className="h-3.5 w-3.5" />
-                  Start Your English Journey
+                  {getText(['cta', 'badge'])}
                 </div>
-                <h3 className="mt-4 text-2xl sm:text-3xl tracking-tight font-nunito font-semibold">Ready to master English?</h3>
-                <p className="mt-2 text-sm text-black/70 font-nunito">Join thousands of successful students and start your personalized learning journey today.</p>
+                <h3 className="mt-4 text-2xl sm:text-3xl tracking-tight font-nunito font-semibold">{getText(['cta', 'title'])}</h3>
+                <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['cta', 'subtitle'])}</p>
 
                 <div className="mt-6 space-y-4">
                   <button onClick={handleAuthAction} className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                     <Send className="h-4 w-4" />
-                    Start Free Trial
+                    {getText(['cta', 'startTrial'])}
                   </button>
                   <button onClick={() => navigate('/ielts-portal')} className="w-full inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
                     <FileText className="h-4 w-4" />
-                    Try Practice Test
+                    {getText(['cta', 'tryTest'])}
                   </button>
                 </div>
-                <p className="mt-3 text-[11px] text-black/60 font-nunito">No credit card required. Start learning immediately.</p>
+                <p className="mt-3 text-[11px] text-black/60 font-nunito">{getText(['cta', 'note'])}</p>
               </div>
               <div className="relative">
                 <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center min-h-[300px]">
                   <div className="text-center">
                     <Trophy className="w-20 h-20 mx-auto text-black/40 mb-4" />
-                    <h4 className="text-xl font-semibold text-black/80 font-nunito">Your Success Awaits</h4>
-                    <p className="text-sm text-black/60 font-nunito mt-2">Join the AI revolution in English learning</p>
+                    <h4 className="text-xl font-semibold text-black/80 font-nunito">{getText(['cta', 'successTitle'])}</h4>
+                    <p className="text-sm text-black/60 font-nunito mt-2">{getText(['cta', 'successSubtitle'])}</p>
                   </div>
                 </div>
               </div>
@@ -616,36 +728,36 @@ const HeroIndex = () => {
                 </div>
                 <span className="text-lg font-semibold font-nunito">English AIdol</span>
               </div>
-              <p className="mt-3 text-sm text-black/70 font-nunito">AI-powered English learning platform for IELTS and General English mastery.</p>
+              <p className="mt-3 text-sm text-black/70 font-nunito">{getText(['footer', 'description'])}</p>
               <div className="mt-4 flex items-center gap-3 text-sm text-black/70 font-nunito">
                 <Mail className="h-4 w-4" />
-                hello@englishaidol.com
+                {getText(['footer', 'email'])}
               </div>
               <div className="mt-2 flex items-center gap-3 text-sm text-black/70 font-nunito">
                 <Phone className="h-4 w-4" />
-                Available 24/7 via AI Chat
+                {getText(['footer', 'phone'])}
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">Learning</h4>
+              <h4 className="text-sm font-semibold tracking-tight font-nunito">{getText(['footer', 'learning', 'title'])}</h4>
               <ul className="mt-3 space-y-2 text-sm text-black/70">
-                <li><a className="hover:text-black font-nunito" href="#programs">IELTS Preparation</a></li>
-                <li><a className="hover:text-black font-nunito" href="#programs">General English</a></li>
-                <li><a className="hover:text-black font-nunito" href="#features">AI Features</a></li>
-                <li><a className="hover:text-black font-nunito" href="#stories">Success Stories</a></li>
+                <li><a className="hover:text-black font-nunito" href="#programs">{getText(['footer', 'learning', 'ielts'])}</a></li>
+                <li><a className="hover:text-black font-nunito" href="#programs">{getText(['footer', 'learning', 'general'])}</a></li>
+                <li><a className="hover:text-black font-nunito" href="#features">{getText(['footer', 'learning', 'features'])}</a></li>
+                <li><a className="hover:text-black font-nunito" href="#stories">{getText(['footer', 'learning', 'stories'])}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">Resources</h4>
+              <h4 className="text-sm font-semibold tracking-tight font-nunito">{getText(['footer', 'resources', 'title'])}</h4>
               <ul className="mt-3 space-y-2 text-sm text-black/70">
-                <li><a className="hover:text-black font-nunito" href="/practice">Practice Tests</a></li>
-                <li><a className="hover:text-black font-nunito" href="/writing">Writing Feedback</a></li>
-                <li><a className="hover:text-black font-nunito" href="/speaking">Speaking Practice</a></li>
-                <li><a className="hover:text-black font-nunito" href="/vocabulary">Vocabulary Builder</a></li>
+                <li><a className="hover:text-black font-nunito" href="/practice">{getText(['footer', 'resources', 'practice'])}</a></li>
+                <li><a className="hover:text-black font-nunito" href="/writing">{getText(['footer', 'resources', 'writing'])}</a></li>
+                <li><a className="hover:text-black font-nunito" href="/speaking">{getText(['footer', 'resources', 'speaking'])}</a></li>
+                <li><a className="hover:text-black font-nunito" href="/vocabulary">{getText(['footer', 'resources', 'vocabulary'])}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">Connect</h4>
+              <h4 className="text-sm font-semibold tracking-tight font-nunito">{getText(['footer', 'connect', 'title'])}</h4>
               <div className="mt-3 flex gap-2">
                 <a className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5" href="#" aria-label="Instagram">
                   <Instagram className="h-4 w-4" />
@@ -660,11 +772,11 @@ const HeroIndex = () => {
             </div>
           </div>
           <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 text-xs sm:flex-row border-black/10 text-black/60">
-            <p className="font-nunito">© 2024 English AIdol. All rights reserved.</p>
+            <p className="font-nunito">{getText(['footer', 'copyright'])}</p>
             <div className="flex items-center gap-4">
-              <a className="hover:text-black font-nunito" href="/privacy">Privacy</a>
-              <a className="hover:text-black font-nunito" href="/terms">Terms</a>
-              <a className="hover:text-black font-nunito" href="/support">Support</a>
+              <a className="hover:text-black font-nunito" href="/privacy">{getText(['footer', 'privacy'])}</a>
+              <a className="hover:text-black font-nunito" href="/terms">{getText(['footer', 'terms'])}</a>
+              <a className="hover:text-black font-nunito" href="/support">{getText(['footer', 'support'])}</a>
             </div>
           </div>
         </div>

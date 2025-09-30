@@ -94,12 +94,7 @@ const HeroIndex = () => {
 
               {/* Desktop Nav */}
               <nav className="hidden items-center gap-8 md:flex">
-                <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#about">About</a>
-                <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#programs">Programs</a>
-                <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#features">Features</a>
-                <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#pricing">Pricing</a>
-                <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#stories">Stories</a>
-                <a className="text-sm font-medium transition text-black/80 hover:text-black font-nunito" href="#contact">Contact</a>
+                {/* Navigation items removed - keeping only Dashboard and English Aidol */}
               </nav>
 
               {/* Actions */}
@@ -123,12 +118,7 @@ const HeroIndex = () => {
             {/* Mobile Menu */}
             {mobileMenuOpen && <div className="border-t px-4 py-3 md:hidden border-black/10">
                 <nav className="grid gap-2">
-                  <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#about">About</a>
-                  <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#programs">Programs</a>
-                  <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#features">Features</a>
-                  <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#pricing">Pricing</a>
-                  <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#stories">Stories</a>
-                  <a className="rounded-lg px-3 py-2 text-sm font-medium transition text-black/80 hover:bg-black/5 hover:text-black font-nunito" href="#contact">Contact</a>
+                  {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
                   <div className="mt-2 flex gap-2">
                     <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
                       <Phone className="h-4 w-4" />

@@ -26,19 +26,57 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Create content hash to detect changes
+    const contentHash = btoa(JSON.stringify(content)).substring(0, 32);
+    console.log(`Content hash for ${pageKey}: ${contentHash}`);
+
     // Check cache first
     const { data: cached } = await supabase
       .from('page_translations')
-      .select('content')
+      .select('content, created_at')
       .eq('page_key', pageKey)
       .eq('language_code', targetLanguage)
       .single();
 
-    if (cached) {
-      return new Response(
-        JSON.stringify({ success: true, translation: cached.content }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Check if we have a stored content version
+    const { data: versionData } = await supabase
+      .from('page_content_versions')
+      .select('content_hash')
+      .eq('page_key', pageKey)
+      .single();
+
+    // If content has changed, clear all cached translations for this page
+    if (versionData && versionData.content_hash !== contentHash) {
+      console.log(`Content hash changed for ${pageKey}, clearing all translations`);
+      await supabase
+        .from('page_translations')
+        .delete()
+        .eq('page_key', pageKey);
+      
+      // Update content version
+      await supabase
+        .from('page_content_versions')
+        .update({ content_hash: contentHash, last_updated: new Date().toISOString() })
+        .eq('page_key', pageKey);
+    } else if (!versionData) {
+      // First time - store content hash
+      await supabase
+        .from('page_content_versions')
+        .insert({ page_key: pageKey, content_hash: contentHash });
+    }
+
+    // If cached translation exists and content hasn't changed, use it
+    if (cached && versionData?.content_hash === contentHash) {
+      const cacheAge = Date.now() - new Date(cached.created_at).getTime();
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      
+      if (cacheAge < sevenDays) {
+        console.log(`Using cached translation for ${targetLanguage}`);
+        return new Response(
+          JSON.stringify({ success: true, translation: cached.content }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Translate using Gemini

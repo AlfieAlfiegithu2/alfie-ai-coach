@@ -68,9 +68,11 @@ const resources = {
 };
 
 // Custom language detector that includes location-based detection
-const customDetector = {
+const customDetector: any = {
   name: 'customDetector',
-  lookup: async () => {
+  type: 'languageDetector',
+  async: true,
+  detect: async (callback: (lng: string) => void) => {
     // First check if user has a saved preference
     const savedLang = localStorage.getItem('i18nextLng');
     if (savedLang) return savedLang;
@@ -196,8 +198,11 @@ const customDetector = {
       console.log('Location detection failed:', error);
     }
 
-    return 'en'; // Default fallback
+    const result = 'en'; // Default fallback
+    callback(result);
+    return result;
   },
+  init: () => {},
   cacheUserLanguage: (lng: string) => {
     localStorage.setItem('i18nextLng', lng);
   }

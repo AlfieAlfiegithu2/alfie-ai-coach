@@ -363,7 +363,7 @@ const HeroIndex = () => {
             </div>
 
             {/* Pro Plan - Highlighted */}
-            <div className="rounded-2xl border-2 p-8 border-amber-500 bg-amber-50/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 scale-105">
+            <div className="relative rounded-2xl border-2 p-8 border-amber-500 bg-amber-50/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 scale-105">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white font-nunito">
                   <Star className="h-3 w-3" />

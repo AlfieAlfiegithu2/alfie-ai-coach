@@ -23,6 +23,7 @@ const HeroIndex = () => {
     loading
   } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedDiscount, setSelectedDiscount] = useState<'monthly' | '3months' | '6months'>('monthly');
 
   // Default English content
   const defaultContent: PageContent = {
@@ -109,45 +110,43 @@ const HeroIndex = () => {
     pricing: {
       title: "Pricing Plans",
       subtitle: "Choose the perfect plan for your learning journey",
-      starter: {
-        title: "Starter",
-        subtitle: "Perfect for individuals and small projects.",
-        price: "$9",
+      discounts: {
+        monthly: "Monthly",
+        threeMonths: "3 Months",
+        sixMonths: "6 Months",
+        save10: "Save 10%",
+        save30: "Save 30%"
+      },
+      free: {
+        title: "Free",
+        subtitle: "Perfect for getting started with limited content.",
+        price: "$0",
         period: "/mo",
         features: [
-          "10GB Storage",
-          "1 User",
-          "Basic Support",
-          "Advanced Analytics"
+          "Limited Practice Tests",
+          "Basic AI Feedback",
+          "Community Access",
+          "Basic Progress Tracking"
         ],
-        button: "Choose Starter"
+        button: "Get Started Free"
       },
       pro: {
         title: "Pro",
-        subtitle: "Ideal for growing businesses and professionals.",
+        subtitle: "Unlimited access to all learning features.",
         badge: "Most Popular",
-        price: "$29",
+        priceMonthly: "$29",
+        price3Months: "$26",
+        price6Months: "$20",
         period: "/mo",
         features: [
-          "50GB Storage",
-          "5 Users",
+          "Unlimited Practice Tests",
+          "Advanced AI Feedback",
+          "All Learning Modules",
           "Priority Support",
-          "Advanced Analytics"
+          "Detailed Analytics",
+          "Personalized Study Plans"
         ],
-        button: "Choose Pro"
-      },
-      enterprise: {
-        title: "Enterprise",
-        subtitle: "For large organizations with custom needs.",
-        price: "$79",
-        period: "/mo",
-        features: [
-          "Unlimited Storage",
-          "Unlimited Users",
-          "Dedicated Support",
-          "Custom Integrations"
-        ],
-        button: "Contact Us"
+        button: "Upgrade to Pro"
       }
     },
     testimonials: {
@@ -254,6 +253,18 @@ const HeroIndex = () => {
       navigate('/auth');
     }
   };
+  
+  const getProPrice = () => {
+    switch (selectedDiscount) {
+      case '3months':
+        return getText(['pricing', 'pro', 'price3Months']);
+      case '6months':
+        return getText(['pricing', 'pro', 'price6Months']);
+      default:
+        return getText(['pricing', 'pro', 'priceMonthly']);
+    }
+  };
+  
   const testTypes = [{
     title: "IELTS Mastery",
     description: "Complete IELTS preparation with AI feedback",
@@ -611,28 +622,63 @@ const HeroIndex = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="sm:py-20 pt-16 pb-16" id="pricing">
+      <section className="sm:py-20 pt-16 pb-16 bg-zinc-50 border-y border-black/10" id="pricing">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">{getText(['pricing', 'title'])}</h2>
             <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['pricing', 'subtitle'])}</p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+          {/* Discount Period Selector */}
+          <div className="mb-12 flex justify-center">
+            <div className="inline-flex rounded-lg border border-black/10 bg-white p-1 shadow-sm">
+              <button
+                onClick={() => setSelectedDiscount('monthly')}
+                data-discount="monthly"
+                className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${
+                  selectedDiscount === 'monthly' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
+                }`}
+              >
+                {getText(['pricing', 'discounts', 'monthly'])}
+              </button>
+              <button
+                onClick={() => setSelectedDiscount('3months')}
+                data-discount="3months"
+                className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${
+                  selectedDiscount === '3months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
+                }`}
+              >
+                {getText(['pricing', 'discounts', 'threeMonths'])}
+                <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save10'])}</span>
+              </button>
+              <button
+                onClick={() => setSelectedDiscount('6months')}
+                data-discount="6months"
+                className={`rounded-md px-4 py-2 text-sm font-medium transition font-nunito ${
+                  selectedDiscount === '6months' ? 'bg-black text-white' : 'text-black hover:bg-black/5'
+                }`}
+              >
+                {getText(['pricing', 'discounts', 'sixMonths'])}
+                <span className="ml-1 text-xs text-green-600 font-semibold">{getText(['pricing', 'discounts', 'save30'])}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
             <PricingCard
-              title={getText(['pricing', 'starter', 'title'])}
-              subtitle={getText(['pricing', 'starter', 'subtitle'])}
-              price={getText(['pricing', 'starter', 'price'])}
-              period={getText(['pricing', 'starter', 'period'])}
-              features={getArray(['pricing', 'starter', 'features'])}
-              buttonText={getText(['pricing', 'starter', 'button'])}
+              title={getText(['pricing', 'free', 'title'])}
+              subtitle={getText(['pricing', 'free', 'subtitle'])}
+              price={getText(['pricing', 'free', 'price'])}
+              period={getText(['pricing', 'free', 'period'])}
+              features={getArray(['pricing', 'free', 'features'])}
+              buttonText={getText(['pricing', 'free', 'button'])}
               onButtonClick={handleAuthAction}
             />
             
             <PricingCard
               title={getText(['pricing', 'pro', 'title'])}
               subtitle={getText(['pricing', 'pro', 'subtitle'])}
-              price={getText(['pricing', 'pro', 'price'])}
+              price={getProPrice()}
               period={getText(['pricing', 'pro', 'period'])}
               features={getArray(['pricing', 'pro', 'features'])}
               buttonText={getText(['pricing', 'pro', 'button'])}
@@ -640,16 +686,6 @@ const HeroIndex = () => {
               isPopular
               isPremium
               badge={getText(['pricing', 'pro', 'badge'])}
-            />
-            
-            <PricingCard
-              title={getText(['pricing', 'enterprise', 'title'])}
-              subtitle={getText(['pricing', 'enterprise', 'subtitle'])}
-              price={getText(['pricing', 'enterprise', 'price'])}
-              period={getText(['pricing', 'enterprise', 'period'])}
-              features={getArray(['pricing', 'enterprise', 'features'])}
-              buttonText={getText(['pricing', 'enterprise', 'button'])}
-              onButtonClick={() => navigate('/contact')}
             />
           </div>
         </div>

@@ -47,6 +47,11 @@ serve(async (req) => {
         const t = await r.text();
         throw new Error(t);
       }
+    } else {
+      // If no email provider is configured, fail clearly so the UI can show guidance
+      throw new Error(
+        "Email provider not configured. Set RESEND_API_KEY (and FROM_EMAIL) in Supabase project environment variables, then redeploy the function."
+      );
     }
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

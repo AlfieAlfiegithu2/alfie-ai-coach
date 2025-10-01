@@ -35,6 +35,9 @@ functions_to_deploy=(
     "ielts-writing-examiner"
     "content-generator-gemini"
     "gemini-chat"
+    "send-email-otp"
+    "verify-email-otp"
+    "send-magic-link"
 )
 
 for func in "${functions_to_deploy[@]}"; do

@@ -31,8 +31,8 @@ serve(async (req) => {
     if (error || !data) throw new Error('Invalid code');
     if (new Date(data.expires_at).getTime() < Date.now()) throw new Error('Code expired');
 
-    // Upsert flag on profiles to mark email_preverified true
-    await admin.from('profiles').upsert({ id: email, email_verified: true }, { onConflict: 'id' });
+    // Optionally clean up used OTP (best-effort)
+    await admin.from('email_otps').delete().eq('email', email).eq('code', code);
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

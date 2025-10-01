@@ -367,21 +367,23 @@ const HeroIndex = () => {
               </nav>
 
               {/* Actions */}
-              <div className="hidden md:flex items-center gap-3">
-                {/* Language Selector */}
-                <LanguageSelector />
+              <div className="flex items-center gap-3">
+                {/* Language Selector - visible on all breakpoints */}
+                <div className="md:block">
+                  <LanguageSelector />
+                </div>
                 {user ? (
                   <>
-                    <button onClick={() => navigate('/dashboard')} className="inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
+                    <button onClick={() => navigate('/dashboard')} className="hidden md:inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
                       {t('header.dashboard', 'Dashboard')}
                     </button>
-                    <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                    <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                       <Calendar className="h-4 w-4" />
                       {user ? t('header.continueLearning', 'Continue Learning') : t('header.startFreeTrial', 'Start Free Trial')}
                     </button>
                   </>
                 ) : (
-                  <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                  <button onClick={() => navigate('/auth')} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                     {t('header.signIn', 'Sign In')}
                   </button>
                 )}
@@ -396,10 +398,7 @@ const HeroIndex = () => {
             {/* Mobile Menu */}
             {mobileMenuOpen && <div className="border-t px-4 py-3 md:hidden border-black/10">
                 <nav className="grid gap-2">
-                  {/* Language Selector for Mobile */}
-                  <div className="mb-2">
-                    <LanguageSelector />
-                  </div>
+                  {/* Language selector already visible in header on mobile */}
                   {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
                   <div className="mt-2 flex gap-2">
                     {user ? (

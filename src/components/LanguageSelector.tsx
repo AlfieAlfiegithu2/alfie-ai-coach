@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe, ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 
 interface Language {
   code: string;
@@ -63,7 +63,6 @@ const LanguageSelector = () => {
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <Globe className="w-4 h-4" />
         <span className="text-lg">{currentLanguage.flag}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>

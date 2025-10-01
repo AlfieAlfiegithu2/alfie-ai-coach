@@ -71,3 +71,12 @@ verify_jwt = true
 
 [functions.translate-page]
 verify_jwt = false
+
+[functions.send-email-otp]
+verify_jwt = false
+
+[functions.verify-email-otp]
+verify_jwt = false
+
+[functions.send-magic-link]
+verify_jwt = false

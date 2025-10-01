@@ -18,7 +18,10 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English Aidol <no-reply@englishaidol.com>";
+    // Prefer project-configured FROM_EMAIL; otherwise fall back to Resend's onboarding domain for dev
+    // You don't need a mailbox for onboarding@resend.dev, but deliverability is better with a verified domain
+    const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "English Aidol <onboarding@resend.dev>";
+    const REPLY_TO = Deno.env.get("REPLY_TO");
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -41,7 +44,7 @@ serve(async (req) => {
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_EMAIL, to: [email], subject, html })
+        body: JSON.stringify({ from: FROM_EMAIL, to: [email], subject, html, reply_to: REPLY_TO || undefined })
       });
       if (!r.ok) {
         const t = await r.text();

@@ -36,37 +36,21 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    let priceData;
-    if (planName === 'premium') {
-      priceData = {
-        currency: "usd",
-        product_data: { name: "Premium Plan" },
-        unit_amount: 999, // $9.99
-        recurring: { interval: "month" }
-      };
-    } else if (planName === 'unlimited') {
-      priceData = {
-        currency: "usd", 
-        product_data: { name: "Unlimited Plan" },
-        unit_amount: 2999, // $29.99
-        recurring: { interval: "month" }
-      };
-    } else {
-      throw new Error("Invalid plan selected");
-    }
+    // Use the Stripe price ID for the Pro plan
+    const priceId = "price_1SDJiaEHACZ6WVATDRx9ZwXZ";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: priceData,
+          price: priceId,
           quantity: 1,
         },
       ],
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/personal-page?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/pricing`,
+      cancel_url: `${req.headers.get("origin")}/`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

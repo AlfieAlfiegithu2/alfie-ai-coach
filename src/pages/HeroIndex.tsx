@@ -134,9 +134,9 @@ const HeroIndex = () => {
         title: "Pro",
         subtitle: "Unlimited access to all learning features.",
         badge: "Most Popular",
-        priceMonthly: "$29",
-        price3Months: "$26",
-        price6Months: "$20",
+        priceMonthly: "$50",
+        price3Months: "$45",
+        price6Months: "$35",
         period: "/mo",
         features: [
           "Unlimited Practice Tests",
@@ -255,13 +255,43 @@ const HeroIndex = () => {
   };
   
   const getProPrice = () => {
-    switch (selectedDiscount) {
-      case '3months':
-        return getText(['pricing', 'pro', 'price3Months']);
-      case '6months':
-        return getText(['pricing', 'pro', 'price6Months']);
-      default:
-        return getText(['pricing', 'pro', 'priceMonthly']);
+    const basePrice = 50;
+    if (selectedDiscount === '3months') {
+      return `$${(basePrice * 0.9).toFixed(0)}`;
+    } else if (selectedDiscount === '6months') {
+      return `$${(basePrice * 0.7).toFixed(0)}`;
+    }
+    return `$${basePrice}`;
+  };
+
+  const handleProCheckout = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to subscribe to the Pro plan.",
+          variant: "destructive"
+        });
+        navigate('/auth');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { planName: 'pro' }
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Error",
+        description: "Failed to start checkout. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -682,7 +712,7 @@ const HeroIndex = () => {
               period={getText(['pricing', 'pro', 'period'])}
               features={getArray(['pricing', 'pro', 'features'])}
               buttonText={getText(['pricing', 'pro', 'button'])}
-              onButtonClick={handleAuthAction}
+              onButtonClick={handleProCheckout}
               isPopular
               isPremium
               badge={getText(['pricing', 'pro', 'badge'])}

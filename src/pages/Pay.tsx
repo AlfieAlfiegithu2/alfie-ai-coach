@@ -181,7 +181,7 @@ const Pay = () => {
 
   // Stripe publishable key - safe to expose in client-side code
   const stripePromise = useMemo(() => {
-    const pk = 'pk_test_51QeeZZEHACZ6WVAT2gLBjcDm9tH2AjjHvq5YbjJfZk37YTyWEGm5T3AiGDSvhh9KnLDlmNzCbj7Z7n5gTqVJ8CUg00tB0jIRi5';
+    const pk = 'pk_test_51RuyWTEHACZ6WVATVX9ysMszIvLRJXjoublkFKEZQD7Uy88sJ9VsW38G4hbFDoDFO65qV7gxZJKpqwBkoE5REKwD00Gnkr03vi';
     return loadStripe(pk);
   }, []);
 

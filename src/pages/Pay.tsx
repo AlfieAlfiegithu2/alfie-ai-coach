@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, LinkAuthenticationElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, LinkAuthenticationElement, AddressElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft } from 'lucide-react';
 
@@ -34,7 +34,7 @@ const CheckoutForm = ({ returnUrl }: { returnUrl: string }) => {
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="bg-zinc-900 rounded-2xl shadow-xl p-6 md:p-8 border border-zinc-800">
+      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-zinc-200">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Card preview (decorative) */}
           <div className="w-full md:w-1/2 flex items-center justify-center mb-6 md:mb-0">
@@ -94,7 +94,7 @@ const CheckoutForm = ({ returnUrl }: { returnUrl: string }) => {
 
           {/* Payment Element */}
           <div className="w-full md:w-1/2">
-            <h2 className="text-xl font-semibold text-gray-100 mb-6">Payment Details</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Payment Details</h2>
             <div className="mb-4 space-y-4">
               <LinkAuthenticationElement
                 onChange={(e) => setEmail(e?.value?.email ?? '')}
@@ -103,6 +103,7 @@ const CheckoutForm = ({ returnUrl }: { returnUrl: string }) => {
                 }}
               />
               <PaymentElement options={{ layout: 'tabs', business: { name: 'English AIdol' } }} />
+              <AddressElement options={{ mode: 'billing', fields: { phone: 'always' } }} />
             </div>
             <button
               type="submit"
@@ -112,7 +113,7 @@ const CheckoutForm = ({ returnUrl }: { returnUrl: string }) => {
             >
               {submitting ? 'Processing…' : 'Pay now'}
             </button>
-            <p className="text-xs text-gray-400 mt-3">Your payment is secured with industry-standard encryption.</p>
+            <p className="text-xs text-gray-600 mt-3">Your payment is secured with industry-standard encryption.</p>
           </div>
         </div>
       </div>

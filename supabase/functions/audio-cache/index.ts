@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
+import { S3Client, PutObjectCommand } from "https://deno.land/x/s3_lite_client@0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,10 +33,28 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
+    const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
+    const CLOUDFLARE_R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+    const CLOUDFLARE_R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME');
+    const CLOUDFLARE_R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
     
     if (!OPENAI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Required environment variables not configured');
     }
+
+    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID || !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME || !CLOUDFLARE_R2_PUBLIC_URL) {
+      throw new Error('Cloudflare R2 environment variables not configured');
+    }
+
+    // Initialize R2 client
+    const r2Client = new S3Client({
+      endPoint: `${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      region: 'auto',
+      accessKey: CLOUDFLARE_R2_ACCESS_KEY_ID,
+      secretKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+      bucket: CLOUDFLARE_R2_BUCKET_NAME,
+    });
 
     // Parse request - support both old ElevenLabs format and new format
     const { text, voice, voice_id, questionId, question_id } = await req.json();
@@ -70,10 +89,8 @@ serve(async (req) => {
         .single();
 
       if (!cacheError && cached?.storage_path) {
-        // Get public URL from storage
-        const { data: publicUrl } = supabase.storage
-          .from('audio-files')
-          .getPublicUrl(cached.storage_path);
+        // Get public URL from R2
+        const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${cached.storage_path}`;
 
         // Track cache hit
         await supabase.from('audio_analytics').insert({
@@ -90,10 +107,10 @@ serve(async (req) => {
           .eq('question_id', cacheKey)
           .eq('voice', mappedVoice);
 
-        console.log(`✅ Cache hit for ${cacheKey} - Saved API cost!`);
+        console.log(`✅ Cache hit for ${cacheKey} - Saved API cost and egress!`);
         return new Response(
           JSON.stringify({ 
-            audio_url: publicUrl.publicUrl,
+            audio_url: publicUrl,
             cached: true,
             success: true 
           }),
@@ -128,35 +145,33 @@ serve(async (req) => {
     const audioBlob = new Uint8Array(arrayBuffer);
     const fileSize = audioBlob.byteLength;
 
-    // Upload to storage bucket instead of base64
+    // Upload to R2 bucket instead of Supabase Storage
     if (cacheKey) {
-      const fileName = `${cacheKey}_${mappedVoice}_${Date.now()}.mp3`;
+      const fileName = `audio/${cacheKey}_${mappedVoice}_${Date.now()}.mp3`;
       
-      console.log(`💾 Uploading ${(fileSize / 1024).toFixed(2)}KB to storage...`);
+      console.log(`💾 Uploading ${(fileSize / 1024).toFixed(2)}KB to Cloudflare R2...`);
       
-      const { error: uploadError } = await supabase.storage
-        .from('audio-files')
-        .upload(fileName, audioBlob, {
-          contentType: 'audio/mpeg',
-          cacheControl: '31536000',
-          upsert: true
+      try {
+        await r2Client.putObject(fileName, audioBlob, {
+          metadata: {
+            'Content-Type': 'audio/mpeg',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          }
         });
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
+      } catch (uploadError) {
+        console.error('R2 upload error:', uploadError);
         throw uploadError;
       }
 
-      // Get public URL
-      const { data: publicUrl } = supabase.storage
-        .from('audio-files')
-        .getPublicUrl(fileName);
+      // Get public URL from R2
+      const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${fileName}`;
 
       // Save to cache
       await supabase.from('audio_cache').upsert({
         question_id: cacheKey,
         voice: mappedVoice,
         storage_path: fileName,
+        audio_url: publicUrl,
         file_size_bytes: fileSize,
         text_hash: btoa(text),
         play_count: 1,
@@ -172,11 +187,11 @@ serve(async (req) => {
         storage_path: fileName
       });
 
-      console.log(`✅ Audio cached successfully - ${(fileSize / 1024).toFixed(2)}KB`);
+      console.log(`✅ Audio cached to R2 successfully - ${(fileSize / 1024).toFixed(2)}KB (Zero egress!)`);
 
       return new Response(
         JSON.stringify({ 
-          audio_url: publicUrl.publicUrl,
+          audio_url: publicUrl,
           cached: false,
           success: true,
           file_size: fileSize

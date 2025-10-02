@@ -89,6 +89,7 @@ import Signup from "./pages/Signup";
 import VocabularyMapView from "./components/VocabularyMapView";
 import WritingHistory from "./pages/WritingHistory";
 import WritingResultsDetail from "./pages/WritingResultsDetail";
+import Pay from "./pages/Pay";
 import MyWordBook from "./pages/MyWordBook";
 import AdminAnalytics from "./pages/AdminAnalytics";
 
@@ -220,6 +221,7 @@ const App = () => {
             <Route path="/listening-results" element={<ListeningResults />} />
             <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
             <Route path="/ielts-writing-pro-results" element={<IELTSWritingProResults />} />
+            <Route path="/pay" element={<Pay />} />
             <Route path="/ielts-portal" element={<IELTSPortal />} />
             <Route path="/ielts-test-modules/:testId" element={<IELTSTestModules />} />
             <Route path="/pte-portal" element={<PTEPortal />} />

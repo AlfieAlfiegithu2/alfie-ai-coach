@@ -99,25 +99,7 @@ const Pricing = () => {
     setLoading(planId);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          priceId: stripePrice,
-          planName: planId 
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast({
-        title: "Something went wrong",
-        description: "Please try again or contact support.",
-        variant: "destructive"
-      });
+      navigate(`/pay?plan=${planId}`);
     } finally {
       setLoading(null);
     }
@@ -230,28 +212,18 @@ const Pricing = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Button
-                    onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
-                    disabled={loading === plan.id || (plan.id === 'free' && !!user)}
-                    className={`${
-                      plan.popular 
-                        ? 'bg-primary hover:bg-primary/90' 
-                        : 'bg-accent hover:bg-accent/90'
-                    }`}
-                    size="lg"
-                  >
-                    {loading === plan.id ? 'Processing...' : 'Pay with Card'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleAlipay(plan.id)}
-                    disabled={loading === `alipay-${plan.id}` || plan.id === 'free'}
-                    size="lg"
-                  >
-                    {loading === `alipay-${plan.id}` ? 'Redirecting...' : 'Pay with Alipay'}
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
+                  disabled={loading === plan.id || (plan.id === 'free' && !!user)}
+                  className={`${
+                    plan.popular 
+                      ? 'bg-primary hover:bg-primary/90' 
+                      : 'bg-accent hover:bg-accent/90'
+                  }`}
+                  size="lg"
+                >
+                  {loading === plan.id ? 'Processing...' : 'Upgrade / Pay'}
+                </Button>
               </CardContent>
             </Card>
           ))}

@@ -303,6 +303,30 @@ export type Database = {
         }
         Relationships: []
       }
+      email_otps: {
+        Row: {
+          code: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       general_speaking_prompts: {
         Row: {
           band_criteria: Json | null

@@ -50,6 +50,7 @@ const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'alipay'>('stripe');
   const navigate = useNavigate();
+  const inStripeContext = !!stripe && !!elements;
 
   const handleAlipayCheckout = async () => {
     setSubmitting(true);
@@ -101,61 +102,35 @@ const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string
       {/* Left sidebar - Order summary */}
       <div className="w-1/2 relative text-white flex flex-col overflow-hidden">
         <AnimatedGoldBackground />
-        
         <div className="relative z-10 flex flex-col h-full p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-light tracking-tight mb-2">Order Summary</h1>
             <p className="text-sm text-gray-200">Review your purchase details</p>
           </div>
-
           <div className="flex-1 flex flex-col justify-between">
-            {/* Progress Steps */}
             <div className="space-y-4 mb-8">
               {[1, 2].map((step) => (
                 <div key={step} className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
-                    step < currentStep ? 'bg-green-500 text-white' : 
-                    step === currentStep ? 'bg-black text-white' : 
-                    'bg-white/20 text-white'
-                  }`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${step < currentStep ? 'bg-green-500 text-white' : step === currentStep ? 'bg-black text-white' : 'bg-white/20 text-white'}`}>
                     {step < currentStep ? <Check className="w-4 h-4" /> : step}
                   </div>
                   <span className="text-sm">{step === 1 ? 'Payment Method' : 'Complete Payment'}</span>
                 </div>
               ))}
             </div>
-
-            {/* Product Details */}
             <div className="bg-black/20 rounded-xl p-6 backdrop-blur-sm mb-6">
               <h3 className="font-medium mb-4 text-lg">Premium Plan</h3>
               <div className="space-y-3 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4" />
-                  <span className="text-gray-100">Unlimited access to all features</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4" />
-                  <span className="text-gray-100">Priority customer support</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Check className="w-4 h-4" />
-                  <span className="text-gray-100">Advanced analytics dashboard</span>
-                </div>
+                <div className="flex items-center space-x-2"><Check className="w-4 h-4" /><span className="text-gray-100">Unlimited access to all features</span></div>
+                <div className="flex items-center space-x-2"><Check className="w-4 h-4" /><span className="text-gray-100">Priority customer support</span></div>
+                <div className="flex items-center space-x-2"><Check className="w-4 h-4" /><span className="text-gray-100">Advanced analytics dashboard</span></div>
               </div>
             </div>
-
-            {/* Payment Summary */}
             <div className="bg-black/20 rounded-xl p-6 backdrop-blur-sm">
               <h3 className="font-medium mb-4">Payment Details</h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-100">Premium Plan (30 days)</span>
-                  <span>$9.99</span>
-                </div>
-                <div className="border-t border-white/10 pt-3 flex justify-between font-medium text-lg">
-                  <span>Total</span>
-                  <span>$9.99</span>
-                </div>
+                <div className="flex justify-between"><span className="text-gray-100">Premium Plan (30 days)</span><span>$9.99</span></div>
+                <div className="border-t border-white/10 pt-3 flex justify-between font-medium text-lg"><span>Total</span><span>$9.99</span></div>
               </div>
             </div>
           </div>
@@ -291,10 +266,8 @@ const Pay = () => {
 
   const stripePromise = useMemo(() => {
     const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string;
-    if (!pk) {
-      console.warn('VITE_STRIPE_PUBLISHABLE_KEY not set');
-    }
-    return loadStripe(pk || '');
+    if (!pk) return null;
+    return loadStripe(pk);
   }, []);
 
   const options = useMemo(() => ({
@@ -328,14 +301,16 @@ const Pay = () => {
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
         </div>
-        
         {error && <div className="text-sm text-red-500 mb-4 text-center bg-red-50 p-4 rounded-xl">{error}</div>}
-        
-        {clientSecret && (
+        {clientSecret && stripePromise ? (
           <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
             <Elements stripe={stripePromise} options={options}>
               <CheckoutForm returnUrl={returnUrl} planId={planId} />
             </Elements>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+            <CheckoutForm returnUrl={returnUrl} planId={planId} />
           </div>
         )}
       </div>

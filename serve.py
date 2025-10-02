@@ -8,6 +8,24 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory='dist', **kwargs)
 
+    def serve_index(self):
+        index_path = os.path.join('dist', 'index.html')
+        if os.path.exists(index_path):
+            try:
+                with open(index_path, 'rb') as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+            except Exception:
+                pass
+        # Fallback to default behavior if any issue
+        self.path = '/index.html'
+        return super().do_GET()
+
     def do_GET(self):
         # Parse the URL
         parsed_path = urllib.parse.urlparse(self.path)
@@ -18,9 +36,8 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             path.startswith('/api/auth/callback') or
             'access_token' in parsed_path.query or
             'error' in parsed_path.query):
-            # Serve index.html for OAuth callbacks - React Router will handle the auth state
-            self.path = '/index.html'
-            return super().do_GET()
+            # Serve index.html for OAuth callbacks with explicit HTML content type
+            return self.serve_index()
 
         # Check if it's a request for a static file that exists
         # Handle common static file extensions
@@ -32,9 +49,8 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
                 return super().do_GET()
 
         # For all other routes (including /hero, /hero/, /auth, etc.), serve index.html
-        # This allows React Router to handle client-side routing
-        self.path = '/index.html'
-        return super().do_GET()
+        # This allows React Router to handle client-side routing with explicit HTML content type
+        return self.serve_index()
 
 if __name__ == "__main__":
     os.chdir('.')

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 // Inline Google brand icon (multi-color)
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 // Technical, monochrome, grid-styled login inspired by the reference
 const Auth = () => {
   const { user, signIn, signInWithGoogle, resetPassword, loading } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +69,15 @@ const Auth = () => {
       <div className="fixed inset-0 bg-background/50 backdrop-blur-sm -z-10" />
 
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-foreground/80 hover:text-foreground bg-card/80 backdrop-blur px-3 py-2 rounded-xl border border-border"
+          aria-label="Go back"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
         {/* Header removed per request */}
 
         {/* Card */}

@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 const Signup = () => {
   const { user, signUp, loading } = useAuth();
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,6 +97,15 @@ const Signup = () => {
       <div className="fixed inset-0 bg-background/50 backdrop-blur-sm -z-10" />
 
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-foreground/80 hover:text-foreground bg-card/80 backdrop-blur px-3 py-2 rounded-xl border border-border"
+          aria-label="Go back"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
         <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl bg-card/90 border border-border mx-auto">
           <div className="p-6 md:p-8 bg-card">
             <h3 className="text-2xl font-semibold text-foreground text-center mb-4">Create account</h3>

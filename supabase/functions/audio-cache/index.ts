@@ -5,18 +5,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Cache-Control': 'public, max-age=31536000, immutable',
 };
 
 // Voice mapping from ElevenLabs to OpenAI
 const voiceMapping = {
-  // ElevenLabs default voice mappings to OpenAI voices
-  '9BWtsMINqrJLrRacOk9x': 'nova', // Aria -> Nova (warm, engaging female)
-  'CwhRBWXzGAHq8TQ4Fs17': 'onyx', // Roger -> Onyx (deep male)  
-  'EXAVITQu4vr4xnSDxMaL': 'shimmer', // Sarah -> Shimmer (soft female)
-  'FGY2WhTYpPnrIDTdsKH5': 'alloy', // Laura -> Alloy (neutral)
-  'IKne3meq5aSn9XLyUdCD': 'echo', // Charlie -> Echo (male)
-  'JBFqnCBsd6RMkjVDRZzb': 'fable', // George -> Fable (expressive male)
-  // Default fallback
+  '9BWtsMINqrJLrRacOk9x': 'nova',
+  'CwhRBWXzGAHq8TQ4Fs17': 'onyx',
+  'EXAVITQu4vr4xnSDxMaL': 'shimmer',
+  'FGY2WhTYpPnrIDTdsKH5': 'alloy',
+  'IKne3meq5aSn9XLyUdCD': 'echo',
+  'JBFqnCBsd6RMkjVDRZzb': 'fable',
   'default': 'nova'
 };
 
@@ -62,31 +61,48 @@ serve(async (req) => {
 
     // Check if audio already exists in cache
     if (cacheKey) {
-      console.log(`🔍 Efficient Voice: Checking cache for question ${cacheKey}`);
+      console.log(`🔍 Checking cache for question ${cacheKey}`);
       const { data: cached, error: cacheError } = await supabase
         .from('audio_cache')
-        .select('audio_url')
+        .select('storage_path, file_size_bytes, play_count')
         .eq('question_id', cacheKey)
         .eq('voice', mappedVoice)
         .single();
 
-      if (!cacheError && cached?.audio_url) {
-        console.log(`✅ Efficient Voice: Found cached audio for question ${cacheKey}, saving API costs!`);
+      if (!cacheError && cached?.storage_path) {
+        // Get public URL from storage
+        const { data: publicUrl } = supabase.storage
+          .from('audio-files')
+          .getPublicUrl(cached.storage_path);
+
+        // Track cache hit
+        await supabase.from('audio_analytics').insert({
+          question_id: cacheKey,
+          voice: mappedVoice,
+          action_type: 'cache_hit',
+          file_size_bytes: cached.file_size_bytes,
+          storage_path: cached.storage_path
+        });
+
+        // Update play count
+        await supabase.from('audio_cache')
+          .update({ play_count: (cached.play_count || 0) + 1 })
+          .eq('question_id', cacheKey)
+          .eq('voice', mappedVoice);
+
+        console.log(`✅ Cache hit for ${cacheKey} - Saved API cost!`);
         return new Response(
           JSON.stringify({ 
-            audioContent: cached.audio_url,
-            audio_url: cached.audio_url,
+            audio_url: publicUrl.publicUrl,
             cached: true,
             success: true 
           }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          },
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
 
-    console.log(`🎵 Efficient Voice: Generating new audio with OpenAI TTS...`);
+    console.log(`🎵 Generating new audio with OpenAI TTS...`);
 
     // Generate speech from text using OpenAI TTS
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -108,53 +124,76 @@ serve(async (req) => {
       throw new Error(`TTS API error: ${error}`);
     }
 
-    // Convert audio buffer to base64
     const arrayBuffer = await response.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
-    // Convert to base64 in chunks to avoid stack overflow
-    let base64Audio = '';
-    const chunkSize = 1024;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.slice(i, i + chunkSize);
-      base64Audio += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
-    }
+    const audioBlob = new Uint8Array(arrayBuffer);
+    const fileSize = audioBlob.byteLength;
 
-    const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
-
-    // Save to cache if questionId provided
+    // Upload to storage bucket instead of base64
     if (cacheKey) {
-      console.log(`💾 Efficient Voice: Saving audio to cache for question ${cacheKey}`);
-      const { error: saveError } = await supabase
-        .from('audio_cache')
-        .upsert({
-          question_id: cacheKey,
-          voice: mappedVoice,
-          audio_url: audioDataUrl,
-          text_hash: btoa(text), // Hash of the text for verification
-          created_at: new Date().toISOString()
+      const fileName = `${cacheKey}_${mappedVoice}_${Date.now()}.mp3`;
+      
+      console.log(`💾 Uploading ${(fileSize / 1024).toFixed(2)}KB to storage...`);
+      
+      const { error: uploadError } = await supabase.storage
+        .from('audio-files')
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/mpeg',
+          cacheControl: '31536000',
+          upsert: true
         });
 
-      if (saveError) {
-        console.error('Failed to cache audio:', saveError);
-        // Continue anyway, don't fail the request
-      } else {
-        console.log(`✅ Efficient Voice: Audio cached successfully for reuse, reducing future API costs`);
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
       }
+
+      // Get public URL
+      const { data: publicUrl } = supabase.storage
+        .from('audio-files')
+        .getPublicUrl(fileName);
+
+      // Save to cache
+      await supabase.from('audio_cache').upsert({
+        question_id: cacheKey,
+        voice: mappedVoice,
+        storage_path: fileName,
+        file_size_bytes: fileSize,
+        text_hash: btoa(text),
+        play_count: 1,
+        updated_at: new Date().toISOString()
+      });
+
+      // Track generation in analytics
+      await supabase.from('audio_analytics').insert({
+        question_id: cacheKey,
+        voice: mappedVoice,
+        action_type: 'generate',
+        file_size_bytes: fileSize,
+        storage_path: fileName
+      });
+
+      console.log(`✅ Audio cached successfully - ${(fileSize / 1024).toFixed(2)}KB`);
+
+      return new Response(
+        JSON.stringify({ 
+          audio_url: publicUrl.publicUrl,
+          cached: false,
+          success: true,
+          file_size: fileSize
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('TTS generation and caching successful');
-
+    // Fallback: return base64 if no cache key
+    const base64Audio = btoa(String.fromCharCode(...audioBlob));
     return new Response(
       JSON.stringify({ 
-        audioContent: audioDataUrl,
-        audio_url: audioDataUrl,
+        audio_url: `data:audio/mp3;base64,${base64Audio}`,
         cached: false,
         success: true 
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {

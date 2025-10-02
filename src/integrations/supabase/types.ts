@@ -112,12 +112,48 @@ export type Database = {
         }
         Relationships: []
       }
+      audio_analytics: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          file_size_bytes: number | null
+          id: string
+          question_id: string
+          storage_path: string | null
+          user_id: string | null
+          voice: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          question_id: string
+          storage_path?: string | null
+          user_id?: string | null
+          voice: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          question_id?: string
+          storage_path?: string | null
+          user_id?: string | null
+          voice?: string
+        }
+        Relationships: []
+      }
       audio_cache: {
         Row: {
           audio_url: string
           created_at: string
+          file_size_bytes: number | null
           id: string
+          play_count: number | null
           question_id: string
+          storage_path: string | null
           text_hash: string
           updated_at: string
           voice: string
@@ -125,8 +161,11 @@ export type Database = {
         Insert: {
           audio_url: string
           created_at?: string
+          file_size_bytes?: number | null
           id?: string
+          play_count?: number | null
           question_id: string
+          storage_path?: string | null
           text_hash: string
           updated_at?: string
           voice?: string
@@ -134,8 +173,11 @@ export type Database = {
         Update: {
           audio_url?: string
           created_at?: string
+          file_size_bytes?: number | null
           id?: string
+          play_count?: number | null
           question_id?: string
+          storage_path?: string | null
           text_hash?: string
           updated_at?: string
           voice?: string
@@ -1742,6 +1784,27 @@ export type Database = {
       cleanup_writing_analysis_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_audio_analytics_summary: {
+        Args: { days_back?: number }
+        Returns: {
+          avg_file_size: number
+          cache_hit_rate: number
+          cache_hits: number
+          total_egress_bytes: number
+          total_generations: number
+          total_plays: number
+          unique_questions: number
+        }[]
+      }
+      get_storage_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avg_bytes: number
+          bucket_id: string
+          file_count: number
+          total_bytes: number
+        }[]
       }
       invalidate_translations_on_content_change: {
         Args: Record<PropertyKey, never>

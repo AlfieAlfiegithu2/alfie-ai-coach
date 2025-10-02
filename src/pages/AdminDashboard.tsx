@@ -44,6 +44,13 @@ const AdminDashboard = () => {
       icon: Mic,
       route: "/admin/general-english", 
       count: "English Lessons"
+    },
+    {
+      title: "Analytics Dashboard",
+      description: "Audio usage, storage & cost tracking",
+      icon: BarChart3,
+      route: "/admin/analytics",
+      count: "View Stats"
     }
   ];
 
@@ -66,7 +73,7 @@ const AdminDashboard = () => {
           <h2 className="text-3xl font-georgia font-bold text-center text-foreground mb-8">
             Test Type Administration
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {testTypes.map((section) => {
               const Icon = section.icon;
               return (

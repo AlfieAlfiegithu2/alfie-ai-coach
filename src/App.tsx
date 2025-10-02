@@ -90,6 +90,7 @@ import VocabularyMapView from "./components/VocabularyMapView";
 import WritingHistory from "./pages/WritingHistory";
 import WritingResultsDetail from "./pages/WritingResultsDetail";
 import MyWordBook from "./pages/MyWordBook";
+import AdminAnalytics from "./pages/AdminAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +142,7 @@ const App = () => {
             
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/admin/reading" element={<AdminReading />} />
             <Route path="/admin/listening" element={<AdminListening />} />
             <Route path="/admin/writing" element={<AdminWriting />} />

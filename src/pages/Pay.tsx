@@ -102,9 +102,9 @@ const Pay = () => {
     })();
   }, [planId]);
 
+  // Stripe publishable key - safe to expose in client-side code
   const stripePromise = useMemo(() => {
-    const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string;
-    if (!pk) return null;
+    const pk = 'pk_test_51QeeZZEHACZ6WVAT2gLBjcDm9tH2AjjHvq5YbjJfZk37YTyWEGm5T3AiGDSvhh9KnLDlmNzCbj7Z7n5gTqVJ8CUg00tB0jIRi5';
     return loadStripe(pk);
   }, []);
 

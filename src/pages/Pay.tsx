@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, LinkAuthenticationElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft } from 'lucide-react';
 
@@ -14,6 +14,7 @@ const CheckoutForm = ({ returnUrl }: { returnUrl: string }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
+  const [email, setEmail] = useState<string>("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +23,7 @@ const CheckoutForm = ({ returnUrl }: { returnUrl: string }) => {
     setSubmitting(true);
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: returnUrl },
+      confirmParams: { return_url: returnUrl, receipt_email: email || undefined },
       redirect: 'if_required',
     });
     setSubmitting(false);
@@ -94,7 +95,13 @@ const CheckoutForm = ({ returnUrl }: { returnUrl: string }) => {
           {/* Payment Element */}
           <div className="w-full md:w-1/2">
             <h2 className="text-xl font-semibold text-gray-100 mb-6">Payment Details</h2>
-            <div className="mb-4">
+            <div className="mb-4 space-y-4">
+              <LinkAuthenticationElement
+                onChange={(e) => setEmail(e?.value?.email ?? '')}
+                options={{
+                  defaultValues: { email: email || '' },
+                }}
+              />
               <PaymentElement options={{ layout: 'tabs', business: { name: 'English AIdol' } }} />
             </div>
             <button

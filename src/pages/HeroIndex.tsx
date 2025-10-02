@@ -265,34 +265,17 @@ const HeroIndex = () => {
   };
 
   const handleProCheckout = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to subscribe to the Pro plan.",
-          variant: "destructive"
-        });
-        navigate('/auth');
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { planName: 'pro' }
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       toast({
-        title: "Checkout Error",
-        description: "Failed to start checkout. Please try again.",
+        title: "Authentication Required",
+        description: "Please sign in to upgrade to Pro.",
         variant: "destructive"
       });
+      navigate('/auth');
+      return;
     }
+    navigate('/pay?plan=premium');
   };
   
   const testTypes = [{

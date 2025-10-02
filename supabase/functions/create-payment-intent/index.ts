@@ -45,7 +45,8 @@ serve(async (req) => {
     const intent = await stripe.paymentIntents.create({
       amount: plan.amount,
       currency: "usd",
-      payment_method_types: ["card", "alipay"],
+      automatic_payment_methods: { enabled: true, allow_redirects: "always" },
+      payment_method_configuration: undefined,
       metadata: {
         user_id: user.id,
         plan_id: planId,

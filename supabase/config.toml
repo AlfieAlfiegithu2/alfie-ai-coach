@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.create-checkout]
 verify_jwt = true
 
+[functions.create-alipay-checkout]
+verify_jwt = true
+
 [functions.admin-auth]
 verify_jwt = false
 

@@ -123,6 +123,43 @@ const Pricing = () => {
     }
   };
 
+  const handleAlipay = async (planId: string) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    if (planId === 'free') {
+      toast({
+        title: "Alipay not required for Free plan",
+        description: "Choose Premium or Unlimited to pay with Alipay.",
+      });
+      return;
+    }
+
+    setLoading(`alipay-${planId}`);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-alipay-checkout', {
+        body: { planId }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Alipay checkout error:', error);
+      toast({
+        title: "Alipay checkout failed",
+        description: "Please try again or use card checkout.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
       <div className="container mx-auto px-4 py-16">
@@ -193,18 +230,28 @@ const Pricing = () => {
                   </div>
                 )}
 
-                <Button
-                  onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
-                  disabled={loading === plan.id || (plan.id === 'free' && !!user)}
-                  className={`w-full ${
-                    plan.popular 
-                      ? 'bg-primary hover:bg-primary/90' 
-                      : 'bg-accent hover:bg-accent/90'
-                  }`}
-                  size="lg"
-                >
-                  {loading === plan.id ? 'Processing...' : plan.buttonText}
-                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => handleSubscribe(plan.id, plan.stripePrice)}
+                    disabled={loading === plan.id || (plan.id === 'free' && !!user)}
+                    className={`${
+                      plan.popular 
+                        ? 'bg-primary hover:bg-primary/90' 
+                        : 'bg-accent hover:bg-accent/90'
+                    }`}
+                    size="lg"
+                  >
+                    {loading === plan.id ? 'Processing...' : 'Pay with Card'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleAlipay(plan.id)}
+                    disabled={loading === `alipay-${plan.id}` || plan.id === 'free'}
+                    size="lg"
+                  >
+                    {loading === `alipay-${plan.id}` ? 'Redirecting...' : 'Pay with Alipay'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

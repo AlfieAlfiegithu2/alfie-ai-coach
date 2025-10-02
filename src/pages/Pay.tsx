@@ -129,7 +129,7 @@ const Pay = () => {
 
   return (
     <div className="min-h-screen w-full font-sans bg-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-2xl">
         <div className="flex items-center gap-3 mb-6">
           <button
             type="button"
@@ -141,14 +141,17 @@ const Pay = () => {
         </div>
         {error && <div className="text-sm text-red-500 mb-4 text-center bg-red-50 p-4 rounded-xl">{error}</div>}
         {clientSecret && stripePromise ? (
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-            <Elements stripe={stripePromise} options={options}>
-              <CheckoutForm returnUrl={returnUrl} planId={planId} />
-            </Elements>
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+          <Elements stripe={stripePromise} options={options}>
             <CheckoutForm returnUrl={returnUrl} planId={planId} />
+          </Elements>
+        ) : (
+          <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading payment form...</p>
+              </div>
+            </div>
           </div>
         )}
       </div>

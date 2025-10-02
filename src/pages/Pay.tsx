@@ -1,110 +1,45 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, LinkAuthenticationElement, AddressElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Check } from 'lucide-react';
-import * as THREE from 'three';
 
 function useQuery() {
   const { search } = useLocation();
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-const SilkShaderBackground = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const parent = canvas.parentElement;
-    if (!parent) return;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-
-    const resizeCanvas = () => {
-      const rect = parent.getBoundingClientRect();
-      renderer.setSize(rect.width, rect.height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    };
-    resizeCanvas();
-
-    const vertexShader = `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `;
-
-    const fragmentShader = `
-      varying vec2 vUv;
-      uniform float uTime;
-      uniform vec3 uColor;
-      
-      float noise(vec2 p) {
-        return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-      }
-      
-      void main() {
-        vec2 uv = vUv * 1.5;
-        float t = uTime * 0.8;
-        
-        uv.y += 0.03 * sin(8.0 * uv.x - t);
-        float pattern = 0.6 + 0.4 * sin(5.0 * (uv.x + uv.y + cos(3.0 * uv.x + 5.0 * uv.y) + 0.02 * t) + sin(20.0 * (uv.x + uv.y - 0.1 * t)));
-        
-        vec3 gold = vec3(0.85, 0.65, 0.13);
-        vec3 darkGold = vec3(0.55, 0.35, 0.05);
-        vec3 col = mix(darkGold, gold, pattern);
-        
-        float rnd = noise(gl_FragCoord.xy) * 0.05;
-        col -= rnd;
-        
-        gl_FragColor = vec4(col, 1.0);
-      }
-    `;
-
-    const uniforms = {
-      uTime: { value: 0 },
-      uColor: { value: new THREE.Color(0.85, 0.65, 0.13) }
-    };
-
-    const material = new THREE.ShaderMaterial({
-      uniforms,
-      vertexShader,
-      fragmentShader
-    });
-
-    const geometry = new THREE.PlaneGeometry(2, 2);
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
-    const clock = new THREE.Clock();
-    let animationId: number;
-
-    const animate = () => {
-      animationId = requestAnimationFrame(animate);
-      uniforms.uTime.value += clock.getDelta() * 0.1;
-      renderer.render(scene, camera);
-    };
-
-    const handleResize = () => resizeCanvas();
-    window.addEventListener('resize', handleResize);
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationId);
-      renderer.dispose();
-      geometry.dispose();
-      material.dispose();
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+// Simple animated gold gradient background
+const AnimatedGoldBackground = () => {
+  return (
+    <div className="absolute inset-0 w-full h-full overflow-hidden">
+      <div 
+        className="absolute inset-0 opacity-90"
+        style={{
+          background: 'linear-gradient(135deg, #D4AF37 0%, #C5A028 25%, #B8941F 50%, #AA7F1A 75%, #9B6B15 100%)',
+          animation: 'gradientShift 8s ease infinite'
+        }}
+      />
+      <div 
+        className="absolute inset-0 opacity-30"
+        style={{
+          background: 'radial-gradient(circle at 30% 50%, rgba(255,215,0,0.4) 0%, transparent 50%)',
+          animation: 'pulse 6s ease-in-out infinite'
+        }}
+      />
+      <style>{`
+        @keyframes gradientShift {
+          0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+          50% { filter: hue-rotate(10deg) brightness(1.1); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.1); }
+        }
+      `}</style>
+    </div>
+  );
 };
 
 const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string }) => {
@@ -165,7 +100,7 @@ const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string
     <div className="flex min-h-[700px] w-full">
       {/* Left sidebar - Order summary */}
       <div className="w-1/2 relative text-white flex flex-col overflow-hidden">
-        <SilkShaderBackground />
+        <AnimatedGoldBackground />
         
         <div className="relative z-10 flex flex-col h-full p-8">
           <div className="mb-8">

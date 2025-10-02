@@ -10,14 +10,6 @@ function useQuery() {
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-<<<<<<< HEAD
-=======
-// Minimal background helpers (no heavy image/mesh)
-const CardDivider = () => (
-  <div className="h-px w-full bg-gradient-to-r from-transparent via-black/10 to-transparent" />
-);
-
->>>>>>> afcb74d (feat(payments): redesign pay UI to neutral modern card, updated copy and 49usd plan; keep embedded Payment Element)
 const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -41,85 +33,10 @@ const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string
   };
 
   return (
-<<<<<<< HEAD
     <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-gray-900 mb-2">Complete your purchase</h1>
         <p className="text-gray-600">Subscribe to Premium Plan - $50.00</p>
-=======
-    <div className="flex min-h-[700px] w-full">
-      {/* Left sidebar - Plan summary (neutral background) */}
-      <div className="w-1/2 relative flex flex-col overflow-hidden bg-white">
-        <div className="relative z-10 flex flex-col h-full p-8">
-          <div className="mb-4">
-            <div className="flex items-center gap-3 text-slate-700">
-              <div className="h-10 w-10 rounded-full border border-slate-200 flex items-center justify-center bg-white"><Rocket className="h-5 w-5" /></div>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight">Upgrade Plan</h1>
-                <p className="text-sm text-slate-500">Unlock premium AI capabilities</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Steps */}
-          <div className="space-y-3 mb-6">
-            {[1, 2].map((step) => (
-              <div key={step} className="flex items-center gap-3 text-slate-700">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] ${step < currentStep ? 'bg-emerald-500 text-white' : step === currentStep ? 'bg-black text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {step < currentStep ? <Check className="h-4 w-4" /> : step}
-                </div>
-                <span className="text-sm">{step === 1 ? 'Payment Method' : 'Complete Payment'}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Price */}
-          <div className="flex items-end gap-2 mb-4">
-            <div className="text-4xl font-semibold tracking-tight">$49</div>
-            <div className="text-slate-500 mb-1">/month</div>
-          </div>
-          <CardDivider />
-
-          {/* Features grid */}
-          <div className="grid grid-cols-2 gap-3 my-6 text-sm">
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />25,000 AI tokens/month</div>
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />Priority processing</div>
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />Advanced templates</div>
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />24/7 support</div>
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />Custom integrations</div>
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />API access</div>
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />Advanced analytics</div>
-            <div className="flex items-center gap-2 text-slate-700"><Check className="h-4 w-4 text-emerald-500" />Multi-user workspace</div>
-          </div>
-
-          <CardDivider />
-
-          {/* Extras */}
-          <div className="mt-6 space-y-3 text-sm">
-            <div className="flex items-start gap-3 text-slate-700">
-              <Star className="h-4 w-4 text-yellow-500 mt-0.5" />
-              <div>
-                <p className="font-medium">Advanced AI Models</p>
-                <p className="text-slate-500 text-xs">Access to top-tier model features</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 text-slate-700">
-              <Users className="h-4 w-4 text-blue-500 mt-0.5" />
-              <div>
-                <p className="font-medium">Team Collaboration</p>
-                <p className="text-slate-500 text-xs">Share and collaborate with teammates</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 text-slate-700">
-              <BarChart3 className="h-4 w-4 text-emerald-500 mt-0.5" />
-              <div>
-                <p className="font-medium">Advanced Analytics</p>
-                <p className="text-slate-500 text-xs">Detailed usage insights</p>
-              </div>
-            </div>
-          </div>
-        </div>
->>>>>>> afcb74d (feat(payments): redesign pay UI to neutral modern card, updated copy and 49usd plan; keep embedded Payment Element)
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

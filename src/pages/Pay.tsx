@@ -52,23 +52,8 @@ const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string
   const navigate = useNavigate();
   const inStripeContext = !!stripe && !!elements;
 
-  const handleAlipayCheckout = async () => {
-    setSubmitting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-alipay-checkout', {
-        body: { planId }
-      });
-      
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Alipay checkout error:', error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // Alipay is supported inside Stripe Payment Element when enabled on your Stripe account.
+  // We no longer open a separate hosted checkout window.
 
   const handleStripeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +71,7 @@ const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string
   };
 
   const handleNext = () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
-    } else if (paymentMethod === 'alipay') {
-      handleAlipayCheckout();
-    }
+    if (currentStep < 2) setCurrentStep(currentStep + 1);
   };
 
   const handlePrev = () => {
@@ -228,14 +209,14 @@ const CheckoutForm = ({ returnUrl, planId }: { returnUrl: string; planId: string
                 </button>
               ) : <div />}
               
-              {(currentStep === 1 || paymentMethod === 'alipay') && (
+              {currentStep === 1 && (
                 <button
                   type="button"
                   onClick={handleNext}
                   disabled={submitting}
                   className="bg-black hover:bg-gray-800 text-white font-medium py-3 px-8 rounded-xl transition-colors disabled:opacity-50"
                 >
-                  {submitting ? 'Processing…' : currentStep === 2 ? 'Pay with Alipay' : 'Continue →'}
+                  {submitting ? 'Processing…' : 'Continue →'}
                 </button>
               )}
             </div>

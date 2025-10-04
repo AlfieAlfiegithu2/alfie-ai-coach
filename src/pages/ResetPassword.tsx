@@ -33,8 +33,9 @@ const ResetPassword = () => {
       });
       
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
-      setSuccess('Reset code sent! Check your email.');
+      setSuccess('Password reset code sent! Please check your email for a 6-digit verification code.');
       setStep('verify');
     } catch (err: any) {
       setError(err.message || 'Failed to send reset code.');

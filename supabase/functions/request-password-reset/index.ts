@@ -30,10 +30,9 @@ serve(async (req) => {
     const user = users?.users.find(u => u.email === email);
     
     if (!user) {
-      // Return success even if user doesn't exist (security best practice)
       return new Response(
-        JSON.stringify({ success: true, message: "If the email exists, a reset code will be sent." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "No account found with this email address." }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

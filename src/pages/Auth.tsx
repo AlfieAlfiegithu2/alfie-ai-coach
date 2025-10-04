@@ -128,7 +128,7 @@ const Auth = () => {
                   <input type="checkbox" className="w-4 h-4 rounded mr-2 border-border text-primary focus:ring-primary/30" />
                   Remember me
                           </label>
-                <button type="button" className="text-primary font-medium hover:underline" onClick={() => setResetMode(true)}>Forgot password?</button>
+                <button type="button" className="text-primary font-medium hover:underline" onClick={() => navigate('/reset-password')}>Forgot password?</button>
                         </div>
               {error && <div className="text-sm text-red-500">{error}</div>}
                         <button

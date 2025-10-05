@@ -117,7 +117,7 @@ function weekFromBand(band: Score['band']): PlanWeek {
   };
 }
 
-type PlanContext = { targetScore?: number | null; timePerDay?: 'under_30' | '1_hour' | '2_hours' | 'more'; targetDeadline?: string | null };
+type PlanContext = { targetScore?: number | null; targetDeadline?: string | null };
 
 function ieltsFromPct(pct: number): number {
   if (pct < 25) return 3.5;
@@ -128,43 +128,32 @@ function ieltsFromPct(pct: number): number {
   return 8.0;
 }
 
-function minutesForTimePerDay(val?: PlanContext['timePerDay']): number {
-  switch (val) {
-    case 'under_30': return 25;
-    case '1_hour': return 60;
-    case '2_hours': return 120;
-    case 'more': return 150;
-    default: return 60;
-  }
+// Compute required daily minutes to hit target by deadline based on band gap
+function requiredDailyMinutes(currentApprox: number, target: number, weeksAvailable: number): number {
+  const halfBandSteps = Math.max(0, Math.ceil((target - currentApprox) * 2));
+  if (halfBandSteps === 0) return 30; // maintain
+  // Baseline: 4 weeks per 0.5 band at ~60 min/day -> total minutes per step
+  const minutesPerStepAt60 = 4 * 7 * 60; // 1680
+  const totalMinutesNeeded = halfBandSteps * minutesPerStepAt60;
+  const minutesPerWeek = totalMinutesNeeded / Math.max(1, weeksAvailable);
+  const perDay = Math.ceil(minutesPerWeek / 7);
+  return Math.min(180, Math.max(30, perDay));
 }
 
 export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContext = {}): Plan {
   const currentApprox = ieltsFromPct((score as any).overallPct ?? 50);
   const target = goal?.toLowerCase() === 'ielts' ? (ctx.targetScore ?? 7.0) : (ctx.targetScore ?? currentApprox + 1);
-  const dailyMinutes = minutesForTimePerDay(ctx.timePerDay);
-  // Baseline: ~4 weeks per 0.5 band at ~60 min/day
-  const stepWeeksAt60 = 4;
-  const minutesFactor = 60 / Math.max(30, dailyMinutes); // more minutes => <1
-  const halfBandSteps = Math.max(0, Math.ceil((target - currentApprox) * 2));
-  let durationWeeks = Math.max(2, Math.ceil(halfBandSteps * stepWeeksAt60 * minutesFactor));
-
-  // If a target deadline exists, adjust duration to fit by recommending daily minutes
-  let recommendedDailyMinutes = dailyMinutes;
+  // Determine available weeks from deadline (default 12 weeks if none)
+  let durationWeeks = 12;
   if (ctx.targetDeadline) {
     const deadline = new Date(ctx.targetDeadline);
     const now = new Date();
     const diffWeeks = Math.max(1, Math.ceil((deadline.getTime() - now.getTime()) / (7 * 24 * 60 * 60 * 1000)));
-    if (isFinite(diffWeeks) && diffWeeks > 0) {
-      // If our computed duration is longer than available time, increase daily minutes suggestion
-      if (durationWeeks > diffWeeks) {
-        const factorNeeded = durationWeeks / diffWeeks;
-        recommendedDailyMinutes = Math.min(180, Math.round(dailyMinutes * factorNeeded));
-        durationWeeks = diffWeeks; // fit to deadline
-      } else {
-        durationWeeks = diffWeeks; // align to deadline nice UX
-      }
-    }
+    if (isFinite(diffWeeks) && diffWeeks > 0) durationWeeks = diffWeeks;
   }
+  // Compute required daily minutes to close the band gap within durationWeeks
+  let recommendedDailyMinutes = requiredDailyMinutes(currentApprox, target, durationWeeks);
+  // If no deadline, cap to reasonable 26 weeks
   // Cap to 26 weeks for ~6 months; still allows shorter/longer as needed
   durationWeeks = Math.min(26, durationWeeks);
   const estimatedMonths = Math.max(1, Math.round(durationWeeks / 4));
@@ -180,7 +169,7 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
 
   const highlights = [
     `Starting level ≈ ${score.band} (IELTS ~${currentApprox.toFixed(1)})`,
-    `Target IELTS ${target.toFixed(1)} • Daily study ~${dailyMinutes} min`,
+    `Target IELTS ${target.toFixed(1)} • Daily study ~${recommendedDailyMinutes} min`,
     `Estimated timeline: ~${estimatedMonths} month(s)`
   ];
   const quickWins = [

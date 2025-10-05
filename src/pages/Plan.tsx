@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 
 const PlanPage = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [openDayKey, setOpenDayKey] = useState<string | null>(null);
   const location = useLocation() as any;
 
   useEffect(() => {
@@ -43,8 +44,6 @@ const PlanPage = () => {
   }, [location?.state]);
 
   if (!plan) return <div className="max-w-3xl mx-auto p-6">No plan yet.</div>;
-
-  const [openDayKey, setOpenDayKey] = useState<string | null>(null);
   const getDay = (key: string | null) => {
     if (!key) return null;
     const [w, d] = key.split('-').map(Number);

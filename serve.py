@@ -54,24 +54,43 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     os.chdir('.')
-    PORT = 8080
+    base_port = int(os.environ.get('PORT', '8080'))
+    max_tries = 15
 
-    # Bind to both IPv4 and IPv6
-    try:
-        with socketserver.TCPServer(("", PORT), SPAHandler) as httpd:
-            print(f"Serving at http://localhost:{PORT}")
-            print("SPA mode: All routes will serve index.html for React Router")
-            print("OAuth callbacks will be handled correctly")
-            print("Static assets will be served directly from dist/")
-            httpd.serve_forever()
-    except OSError as e:
-        if "Address already in use" in str(e):
-            print(f"Port {PORT} is already in use. Trying IPv4 only...")
-            with socketserver.TCPServer(("0.0.0.0", PORT), SPAHandler) as httpd:
-                print(f"Serving at http://localhost:{PORT}")
+    def try_start(port: int):
+        try:
+            with socketserver.TCPServer(("", port), SPAHandler) as httpd:
+                print(f"Serving at http://localhost:{port}")
                 print("SPA mode: All routes will serve index.html for React Router")
                 print("OAuth callbacks will be handled correctly")
                 print("Static assets will be served directly from dist/")
                 httpd.serve_forever()
-        else:
-            raise
+        except OSError as e:
+            if "Address already in use" in str(e):
+                # Try IPv4 only
+                try:
+                    with socketserver.TCPServer(("0.0.0.0", port), SPAHandler) as httpd:
+                        print(f"Serving at http://localhost:{port}")
+                        print("SPA mode: All routes will serve index.html for React Router")
+                        print("OAuth callbacks will be handled correctly")
+                        print("Static assets will be served directly from dist/")
+                        httpd.serve_forever()
+                except OSError as e2:
+                    if "Address already in use" in str(e2):
+                        raise e2
+                    else:
+                        raise
+            else:
+                raise
+
+    for i in range(max_tries):
+        port = base_port + i
+        try:
+            try_start(port)
+            break
+        except OSError as e:
+            if "Address already in use" in str(e):
+                print(f"Port {port} is in use. Trying {port+1}...")
+                continue
+            else:
+                raise

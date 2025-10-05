@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import DailyChallenge from "@/components/DailyChallenge";
 import LoadingAnimation from "@/components/animations/LoadingAnimation";
 import SettingsModal from "@/components/SettingsModal";
+import StudyPlanModal from "@/components/StudyPlanModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
 import ProfilePhotoSelector from "@/components/ProfilePhotoSelector";
@@ -286,7 +287,7 @@ const Dashboard = () => {
             
             
           </div>
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2">
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2 pr-48">
             <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
@@ -298,6 +299,15 @@ const Dashboard = () => {
             }}>
               Tests
             </button>
+            
+            {/* Study Plan Button next to Tests as nav text */}
+            <StudyPlanModal>
+              <button className="text-slate-600 hover:text-blue-600 transition" style={{
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                Study Plan
+              </button>
+            </StudyPlanModal>
             
             <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'

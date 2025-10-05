@@ -573,6 +573,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          current_plan_id: string | null
           full_name: string | null
           id: string
           native_language: string | null
@@ -582,6 +583,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          current_plan_id?: string | null
           full_name?: string | null
           id: string
           native_language?: string | null
@@ -591,13 +593,22 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          current_plan_id?: string | null
           full_name?: string | null
           id?: string
           native_language?: string | null
           role?: string | null
           subscription_status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_plan_id_fkey"
+            columns: ["current_plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pronunciation_items: {
         Row: {
@@ -1152,6 +1163,30 @@ export type Database = {
           },
         ]
       }
+      study_plans: {
+        Row: {
+          created_at: string
+          id: string
+          plan: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_results: {
         Row: {
           audio_retention_expires_at: string | null
@@ -1397,6 +1432,30 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_assessments: {
+        Row: {
+          assessment_data: Json
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assessment_data: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assessment_data?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

@@ -463,6 +463,20 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               Cancel
             </Button>
           </div>
+
+          {/* Retake Assessment Action */}
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              className="w-full border-slate-300"
+              onClick={() => {
+                setOpen(false);
+                navigate('/onboarding/assessment');
+              }}
+            >
+              Retake Level Assessment (5 min)
+            </Button>
+          </div>
           
           <div className="border-t border-white/20 pt-4">
             <Button 

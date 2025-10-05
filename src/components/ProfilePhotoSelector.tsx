@@ -5,6 +5,7 @@ import { User, Upload, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfilePhotoSelectorProps {
   children: React.ReactNode;
@@ -38,6 +39,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const navigate = useNavigate();
 
   const uploadCustomPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -183,6 +185,23 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
                   />
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Other Actions */}
+          <div className="pt-2 border-t border-slate-200/60">
+            <h3 className="text-sm font-medium text-slate-700 mb-3">Other Actions</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                className="border-slate-300"
+                onClick={() => {
+                  setOpen(false);
+                  navigate('/onboarding/assessment');
+                }}
+              >
+                Retake Level Assessment
+              </Button>
             </div>
           </div>
         </div>

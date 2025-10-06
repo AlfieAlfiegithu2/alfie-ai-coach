@@ -20,9 +20,20 @@ interface PlanWeek {
 }
 
 interface PlanData {
+  durationWeeks: number;
   highlights: string[];
   quickWins: string[];
   weekly: PlanWeek[];
+  meta?: {
+    currentLevel: string;
+    currentApproxIELTS: number;
+    targetIELTS?: number | null;
+    dailyMinutes?: number;
+    estimatedMonths?: number;
+    rationale?: string;
+    targetDeadline?: string | null;
+    startDateISO?: string;
+  };
 }
 
 interface StudyPlanModalProps {
@@ -46,7 +57,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('current_plan_id')
         .eq('id', user.id)
@@ -55,13 +66,13 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
         setPlan(null);
         return;
       }
-      const { data: planRow } = await supabase
+      const { data: planRow } = await (supabase as any)
         .from('study_plans')
         .select('plan')
         .eq('id', profile.current_plan_id)
         .single();
       if (planRow?.plan) {
-        setPlan(planRow.plan as PlanData);
+        setPlan(planRow.plan as any as PlanData);
       } else {
         setPlan(null);
       }

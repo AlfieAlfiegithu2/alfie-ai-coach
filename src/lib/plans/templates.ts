@@ -109,14 +109,6 @@ function buildDailyTasks(band: Score['band'], dayIndex: number, minutes: number)
   return tasks;
 }
 
-function weekFromBand(band: Score['band']): PlanWeek {
-  const tasks = BASE_TASKS[band];
-  return {
-    week: 1,
-    days: Array.from({ length: 7 }).map((_, i) => ({ day: i + 1, tasks })),
-  };
-}
-
 type PlanContext = { targetScore?: number | null; timePerDay?: 'under_30' | '1_hour' | '2_hours' | 'more'; targetDeadline?: string | null };
 
 function ieltsFromPct(pct: number): number {

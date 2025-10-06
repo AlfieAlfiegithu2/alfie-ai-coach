@@ -25,7 +25,6 @@ const OnboardingAssessment = () => {
     try {
       const goal = answers['goal'] || 'ielts';
       const score = scoreAnswers(items, answers);
-      const self_level = score.band; // infer instead of asking
       const timePerDay = (answers['time_per_day'] as any) || '1_hour';
       const targetDeadline = (answers['target_deadline'] as any) || null;
       const targetScore = parseFloat((answers['target_score'] as any) || '7.0');
@@ -34,20 +33,20 @@ const OnboardingAssessment = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Not signed in');
 
-        const { error: assessErr } = await supabase
+        const { error: assessErr } = await (supabase as any)
           .from('user_assessments')
-          .insert({ user_id: user.id, goal, self_level, answers, score });
+          .insert({ user_id: user.id, assessment_data: { goal, answers, score } });
         if (assessErr) throw assessErr;
 
         // Always persist the latest plan for the profile
-        const { data: planRow, error: planErr } = await supabase
+        const { data: planRow, error: planErr } = await (supabase as any)
           .from('study_plans')
-          .insert({ user_id: user.id, band: score.band, goal, plan, source: 'template' })
+          .insert({ user_id: user.id, plan })
           .select('*')
           .single();
         if (planErr) throw planErr;
 
-        await supabase.from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
+        await (supabase as any).from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
         // Cache locally as well
         try { localStorage.setItem('latest_plan', JSON.stringify({ plan })); } catch {}
         toast({ title: 'Plan ready', description: 'Your personalized plan was generated.' });

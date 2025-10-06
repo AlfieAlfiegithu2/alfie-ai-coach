@@ -146,9 +146,13 @@ const OnboardingAssessment = () => {
             <div className="space-y-2">
               <audio controls className="w-full">
                 <source src={item.audio} type="audio/mpeg" />
+                Your browser does not support the audio element.
               </audio>
-              {!item.audio && item['transcript' as any] && (
-                <div className="text-sm text-slate-600">{(item as any).transcript}</div>
+              {item['transcript' as any] && (
+                <details className="text-sm text-slate-600">
+                  <summary className="cursor-pointer hover:text-slate-800">Show transcript</summary>
+                  <p className="mt-2 pl-4 border-l-2 border-slate-300">{(item as any).transcript}</p>
+                </details>
               )}
             </div>
           )}

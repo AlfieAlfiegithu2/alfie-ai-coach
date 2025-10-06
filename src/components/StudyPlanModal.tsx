@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -189,7 +189,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
             {/* Mini Calendar Preview */}
             <div>
               <h3 className="text-slate-800 font-semibold mb-2">This month</h3>
-              <ScrollableMiniCalendar plan={plan} />
+              <ScrollableMiniCalendar plan={plan} onOpenFull={() => navigate('/plan')} />
             </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
@@ -220,7 +220,26 @@ function TodayQuickTodo({ plan }: { plan: any }) {
   const diffDays = Math.max(0, Math.floor((today.getTime() - start.getTime()) / (24*60*60*1000)));
   const w = Math.floor(diffDays / 7);
   const d = diffDays % 7;
-  const day = plan?.weekly?.[w]?.days?.[d] || plan?.weekly?.[0]?.days?.[0];
+  
+  // Find today's tasks or next available study day
+  let day = plan?.weekly?.[w]?.days?.[d];
+  if (!day || day.tasks.length === 0) {
+    // Look for next study day within the next 7 days
+    for (let offset = 1; offset <= 7; offset++) {
+      const nextD = (d + offset) % 7;
+      const nextW = w + Math.floor((d + offset) / 7);
+      const nextDay = plan?.weekly?.[nextW]?.days?.[nextD];
+      if (nextDay && nextDay.tasks.length > 0) {
+        day = nextDay;
+        break;
+      }
+    }
+  }
+  // Fallback to first available day
+  if (!day || day.tasks.length === 0) {
+    day = plan?.weekly?.[0]?.days?.find((d: any) => d.tasks.length > 0) || plan?.weekly?.[0]?.days?.[0];
+  }
+  
   const key = today.toISOString().slice(0,10);
   const [checked, setChecked] = React.useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}'); } catch { return {}; }

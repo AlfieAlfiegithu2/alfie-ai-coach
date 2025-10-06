@@ -95,6 +95,38 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     return firstDay?.tasks?.slice(0, 5) || [];
   };
 
+  // Build a small calendar preview for the first 5 weeks
+  const buildCalendarPreview = () => {
+    if (!plan?.weekly?.length) return { headers: [], cells: [] as Array<{ label: string; hasTasks: boolean }> };
+    const startISO = (plan as any).meta?.startDateISO || new Date().toISOString();
+    const startDate = new Date(startISO);
+    const headers = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    const cells: Array<{ label: string; hasTasks: boolean; week: number; day: number } > = [];
+    // Start from the first day of the start month for a consistent grid
+    const monthStart = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const offset = monthStart.getDay();
+    for (let i = 0; i < offset; i++) cells.push({ label: '', hasTasks: false, week: 0, day: 0 });
+    // Map plan days onto dates (up to ~35 days)
+    const allDays: Array<{ date: Date; week: number; day: number; tasks: PlanTask[] }> = [];
+    plan.weekly.forEach((w, wi) => {
+      w.days.forEach((d, di) => {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + wi * 7 + di);
+        allDays.push({ date, week: w.week, day: d.day, tasks: d.tasks });
+      });
+    });
+    const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+      const thisDate = new Date(monthStart.getFullYear(), monthStart.getMonth(), dayNum);
+      const found = allDays.find(d => d.date.toDateString() === thisDate.toDateString());
+      cells.push({ label: String(dayNum), hasTasks: !!found, week: found?.week || 0, day: found?.day || 0 });
+    }
+    // pad to full rows (5 or 6 weeks)
+    while (cells.length % 7 !== 0) cells.push({ label: '', hasTasks: false, week: 0, day: 0 });
+    return { headers, cells };
+  };
+  const calendar = buildCalendarPreview();
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -152,6 +184,32 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   ))}
                 </ul>
               </div>
+            {/* Mini Calendar Preview */}
+            <div>
+              <h3 className="text-slate-800 font-semibold mb-2">This month</h3>
+              <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
+                <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
+                  {calendar.headers.map((h) => (<div key={h}>{h}</div>))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {calendar.cells.map((c, idx) => (
+                    <button
+                      key={idx}
+                      disabled={!c.label}
+                      onClick={() => {
+                        if (!c.week || !c.day) { return; }
+                        setOpen(false);
+                        navigate('/plan');
+                      }}
+                      className={`h-12 rounded-xl border text-sm ${c.label ? 'bg-white hover:bg-white/90' : 'bg-transparent border-transparent cursor-default'} ${c.hasTasks ? 'border-slate-300' : 'border-white/40'}`}
+                    >
+                      <span className="text-slate-900">{c.label}</span>
+                      {c.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="outline"

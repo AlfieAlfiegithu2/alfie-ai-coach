@@ -109,7 +109,7 @@ function buildDailyTasks(band: Score['band'], dayIndex: number, minutes: number)
   return tasks;
 }
 
-type PlanContext = { targetScore?: number | null; targetDeadline?: string | null };
+type PlanContext = { targetScore?: number | null; targetDeadline?: string | null; studyDaysJson?: string; firstLanguage?: string; planNativeLanguage?: 'yes' | 'no' };
 
 function ieltsFromPct(pct: number): number {
   if (pct < 25) return 3.5;
@@ -150,12 +150,17 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
   durationWeeks = Math.min(26, durationWeeks);
   const estimatedMonths = Math.max(1, Math.round(durationWeeks / 4));
 
-  // Build weekly schedule by repeating template week with minor variation hooks
+  // Respect selected study days if provided
+  const studyDays: number[] = (() => { try { return JSON.parse(ctx.studyDaysJson || '[]'); } catch { return []; } })();
+
+  // Build weekly schedule honoring study days (default: all days)
   const weekly: PlanWeek[] = Array.from({ length: durationWeeks }).map((_, wi) => ({
     week: wi + 1,
     days: Array.from({ length: 7 }).map((__, di) => ({
       day: di + 1,
-      tasks: buildDailyTasks(score.band, wi * 7 + di, recommendedDailyMinutes)
+      tasks: (studyDays.length === 0 || studyDays.includes(di))
+        ? buildDailyTasks(score.band, wi * 7 + di, recommendedDailyMinutes)
+        : []
     }))
   }));
 

@@ -7,6 +7,7 @@ export type AssessmentItem = {
   max?: number;
   passage?: string;
   audio?: string; // optional audio clip for listening items
+  multiSelect?: boolean; // allow multiple selections (stored as JSON array string)
 };
 
 export const universalAssessmentItems: AssessmentItem[] = [
@@ -20,6 +21,49 @@ export const universalAssessmentItems: AssessmentItem[] = [
       { id: 'toeic', label: 'TOEIC' },
       { id: 'work', label: 'Work/Business' },
       { id: 'travel', label: 'Travel' }
+    ]
+  },
+  {
+    id: 'study_days',
+    type: 'multi',
+    prompt: 'Which days will you study each week?',
+    multiSelect: true,
+    choices: [
+      { id: '0', label: 'Sun' },
+      { id: '1', label: 'Mon' },
+      { id: '2', label: 'Tue' },
+      { id: '3', label: 'Wed' },
+      { id: '4', label: 'Thu' },
+      { id: '5', label: 'Fri' },
+      { id: '6', label: 'Sat' }
+    ]
+  },
+  {
+    id: 'first_language',
+    type: 'multi',
+    prompt: 'What is your first language?',
+    choices: [
+      { id: 'ko', label: 'Korean' },
+      { id: 'ja', label: 'Japanese' },
+      { id: 'zh', label: 'Chinese' },
+      { id: 'vi', label: 'Vietnamese' },
+      { id: 'es', label: 'Spanish' },
+      { id: 'pt', label: 'Portuguese' },
+      { id: 'ru', label: 'Russian' },
+      { id: 'ar', label: 'Arabic' },
+      { id: 'hi', label: 'Hindi' },
+      { id: 'fr', label: 'French' },
+      { id: 'de', label: 'German' },
+      { id: 'other', label: 'Other' }
+    ]
+  },
+  {
+    id: 'plan_native_language',
+    type: 'multi',
+    prompt: 'Do you want your plan generated in your first language?',
+    choices: [
+      { id: 'yes', label: 'Yes' },
+      { id: 'no', label: 'No' }
     ]
   },
   // Writing micro-tasks (choose best option)
@@ -151,14 +195,15 @@ export const universalAssessmentItems: AssessmentItem[] = [
     ]
   },
   {
-    id: 'listening_q1',
+    id: 'listening_clip1_q1',
     type: 'multi',
-    prompt: 'Paraphrase understanding: “Please submit the report by noon.” means ______.',
+    audio: '/assets/listening/clip1.mp3',
+    prompt: 'Clip 1: What does the speaker ask you to do?',
     choices: [
-      { id: 'a', label: 'finish the report tomorrow', value: 0 },
-      { id: 'b', label: 'send the report before 12:00', value: 1 },
-      { id: 'c', label: 'start the report at noon', value: 0 },
-      { id: 'd', label: 'bring the report to the meeting', value: 0 }
+      { id: 'a', label: 'send the summary by lunchtime', value: 1 },
+      { id: 'b', label: 'book a meeting for tomorrow', value: 0 },
+      { id: 'c', label: 'prepare slides for a presentation', value: 0 },
+      { id: 'd', label: 'call the client immediately', value: 0 }
     ]
   },
   {
@@ -227,47 +272,27 @@ export const universalAssessmentItems: AssessmentItem[] = [
     ]
   },
   {
-    id: 'listening_q2',
+    id: 'listening_clip2_q1',
     type: 'multi',
-    prompt: 'Paraphrase understanding: “He is unavailable this afternoon.” means he ______ this afternoon.',
+    audio: '/assets/listening/clip2.mp3',
+    prompt: 'Clip 2: What is the main topic?',
     choices: [
-      { id: 'a', label: 'is free', value: 0 },
-      { id: 'b', label: 'cannot meet', value: 1 },
-      { id: 'c', label: 'will call', value: 0 },
-      { id: 'd', label: 'is early', value: 0 }
+      { id: 'a', label: 'library opening hours', value: 0 },
+      { id: 'b', label: 'exam registration steps', value: 1 },
+      { id: 'c', label: 'bus timetable changes', value: 0 },
+      { id: 'd', label: 'assignment grading policy', value: 0 }
     ]
   },
   {
-    id: 'listening_q3',
+    id: 'listening_clip3_q1',
     type: 'multi',
-    prompt: 'Paraphrase understanding: “Let’s push back the deadline.” means ______ the deadline.',
+    audio: '/assets/listening/clip3.mp3',
+    prompt: 'Clip 3: What will happen next?',
     choices: [
-      { id: 'a', label: 'move earlier', value: 0 },
-      { id: 'b', label: 'extend', value: 1 },
-      { id: 'c', label: 'cancel', value: 0 },
-      { id: 'd', label: 'keep', value: 0 }
-    ]
-  },
-  {
-    id: 'listening_q4',
-    type: 'multi',
-    prompt: 'Paraphrase understanding: “Could you look into this issue?” means ______.',
-    choices: [
-      { id: 'a', label: 'ignore the problem', value: 0 },
-      { id: 'b', label: 'investigate the problem', value: 1 },
-      { id: 'c', label: 'solve it immediately', value: 0 },
-      { id: 'd', label: 'approve the budget', value: 0 }
-    ]
-  },
-  {
-    id: 'listening_q5',
-    type: 'multi',
-    prompt: 'Paraphrase understanding: “I will get back to you.” means ______.',
-    choices: [
-      { id: 'a', label: 'I will reply later', value: 1 },
-      { id: 'b', label: 'I will leave now', value: 0 },
-      { id: 'c', label: 'I will disagree', value: 0 },
-      { id: 'd', label: 'I will forward this', value: 0 }
+      { id: 'a', label: 'the meeting is cancelled', value: 0 },
+      { id: 'b', label: 'the speaker will send a follow‑up email', value: 1 },
+      { id: 'c', label: 'the deadline is moved earlier', value: 0 },
+      { id: 'd', label: 'the speaker will call the manager now', value: 0 }
     ]
   },
   {

@@ -18,6 +18,18 @@ const OnboardingAssessment = () => {
   const targetScoreIndex = useMemo(() => items.findIndex((i) => i.id === 'target_score'), [items]);
 
   const setAnswer = (id: string, value: string) => setAnswers((a) => ({ ...a, [id]: value }));
+  const toggleMulti = (id: string, val: string) => {
+    try {
+      const cur = aJson(answers[id]);
+      const next = cur.includes(val) ? cur.filter((v: string) => v !== val) : [...cur, val];
+      setAnswer(id, JSON.stringify(next));
+    } catch {
+      setAnswer(id, JSON.stringify([val]));
+    }
+  };
+  const aJson = (v?: string) => {
+    try { return JSON.parse(v || '[]'); } catch { return []; }
+  };
 
   const goNext = () => setStep((s) => Math.min(s + 1, items.length - 1));
   const goBack = () => setStep((s) => Math.max(0, s - 1));
@@ -31,7 +43,10 @@ const OnboardingAssessment = () => {
       const self_level = score.band; // infer instead of asking
       const targetDeadline = (answers['target_deadline'] as any) || null;
       const targetScore = parseFloat((answers['target_score'] as any) || '7.0');
-      const plan = generatePlan(score, goal, { targetScore, targetDeadline });
+      const studyDaysJson = answers['study_days'];
+      const firstLanguage = answers['first_language'];
+      const planNativeLanguage = (answers['plan_native_language'] as any) as 'yes' | 'no' | undefined;
+      const plan = generatePlan(score, goal, { targetScore, targetDeadline, studyDaysJson, firstLanguage, planNativeLanguage });
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Not signed in');
@@ -93,7 +108,7 @@ const OnboardingAssessment = () => {
         )}
         <div className="text-lg font-medium">{item.prompt}</div>
         <div className="grid gap-3">
-          {item.type === 'multi' && item.choices?.map((c) => (
+          {item.type === 'multi' && !item.multiSelect && item.choices?.map((c) => (
             <button
               key={c.id}
               onClick={() => onSelect(c.id)}
@@ -102,6 +117,28 @@ const OnboardingAssessment = () => {
               {c.label}
             </button>
           ))}
+          {item.type === 'multi' && item.multiSelect && (
+            <div className="grid grid-cols-2 gap-2">
+              {item.choices?.map((c) => {
+                const selected = aJson(answers[item.id]).includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => toggleMulti(item.id, c.id)}
+                    className={`text-left px-4 py-3 rounded-md border ${selected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {/* Inline audio for listening items */}
+          {item.audio && (
+            <audio controls className="w-full">
+              <source src={item.audio} type="audio/mpeg" />
+            </audio>
+          )}
           {item.type === 'date' && (
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-2 w-full">
               <Calendar

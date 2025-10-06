@@ -14,7 +14,13 @@ const OnboardingAssessment = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const items = useMemo(() => universalAssessmentItems, []);
+  const items = useMemo(() => {
+    const base = universalAssessmentItems as any[];
+    const personalOrder = ['goal','study_days','first_language','plan_native_language','target_deadline','target_score'];
+    const personal = personalOrder.map(id => base.find(i => i.id === id)).filter(Boolean);
+    const english = base.filter(i => !personalOrder.includes(i.id));
+    return [...personal, ...english] as typeof universalAssessmentItems;
+  }, []);
   const targetScoreIndex = useMemo(() => items.findIndex((i) => i.id === 'target_score'), [items]);
 
   const setAnswer = (id: string, value: string) => setAnswers((a) => ({ ...a, [id]: value }));
@@ -194,13 +200,21 @@ const OnboardingAssessment = () => {
         ) : <span />}
 
         {step === items.length - 1 ? (
-          <button
-            onClick={(e) => handleSubmit(e as any)}
-            disabled={submitting}
-            className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50"
-          >
-            {submitting ? 'Generating…' : 'Get My Study Plan'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => handleSubmit(e as any)}
+              disabled={submitting}
+              className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50"
+            >
+              {submitting ? 'Generating…' : 'Get My Study Plan'}
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="px-4 py-2 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-800"
+            >
+              Go to Dashboard
+            </button>
+          </div>
         ) : item.type === 'date' ? (
           <button
             onClick={() => onSelect(answers[item.id])}

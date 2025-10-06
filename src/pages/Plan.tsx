@@ -97,16 +97,20 @@ const PlanPage = () => {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskMinutes, setNewTaskMinutes] = useState<number>(20);
+  const [dayNotes, setDayNotes] = useState<string>('');
 
   const loadDayState = (iso: string) => {
     try {
       const ct = JSON.parse(localStorage.getItem(`plan-custom-tasks-${iso}`) || '[]');
       const comp = JSON.parse(localStorage.getItem(`plan-completed-${iso}`) || '[]');
+      const notes = localStorage.getItem(`plan-notes-${iso}`) || '';
       setCustomTasks(Array.isArray(ct) ? ct : []);
       setCompletedIds(new Set(Array.isArray(comp) ? comp : []));
+      setDayNotes(notes);
     } catch {
       setCustomTasks([]);
       setCompletedIds(new Set());
+      setDayNotes('');
     }
   };
   const saveCustomTasks = (iso: string, tasks: CustomTask[]) => {
@@ -114,6 +118,9 @@ const PlanPage = () => {
   };
   const saveCompleted = (iso: string, ids: Set<string>) => {
     try { localStorage.setItem(`plan-completed-${iso}`, JSON.stringify(Array.from(ids))); } catch {}
+  };
+  const saveNotes = (iso: string, text: string) => {
+    try { localStorage.setItem(`plan-notes-${iso}`, text); } catch {}
   };
   const openDay = (w: number, d: number) => {
     const entry = allDays.find(e => e.week === w && e.day === d);
@@ -150,6 +157,35 @@ const PlanPage = () => {
       setCompletedIds(set);
       saveCompleted(openIso, set);
     }
+  };
+  const moveTask = (index: number, dir: -1 | 1) => {
+    if (!openIso) return;
+    const next = customTasks.slice();
+    const newIndex = index + dir;
+    if (newIndex < 0 || newIndex >= next.length) return;
+    const [t] = next.splice(index, 1);
+    next.splice(newIndex, 0, t);
+    setCustomTasks(next);
+    saveCustomTasks(openIso, next);
+  };
+  const duplicateToTomorrow = () => {
+    if (!openIso) return;
+    const date = new Date(openIso);
+    date.setDate(date.getDate() + 1);
+    const iso = toISO(date);
+    const aiTasks = (getDay(openDayKey)?.tasks || []).map(t => ({ title: t.title, minutes: t.minutes }));
+    const existing = JSON.parse(localStorage.getItem(`plan-custom-tasks-${iso}`) || '[]');
+    const merged = Array.isArray(existing) ? [...existing, ...customTasks, ...aiTasks] : [...customTasks, ...aiTasks];
+    try { localStorage.setItem(`plan-custom-tasks-${iso}`, JSON.stringify(merged)); } catch {}
+  };
+  const resetDay = () => {
+    if (!openIso) return;
+    setCustomTasks([]);
+    setCompletedIds(new Set());
+    setDayNotes('');
+    saveCustomTasks(openIso, []);
+    saveCompleted(openIso, new Set());
+    saveNotes(openIso, '');
   };
 
   return (
@@ -268,23 +304,27 @@ const PlanPage = () => {
                 <button className="text-slate-500 hover:text-slate-700" onClick={() => { setOpenDayKey(null); setOpenIso(null); }}>Close</button>
               </div>
               <div className="space-y-4">
-                <div>
+                <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-slate-800 mb-2">AI Tasks</h4>
-                  <ul className="space-y-2 text-slate-800">
-                    {(getDay(openDayKey)?.tasks || []).map((t, i) => {
-                      const id = `ai-${i}`;
-                      return (
-                        <li key={id} className="flex items-center justify-between rounded-lg border p-3">
-                          <label className="flex items-center gap-3">
-                            <input type="checkbox" checked={completedIds.has(id)} onChange={() => toggleTaskDone(id)} />
-                            <span>{t.title}</span>
-                          </label>
-                          <span className="text-xs text-slate-500">{t.minutes} min</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button className="rounded-md border px-2 py-1" onClick={duplicateToTomorrow}>Duplicate to tomorrow</button>
+                    <button className="rounded-md border px-2 py-1" onClick={resetDay}>Reset day</button>
+                  </div>
                 </div>
+                <ul className="space-y-2 text-slate-800">
+                  {(getDay(openDayKey)?.tasks || []).map((t, i) => {
+                    const id = `ai-${i}`;
+                    return (
+                      <li key={id} className="flex items-center justify-between rounded-lg border p-3">
+                        <label className="flex items-center gap-3">
+                          <input type="checkbox" checked={completedIds.has(id)} onChange={() => toggleTaskDone(id)} />
+                          <span>{t.title}</span>
+                        </label>
+                        <span className="text-xs text-slate-500">{t.minutes} min</span>
+                      </li>
+                    );
+                  })}
+                </ul>
                 <div>
                   <h4 className="text-sm font-semibold text-slate-800 mb-2">Your Tasks</h4>
                   <div className="flex gap-2 mb-2">
@@ -303,13 +343,20 @@ const PlanPage = () => {
                           </label>
                           <div className="flex items-center gap-3 text-xs text-slate-500">
                             <span>{t.minutes} min</span>
+                            <button className="border rounded px-2 py-1" onClick={() => moveTask(i, -1)}>Up</button>
+                            <button className="border rounded px-2 py-1" onClick={() => moveTask(i, 1)}>Down</button>
                             <button className="text-red-500" onClick={() => removeCustomTask(i)}>Remove</button>
                           </div>
                         </li>
                       );
                     })}
                     {customTasks.length === 0 && <li className="text-sm text-slate-500">No custom tasks yet.</li>}
-                </ul>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-800 mb-2">Notes</h4>
+                  <textarea value={dayNotes} onChange={(e) => { setDayNotes(e.target.value); if (openIso) saveNotes(openIso, e.target.value); }} className="w-full rounded-md border px-3 py-2 min-h-[80px]" placeholder="Key mistakes, time spent, reflections..." />
+                  <div className="mt-2 text-xs text-slate-500">Total planned minutes: {((getDay(openDayKey)?.tasks || []).reduce((s,t)=>s+t.minutes,0) + customTasks.reduce((s,t)=>s+t.minutes,0))} min</div>
                 </div>
               </div>
             </div>

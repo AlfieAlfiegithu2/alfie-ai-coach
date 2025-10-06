@@ -13,6 +13,7 @@ const PlanPage = () => {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskMinutes, setNewTaskMinutes] = useState<number>(20);
+  const [hiddenAiIds, setHiddenAiIds] = useState<Set<string>>(new Set());
   const [dayNotes, setDayNotes] = useState<string>('');
   const location = useLocation() as any;
 
@@ -106,13 +107,16 @@ const PlanPage = () => {
     try {
       const ct = JSON.parse(localStorage.getItem(`plan-custom-tasks-${iso}`) || '[]');
       const comp = JSON.parse(localStorage.getItem(`plan-completed-${iso}`) || '[]');
+      const hidden = JSON.parse(localStorage.getItem(`plan-hidden-ai-${iso}`) || '[]');
       const notes = localStorage.getItem(`plan-notes-${iso}`) || '';
       setCustomTasks(Array.isArray(ct) ? ct : []);
       setCompletedIds(new Set(Array.isArray(comp) ? comp : []));
+      setHiddenAiIds(new Set(Array.isArray(hidden) ? hidden : []));
       setDayNotes(notes);
     } catch {
       setCustomTasks([]);
       setCompletedIds(new Set());
+      setHiddenAiIds(new Set());
       setDayNotes('');
     }
   };
@@ -121,6 +125,9 @@ const PlanPage = () => {
   };
   const saveCompleted = (iso: string, ids: Set<string>) => {
     try { localStorage.setItem(`plan-completed-${iso}`, JSON.stringify(Array.from(ids))); } catch {}
+  };
+  const saveHiddenAi = (iso: string, ids: Set<string>) => {
+    try { localStorage.setItem(`plan-hidden-ai-${iso}`, JSON.stringify(Array.from(ids))); } catch {}
   };
   const saveNotes = (iso: string, text: string) => {
     try { localStorage.setItem(`plan-notes-${iso}`, text); } catch {}
@@ -171,6 +178,13 @@ const PlanPage = () => {
     setCustomTasks(next);
     saveCustomTasks(openIso, next);
   };
+  const hideAiTask = (i: number) => {
+    const id = `ai-${i}`;
+    const next = new Set(hiddenAiIds);
+    next.add(id);
+    setHiddenAiIds(next);
+    if (openIso) saveHiddenAi(openIso, next);
+  };
   const duplicateToTomorrow = () => {
     if (!openIso) return;
     const date = new Date(openIso);
@@ -189,6 +203,23 @@ const PlanPage = () => {
     saveCustomTasks(openIso, []);
     saveCompleted(openIso, new Set());
     saveNotes(openIso, '');
+  };
+
+  const resetAllLocalPlanData = () => {
+    const confirmReset = window.confirm('Reset all local study plan data (completions, custom tasks, notes)?');
+    if (!confirmReset) return;
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) as string;
+      if (!k) continue;
+      if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
+    }
+    keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+    // reset current view state
+    setCompletedIds(new Set());
+    setCustomTasks([]);
+    setHiddenAiIds(new Set());
+    setDayNotes('');
   };
 
   return (
@@ -260,9 +291,12 @@ const PlanPage = () => {
             const monthLabel = firstOfMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' });
             return (
               <div key={key} className="rounded-2xl border border-white/40 bg-white/60 p-5">
-                <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3">
                   <h2 className="text-lg font-semibold text-slate-900">{monthLabel}</h2>
-                  <div className="text-xs text-slate-500">Daily ~{plan.meta?.dailyMinutes || plan.meta?.dailyMinutes === 0 ? plan.meta?.dailyMinutes : 60} min</div>
+          <div className="flex items-center gap-3">
+            <button className="text-xs underline" onClick={resetAllLocalPlanData}>Reset all</button>
+            <div className="text-xs text-slate-500">Daily ~{plan.meta?.dailyMinutes || plan.meta?.dailyMinutes === 0 ? plan.meta?.dailyMinutes : 60} min</div>
+          </div>
                 </div>
                 <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-1">
                   <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
@@ -314,16 +348,20 @@ const PlanPage = () => {
                     <button className="rounded-md border px-2 py-1" onClick={resetDay}>Reset day</button>
                   </div>
                 </div>
-                <ul className="space-y-2 text-slate-800">
-                  {(getDay(openDayKey)?.tasks || []).map((t, i) => {
+                  <ul className="space-y-2 text-slate-800">
+                    {(getDay(openDayKey)?.tasks || []).map((t, i) => {
                     const id = `ai-${i}`;
+                      if (hiddenAiIds.has(id)) return null;
                     return (
                       <li key={id} className="flex items-center justify-between rounded-lg border p-3">
                         <label className="flex items-center gap-3">
                           <input type="checkbox" checked={completedIds.has(id)} onChange={() => toggleTaskDone(id)} />
                           <span>{t.title}</span>
                         </label>
-                        <span className="text-xs text-slate-500">{t.minutes} min</span>
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <span>{t.minutes} min</span>
+                            <button className="text-red-500" onClick={() => hideAiTask(i)}>Remove</button>
+                          </div>
                       </li>
                     );
                   })}

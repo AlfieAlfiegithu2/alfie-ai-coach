@@ -27,21 +27,12 @@ export const universalAssessmentItems: AssessmentItem[] = [
     prompt: 'When is your target exam date or deadline?',
   },
   {
-    id: 'time_per_day',
-    type: 'multi',
-    prompt: 'How much time can you study per day?',
-    choices: [
-      { id: 'under_30', label: 'Under 30 minutes' },
-      { id: '1_hour', label: '1 hour' },
-      { id: '2_hours', label: '2 hours' },
-      { id: 'more', label: 'More than 2 hours' }
-    ]
-  },
-  {
     id: 'target_score',
     type: 'multi',
     prompt: 'What is your target IELTS band score?',
     choices: [
+      { id: '5.0', label: '5.0 or below' },
+      { id: '5.5', label: '5.5' },
       { id: '6.0', label: '6.0' },
       { id: '6.5', label: '6.5' },
       { id: '7.0', label: '7.0' },

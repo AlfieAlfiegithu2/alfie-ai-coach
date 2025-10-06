@@ -239,6 +239,9 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
   const [customTasks, setCustomTasks] = React.useState<Array<{ title: string; minutes: number }>>(() => {
     try { return JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]'); } catch { return []; }
   });
+  const [hiddenAi, setHiddenAi] = React.useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]')); } catch { return new Set(); }
+  });
   const toggle = (i: number) => {
     const next = { ...checked, [i]: !checked[i] };
     setChecked(next);
@@ -255,7 +258,13 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
     const next = customTasks.slice(); next.splice(idx,1); setCustomTasks(next);
     try { localStorage.setItem(`quicktodo-custom-${key}`, JSON.stringify(next)); } catch {}
   };
-  const totalMinutes = (day?.tasks||[]).slice(0,5).reduce((s: number,t: any)=>s+t.minutes,0) + customTasks.reduce((s,t)=>s+t.minutes,0);
+  const hideAi = (idx: number) => {
+    const next = new Set(hiddenAi);
+    next.add(String(idx));
+    setHiddenAi(next);
+    try { localStorage.setItem(`quicktodo-hidden-ai-${key}`, JSON.stringify(Array.from(next))); } catch {}
+  };
+  const totalMinutes = (day?.tasks||[]).slice(0,5).filter((_,i)=>!hiddenAi.has(String(i))).reduce((s: number,t: any)=>s+t.minutes,0) + customTasks.reduce((s,t)=>s+t.minutes,0);
   return (
     <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
       <div className="flex items-center justify-between mb-2">
@@ -263,15 +272,21 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
         <button className="text-xs underline text-slate-600" onClick={onOpenFull}>Open full plan</button>
       </div>
       <ul className="space-y-2">
-        {(day?.tasks || []).slice(0,5).map((t: any, i: number) => (
-          <li key={i} className="flex items-center justify-between rounded-lg border p-3">
-            <label className="flex items-center gap-3">
-              <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)} />
-              <span>{t.title}</span>
-            </label>
-            <span className="text-xs text-slate-500">{t.minutes} min</span>
-          </li>
-        ))}
+        {(day?.tasks || []).slice(0,5).map((t: any, i: number) => {
+          if (hiddenAi.has(String(i))) return null;
+          return (
+            <li key={i} className="flex items-center justify-between rounded-lg border p-3">
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)} />
+                <span>{t.title}</span>
+              </label>
+              <div className="text-xs text-slate-500 flex items-center gap-2">
+                <span>{t.minutes} min</span>
+                <button className="text-red-500" onClick={() => hideAi(i)}>Remove</button>
+              </div>
+            </li>
+          );
+        })}
         {customTasks.map((t, i) => (
           <li key={`c${i}`} className="flex items-center justify-between rounded-lg border p-3">
             <label className="flex items-center gap-3">

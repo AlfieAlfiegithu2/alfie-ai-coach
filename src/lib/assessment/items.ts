@@ -6,6 +6,7 @@ export type AssessmentItem = {
   min?: number;
   max?: number;
   passage?: string;
+  audio?: string; // optional audio clip for listening items
 };
 
 export const universalAssessmentItems: AssessmentItem[] = [
@@ -19,6 +20,47 @@ export const universalAssessmentItems: AssessmentItem[] = [
       { id: 'toeic', label: 'TOEIC' },
       { id: 'work', label: 'Work/Business' },
       { id: 'travel', label: 'Travel' }
+    ]
+  },
+  // Writing micro-tasks (choose best option)
+  {
+    id: 'writing_q1',
+    type: 'multi',
+    prompt: 'Writing Task 2: Choose the strongest thesis statement for the topic: “Some people think studying art in school is a waste of time.”',
+    choices: [
+      { id: 'a', label: 'Art is important and should be studied by everyone.', value: 0 },
+      { id: 'b', label: 'Although some believe art is unnecessary, it develops creativity and cultural awareness and thus deserves a central place in school curricula.', value: 1 },
+      { id: 'c', label: 'Art is fun for some students.', value: 0 }
+    ]
+  },
+  {
+    id: 'writing_q2',
+    type: 'multi',
+    prompt: 'Writing Task 1: Which sentence best describes a chart where exports fell from 60 to 40 while imports rose from 30 to 50?',
+    choices: [
+      { id: 'a', label: 'Both exports and imports increased steadily.', value: 0 },
+      { id: 'b', label: 'Exports declined markedly as imports climbed, reversing the initial gap.', value: 1 },
+      { id: 'c', label: 'Imports and exports stayed the same.', value: 0 }
+    ]
+  },
+  {
+    id: 'writing_q3',
+    type: 'multi',
+    prompt: 'Coherence: Choose the most logical order of sentences (1) In addition, libraries host quiet study spaces. (2) Libraries remain vital for communities. (3) They provide free access to information. (4) As a result, people of all ages benefit.',
+    choices: [
+      { id: 'a', label: '2 → 3 → 1 → 4', value: 1 },
+      { id: 'b', label: '3 → 2 → 1 → 4', value: 0 },
+      { id: 'c', label: '2 → 1 → 3 → 4', value: 0 }
+    ]
+  },
+  {
+    id: 'writing_q4',
+    type: 'multi',
+    prompt: 'Register: Select the more formal alternative: “kids should get free tickets.”',
+    choices: [
+      { id: 'a', label: 'children ought to receive complimentary tickets', value: 1 },
+      { id: 'b', label: 'kids must get free tickets ASAP', value: 0 },
+      { id: 'c', label: 'give kids free tickets', value: 0 }
     ]
   },
   {

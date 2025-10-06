@@ -157,7 +157,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           {plan && (
             <div className="space-y-6">
               {/* Today's quick to‑do */}
-              <TodayQuickTodo plan={plan} onOpenFull={() => { setOpen(false); navigate('/plan'); }} />
+              <TodayQuickTodo plan={plan} />
               {plan.highlights?.length > 0 && (
                 <div>
                   <h3 className="text-slate-800 font-semibold mb-2">Highlights</h3>
@@ -182,26 +182,16 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 <h3 className="text-slate-800 font-semibold mb-2">What to do next</h3>
                 <ul className="list-disc pl-5 space-y-1 text-slate-700">
                   {getNextActions().map((t, i) => (
-                    <li key={i}>{t.title} · {t.minutes} min</li>
+                    <li key={i}>{t.title}</li>
                   ))}
                 </ul>
               </div>
             {/* Mini Calendar Preview */}
             <div>
               <h3 className="text-slate-800 font-semibold mb-2">This month</h3>
-              <ScrollableMiniCalendar plan={plan} onOpenFull={() => { setOpen(false); navigate('/plan'); }} />
+              <ScrollableMiniCalendar plan={plan} />
             </div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 border-slate-300"
-                  onClick={() => {
-                    setOpen(false);
-                    navigate('/plan');
-                  }}
-                >
-                  View Full Plan
-                </Button>
                 <Button
                   className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
                   onClick={() => {
@@ -224,7 +214,7 @@ export default StudyPlanModal;
 
 
 // Lightweight components appended for modal UX
-function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => void }) {
+function TodayQuickTodo({ plan }: { plan: any }) {
   const today = new Date();
   const start = plan?.meta?.startDateISO ? new Date(plan.meta.startDateISO) : new Date();
   const diffDays = Math.max(0, Math.floor((today.getTime() - start.getTime()) / (24*60*60*1000)));
@@ -269,7 +259,6 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
     <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-slate-800 font-semibold">Today</h3>
-        <button className="text-xs underline text-slate-600" onClick={onOpenFull}>Open full plan</button>
       </div>
       <ul className="space-y-2">
         {(day?.tasks || []).slice(0,5).map((t: any, i: number) => {
@@ -281,8 +270,9 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
                 <span>{t.title}</span>
               </label>
               <div className="text-xs text-slate-500 flex items-center gap-2 whitespace-nowrap">
-                <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600">{t.minutes} min</span>
-                <button className="px-2 py-1 rounded-md border border-red-300 text-red-600 hover:bg-red-50" onClick={() => hideAi(i)}>Remove</button>
+                <button aria-label="Remove" title="Remove" className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => hideAi(i)}>
+                  ×
+                </button>
               </div>
             </li>
           );
@@ -294,18 +284,15 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
               <span>{t.title}</span>
             </label>
             <div className="text-xs text-slate-500 flex items-center gap-2">
-              <span>{t.minutes} min</span>
-              <button className="text-red-500" onClick={() => removeCustom(i)}>Remove</button>
+              <button aria-label='Remove' title='Remove' className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => removeCustom(i)}>×</button>
             </div>
           </li>
         ))}
       </ul>
       <div className="mt-3 flex gap-2">
-        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder="Add a task (e.g., Review mistakes)" className="flex-1 rounded-md border px-3 py-2" />
-        <input type="number" value={custom.minutes} onChange={(e)=>setCustom(c=>({...c,minutes:Number(e.target.value)}))} className="w-20 rounded-md border px-3 py-2" />
+        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder="Add a task" className="flex-1 rounded-md border px-3 py-2" />
         <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>Add</button>
       </div>
-      <div className="mt-2 text-xs text-slate-500">Total today: {totalMinutes} min</div>
     </div>
   );
 }

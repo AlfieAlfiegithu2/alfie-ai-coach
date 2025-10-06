@@ -162,7 +162,8 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
   const highlights = [
     `Starting level ≈ ${score.band} (IELTS ~${currentApprox.toFixed(1)})`,
     `Target IELTS ${target.toFixed(1)} • Daily study ~${recommendedDailyMinutes} min`,
-    `Estimated timeline: ~${estimatedMonths} month(s)`
+    `Estimated timeline: ~${estimatedMonths} month(s)`,
+    `Focus: ${(Object.entries(score.subs).sort((a,b)=>a[1]-b[1])[0]||[])[0] ?? 'mixed'}`
   ];
   const quickWins = [
     'Shadow 5–10 min academic audio daily (pronunciation + rhythm)',

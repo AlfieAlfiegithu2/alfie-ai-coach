@@ -7,6 +7,7 @@ export type AssessmentItem = {
   max?: number;
   passage?: string;
   audio?: string; // optional audio clip for listening items
+  transcript?: string; // optional transcript fallback for TTS
   multiSelect?: boolean; // allow multiple selections (stored as JSON array string)
 };
 
@@ -198,6 +199,7 @@ export const universalAssessmentItems: AssessmentItem[] = [
     id: 'listening_clip1_q1',
     type: 'multi',
     audio: '/assets/listening/clip1.mp3',
+    transcript: 'Please send me a short summary by lunchtime today.',
     prompt: 'Clip 1: What does the speaker ask you to do?',
     choices: [
       { id: 'a', label: 'send the summary by lunchtime', value: 1 },
@@ -275,6 +277,7 @@ export const universalAssessmentItems: AssessmentItem[] = [
     id: 'listening_clip2_q1',
     type: 'multi',
     audio: '/assets/listening/clip2.mp3',
+    transcript: 'To register for the exam, fill in the online form, upload your ID, and pay the fee.',
     prompt: 'Clip 2: What is the main topic?',
     choices: [
       { id: 'a', label: 'library opening hours', value: 0 },
@@ -287,6 +290,7 @@ export const universalAssessmentItems: AssessmentItem[] = [
     id: 'listening_clip3_q1',
     type: 'multi',
     audio: '/assets/listening/clip3.mp3',
+    transcript: 'I will send a follow up email with the details after our call.',
     prompt: 'Clip 3: What will happen next?',
     choices: [
       { id: 'a', label: 'the meeting is cancelled', value: 0 },

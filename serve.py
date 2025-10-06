@@ -45,7 +45,7 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
 
         # Check if it's a request for a static file that exists
         # Handle common static file extensions
-        static_extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp4', '.webm', '.ogg', '.json']
+        static_extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp3', '.mp4', '.webm', '.ogg', '.json']
         if any(path.endswith(ext) for ext in static_extensions):
             file_path = path.lstrip('/')
             if os.path.exists(os.path.join('dist', file_path)) and os.path.isfile(os.path.join('dist', file_path)):

@@ -135,9 +135,14 @@ const OnboardingAssessment = () => {
           )}
           {/* Inline audio for listening items */}
           {item.audio && (
-            <audio controls className="w-full">
-              <source src={item.audio} type="audio/mpeg" />
-            </audio>
+            <div className="space-y-2">
+              <audio controls className="w-full">
+                <source src={item.audio} type="audio/mpeg" />
+              </audio>
+              {!item.audio && item['transcript' as any] && (
+                <div className="text-sm text-slate-600">{(item as any).transcript}</div>
+              )}
+            </div>
           )}
           {item.type === 'date' && (
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-2 w-full">

@@ -132,7 +132,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       <DialogTrigger asChild>
         {children || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20">
         <DialogHeader>
           <DialogTitle className="text-slate-800">Your Study Plan</DialogTitle>
         </DialogHeader>
@@ -156,6 +156,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           )}
           {plan && (
             <div className="space-y-6">
+              {/* Today's quick to‑do */}
+              <TodayQuickTodo plan={plan} onOpenFull={() => { setOpen(false); navigate('/plan'); }} />
               {plan.highlights?.length > 0 && (
                 <div>
                   <h3 className="text-slate-800 font-semibold mb-2">Highlights</h3>
@@ -187,28 +189,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
             {/* Mini Calendar Preview */}
             <div>
               <h3 className="text-slate-800 font-semibold mb-2">This month</h3>
-              <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
-                <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
-                  {calendar.headers.map((h) => (<div key={h}>{h}</div>))}
-                </div>
-                <div className="grid grid-cols-7 gap-2">
-                  {calendar.cells.map((c, idx) => (
-                    <button
-                      key={idx}
-                      disabled={!c.label}
-                      onClick={() => {
-                        if (!c.week || !c.day) { return; }
-                        setOpen(false);
-                        navigate('/plan');
-                      }}
-                      className={`h-12 rounded-xl border text-sm ${c.label ? 'bg-white hover:bg-white/90' : 'bg-transparent border-transparent cursor-default'} ${c.hasTasks ? 'border-slate-300' : 'border-white/40'}`}
-                    >
-                      <span className="text-slate-900">{c.label}</span>
-                      {c.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <ScrollableMiniCalendar plan={plan} onOpenFull={() => { setOpen(false); navigate('/plan'); }} />
             </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
@@ -241,4 +222,94 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
 
 export default StudyPlanModal;
 
+
+// Lightweight components appended for modal UX
+function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => void }) {
+  const today = new Date();
+  const start = plan?.meta?.startDateISO ? new Date(plan.meta.startDateISO) : new Date();
+  const diffDays = Math.max(0, Math.floor((today.getTime() - start.getTime()) / (24*60*60*1000)));
+  const w = Math.floor(diffDays / 7);
+  const d = diffDays % 7;
+  const day = plan?.weekly?.[w]?.days?.[d] || plan?.weekly?.[0]?.days?.[0];
+  const key = today.toISOString().slice(0,10);
+  const [checked, setChecked] = React.useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}'); } catch { return {}; }
+  });
+  const toggle = (i: number) => {
+    const next = { ...checked, [i]: !checked[i] };
+    setChecked(next);
+    try { localStorage.setItem(`quicktodo-${key}`, JSON.stringify(next)); } catch {}
+  };
+  return (
+    <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-slate-800 font-semibold">Today</h3>
+        <button className="text-xs underline text-slate-600" onClick={onOpenFull}>Open full plan</button>
+      </div>
+      <ul className="space-y-2">
+        {(day?.tasks || []).slice(0,5).map((t: any, i: number) => (
+          <li key={i} className="flex items-center justify-between rounded-lg border p-3">
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)} />
+              <span>{t.title}</span>
+            </label>
+            <span className="text-xs text-slate-500">{t.minutes} min</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ScrollableMiniCalendar({ plan, onOpenFull }: { plan: any; onOpenFull: () => void }) {
+  const startISO = plan?.meta?.startDateISO || new Date().toISOString();
+  const startDate = new Date(startISO);
+  const months: Array<{ label: string; days: Array<{ date: Date; hasTasks: boolean }> }> = [];
+  // Build three months preview
+  for (let m = 0; m < 3; m++) {
+    const first = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
+    const daysInMonth = new Date(first.getFullYear(), first.getMonth()+1, 0).getDate();
+    const label = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+    const days: Array<{ date: Date; hasTasks: boolean }> = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(first.getFullYear(), first.getMonth(), d);
+      const diff = Math.floor((date.getTime() - startDate.getTime())/(24*60*60*1000));
+      const weekIdx = Math.floor(diff/7);
+      const dayIdx = diff%7;
+      const hasTasks = !!plan.weekly?.[weekIdx]?.days?.[dayIdx];
+      days.push({ date, hasTasks });
+    }
+    months.push({ label, days });
+  }
+  const headers = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  return (
+    <div className="space-y-4">
+      {months.map((m, mi) => {
+        const first = new Date(startDate.getFullYear(), startDate.getMonth() + mi, 1);
+        const offset = first.getDay();
+        const blanks = Array.from({length: offset}).map((_,i)=>i);
+        return (
+          <div key={mi} className="rounded-2xl border border-white/40 bg-white/60 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-slate-800">{m.label}</div>
+              <button className="text-xs underline text-slate-600" onClick={onOpenFull}>Open full plan</button>
+            </div>
+            <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
+              {headers.map(h => (<div key={h}>{h}</div>))}
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {blanks.map(b => (<div key={`b${b}`} className="h-12" />))}
+              {m.days.map((d, di) => (
+                <button key={di} onClick={onOpenFull} className={`h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
+                  <span className="text-slate-900">{d.date.getDate()}</span>
+                  {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 

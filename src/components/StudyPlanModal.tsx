@@ -235,11 +235,27 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
   const [checked, setChecked] = React.useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}'); } catch { return {}; }
   });
+  const [custom, setCustom] = React.useState<{ title: string; minutes: number }>({ title: "", minutes: 15 });
+  const [customTasks, setCustomTasks] = React.useState<Array<{ title: string; minutes: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]'); } catch { return []; }
+  });
   const toggle = (i: number) => {
     const next = { ...checked, [i]: !checked[i] };
     setChecked(next);
     try { localStorage.setItem(`quicktodo-${key}`, JSON.stringify(next)); } catch {}
   };
+  const addCustom = () => {
+    if (!custom.title.trim()) return;
+    const next = [...customTasks, { title: custom.title.trim(), minutes: Math.max(5, Math.min(180, Number(custom.minutes)||15)) }];
+    setCustomTasks(next);
+    setCustom({ title: "", minutes: 15 });
+    try { localStorage.setItem(`quicktodo-custom-${key}`, JSON.stringify(next)); } catch {}
+  };
+  const removeCustom = (idx: number) => {
+    const next = customTasks.slice(); next.splice(idx,1); setCustomTasks(next);
+    try { localStorage.setItem(`quicktodo-custom-${key}`, JSON.stringify(next)); } catch {}
+  };
+  const totalMinutes = (day?.tasks||[]).slice(0,5).reduce((s: number,t: any)=>s+t.minutes,0) + customTasks.reduce((s,t)=>s+t.minutes,0);
   return (
     <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
       <div className="flex items-center justify-between mb-2">
@@ -256,7 +272,25 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
             <span className="text-xs text-slate-500">{t.minutes} min</span>
           </li>
         ))}
+        {customTasks.map((t, i) => (
+          <li key={`c${i}`} className="flex items-center justify-between rounded-lg border p-3">
+            <label className="flex items-center gap-3">
+              <input type="checkbox" />
+              <span>{t.title}</span>
+            </label>
+            <div className="text-xs text-slate-500 flex items-center gap-2">
+              <span>{t.minutes} min</span>
+              <button className="text-red-500" onClick={() => removeCustom(i)}>Remove</button>
+            </div>
+          </li>
+        ))}
       </ul>
+      <div className="mt-3 flex gap-2">
+        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder="Add a task (e.g., Review mistakes)" className="flex-1 rounded-md border px-3 py-2" />
+        <input type="number" value={custom.minutes} onChange={(e)=>setCustom(c=>({...c,minutes:Number(e.target.value)}))} className="w-20 rounded-md border px-3 py-2" />
+        <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>Add</button>
+      </div>
+      <div className="mt-2 text-xs text-slate-500">Total today: {totalMinutes} min</div>
     </div>
   );
 }
@@ -264,51 +298,44 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
 function ScrollableMiniCalendar({ plan, onOpenFull }: { plan: any; onOpenFull: () => void }) {
   const startISO = plan?.meta?.startDateISO || new Date().toISOString();
   const startDate = new Date(startISO);
-  const months: Array<{ label: string; days: Array<{ date: Date; hasTasks: boolean }> }> = [];
-  // Build three months preview
-  for (let m = 0; m < 3; m++) {
-    const first = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1);
-    const daysInMonth = new Date(first.getFullYear(), first.getMonth()+1, 0).getDate();
-    const label = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
-    const days: Array<{ date: Date; hasTasks: boolean }> = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(first.getFullYear(), first.getMonth(), d);
-      const diff = Math.floor((date.getTime() - startDate.getTime())/(24*60*60*1000));
-      const weekIdx = Math.floor(diff/7);
-      const dayIdx = diff%7;
-      const hasTasks = !!plan.weekly?.[weekIdx]?.days?.[dayIdx];
-      days.push({ date, hasTasks });
-    }
-    months.push({ label, days });
-  }
+  const [offset, setOffset] = React.useState(0); // months from start
   const headers = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const first = new Date(startDate.getFullYear(), startDate.getMonth() + offset, 1);
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth()+1, 0).getDate();
+  const label = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  const leading = first.getDay();
+  const blanks = Array.from({length: leading}).map((_,i)=>i);
+  const days: Array<{ date: Date; hasTasks: boolean }> = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(first.getFullYear(), first.getMonth(), d);
+    const diff = Math.floor((date.getTime() - startDate.getTime())/(24*60*60*1000));
+    const weekIdx = Math.floor(diff/7);
+    const dayIdx = diff%7;
+    const hasTasks = !!plan.weekly?.[weekIdx]?.days?.[dayIdx];
+    days.push({ date, hasTasks });
+  }
   return (
-    <div className="space-y-4">
-      {months.map((m, mi) => {
-        const first = new Date(startDate.getFullYear(), startDate.getMonth() + mi, 1);
-        const offset = first.getDay();
-        const blanks = Array.from({length: offset}).map((_,i)=>i);
-        return (
-          <div key={mi} className="rounded-2xl border border-white/40 bg-white/60 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium text-slate-800">{m.label}</div>
-              <button className="text-xs underline text-slate-600" onClick={onOpenFull}>Open full plan</button>
-            </div>
-            <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
-              {headers.map(h => (<div key={h}>{h}</div>))}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {blanks.map(b => (<div key={`b${b}`} className="h-12" />))}
-              {m.days.map((d, di) => (
-                <button key={di} onClick={onOpenFull} className={`h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
-                  <span className="text-slate-900">{d.date.getDate()}</span>
-                  {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+    <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm font-medium text-slate-800">{label}</div>
+        <div className="flex items-center gap-2">
+          <button className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o-1)}>Prev</button>
+          <button className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o+1)}>Next</button>
+          <button className="text-xs underline text-slate-600" onClick={onOpenFull}>Open full plan</button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
+        {headers.map(h => (<div key={h}>{h}</div>))}
+      </div>
+      <div className="grid grid-cols-7 gap-2">
+        {blanks.map(b => (<div key={`b${b}`} className="h-12" />))}
+        {days.map((d, di) => (
+          <button key={di} onClick={onOpenFull} className={`h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
+            <span className="text-slate-900">{d.date.getDate()}</span>
+            {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

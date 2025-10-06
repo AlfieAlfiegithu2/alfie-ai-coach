@@ -6,6 +6,14 @@ import { useLocation } from 'react-router-dom';
 const PlanPage = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [openDayKey, setOpenDayKey] = useState<string | null>(null);
+  const [openIso, setOpenIso] = useState<string | null>(null);
+  // Per-day local state (custom tasks and completion)
+  type CustomTask = { title: string; minutes: number };
+  const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskMinutes, setNewTaskMinutes] = useState<number>(20);
+  const [dayNotes, setDayNotes] = useState<string>('');
   const location = useLocation() as any;
 
   useEffect(() => {
@@ -44,7 +52,7 @@ const PlanPage = () => {
   }, [location?.state]);
 
   if (!plan) return <div className="max-w-3xl mx-auto p-6">No plan yet.</div>;
-  const [openIso, setOpenIso] = useState<string | null>(null);
+// moved openIso useState to top-level
   const getDay = (key: string | null) => {
     if (!key) return null;
     const [w, d] = key.split('-').map(Number);
@@ -92,12 +100,7 @@ const PlanPage = () => {
   })();
 
   // Per-day local state (custom tasks and completion)
-  type CustomTask = { title: string; minutes: number };
-  const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskMinutes, setNewTaskMinutes] = useState<number>(20);
-  const [dayNotes, setDayNotes] = useState<string>('');
+// moved day state hooks to top-level
 
   const loadDayState = (iso: string) => {
     try {

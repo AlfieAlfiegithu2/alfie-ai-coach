@@ -834,6 +834,6 @@ const HeroIndex = () => {
 
       {/* AI Chatbot */}
       <MinimalisticChatbot />
-    </div>;
+    </div>
 };
 export default HeroIndex;

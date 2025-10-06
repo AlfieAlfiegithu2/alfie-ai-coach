@@ -86,6 +86,8 @@ const OnboardingAssessment = () => {
   const item = items[step];
   const onSelect = async (choiceId: string) => {
     setAnswer(item.id, choiceId);
+    // For plan_native_language we show a start notice instead of auto-advance
+    if (item.id === 'plan_native_language') return;
     // Move to next after a short tick so state updates apply
     setTimeout(async () => {
       if (step === items.length - 1) {
@@ -118,19 +120,25 @@ const OnboardingAssessment = () => {
             </button>
           ))}
           {item.type === 'multi' && item.multiSelect && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-wrap gap-3">
               {item.choices?.map((c) => {
                 const selected = aJson(answers[item.id]).includes(c.id);
                 return (
                   <button
                     key={c.id}
                     onClick={() => toggleMulti(item.id, c.id)}
-                    className={`text-left px-4 py-3 rounded-md border ${selected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}
+                    className={`px-5 py-3 rounded-full border ${selected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}
                   >
                     {c.label}
                   </button>
                 );
               })}
+            </div>
+          )}
+          {/* Start notice after personal info */}
+          {item.id === 'plan_native_language' && (
+            <div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-slate-700">
+              We’ll now run a short skills check to tailor your plan precisely. It takes about 10–12 minutes.
             </div>
           )}
           {/* Inline audio for listening items */}
@@ -196,6 +204,19 @@ const OnboardingAssessment = () => {
             className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50"
           >
             Continue
+          </button>
+        ) : item.id === 'study_days' || item.id === 'first_language' || item.id === 'plan_native_language' ? (
+          <button
+            onClick={() => {
+              if (item.multiSelect) {
+                if (!answers[item.id]) return; // require at least one day
+              } else if (!answers[item.id]) return;
+              goNext();
+            }}
+            disabled={!answers[item.id]}
+            className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50"
+          >
+            Next
           </button>
         ) : null}
       </div>

@@ -280,9 +280,9 @@ function TodayQuickTodo({ plan, onOpenFull }: { plan: any; onOpenFull: () => voi
                 <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)} />
                 <span>{t.title}</span>
               </label>
-              <div className="text-xs text-slate-500 flex items-center gap-2">
-                <span>{t.minutes} min</span>
-                <button className="text-red-500" onClick={() => hideAi(i)}>Remove</button>
+              <div className="text-xs text-slate-500 flex items-center gap-2 whitespace-nowrap">
+                <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600">{t.minutes} min</span>
+                <button className="px-2 py-1 rounded-md border border-red-300 text-red-600 hover:bg-red-50" onClick={() => hideAi(i)}>Remove</button>
               </div>
             </li>
           );

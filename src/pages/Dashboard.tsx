@@ -313,9 +313,11 @@ const Dashboard = () => {
               fontFamily: 'Inter, sans-serif'
             }}>Home</button>
           </nav>
-          <div className="flex items-center gap-3 lg:gap-4">
+          <div className="flex items-center gap-3 lg:gap-4 relative z-50">
             {/* Settings Button */}
-            <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
+            <div className="relative z-50">
+              <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
+            </div>
             
             {/* Clickable User Avatar for Photo Upload */}
             <ProfilePhotoSelector onPhotoUpdate={() => {

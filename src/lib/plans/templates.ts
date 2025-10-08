@@ -201,7 +201,8 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
     : '';
 
   // Localize plan content if requested
-  const wantKorean = ctx.planNativeLanguage === 'yes' && (ctx.firstLanguage?.toLowerCase() === 'ko' || ctx.firstLanguage?.toLowerCase() === 'korean');
+  const lang = (ctx.firstLanguage || '').toLowerCase();
+  const wantNative = ctx.planNativeLanguage === 'yes' && lang && lang !== 'en' && lang !== 'english';
 
   // Build English defaults
   let highlights = [
@@ -219,37 +220,47 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
     ...languageSpecificTips.quickWins
   ];
 
-  // If Korean requested, provide bilingual highlights/quick wins and bilingual task titles
-  if (wantKorean) {
-    highlights = [
-      `현재 수준: ${score.band} (IELTS 약 ${currentApprox.toFixed(1)})`,
-      `목표: IELTS ${target.toFixed(1)}${deadlineText ? '까지' : ''}`,
-      `학습 계획: 하루 ${recommendedDailyMinutes}분, ${studyDaysText}`,
-      `우선 집중 영역: ${weakestSkill} (${score.subs[weakestSkill]}%)`,
-      ...languageSpecificTips.highlights
-    ];
-    quickWins = [
-      `매일 ${weakestSkill} 15분 집중 연습 (즉시 피드백)`,
-      '하루 1분 스피킹 녹음 → 모델 답안과 비교',
-      '약점 분야에서 콜로케이션 10개 학습',
-      ...languageSpecificTips.quickWins
-    ];
+  // If native language requested, provide bilingual highlights/quick wins and bilingual task titles for major languages
+  if (wantNative) {
+    const L = {
+      ko: {
+        hl: [`현재 수준: ${score.band} (IELTS 약 ${currentApprox.toFixed(1)})`, `목표: IELTS ${target.toFixed(1)}${deadlineText ? '까지' : ''}`, `학습 계획: 하루 ${recommendedDailyMinutes}분, ${studyDaysText}`, `우선 집중 영역: ${weakestSkill} (${score.subs[weakestSkill]}%)`],
+        qw: [`매일 ${weakestSkill} 15분 집중 연습 (즉시 피드백)`, '하루 1분 스피킹 녹음 → 모델 답안과 비교', '약점 분야에서 콜로케이션 10개 학습'],
+        map: [[/^Vocabulary:/,'어휘:'],[/^Listening:/,'리스닝:'],[/^Reading:/,'리딩:'],[/^Grammar:/,'문법:'],[/^Writing:/,'라이팅:'],[/^Speaking:/,'스피킹:']] as Array<[RegExp,string]>
+      },
+      ja: {
+        hl: [`現在レベル: ${score.band} (IELTS 約 ${currentApprox.toFixed(1)})`, `目標: IELTS ${target.toFixed(1)}${deadlineText ? 'まで' : ''}`, `学習計画: 1日 ${recommendedDailyMinutes}分, ${studyDaysText}`, `優先フォーカス: ${weakestSkill} (${score.subs[weakestSkill]}%)`],
+        qw: [`毎日 ${weakestSkill} を15分練習（即時フィードバック）`, '1分スピーキングを録音してモデル解答と比較', '弱点分野のコロケーションを毎日10個'],
+        map: [[/^Vocabulary:/,'語彙:'],[/^Listening:/,'リスニング:'],[/^Reading:/,'リーディング:'],[/^Grammar:/,'文法:'],[/^Writing:/,'ライティング:'],[/^Speaking:/,'スピーキング:']]
+      },
+      zh: {
+        hl: [`当前水平: ${score.band} (雅思约 ${currentApprox.toFixed(1)})`, `目标: 雅思 ${target.toFixed(1)}${deadlineText ? '之前' : ''}`, `学习计划: 每天 ${recommendedDailyMinutes} 分钟, ${studyDaysText}`, `优先重点: ${weakestSkill} (${score.subs[weakestSkill]}%)`],
+        qw: [`每天专注练习 ${weakestSkill} 15 分钟（即时反馈）`, '每天录1分钟口语并与范文比较', '弱项领域每天学习10个搭配'],
+        map: [[/^Vocabulary:/,'词汇:'],[/^Listening:/,'听力:'],[/^Reading:/,'阅读:'],[/^Grammar:/,'语法:'],[/^Writing:/,'写作:'],[/^Speaking:/,'口语:']]
+      },
+      es: {
+        hl: [`Nivel actual: ${score.band} (≈ IELTS ${currentApprox.toFixed(1)})`, `Meta: IELTS ${target.toFixed(1)}${deadlineText ? ' antes de la fecha' : ''}`, `Plan: ${recommendedDailyMinutes} min/día, ${studyDaysText}`, `Enfoque prioritario: ${weakestSkill} (${score.subs[weakestSkill]}%)`],
+        qw: [`Practica ${weakestSkill} 15 min/día con feedback inmediato`, 'Graba 1 min de speaking y compáralo con un modelo', 'Aprende 10 colocaciones diarias de tus áreas débiles'],
+        map: [[/^Vocabulary:/,'Vocabulario:'],[/^Listening:/,'Listening:'],[/^Reading:/,'Reading:'],[/^Grammar:/,'Gramática:'],[/^Writing:/,'Writing:'],[/^Speaking:/,'Speaking:']]
+      },
+      pt: { hl: [`Nível atual: ${score.band}`, `Meta: IELTS ${target.toFixed(1)}`, `Plano: ${recommendedDailyMinutes} min/dia, ${studyDaysText}`, `Foco prioritário: ${weakestSkill} (${score.subs[weakestSkill]}%)`], qw: [`Pratique ${weakestSkill} 15 min/dia com feedback imediato`, 'Grave 1 min de fala e compare com modelo', 'Aprenda 10 colocações por dia'], map: [[/^Vocabulary:/,'Vocabulário:'],[/^Listening:/,'Listening:'],[/^Reading:/,'Reading:'],[/^Grammar:/,'Gramática:'],[/^Writing:/,'Writing:'],[/^Speaking:/,'Speaking:']] },
+      fr: { hl: [`Niveau actuel: ${score.band}`, `Objectif: IELTS ${target.toFixed(1)}`, `Plan: ${recommendedDailyMinutes} min/jour, ${studyDaysText}`, `Priorité: ${weakestSkill} (${score.subs[weakestSkill]}%)`], qw: [`Pratique ${weakestSkill} 15 min/jour avec feedback`, 'Enregistre 1 min d’expression orale et compare au modèle', 'Apprends 10 collocations par jour'], map: [[/^Vocabulary:/,'Vocabulaire:'],[/^Listening:/,'Listening:'],[/^Reading:/,'Reading:'],[/^Grammar:/,'Grammaire:'],[/^Writing:/,'Writing:'],[/^Speaking:/,'Speaking:']] },
+      de: { hl: [`Aktuelles Niveau: ${score.band}`, `Ziel: IELTS ${target.toFixed(1)}`, `Plan: ${recommendedDailyMinutes} Min/Tag, ${studyDaysText}`, `Prioritätsfokus: ${weakestSkill} (${score.subs[weakestSkill]}%)`], qw: [`Täglich ${weakestSkill} 15 Min üben (sofortiges Feedback)`, 'Täglich 1 Min Sprechen aufnehmen und mit Modelllösung vergleichen', 'Lerne 10 Kollokationen pro Tag'], map: [[/^Vocabulary:/,'Wortschatz:'],[/^Listening:/,'Listening:'],[/^Reading:/,'Reading:'],[/^Grammar:/,'Grammatik:'],[/^Writing:/,'Writing:'],[/^Speaking:/,'Speaking:']] },
+      ru: { hl: [`Текущий уровень: ${score.band}`, `Цель: IELTS ${target.toFixed(1)}`, `План: ${recommendedDailyMinutes} мин/день, ${studyDaysText}`, `Приоритет: ${weakestSkill} (${score.subs[weakestSkill]}%)`], qw: [`Ежедневно тренируйте ${weakestSkill} 15 минут`, 'Записывайте 1 минуту речи и сравнивайте с образцом', 'Учите 10 коллокаций в день'], map: [[/^Vocabulary:/,'Лексика:'],[/^Listening:/,'Аудирование:'],[/^Reading:/,'Чтение:'],[/^Grammar:/,'Грамматика:'],[/^Writing:/,'Письмо:'],[/^Speaking:/,'Говорение:']] },
+      hi: { hl: [`वर्तमान स्तर: ${score.band}`, `लक्ष्य: IELTS ${target.toFixed(1)}`, `योजना: प्रतिदिन ${recommendedDailyMinutes} मिनट, ${studyDaysText}`, `प्राथमिक फोकस: ${weakestSkill} (${score.subs[weakestSkill]}%)`], qw: [`प्रतिदिन ${weakestSkill} 15 मिनट अभ्यास (तुरंत फीडबैक)`, '1 मिनट स्पीकिंग रिकॉर्ड करें और मॉडल से तुलना करें', 'कमज़ोर क्षेत्रों की 10 कोलोकेशन्स सीखें'], map: [[/^Vocabulary:/,'शब्दावली:'],[/^Listening:/,'Listening:'],[/^Reading:/,'Reading:'],[/^Grammar:/,'व्याकरण:'],[/^Writing:/,'Writing:'],[/^Speaking:/,'Speaking:']] },
+      vi: { hl: [`Trình độ hiện tại: ${score.band}`, `Mục tiêu: IELTS ${target.toFixed(1)}`, `Kế hoạch: ${recommendedDailyMinutes} phút/ngày, ${studyDaysText}`, `Trọng tâm ưu tiên: ${weakestSkill} (${score.subs[weakestSkill]}%)`], qw: [`Luyện ${weakestSkill} 15 phút mỗi ngày (phản hồi ngay)`, 'Thu âm 1 phút nói và so sánh với mẫu', 'Học 10 collocation mỗi ngày'], map: [[/^Vocabulary:/,'Từ vựng:'],[/^Listening:/,'Listening:'],[/^Reading:/,'Reading:'],[/^Grammar:/,'Ngữ pháp:'],[/^Writing:/,'Writing:'],[/^Speaking:/,'Speaking:']] }
+    } as const;
 
-    const localizeTitle = (t: string) => {
-      const map: Array<[RegExp, string]> = [
-        [/^Vocabulary:/, '어휘:'],
-        [/^Listening:/, '리스닝:'],
-        [/^Reading:/, '리딩:'],
-        [/^Grammar:/, '문법:'],
-        [/^Writing:/, '라이팅:'],
-        [/^Speaking:/, '스피킹:'],
-      ];
-      let out = t;
-      for (const [re, ko] of map) { if (re.test(out)) { out = out.replace(re, ko); break; } }
-      // Bilingual label keeps English in parentheses for clarity
-      return `${out} (${t})`;
-    };
-    weekly.forEach((w) => w.days.forEach((d) => { d.tasks = d.tasks.map((task) => ({ ...task, title: localizeTitle(task.title) })); }));
+    const pack = (L as any)[lang];
+    if (pack) {
+      highlights = [...pack.hl, ...languageSpecificTips.highlights];
+      quickWins = [...pack.qw, ...languageSpecificTips.quickWins];
+      const localizeTitle = (t: string) => {
+        let out = t; for (const [re, lbl] of pack.map) { if (re.test(out)) { out = out.replace(re, lbl); break; } }
+        return `${out} (${t})`;
+      };
+      weekly.forEach((w) => w.days.forEach((d) => { d.tasks = d.tasks.map((task) => ({ ...task, title: localizeTitle(task.title) })); }));
+    }
   }
 
   const nativeLanguageNote = ctx.planNativeLanguage === 'yes' && ctx.firstLanguage

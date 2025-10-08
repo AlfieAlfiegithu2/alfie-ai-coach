@@ -58,7 +58,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
           text: text,
           targetLang: language,
           sourceLang: 'auto',
-          includeContext: true // Need context to get alternative meanings
+          includeContext: false // Set to false for 2-3x faster translations with DeepSeek 3.2-Exp
         }
       });
 
@@ -88,19 +88,30 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   // Calculate dynamic positioning to keep popup on screen and next to word
   const getPopupPosition = () => {
     const popupWidth = 400; // max-w-sm is about 400px
-    const popupHeight = 250; // estimated popup height
-    const margin = 10; // margin from screen edges
+    const popupHeight = 300; // increased for better estimation
+    const margin = 20; // increased margin from screen edges
+    const wordOffset = 15; // offset from the selected word
+
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const scrollY = window.scrollY;
 
     let left = position.x;
     let top = position.y;
 
-    // Position to the right of the word first
-    left = position.x + 10;
+    // Try to position to the right of the word first
+    left = position.x + wordOffset;
 
     // Check if there's enough space on the right
-    if (left + popupWidth > window.innerWidth - margin) {
-      // Position to the left of the word instead
-      left = position.x - popupWidth - 10;
+    if (left + popupWidth > viewportWidth - margin) {
+      // Try to position to the left of the word
+      left = position.x - popupWidth - wordOffset;
+      
+      // If still doesn't fit on the left, center it horizontally
+      if (left < margin) {
+        left = Math.max(margin, (viewportWidth - popupWidth) / 2);
+      }
     }
 
     // Ensure it doesn't go off the left edge
@@ -108,23 +119,28 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       left = margin;
     }
 
-    // Position below the word by default
-    top = position.y + 5;
-
-    // Check if there's enough space below
-    if (top + popupHeight > window.innerHeight + window.scrollY - margin) {
-      // Position above the word instead
-      top = position.y - popupHeight - 25;
+    // Ensure it doesn't go off the right edge
+    if (left + popupWidth > viewportWidth - margin) {
+      left = viewportWidth - popupWidth - margin;
     }
 
-    // Ensure it doesn't go above the viewport
-    if (top < window.scrollY + margin) {
-      top = window.scrollY + margin;
+    // Position below the word by default
+    top = position.y + wordOffset;
+
+    // Check if there's enough space below
+    if (top + popupHeight > viewportHeight + scrollY - margin) {
+      // Position above the word instead
+      top = position.y - popupHeight - wordOffset;
+      
+      // If still doesn't fit above, try to center it vertically
+      if (top < scrollY + margin) {
+        top = Math.max(scrollY + margin, (viewportHeight - popupHeight) / 2 + scrollY);
+      }
     }
 
     // Final bounds check to ensure it's always visible
-    left = Math.max(margin, Math.min(left, window.innerWidth - popupWidth - margin));
-    top = Math.max(window.scrollY + margin, Math.min(top, window.innerHeight + window.scrollY - popupHeight - margin));
+    left = Math.max(margin, Math.min(left, viewportWidth - popupWidth - margin));
+    top = Math.max(scrollY + margin, Math.min(top, viewportHeight + scrollY - popupHeight - margin));
 
     return { left, top };
   };
@@ -221,11 +237,13 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
 
   return (
     <div 
-      className="fixed z-50 max-w-sm"
+      className="fixed z-50 max-w-sm max-h-80 overflow-hidden"
       data-translation-helper
       style={{
-        left: dynamicPosition.left,
-        top: dynamicPosition.top,
+        left: `${dynamicPosition.left}px`,
+        top: `${dynamicPosition.top}px`,
+        maxWidth: '400px',
+        maxHeight: '320px',
       }}
     >
       <Card className="glass-effect shadow-lg border-border/20">
@@ -242,7 +260,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
             </Button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-60 overflow-y-auto">
             <div className="bg-surface-2 rounded-lg p-3">
               <p className="text-sm font-medium text-text-primary mb-1">
                 "{selectedText}"

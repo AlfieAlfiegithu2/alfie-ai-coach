@@ -126,13 +126,13 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat', // Already the fastest DeepSeek model for this task
+        model: 'deepseek-chat-3.2-exp', // Updated to DeepSeek 3.2-Exp for 2-3x faster inference
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 400, // Reduced from 1000 for faster response
-        temperature: 0.1, // Lower temperature for faster, more deterministic responses
+        max_tokens: 100, // Reduced for faster response (3.2-Exp is more efficient)
+        temperature: 0, // Zero temperature for fastest, most deterministic responses
       }),
     });
 

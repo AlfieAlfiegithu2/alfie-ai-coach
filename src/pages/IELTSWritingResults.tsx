@@ -313,7 +313,7 @@ const IELTSWritingResults = () => {
                 size="sm"
                 onClick={() => {
                   const element = document.createElement('a');
-                  const file = new Blob([feedback], { type: 'text/plain' });
+                  const file = new Blob([effFeedback || 'No feedback available'], { type: 'text/plain' });
                   element.href = URL.createObjectURL(file);
                   element.download = `IELTS-Writing-Report-${new Date().toISOString().split('T')[0]}.txt`;
                   document.body.appendChild(element);
@@ -564,7 +564,7 @@ const IELTSWritingResults = () => {
             <div 
               className="prose prose-lg max-w-none text-text-primary"
               dangerouslySetInnerHTML={{
-                __html: (fallback?.feedback || feedback)
+                __html: (effFeedback || "No feedback available")
                   .replace(/^(TASK [12] ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-blue mt-8 mb-6 border-b-2 border-brand-blue/20 pb-3">$1</h2>')
                   .replace(/^(OVERALL WRITING ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-purple mt-8 mb-6 border-b-2 border-brand-purple/20 pb-3">$1</h2>')
                   .replace(/^(Task Achievement|Task Response|Coherence and Cohesion|Lexical Resource|Grammatical Range and Accuracy|Your Path to a Higher Score)$/gm, '<h3 class="text-xl font-semibold text-text-primary mt-6 mb-4 bg-surface-3 p-3 rounded-xl">$1</h3>')
@@ -584,20 +584,20 @@ const IELTSWritingResults = () => {
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <AnnotatedWritingText
             taskTitle="Your Task 1 Answer"
-            originalText={task1Answer || ""}
-            annotatedOriginal={structured?.task1?.annotated_original}
-            annotatedCorrected={structured?.task1?.annotated_corrected}
-            corrections={structured?.task1?.corrections}
+            originalText={effTask1Answer || ""}
+            annotatedOriginal={effStructured?.task1?.annotated_original}
+            annotatedCorrected={effStructured?.task1?.annotated_corrected}
+            corrections={effStructured?.task1?.corrections}
             icon={Target}
             colorScheme="text-brand-blue"
           />
 
           <AnnotatedWritingText
             taskTitle="Your Task 2 Answer"
-            originalText={task2Answer || ""}
-            annotatedOriginal={structured?.task2?.annotated_original}
-            annotatedCorrected={structured?.task2?.annotated_corrected}
-            corrections={structured?.task2?.corrections}
+            originalText={effTask2Answer || ""}
+            annotatedOriginal={effStructured?.task2?.annotated_original}
+            annotatedCorrected={effStructured?.task2?.annotated_corrected}
+            corrections={effStructured?.task2?.corrections}
             icon={Edit3}
             colorScheme="text-brand-purple"
           />

@@ -13,21 +13,13 @@ const Signup = () => {
   const [confirm, setConfirm] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
-  const [code, setCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
+  // OTP email verification removed for simpler UX; Supabase email confirmation is sent after sign up
 
   if (user && !loading) return <Navigate to="/dashboard" replace />;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!emailVerified) {
-      setError('Please verify your email first.');
-      return;
-    }
     if (password !== confirm) {
       setError('Passwords do not match');
       return;
@@ -40,45 +32,7 @@ const Signup = () => {
 
   const isEmailValid = (value: string) => /\S+@\S+\.\S+/.test(value);
 
-  const verifyEmail = async () => {
-    setVerifyMsg(null);
-    setError(null);
-    if (!isEmailValid(email)) {
-      setVerifyMsg('Please enter a valid email address.');
-      return;
-    }
-    try {
-      setVerifying(true);
-      const { data, error } = await supabase.functions.invoke('send-email-otp', { body: { email } });
-      if (error || !data?.success) setVerifyMsg(error?.message || data?.error || 'Failed to send email');
-      else {
-        setVerifyMsg('We sent a 6‑digit code to your email. Enter it below to verify.');
-        setCodeSent(true);
-      }
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const confirmCode = async () => {
-    setVerifyMsg(null);
-    setError(null);
-    if (!/^[0-9]{6}$/.test(code)) {
-      setVerifyMsg('Enter the 6‑digit code.');
-      return;
-    }
-    try {
-      setVerifying(true);
-      const { data, error } = await supabase.functions.invoke('verify-email-otp', { body: { email, code } });
-      if (error || !data?.success) setVerifyMsg(error?.message || data?.error || 'Invalid or expired code');
-      else {
-        setVerifyMsg('Email verified. You can now create your account.');
-        setEmailVerified(true);
-      }
-    } finally {
-      setVerifying(false);
-    }
-  };
+  // OTP helpers removed
 
   if (loading) {
     return (
@@ -125,47 +79,19 @@ const Signup = () => {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-2">Email address</label>
-                <div className="flex gap-2">
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                    placeholder="okie@dokie.com"
-                  />
-                  <button
-                    type="button"
-                    onClick={verifyEmail}
-                    disabled={verifying || !email}
-                    className="px-4 rounded-xl border border-border bg-card text-foreground hover:bg-accent/40"
-                  >
-                    {verifying ? 'Sending…' : 'Verify'}
-                  </button>
-                </div>
-                {verifyMsg && <p className="mt-1 text-xs text-muted-foreground">{verifyMsg}</p>}
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  placeholder="okie@dokie.com"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">We’ll send a verification email after you sign up.</p>
               </div>
 
-              {codeSent && (
-                <div>
-                  <label htmlFor="code" className="block text-sm font-medium text-muted-foreground mb-2">Enter 6‑digit code</label>
-                  <div className="flex gap-2">
-                    <input
-                      id="code"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]{6}"
-                      maxLength={6}
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                      className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                      placeholder="000000"
-                    />
-                    <button type="button" onClick={confirmCode} disabled={verifying || code.length !== 6} className="px-4 rounded-xl border border-border bg-card text-foreground hover:bg-accent/40">{verifying ? 'Checking…' : 'Confirm'}</button>
-                  </div>
-                </div>
-              )}
+              {/* OTP step removed for simpler UX */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-2">Password</label>
                 <input

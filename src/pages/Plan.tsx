@@ -16,6 +16,8 @@ const PlanPage = () => {
   const [hiddenAiIds, setHiddenAiIds] = useState<Set<string>>(new Set());
   const [dayNotes, setDayNotes] = useState<string>('');
   const [showTodosOnly, setShowTodosOnly] = useState<boolean>(true);
+  const [focusText, setFocusText] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const location = useLocation() as any;
   const navigate = useNavigate();
 
@@ -101,6 +103,33 @@ const PlanPage = () => {
     });
     return Array.from(map.entries()).sort((a,b) => a[0].localeCompare(b[0]));
   })();
+
+  const generateTodosFromFocus = async () => {
+    if (!focusText.trim()) return;
+    setIsGenerating(true);
+    try {
+      const minutes = plan?.meta?.dailyMinutes || 45;
+      const firstLang = (plan?.meta as any)?.firstLanguage || 'en';
+      const level = plan?.meta?.currentLevel || 'B1';
+      const { data, error } = await supabase.functions.invoke('plan-focus-to-todos', {
+        body: { focusText, minutesPerDay: minutes, days: 7, firstLanguage: firstLang, level }
+      });
+      if (error || !data?.success) throw error || new Error(data?.error || 'Failed to generate');
+      const tomorrow = new Date(startDate);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const iso = toISO(tomorrow);
+      const existing = JSON.parse(localStorage.getItem(`plan-custom-tasks-${iso}`) || '[]');
+      const pack = Array.isArray(data.days) && data.days.length > 0 ? (data.days[0]?.tasks || []) : [];
+      const merged = Array.isArray(existing) ? [...existing, ...pack] : pack;
+      localStorage.setItem(`plan-custom-tasks-${iso}`, JSON.stringify(merged));
+      setFocusText('');
+      alert('A to‑do pack has been generated for tomorrow. You can move/edit them in the day view.');
+    } catch (e: any) {
+      alert('Could not generate tasks: ' + (e.message || e));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Per-day local state (custom tasks and completion)
 // moved day state hooks to top-level
@@ -252,6 +281,16 @@ const PlanPage = () => {
               </div>
             </div>
           )}
+        </div>
+        {/* Focus → To‑dos generator */}
+        <div className="rounded-xl border border-slate-200 bg-white/70 p-4 mb-6">
+          <div className="text-sm font-medium text-slate-800 mb-2">Generate tasks from your focus (write in any language)</div>
+          <textarea value={focusText} onChange={(e)=>setFocusText(e.target.value)} className="w-full rounded-md border px-3 py-2 min-h-[80px]" placeholder="예: 그래프 비교 쓰기(Task 1)와 cohesion 연결어 연습" />
+          <div className="mt-2">
+            <button onClick={generateTodosFromFocus} disabled={isGenerating || !focusText.trim()} className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50">
+              {isGenerating ? 'Generating…' : 'Generate To‑dos'}
+            </button>
+          </div>
         </div>
         
         {/* Action Buttons */}

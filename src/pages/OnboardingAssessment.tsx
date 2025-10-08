@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
+import { useTranslation } from 'react-i18next';
 
 const OnboardingAssessment = () => {
   const [answers, setAnswers] = useState<Answers>({});
@@ -13,14 +14,25 @@ const OnboardingAssessment = () => {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
+  // Determine beginner intent: if user selects plan_native_language=yes and first_language present, start with easier items
+  const beginnerIntent = useMemo(() => {
+    const goal = answers['goal'];
+    // if goal is ielts but no prior answers yet, treat as beginner until scored
+    return !goal || goal === 'ielts';
+  }, [answers]);
+
+  const rawItems = universalAssessmentItems as any[];
   const items = useMemo(() => {
-    const base = universalAssessmentItems as any[];
+    // Prefer personal info first
     const personalOrder = ['goal','study_days','first_language','plan_native_language','target_deadline','target_score'];
-    const personal = personalOrder.map(id => base.find(i => i.id === id)).filter(Boolean);
-    const english = base.filter(i => !personalOrder.includes(i.id));
-    return [...personal, ...english] as typeof universalAssessmentItems;
-  }, []);
+    const personal = personalOrder.map(id => rawItems.find(i => i.id === id)).filter(Boolean);
+    const english = rawItems.filter(i => !personalOrder.includes(i.id));
+    // Simple beginner filter: keep only items that either have no difficulty or are tagged A1/A2
+    const filtered = beginnerIntent ? english.filter((i:any)=>!i.difficulty || i.difficulty === 'A1' || i.difficulty === 'A2') : english;
+    return [...personal, ...filtered] as typeof universalAssessmentItems;
+  }, [rawItems, beginnerIntent]);
   const targetScoreIndex = useMemo(() => items.findIndex((i) => i.id === 'target_score'), [items]);
 
   const setAnswer = (id: string, value: string) => setAnswers((a) => ({ ...a, [id]: value }));
@@ -92,11 +104,11 @@ const OnboardingAssessment = () => {
   };
 
   const item = items[step];
+  const promptText = (item as any).langKey ? t((item as any).langKey) : item.prompt;
+
   const onSelect = async (choiceId: string) => {
     setAnswer(item.id, choiceId);
-    // For plan_native_language we show a start notice instead of auto-advance
     if (item.id === 'plan_native_language') return;
-    // Move to next after a short tick so state updates apply
     setTimeout(async () => {
       if (step === items.length - 1) {
         await handleSubmit({ preventDefault: () => {} } as unknown as React.FormEvent);
@@ -116,7 +128,7 @@ const OnboardingAssessment = () => {
             {item.passage}
           </div>
         )}
-        <div className="text-lg font-medium">{item.prompt}</div>
+        <div className="text-lg font-medium">{promptText}</div>
         <div className="grid gap-3">
           {item.type === 'multi' && !item.multiSelect && item.choices?.map((c) => (
             <button
@@ -124,7 +136,7 @@ const OnboardingAssessment = () => {
               onClick={() => onSelect(c.id)}
               className={`text-left px-4 py-3 rounded-md border ${answers[item.id] === c.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}
             >
-              {c.label}
+              {(c as any).langKey ? t((c as any).langKey) : c.label}
             </button>
           ))}
           {item.type === 'multi' && item.multiSelect && (
@@ -137,19 +149,17 @@ const OnboardingAssessment = () => {
                     onClick={() => toggleMulti(item.id, c.id)}
                     className={`px-5 py-3 rounded-full border ${selected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}
                   >
-                    {c.label}
+                    {(c as any).langKey ? t((c as any).langKey) : c.label}
                   </button>
                 );
               })}
             </div>
           )}
-          {/* Start notice after personal info */}
           {item.id === 'plan_native_language' && (
             <div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-slate-700">
               We’ll now run a short skills check to tailor your plan precisely. It takes about 10–12 minutes.
             </div>
           )}
-          {/* Inline audio for listening items */}
           {item.audio && (
             <div className="space-y-2">
               <audio controls className="w-full">
@@ -172,7 +182,6 @@ const OnboardingAssessment = () => {
                 selected={answers[item.id] ? new Date(answers[item.id] + 'T12:00:00') : undefined}
                 onSelect={(d: Date | undefined) => {
                   if (!d) return;
-                  // Normalize to local date to avoid off-by-one due to TZ
                   const local = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                   const iso = new Date(local.getTime() - local.getTimezoneOffset()*60000).toISOString().slice(0,10);
                   setAnswer(item.id, iso);
@@ -229,7 +238,7 @@ const OnboardingAssessment = () => {
           <button
             onClick={() => {
               if (item.multiSelect) {
-                if (!answers[item.id]) return; // require at least one day
+                if (!answers[item.id]) return;
               } else if (!answers[item.id]) return;
               goNext();
             }}

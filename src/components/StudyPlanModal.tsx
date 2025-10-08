@@ -54,8 +54,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [aiDeadline, setAiDeadline] = useState<string>('');
   const [aiMinutes, setAiMinutes] = useState<number>(60);
   const [aiDays, setAiDays] = useState<Set<number>>(new Set([1,2,3,4,5]));
-  const [aiFirstLang, setAiFirstLang] = useState<string>('en');
-  const [aiBilingual, setAiBilingual] = useState<boolean>(false);
+  const [aiFirstLang, setAiFirstLang] = useState<string>(() => i18n.language || 'en');
+  const [aiBilingual, setAiBilingual] = useState<boolean>(() => (i18n.language && i18n.language !== 'en'));
   const [aiWeak, setAiWeak] = useState<Set<string>>(new Set());
   const [aiNotes, setAiNotes] = useState<string>('');
   const [aiLoading, setAiLoading] = useState<boolean>(false);

@@ -48,7 +48,7 @@ serve(async (req) => {
   }
 }`;
 
-    const system = `You are an IELTS coach. Produce a practical, to-do-list focused plan. Follow IELTS task naming and keep IELTS keywords in ENGLISH. If the student wants native language output (planNativeLanguage=yes and firstLanguage != en), provide bilingual task titles as: Localized Title (English keyword).`;
+    const system = `You are an IELTS coach. Produce a practical, to-do-list focused plan. Follow IELTS task naming and keep IELTS keywords in ENGLISH. If the student wants native language output (planNativeLanguage=yes and firstLanguage != en), provide bilingual task titles as: Localized Title (English keyword). Ensure highlights and quickWins are also bilingual in that case.`;
 
     const user = `Student request:
 - Target IELTS: ${Number(targetScore).toFixed(1)}
@@ -63,8 +63,8 @@ serve(async (req) => {
 Rules:
 - Respect study days; empty task list on non-study days.
 - 3-5 tasks per study day; sum close to ${minutesPerDay} minutes.
-- Prioritize weak areas first in the weekly rotation.
-- Duration defaults 12 weeks if no deadline; otherwise derive from deadline.
+- Strongly prioritize weak areas FIRST when composing each study day, then fill with other skills.
+- Duration defaults 12 weeks if no deadline; otherwise DERIVE EXACT weeks from deadline so that the schedule ends on or just after the deadline date.
 - Include 4-6 clear highlights and quick wins.
 - Keep IELTS keywords (Task 1/2, cohesion, band, etc.) in English.
 - ${wantNative ? 'Use bilingual titles; e.g., for Korean: 어휘: 12개 학술어 (Vocabulary: 12 academic words).' : 'Use concise English titles.'}
@@ -114,7 +114,7 @@ Rules:
     plan.meta.firstLanguage = firstLanguage;
     plan.meta.planNativeLanguage = wantNative ? 'yes' : 'no';
 
-    // Ensure non-study days have empty tasks
+    // Ensure non-study days have empty tasks & align plan end to deadline if provided
     try {
       const setDays = new Set<number>(Array.isArray(studyDays) ? studyDays.map((n: any)=>Number(n)) : []);
       plan.weekly.forEach((w: any, wi: number) => {
@@ -123,6 +123,24 @@ Rules:
           if (!setDays.has((d.day ?? di) - 1)) d.tasks = [];
         });
       });
+      if (targetDeadline) {
+        const startISO = plan?.meta?.startDateISO || new Date().toISOString();
+        const start = new Date(startISO);
+        const deadline = new Date(targetDeadline);
+        const totalDays = Math.max(1, Math.ceil((deadline.getTime() - start.getTime()) / (24*60*60*1000))) + 1;
+        const neededWeeks = Math.max(1, Math.ceil(totalDays / 7));
+        // extend or trim weekly to match
+        if (plan.weekly.length < neededWeeks) {
+          const lastWeek = plan.weekly[plan.weekly.length - 1] || { week: plan.weekly.length, days: [] };
+          for (let w = plan.weekly.length; w < neededWeeks; w++) {
+            plan.weekly.push({ week: w + 1, days: (lastWeek.days || []).map((d: any) => ({ day: d.day, tasks: Array.isArray(d.tasks) ? d.tasks : [] })) });
+          }
+        } else if (plan.weekly.length > neededWeeks) {
+          plan.weekly = plan.weekly.slice(0, neededWeeks);
+        }
+        plan.durationWeeks = neededWeeks;
+        plan.meta.estimatedMonths = Math.max(1, Math.round(neededWeeks/4));
+      }
     } catch {}
 
     return new Response(JSON.stringify({ success: true, plan }), { headers: { ...cors, 'Content-Type': 'application/json' } });

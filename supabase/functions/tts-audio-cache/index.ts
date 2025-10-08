@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,13 @@ const AZURE_TTS_REGION = Deno.env.get('AZURE_TTS_REGION');
 const GOOGLE_CLOUD_TTS_API_KEY = Deno.env.get('GOOGLE_CLOUD_TTS_API_KEY') || Deno.env.get('GOOGLE_CLOUD_API_KEY');
 const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+
+// Cloudflare R2 Configuration
+const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
+const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
+const CLOUDFLARE_R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+const CLOUDFLARE_R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME');
+const CLOUDFLARE_R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -35,6 +43,13 @@ serve(async (req) => {
       throw new Error('Text is required');
     }
 
+    // Validate R2 configuration
+    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID || 
+        !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME || 
+        !CLOUDFLARE_R2_PUBLIC_URL) {
+      throw new Error('Cloudflare R2 environment variables not configured');
+    }
+
     console.log('🎵 TTS request:', { text: text.substring(0, 50), language, voice, provider });
 
     // Generate cache key
@@ -44,38 +59,33 @@ serve(async (req) => {
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     const audioFileName = `tts-cache/${hashHex}.mp3`;
 
-    // Check if audio already exists in Supabase Storage
-    try {
-      const { data: existingFile } = await supabase.storage
-        .from('audio-files')
-        .download(audioFileName);
+    // Check if audio already exists in cache
+    const { data: cachedAudio } = await supabase
+      .from('audio_cache')
+      .select('audio_url')
+      .eq('text_hash', hashHex)
+      .single();
 
-      if (existingFile) {
-        const { data: { publicUrl } } = supabase.storage
-          .from('audio-files')
-          .getPublicUrl(audioFileName);
+    if (cachedAudio?.audio_url) {
+      console.log('✅ TTS cache hit (R2):', cachedAudio.audio_url);
 
-        console.log('✅ TTS cache hit:', publicUrl);
+      // Track cache hit in analytics
+      await supabase.from('audio_analytics').insert({
+        action_type: 'tts_cache_hit',
+        storage_path: audioFileName,
+      });
 
-        // Track cache hit in analytics
-        await supabase.from('audio_analytics').insert({
-          action_type: 'tts_cache_hit',
-          file_path: audioFileName,
-          cache_key: hashHex,
-        });
-
-        return new Response(JSON.stringify({
-          success: true,
-          audioUrl: publicUrl,
-          cached: true,
-          source: 'storage'
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    } catch (e) {
-      console.log('ℹ️ Cache miss, will generate audio...');
+      return new Response(JSON.stringify({
+        success: true,
+        audioUrl: cachedAudio.audio_url,
+        cached: true,
+        source: 'r2'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('ℹ️ Cache miss, will generate audio...');
 
     // Helper to decode base64 to Uint8Array
     const decodeBase64 = (b64: string) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -212,31 +222,42 @@ serve(async (req) => {
       throw new Error(`All TTS providers failed. Last error: ${lastError}`);
     }
 
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('audio-files')
-      .upload(audioFileName, audioBuffer, {
-        contentType: 'audio/mpeg',
-        cacheControl: '31536000',
-        upsert: true,
-      });
+    // Upload to Cloudflare R2
+    const r2Client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: CLOUDFLARE_R2_ACCESS_KEY_ID,
+        secretAccessKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+      },
+    });
 
-    if (uploadError) {
-      console.error('❌ Storage upload error:', uploadError);
-      throw new Error(`Storage upload failed: ${uploadError.message}`);
-    }
+    const command = new PutObjectCommand({
+      Bucket: CLOUDFLARE_R2_BUCKET_NAME,
+      Key: audioFileName,
+      Body: audioBuffer,
+      ContentType: 'audio/mpeg',
+      CacheControl: 'public, max-age=31536000, immutable',
+    });
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('audio-files')
-      .getPublicUrl(audioFileName);
+    await r2Client.send(command);
+    
+    const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
 
-    console.log('✅ TTS audio generated and cached:', { publicUrl, usedProvider });
+    console.log('✅ TTS audio generated and cached to R2:', { publicUrl, usedProvider });
+
+    // Cache the audio URL in database
+    await supabase.from('audio_cache').insert({
+      text_hash: hashHex,
+      voice: voice,
+      audio_url: publicUrl,
+      storage_path: audioFileName,
+    });
 
     // Track generation in analytics
     await supabase.from('audio_analytics').insert({
       action_type: 'tts_generated',
-      file_path: audioFileName,
-      cache_key: hashHex,
+      storage_path: audioFileName,
       file_size_bytes: (audioBuffer instanceof Uint8Array ? audioBuffer.length : (audioBuffer as ArrayBuffer).byteLength),
     });
 

@@ -173,8 +173,9 @@ serve(async (req) => {
         }
         if (p === 'elevenlabs') {
           if (!ELEVENLABS_API_KEY) throw new Error('ELEVENLABS_API_KEY not set');
-          // If voice is not an ElevenLabs voice ID, use a safe default
-          const voiceId = /^[A-Za-z0-9]{20,}$/.test(voice) ? voice : 'pNInz6obpgDQGcFmaJgB';
+          // Use ElevenLabs voice ID (Adam voice by default)
+          const voiceId = 'pNInz6obpgDQGcFmaJgB'; // ElevenLabs Adam voice ID
+          console.log('🎤 ElevenLabs TTS request:', { text: text.substring(0, 50), voiceId });
           const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
             {
               method: 'POST',
@@ -196,7 +197,8 @@ serve(async (req) => {
           );
           if (!resp.ok) {
             const err = await resp.text();
-            throw new Error(`ElevenLabs TTS response not ok: ${err}`);
+            console.error('❌ ElevenLabs TTS error:', { status: resp.status, error: err });
+            throw new Error(`ElevenLabs TTS response not ok (${resp.status}): ${err}`);
           }
           audioBuffer = await resp.arrayBuffer();
           usedProvider = 'elevenlabs';

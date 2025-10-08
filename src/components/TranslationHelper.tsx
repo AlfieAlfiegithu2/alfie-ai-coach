@@ -123,7 +123,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
           body: {
             text: selectedText,
             language: 'en-US',
-            voice: 'en-US-Neural2-J',
+            voice: 'pNInz6obpgDQGcFmaJgB', // ElevenLabs Adam voice ID
             speed: 0.9,
             provider: 'elevenlabs'
           }

@@ -55,7 +55,7 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
               language: 'en-US',
               voice: 'en-US-Neural2-J',
               speed: 0.9,
-              provider: 'auto'
+              provider: 'elevenlabs'
             }
           });
 

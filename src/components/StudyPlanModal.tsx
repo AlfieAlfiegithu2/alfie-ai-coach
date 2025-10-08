@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import i18n from '@/lib/i18n';
 
 interface PlanTask {
   title: string;
@@ -45,6 +46,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
+  const [lang, setLang] = useState<string>(() => i18n.language || 'en');
 
   useEffect(() => {
     if (open) {
@@ -58,6 +60,11 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     window.addEventListener('focus', handler);
     return () => window.removeEventListener('focus', handler);
   }, [open]);
+
+  // Reload when language changes
+  useEffect(() => {
+    if (open) void loadPlan();
+  }, [lang, open]);
 
   const loadPlan = async () => {
     setLoading(true);
@@ -134,6 +141,12 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   };
   const calendar = buildCalendarPreview();
 
+  const switchLang = async (target: 'en' | 'ko') => {
+    if (lang === target) return;
+    await i18n.changeLanguage(target);
+    setLang(target);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -141,7 +154,13 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20">
         <DialogHeader>
-          <DialogTitle className="text-slate-800">Your Study Plan</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-slate-800">Your Study Plan</DialogTitle>
+            <div className="flex items-center gap-2 text-xs">
+              <button className={`rounded-md border px-2 py-1 ${lang==='en'?'bg-black text-white':'bg-white'}`} onClick={() => switchLang('en')}>EN</button>
+              <button className={`rounded-md border px-2 py-1 ${lang==='ko'?'bg-black text-white':'bg-white'}`} onClick={() => switchLang('ko')}>KO</button>
+            </div>
+          </div>
         </DialogHeader>
         <div className="space-y-6">
           {!loading && !plan && (

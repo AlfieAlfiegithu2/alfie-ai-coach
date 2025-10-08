@@ -67,11 +67,12 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
 
       if (error || !data.success) {
         console.warn('Translation service error:', error);
-        // Fallback to simple translation that still allows saving
-        setTranslationResult({
-          translation: `${text} → ${language} translation`,
-          simple: true
+        toast({
+          title: "Translation failed",
+          description: "Unable to translate at the moment. Please try again.",
+          variant: "destructive",
         });
+        setTranslationResult(null);
       } else {
         setTranslationResult(data.result);
         // Cache the result
@@ -79,10 +80,12 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       }
     } catch (error) {
       console.error('Translation error:', error);
-      setTranslationResult({
-        translation: `${text} → ${language}`,
-        simple: true
+      toast({
+        title: "Translation failed",
+        description: "Unable to translate. Please try again later.",
+        variant: "destructive",
       });
+      setTranslationResult(null);
     } finally {
       setIsLoading(false);
     }

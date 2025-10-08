@@ -1767,7 +1767,6 @@ export type Database = {
           detailed_feedback: string | null
           id: string
           improvement_suggestions: string[] | null
-          structured: Json | null
           prompt_text: string
           task_number: number
           test_result_id: string | null
@@ -1782,7 +1781,6 @@ export type Database = {
           detailed_feedback?: string | null
           id?: string
           improvement_suggestions?: string[] | null
-          structured?: Json | null
           prompt_text: string
           task_number: number
           test_result_id?: string | null
@@ -1797,7 +1795,6 @@ export type Database = {
           detailed_feedback?: string | null
           id?: string
           improvement_suggestions?: string[] | null
-          structured?: Json | null
           prompt_text?: string
           task_number?: number
           test_result_id?: string | null

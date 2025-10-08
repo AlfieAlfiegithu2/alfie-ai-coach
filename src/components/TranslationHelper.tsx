@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, BookPlus, Check } from 'lucide-react';
+import { X, BookPlus, Check, Volume2, VolumeX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
@@ -28,10 +28,13 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Simple cache to avoid repeated API calls
   const translationCache = useRef<Map<string, TranslationResult>>(new Map());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (selectedText.trim()) {
@@ -82,6 +85,74 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const playPronunciation = async () => {
+    if (isPlayingAudio) {
+      // Stop current audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      setIsPlayingAudio(false);
+      return;
+    }
+
+    setIsPlayingAudio(true);
+    try {
+      // Check if we already have the audio URL
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        audio.onended = () => setIsPlayingAudio(false);
+        audio.onerror = () => {
+          setIsPlayingAudio(false);
+          toast({
+            title: "Audio playback failed",
+            description: "Could not play pronunciation",
+            variant: "destructive",
+          });
+        };
+        await audio.play();
+        return;
+      }
+
+      // Generate audio using TTS cache function
+      const { data, error } = await supabase.functions.invoke('tts-audio-cache', {
+        body: {
+          text: selectedText,
+          language: 'en-US',
+          voice: 'en-US-Neural2-J',
+          speed: 0.9
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.audioUrl) {
+        setAudioUrl(data.audioUrl);
+        const audio = new Audio(data.audioUrl);
+        audioRef.current = audio;
+        audio.onended = () => setIsPlayingAudio(false);
+        audio.onerror = () => {
+          setIsPlayingAudio(false);
+          toast({
+            title: "Audio playback failed",
+            description: "Could not play pronunciation",
+            variant: "destructive",
+          });
+        };
+        await audio.play();
+      }
+    } catch (error) {
+      console.error('Pronunciation error:', error);
+      setIsPlayingAudio(false);
+      toast({
+        title: "Pronunciation failed",
+        description: "Could not generate pronunciation",
+        variant: "destructive",
+      });
     }
   };
 
@@ -262,9 +333,25 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
 
           <div className="space-y-2 max-h-60 overflow-y-auto">
             <div className="bg-surface-2 rounded-lg p-3">
-              <p className="text-sm font-medium text-text-primary mb-1">
-                "{selectedText}"
-              </p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-medium text-text-primary">
+                  "{selectedText}"
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={playPronunciation}
+                  disabled={isPlayingAudio}
+                  className="h-7 w-7 p-0 hover:bg-surface-3"
+                  title="Play pronunciation"
+                >
+                  {isPlayingAudio ? (
+                    <VolumeX className="w-4 h-4 text-brand-blue" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 text-text-secondary hover:text-brand-blue" />
+                  )}
+                </Button>
+              </div>
               {isLoading ? (
                 <div className="flex items-center gap-2">
                                  <div className="w-3 h-3 mr-2">

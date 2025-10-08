@@ -51,7 +51,7 @@ serve(async (req) => {
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     const audioFileName = `tts-audio/${hashHex}.mp3`;
 
-    // Initialize R2 client
+    // Initialize R2 client with explicit config to avoid filesystem access
     const r2Client = new S3Client({
       region: 'auto',
       endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -59,6 +59,9 @@ serve(async (req) => {
         accessKeyId: CLOUDFLARE_R2_ACCESS_KEY_ID,
         secretAccessKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
       },
+      // Prevent SDK from trying to load config from filesystem
+      forcePathStyle: true,
+      logger: undefined,
     });
 
     // Check if audio already exists in R2

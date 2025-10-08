@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // Environment variables
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const GOOGLE_CLOUD_API_KEY = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_CLOUD_API_KEY');
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
 const CLOUDFLARE_R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
@@ -27,8 +27,8 @@ serve(async (req) => {
 
   try {
     // Validate environment variables
-    if (!GEMINI_API_KEY) {
-      throw new Error('Gemini API key not configured');
+    if (!GOOGLE_CLOUD_API_KEY) {
+      throw new Error('Google Cloud API key not configured (GEMINI_API_KEY or GOOGLE_CLOUD_API_KEY)');
     }
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID ||
         !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME ||
@@ -91,40 +91,37 @@ serve(async (req) => {
       console.log('💨 TTS cache miss, generating audio...');
     }
 
-    // Generate audio using Gemini TTS
+    // Generate audio using Google Cloud TTS (standard API)
     const ttsResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-tts:generateContent?key=${GEMINI_API_KEY}`,
+      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: text
-            }]
-          }],
-          generationConfig: {
-            voice: {
-              languageCode: language,
-              name: voice,
-              speakingRate: speed,
-              pitch: 0
-            }
-          }
+          input: { text },
+          voice: {
+            languageCode: language,
+            name: voice,
+          },
+          audioConfig: {
+            audioEncoding: 'MP3',
+            speakingRate: speed,
+            pitch: 0,
+          },
         }),
       }
     );
 
     if (!ttsResponse.ok) {
       const errorData = await ttsResponse.json();
-      throw new Error(`Gemini TTS error: ${errorData.error?.message || 'Unknown error'}`);
+      throw new Error(`Google Cloud TTS error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const ttsData = await ttsResponse.json();
-    const audioContent = ttsData.candidates?.[0]?.content?.parts?.[0]?.audioData;
+    const audioContent = ttsData.audioContent;
 
     if (!audioContent) {
-      throw new Error('No audio content received from Gemini TTS');
+      throw new Error('No audio content received from Google Cloud TTS');
     }
 
     // Decode base64 audio
@@ -142,7 +139,7 @@ serve(async (req) => {
     await r2Client.send(putCommand);
 
     const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
-    console.log('✅ Gemini TTS audio generated and cached to R2:', publicUrl);
+    console.log('✅ Google Cloud TTS audio generated and cached to R2:', publicUrl);
 
     // Track generation in analytics
     await supabase.from('audio_analytics').insert({
@@ -156,7 +153,7 @@ serve(async (req) => {
       success: true,
       audioUrl: publicUrl,
       cached: false,
-      source: 'gemini_tts'
+      source: 'google_cloud_tts'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

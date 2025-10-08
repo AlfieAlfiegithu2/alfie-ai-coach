@@ -173,8 +173,8 @@ serve(async (req) => {
         }
         if (p === 'elevenlabs') {
           if (!ELEVENLABS_API_KEY) throw new Error('ELEVENLABS_API_KEY not set');
-          // Use ElevenLabs voice ID (Adam voice by default)
-          const voiceId = 'pNInz6obpgDQGcFmaJgB'; // ElevenLabs Adam voice ID
+          // Use ElevenLabs voice ID (Rachel voice from documentation)
+          const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // ElevenLabs Rachel voice ID
           console.log('🎤 ElevenLabs TTS request:', { text: text.substring(0, 50), voiceId });
           const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
             {
@@ -186,6 +186,7 @@ serve(async (req) => {
               body: JSON.stringify({
                 text,
                 model_id: 'eleven_multilingual_v2',
+                output_format: 'mp3_44100_128',
                 voice_settings: {
                   stability: 0.5,
                   similarity_boost: 0.5,

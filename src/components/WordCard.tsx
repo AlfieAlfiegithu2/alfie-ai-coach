@@ -53,7 +53,7 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
             body: {
               text: word.word,
               language: 'en-US',
-              voice: 'pNInz6obpgDQGcFmaJgB', // ElevenLabs Adam voice ID
+              voice: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice ID
               speed: 0.9,
               provider: 'elevenlabs'
             }

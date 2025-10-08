@@ -114,7 +114,7 @@ Focus on meaningful improvements that would actually raise the IELTS band score.
   } catch (error) {
     console.error('Error in analyze-speaking-suggestion:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       original_spans: [],
       suggested_spans: []
     }), {

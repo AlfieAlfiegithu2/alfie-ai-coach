@@ -120,7 +120,7 @@ serve(async (req) => {
         user_id: user.id,
         word: word.trim().toLowerCase(),
         part_of_speech: part_of_speech || null,
-        translations: translationArray.map(t => t.trim())
+        translations: translationArray.map((t: string) => t.trim())
       })
       .select('id, word, created_at')
       .single();

@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
-import { S3Client, PutObjectCommand } from "https://deno.land/x/s3_lite_client@0.7.0/mod.ts";
+import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,11 +49,14 @@ serve(async (req) => {
 
     // Initialize R2 client
     const r2Client = new S3Client({
-      endPoint: `${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       region: 'auto',
-      accessKey: CLOUDFLARE_R2_ACCESS_KEY_ID,
-      secretKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
-      bucket: CLOUDFLARE_R2_BUCKET_NAME,
+      endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: CLOUDFLARE_R2_ACCESS_KEY_ID,
+        secretAccessKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+      },
+      forcePathStyle: true,
+      logger: undefined,
     });
 
     // Parse request - support both old ElevenLabs format and new format
@@ -152,12 +155,14 @@ serve(async (req) => {
       console.log(`💾 Uploading ${(fileSize / 1024).toFixed(2)}KB to Cloudflare R2...`);
       
       try {
-        await r2Client.putObject(fileName, audioBlob, {
-          metadata: {
-            'Content-Type': 'audio/mpeg',
-            'Cache-Control': 'public, max-age=31536000, immutable',
-          }
+        const putCommand = new PutObjectCommand({
+          Bucket: CLOUDFLARE_R2_BUCKET_NAME,
+          Key: fileName,
+          Body: audioBlob,
+          ContentType: 'audio/mpeg',
+          CacheControl: 'public, max-age=31536000, immutable',
         });
+        await r2Client.send(putCommand);
       } catch (uploadError) {
         console.error('R2 upload error:', uploadError);
         throw uploadError;
@@ -215,7 +220,7 @@ serve(async (req) => {
     console.error('TTS cache error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         success: false 
       }),
       {

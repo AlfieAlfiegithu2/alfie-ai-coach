@@ -85,17 +85,26 @@ const poolsByBand = (band: Score['band']) => {
 
 function pick<T>(arr: T[], index: number): T { return arr[index % arr.length]; }
 
-function buildDailyTasks(band: Score['band'], dayIndex: number, minutes: number): PlanTask[] {
+function buildDailyTasks(
+  band: Score['band'],
+  dayIndex: number,
+  minutes: number,
+  prioritizedSkills: ReadonlyArray<'vocab' | 'listening' | 'reading' | 'grammar' | 'writing' | 'speaking'> = ['vocab','listening','reading','grammar','writing','speaking']
+): PlanTask[] {
   const pools = poolsByBand(band);
-  const order = [
-    'vocab','listening','reading','grammar','writing','speaking'
+  // Start with prioritized skills (weakest first), then fill any remaining in the default order.
+  const defaultOrder = ['vocab','listening','reading','grammar','writing','speaking'] as const;
+  const seen = new Set<string>();
+  const mergedOrder = [
+    ...prioritizedSkills.filter((s) => defaultOrder.includes(s as any) && !seen.has(s) && (seen.add(s), true)),
+    ...defaultOrder.filter((s) => !seen.has(s))
   ] as const;
   const tasks: PlanTask[] = [];
   let time = 0;
   // Rotate start skill by day for variety
-  const start = dayIndex % order.length;
-  for (let i = 0; i < order.length; i++) {
-    const skill = order[(start + i) % order.length];
+  const start = dayIndex % mergedOrder.length;
+  for (let i = 0; i < mergedOrder.length; i++) {
+    const skill = mergedOrder[(start + i) % mergedOrder.length];
     const pool = pools[skill];
     const task = pick(pool, dayIndex + i);
     if (time + task.minutes <= Math.max(45, minutes)) {
@@ -152,8 +161,23 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
   durationWeeks = Math.min(26, durationWeeks);
   const estimatedMonths = Math.max(1, Math.round(durationWeeks / 4));
 
-  // Respect selected study days if provided
-  const studyDays: number[] = (() => { try { return JSON.parse(ctx.studyDaysJson || '[]'); } catch { return []; } })();
+  // Respect selected study days if provided. Ensure numeric indices (0=Sun..6=Sat).
+  const studyDays: number[] = (() => {
+    try {
+      const raw = JSON.parse(ctx.studyDaysJson || '[]');
+      if (Array.isArray(raw)) return raw.map((v) => Number(v)).filter((n) => Number.isFinite(n));
+      return [];
+    } catch { return []; }
+  })();
+
+  // Build prioritized skills order from weakest sub-scores (lowest first).
+  const subs = score.subs || { reading: 50, listening: 50, grammar: 50, vocab: 50, writing: 50 } as Score['subs'];
+  const priority = (Object.entries(subs) as Array<[keyof typeof subs, number]>)
+    .sort((a, b) => a[1] - b[1])
+    .map(([k]) => (k === 'reading' || k === 'listening' || k === 'grammar' || k === 'vocab' || k === 'writing' ? k : 'speaking'));
+  // Map subs keys to plan skill keys
+  const toPlanKey = (k: string): any => ({ vocab: 'vocab', listening: 'listening', reading: 'reading', grammar: 'grammar', writing: 'writing' } as any)[k] ?? 'speaking';
+  const prioritizedSkills = priority.map((k) => toPlanKey(k)) as ReadonlyArray<'vocab' | 'listening' | 'reading' | 'grammar' | 'writing' | 'speaking'>;
 
   // Build weekly schedule honoring study days (default: all days)
   const weekly: PlanWeek[] = Array.from({ length: durationWeeks }).map((_, wi) => ({
@@ -161,7 +185,7 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
     days: Array.from({ length: 7 }).map((__, di) => ({
       day: di + 1,
       tasks: (studyDays.length === 0 || studyDays.includes(di))
-        ? buildDailyTasks(score.band, wi * 7 + di, recommendedDailyMinutes)
+        ? buildDailyTasks(score.band, wi * 7 + di, recommendedDailyMinutes, prioritizedSkills)
         : []
     }))
   }));

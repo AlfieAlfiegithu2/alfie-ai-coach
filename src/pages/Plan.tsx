@@ -15,6 +15,7 @@ const PlanPage = () => {
   const [newTaskMinutes, setNewTaskMinutes] = useState<number>(20);
   const [hiddenAiIds, setHiddenAiIds] = useState<Set<string>>(new Set());
   const [dayNotes, setDayNotes] = useState<string>('');
+  const [showTodosOnly, setShowTodosOnly] = useState<boolean>(true);
   const location = useLocation() as any;
   const navigate = useNavigate();
 
@@ -269,6 +270,14 @@ const PlanPage = () => {
           </button>
         </div>
 
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-slate-600">View mode</div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-slate-700">Todo list focus</label>
+            <input type="checkbox" checked={showTodosOnly} onChange={(e) => setShowTodosOnly((e.target as HTMLInputElement).checked)} />
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           <div className="rounded-2xl border border-white/40 bg-white/60 p-5">
             <h2 className="text-lg font-semibold text-slate-900 mb-2">Highlights</h2>
@@ -311,12 +320,15 @@ const PlanPage = () => {
               </div>
               <div className="grid gap-3">
                 {todayEntry.tasks.map((task, i) => (
-                  <div key={i} className="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100">
-                    <span className="font-medium text-slate-800">{task.title}</span>
+                  <label key={i} className="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100">
+                    <div className="flex items-center gap-3">
+                      <input type="checkbox" />
+                      <span className="font-medium text-slate-800">{task.title}</span>
+                    </div>
                     <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
                       {task.minutes} min
                     </span>
-                  </div>
+                  </label>
                 ))}
                 <div className="text-sm text-blue-700 mt-2">
                   Total: {todayEntry.tasks.reduce((sum, task) => sum + task.minutes, 0)} minutes
@@ -406,7 +418,7 @@ const PlanPage = () => {
                           {cell.tasks.slice(0,2).map((t,i) => (
                             <li key={i} className="flex items-center justify-between">
                               <span className="truncate max-w-[120px]">{t.title}</span>
-                              <span className="text-[10px] text-slate-500">{t.minutes}m</span>
+                              {!showTodosOnly && <span className="text-[10px] text-slate-500">{t.minutes}m</span>}
                             </li>
                           ))}
                           {cell.tasks.length > 2 && <li className="text-[10px] text-slate-500">+{cell.tasks.length-2} more</li>}

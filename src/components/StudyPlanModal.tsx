@@ -41,12 +41,24 @@ interface StudyPlanModalProps {
   children?: React.ReactNode;
 }
 
+const LANGS = ['en','ko','ja','zh','es','pt','fr','de','ru','hi','vi'] as const;
+
 const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [lang, setLang] = useState<string>(() => i18n.language || 'en');
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTarget, setAiTarget] = useState<number>(7.0);
+  const [aiDeadline, setAiDeadline] = useState<string>('');
+  const [aiMinutes, setAiMinutes] = useState<number>(60);
+  const [aiDays, setAiDays] = useState<Set<number>>(new Set([1,2,3,4,5]));
+  const [aiFirstLang, setAiFirstLang] = useState<string>('en');
+  const [aiBilingual, setAiBilingual] = useState<boolean>(false);
+  const [aiWeak, setAiWeak] = useState<Set<string>>(new Set());
+  const [aiNotes, setAiNotes] = useState<string>('');
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (open) {
@@ -54,14 +66,12 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     }
   }, [open]);
 
-  // Also refresh plan when navigating back from assessment
   useEffect(() => {
     const handler = () => { if (open) void loadPlan(); };
     window.addEventListener('focus', handler);
     return () => window.removeEventListener('focus', handler);
   }, [open]);
 
-  // Reload when language changes
   useEffect(() => {
     if (open) void loadPlan();
   }, [lang, open]);
@@ -101,7 +111,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     </Button>
   );
 
-  // Derive a concise next-actions block
   const getNextActions = () => {
     if (!plan?.weekly?.length) return [] as PlanTask[];
     const firstWeek = plan.weekly[0];
@@ -109,18 +118,15 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     return firstDay?.tasks?.slice(0, 5) || [];
   };
 
-  // Build a small calendar preview for the first 5 weeks
   const buildCalendarPreview = () => {
     if (!plan?.weekly?.length) return { headers: [], cells: [] as Array<{ label: string; hasTasks: boolean }> };
     const startISO = (plan as any).meta?.startDateISO || new Date().toISOString();
     const startDate = new Date(startISO);
     const headers = ['Su','Mo','Tu','We','Th','Fr','Sa'];
     const cells: Array<{ label: string; hasTasks: boolean; week: number; day: number } > = [];
-    // Start from the first day of the start month for a consistent grid
     const monthStart = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
     const offset = monthStart.getDay();
     for (let i = 0; i < offset; i++) cells.push({ label: '', hasTasks: false, week: 0, day: 0 });
-    // Map plan days onto dates (up to ~35 days)
     const allDays: Array<{ date: Date; week: number; day: number; tasks: PlanTask[] }> = [];
     plan.weekly.forEach((w, wi) => {
       w.days.forEach((d, di) => {
@@ -135,13 +141,12 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       const found = allDays.find(d => d.date.toDateString() === thisDate.toDateString());
       cells.push({ label: String(dayNum), hasTasks: !!found, week: found?.week || 0, day: found?.day || 0 });
     }
-    // pad to full rows (5 or 6 weeks)
     while (cells.length % 7 !== 0) cells.push({ label: '', hasTasks: false, week: 0, day: 0 });
     return { headers, cells };
   };
   const calendar = buildCalendarPreview();
 
-  const switchLang = async (target: 'en' | 'ko') => {
+  const switchLang = async (target: string) => {
     if (lang === target) return;
     await i18n.changeLanguage(target);
     setLang(target);
@@ -157,8 +162,9 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           <div className="flex items-center justify-between">
             <DialogTitle className="text-slate-800">Your Study Plan</DialogTitle>
             <div className="flex items-center gap-2 text-xs">
-              <button className={`rounded-md border px-2 py-1 ${lang==='en'?'bg-black text-white':'bg-white'}`} onClick={() => switchLang('en')}>EN</button>
-              <button className={`rounded-md border px-2 py-1 ${lang==='ko'?'bg-black text-white':'bg-white'}`} onClick={() => switchLang('ko')}>KO</button>
+              <select value={lang} onChange={(e)=>switchLang(e.target.value)} className="rounded-md border px-2 py-1">
+                {LANGS.map(l => (<option key={l} value={l}>{l.toUpperCase()}</option>))}
+              </select>
             </div>
           </div>
         </DialogHeader>
@@ -175,6 +181,14 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
               >
                 Take 5‑Minute Assessment to Generate Plan
               </Button>
+              <div className="my-3 text-center text-slate-500 text-xs">or</div>
+              <Button
+                variant="outline"
+                className="border-slate-300"
+                onClick={() => setAiOpen(true)}
+              >
+                Quick AI Plan (no assessment)
+              </Button>
             </div>
           )}
           {loading && (
@@ -182,7 +196,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           )}
           {plan && (
             <div className="space-y-6">
-              {/* Today's quick to‑do */}
               <TodayQuickTodo plan={plan} />
               {plan.highlights?.length > 0 && (
                 <div>
@@ -212,7 +225,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   ))}
                 </ul>
               </div>
-            {/* Mini Calendar Preview */}
             <div>
               <h3 className="text-slate-800 font-semibold mb-2">This month</h3>
               <ScrollableMiniCalendar plan={plan} onOpenFull={() => navigate('/plan')} />
@@ -227,10 +239,132 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 >
                   Retake Level Assessment
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setAiOpen(true)}
+                >
+                  Quick AI Plan (no assessment)
+                </Button>
               </div>
             </div>
           )}
         </div>
+        {aiOpen && (
+          <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center p-4 z-50" onClick={()=>setAiOpen(false)}>
+            <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5" onClick={(e)=>e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-lg font-semibold text-slate-900">Quick AI Plan</div>
+                <button className="text-slate-500" onClick={()=>setAiOpen(false)}>Close</button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="text-sm text-slate-700">
+                  Target IELTS
+                  <select value={aiTarget} onChange={(e)=>setAiTarget(Number(e.target.value))} className="mt-1 w-full rounded-md border px-2 py-2">
+                    {[5.0,5.5,6.0,6.5,7.0,7.5,8.0].map(n=> (
+                      <option key={n} value={n}>{n.toFixed(1)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
+                  Deadline (optional)
+                  <input type="date" value={aiDeadline} onChange={(e)=>setAiDeadline(e.target.value)} className="mt-1 w-full rounded-md border px-2 py-2" />
+                </label>
+                <label className="text-sm text-slate-700">
+                  Minutes per day
+                  <input type="number" min={20} max={180} value={aiMinutes} onChange={(e)=>setAiMinutes(Number(e.target.value)||60)} className="mt-1 w-full rounded-md border px-2 py-2" />
+                </label>
+                <label className="text-sm text-slate-700">
+                  First language
+                  <select value={aiFirstLang} onChange={(e)=>setAiFirstLang(e.target.value)} className="mt-1 w-full rounded-md border px-2 py-2">
+                    {Array.from(LANGS).map(l => (<option key={l} value={l}>{l.toUpperCase()}</option>))}
+                  </select>
+                </label>
+                <div className="sm:col-span-2">
+                  <div className="text-sm text-slate-700 mb-1">Study days</div>
+                  <div className="flex flex-wrap gap-2">
+                    {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d, i) => {
+                      const active = aiDays.has(i);
+                      return (
+                        <button key={d} type="button" onClick={()=>{
+                          const next = new Set(aiDays); next.has(i) ? next.delete(i) : next.add(i); setAiDays(next);
+                        }} className={`px-3 py-1 rounded-md border ${active ? 'bg-black text-white border-black' : 'bg-white border-slate-300'}`}>
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="text-sm text-slate-700 mb-1">Weak areas (optional)</div>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    {['vocab','listening','reading','grammar','writing','speaking'].map(w => {
+                      const sel = aiWeak.has(w);
+                      return (
+                        <button key={w} type="button" onClick={()=>{
+                          const next = new Set(aiWeak); sel ? next.delete(w) : next.add(w); setAiWeak(next);
+                        }} className={`px-3 py-1 rounded-full border ${sel ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}`}>
+                          {w}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
+                  <input type="checkbox" checked={aiBilingual} onChange={(e)=>setAiBilingual((e.target as HTMLInputElement).checked)} />
+                  Show plan in first language (keep IELTS keywords in English)
+                </label>
+                <label className="text-sm text-slate-700 sm:col-span-2">
+                  Anything else to consider? (schedule limits, modules, focus)
+                  <textarea value={aiNotes} onChange={(e)=>setAiNotes(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 min-h-[60px]" placeholder="e.g., Academic module, weak in Task 1 charts, only study Mon/Wed/Fri" />
+                </label>
+              </div>
+              <div className="mt-4 flex gap-3 justify-end">
+                <Button variant="outline" onClick={()=>setAiOpen(false)}>Cancel</Button>
+                <Button className="bg-slate-900 text-white" disabled={aiLoading} onClick={async ()=>{
+                  setAiLoading(true);
+                  try {
+                    const days = Array.from(aiDays).sort((a,b)=>a-b);
+                    const { data, error } = await supabase.functions.invoke('plan-ai-generator', {
+                      body: {
+                        targetScore: aiTarget,
+                        targetDeadline: aiDeadline || null,
+                        minutesPerDay: aiMinutes,
+                        studyDays: days,
+                        firstLanguage: aiFirstLang,
+                        planNativeLanguage: aiBilingual ? 'yes' : 'no',
+                        weakAreas: Array.from(aiWeak),
+                        notes: aiNotes || ''
+                      }
+                    });
+                    if (error || !data?.success) throw error || new Error(data?.error || 'Failed');
+                    const planJson = data.plan as PlanData;
+                    // persist as current plan when signed in
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) {
+                        const { data: planRow, error: planErr } = await (supabase as any)
+                          .from('study_plans')
+                          .insert({ user_id: user.id, plan: planJson, goal: 'ielts', source: 'ai' })
+                          .select('*')
+                          .single();
+                        if (planErr) throw planErr;
+                        await (supabase as any).from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
+                      }
+                    } catch {}
+                    try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planJson, ts: Date.now() })); } catch {}
+                    setPlan(planJson);
+                    setAiOpen(false);
+                  } catch (e) {
+                    alert('Could not generate plan. Please try again.');
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}>{aiLoading ? 'Generating…' : 'Generate Plan'}</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

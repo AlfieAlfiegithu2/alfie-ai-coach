@@ -338,33 +338,31 @@ const Dashboard = () => {
             <Button
               onClick={async () => {
                 if (!user) return;
-                const confirmed = window.confirm('This will permanently delete all your saved test results (writing + overall). Continue?');
+                  const confirmed = window.confirm('This will permanently delete all your saved test results (reading, listening, writing, speaking). Continue?');
                 if (!confirmed) return;
                 try {
-                  // Delete detailed writing results first (FKs may refer to test_results)
-                  const { error: wErr } = await supabase.from('writing_test_results').delete().eq('user_id', user.id);
-                  if (wErr) throw wErr;
-
-                  // Delete other skill-specific tables if present
-                  const { error: sErr } = await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
-                  if (sErr) console.warn('speaking_test_results delete warning', sErr);
+                  setLoading(true);
                   
-                  const { error: rErr } = await supabase.from('reading_test_results').delete().eq('user_id', user.id);
-                  if (rErr) console.warn('reading_test_results delete warning', rErr);
-                  
-                  const { error: lErr } = await supabase.from('listening_test_results').delete().eq('user_id', user.id);
-                  if (lErr) console.warn('listening_test_results delete warning', lErr);
+                  // Delete skill-specific results first (foreign keys)
+                  await supabase.from('writing_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('reading_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('listening_test_results').delete().eq('user_id', user.id);
 
+                  // Delete main test results
                   const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
                   if (tErr) throw tErr;
-                  // Immediately clear local state for instant UI feedback
+                  
+                  // Clear local state for instant UI feedback
                   setTestResults([]);
                   setUserStats({ totalTests: 0, avgScore: 0, recentImprovement: 0, weeklyProgress: 0 });
-                  toast({ title: 'Results reset', description: 'All your saved results have been removed.' });
+                  toast({ title: 'Results reset', description: 'All your test results have been removed.' });
                   setRefreshKey(prev => prev + 1);
                 } catch (e: any) {
                   console.error('Failed to reset results', e);
                   toast({ title: 'Error', description: 'Failed to reset results. Please try again.', variant: 'destructive' });
+                } finally {
+                  setLoading(false);
                 }
               }}
               variant="ghost"

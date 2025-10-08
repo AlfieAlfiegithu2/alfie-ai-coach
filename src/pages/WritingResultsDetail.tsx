@@ -283,7 +283,7 @@ This assessment is based on your performance across both writing tasks, with Tas
       <div className="min-h-screen bg-surface-2 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-blue mx-auto mb-4"></div>
-          <p className="text-text-secondary">Loading test results...</p>
+          <p className="text-text-secondary">Loading...</p>
         </div>
       </div>
     );
@@ -293,7 +293,7 @@ This assessment is based on your performance across both writing tasks, with Tas
     return (
       <div className="min-h-screen bg-surface-2 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-heading-2 mb-4">Test Not Found</h2>
+          <h2 className="text-heading-2 mb-4">Test Not Available</h2>
           <p className="text-body mb-6">Could not load the requested test results.</p>
           <Button onClick={() => navigate('/dashboard/writing-history')}>
             Back to Writing History

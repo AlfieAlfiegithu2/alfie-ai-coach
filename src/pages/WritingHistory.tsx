@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Star, Book, Edit, ChevronRight } from "lucide-react";
+import { ArrowLeft, Calendar, Star, Book, Edit, ChevronRight, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -179,6 +179,52 @@ const WritingHistory = () => {
     }
   };
 
+  const handleDeleteSubmission = async (e: React.MouseEvent, submission: WritingSubmission) => {
+    e.stopPropagation(); // Prevent card click
+    
+    const confirmed = window.confirm('Are you sure you want to delete this writing test result? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      const submissionId = submission.id.startsWith('standalone-') 
+        ? submission.id.replace('standalone-', '') 
+        : submission.id;
+
+      // Delete writing test results
+      const { error: writingError } = await supabase
+        .from('writing_test_results')
+        .delete()
+        .eq('test_result_id', submissionId)
+        .eq('user_id', user?.id);
+
+      if (writingError) throw writingError;
+
+      // Delete main test result if it exists
+      const { error: testError } = await supabase
+        .from('test_results')
+        .delete()
+        .eq('id', submissionId)
+        .eq('user_id', user?.id);
+
+      if (testError && testError.code !== 'PGRST116') throw testError;
+
+      toast({
+        title: "Test Result Deleted",
+        description: "Your writing test result has been removed.",
+      });
+
+      // Refresh the list
+      fetchWritingHistory();
+    } catch (error) {
+      console.error('Error deleting submission:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the test result. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getBandColor = (score: number) => {
     if (score >= 8.5) return "text-green-600 bg-green-50 border-green-200";
     if (score >= 7.0) return "text-blue-600 bg-blue-50 border-blue-200";
@@ -191,7 +237,7 @@ const WritingHistory = () => {
       <div className="min-h-screen bg-surface-2 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-blue mx-auto mb-4"></div>
-          <p className="text-text-secondary">Loading your writing history...</p>
+          <p className="text-text-secondary">Loading...</p>
         </div>
       </div>
     );
@@ -253,7 +299,7 @@ const WritingHistory = () => {
             {submissions.map((submission) => (
               <Card 
                 key={submission.id} 
-                className="card-modern hover:shadow-lg transition-all cursor-pointer"
+                className="card-modern hover:shadow-lg transition-all cursor-pointer group"
                 onClick={() => handleViewSubmission(submission)}
               >
                 <CardContent className="p-6">
@@ -292,6 +338,14 @@ const WritingHistory = () => {
                     </div>
                     
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDeleteSubmission(e, submission)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                       <ChevronRight className="w-5 h-5 text-text-muted" />
                     </div>
                   </div>

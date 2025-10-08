@@ -71,6 +71,8 @@ const OnboardingAssessment = () => {
         if (planErr) throw planErr;
 
         await (supabase as any).from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
+        // Invalidate cached modal by bumping a client-side flag
+        try { localStorage.setItem('latest_plan', JSON.stringify({ plan, ts: Date.now() })); } catch {}
         // Cache locally as well
         try { localStorage.setItem('latest_plan', JSON.stringify({ plan })); } catch {}
         toast({ title: 'Plan ready', description: 'Your personalized plan was generated.' });

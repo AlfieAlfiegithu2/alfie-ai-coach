@@ -200,7 +200,11 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
     ? ` by ${new Date(ctx.targetDeadline).toLocaleDateString()}` 
     : '';
 
-  const highlights = [
+  // Localize plan content if requested
+  const wantKorean = ctx.planNativeLanguage === 'yes' && (ctx.firstLanguage?.toLowerCase() === 'ko' || ctx.firstLanguage?.toLowerCase() === 'korean');
+
+  // Build English defaults
+  let highlights = [
     `Starting level: ${score.band} (≈ IELTS ${currentApprox.toFixed(1)})`,
     `Target: IELTS ${target.toFixed(1)}${deadlineText}`,
     `Study plan: ${recommendedDailyMinutes} min/day, ${studyDaysText}`,
@@ -208,12 +212,45 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
     ...languageSpecificTips.highlights
   ];
 
-  const quickWins = [
+  let quickWins = [
     `Practice ${weakestSkill} for 15 min daily with immediate feedback`,
     'Record yourself speaking for 1 min daily, compare to model answers',
     'Learn 10 collocations per day from your weak areas',
     ...languageSpecificTips.quickWins
   ];
+
+  // If Korean requested, provide bilingual highlights/quick wins and bilingual task titles
+  if (wantKorean) {
+    highlights = [
+      `현재 수준: ${score.band} (IELTS 약 ${currentApprox.toFixed(1)})`,
+      `목표: IELTS ${target.toFixed(1)}${deadlineText ? '까지' : ''}`,
+      `학습 계획: 하루 ${recommendedDailyMinutes}분, ${studyDaysText}`,
+      `우선 집중 영역: ${weakestSkill} (${score.subs[weakestSkill]}%)`,
+      ...languageSpecificTips.highlights
+    ];
+    quickWins = [
+      `매일 ${weakestSkill} 15분 집중 연습 (즉시 피드백)`,
+      '하루 1분 스피킹 녹음 → 모델 답안과 비교',
+      '약점 분야에서 콜로케이션 10개 학습',
+      ...languageSpecificTips.quickWins
+    ];
+
+    const localizeTitle = (t: string) => {
+      const map: Array<[RegExp, string]> = [
+        [/^Vocabulary:/, '어휘:'],
+        [/^Listening:/, '리스닝:'],
+        [/^Reading:/, '리딩:'],
+        [/^Grammar:/, '문법:'],
+        [/^Writing:/, '라이팅:'],
+        [/^Speaking:/, '스피킹:'],
+      ];
+      let out = t;
+      for (const [re, ko] of map) { if (re.test(out)) { out = out.replace(re, ko); break; } }
+      // Bilingual label keeps English in parentheses for clarity
+      return `${out} (${t})`;
+    };
+    weekly.forEach((w) => w.days.forEach((d) => { d.tasks = d.tasks.map((task) => ({ ...task, title: localizeTitle(task.title) })); }));
+  }
 
   const nativeLanguageNote = ctx.planNativeLanguage === 'yes' && ctx.firstLanguage
     ? `Note: Double-click any word during practice for ${ctx.firstLanguage} translation`

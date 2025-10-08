@@ -52,6 +52,13 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     }
   }, [open]);
 
+  // Also refresh plan when navigating back from assessment
+  useEffect(() => {
+    const handler = () => { if (open) void loadPlan(); };
+    window.addEventListener('focus', handler);
+    return () => window.removeEventListener('focus', handler);
+  }, [open]);
+
   const loadPlan = async () => {
     setLoading(true);
     try {
@@ -68,7 +75,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       }
       const { data: planRow } = await (supabase as any)
         .from('study_plans')
-        .select('plan')
+        .select('plan, updated_at')
         .eq('id', profile.current_plan_id)
         .single();
       if (planRow?.plan) {

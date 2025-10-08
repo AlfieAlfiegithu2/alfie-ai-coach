@@ -125,7 +125,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
             language: 'en-US',
             voice: 'en-US-Neural2-J',
             speed: 0.9,
-            provider: 'azure'
+            provider: 'elevenlabs'
           }
         });
 

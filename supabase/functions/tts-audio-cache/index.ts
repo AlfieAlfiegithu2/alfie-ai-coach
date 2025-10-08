@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { S3Client, PutObjectCommand, HeadObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
+import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,35 +68,33 @@ serve(async (req) => {
       logger: undefined,
     });
 
-    // Check if audio already exists in R2
+    // Check if audio already exists via public URL HEAD to avoid AWS SDK Node fs access
     try {
-      const headCommand = new HeadObjectCommand({
-        Bucket: CLOUDFLARE_R2_BUCKET_NAME,
-        Key: audioFileName,
-      });
-      await r2Client.send(headCommand);
-      
       const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
-      console.log('✅ TTS cache hit in R2:', publicUrl);
+      const headResp = await fetch(publicUrl, { method: 'HEAD' });
+      if (headResp.ok) {
+        console.log('✅ TTS cache hit in R2 (HEAD):', publicUrl);
 
-      // Track cache hit in analytics
-      await supabase.from('audio_analytics').insert({
-        action_type: 'tts_cache_hit',
-        file_path: audioFileName,
-        cache_key: hashHex,
-      });
+        // Track cache hit in analytics
+        await supabase.from('audio_analytics').insert({
+          action_type: 'tts_cache_hit',
+          file_path: audioFileName,
+          cache_key: hashHex,
+        });
 
-      return new Response(JSON.stringify({
-        success: true,
-        audioUrl: publicUrl,
-        cached: true,
-        source: 'r2'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } catch (error) {
-      console.log('💨 TTS cache miss, generating audio...');
+        return new Response(JSON.stringify({
+          success: true,
+          audioUrl: publicUrl,
+          cached: true,
+          source: 'r2'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (e) {
+      console.log('ℹ️ HEAD check failed, will generate audio...', e?.message || e);
     }
+    console.log('💨 TTS cache miss, generating audio...');
 
     // Helper to decode base64 to Uint8Array
     const decodeBase64 = (b64: string) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));

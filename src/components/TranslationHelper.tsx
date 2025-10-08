@@ -61,7 +61,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
           text: text,
           targetLang: language,
           sourceLang: 'auto',
-          includeContext: false // Set to false for 2-3x faster translations with DeepSeek 3.2-Exp
+          includeContext: true // Enable full context to get multiple translations and alternatives
         }
       });
 

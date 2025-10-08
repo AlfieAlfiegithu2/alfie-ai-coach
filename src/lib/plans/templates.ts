@@ -17,6 +17,8 @@ export type Plan = {
     rationale?: string;
     targetDeadline?: string | null;
     startDateISO?: string;
+    firstLanguage?: string;
+    planNativeLanguage?: 'yes' | 'no';
   };
 };
 
@@ -164,21 +166,39 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
     }))
   }));
 
+  // Get language-specific tips based on first language
+  const languageSpecificTips = getLanguageSpecificTips(ctx.firstLanguage, score);
+  
+  // Get weakest skill for focused feedback
+  const weakestSkill = (Object.entries(score.subs).sort((a,b)=>a[1]-b[1])[0]||[])[0] ?? 'mixed';
+  const studyDaysText = studyDays.length > 0 ? `${studyDays.length} days/week` : 'daily';
+  const deadlineText = ctx.targetDeadline 
+    ? ` by ${new Date(ctx.targetDeadline).toLocaleDateString()}` 
+    : '';
+
   const highlights = [
-    `Starting level ≈ ${score.band} (IELTS ~${currentApprox.toFixed(1)})`,
-    `Target IELTS ${target.toFixed(1)} • Daily study ~${recommendedDailyMinutes} min`,
-    `Estimated timeline: ~${estimatedMonths} month(s)`,
-    `Focus: ${(Object.entries(score.subs).sort((a,b)=>a[1]-b[1])[0]||[])[0] ?? 'mixed'}`
+    `Starting level: ${score.band} (≈ IELTS ${currentApprox.toFixed(1)})`,
+    `Target: IELTS ${target.toFixed(1)}${deadlineText}`,
+    `Study plan: ${recommendedDailyMinutes} min/day, ${studyDaysText}`,
+    `Priority focus: ${weakestSkill} (${score.subs[weakestSkill]}%)`,
+    ...languageSpecificTips.highlights
   ];
+
   const quickWins = [
-    'Shadow 5–10 min academic audio daily (pronunciation + rhythm)',
-    'Target weak subskills with 10 focused items/day',
-    'Weekly mini‑mock to measure progress',
+    `Practice ${weakestSkill} for 15 min daily with immediate feedback`,
+    'Record yourself speaking for 1 min daily, compare to model answers',
+    'Learn 10 collocations per day from your weak areas',
+    ...languageSpecificTips.quickWins
   ];
+
+  const nativeLanguageNote = ctx.planNativeLanguage === 'yes' && ctx.firstLanguage
+    ? `Note: Double-click any word during practice for ${ctx.firstLanguage} translation`
+    : undefined;
+
   return {
     durationWeeks,
     weekly,
-    highlights,
+    highlights: nativeLanguageNote ? [nativeLanguageNote, ...highlights] : highlights,
     quickWins,
     meta: {
       currentLevel: score.band,
@@ -186,10 +206,65 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
       targetIELTS: target,
       dailyMinutes: recommendedDailyMinutes,
       estimatedMonths,
-      rationale: 'Computed from current level, target score, daily minutes, and deadline',
+      rationale: `Personalized for ${ctx.firstLanguage || 'English learner'} studying ${studyDaysText}, targeting ${(target - currentApprox).toFixed(1)} band improvement`,
       targetDeadline: ctx.targetDeadline ?? null,
-      startDateISO: new Date().toISOString()
+      startDateISO: new Date().toISOString(),
+      firstLanguage: ctx.firstLanguage,
+      planNativeLanguage: ctx.planNativeLanguage
     }
+  };
+}
+
+// Get language-specific tips and focus areas
+function getLanguageSpecificTips(firstLanguage: string | undefined, score: Score): { highlights: string[]; quickWins: string[] } {
+  if (!firstLanguage) return { highlights: [], quickWins: [] };
+
+  const languageChallenges: Record<string, { highlights: string[]; quickWins: string[] }> = {
+    'Chinese': {
+      highlights: ['Focus on articles (a/an/the) and plural forms', 'Practice linking words in speaking'],
+      quickWins: ['Master 20 common article patterns', 'Record yourself using linking words (however, therefore, etc.)']
+    },
+    'Arabic': {
+      highlights: ['Focus on word order and tense consistency', 'Practice vowel sounds in pronunciation'],
+      quickWins: ['Drill subject-verb-object patterns daily', 'Shadow native speakers for vowel clarity']
+    },
+    'Spanish': {
+      highlights: ['Focus on false friends and phrasal verbs', 'Practice writing without literal translation'],
+      quickWins: ['Learn 10 phrasal verbs weekly', 'Write summaries using English thought patterns']
+    },
+    'French': {
+      highlights: ['Focus on false cognates and prepositions', 'Practice formal vs. informal register'],
+      quickWins: ['Master 15 key preposition differences', 'Study IELTS register requirements']
+    },
+    'Japanese': {
+      highlights: ['Focus on articles and subject-verb agreement', 'Practice direct communication style'],
+      quickWins: ['Drill article usage in context', 'Practice stating opinions directly']
+    },
+    'Korean': {
+      highlights: ['Focus on articles and relative clauses', 'Practice paragraph structure'],
+      quickWins: ['Master basic article rules', 'Outline before writing to improve coherence']
+    },
+    'Russian': {
+      highlights: ['Focus on articles and continuous tenses', 'Practice natural word stress'],
+      quickWins: ['Learn article patterns in common contexts', 'Shadow audio for natural rhythm']
+    },
+    'Portuguese': {
+      highlights: ['Focus on false friends and phrasal verbs', 'Practice question formation'],
+      quickWins: ['Study 10 misleading cognates weekly', 'Drill question word order']
+    },
+    'Hindi': {
+      highlights: ['Focus on articles and prepositions', 'Practice writing complex sentences'],
+      quickWins: ['Master article usage rules', 'Study compound-complex sentence patterns']
+    },
+    'Vietnamese': {
+      highlights: ['Focus on verb tenses and word order', 'Practice consonant clusters'],
+      quickWins: ['Drill past/present/future markers', 'Practice consonant combinations daily']
+    }
+  };
+
+  return languageChallenges[firstLanguage] || { 
+    highlights: [`Tailored for ${firstLanguage} speakers`], 
+    quickWins: ['Focus on areas where your language differs from English'] 
   };
 }
 

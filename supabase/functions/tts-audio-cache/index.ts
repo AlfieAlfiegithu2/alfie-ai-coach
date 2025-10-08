@@ -1,7 +1,5 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,11 +12,6 @@ const AZURE_TTS_REGION = Deno.env.get('AZURE_TTS_REGION');
 const GOOGLE_CLOUD_TTS_API_KEY = Deno.env.get('GOOGLE_CLOUD_TTS_API_KEY') || Deno.env.get('GOOGLE_CLOUD_API_KEY');
 const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
-const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID') || Deno.env.get('CLOUDFLARE_ACCESS_KEY_ID');
-const CLOUDFLARE_R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY') || Deno.env.get('CLOUDFLARE_SECRET_ACCESS_KEY');
-const CLOUDFLARE_R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME') || Deno.env.get('CLOUDFLARE_R2_BUCKET') || 'alfie-ai-audio';
-const CLOUDFLARE_R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -33,12 +26,7 @@ serve(async (req) => {
   try {
     // Validate environment variables (at least one provider)
     if (!AZURE_TTS_API_KEY && !GOOGLE_CLOUD_TTS_API_KEY && !ELEVENLABS_API_KEY && !GEMINI_API_KEY) {
-      throw new Error('No TTS provider configured. Set AZURE_TTS_API_KEY or GOOGLE_CLOUD_TTS_API_KEY or ELEVENLABS_API_KEY or GEMINI_API_KEY');
-    }
-    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID ||
-        !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME ||
-        !CLOUDFLARE_R2_PUBLIC_URL) {
-      throw new Error('Cloudflare R2 environment variables not configured');
+      throw new Error('No TTS provider configured');
     }
 
     const { text, language = 'en-US', voice = 'en-US-Neural2-J', speed = 1.0, provider = 'auto' } = await req.json();
@@ -47,34 +35,27 @@ serve(async (req) => {
       throw new Error('Text is required');
     }
 
-    console.log('🎵 TTS request:', { text: text.substring(0, 50), language, voice });
+    console.log('🎵 TTS request:', { text: text.substring(0, 50), language, voice, provider });
 
     // Generate cache key
     const cacheKey = `tts_${text.toLowerCase().trim()}_${language}_${voice}_${speed}_${provider}`;
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(cacheKey));
     const hashArray = Array.from(new Uint8Array(hash));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    const audioFileName = `tts-audio/${hashHex}.mp3`;
+    const audioFileName = `tts-cache/${hashHex}.mp3`;
 
-    // Initialize R2 client with explicit config to avoid filesystem access
-    const r2Client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      credentials: {
-        accessKeyId: CLOUDFLARE_R2_ACCESS_KEY_ID,
-        secretAccessKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
-      },
-      // Prevent SDK from trying to load config from filesystem
-      forcePathStyle: true,
-      logger: undefined,
-    });
-
-    // Check if audio already exists via public URL HEAD to avoid AWS SDK Node fs access
+    // Check if audio already exists in Supabase Storage
     try {
-      const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
-      const headResp = await fetch(publicUrl, { method: 'HEAD' });
-      if (headResp.ok) {
-        console.log('✅ TTS cache hit in R2 (HEAD):', publicUrl);
+      const { data: existingFile } = await supabase.storage
+        .from('audio-files')
+        .download(audioFileName);
+
+      if (existingFile) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('audio-files')
+          .getPublicUrl(audioFileName);
+
+        console.log('✅ TTS cache hit:', publicUrl);
 
         // Track cache hit in analytics
         await supabase.from('audio_analytics').insert({
@@ -87,15 +68,14 @@ serve(async (req) => {
           success: true,
           audioUrl: publicUrl,
           cached: true,
-          source: 'r2'
+          source: 'storage'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     } catch (e) {
-      console.log('ℹ️ HEAD check failed, will generate audio...', e?.message || e);
+      console.log('ℹ️ Cache miss, will generate audio...');
     }
-    console.log('💨 TTS cache miss, generating audio...');
 
     // Helper to decode base64 to Uint8Array
     const decodeBase64 = (b64: string) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -118,7 +98,7 @@ serve(async (req) => {
     for (const p of tryOrder) {
       try {
         if (p === 'azure') {
-          if (!AZURE_TTS_API_KEY || !AZURE_TTS_REGION) throw new Error('AZURE_TTS_API_KEY and AZURE_TTS_REGION not set');
+          if (!AZURE_TTS_API_KEY || !AZURE_TTS_REGION) throw new Error('Azure TTS not configured');
           const resp = await fetch(`https://${AZURE_TTS_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
             {
               method: 'POST',
@@ -136,34 +116,28 @@ serve(async (req) => {
           );
           if (!resp.ok) {
             const err = await resp.text();
-            throw new Error(`Azure TTS response not ok: ${err}`);
+            throw new Error(`Azure TTS error: ${err}`);
           }
           audioBuffer = new Uint8Array(await resp.arrayBuffer());
           usedProvider = 'azure';
           break;
         }
         if (p === 'google') {
-          if (!GOOGLE_CLOUD_TTS_API_KEY) throw new Error('GOOGLE_CLOUD_TTS_API_KEY not set');
+          if (!GOOGLE_CLOUD_TTS_API_KEY) throw new Error('Google TTS not configured');
           const resp = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_TTS_API_KEY}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 input: { text },
-                voice: {
-                  languageCode: language,
-                  name: voice,
-                },
-                audioConfig: {
-                  audioEncoding: 'MP3',
-                  speakingRate: speed,
-                },
+                voice: { languageCode: language, name: voice },
+                audioConfig: { audioEncoding: 'MP3', speakingRate: speed },
               }),
             }
           );
           if (!resp.ok) {
             const err = await resp.text();
-            throw new Error(`Google TTS response not ok: ${err}`);
+            throw new Error(`Google TTS error: ${err}`);
           }
           const data = await resp.json();
           if (!data.audioContent) throw new Error('Google TTS: missing audioContent');
@@ -172,9 +146,9 @@ serve(async (req) => {
           break;
         }
         if (p === 'elevenlabs') {
-          if (!ELEVENLABS_API_KEY) throw new Error('ELEVENLABS_API_KEY not set');
+          if (!ELEVENLABS_API_KEY) throw new Error('ElevenLabs not configured');
           // Use ElevenLabs voice ID (Rachel voice from documentation)
-          const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // ElevenLabs Rachel voice ID
+          const voiceId = 'JBFqnCBsd6RMkjVDRZzb';
           console.log('🎤 ElevenLabs TTS request:', { text: text.substring(0, 50), voiceId });
           const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
             {
@@ -198,16 +172,16 @@ serve(async (req) => {
           );
           if (!resp.ok) {
             const err = await resp.text();
-            console.error('❌ ElevenLabs TTS error:', { status: resp.status, error: err });
-            throw new Error(`ElevenLabs TTS response not ok (${resp.status}): ${err}`);
+            console.error('❌ ElevenLabs error:', { status: resp.status, error: err });
+            throw new Error(`ElevenLabs error (${resp.status}): ${err}`);
           }
           audioBuffer = await resp.arrayBuffer();
           usedProvider = 'elevenlabs';
+          console.log('✅ ElevenLabs TTS successful');
           break;
         }
         if (p === 'gemini') {
-          if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
-          // Attempt Gemini TTS; if fails, we'll fall back
+          if (!GEMINI_API_KEY) throw new Error('Gemini not configured');
           const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-tts:generateContent?key=${GEMINI_API_KEY}`,
             {
               method: 'POST',
@@ -219,7 +193,7 @@ serve(async (req) => {
           );
           if (!resp.ok) {
             const err = await resp.text();
-            throw new Error(`Gemini TTS response not ok: ${err}`);
+            throw new Error(`Gemini TTS error: ${err}`);
           }
           const data = await resp.json();
           const audioData = data?.candidates?.[0]?.content?.parts?.[0]?.audioData;
@@ -238,19 +212,25 @@ serve(async (req) => {
       throw new Error(`All TTS providers failed. Last error: ${lastError}`);
     }
 
-    // Upload to R2
-    const putCommand = new PutObjectCommand({
-      Bucket: CLOUDFLARE_R2_BUCKET_NAME,
-      Key: audioFileName,
-      Body: audioBuffer,
-      ContentType: 'audio/mpeg',
-      CacheControl: 'public, max-age=31536000, immutable',
-    });
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('audio-files')
+      .upload(audioFileName, audioBuffer, {
+        contentType: 'audio/mpeg',
+        cacheControl: '31536000',
+        upsert: true,
+      });
 
-    await r2Client.send(putCommand);
+    if (uploadError) {
+      console.error('❌ Storage upload error:', uploadError);
+      throw new Error(`Storage upload failed: ${uploadError.message}`);
+    }
 
-    const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
-    console.log('✅ TTS audio generated and cached to R2:', { publicUrl, usedProvider });
+    const { data: { publicUrl } } = supabase.storage
+      .from('audio-files')
+      .getPublicUrl(audioFileName);
+
+    console.log('✅ TTS audio generated and cached:', { publicUrl, usedProvider });
 
     // Track generation in analytics
     await supabase.from('audio_analytics').insert({
@@ -280,4 +260,3 @@ serve(async (req) => {
     });
   }
 });
-

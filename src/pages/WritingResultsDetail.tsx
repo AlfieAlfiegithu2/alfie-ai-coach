@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Star, Book, Edit3, Target, MessageSquare, Trophy, CheckCircle, Download, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, Star, Book, Edit3, Target, MessageSquare, Trophy, CheckCircle, Download, Share2, Trash2 } from "lucide-react";
 import CelebrationLottieAnimation from "@/components/animations/CelebrationLottieAnimation";
 import LightRays from "@/components/animations/LightRays";
 import AnnotatedWritingText from "@/components/AnnotatedWritingText";
@@ -232,6 +232,52 @@ This assessment is based on your performance across both writing tasks, with Tas
     return "Limited";
   };
 
+  const handleDeleteResult = async () => {
+    if (!submissionId || !user) return;
+    
+    const confirmed = window.confirm('Are you sure you want to delete this writing test result? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      
+      // Delete writing test results first (FK constraint)
+      const { error: writingError } = await supabase
+        .from('writing_test_results')
+        .delete()
+        .eq('test_result_id', submissionId)
+        .eq('user_id', user.id);
+
+      if (writingError) throw writingError;
+
+      // Delete the main test result
+      const { error: testError } = await supabase
+        .from('test_results')
+        .delete()
+        .eq('id', submissionId)
+        .eq('user_id', user.id);
+
+      if (testError) throw testError;
+
+      toast({
+        title: "Test Result Deleted",
+        description: "Your writing test result has been permanently removed.",
+      });
+
+      // Navigate back to writing history
+      navigate('/dashboard/writing-history');
+    } catch (error) {
+      console.error('Error deleting result:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the test result. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-surface-2 flex items-center justify-center">
@@ -322,6 +368,15 @@ This assessment is based on your performance across both writing tasks, with Tas
               <Button variant="outline" size="sm">
                 <Share2 className="w-4 h-4 mr-2" />
                 Share Results
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleDeleteResult}
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Result
               </Button>
             </div>
           </div>

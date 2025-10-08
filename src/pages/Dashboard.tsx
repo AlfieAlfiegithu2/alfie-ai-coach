@@ -343,12 +343,17 @@ const Dashboard = () => {
                 try {
                   // Delete detailed writing results first (FKs may refer to test_results)
                   const { error: wErr } = await supabase.from('writing_test_results').delete().eq('user_id', user.id);
-                  if (wErr) console.warn('writing_test_results delete warning', wErr);
+                  if (wErr) throw wErr;
 
-                  // Delete other skill-specific tables if present (best-effort)
-                  try { await (supabase as any).from('speaking_test_results').delete().eq('user_id', user.id); } catch {}
-                  try { await (supabase as any).from('reading_results').delete().eq('user_id', user.id); } catch {}
-                  try { await (supabase as any).from('listening_results').delete().eq('user_id', user.id); } catch {}
+                  // Delete other skill-specific tables if present
+                  const { error: sErr } = await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
+                  if (sErr) console.warn('speaking_test_results delete warning', sErr);
+                  
+                  const { error: rErr } = await supabase.from('reading_test_results').delete().eq('user_id', user.id);
+                  if (rErr) console.warn('reading_test_results delete warning', rErr);
+                  
+                  const { error: lErr } = await supabase.from('listening_test_results').delete().eq('user_id', user.id);
+                  if (lErr) console.warn('listening_test_results delete warning', lErr);
 
                   const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
                   if (tErr) throw tErr;

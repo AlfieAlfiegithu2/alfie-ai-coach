@@ -8,6 +8,13 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory='dist', **kwargs)
 
+    # Add no-store caching for all resources to ensure immediate local updates
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        return super().end_headers()
+
     def serve_index(self):
         index_path = os.path.join('dist', 'index.html')
         if os.path.exists(index_path):

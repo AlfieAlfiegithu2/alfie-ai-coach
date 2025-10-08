@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Plan } from '@/lib/plans/templates';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const PlanPage = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -16,6 +16,7 @@ const PlanPage = () => {
   const [hiddenAiIds, setHiddenAiIds] = useState<Set<string>>(new Set());
   const [dayNotes, setDayNotes] = useState<string>('');
   const location = useLocation() as any;
+  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -226,7 +227,7 @@ const PlanPage = () => {
     <div className="max-w-5xl mx-auto p-6 lg:p-10">
       <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-sm p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-      <div>
+          <div>
             <h1 className="text-2xl lg:text-3xl font-semibold text-slate-900">Your Personalized IELTS Study Plan</h1>
             <p className="text-slate-600 mt-1">Designed from your quick assessment</p>
           </div>
@@ -251,6 +252,22 @@ const PlanPage = () => {
             </div>
           )}
         </div>
+        
+        {/* Action Buttons */}
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-800 transition-colors"
+          >
+            Go to Dashboard
+          </button>
+          <button
+            onClick={() => navigate('/onboarding/assessment')}
+            className="px-4 py-2 rounded-lg bg-black text-white hover:bg-black/90 transition-colors"
+          >
+            New Assessment
+          </button>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           <div className="rounded-2xl border border-white/40 bg-white/60 p-5">
@@ -274,6 +291,40 @@ const PlanPage = () => {
             </ul>
           </div>
         </div>
+
+        {/* Today's Tasks Section */}
+        {(() => {
+          const today = new Date();
+          const todayEntry = allDays.find(d => d.date.toDateString() === today.toDateString());
+          if (!todayEntry || todayEntry.tasks.length === 0) return null;
+          
+          return (
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-blue-900">Today's Study Tasks</h2>
+                <button 
+                  onClick={() => openDay(todayEntry.week, todayEntry.day)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  View Details
+                </button>
+              </div>
+              <div className="grid gap-3">
+                {todayEntry.tasks.map((task, i) => (
+                  <div key={i} className="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100">
+                    <span className="font-medium text-slate-800">{task.title}</span>
+                    <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                      {task.minutes} min
+                    </span>
+                  </div>
+                ))}
+                <div className="text-sm text-blue-700 mt-2">
+                  Total: {todayEntry.tasks.reduce((sum, task) => sum + task.minutes, 0)} minutes
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="space-y-8">
           {months.map(([key, monthDays]) => {
@@ -307,13 +358,49 @@ const PlanPage = () => {
                     const iso = toISO(cell.date);
                     const completeKey = `plan-date-complete-${iso}`;
                     const completed = typeof window !== 'undefined' && localStorage.getItem(completeKey) === '1';
+                    const isToday = new Date().toDateString() === cell.date.toDateString();
+                    const isSelected = openDayKey === `${cell.week}-${cell.day}`;
+                    const totalMinutes = cell.tasks.reduce((sum, task) => sum + task.minutes, 0);
+                    
                     return (
-                      <button key={iso} className={`h-24 rounded-2xl border p-2 text-left shadow-sm ${cell.tasks.length ? 'bg-white/80 border-white/60 hover:bg-white' : 'bg-white/40 border-white/40'} transition`} onClick={() => openDay(cell.week, cell.day)}>
+                      <button 
+                        key={iso} 
+                        className={`h-24 rounded-2xl border p-2 text-left shadow-sm transition-all duration-200 ${
+                          cell.tasks.length 
+                            ? isSelected 
+                              ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-200' 
+                              : completed
+                                ? 'bg-green-100 border-green-300 hover:bg-green-200'
+                                : 'bg-white/80 border-white/60 hover:bg-white hover:border-blue-200'
+                            : 'bg-white/40 border-white/40 hover:bg-white/60'
+                        } ${isToday ? 'ring-2 ring-orange-200' : ''}`} 
+                        onClick={() => openDay(cell.week, cell.day)}
+                      >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-slate-900">{cell.date.getDate()}</span>
-                          <input type="checkbox" aria-label={`Mark ${iso} complete`} onChange={(e) => {
-                            if ((e.target as HTMLInputElement).checked) localStorage.setItem(completeKey, '1'); else localStorage.removeItem(completeKey);
-                          }} defaultChecked={completed} onClick={(e) => e.stopPropagation()} />
+                          <div className="flex items-center gap-1">
+                            <span className={`text-sm font-medium ${isToday ? 'text-orange-600' : 'text-slate-900'}`}>
+                              {cell.date.getDate()}
+                            </span>
+                            {isToday && <span className="text-xs text-orange-500">Today</span>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {cell.tasks.length > 0 && (
+                              <span className="text-xs text-slate-500 bg-slate-100 px-1 rounded">
+                                {totalMinutes}m
+                              </span>
+                            )}
+                            <input 
+                              type="checkbox" 
+                              aria-label={`Mark ${iso} complete`} 
+                              onChange={(e) => {
+                                if ((e.target as HTMLInputElement).checked) localStorage.setItem(completeKey, '1'); 
+                                else localStorage.removeItem(completeKey);
+                              }} 
+                              defaultChecked={completed} 
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-3 h-3"
+                            />
+                          </div>
                         </div>
                         <ul className="space-y-1 text-slate-700 text-xs">
                           {cell.tasks.slice(0,2).map((t,i) => (
@@ -323,6 +410,9 @@ const PlanPage = () => {
                             </li>
                           ))}
                           {cell.tasks.length > 2 && <li className="text-[10px] text-slate-500">+{cell.tasks.length-2} more</li>}
+                          {cell.tasks.length === 0 && (
+                            <li className="text-[10px] text-slate-400 italic">No tasks</li>
+                          )}
                         </ul>
                       </button>
                     );

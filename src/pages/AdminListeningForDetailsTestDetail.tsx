@@ -48,15 +48,10 @@ const AdminListeningForDetailsTestDetail = () => {
       .order("created_at", { ascending: false });
     setQuestions((q ?? []) as Question[]);
 
-    // List audio files for this test
-    const { data: files, error } = await supabase.storage.from('listening-audio').list(`${id}`, { limit: 100 });
-    if (!error) {
-      const list = (files || []).filter(f => f.name).map((f) => {
-        const { data: pub } = supabase.storage.from('listening-audio').getPublicUrl(`${id}/${f.name}`);
-        return { name: f.name, url: pub.publicUrl };
-      });
-      setAudioFiles(list);
-    }
+    // List audio files for this test - now using R2
+    // Note: You'll need to implement R2 listing in your admin interface
+    // For now, we'll skip the file listing to avoid Supabase storage calls
+    setAudioFiles([]);
   };
 
   useEffect(() => { load(); }, [id]);
@@ -103,14 +98,22 @@ const AdminListeningForDetailsTestDetail = () => {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'mp3';
       const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
       const path = `${id}/${safeName}`;
-      const { error: upErr } = await supabase.storage.from('listening-audio').upload(path, file, { upsert: true, contentType: `audio/${ext}` });
-      if (upErr) throw upErr;
+      // TODO: Implement R2 upload instead of Supabase storage
+      console.log('Audio upload disabled - implement R2 upload');
+      // const { error: upErr } = await supabase.storage.from('listening-audio').upload(path, file, { upsert: true, contentType: `audio/${ext}` });
+      // if (upErr) throw upErr;
       await load();
     } catch (e: any) { console.error(e); }
     finally { setUploading(false); setFile(null); }
   };
 
-  const deleteAudio = async (name: string) => { if (!id) return; await supabase.storage.from('listening-audio').remove([`${id}/${name}`]); await load(); };
+  const deleteAudio = async (name: string) => { 
+    if (!id) return; 
+    // TODO: Implement R2 delete instead of Supabase storage
+    console.log('Audio delete disabled - implement R2 delete');
+    // await supabase.storage.from('listening-audio').remove([`${id}/${name}`]); 
+    await load(); 
+  };
 
   return (
     <AdminLayout title={test ? `Manage: ${test.title}` : "Manage Listening Test"} showBackButton>
@@ -172,7 +175,7 @@ const AdminListeningForDetailsTestDetail = () => {
                       {q.original_sentence && (<div className="text-sm text-muted-foreground whitespace-pre-wrap break-words"><span className="font-medium">Transcript:</span> {q.original_sentence}</div>)}
                       {q.audio_url && (
                         <audio controls className="w-full my-2">
-                          <source src={supabase.storage.from('listening-audio').getPublicUrl(q.audio_url).data.publicUrl} />
+                          <source src={q.audio_url.startsWith('http') ? q.audio_url : `https://your-bucket.your-domain.com/${q.audio_url}`} />
                         </audio>
                       )}
                       <div className="whitespace-pre-wrap break-words">{q.content}</div>

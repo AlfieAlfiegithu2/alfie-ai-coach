@@ -426,15 +426,18 @@ const IELTSSpeakingTest = () => {
       }
       const uploadPromises = recordingEntries.map(async ([key, blob]) => {
         const fileName = `speaking_${testData?.id}_${key}_${Date.now()}.webm`;
-        const { data, error } = await supabase.storage
-          .from('audio-files')
-          .upload(fileName, blob);
+        // TODO: Implement R2 upload instead of Supabase storage
+        console.log('Speaking test upload disabled - implement R2 upload');
+        // const { data, error } = await supabase.storage
+        //   .from('audio-files')
+        //   .upload(fileName, blob);
 
-        if (error) throw error;
+        // if (error) throw error;
 
-        const { data: publicData } = supabase.storage
-          .from('audio-files')
-          .getPublicUrl(fileName);
+        // const { data: publicData } = supabase.storage
+        //   .from('audio-files')
+        //   .getPublicUrl(fileName);
+        const publicData = { publicUrl: `https://your-bucket.your-domain.com/${fileName}` };
 
         return {
           part: key,

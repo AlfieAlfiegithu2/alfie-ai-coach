@@ -149,7 +149,7 @@ const ListeningQuizPreview = (props: Props) => {
               <div className="bg-muted/30 rounded-lg p-3">
                 <div className="text-sm font-medium mb-2">Audio</div>
                 <audio controls className="w-full">
-                  <source src={supabase.storage.from('listening-audio').getPublicUrl(current.audio_url).data.publicUrl} />
+                  <source src={current.audio_url.startsWith('http') ? current.audio_url : `https://your-bucket.your-domain.com/${current.audio_url}`} />
                   Your browser does not support the audio element.
                 </audio>
               </div>

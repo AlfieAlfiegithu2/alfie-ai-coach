@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +20,21 @@ serve(async (req) => {
     }
 
     const elevenlabsApiKey = Deno.env.get('ELEVENLABS_API_KEY');
+    
+    // R2 Configuration
+    const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
+    const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
+    const CLOUDFLARE_R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+    const CLOUDFLARE_R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME');
+    const CLOUDFLARE_R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
     if (!elevenlabsApiKey) {
       throw new Error('ElevenLabs API key not configured');
+    }
+    
+    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID || 
+        !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME || 
+        !CLOUDFLARE_R2_PUBLIC_URL) {
+      throw new Error('Cloudflare R2 environment variables not configured');
     }
 
     // Create Supabase client for caching
@@ -78,25 +92,31 @@ serve(async (req) => {
       throw new Error(error.detail?.message || 'Failed to generate speech');
     }
 
-    // Convert audio to base64 and upload to Supabase storage
+    // Convert audio to base64 and upload to R2 storage
     const audioBuffer = await response.arrayBuffer();
-    const audioFileName = `${hashHex}.mp3`;
+    const audioFileName = `audio/${hashHex}.mp3`;
     
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('audio-files')
-      .upload(audioFileName, audioBuffer, {
-        contentType: 'audio/mpeg',
-        cacheControl: '31536000' // 1 year cache
-      });
+    // Upload to R2 instead of Supabase storage
+    const r2Client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: CLOUDFLARE_R2_ACCESS_KEY_ID,
+        secretAccessKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+      },
+    });
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error('Failed to upload audio file');
-    }
+    const command = new PutObjectCommand({
+      Bucket: CLOUDFLARE_R2_BUCKET_NAME,
+      Key: audioFileName,
+      Body: audioBuffer,
+      ContentType: 'audio/mpeg',
+      CacheControl: 'public, max-age=31536000, immutable',
+    });
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('audio-files')
-      .getPublicUrl(audioFileName);
+    await r2Client.send(command);
+    
+    const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
 
     // Cache the result
     await supabase.from('audio_cache').insert({

@@ -57,7 +57,8 @@ const ListeningQuiz = () => {
 
   const getAudioUrl = (q?: Question) => {
     if (!q?.audio_url) return "";
-    return supabase.storage.from('listening-audio').getPublicUrl(q.audio_url).data.publicUrl;
+    // Use R2 URL instead of Supabase storage
+    return q.audio_url.startsWith('http') ? q.audio_url : `https://your-bucket.your-domain.com/${q.audio_url}`;
   };
 
   const playCorrect = () => {

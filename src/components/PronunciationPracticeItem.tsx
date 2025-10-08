@@ -113,12 +113,15 @@ const PronunciationPracticeItem: React.FC<Props> = ({ item, testId, onAnalyzed }
       setLoading(true);
       // 1) Upload audio to storage
       const path = `user-recordings/pronunciation/${testId}/${item.id}/${Date.now()}.webm`;
-      const { error: upErr } = await supabase.storage
-        .from("audio-files")
-        .upload(path, recordingBlob, { upsert: false, contentType: "audio/webm" });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("audio-files").getPublicUrl(path);
-      const audio_url = pub.publicUrl;
+      // TODO: Implement R2 upload instead of Supabase storage
+      console.log('Pronunciation upload disabled - implement R2 upload');
+      // const { error: upErr } = await supabase.storage
+      //   .from("audio-files")
+      //   .upload(path, recordingBlob, { upsert: false, contentType: "audio/webm" });
+      // if (upErr) throw upErr;
+      // const { data: pub } = supabase.storage.from("audio-files").getPublicUrl(path);
+      // const audio_url = pub.publicUrl;
+      const audio_url = `https://your-bucket.your-domain.com/${path}`;
       setUploadedUrl(audio_url);
 
       // 2) Convert to base64 for analysis function

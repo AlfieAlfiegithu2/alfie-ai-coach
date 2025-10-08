@@ -164,7 +164,11 @@ const IELTSWritingResults = () => {
     return match ? roundToValidBandScore(parseFloat(match[1])) : 7.0;
   };
 
-  const extractCriteriaScores = (feedbackText: string) => {
+  const extractCriteriaScores = (feedbackText: string | undefined) => {
+    if (!feedbackText) {
+      return { task1: [], task2: [], overall: 7.0, task1Overall: 7.0, task2Overall: 7.0 };
+    }
+    
     // Try both formats - new format without ## and old format with ##
     let task1Match = feedbackText.match(/TASK 1 ASSESSMENT([\s\S]*?)(?=TASK 2 ASSESSMENT)/);
     let task2Match = feedbackText.match(/TASK 2 ASSESSMENT([\s\S]*?)(?=OVERALL WRITING ASSESSMENT)/);
@@ -250,8 +254,8 @@ const IELTSWritingResults = () => {
     } catch { return null; }
   };
 
-  const structuredScores = structured ? mapFromStructured(structured) : null;
-  const scores = structuredScores || extractCriteriaScores(feedback);
+  const structuredScores = effStructured ? mapFromStructured(effStructured) : null;
+  const scores = structuredScores || extractCriteriaScores(effFeedback);
   const overallBand = scores.overall;
 
   const getBandColor = (score: number) => {

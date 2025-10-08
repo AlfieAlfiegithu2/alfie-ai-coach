@@ -8,6 +8,8 @@ const corsHeaders = {
 };
 
 // Environment variables
+const AZURE_TTS_API_KEY = Deno.env.get('AZURE_TTS_API_KEY');
+const AZURE_TTS_REGION = Deno.env.get('AZURE_TTS_REGION');
 const GOOGLE_CLOUD_TTS_API_KEY = Deno.env.get('GOOGLE_CLOUD_TTS_API_KEY') || Deno.env.get('GOOGLE_CLOUD_API_KEY');
 const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
@@ -29,8 +31,8 @@ serve(async (req) => {
 
   try {
     // Validate environment variables (at least one provider)
-    if (!GOOGLE_CLOUD_TTS_API_KEY && !ELEVENLABS_API_KEY && !GEMINI_API_KEY) {
-      throw new Error('No TTS provider configured. Set GOOGLE_CLOUD_TTS_API_KEY or ELEVENLABS_API_KEY or GEMINI_API_KEY');
+    if (!AZURE_TTS_API_KEY && !GOOGLE_CLOUD_TTS_API_KEY && !ELEVENLABS_API_KEY && !GEMINI_API_KEY) {
+      throw new Error('No TTS provider configured. Set AZURE_TTS_API_KEY or GOOGLE_CLOUD_TTS_API_KEY or ELEVENLABS_API_KEY or GEMINI_API_KEY');
     }
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID ||
         !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME ||
@@ -99,14 +101,15 @@ serve(async (req) => {
     // Helper to decode base64 to Uint8Array
     const decodeBase64 = (b64: string) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
-    // Decide provider (explicit > auto preference: Google > ElevenLabs > Gemini)
+    // Decide provider (explicit > auto preference: ElevenLabs > Azure > Google > Gemini)
     const tryOrder = (() => {
       if (provider !== 'auto') return [provider];
       const list: string[] = [];
-      if (GOOGLE_CLOUD_TTS_API_KEY) list.push('google');
       if (ELEVENLABS_API_KEY) list.push('elevenlabs');
+      if (AZURE_TTS_API_KEY) list.push('azure');
+      if (GOOGLE_CLOUD_TTS_API_KEY) list.push('google');
       if (GEMINI_API_KEY) list.push('gemini');
-      return list.length ? list : ['google'];
+      return list.length ? list : ['elevenlabs'];
     })();
 
     let audioBuffer: Uint8Array | ArrayBuffer | null = null;
@@ -115,6 +118,31 @@ serve(async (req) => {
 
     for (const p of tryOrder) {
       try {
+        if (p === 'azure') {
+          if (!AZURE_TTS_API_KEY || !AZURE_TTS_REGION) throw new Error('AZURE_TTS_API_KEY and AZURE_TTS_REGION not set');
+          const resp = await fetch(`https://${AZURE_TTS_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
+            {
+              method: 'POST',
+              headers: {
+                'Ocp-Apim-Subscription-Key': AZURE_TTS_API_KEY,
+                'Content-Type': 'application/ssml+xml',
+                'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+              },
+              body: `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${language}'>
+                <voice name='${voice}'>
+                  <prosody rate='${speed}'>${text}</prosody>
+                </voice>
+              </speak>`,
+            }
+          );
+          if (!resp.ok) {
+            const err = await resp.text();
+            throw new Error(`Azure TTS response not ok: ${err}`);
+          }
+          audioBuffer = new Uint8Array(await resp.arrayBuffer());
+          usedProvider = 'azure';
+          break;
+        }
         if (p === 'google') {
           if (!GOOGLE_CLOUD_TTS_API_KEY) throw new Error('GOOGLE_CLOUD_TTS_API_KEY not set');
           const resp = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_TTS_API_KEY}`,

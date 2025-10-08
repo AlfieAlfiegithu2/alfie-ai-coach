@@ -146,7 +146,7 @@ serve(async (req) => {
   }
 
   try {
-    const { task1Answer, task2Answer, task1Data, task2Data, apiProvider = 'gemini' } = await req.json();
+    const { task1Answer, task2Answer, task1Data, task2Data, apiProvider = 'gemini', targetLanguage } = await req.json();
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -171,10 +171,39 @@ serve(async (req) => {
 
     console.log('🔍 AI Examiner Request:', { 
       task1Length: task1Answer.length,
-      task2Length: task2Answer.length 
+      task2Length: task2Answer.length,
+      targetLanguage: targetLanguage || 'en'
     });
 
+    // Language instruction for translation
+    const languageInstruction = targetLanguage ? `
+IMPORTANT LANGUAGE INSTRUCTION:
+You MUST provide all feedback, explanations, justifications, and improvement descriptions in ${targetLanguage === 'zh' ? 'Chinese (中文)' : targetLanguage === 'es' ? 'Spanish (Español)' : targetLanguage === 'fr' ? 'French (Français)' : targetLanguage === 'de' ? 'German (Deutsch)' : targetLanguage === 'ja' ? 'Japanese (日本語)' : targetLanguage === 'ko' ? 'Korean (한국어)' : targetLanguage === 'ar' ? 'Arabic (العربية)' : targetLanguage === 'pt' ? 'Portuguese (Português)' : targetLanguage === 'ru' ? 'Russian (Русский)' : targetLanguage === 'hi' ? 'Hindi (हिन्दी)' : targetLanguage === 'vi' ? 'Vietnamese (Tiếng Việt)' : 'English'}.
+
+CRITICAL: Keep the following in ENGLISH:
+- The student's original writing (task1Answer and task2Answer)
+- All quoted text from the student's writing in the "original" field
+- Your improved versions in the "improved" field
+- IELTS terminology (e.g., "Task Achievement", "Coherence and Cohesion", "Lexical Resource", "Grammatical Range and Accuracy", "Band Score")
+- Technical terms like "IELTS", "Task 1", "Task 2"
+
+TRANSLATE to ${targetLanguage === 'zh' ? 'Chinese' : targetLanguage === 'es' ? 'Spanish' : targetLanguage === 'fr' ? 'French' : targetLanguage === 'de' ? 'German' : targetLanguage === 'ja' ? 'Japanese' : targetLanguage === 'ko' ? 'Korean' : targetLanguage === 'ar' ? 'Arabic' : targetLanguage === 'pt' ? 'Portuguese' : targetLanguage === 'ru' ? 'Russian' : targetLanguage === 'hi' ? 'Hindi' : targetLanguage === 'vi' ? 'Vietnamese' : 'English'}:
+- All justifications
+- All explanations
+- All feedback text
+- Improvement descriptions (the "explanation" field)
+- Strengths and areas for improvement
+- General guidance and advice
+
+Example for Chinese:
+- justification: "学生在任务完成方面表现良好，提供了相关的信息..." (in Chinese)
+- explanation: "使用更学术性的词汇如'illustrates'和'substantial growth'而不是简单的词汇..." (in Chinese)
+- But keep: original: "The graph shows a big increase in sales." (in English)
+- And keep: improved: "The provided chart illustrates a substantial growth in sales revenue." (in English)
+` : '';
+
     const masterExaminerPrompt = `Core Principles & Directives
+${languageInstruction}
 
 You are an expert IELTS examiner and writing coach. You must adhere to the following core principles at all times.
 

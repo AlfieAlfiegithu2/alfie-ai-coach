@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, PenTool, BookOpen } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import { Languages } from "lucide-react";
 
 const WritingTest = () => {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ const WritingTest = () => {
   const [selectedTask, setSelectedTask] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [selectedAPI, setSelectedAPI] = useState<'gemini' | 'openai'>('gemini');
+  const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
 
   // Get URL parameters for specific test/book - support both search params and URL params
   const cambridgeBook = params.book || searchParams.get('book') || 'C19';
@@ -153,7 +156,8 @@ const WritingTest = () => {
             title: currentPrompt?.title || 'Task 2',
             instructions: currentPrompt?.prompt_text || ''
           } : {},
-          apiProvider: selectedAPI
+          apiProvider: selectedAPI,
+          targetLanguage: feedbackLanguage !== "en" ? feedbackLanguage : undefined
         }
       });
 
@@ -403,6 +407,38 @@ const WritingTest = () => {
                   className="min-h-[350px] text-sm leading-relaxed input-modern"
                   disabled={isAnalyzing}
                 />
+
+                {/* Feedback Language Selector */}
+                <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-xl border border-border">
+                  <Languages className="w-5 h-5 text-brand-blue" />
+                  <div className="flex-1">
+                    <Label htmlFor="feedback-language-writing" className="text-sm font-medium mb-1 block">
+                      Feedback Language
+                    </Label>
+                    <p className="text-xs text-text-secondary mb-2">
+                      Choose your preferred language for explanations. Your writing and key terms will remain in English.
+                    </p>
+                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                      <SelectTrigger id="feedback-language-writing" className="w-full max-w-xs">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                        <SelectItem value="es">Español (Spanish)</SelectItem>
+                        <SelectItem value="fr">Français (French)</SelectItem>
+                        <SelectItem value="de">Deutsch (German)</SelectItem>
+                        <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                        <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                        <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                        <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                        <SelectItem value="ru">Русский (Russian)</SelectItem>
+                        <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                        <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
                 {/* API Selection */}
                 <div className="space-y-3 p-4 border border-border/50 rounded-lg bg-surface-2">

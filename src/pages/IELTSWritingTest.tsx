@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, BookOpen, ListTree, Clock, FileText, PenTool } from "lucide-react";
+import { Bot, BookOpen, ListTree, Clock, FileText, PenTool, Languages } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 
@@ -62,6 +64,7 @@ const IELTSWritingTestInterface = () => {
   const [isCatbotOpen, setIsCatbotOpen] = useState(false);
   const [isDraggableChatOpen, setIsDraggableChatOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
 
   // Timer states
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -317,7 +320,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             task1Answer,
             task2Answer,
             task1Data: task1,
-            task2Data: task2
+            task2Data: task2,
+            targetLanguage: feedbackLanguage !== "en" ? feedbackLanguage : undefined
           }
         })
       ]);
@@ -673,22 +677,56 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 placeholder="Write your essay here..." 
                 className="min-h-[400px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
               />
-              <div className="flex justify-between items-center mt-4">
-                <div className="text-sm">
-                  {getWordCount(task2Answer) >= 250 ? 
-                    <span className="text-brand-green">✓ Word count requirement met</span> : 
-                    <span className="text-brand-orange">
-                      {250 - getWordCount(task2Answer)} more words needed
-                    </span>
-                  }
+              <div className="space-y-4 mt-4">
+                {/* Feedback Language Selector */}
+                <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-xl border border-border">
+                  <Languages className="w-5 h-5 text-brand-blue" />
+                  <div className="flex-1">
+                    <Label htmlFor="feedback-language" className="text-sm font-medium mb-1 block">
+                      Feedback Language
+                    </Label>
+                    <p className="text-xs text-text-secondary mb-2">
+                      Choose your preferred language for explanations and guidance. Your writing and key terms will remain in English.
+                    </p>
+                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                      <SelectTrigger id="feedback-language" className="w-full max-w-xs">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                        <SelectItem value="es">Español (Spanish)</SelectItem>
+                        <SelectItem value="fr">Français (French)</SelectItem>
+                        <SelectItem value="de">Deutsch (German)</SelectItem>
+                        <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                        <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                        <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                        <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                        <SelectItem value="ru">Русский (Russian)</SelectItem>
+                        <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                        <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Button 
-                  onClick={submitTest} 
-                  disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
-                  variant="default"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Test"}
-                </Button>
+
+                <div className="flex justify-between items-center">
+                  <div className="text-sm">
+                    {getWordCount(task2Answer) >= 250 ? 
+                      <span className="text-brand-green">✓ Word count requirement met</span> : 
+                      <span className="text-brand-orange">
+                        {250 - getWordCount(task2Answer)} more words needed
+                      </span>
+                    }
+                  </div>
+                  <Button 
+                    onClick={submitTest} 
+                    disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
+                    variant="default"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Test"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

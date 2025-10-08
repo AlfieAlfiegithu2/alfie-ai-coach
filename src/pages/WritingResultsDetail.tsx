@@ -89,6 +89,10 @@ const WritingResultsDetail = () => {
       const task2Band = extractBandFromResult(task2Data);
       const overallBand = Math.round(((task1Band * 1) + (task2Band * 2)) / 3 * 2) / 2;
 
+      // Prefer the structured snapshot if we stored it on either task row
+      // We saved the full structured object per row at test time for simplicity
+      const storedStructured = (task1Data as any).structured || (task2Data as any).structured || null;
+
       // Construct the result data in the format expected by IELTSWritingResults
       const constructedData = {
         testName: testResult?.test_type || 'IELTS Writing Test',
@@ -107,9 +111,15 @@ const WritingResultsDetail = () => {
         },
         task1WordCount: task1Data.word_count,
         task2WordCount: task2Data.word_count,
-        structured: {
-          task1: { overall_band: task1Band },
-          task2: { overall_band: task2Band },
+        structured: storedStructured || {
+          task1: {
+            criteria: task1Data.band_scores,
+            overall_band: task1Band
+          },
+          task2: {
+            criteria: task2Data.band_scores,
+            overall_band: task2Band
+          },
           overall: { band: overallBand }
         }
       };
@@ -319,7 +329,7 @@ This assessment is based on your performance across both writing tasks, with Tas
       </div>
 
       <div className="container mx-auto px-6 space-section">
-        {/* Success Message */}
+        {/* Success Message - match live results styling/text */}
         <Card className="mb-8 card-modern border-2 border-brand-green/20 bg-gradient-to-br from-brand-green/5 to-brand-green/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -327,8 +337,8 @@ This assessment is based on your performance across both writing tasks, with Tas
                 <CheckCircle className="w-8 h-8 text-brand-green" />
               </div>
               <div>
-                <h2 className="text-heading-3 text-brand-green">Historical Test Results</h2>
-                <p className="text-body">Reviewing your past IELTS Writing test performance.</p>
+                <h2 className="text-heading-3 text-brand-green">Test Completed Successfully!</h2>
+                <p className="text-body">Your IELTS Writing test has been evaluated by our AI examiner.</p>
               </div>
             </div>
           </CardContent>
@@ -422,67 +432,60 @@ This assessment is based on your performance across both writing tasks, with Tas
           </Card>
         )}
 
-        {/* AI Examiner Report */}
-        <Card className="mb-8 card-elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-brand-orange/10">
-                <MessageSquare className="w-5 h-5 text-brand-orange" />
+        {/* AI Examiner Report - identical formatting to live results */}
+        <Card className="mb-8 bg-surface-1 rounded-3xl shadow-lg border-2 border-brand-blue/20">
+          <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+            <CardTitle className="flex items-center gap-2 text-brand-blue">
+              <div className="p-2 rounded-xl bg-brand-blue/10">
+                <MessageSquare className="w-5 h-5" />
               </div>
-              AI Examiner Detailed Report
+              AI Examiner Report - Professional IELTS Assessment
             </CardTitle>
+            <p className="text-body">
+              Comprehensive analysis based on official IELTS band descriptors
+            </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div 
-              className="prose prose-sm max-w-none text-text-secondary leading-relaxed"
-              dangerouslySetInnerHTML={{ 
-                __html: resultData.feedback.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+              className="prose prose-lg max-w-none text-text-primary"
+              dangerouslySetInnerHTML={{
+                __html: (resultData.feedback)
+                  .replace(/^(TASK [12] ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-blue mt-8 mb-6 border-b-2 border-brand-blue/20 pb-3">$1<\/h2>')
+                  .replace(/^(OVERALL WRITING ASSESSMENT)$/gm, '<h2 class="text-2xl font-bold text-brand-purple mt-8 mb-6 border-b-2 border-brand-purple/20 pb-3">$1<\/h2>')
+                  .replace(/^(Task Achievement|Task Response|Coherence and Cohesion|Lexical Resource|Grammatical Range and Accuracy|Your Path to a Higher Score)$/gm, '<h3 class="text-xl font-semibold text-text-primary mt-6 mb-4 bg-surface-3 p-3 rounded-xl">$1<\/h3>')
+                  .replace(/^Band Score: (\d+(?:\.\d+)?)$/gm, '<div class="text-lg font-bold text-brand-green mb-3 bg-brand-green/10 p-2 rounded-lg inline-block">Band Score: $1<\/div>')
+                  .replace(/^(Positive Feedback|Areas for Improvement):$/gm, '<h4 class="text-lg font-semibold text-text-primary mt-4 mb-2">$1:<\/h4>')
+                  .replace(/^• (.*)$/gm, '<li class="mb-2 text-text-secondary">$1<\/li>')
+                  .replace(/(<li>.*?<\/li>(?:\s*<li>.*?<\/li>)*)/gs, '<ul class="list-disc pl-6 mb-4 space-y-1">$1<\/ul>')
+                  .replace(/^Overall Writing Band Score: (.*)$/gm, '<div class="text-2xl font-bold text-brand-purple mt-6 mb-4 bg-brand-purple/10 p-4 rounded-xl text-center">Overall Writing Band Score: $1<\/div>')
+                  .replace(/\n/g, '<br>')
+                  .replace(/---/g, '<hr class="my-8 border-border">')
               }}
             />
           </CardContent>
         </Card>
 
-        {/* Your Answers */}
+        {/* Your Answers with Corrections (match live results) */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="card-elevated">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-brand-blue/10">
-                  <Target className="w-5 h-5 text-brand-blue" />
-                </div>
-                Your Task 1 Answer
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AnnotatedWritingText 
-                taskTitle="Task 1"
-                originalText={resultData.task1Answer}
-                corrections={[]}
-                icon={Target}
-                colorScheme="brand-blue"
-              />
-            </CardContent>
-          </Card>
+          <AnnotatedWritingText
+            taskTitle="Your Task 1 Answer"
+            originalText={resultData.task1Answer || ''}
+            annotatedOriginal={resultData.structured?.task1?.annotated_original}
+            annotatedCorrected={resultData.structured?.task1?.annotated_corrected}
+            corrections={resultData.structured?.task1?.corrections}
+            icon={Target}
+            colorScheme="text-brand-blue"
+          />
 
-          <Card className="card-elevated">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-brand-purple/10">
-                  <Edit3 className="w-5 h-5 text-brand-purple" />
-                </div>
-                Your Task 2 Answer
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AnnotatedWritingText 
-                taskTitle="Task 2"
-                originalText={resultData.task2Answer}
-                corrections={[]}
-                icon={Edit3}
-                colorScheme="brand-purple"
-              />
-            </CardContent>
-          </Card>
+          <AnnotatedWritingText
+            taskTitle="Your Task 2 Answer"
+            originalText={resultData.task2Answer || ''}
+            annotatedOriginal={resultData.structured?.task2?.annotated_original}
+            annotatedCorrected={resultData.structured?.task2?.annotated_corrected}
+            corrections={resultData.structured?.task2?.corrections}
+            icon={Edit3}
+            colorScheme="text-brand-purple"
+          />
         </div>
 
         {/* Action Buttons */}

@@ -205,6 +205,7 @@ const WritingTest = () => {
               word_count: wordCount,
               band_scores: data.structured?.criteria || null,
               detailed_feedback: data.feedback,
+              structured: data.structured || null,
               improvement_suggestions: [],
               time_taken_seconds: (currentPrompt?.time_limit || 60) * 60
             });

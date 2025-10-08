@@ -145,12 +145,21 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
         };
         await audio.play();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Pronunciation error:', error);
       setIsPlayingAudio(false);
+      
+      // Provide more specific error message
+      let errorMessage = "Could not generate pronunciation";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
         title: "Pronunciation failed",
-        description: "Could not generate pronunciation",
+        description: errorMessage,
         variant: "destructive",
       });
     }

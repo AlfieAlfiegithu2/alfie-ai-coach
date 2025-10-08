@@ -67,9 +67,12 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
         audio.onerror = () => setIsPlayingAudio(false);
         await audio.play();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Pronunciation error:', error);
       setIsPlayingAudio(false);
+      
+      // Show error to user for debugging
+      console.error('Full error details:', error);
     }
   };
 

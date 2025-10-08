@@ -8,7 +8,9 @@ const corsHeaders = {
 };
 
 // Environment variables
-const GOOGLE_CLOUD_API_KEY = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_CLOUD_API_KEY');
+const GOOGLE_CLOUD_TTS_API_KEY = Deno.env.get('GOOGLE_CLOUD_TTS_API_KEY') || Deno.env.get('GOOGLE_CLOUD_API_KEY') || Deno.env.get('GEMINI_API_KEY');
+const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
 const CLOUDFLARE_R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
@@ -26,9 +28,9 @@ serve(async (req) => {
   }
 
   try {
-    // Validate environment variables
-    if (!GOOGLE_CLOUD_API_KEY) {
-      throw new Error('Google Cloud API key not configured (GEMINI_API_KEY or GOOGLE_CLOUD_API_KEY)');
+    // Validate environment variables (at least one provider)
+    if (!GOOGLE_CLOUD_TTS_API_KEY && !ELEVENLABS_API_KEY && !GEMINI_API_KEY) {
+      throw new Error('No TTS provider configured. Set GOOGLE_CLOUD_TTS_API_KEY or ELEVENLABS_API_KEY or GEMINI_API_KEY');
     }
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID ||
         !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME ||
@@ -36,7 +38,7 @@ serve(async (req) => {
       throw new Error('Cloudflare R2 environment variables not configured');
     }
 
-    const { text, language = 'en', voice = 'en-US-Neural2-J', speed = 1.0 } = await req.json();
+    const { text, language = 'en-US', voice = 'en-US-Neural2-J', speed = 1.0, provider = 'auto' } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
@@ -45,7 +47,7 @@ serve(async (req) => {
     console.log('🎵 TTS request:', { text: text.substring(0, 50), language, voice });
 
     // Generate cache key
-    const cacheKey = `tts_${text.toLowerCase().trim()}_${language}_${voice}_${speed}`;
+    const cacheKey = `tts_${text.toLowerCase().trim()}_${language}_${voice}_${speed}_${provider}`;
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(cacheKey));
     const hashArray = Array.from(new Uint8Array(hash));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -94,41 +96,117 @@ serve(async (req) => {
       console.log('💨 TTS cache miss, generating audio...');
     }
 
-    // Generate audio using Google Cloud TTS (standard API)
-    const ttsResponse = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input: { text },
-          voice: {
-            languageCode: language,
-            name: voice,
-          },
-          audioConfig: {
-            audioEncoding: 'MP3',
-            speakingRate: speed,
-            pitch: 0,
-          },
-        }),
+    // Helper to decode base64 to Uint8Array
+    const decodeBase64 = (b64: string) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+    // Decide provider (explicit > auto preference: Google > ElevenLabs > Gemini)
+    const tryOrder = (() => {
+      if (provider !== 'auto') return [provider];
+      const list: string[] = [];
+      if (GOOGLE_CLOUD_TTS_API_KEY) list.push('google');
+      if (ELEVENLABS_API_KEY) list.push('elevenlabs');
+      if (GEMINI_API_KEY) list.push('gemini');
+      return list.length ? list : ['google'];
+    })();
+
+    let audioBuffer: Uint8Array | ArrayBuffer | null = null;
+    let usedProvider = 'unknown';
+    let lastError: unknown = null;
+
+    for (const p of tryOrder) {
+      try {
+        if (p === 'google') {
+          if (!GOOGLE_CLOUD_TTS_API_KEY) throw new Error('GOOGLE_CLOUD_TTS_API_KEY not set');
+          const resp = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_TTS_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: { text },
+                voice: {
+                  languageCode: language,
+                  name: voice,
+                },
+                audioConfig: {
+                  audioEncoding: 'MP3',
+                  speakingRate: speed,
+                },
+              }),
+            }
+          );
+          if (!resp.ok) {
+            const err = await resp.text();
+            throw new Error(`Google TTS response not ok: ${err}`);
+          }
+          const data = await resp.json();
+          if (!data.audioContent) throw new Error('Google TTS: missing audioContent');
+          audioBuffer = decodeBase64(data.audioContent);
+          usedProvider = 'google';
+          break;
+        }
+        if (p === 'elevenlabs') {
+          if (!ELEVENLABS_API_KEY) throw new Error('ELEVENLABS_API_KEY not set');
+          // If voice is not an ElevenLabs voice ID, use a safe default
+          const voiceId = /^[A-Za-z0-9]{20,}$/.test(voice) ? voice : 'pNInz6obpgDQGcFmaJgB';
+          const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': ELEVENLABS_API_KEY,
+              },
+              body: JSON.stringify({
+                text,
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                  stability: 0.5,
+                  similarity_boost: 0.5,
+                  style: 0.0,
+                  use_speaker_boost: true,
+                },
+              }),
+            }
+          );
+          if (!resp.ok) {
+            const err = await resp.text();
+            throw new Error(`ElevenLabs TTS response not ok: ${err}`);
+          }
+          audioBuffer = await resp.arrayBuffer();
+          usedProvider = 'elevenlabs';
+          break;
+        }
+        if (p === 'gemini') {
+          if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+          // Attempt Gemini TTS; if fails, we'll fall back
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-tts:generateContent?key=${GEMINI_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text }] }],
+              })
+            }
+          );
+          if (!resp.ok) {
+            const err = await resp.text();
+            throw new Error(`Gemini TTS response not ok: ${err}`);
+          }
+          const data = await resp.json();
+          const audioData = data?.candidates?.[0]?.content?.parts?.[0]?.audioData;
+          if (!audioData) throw new Error('Gemini TTS: missing audioData');
+          audioBuffer = decodeBase64(audioData);
+          usedProvider = 'gemini';
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+        console.error(`Provider ${p} failed:`, err);
       }
-    );
-
-    if (!ttsResponse.ok) {
-      const errorData = await ttsResponse.json();
-      throw new Error(`Google Cloud TTS error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
-    const ttsData = await ttsResponse.json();
-    const audioContent = ttsData.audioContent;
-
-    if (!audioContent) {
-      throw new Error('No audio content received from Google Cloud TTS');
+    if (!audioBuffer) {
+      throw new Error(`All TTS providers failed. Last error: ${lastError}`);
     }
-
-    // Decode base64 audio
-    const audioBuffer = Uint8Array.from(atob(audioContent), c => c.charCodeAt(0));
 
     // Upload to R2
     const putCommand = new PutObjectCommand({
@@ -142,7 +220,7 @@ serve(async (req) => {
     await r2Client.send(putCommand);
 
     const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${audioFileName}`;
-    console.log('✅ Google Cloud TTS audio generated and cached to R2:', publicUrl);
+    console.log('✅ TTS audio generated and cached to R2:', { publicUrl, usedProvider });
 
     // Track generation in analytics
     await supabase.from('audio_analytics').insert({
@@ -156,7 +234,7 @@ serve(async (req) => {
       success: true,
       audioUrl: publicUrl,
       cached: false,
-      source: 'google_cloud_tts'
+      source: usedProvider
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

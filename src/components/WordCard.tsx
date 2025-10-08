@@ -49,14 +49,15 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
     setIsPlayingAudio(true);
     try {
       // Generate audio using TTS cache function
-      const { data, error } = await supabase.functions.invoke('tts-audio-cache', {
-        body: {
-          text: word.word,
-          language: 'en-US',
-          voice: 'en-US-Neural2-J',
-          speed: 0.9
-        }
-      });
+          const { data, error } = await supabase.functions.invoke('tts-audio-cache', {
+            body: {
+              text: word.word,
+              language: 'en-US',
+              voice: 'en-US-Neural2-J',
+              speed: 0.9,
+              provider: 'auto'
+            }
+          });
 
       if (error) throw error;
 

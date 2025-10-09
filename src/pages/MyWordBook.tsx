@@ -339,8 +339,7 @@ const MyWordBook = () => {
                 {/* Notification Suggestion */}
                 <div className="mb-6 text-center">
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
-                    <span className="text-blue-500">💡</span>
-                    <span>Click any word to hear pronunciation with different accents!</span>
+                    <span>Click any word for pronunciation</span>
                   </div>
                 </div>
 

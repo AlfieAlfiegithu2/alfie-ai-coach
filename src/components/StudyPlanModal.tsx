@@ -61,9 +61,13 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [aiLoading, setAiLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    if (open) {
-      void loadPlan();
-    }
+    if (!open) return;
+    // Instant seed from local cache for fast paint
+    try {
+      const cached = JSON.parse(localStorage.getItem('latest_plan') || 'null');
+      if (cached?.plan) setPlan(cached.plan as PlanData);
+    } catch {}
+    void loadPlan();
   }, [open]);
 
   useEffect(() => {
@@ -72,34 +76,22 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     return () => window.removeEventListener('focus', handler);
   }, [open]);
 
-  useEffect(() => {
-    if (open) void loadPlan();
-  }, [lang, open]);
+  // Changing UI language shouldn't refetch plan; the plan content is already bilingual where relevant
 
   const loadPlan = async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: profile } = await (supabase as any)
+      // Single round-trip: embed study_plans via FK
+      const { data: profJoin } = await (supabase as any)
         .from('profiles')
-        .select('current_plan_id')
+        .select('current_plan_id, study_plans!profiles_current_plan_id_fkey(id, plan, updated_at)')
         .eq('id', user.id)
         .single();
-      if (!profile?.current_plan_id) {
-        setPlan(null);
-        return;
-      }
-      const { data: planRow } = await (supabase as any)
-        .from('study_plans')
-        .select('plan, updated_at')
-        .eq('id', profile.current_plan_id)
-        .single();
-      if (planRow?.plan) {
-        setPlan(planRow.plan as any as PlanData);
-      } else {
-        setPlan(null);
-      }
+      const joined = profJoin?.['study_plans'];
+      const planRow = Array.isArray(joined) ? joined[0] : joined;
+      if (planRow?.plan) setPlan(planRow.plan as PlanData);
     } finally {
       setLoading(false);
     }

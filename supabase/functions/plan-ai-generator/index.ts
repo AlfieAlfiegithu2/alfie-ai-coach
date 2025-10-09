@@ -168,7 +168,7 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: mergedText }]}],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 1800 }
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1800, responseMimeType: 'application/json', response_mime_type: 'application/json' }
         }),
         signal: controller.signal
       }).finally(() => clearTimeout(timeoutId));
@@ -219,7 +219,55 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
     plan = parsePlanSafely(content);
 
     // Minimal validation & backfill
-    if (!plan || typeof plan !== 'object') plan = {};
+    if (!plan || typeof plan !== 'object' || !Array.isArray(plan.weekly)) {
+      console.warn('⚠️ AI returned invalid plan JSON. Building deterministic fallback schedule.');
+      const days = Array.isArray(studyDays) ? studyDays.map((n: any)=>Number(n)) : [1,2,3,4,5];
+      const startISO = new Date().toISOString();
+      const durationWeeks = Math.max(1, Math.round(((targetDeadline ? (new Date(targetDeadline).getTime() - Date.now()) : (84*24*60*60*1000)))/(7*24*60*60*1000)));
+      const basicTasks = (weakAreas.length ? weakAreas : ['vocab','grammar','listening','reading','writing','speaking']).slice(0,4);
+      const toTitle = (w: string) => ({
+        vocab: 'Vocabulary: 12 academic words',
+        grammar: 'Grammar: articles & prepositions (12 items)',
+        listening: 'Listening: Section 1 detail (forms/dates/numbers) 10 Q',
+        reading: 'Reading: headings/para matching 8 Q',
+        writing: 'Writing: Task 2 paragraph (claim + reason + example)',
+        speaking: 'Speaking: mimic & shadow 3 sentences (pronunciation)'
+      } as any)[w] || 'Study 20 minutes';
+      const pack = basicTasks.map((w) => ({ title: toTitle(w as string), minutes: Math.max(20, Math.min(90, Math.round(Number(minutesPerDay)/basicTasks.length))) }));
+      const weekly = Array.from({ length: durationWeeks }).map((_, wi) => ({
+        week: wi + 1,
+        days: Array.from({ length: 7 }).map((__, di) => ({
+          day: di + 1,
+          tasks: days.includes(di) ? pack : []
+        }))
+      }));
+      plan = {
+        durationWeeks,
+        weekly,
+        highlights: [
+          `Starting level ≈ ${Math.max(1, Math.min(9, Number(targetScore) - 2)).toFixed(1)}`,
+          `Target IELTS ${Number(targetScore).toFixed(1)} • Daily study ~${minutesPerDay} min`,
+          `Estimated timeline: ~${Math.max(1, Math.round(durationWeeks/4))} month(s)`
+        ],
+        quickWins: [
+          'Shadow 5–10 min academic audio daily (pronunciation + rhythm)',
+          'Target weak subskills with 10 focused items/day',
+          'Weekly mini‑mock to measure progress'
+        ],
+        meta: {
+          currentLevel: 'B1',
+          currentApproxIELTS: Math.max(4, Number(targetScore) - 1),
+          targetIELTS: Number(targetScore),
+          dailyMinutes: Number(minutesPerDay),
+          estimatedMonths: Math.max(1, Math.round(durationWeeks/4)),
+          rationale: 'Fallback plan generated deterministically due to AI output issue.',
+          targetDeadline,
+          startDateISO: startISO,
+          firstLanguage: firstLangNorm,
+          planNativeLanguage: wantNative ? 'yes' : 'no'
+        }
+      };
+    }
     plan.durationWeeks = Number(plan.durationWeeks) || 12;
     plan.weekly = Array.isArray(plan.weekly) ? plan.weekly : [];
     plan.highlights = Array.isArray(plan.highlights) ? plan.highlights : [];

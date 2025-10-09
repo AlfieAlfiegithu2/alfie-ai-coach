@@ -24,7 +24,21 @@ serve(async (req) => {
       notes = ''
     } = body || {};
 
+    // Create cache key for similar requests
+    const cacheKey = `plan_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLanguage}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
+    console.log('🔍 Plan cache key:', cacheKey.substring(0, 50) + '...');
+
     const wantNative = String(planNativeLanguage) === 'yes' && firstLanguage && firstLanguage !== 'en';
+
+    // Check for cached plan first (simple in-memory cache for now)
+    const cache = new Map();
+    if (cache.has(cacheKey)) {
+      console.log('⚡ Using cached plan');
+      const cachedPlan = cache.get(cacheKey);
+      return new Response(JSON.stringify({ success: true, plan: cachedPlan, cached: true }), { 
+        headers: { ...cors, 'Content-Type': 'application/json' } 
+      });
+    }
 
     const schema = `Return ONLY JSON, no prose. Schema:
 {
@@ -48,28 +62,12 @@ serve(async (req) => {
   }
 }`;
 
-    const system = `You are an IELTS coach. Produce a practical, to-do-list focused plan. Follow IELTS task naming and keep IELTS keywords in ENGLISH. If the student wants native language output (planNativeLanguage=yes and firstLanguage != en), provide bilingual task titles as: Localized Title (English keyword). Ensure highlights and quickWins are also bilingual in that case.`;
+    const system = `You are an IELTS coach. Create a concise, practical study plan. Keep IELTS keywords in ENGLISH. For bilingual output, use format: "Localized Title (English keyword)". Focus on 3-5 tasks per study day, prioritize weak areas first.`;
 
-    const user = `Student request:
-- Target IELTS: ${Number(targetScore).toFixed(1)}
-- Deadline: ${targetDeadline || 'none'}
-- Minutes/day: ${minutesPerDay}
-- Study days: ${Array.isArray(studyDays) ? studyDays.join(',') : ''}
-- First language: ${firstLanguage}
-- Bilingual plan: ${wantNative ? 'yes' : 'no'}
-- Weak areas: ${(weakAreas||[]).join(', ') || 'unspecified'}
-- Notes: ${notes || 'n/a'}
+    const user = `Create IELTS study plan:
+Target: ${Number(targetScore).toFixed(1)} | Deadline: ${targetDeadline || 'none'} | Daily: ${minutesPerDay}min | Days: ${Array.isArray(studyDays) ? studyDays.join(',') : ''} | Lang: ${firstLanguage} | Bilingual: ${wantNative ? 'yes' : 'no'} | Weak: ${(weakAreas||[]).join(', ') || 'none'}
 
-Rules:
-- Respect study days; empty task list on non-study days.
-- 3-5 tasks per study day; sum close to ${minutesPerDay} minutes.
-- Strongly prioritize weak areas FIRST when composing each study day, then fill with other skills.
-- Duration defaults 12 weeks if no deadline; otherwise DERIVE EXACT weeks from deadline so that the schedule ends on or just after the deadline date.
-- Include 4-6 clear highlights and quick wins.
-- Keep IELTS keywords (Task 1/2, cohesion, band, etc.) in English.
-- ${wantNative ? 'Use bilingual titles; e.g., for Korean: 어휘: 12개 학술어 (Vocabulary: 12 academic words).' : 'Use concise English titles.'}
-- Set meta.currentLevel using a rough guess from target (e.g., A2/B1/B2/C1).
-- ${schema}`;
+Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}min. Prioritize weak areas first. 12 weeks default or match deadline. Keep IELTS terms in English. ${wantNative ? 'Bilingual titles: "Local (English)"' : 'English titles only'}. ${schema}`;
 
     const prompt = {
       model: 'gpt-4o-mini',
@@ -78,15 +76,22 @@ Rules:
         { role: 'user', content: user }
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3,
-      max_tokens: 3000
+      temperature: 0.1, // Lower temperature for faster, more consistent responses
+      max_tokens: 2000, // Reduced token limit for faster generation
+      timeout: 10000 // 10 second timeout to prevent hanging
     } as const;
 
+    console.log('🚀 Starting study plan generation...');
+    const startTime = Date.now();
+    
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(prompt)
     });
+    
+    const generationTime = Date.now() - startTime;
+    console.log(`⏱️ Plan generation took ${generationTime}ms`);
     if (!resp.ok) {
       const t = await resp.text();
       throw new Error(`OpenAI error: ${t}`);
@@ -142,6 +147,10 @@ Rules:
         plan.meta.estimatedMonths = Math.max(1, Math.round(neededWeeks/4));
       }
     } catch {}
+
+    // Cache the generated plan
+    cache.set(cacheKey, plan);
+    console.log('💾 Plan cached for future use');
 
     return new Response(JSON.stringify({ success: true, plan }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (e) {

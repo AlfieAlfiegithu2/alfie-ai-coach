@@ -73,8 +73,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [aiWeak, setAiWeak] = useState<Set<string>>(new Set());
   const [aiNotes, setAiNotes] = useState<string>('');
   const [aiLoading, setAiLoading] = useState<boolean>(false);
-  const [confirmNewPlan, setConfirmNewPlan] = useState<boolean>(false);
-  const [newPlanData, setNewPlanData] = useState<PlanData | null>(null);
+  // Confirmation removed: new plans replace current immediately
 
   useEffect(() => {
     if (!open) return;
@@ -426,8 +425,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     // Apply immediately so closing the modal won't revert
                     try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planJson, ts: Date.now() })); } catch {}
                     setPlan(planJson);
-                    setNewPlanData(planJson);
-                    setConfirmNewPlan(true);
+                    // Also update profile current_plan_id to the new row above
                     setAiOpen(false);
                   } catch (e) {
                     alert('Failed to generate plan. Please try again.');
@@ -440,46 +438,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           </div>
         )}
         
-        {confirmNewPlan && newPlanData && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={()=>setConfirmNewPlan(false)}>
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6" onClick={(e)=>e.stopPropagation()}>
-              <div className="text-lg font-semibold text-slate-900 mb-3">New Plan Generated!</div>
-              <div className="text-sm text-slate-600 mb-4">
-                You have a new AI-generated study plan. Would you like to keep this new plan or continue with your current one?
-              </div>
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => {
-                    setConfirmNewPlan(false);
-                    setNewPlanData(null);
-                  }}
-                >
-                  Keep Current Plan
-                </Button>
-                <Button 
-                  className="flex-1 bg-slate-900 text-white"
-                  onClick={async () => {
-                    try { localStorage.setItem('latest_plan', JSON.stringify({ plan: newPlanData, ts: Date.now() })); } catch {}
-                    setPlan(newPlanData);
-                    // Ensure profile points to new plan if saved earlier
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (user) {
-                        // No-op here; insertion already done before confirmation in generator. This ensures modal state persists.
-                      }
-                    } catch {}
-                    setConfirmNewPlan(false);
-                    setNewPlanData(null);
-                  }}
-                >
-                  Use New Plan
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Confirmation step removed */}
       </DialogContent>
     </Dialog>
   );

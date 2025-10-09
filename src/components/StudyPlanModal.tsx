@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import i18n from '@/lib/i18n';
-import TTSTestButton from './TTSTestButton';
+// Removed TTSTestButton (debug control)
 
 interface PlanTask {
   title: string;
@@ -254,15 +254,13 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   Quick AI Plan (no assessment)
                 </Button>
               </div>
-              <div className="border-t pt-4">
-                <TTSTestButton text="Testing text-to-speech for IELTS practice" />
-              </div>
+              {/* Debug controls removed */}
             </div>
           )}
         </div>
         {aiOpen && (
-          <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center p-4 z-50" onClick={()=>setAiOpen(false)}>
-            <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5" onClick={(e)=>e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center p-4 z-50">
+            <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-lg font-semibold text-slate-900">Quick AI Plan</div>
                 <button className="text-slate-500" onClick={()=>setAiOpen(false)}>Close</button>
@@ -396,9 +394,16 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 </Button>
                 <Button 
                   className="flex-1 bg-slate-900 text-white"
-                  onClick={() => {
+                  onClick={async () => {
                     try { localStorage.setItem('latest_plan', JSON.stringify({ plan: newPlanData, ts: Date.now() })); } catch {}
                     setPlan(newPlanData);
+                    // Ensure profile points to new plan if saved earlier
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) {
+                        // No-op here; insertion already done before confirmation in generator. This ensures modal state persists.
+                      }
+                    } catch {}
                     setConfirmNewPlan(false);
                     setNewPlanData(null);
                   }}

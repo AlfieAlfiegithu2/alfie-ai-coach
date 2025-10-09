@@ -99,4 +99,4 @@ export const TTSTestButton: React.FC<TTSTestButtonProps> = ({
   );
 };
 
-export default TTSTestButton;
+export default function PlaceholderRemoved() { return null; }

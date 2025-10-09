@@ -27,17 +27,36 @@ serve(async (req) => {
       notes = ''
     } = body || {};
 
+    // Normalize language code/names
+    const lang = String(firstLanguage || 'en').toLowerCase();
+    const normalizeLang = (l: string) => {
+      const m: Record<string, string> = {
+        'zh-cn': 'zh', 'zh-hans': 'zh', 'zh-hant': 'zh', 'cn': 'zh', 'chinese': 'zh', '中文': 'zh',
+        'ko-kr': 'ko', 'korean': 'ko', '한국어': 'ko',
+        'ja-jp': 'ja', 'japanese': 'ja', '日本語': 'ja',
+        'es-es': 'es', 'spanish': 'es', 'español': 'es',
+        'pt-pt': 'pt', 'portuguese': 'pt', 'português': 'pt',
+        'fr-fr': 'fr', 'french': 'fr', 'français': 'fr',
+        'de-de': 'de', 'german': 'de', 'deutsch': 'de',
+        'ru-ru': 'ru', 'russian': 'ru', 'русский': 'ru',
+        'hi-in': 'hi', 'hindi': 'hi', 'हिन्दी': 'hi',
+        'vi-vn': 'vi', 'vietnamese': 'vi', 'tiếng việt': 'vi'
+      };
+      return m[l] || l;
+    };
+    const firstLangNorm = normalizeLang(lang);
+
     // Create cache key for similar requests
-    const cacheKey = `plan_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLanguage}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
+    const cacheKey = `plan_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLangNorm}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
     console.log('🔍 Plan cache key:', cacheKey.substring(0, 50) + '...');
 
-    const wantNative = String(planNativeLanguage) === 'yes' && firstLanguage && firstLanguage !== 'en';
+    const wantNative = String(planNativeLanguage) === 'yes' && firstLangNorm && firstLangNorm !== 'en';
     
     console.log('🌍 Language settings:', {
-      firstLanguage,
+      firstLanguage: firstLangNorm,
       planNativeLanguage,
       wantNative,
-      isChinese: firstLanguage?.toLowerCase() === 'chinese'
+      isChinese: firstLangNorm === 'zh'
     });
 
     // Clear cache for language changes to ensure fresh generation
@@ -84,9 +103,9 @@ CRITICAL: For bilingual output (when firstLanguage is Chinese/Korean/Japanese/et
 Focus on 3-5 tasks per study day, prioritize weak areas first.`;
 
     const user = `Create IELTS study plan:
-Target: ${Number(targetScore).toFixed(1)} | Deadline: ${targetDeadline || 'none'} | Daily: ${minutesPerDay}min | Days: ${Array.isArray(studyDays) ? studyDays.join(',') : ''} | Lang: ${firstLanguage} | Bilingual: ${wantNative ? 'yes' : 'no'} | Weak: ${(weakAreas||[]).join(', ') || 'none'}
+Target: ${Number(targetScore).toFixed(1)} | Deadline: ${targetDeadline || 'none'} | Daily: ${minutesPerDay}min | Days: ${Array.isArray(studyDays) ? studyDays.join(',') : ''} | Lang: ${firstLangNorm} | Bilingual: ${wantNative ? 'yes' : 'no'} | Weak: ${(weakAreas||[]).join(', ') || 'none'}
 
-${wantNative && firstLanguage.toLowerCase() === 'chinese' ? `
+${wantNative && firstLangNorm === 'zh' ? `
 MANDATORY CHINESE OUTPUT:
 - Task titles MUST be: "中文标题 (English keyword)"
 - Highlights MUST be: "当前水平: A2 (雅思约4.5)" format
@@ -112,11 +131,15 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
     console.log('🚀 Starting study plan generation...');
     const startTime = Date.now();
     
+    // Timeout for faster failure recovery
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort('timeout'), 12000);
     const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(prompt)
-    });
+      body: JSON.stringify(prompt),
+      signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
     
     const generationTime = Date.now() - startTime;
     console.log(`⏱️ Plan generation took ${generationTime}ms`);
@@ -144,7 +167,7 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
     plan.meta.rationale = plan.meta.rationale || 'AI-generated without assessment, prioritized by weak areas and schedule.';
     plan.meta.targetDeadline = targetDeadline;
     plan.meta.startDateISO = plan.meta.startDateISO || new Date().toISOString();
-    plan.meta.firstLanguage = firstLanguage;
+    plan.meta.firstLanguage = firstLangNorm;
     plan.meta.planNativeLanguage = wantNative ? 'yes' : 'no';
 
     // Ensure non-study days have empty tasks & align plan end to deadline if provided

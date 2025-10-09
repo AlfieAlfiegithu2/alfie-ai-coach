@@ -49,11 +49,11 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
 
     setIsPlayingAudio(true);
     try {
-      // Generate audio using TTS cache function
+      // Generate audio using ElevenLabs TTS
           const { data, error } = await supabase.functions.invoke('audio-cache', {
             body: {
               text: word.word,
-              voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice ID
+              voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Sarah (Rachel) voice ID
               question_id: `word-${word.word}-${Date.now()}`
             }
           });

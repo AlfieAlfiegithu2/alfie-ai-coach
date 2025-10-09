@@ -1,7 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
-import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.454.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,19 +8,15 @@ const corsHeaders = {
   'Cache-Control': 'public, max-age=31536000, immutable',
 };
 
-// Voice mapping from ElevenLabs to OpenAI
-const voiceMapping = {
-  '9BWtsMINqrJLrRacOk9x': 'nova',
-  'CwhRBWXzGAHq8TQ4Fs17': 'onyx',
-  'EXAVITQu4vr4xnSDxMaL': 'shimmer',
-  'FGY2WhTYpPnrIDTdsKH5': 'alloy',
-  'IKne3meq5aSn9XLyUdCD': 'echo',
-  'JBFqnCBsd6RMkjVDRZzb': 'fable',
-  'default': 'nova'
-};
-
-const mapVoice = (voiceId: string): string => {
-  return voiceMapping[voiceId as keyof typeof voiceMapping] || voiceMapping.default;
+// ElevenLabs voice IDs
+const ELEVENLABS_VOICES = {
+  '9BWtsMINqrJLrRacOk9x': 'Rachel (Female, American)',
+  'CwhRBWXzGAHq8TQ4Fs17': 'Drew (Male, American)', 
+  'EXAVITQu4vr4xnSDxMaL': 'Bella (Female, American)',
+  'FGY2WhTYpPnrIDTdsKH5': 'Antoni (Male, American)',
+  'IKne3meq5aSn9XLyUdCD': 'Elli (Female, American)',
+  'JBFqnCBsd6RMkjVDRZzb': 'Sarah (Female, British)',
+  'default': 'JBFqnCBsd6RMkjVDRZzb' // Default to Sarah (Rachel)
 };
 
 serve(async (req) => {
@@ -32,33 +27,22 @@ serve(async (req) => {
   const startTime = Date.now();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  console.log(`[${requestId}] TTS Request started`);
+  console.log(`[${requestId}] ElevenLabs TTS Request started`);
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
-    const CLOUDFLARE_R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
-    const CLOUDFLARE_R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
-    const CLOUDFLARE_R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME');
-    const CLOUDFLARE_R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
     
     // Check environment variables with detailed logging
     const missingVars = [];
-    if (!OPENAI_API_KEY) missingVars.push('OPENAI_API_KEY');
+    if (!ELEVENLABS_API_KEY) missingVars.push('ELEVENLABS_API_KEY');
     if (!SUPABASE_URL) missingVars.push('SUPABASE_URL');
     if (!SUPABASE_SERVICE_ROLE_KEY) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
-    if (!CLOUDFLARE_ACCOUNT_ID) missingVars.push('CLOUDFLARE_ACCOUNT_ID');
-    if (!CLOUDFLARE_R2_ACCESS_KEY_ID) missingVars.push('CLOUDFLARE_R2_ACCESS_KEY_ID');
-    if (!CLOUDFLARE_R2_SECRET_ACCESS_KEY) missingVars.push('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
-    if (!CLOUDFLARE_R2_BUCKET_NAME) missingVars.push('CLOUDFLARE_R2_BUCKET_NAME');
-    if (!CLOUDFLARE_R2_PUBLIC_URL) missingVars.push('CLOUDFLARE_R2_PUBLIC_URL');
 
     console.log(`[${requestId}] Environment check:`, {
-      hasOpenAI: !!OPENAI_API_KEY,
+      hasElevenLabs: !!ELEVENLABS_API_KEY,
       hasSupabase: !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE_KEY,
-      hasCloudflare: !missingVars.filter(v => v.startsWith('CLOUDFLARE')).length,
       missingVars
     });
 
@@ -75,34 +59,20 @@ serve(async (req) => {
       });
     }
 
-    // Initialize R2 client
-    const r2Client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      credentials: {
-        accessKeyId: CLOUDFLARE_R2_ACCESS_KEY_ID,
-        secretAccessKey: CLOUDFLARE_R2_SECRET_ACCESS_KEY,
-      },
-      forcePathStyle: true,
-      logger: undefined,
-    });
-
-    // Parse request - support both old ElevenLabs format and new format
-    const { text, voice, voice_id, questionId, question_id } = await req.json();
+    // Parse request
+    const { text, voice_id, question_id } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
     }
 
-    // Map ElevenLabs voice IDs to OpenAI voices
-    const inputVoiceId = voice_id || voice || 'default';
-    const mappedVoice = mapVoice(inputVoiceId);
-    const cacheKey = question_id || questionId;
+    const voiceId = voice_id || ELEVENLABS_VOICES.default;
+    const cacheKey = question_id || `tts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    console.log(`[${requestId}] TTS Request details:`, { 
+    console.log(`[${requestId}] ElevenLabs TTS Request:`, { 
       text: text.substring(0, 100), 
-      originalVoice: inputVoiceId, 
-      mappedVoice, 
+      voiceId,
+      voiceName: ELEVENLABS_VOICES[voiceId as keyof typeof ELEVENLABS_VOICES] || 'Unknown',
       questionId: cacheKey 
     });
 
@@ -110,157 +80,102 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Check if audio already exists in cache
-    if (cacheKey) {
-      console.log(`🔍 Checking cache for question ${cacheKey}`);
-      const { data: cached, error: cacheError } = await supabase
-        .from('audio_cache')
-        .select('storage_path, file_size_bytes, play_count')
-        .eq('question_id', cacheKey)
-        .eq('voice', mappedVoice)
-        .single();
+    const { data: existingAudio, error: cacheError } = await supabase
+      .from('audio_analytics')
+      .select('audio_url, created_at')
+      .eq('question_id', cacheKey)
+      .eq('voice_id', voiceId)
+      .single();
 
-      if (!cacheError && cached?.storage_path) {
-        // Get public URL from R2
-        const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${cached.storage_path}`;
-
-        // Track cache hit
-        await supabase.from('audio_analytics').insert({
-          question_id: cacheKey,
-          voice: mappedVoice,
-          action_type: 'cache_hit',
-          file_size_bytes: cached.file_size_bytes,
-          storage_path: cached.storage_path
-        });
-
-        // Update play count
-        await supabase.from('audio_cache')
-          .update({ play_count: (cached.play_count || 0) + 1 })
-          .eq('question_id', cacheKey)
-          .eq('voice', mappedVoice);
-
-        console.log(`✅ Cache hit for ${cacheKey} - Saved API cost and egress!`);
-        return new Response(
-          JSON.stringify({ 
-            audio_url: publicUrl,
-            cached: true,
-            success: true 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
-    console.log(`🎵 Generating new audio with OpenAI TTS...`);
-
-    // Generate speech from text using OpenAI TTS
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice: mappedVoice,
-        response_format: 'mp3',
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`TTS API error: ${error}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBlob = new Uint8Array(arrayBuffer);
-    const fileSize = audioBlob.byteLength;
-
-    // Upload to R2 bucket instead of Supabase Storage
-    if (cacheKey) {
-      const fileName = `audio/${cacheKey}_${mappedVoice}_${Date.now()}.mp3`;
+    if (!cacheError && existingAudio?.audio_url) {
+      console.log(`[${requestId}] Cache hit for ${cacheKey}`);
       
-      console.log(`💾 Uploading ${(fileSize / 1024).toFixed(2)}KB to Cloudflare R2...`);
-      
-      try {
-        const putCommand = new PutObjectCommand({
-          Bucket: CLOUDFLARE_R2_BUCKET_NAME,
-          Key: fileName,
-          Body: audioBlob,
-          ContentType: 'audio/mpeg',
-          CacheControl: 'public, max-age=31536000, immutable',
-        });
-        await r2Client.send(putCommand);
-      } catch (uploadError) {
-        console.error('R2 upload error:', uploadError);
-        throw uploadError;
-      }
-
-      // Get public URL from R2
-      const publicUrl = `${CLOUDFLARE_R2_PUBLIC_URL}/${fileName}`;
-
-      // Save to cache
-      await supabase.from('audio_cache').upsert({
-        question_id: cacheKey,
-        voice: mappedVoice,
-        storage_path: fileName,
-        audio_url: publicUrl,
-        file_size_bytes: fileSize,
-        text_hash: btoa(text),
-        play_count: 1,
-        updated_at: new Date().toISOString()
-      });
-
-      // Track generation in analytics
+      // Record cache hit
       await supabase.from('audio_analytics').insert({
         question_id: cacheKey,
-        voice: mappedVoice,
-        action_type: 'generate',
-        file_size_bytes: fileSize,
-        storage_path: fileName
+        voice_id: voiceId,
+        text: text.substring(0, 500),
+        audio_url: existingAudio.audio_url,
+        cache_hit: true,
+        created_at: new Date().toISOString()
       });
-
-      console.log(`✅ Audio cached to R2 successfully - ${(fileSize / 1024).toFixed(2)}KB (Zero egress!)`);
 
       return new Response(
         JSON.stringify({ 
-          audio_url: publicUrl,
-          cached: false,
-          success: true,
-          file_size: fileSize
+          success: true, 
+          audio_url: existingAudio.audio_url,
+          cached: true
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fallback: return base64 if no cache key
-    const base64Audio = btoa(String.fromCharCode(...audioBlob));
+    // Generate audio using ElevenLabs TTS
+    console.log(`[${requestId}] Calling ElevenLabs API for voice ${voiceId}`);
+    
+    const elevenLabsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVENLABS_API_KEY,
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.5
+        }
+      }),
+    });
+
+    if (!elevenLabsResponse.ok) {
+      const errorText = await elevenLabsResponse.text();
+      console.error(`[${requestId}] ElevenLabs API error:`, elevenLabsResponse.status, errorText);
+      throw new Error(`ElevenLabs TTS failed: ${elevenLabsResponse.status} ${errorText}`);
+    }
+
+    const audioBuffer = await elevenLabsResponse.arrayBuffer();
+    
+    // Convert to base64 for direct audio URL
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    const audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
+
+    console.log(`[${requestId}] Generated ElevenLabs audio for ${cacheKey} (${audioBuffer.byteLength} bytes)`);
+
+    // Record in analytics
+    await supabase.from('audio_analytics').insert({
+      question_id: cacheKey,
+      voice_id: voiceId,
+      text: text.substring(0, 500),
+      audio_url: audioUrl,
+      cache_hit: false,
+      created_at: new Date().toISOString()
+    });
+
     return new Response(
       JSON.stringify({ 
-        audio_url: `data:audio/mp3;base64,${base64Audio}`,
+        success: true, 
+        audio_url: audioUrl,
         cached: false,
-        success: true 
+        voice_used: ELEVENLABS_VOICES[voiceId as keyof typeof ELEVENLABS_VOICES] || 'Unknown'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[${requestId}] TTS cache error (${duration}ms):`, error);
+    console.error(`[${requestId}] ElevenLabs TTS error (${duration}ms):`, error);
     console.error(`[${requestId}] Error details:`, {
       message: error.message,
       stack: error.stack,
       duration,
       requestId,
       env_vars: {
-        hasOpenAI: !!Deno.env.get('OPENAI_API_KEY'),
+        hasElevenLabs: !!Deno.env.get('ELEVENLABS_API_KEY'),
         hasSupabase: !!Deno.env.get('SUPABASE_URL'),
         hasServiceRole: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-        hasCloudflareAccount: !!Deno.env.get('CLOUDFLARE_ACCOUNT_ID'),
-        hasCloudflareAccessKey: !!Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID'),
-        hasCloudflareSecret: !!Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
-        hasCloudflareBucket: !!Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME'),
-        hasCloudflarePublicUrl: !!Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL'),
       }
     });
     return new Response(
@@ -268,24 +183,20 @@ serve(async (req) => {
         error: error instanceof Error ? error.message : 'Unknown error',
         success: false,
         debug: {
-          hasOpenAI: !!Deno.env.get('OPENAI_API_KEY'),
-          hasCloudflare: !!Deno.env.get('CLOUDFLARE_ACCOUNT_ID'),
+          hasElevenLabs: !!Deno.env.get('ELEVENLABS_API_KEY'),
           missingVars: [
-            !Deno.env.get('OPENAI_API_KEY') && 'OPENAI_API_KEY',
+            !Deno.env.get('ELEVENLABS_API_KEY') && 'ELEVENLABS_API_KEY',
             !Deno.env.get('SUPABASE_URL') && 'SUPABASE_URL',
             !Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') && 'SUPABASE_SERVICE_ROLE_KEY',
-            !Deno.env.get('CLOUDFLARE_ACCOUNT_ID') && 'CLOUDFLARE_ACCOUNT_ID',
-            !Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID') && 'CLOUDFLARE_R2_ACCESS_KEY_ID',
-            !Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY') && 'CLOUDFLARE_R2_SECRET_ACCESS_KEY',
-            !Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME') && 'CLOUDFLARE_R2_BUCKET_NAME',
-            !Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL') && 'CLOUDFLARE_R2_PUBLIC_URL',
-          ].filter(Boolean)
+          ].filter(Boolean),
+          requestId,
+          duration
         }
       }),
-      {
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   }
 });

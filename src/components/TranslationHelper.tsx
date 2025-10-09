@@ -122,11 +122,11 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
         return;
       }
 
-      // Generate audio using TTS cache function
+      // Generate audio using ElevenLabs TTS
         const { data, error } = await supabase.functions.invoke('audio-cache', {
           body: {
             text: selectedText,
-            voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice ID
+            voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Sarah (Rachel) voice ID
             question_id: `translation-${selectedText}-${Date.now()}`
           }
         });

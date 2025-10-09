@@ -24,7 +24,7 @@ export const TTSTestButton: React.FC<TTSTestButtonProps> = ({
       const { data, error } = await supabase.functions.invoke('audio-cache', {
         body: {
           text,
-          voice_id: '9BWtsMINqrJLrRacOk9x',
+          voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Sarah (Rachel) voice
           question_id: `test-${Date.now()}`
         }
       });

@@ -122,21 +122,19 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       }
 
       // Generate audio using TTS cache function
-        const { data, error } = await supabase.functions.invoke('tts-audio-cache', {
+        const { data, error } = await supabase.functions.invoke('audio-cache', {
           body: {
             text: selectedText,
-            language: 'en-US',
-            voice: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice ID
-            speed: 0.9,
-            provider: 'elevenlabs'
+            voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice ID
+            question_id: `translation-${selectedText}-${Date.now()}`
           }
         });
 
       if (error) throw error;
 
-      if (data.success && data.audioUrl) {
-        setAudioUrl(data.audioUrl);
-        const audio = new Audio(data.audioUrl);
+      if (data.success && data.audio_url) {
+        setAudioUrl(data.audio_url);
+        const audio = new Audio(data.audio_url);
         audioRef.current = audio;
         audio.onended = () => setIsPlayingAudio(false);
         audio.onerror = () => {

@@ -49,20 +49,18 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
     setIsPlayingAudio(true);
     try {
       // Generate audio using TTS cache function
-          const { data, error } = await supabase.functions.invoke('tts-audio-cache', {
+          const { data, error } = await supabase.functions.invoke('audio-cache', {
             body: {
               text: word.word,
-              language: 'en-US',
-              voice: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice ID
-              speed: 0.9,
-              provider: 'elevenlabs'
+              voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Rachel voice ID
+              question_id: `word-${word.word}-${Date.now()}`
             }
           });
 
       if (error) throw error;
 
-      if (data.success && data.audioUrl) {
-        const audio = new Audio(data.audioUrl);
+      if (data.success && data.audio_url) {
+        const audio = new Audio(data.audio_url);
         audioRef.current = audio;
         audio.onended = () => setIsPlayingAudio(false);
         audio.onerror = () => setIsPlayingAudio(false);

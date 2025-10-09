@@ -218,10 +218,38 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('TTS cache error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      env_vars: {
+        hasOpenAI: !!Deno.env.get('OPENAI_API_KEY'),
+        hasSupabase: !!Deno.env.get('SUPABASE_URL'),
+        hasServiceRole: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+        hasCloudflareAccount: !!Deno.env.get('CLOUDFLARE_ACCOUNT_ID'),
+        hasCloudflareAccessKey: !!Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+        hasCloudflareSecret: !!Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+        hasCloudflareBucket: !!Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME'),
+        hasCloudflarePublicUrl: !!Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL'),
+      }
+    });
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error',
-        success: false 
+        success: false,
+        debug: {
+          hasOpenAI: !!Deno.env.get('OPENAI_API_KEY'),
+          hasCloudflare: !!Deno.env.get('CLOUDFLARE_ACCOUNT_ID'),
+          missingVars: [
+            !Deno.env.get('OPENAI_API_KEY') && 'OPENAI_API_KEY',
+            !Deno.env.get('SUPABASE_URL') && 'SUPABASE_URL',
+            !Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') && 'SUPABASE_SERVICE_ROLE_KEY',
+            !Deno.env.get('CLOUDFLARE_ACCOUNT_ID') && 'CLOUDFLARE_ACCOUNT_ID',
+            !Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID') && 'CLOUDFLARE_R2_ACCESS_KEY_ID',
+            !Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY') && 'CLOUDFLARE_R2_SECRET_ACCESS_KEY',
+            !Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME') && 'CLOUDFLARE_R2_BUCKET_NAME',
+            !Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL') && 'CLOUDFLARE_R2_PUBLIC_URL',
+          ].filter(Boolean)
+        }
       }),
       {
         status: 500,

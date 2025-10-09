@@ -260,6 +260,28 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
           planNativeLanguage: wantNative ? 'yes' : 'no'
         }
       };
+
+      // Add bilingual wrapping when requested
+      if (wantNative) {
+        const labelMap: Record<string, Record<string, string>> = {
+          zh: { Vocabulary: '词汇', Listening: '听力', Reading: '阅读', Grammar: '语法', Writing: '写作', Speaking: '口语' },
+          ko: { Vocabulary: '어휘', Listening: '리스닝', Reading: '리딩', Grammar: '문법', Writing: '라이팅', Speaking: '스피킹' },
+          ja: { Vocabulary: '語彙', Listening: 'リスニング', Reading: 'リーディング', Grammar: '文法', Writing: 'ライティング', Speaking: 'スピーキング' },
+          es: { Vocabulary: 'Vocabulario', Listening: 'Listening', Reading: 'Reading', Grammar: 'Gramática', Writing: 'Writing', Speaking: 'Speaking' },
+          fr: { Vocabulary: 'Vocabulaire', Listening: 'Listening', Reading: 'Reading', Grammar: 'Grammaire', Writing: 'Writing', Speaking: 'Speaking' }
+        };
+        const labels = labelMap[firstLangNorm];
+        if (labels) {
+          const wrap = (title: string) => {
+            const prefix = (title.split(':')[0] || '') as keyof typeof labels;
+            const local = (labels as any)[prefix] || prefix;
+            return `${local}: ${title.slice(String(prefix).length + 2)} (${title})`;
+          };
+          plan.weekly.forEach((w: any) => w.days.forEach((d: any) => {
+            d.tasks = d.tasks.map((t: any) => ({ ...t, title: wrap(t.title) }));
+          }));
+        }
+      }
     }
     plan.durationWeeks = Number(plan.durationWeeks) || 12;
     plan.weekly = Array.isArray(plan.weekly) ? plan.weekly : [];

@@ -10,7 +10,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const [selectedText, setSelectedText] = useState('');
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [showHelper, setShowHelper] = useState(false);
-  const [targetLanguage, setTargetLanguage] = useState('es'); // Default to Spanish
+  const [targetLanguage, setTargetLanguage] = useState('en'); // Default to English
   const [isSaving, setIsSaving] = useState(false);
   const selectionTimeoutRef = useRef<NodeJS.Timeout>();
   const { user } = useAuth();

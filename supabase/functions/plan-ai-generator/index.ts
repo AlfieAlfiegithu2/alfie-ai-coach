@@ -7,6 +7,7 @@ const cors = {
 };
 
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 // Global in-memory cache for study plans
 const globalCache = new Map();
@@ -24,7 +25,8 @@ serve(async (req) => {
       firstLanguage = 'en',
       planNativeLanguage = 'no', // 'yes'|'no'
       weakAreas = [], // ['vocab','listening','reading','grammar','writing','speaking']
-      notes = ''
+      notes = '',
+      provider = 'deepseek' // 'deepseek' | 'gemini'
     } = body || {};
 
     // Normalize language code/names
@@ -47,7 +49,7 @@ serve(async (req) => {
     const firstLangNorm = normalizeLang(lang);
 
     // Create cache key for similar requests
-    const cacheKey = `plan_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLangNorm}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
+    const cacheKey = `plan_${provider}_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLangNorm}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
     console.log('🔍 Plan cache key:', cacheKey.substring(0, 50) + '...');
 
     const wantNative = String(planNativeLanguage) === 'yes' && firstLangNorm && firstLangNorm !== 'en';
@@ -130,25 +132,68 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
 
     console.log('🚀 Starting study plan generation...');
     const startTime = Date.now();
-    
-    // Timeout for faster failure recovery
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort('timeout'), 12000);
-    const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(prompt),
-      signal: controller.signal
-    }).finally(() => clearTimeout(timeoutId));
-    
-    const generationTime = Date.now() - startTime;
-    console.log(`⏱️ Plan generation took ${generationTime}ms`);
-    if (!resp.ok) {
-      const t = await resp.text();
-      throw new Error(`DeepSeek error: ${t}`);
+
+    async function callDeepSeek() {
+      // Timeout for faster failure recovery
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort('timeout'), 12000);
+      const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(prompt),
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeoutId));
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error(`DeepSeek error: ${t}`);
+      }
+      const data = await resp.json();
+      return data?.choices?.[0]?.message?.content || '{}';
     }
-    const data = await resp.json();
-    const content = data?.choices?.[0]?.message?.content || '{}';
+
+    async function callGemini() {
+      if (!GEMINI_API_KEY) throw new Error('Gemini not configured');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort('timeout'), 12000);
+      const mergedText = `${prompt.messages[0].content}\n\n${prompt.messages[1].content}`;
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: mergedText }]}],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1800 }
+        }),
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeoutId));
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error(`Gemini error: ${t}`);
+      }
+      const data = await resp.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      return text;
+    }
+
+    let content = '{}';
+    try {
+      if (provider === 'gemini') {
+        content = await callGemini();
+      } else {
+        content = await callDeepSeek();
+      }
+    } catch (primaryErr) {
+      console.warn('Primary provider failed, attempting fallback...', String(primaryErr));
+      try {
+        content = provider === 'gemini' ? await callDeepSeek() : await callGemini();
+      } catch (fallbackErr) {
+        const generationTime = Date.now() - startTime;
+        console.log(`⏱️ Plan generation failed after ${generationTime}ms`);
+        throw fallbackErr;
+      }
+    }
+
+    const generationTime = Date.now() - startTime;
+    console.log(`⏱️ Plan generation finished in ${generationTime}ms (provider: ${provider})`);
     let plan: any = {};
     try { plan = JSON.parse(content); } catch { plan = {}; }
 

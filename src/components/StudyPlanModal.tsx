@@ -63,6 +63,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [lang, setLang] = useState<string>(() => i18n.language || 'en');
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiProvider, setAiProvider] = useState<'deepseek' | 'gemini'>('gemini');
   const [aiTarget, setAiTarget] = useState<number>(7.0);
   const [aiDeadline, setAiDeadline] = useState<string>('');
   const [aiMinutes, setAiMinutes] = useState<number>(60);
@@ -275,6 +276,13 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   </select>
                 </label>
                 <label className="text-sm text-slate-700">
+                  AI Provider
+                  <select value={aiProvider} onChange={(e)=>setAiProvider(e.target.value as any)} className="mt-1 w-full rounded-md border px-2 py-2">
+                    <option value="gemini">Gemini 2.5 Flash (fast)</option>
+                    <option value="deepseek">DeepSeek (alt)</option>
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700">
                   Deadline (optional)
                   <input type="date" value={aiDeadline} onChange={(e)=>setAiDeadline(e.target.value)} className="mt-1 w-full rounded-md border px-2 py-2" />
                 </label>
@@ -342,7 +350,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                         firstLanguage: aiFirstLang,
                         planNativeLanguage: aiBilingual ? 'yes' : 'no',
                         weakAreas: Array.from(aiWeak),
-                        notes: aiNotes || ''
+                        notes: aiNotes || '',
+                        provider: aiProvider
                       }
                     });
                     if (error || !data?.success) throw error || new Error(data?.error || 'Failed');

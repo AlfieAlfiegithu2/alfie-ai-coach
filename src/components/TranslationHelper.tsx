@@ -6,6 +6,7 @@ import { X, BookPlus, Check, Volume2, VolumeX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
+import FallbackTTS from './FallbackTTS';
 
 interface TranslationHelperProps {
   selectedText: string;
@@ -348,13 +349,19 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
                 <p className="text-sm font-medium text-text-primary">
                   "{selectedText}"
                 </p>
+                <FallbackTTS 
+                  text={selectedText}
+                  onPlay={() => setIsPlayingAudio(true)}
+                  onStop={() => setIsPlayingAudio(false)}
+                  className="mr-2"
+                />
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={playPronunciation}
                   disabled={isPlayingAudio}
                   className="h-7 w-7 p-0 hover:bg-surface-3"
-                  title="Play pronunciation"
+                  title="Play pronunciation (Cloudflare TTS)"
                 >
                   {isPlayingAudio ? (
                     <VolumeX className="w-4 h-4 text-brand-blue" />

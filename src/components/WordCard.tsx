@@ -1,6 +1,7 @@
 import { memo, useState, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import FallbackTTS from './FallbackTTS';
 
 interface SavedWord {
   id: string;
@@ -101,6 +102,11 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
             {word.word}
             {!isEditMode && (
               <span className="inline-block">
+                <FallbackTTS 
+                  text={word.word}
+                  onPlay={() => setIsPlayingAudio(true)}
+                  onStop={() => setIsPlayingAudio(false)}
+                />
                 {isPlayingAudio ? (
                   <VolumeX className="w-4 h-4 text-blue-500" />
                 ) : (

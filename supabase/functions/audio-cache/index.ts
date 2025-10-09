@@ -29,6 +29,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  console.log(`[${requestId}] TTS Request started`);
+
   try {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -39,12 +44,35 @@ serve(async (req) => {
     const CLOUDFLARE_R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME');
     const CLOUDFLARE_R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
     
-    if (!OPENAI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error('Required environment variables not configured');
-    }
+    // Check environment variables with detailed logging
+    const missingVars = [];
+    if (!OPENAI_API_KEY) missingVars.push('OPENAI_API_KEY');
+    if (!SUPABASE_URL) missingVars.push('SUPABASE_URL');
+    if (!SUPABASE_SERVICE_ROLE_KEY) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+    if (!CLOUDFLARE_ACCOUNT_ID) missingVars.push('CLOUDFLARE_ACCOUNT_ID');
+    if (!CLOUDFLARE_R2_ACCESS_KEY_ID) missingVars.push('CLOUDFLARE_R2_ACCESS_KEY_ID');
+    if (!CLOUDFLARE_R2_SECRET_ACCESS_KEY) missingVars.push('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+    if (!CLOUDFLARE_R2_BUCKET_NAME) missingVars.push('CLOUDFLARE_R2_BUCKET_NAME');
+    if (!CLOUDFLARE_R2_PUBLIC_URL) missingVars.push('CLOUDFLARE_R2_PUBLIC_URL');
 
-    if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_R2_ACCESS_KEY_ID || !CLOUDFLARE_R2_SECRET_ACCESS_KEY || !CLOUDFLARE_R2_BUCKET_NAME || !CLOUDFLARE_R2_PUBLIC_URL) {
-      throw new Error('Cloudflare R2 environment variables not configured');
+    console.log(`[${requestId}] Environment check:`, {
+      hasOpenAI: !!OPENAI_API_KEY,
+      hasSupabase: !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE_KEY,
+      hasCloudflare: !missingVars.filter(v => v.startsWith('CLOUDFLARE')).length,
+      missingVars
+    });
+
+    if (missingVars.length > 0) {
+      const error = `Missing environment variables: ${missingVars.join(', ')}`;
+      console.error(`[${requestId}] ${error}`);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error,
+        debug: { missingVars, requestId }
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Initialize R2 client
@@ -71,7 +99,7 @@ serve(async (req) => {
     const mappedVoice = mapVoice(inputVoiceId);
     const cacheKey = question_id || questionId;
 
-    console.log('TTS Request:', { 
+    console.log(`[${requestId}] TTS Request details:`, { 
       text: text.substring(0, 100), 
       originalVoice: inputVoiceId, 
       mappedVoice, 
@@ -217,10 +245,13 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('TTS cache error:', error);
-    console.error('Error details:', {
+    const duration = Date.now() - startTime;
+    console.error(`[${requestId}] TTS cache error (${duration}ms):`, error);
+    console.error(`[${requestId}] Error details:`, {
       message: error.message,
       stack: error.stack,
+      duration,
+      requestId,
       env_vars: {
         hasOpenAI: !!Deno.env.get('OPENAI_API_KEY'),
         hasSupabase: !!Deno.env.get('SUPABASE_URL'),

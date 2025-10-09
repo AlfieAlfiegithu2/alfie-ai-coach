@@ -141,15 +141,11 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
     const startTime = Date.now();
 
     async function callDeepSeek() {
-      // Timeout for faster failure recovery
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort('timeout'), 12000);
       const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(prompt),
-        signal: controller.signal
-      }).finally(() => clearTimeout(timeoutId));
+        body: JSON.stringify(prompt)
+      });
       if (!resp.ok) {
         const t = await resp.text();
         throw new Error(`DeepSeek error: ${t}`);
@@ -160,8 +156,6 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
 
     async function callGemini() {
       if (!GEMINI_API_KEY) throw new Error('Gemini not configured');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort('timeout'), 12000);
       const mergedText = `${prompt.messages[0].content}\n\n${prompt.messages[1].content}`;
       const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
@@ -169,9 +163,8 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
         body: JSON.stringify({
           contents: [{ parts: [{ text: mergedText }]}],
           generationConfig: { temperature: 0.1, maxOutputTokens: 1800, responseMimeType: 'application/json', response_mime_type: 'application/json' }
-        }),
-        signal: controller.signal
-      }).finally(() => clearTimeout(timeoutId));
+        })
+      });
       if (!resp.ok) {
         const t = await resp.text();
         throw new Error(`Gemini error: ${t}`);

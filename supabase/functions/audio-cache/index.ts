@@ -8,15 +8,36 @@ const corsHeaders = {
   'Cache-Control': 'public, max-age=31536000, immutable',
 };
 
-// ElevenLabs voice IDs
+// ElevenLabs voice IDs with accents
 const ELEVENLABS_VOICES = {
-  '9BWtsMINqrJLrRacOk9x': 'Rachel (Female, American)',
-  'CwhRBWXzGAHq8TQ4Fs17': 'Drew (Male, American)', 
-  'EXAVITQu4vr4xnSDxMaL': 'Bella (Female, American)',
-  'FGY2WhTYpPnrIDTdsKH5': 'Antoni (Male, American)',
-  'IKne3meq5aSn9XLyUdCD': 'Elli (Female, American)',
-  'JBFqnCBsd6RMkjVDRZzb': 'Sarah (Female, British)',
-  'default': 'JBFqnCBsd6RMkjVDRZzb' // Default to Sarah (Rachel)
+  // US Accent
+  '9BWtsMINqrJLrRacOk9x': { name: 'Rachel', accent: 'US', gender: 'Female' },
+  'CwhRBWXzGAHq8TQ4Fs17': { name: 'Drew', accent: 'US', gender: 'Male' },
+  'EXAVITQu4vr4xnSDxMaL': { name: 'Bella', accent: 'US', gender: 'Female' },
+  'FGY2WhTYpPnrIDTdsKH5': { name: 'Antoni', accent: 'US', gender: 'Male' },
+  'IKne3meq5aSn9XLyUdCD': { name: 'Elli', accent: 'US', gender: 'Female' },
+  
+  // UK Accent
+  'JBFqnCBsd6RMkjVDRZzb': { name: 'Sarah', accent: 'UK', gender: 'Female' },
+  'AZnzlk1XvdvUeBnXmlld': { name: 'Daniel', accent: 'UK', gender: 'Male' },
+  
+  // Australian Accent (using closest available voices)
+  'pqHfZKP75CvOlQylNhV4': { name: 'Lily', accent: 'AUS', gender: 'Female' },
+  'XB0fDUnXU5TFSJXzOQoQ': { name: 'Charlie', accent: 'AUS', gender: 'Male' },
+  
+  // Indian Accent (using closest available voices)
+  'oWAxZDx7w5VEj9dCyTzz': { name: 'Grace', accent: 'IND', gender: 'Female' },
+  'CYw3kZ02Hs0563khs1Fj': { name: 'Dave', accent: 'IND', gender: 'Male' },
+  
+  'default': 'JBFqnCBsd6RMkjVDRZzb' // Default to Sarah (UK)
+};
+
+// Voice selection by accent
+const ACCENT_VOICES = {
+  'US': ['9BWtsMINqrJLrRacOk9x', 'CwhRBWXzGAHq8TQ4Fs17', 'EXAVITQu4vr4xnSDxMaL'],
+  'UK': ['JBFqnCBsd6RMkjVDRZzb', 'AZnzlk1XvdvUeBnXmlld'],
+  'AUS': ['pqHfZKP75CvOlQylNhV4', 'XB0fDUnXU5TFSJXzOQoQ'],
+  'IND': ['oWAxZDx7w5VEj9dCyTzz', 'CYw3kZ02Hs0563khs1Fj']
 };
 
 serve(async (req) => {
@@ -60,19 +81,31 @@ serve(async (req) => {
     }
 
     // Parse request
-    const { text, voice_id, question_id } = await req.json();
+    const { text, voice_id, accent, question_id } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
     }
 
-    const voiceId = voice_id || ELEVENLABS_VOICES.default;
+    let voiceId = voice_id;
+    
+    // If accent is specified, randomly select a voice from that accent
+    if (accent && ACCENT_VOICES[accent as keyof typeof ACCENT_VOICES]) {
+      const accentVoices = ACCENT_VOICES[accent as keyof typeof ACCENT_VOICES];
+      voiceId = accentVoices[Math.floor(Math.random() * accentVoices.length)];
+    } else if (!voiceId) {
+      voiceId = ELEVENLABS_VOICES.default;
+    }
+
     const cacheKey = question_id || `tts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const voiceInfo = ELEVENLABS_VOICES[voiceId as keyof typeof ELEVENLABS_VOICES];
 
     console.log(`[${requestId}] ElevenLabs TTS Request:`, { 
       text: text.substring(0, 100), 
       voiceId,
-      voiceName: ELEVENLABS_VOICES[voiceId as keyof typeof ELEVENLABS_VOICES] || 'Unknown',
+      accent: voiceInfo?.accent || 'Unknown',
+      voiceName: voiceInfo?.name || 'Unknown',
+      gender: voiceInfo?.gender || 'Unknown',
       questionId: cacheKey 
     });
 

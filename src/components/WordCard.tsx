@@ -2,6 +2,7 @@ import { memo, useState, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import FallbackTTS from './FallbackTTS';
+import MultiAccentTTS from './MultiAccentTTS';
 
 interface SavedWord {
   id: string;
@@ -101,11 +102,17 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
           <div className="font-bold text-lg mb-1 flex items-center justify-center gap-2">
             {word.word}
             {!isEditMode && (
-              <span className="inline-block">
+              <span className="inline-block flex items-center gap-1">
                 <FallbackTTS 
                   text={word.word}
                   onPlay={() => setIsPlayingAudio(true)}
                   onStop={() => setIsPlayingAudio(false)}
+                />
+                <MultiAccentTTS
+                  text={word.word}
+                  onPlay={() => setIsPlayingAudio(true)}
+                  onStop={() => setIsPlayingAudio(false)}
+                  showAccentButtons={false}
                 />
                 {isPlayingAudio ? (
                   <VolumeX className="w-4 h-4 text-blue-500" />

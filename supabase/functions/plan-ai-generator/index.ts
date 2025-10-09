@@ -6,12 +6,12 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   try {
-    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+    if (!DEEPSEEK_API_KEY) throw new Error('DEEPSEEK_API_KEY not configured');
     const body = await req.json();
     const {
       targetScore = 7.0,
@@ -70,23 +70,22 @@ Target: ${Number(targetScore).toFixed(1)} | Deadline: ${targetDeadline || 'none'
 Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}min. Prioritize weak areas first. 12 weeks default or match deadline. Keep IELTS terms in English. ${wantNative ? 'Bilingual titles: "Local (English)"' : 'English titles only'}. ${schema}`;
 
     const prompt = {
-      model: 'gpt-4o-mini',
+      model: 'deepseek-chat',
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user }
       ],
-      response_format: { type: 'json_object' },
       temperature: 0.1, // Lower temperature for faster, more consistent responses
       max_tokens: 2000, // Reduced token limit for faster generation
-      timeout: 10000 // 10 second timeout to prevent hanging
+      stream: false
     } as const;
 
     console.log('🚀 Starting study plan generation...');
     const startTime = Date.now();
     
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(prompt)
     });
     
@@ -94,7 +93,7 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
     console.log(`⏱️ Plan generation took ${generationTime}ms`);
     if (!resp.ok) {
       const t = await resp.text();
-      throw new Error(`OpenAI error: ${t}`);
+      throw new Error(`DeepSeek error: ${t}`);
     }
     const data = await resp.json();
     const content = data?.choices?.[0]?.message?.content || '{}';

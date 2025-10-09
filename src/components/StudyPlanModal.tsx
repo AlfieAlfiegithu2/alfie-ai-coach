@@ -331,7 +331,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   </select>
                 </label>
                 <div className="sm:col-span-2">
-                  <div className="text-sm text-slate-700 mb-1">Study days</div>
+                  <div className="text-sm text-slate-700 mb-1">Study days (Sun=0 … Sat=6)</div>
                   <div className="flex flex-wrap gap-2">
                     {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d, i) => {
                       const active = aiDays.has(i);
@@ -374,7 +374,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 <Button className="bg-slate-900 text-white" disabled={aiLoading} onClick={async ()=>{
                   setAiLoading(true);
                   try {
-                    const days = Array.from(aiDays).sort((a,b)=>a-b);
+                    const days = Array.from(aiDays).filter((n)=>n>=0 && n<=6).sort((a,b)=>a-b);
                     const { data, error } = await supabase.functions.invoke('plan-ai-generator', {
                       body: {
                         targetScore: aiTarget,
@@ -388,7 +388,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                         provider: aiProvider
                       }
                     });
-                    if (error || !data?.success) throw error || new Error(data?.error || 'Failed');
+                    if (error || !data?.success) throw error || new Error(data?.error || 'Failed to generate plan');
                     const planJson = data.plan as PlanData;
                     // persist as current plan when signed in
                     try {

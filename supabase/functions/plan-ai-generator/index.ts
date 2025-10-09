@@ -283,7 +283,10 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
       plan.weekly.forEach((w: any, wi: number) => {
         w.days = Array.isArray(w.days) ? w.days : [];
         w.days.forEach((d: any, di: number) => {
-          if (!setDays.has((d.day ?? di) - 1)) d.tasks = [];
+          const dayIndex = typeof d.day === 'number' && isFinite(d.day)
+            ? Math.max(0, Math.min(6, Number(d.day) - 1))
+            : di; // fallback to index 0..6
+          if (!setDays.has(dayIndex)) d.tasks = [];
         });
       });
       if (targetDeadline) {

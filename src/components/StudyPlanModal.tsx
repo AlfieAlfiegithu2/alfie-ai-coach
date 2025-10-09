@@ -78,6 +78,40 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
 
   useEffect(() => {
     if (!open) return;
+    const normalizeLang = (l: string) => {
+      const s = (l || '').toLowerCase();
+      const map: Record<string, string> = {
+        'zh-cn': 'zh', 'zh-hans': 'zh', 'zh-hant': 'zh', 'cn': 'zh', 'chinese': 'zh', '中文': 'zh', 'zh': 'zh',
+        'ko-kr': 'ko', 'korean': 'ko', '한국어': 'ko', 'ko': 'ko',
+        'ja-jp': 'ja', 'japanese': 'ja', '日本語': 'ja', 'ja': 'ja',
+        'es-es': 'es', 'spanish': 'es', 'español': 'es', 'es': 'es',
+        'pt-pt': 'pt', 'portuguese': 'pt', 'português': 'pt', 'pt': 'pt',
+        'fr-fr': 'fr', 'french': 'fr', 'français': 'fr', 'fr': 'fr',
+        'de-de': 'de', 'german': 'de', 'deutsch': 'de', 'de': 'de',
+        'ru-ru': 'ru', 'russian': 'ru', 'русский': 'ru', 'ru': 'ru',
+        'hi-in': 'hi', 'hindi': 'hi', 'हिन्दी': 'hi', 'hi': 'hi',
+        'vi-vn': 'vi', 'vietnamese': 'vi', 'tiếng việt': 'vi', 'vi': 'vi'
+      };
+      return map[s] || s || 'en';
+    };
+    // Load student's saved native language and set defaults
+    (async () => {
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('native_language')
+          .eq('id', user.id)
+          .single();
+        if (profile?.native_language) {
+          const norm = normalizeLang(profile.native_language);
+          setAiFirstLang(norm);
+          setAiBilingual(norm !== 'en');
+        }
+      } catch {}
+    })();
     // Instant seed from local cache for fast paint
     try {
       const cached = JSON.parse(localStorage.getItem('latest_plan') || 'null');

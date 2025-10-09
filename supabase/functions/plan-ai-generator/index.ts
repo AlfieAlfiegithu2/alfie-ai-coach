@@ -8,6 +8,9 @@ const cors = {
 
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 
+// Global in-memory cache for study plans
+const globalCache = new Map();
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   try {
@@ -29,12 +32,21 @@ serve(async (req) => {
     console.log('🔍 Plan cache key:', cacheKey.substring(0, 50) + '...');
 
     const wantNative = String(planNativeLanguage) === 'yes' && firstLanguage && firstLanguage !== 'en';
+    
+    console.log('🌍 Language settings:', {
+      firstLanguage,
+      planNativeLanguage,
+      wantNative,
+      isChinese: firstLanguage?.toLowerCase() === 'chinese'
+    });
 
-    // Check for cached plan first (simple in-memory cache for now)
-    const cache = new Map();
-    if (cache.has(cacheKey)) {
+    // Clear cache for language changes to ensure fresh generation
+    if (wantNative && firstLanguage) {
+      console.log(`🔄 Generating fresh plan for ${firstLanguage} language`);
+      // Don't use cache for language-specific plans to ensure proper localization
+    } else if (globalCache.has(cacheKey)) {
       console.log('⚡ Using cached plan');
-      const cachedPlan = cache.get(cacheKey);
+      const cachedPlan = globalCache.get(cacheKey);
       return new Response(JSON.stringify({ success: true, plan: cachedPlan, cached: true }), { 
         headers: { ...cors, 'Content-Type': 'application/json' } 
       });
@@ -62,10 +74,27 @@ serve(async (req) => {
   }
 }`;
 
-    const system = `You are an IELTS coach. Create a concise, practical study plan. Keep IELTS keywords in ENGLISH. For bilingual output, use format: "Localized Title (English keyword)". Focus on 3-5 tasks per study day, prioritize weak areas first.`;
+    const system = `You are an IELTS coach. Create a concise, practical study plan. Keep IELTS keywords in ENGLISH. 
+
+CRITICAL: For bilingual output (when firstLanguage is Chinese/Korean/Japanese/etc), you MUST:
+- Use bilingual task titles: "中文标题 (English keyword)"
+- Use bilingual highlights and quickWins
+- Example: "词汇: 12个学术词汇 (Vocabulary: 12 academic words)"
+
+Focus on 3-5 tasks per study day, prioritize weak areas first.`;
 
     const user = `Create IELTS study plan:
 Target: ${Number(targetScore).toFixed(1)} | Deadline: ${targetDeadline || 'none'} | Daily: ${minutesPerDay}min | Days: ${Array.isArray(studyDays) ? studyDays.join(',') : ''} | Lang: ${firstLanguage} | Bilingual: ${wantNative ? 'yes' : 'no'} | Weak: ${(weakAreas||[]).join(', ') || 'none'}
+
+${wantNative && firstLanguage.toLowerCase() === 'chinese' ? `
+MANDATORY CHINESE OUTPUT:
+- Task titles MUST be: "中文标题 (English keyword)"
+- Highlights MUST be: "当前水平: A2 (雅思约4.5)" format
+- QuickWins MUST be: "每天专注练习语法15分钟（即时反馈）" format
+- Example task: "词汇: 12个学术词汇 (Vocabulary: 12 academic words)"
+- Example highlight: "目标: 雅思7.0 • 每日学习约60分钟"
+- Example quickWin: "每天模仿学术音频5-10分钟（发音+节奏）"
+` : ''}
 
 Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}min. Prioritize weak areas first. 12 weeks default or match deadline. Keep IELTS terms in English. ${wantNative ? 'Bilingual titles: "Local (English)"' : 'English titles only'}. ${schema}`;
 
@@ -147,9 +176,13 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
       }
     } catch {}
 
-    // Cache the generated plan
-    cache.set(cacheKey, plan);
-    console.log('💾 Plan cached for future use');
+    // Cache the generated plan (only for non-language-specific plans)
+    if (!wantNative) {
+      globalCache.set(cacheKey, plan);
+      console.log('💾 Plan cached for future use');
+    } else {
+      console.log(`🌍 Generated fresh ${firstLanguage} plan (not cached for language diversity)`);
+    }
 
     return new Response(JSON.stringify({ success: true, plan }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (e) {

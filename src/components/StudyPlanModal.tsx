@@ -112,11 +112,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
         }
       } catch {}
     })();
-    // Instant seed from local cache for fast paint
-    try {
-      const cached = JSON.parse(localStorage.getItem('latest_plan') || 'null');
-      if (cached?.plan) setPlan(cached.plan as PlanData);
-    } catch {}
+    // Load latest plan from DB (fallback to local cache inside loadPlan)
     void loadPlan();
   }, [open]);
 
@@ -141,7 +137,16 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
         .single();
       const joined = profJoin?.['study_plans'];
       const planRow = Array.isArray(joined) ? joined[0] : joined;
-      if (planRow?.plan) setPlan(planRow.plan as PlanData);
+      if (planRow?.plan) {
+        setPlan(planRow.plan as PlanData);
+        try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planRow.plan, ts: Date.now() })); } catch {}
+      } else {
+        // Fallback to local cache
+        try {
+          const cached = JSON.parse(localStorage.getItem('latest_plan') || 'null');
+          if (cached?.plan) setPlan(cached.plan as PlanData);
+        } catch {}
+      }
     } finally {
       setLoading(false);
     }
@@ -403,11 +408,14 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                         await (supabase as any).from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
                       }
                     } catch {}
+                    // Apply immediately so closing the modal won't revert
+                    try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planJson, ts: Date.now() })); } catch {}
+                    setPlan(planJson);
                     setNewPlanData(planJson);
                     setConfirmNewPlan(true);
                     setAiOpen(false);
                   } catch (e) {
-                    alert('Could not generate plan. Please try again.');
+                    alert('Failed to generate plan. Please try again.');
                   } finally {
                     setAiLoading(false);
                   }

@@ -53,18 +53,60 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
       return;
     }
 
-    // First, try fast browser TTS for immediate response
     const currentAccent = ACCENTS[currentAccentIndex];
     setCurrentAccentIndex((prev) => (prev + 1) % ACCENTS.length);
     
     setIsPlayingAudio(true);
+
+    // Try ElevenLabs first for high-quality audio
+    try {
+      console.log(`🎵 Playing ${currentAccent} accent for:`, word.word);
+      
+      const { data, error } = await supabase.functions.invoke('audio-cache', {
+        body: {
+          text: word.word,
+          accent: currentAccent,
+          question_id: `word-${word.word}-${currentAccent}-${Date.now()}`
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.audio_url) {
+        console.log('✅ ElevenLabs Success! Playing high-quality audio:', data.audio_url);
+        
+        const audio = new Audio(data.audio_url);
+        audioRef.current = audio;
+        audio.addEventListener('error', (e) => {
+          console.error('Audio playback error:', e);
+          fallbackToBrowserTTS();
+        });
+
+        audio.addEventListener('ended', () => {
+          setIsPlayingAudio(false);
+        });
+
+        await audio.play();
+        console.log('🎵 High-quality audio playing successfully');
+        return; // Success, don't use fallback
+      }
+    } catch (error: any) {
+      console.log('ElevenLabs failed, using browser TTS fallback:', error.message);
+    }
+
+    // Fallback to browser TTS if ElevenLabs fails
+    fallbackToBrowserTTS();
+  };
+
+  const fallbackToBrowserTTS = () => {
+    console.log('🔄 Using browser TTS fallback');
     
-    // Use browser TTS for instant response
+    // Use browser TTS as fallback
     const utterance = new SpeechSynthesisUtterance(word.word);
     utterance.rate = 0.8;
     utterance.volume = 1;
     
-    // Try to select a good voice based on accent
+    // Try to select a good voice
     const voices = window.speechSynthesis.getVoices();
     let selectedVoice = voices.find(voice => 
       voice.name.includes('Google') && voice.lang.startsWith('en')
@@ -78,27 +120,6 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
     utterance.onerror = () => setIsPlayingAudio(false);
     
     window.speechSynthesis.speak(utterance);
-
-    // Then, try to get ElevenLabs audio in the background for better quality
-    try {
-      const { data, error } = await supabase.functions.invoke('audio-cache', {
-        body: {
-          text: word.word,
-          accent: currentAccent,
-          question_id: `word-${word.word}-${currentAccent}-${Date.now()}`
-        }
-      });
-
-      if (!error && data?.success && data?.audio_url) {
-        // Cache the high-quality audio for next time
-        const audio = new Audio(data.audio_url);
-        audioRef.current = audio;
-        // Don't auto-play, just cache it
-        console.log(`🎵 Cached ${currentAccent} accent audio for:`, word.word);
-      }
-    } catch (error: any) {
-      console.log('Background ElevenLabs failed, browser TTS is working fine:', error.message);
-    }
   };
 
   return (

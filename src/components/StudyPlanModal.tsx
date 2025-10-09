@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import i18n from '@/lib/i18n';
+import TTSTestButton from './TTSTestButton';
 
 interface PlanTask {
   title: string;
@@ -41,7 +42,19 @@ interface StudyPlanModalProps {
   children?: React.ReactNode;
 }
 
-const LANGS = ['en','ko','ja','zh','es','pt','fr','de','ru','hi','vi'] as const;
+const LANGS = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' }
+] as const;
 
 const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const navigate = useNavigate();
@@ -59,6 +72,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [aiWeak, setAiWeak] = useState<Set<string>>(new Set());
   const [aiNotes, setAiNotes] = useState<string>('');
   const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [confirmNewPlan, setConfirmNewPlan] = useState<boolean>(false);
+  const [newPlanData, setNewPlanData] = useState<PlanData | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -155,7 +170,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
             <DialogTitle className="text-slate-800">Your Study Plan</DialogTitle>
             <div className="flex items-center gap-2 text-xs">
               <select value={lang} onChange={(e)=>switchLang(e.target.value)} className="rounded-md border px-2 py-1">
-                {LANGS.map(l => (<option key={l} value={l}>{l.toUpperCase()}</option>))}
+                {LANGS.map(l => (<option key={l.code} value={l.code}>{l.flag} {l.name}</option>))}
               </select>
             </div>
           </div>
@@ -239,6 +254,9 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   Quick AI Plan (no assessment)
                 </Button>
               </div>
+              <div className="border-t pt-4">
+                <TTSTestButton text="Testing text-to-speech for IELTS practice" />
+              </div>
             </div>
           )}
         </div>
@@ -269,7 +287,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 <label className="text-sm text-slate-700">
                   First language
                   <select value={aiFirstLang} onChange={(e)=>setAiFirstLang(e.target.value)} className="mt-1 w-full rounded-md border px-2 py-2">
-                    {Array.from(LANGS).map(l => (<option key={l} value={l}>{l.toUpperCase()}</option>))}
+                    {LANGS.map(l => (<option key={l.code} value={l.code}>{l.flag} {l.name}</option>))}
                   </select>
                 </label>
                 <div className="sm:col-span-2">
@@ -344,8 +362,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                         await (supabase as any).from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
                       }
                     } catch {}
-                    try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planJson, ts: Date.now() })); } catch {}
-                    setPlan(planJson);
+                    setNewPlanData(planJson);
+                    setConfirmNewPlan(true);
                     setAiOpen(false);
                   } catch (e) {
                     alert('Could not generate plan. Please try again.');
@@ -353,6 +371,40 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     setAiLoading(false);
                   }
                 }}>{aiLoading ? 'Generating…' : 'Generate Plan'}</Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {confirmNewPlan && newPlanData && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={()=>setConfirmNewPlan(false)}>
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6" onClick={(e)=>e.stopPropagation()}>
+              <div className="text-lg font-semibold text-slate-900 mb-3">New Plan Generated!</div>
+              <div className="text-sm text-slate-600 mb-4">
+                You have a new AI-generated study plan. Would you like to keep this new plan or continue with your current one?
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setConfirmNewPlan(false);
+                    setNewPlanData(null);
+                  }}
+                >
+                  Keep Current Plan
+                </Button>
+                <Button 
+                  className="flex-1 bg-slate-900 text-white"
+                  onClick={() => {
+                    try { localStorage.setItem('latest_plan', JSON.stringify({ plan: newPlanData, ts: Date.now() })); } catch {}
+                    setPlan(newPlanData);
+                    setConfirmNewPlan(false);
+                    setNewPlanData(null);
+                  }}
+                >
+                  Use New Plan
+                </Button>
               </div>
             </div>
           </div>

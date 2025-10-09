@@ -1,8 +1,5 @@
 import { memo, useState, useRef } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import FallbackTTS from './FallbackTTS';
-import MultiAccentTTS from './MultiAccentTTS';
 
 interface SavedWord {
   id: string;
@@ -23,7 +20,16 @@ interface WordCardProps {
 
 const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false, onToggleSelect }: WordCardProps) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [currentAccentIndex, setCurrentAccentIndex] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const ACCENTS = ['US', 'UK', 'AUS', 'IND'];
+  const ACCENT_FLAGS = {
+    'US': '🇺🇸',
+    'UK': '🇬🇧', 
+    'AUS': '🇦🇺',
+    'IND': '🇮🇳'
+  };
 
   const handleCardClick = (e: React.MouseEvent) => {
     if (isEditMode) {
@@ -32,14 +38,13 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
       return;
     }
     // Play pronunciation when clicking the word
-    playPronunciation(e);
+    playPronunciation();
   };
 
-  const playPronunciation = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
+  const playPronunciation = async () => {
     if (isPlayingAudio) {
       // Stop current audio
+      window.speechSynthesis.cancel();
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -48,32 +53,51 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
       return;
     }
 
+    // First, try fast browser TTS for immediate response
+    const currentAccent = ACCENTS[currentAccentIndex];
+    setCurrentAccentIndex((prev) => (prev + 1) % ACCENTS.length);
+    
     setIsPlayingAudio(true);
+    
+    // Use browser TTS for instant response
+    const utterance = new SpeechSynthesisUtterance(word.word);
+    utterance.rate = 0.8;
+    utterance.volume = 1;
+    
+    // Try to select a good voice based on accent
+    const voices = window.speechSynthesis.getVoices();
+    let selectedVoice = voices.find(voice => 
+      voice.name.includes('Google') && voice.lang.startsWith('en')
+    ) || voices.find(voice => voice.lang.startsWith('en'));
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+    
+    utterance.onend = () => setIsPlayingAudio(false);
+    utterance.onerror = () => setIsPlayingAudio(false);
+    
+    window.speechSynthesis.speak(utterance);
+
+    // Then, try to get ElevenLabs audio in the background for better quality
     try {
-      // Generate audio using ElevenLabs TTS
-          const { data, error } = await supabase.functions.invoke('audio-cache', {
-            body: {
-              text: word.word,
-              voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Sarah (Rachel) voice ID
-              question_id: `word-${word.word}-${Date.now()}`
-            }
-          });
+      const { data, error } = await supabase.functions.invoke('audio-cache', {
+        body: {
+          text: word.word,
+          accent: currentAccent,
+          question_id: `word-${word.word}-${currentAccent}-${Date.now()}`
+        }
+      });
 
-      if (error) throw error;
-
-      if (data.success && data.audio_url) {
+      if (!error && data?.success && data?.audio_url) {
+        // Cache the high-quality audio for next time
         const audio = new Audio(data.audio_url);
         audioRef.current = audio;
-        audio.onended = () => setIsPlayingAudio(false);
-        audio.onerror = () => setIsPlayingAudio(false);
-        await audio.play();
+        // Don't auto-play, just cache it
+        console.log(`🎵 Cached ${currentAccent} accent audio for:`, word.word);
       }
     } catch (error: any) {
-      console.error('Pronunciation error:', error);
-      setIsPlayingAudio(false);
-      
-      // Show error to user for debugging
-      console.error('Full error details:', error);
+      console.log('Background ElevenLabs failed, browser TTS is working fine:', error.message);
     }
   };
 
@@ -103,16 +127,24 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
             {word.word}
             {!isEditMode && (
               <span className="inline-block flex items-center gap-1">
-                <FallbackTTS 
-                  text={word.word}
-                  onPlay={() => setIsPlayingAudio(true)}
-                  onStop={() => setIsPlayingAudio(false)}
-                />
-                <MultiAccentTTS
-                  text={word.word}
-                  onPlay={() => setIsPlayingAudio(true)}
-                  onStop={() => setIsPlayingAudio(false)}
-                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playPronunciation();
+                  }}
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-full hover:bg-slate-100 transition-colors"
+                  title={`Click to hear ${ACCENTS[currentAccentIndex]} accent (rotates through ${ACCENTS.join(', ')})`}
+                >
+                  {isPlayingAudio ? (
+                    <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <span className="text-xs">
+                      {ACCENT_FLAGS[ACCENTS[currentAccentIndex] as keyof typeof ACCENT_FLAGS]}
+                    </span>
+                  )}
+                </button>
               </span>
             )}
           </div>

@@ -63,7 +63,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [lang, setLang] = useState<string>(() => i18n.language || 'en');
   const [aiOpen, setAiOpen] = useState(false);
-  const [aiProvider, setAiProvider] = useState<'deepseek' | 'gemini'>('gemini');
+  // Provider choice removed; default server logic picks the best available
   const [aiTarget, setAiTarget] = useState<number>(7.0);
   const [aiDeadline, setAiDeadline] = useState<string>('');
   const [aiMinutes, setAiMinutes] = useState<number>(60);
@@ -100,6 +100,15 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
         const { supabase } = await import('@/integrations/supabase/client');
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        // Pull dashboard/user preferences deadline for default sync
+        const { data: prefs } = await (supabase as any)
+          .from('user_preferences')
+          .select('target_deadline')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (prefs?.target_deadline) {
+          setAiDeadline(String(prefs.target_deadline));
+        }
         const { data: profile } = await supabase
           .from('profiles')
           .select('native_language')
@@ -314,16 +323,23 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     ))}
                   </select>
                 </label>
-                <label className="text-sm text-slate-700">
-                  AI Provider
-                  <select value={aiProvider} onChange={(e)=>setAiProvider(e.target.value as any)} className="mt-1 w-full rounded-md border px-2 py-2">
-                    <option value="gemini">Gemini 2.5 Flash (fast)</option>
-                    <option value="deepseek">DeepSeek (alt)</option>
-                  </select>
-                </label>
+                {/* Provider selection removed to simplify UI */}
                 <label className="text-sm text-slate-700">
                   Deadline (optional)
-                  <input type="date" value={aiDeadline} onChange={(e)=>setAiDeadline(e.target.value)} className="mt-1 w-full rounded-md border px-2 py-2" />
+                  <div className="flex gap-2 mt-1">
+                    <input type="date" min={new Date().toISOString().slice(0,10)} value={aiDeadline} onChange={(e)=>setAiDeadline(e.target.value)} className="flex-1 rounded-md border px-2 py-2" />
+                    <button type="button" className="rounded-md border px-2 py-2 text-xs" onClick={async ()=>{
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+                      const { data: prefs } = await (supabase as any)
+                        .from('user_preferences')
+                        .select('target_deadline')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+                      if (prefs?.target_deadline) setAiDeadline(String(prefs.target_deadline));
+                    }}>Sync from Dashboard</button>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">This will align plan duration to your dashboard deadline.</div>
                 </label>
                 <label className="text-sm text-slate-700">
                   Minutes per day
@@ -389,8 +405,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                         firstLanguage: aiFirstLang,
                         planNativeLanguage: aiBilingual ? 'yes' : 'no',
                         weakAreas: Array.from(aiWeak),
-                        notes: aiNotes || '',
-                        provider: aiProvider
+                        notes: aiNotes || ''
                       }
                     });
                     if (error || !data?.success) throw error || new Error(data?.error || 'Failed to generate plan');

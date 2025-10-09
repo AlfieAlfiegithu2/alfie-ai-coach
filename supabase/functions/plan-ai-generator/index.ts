@@ -102,26 +102,29 @@ serve(async (req) => {
   }
 }`;
 
-    const system = `You are an IELTS coach. Create a concise, practical study plan. Keep IELTS keywords in ENGLISH. 
+    const system = `You are an IELTS coach. Create a concise, practical study plan.
 
-CRITICAL: For bilingual output (when firstLanguage is Chinese/Korean/Japanese/etc), you MUST:
-- Use bilingual task titles: "中文标题 (English keyword)"
-- Use bilingual highlights and quickWins
-- Example: "词汇: 12个学术词汇 (Vocabulary: 12 academic words)"
+LANGUAGE POLICY (STRICT):
+- If planNativeLanguage === "yes" and firstLanguage != "en":
+  - Write all content in the student's first language by default (highlights, quick wins, task titles).
+  - Keep only essential IELTS keywords in ENGLISH inside parentheses after the localized title, e.g. "本地化标题 (Vocabulary: 12 academic words)".
+  - Do not add any other English words outside the parentheses.
+- If planNativeLanguage === "no" or firstLanguage === "en": English only.
 
-Focus on 3-5 tasks per study day, prioritize weak areas first.`;
+PLANNING RULES:
+- 3–5 tasks per study day, total ~minutesPerDay.
+- Prioritize weak areas first.
+- Respect selected study days (leave other days empty).`;
 
     const user = `Create IELTS study plan:
 Target: ${Number(targetScore).toFixed(1)} | Deadline: ${targetDeadline || 'none'} | Daily: ${minutesPerDay}min | Days: ${Array.isArray(studyDays) ? studyDays.join(',') : ''} | Lang: ${firstLangNorm} | Bilingual: ${wantNative ? 'yes' : 'no'} | Weak: ${(weakAreas||[]).join(', ') || 'none'}
 
 ${wantNative && firstLangNorm === 'zh' ? `
 MANDATORY CHINESE OUTPUT:
-- Task titles MUST be: "中文标题 (English keyword)"
-- Highlights MUST be: "当前水平: A2 (雅思约4.5)" format
-- QuickWins MUST be: "每天专注练习语法15分钟（即时反馈）" format
+- All text in Chinese except IELTS keywords in parentheses.
 - Example task: "词汇: 12个学术词汇 (Vocabulary: 12 academic words)"
-- Example highlight: "目标: 雅思7.0 • 每日学习约60分钟"
-- Example quickWin: "每天模仿学术音频5-10分钟（发音+节奏）"
+- Example highlight: "当前水平: B1 (雅思约5.5) • 目标: 雅思7.0"
+- Example quickWin: "每天模仿学术音频5–10分钟（发音+节奏）"
 ` : ''}
 
 Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}min. Prioritize weak areas first. 12 weeks default or match deadline. Keep IELTS terms in English. ${wantNative ? 'Bilingual titles: "Local (English)"' : 'English titles only'}. ${schema}`;

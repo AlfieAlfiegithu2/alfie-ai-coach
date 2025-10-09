@@ -360,23 +360,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
                   text={selectedText}
                   onPlay={() => setIsPlayingAudio(true)}
                   onStop={() => setIsPlayingAudio(false)}
-                  showAccentButtons={true}
-                  className="mr-2"
                 />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={playPronunciation}
-                  disabled={isPlayingAudio}
-                  className="h-7 w-7 p-0 hover:bg-surface-3"
-                  title="Play pronunciation (Legacy TTS)"
-                >
-                  {isPlayingAudio ? (
-                    <VolumeX className="w-4 h-4 text-brand-blue" />
-                  ) : (
-                    <Volume2 className="w-4 h-4 text-text-secondary hover:text-brand-blue" />
-                  )}
-                </Button>
               </div>
               {isLoading ? (
                 <div className="flex items-center gap-2">

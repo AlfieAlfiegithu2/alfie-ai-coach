@@ -112,13 +112,7 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
                   text={word.word}
                   onPlay={() => setIsPlayingAudio(true)}
                   onStop={() => setIsPlayingAudio(false)}
-                  showAccentButtons={false}
                 />
-                {isPlayingAudio ? (
-                  <VolumeX className="w-4 h-4 text-blue-500" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-gray-400 opacity-60" />
-                )}
               </span>
             )}
           </div>

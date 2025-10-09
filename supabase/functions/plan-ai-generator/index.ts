@@ -15,7 +15,6 @@ const globalCache = new Map();
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   try {
-    if (!DEEPSEEK_API_KEY) throw new Error('DEEPSEEK_API_KEY not configured');
     const body = await req.json();
     const {
       targetScore = 7.0,
@@ -28,6 +27,14 @@ serve(async (req) => {
       notes = '',
       provider = 'deepseek' // 'deepseek' | 'gemini'
     } = body || {};
+
+    // Choose provider sanely based on available API keys
+    let chosenProvider: 'deepseek' | 'gemini' = (provider as any) === 'gemini' ? 'gemini' : 'deepseek';
+    if (chosenProvider === 'gemini' && !GEMINI_API_KEY && DEEPSEEK_API_KEY) chosenProvider = 'deepseek';
+    if (chosenProvider === 'deepseek' && !DEEPSEEK_API_KEY && GEMINI_API_KEY) chosenProvider = 'gemini';
+    if (!DEEPSEEK_API_KEY && !GEMINI_API_KEY) {
+      throw new Error('No AI provider configured: set GEMINI_API_KEY or DEEPSEEK_API_KEY');
+    }
 
     // Normalize language code/names
     const lang = String(firstLanguage || 'en').toLowerCase();
@@ -49,7 +56,7 @@ serve(async (req) => {
     const firstLangNorm = normalizeLang(lang);
 
     // Create cache key for similar requests
-    const cacheKey = `plan_${provider}_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLangNorm}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
+    const cacheKey = `plan_${chosenProvider}_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLangNorm}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
     console.log('🔍 Plan cache key:', cacheKey.substring(0, 50) + '...');
 
     const wantNative = String(planNativeLanguage) === 'yes' && firstLangNorm && firstLangNorm !== 'en';
@@ -176,7 +183,7 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
 
     let content = '{}';
     try {
-      if (provider === 'gemini') {
+      if (chosenProvider === 'gemini') {
         content = await callGemini();
       } else {
         content = await callDeepSeek();
@@ -184,7 +191,13 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
     } catch (primaryErr) {
       console.warn('Primary provider failed, attempting fallback...', String(primaryErr));
       try {
-        content = provider === 'gemini' ? await callDeepSeek() : await callGemini();
+        if (chosenProvider === 'gemini') {
+          if (!DEEPSEEK_API_KEY) throw primaryErr;
+          content = await callDeepSeek();
+        } else {
+          if (!GEMINI_API_KEY) throw primaryErr;
+          content = await callGemini();
+        }
       } catch (fallbackErr) {
         const generationTime = Date.now() - startTime;
         console.log(`⏱️ Plan generation failed after ${generationTime}ms`);
@@ -193,9 +206,17 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
     }
 
     const generationTime = Date.now() - startTime;
-    console.log(`⏱️ Plan generation finished in ${generationTime}ms (provider: ${provider})`);
+    console.log(`⏱️ Plan generation finished in ${generationTime}ms (provider: ${chosenProvider})`);
     let plan: any = {};
-    try { plan = JSON.parse(content); } catch { plan = {}; }
+    function parsePlanSafely(text: string) {
+      try { return JSON.parse(text); } catch {}
+      if (typeof text === 'string') {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (m) { try { return JSON.parse(m[0]); } catch {} }
+      }
+      return {};
+    }
+    plan = parsePlanSafely(content);
 
     // Minimal validation & backfill
     if (!plan || typeof plan !== 'object') plan = {};

@@ -1,5 +1,6 @@
 import { memo, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface SavedWord {
   id: string;
@@ -121,11 +122,10 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
       {/* Edit Mode Checkbox */}
       {isEditMode && (
         <div className="absolute -top-2 -left-2 z-20">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={isSelected}
-            onChange={() => onToggleSelect?.(word.id)}
-            className="w-5 h-5 rounded-full bg-white/90 border-2 border-slate-300 checked:bg-red-500 checked:border-red-500"
+            onCheckedChange={() => onToggleSelect?.(word.id)}
+            className="w-6 h-6 rounded-full bg-white/90 border-2 border-slate-400/50 data-[state=checked]:bg-rose-400 data-[state=checked]:border-rose-400 shadow-sm hover:border-rose-300 transition-all"
           />
         </div>
       )}

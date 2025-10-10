@@ -63,6 +63,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
+  const [planId, setPlanId] = useState<string | null>(null);
   // Removed per UX request: in-modal language switcher
   const [aiOpen, setAiOpen] = useState(false);
   const [miniDate, setMiniDate] = useState<Date | null>(null);
@@ -166,6 +167,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       const planRow = Array.isArray(joined) ? joined[0] : joined;
       
       if (planRow?.plan) {
+        try { setPlanId(planRow.id as string); } catch {}
         // Recency guard: only use DB plan if it's newer than local cache (within 30 seconds tolerance)
         const dbTime = new Date(planRow.updated_at).getTime();
         const localTime = localCache?.ts || 0;
@@ -246,28 +248,18 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20">
         <DialogHeader>
-          <DialogTitle className="text-slate-800">{t('studyPlan.title', { defaultValue: 'Your Study Plan' })}</DialogTitle>
+      <DialogTitle className="text-slate-800">{t('studyPlan.title', { defaultValue: 'Your Study Plan' })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           {!loading && !plan && (
             <div className="text-slate-700">
               <p className="mb-3">{t('studyPlan.noPlanYet', { defaultValue: "You don't have a plan yet." })}</p>
               <Button
-                className="bg-slate-800 hover:bg-slate-700 text-white"
-                onClick={() => {
-                  setOpen(false);
-                  navigate('/onboarding/assessment');
-                }}
-              >
-                {t('studyPlan.takeAssessment', { defaultValue: 'Take 5‑Minute Assessment to Generate Plan' })}
-              </Button>
-              <div className="my-3 text-center text-slate-500 text-xs">or</div>
-              <Button
                 variant="outline"
                 className="border-slate-300"
                 onClick={() => setAiOpen(true)}
               >
-                {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Quick AI Plan (no assessment)' })}
+                {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Study Plan' })}
               </Button>
             </div>
           )}
@@ -305,20 +297,34 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
             </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
-                  onClick={() => {
-                    setOpen(false);
-                    navigate('/onboarding/assessment');
-                  }}
-                >
-                  Retake Level Assessment
-                </Button>
-                <Button
                   variant="outline"
                   className="flex-1"
                   onClick={() => setAiOpen(true)}
                 >
-                  Quick AI Plan (no assessment)
+                  {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Study Plan' })}
+                </Button>
+                <Button
+                  className="flex-1 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
+                  onClick={async () => {
+                    const ok = window.confirm('This will remove your current study plan. Continue?');
+                    if (!ok) return;
+                    try {
+                      try { localStorage.removeItem('latest_plan'); } catch {}
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) {
+                        if (planId) {
+                          try { await (supabase as any).from('study_plans').delete().eq('id', planId); } catch {}
+                        }
+                        try { await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id); } catch {}
+                      }
+                      setPlan(null); setPlanId(null); setAiOpen(false);
+                    } catch (e) {
+                      console.error('Failed to reset plan:', e);
+                      alert('Failed to reset plan');
+                    }
+                  }}
+                >
+                  {t('studyPlan.resetPlan', { defaultValue: 'Reset Plan' })}
                 </Button>
               </div>
               {/* Debug controls removed */}

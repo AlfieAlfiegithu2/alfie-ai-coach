@@ -611,22 +611,10 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
         {days.map((d, di) => {
           const now=new Date();
           const isToday = now.getFullYear()===d.date.getFullYear() && now.getMonth()===d.date.getMonth() && now.getDate()===d.date.getDate();
-          // Completion state based on local quicktodo for that date
-          const key = new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()).toISOString().slice(0,10);
-          let completed = false;
-          try {
-            const checks = JSON.parse(localStorage.getItem(`quicktodo-${key}`)||'{}');
-            // consider completed if all visible AI indices marked true
-            const vals = Object.values(checks||{});
-            completed = Array.isArray(vals) ? vals.every(Boolean) : Object.values(checks).every(Boolean);
-          } catch {}
           return (
             <button key={di} onClick={() => onOpenDay(new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()))} className={`relative h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
               <span className="text-slate-900">{d.date.getDate()}</span>
               {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
-              {completed && (
-                <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" title="Completed" />
-              )}
               {isToday && (
                 <div className="absolute inset-0 rounded-xl ring-2 ring-blue-400 pointer-events-none"></div>
               )}

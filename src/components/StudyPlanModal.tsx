@@ -294,9 +294,10 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => {
-                        // Close the dialog immediately to avoid overlay trapping
+                        // Close overlays first to avoid focus trap and perceived freeze
                         setResetAllOpen(false);
-                        // Defer heavy work to next tick to avoid UI freeze
+                        setOpen(false);
+                        // Defer heavy work to next tick
                         setTimeout(() => {
                           try {
                             const keysToRemove: string[] = [];

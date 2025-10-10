@@ -319,6 +319,12 @@ const Dashboard = () => {
             <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>{t('dashboard.home', { defaultValue: 'Home' })}</button>
+            
+            <button onClick={() => navigate('/community')} className="text-slate-600 hover:text-blue-600 transition" style={{
+              fontFamily: 'Inter, sans-serif'
+            }}>
+              {t('navigation.community', { defaultValue: 'Community' })}
+            </button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4 relative z-50">
             {/* Settings Button */}

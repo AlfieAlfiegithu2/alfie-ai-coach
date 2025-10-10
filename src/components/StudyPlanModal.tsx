@@ -480,6 +480,7 @@ export default StudyPlanModal;
 
 // Lightweight components appended for modal UX
 function TodayQuickTodo({ plan }: { plan: any }) {
+  const { t } = useTranslation();
   const today = new Date();
   const start = plan?.meta?.startDateISO ? new Date(plan.meta.startDateISO) : new Date();
   const diffDays = Math.max(0, Math.floor((today.getTime() - start.getTime()) / (24*60*60*1000)));
@@ -628,6 +629,7 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
 
 // Tasks for an arbitrary date within the plan; supports local per-day check, custom tasks and hide/remove AI items
 function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
+  const { t } = useTranslation();
   const start = plan?.meta?.startDateISO ? new Date(plan.meta.startDateISO) : new Date();
   const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diffDays = Math.max(0, Math.floor((localDate.getTime() - start.getTime()) / (24*60*60*1000)));

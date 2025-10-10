@@ -157,6 +157,8 @@
     "deadlineOptional": "期限（任意）"
   },
   "settings": {
+    "profilePhoto": "プロフィール写真",
+    "profilePhotoHelp": "アカウントをパーソナライズするためにプロフィール写真をアップロードしてください",
     "title": "設定",
     "preferredName": "表示名",
     "uiLanguage": "表示言語",

@@ -188,6 +188,8 @@
     "improvementTips": "सुधार के सुझाव"
   },
   "settings": {
+    "profilePhoto": "प्रोफाइल फोटो",
+    "profilePhotoHelp": "अपना खाता व्यक्तिगत बनाने के लिए प्रोफाइल फोटो अपलोड करें",
     "title": "सेटिंग्स",
     "preferredName": "पसंदीदा नाम",
     "uiLanguage": "यूआई भाषा",

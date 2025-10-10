@@ -155,6 +155,8 @@
     "deadlineOptional": "Hạn chót (tùy chọn)"
   },
   "settings": {
+    "profilePhoto": "Ảnh hồ sơ",
+    "profilePhotoHelp": "Tải ảnh để cá nhân hóa tài khoản",
     "title": "Cài đặt",
     "preferredName": "Tên ưa thích",
     "uiLanguage": "Ngôn ngữ giao diện",

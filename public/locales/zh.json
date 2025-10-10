@@ -155,6 +155,8 @@
     "deadlineOptional": "截止日期（选填）"
   },
   "settings": {
+    "profilePhoto": "个人头像",
+    "profilePhotoHelp": "上传头像以个性化您的账户",
     "title": "设置",
     "preferredName": "常用名称",
     "uiLanguage": "界面语言",

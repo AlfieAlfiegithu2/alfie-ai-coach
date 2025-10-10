@@ -88,7 +88,7 @@ i18n
 
     // Backend options
     backend: {
-      loadPath: '/locales/{{lng}}.json',
+      loadPath: `${(import.meta as any)?.env?.BASE_URL || '/'}locales/{{lng}}.json`,
       requestOptions: {
         cache: 'default',
       },

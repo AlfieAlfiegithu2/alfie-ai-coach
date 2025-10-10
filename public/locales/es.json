@@ -155,6 +155,8 @@
     "deadlineOptional": "Fecha límite (opcional)"
   },
   "settings": {
+    "profilePhoto": "Foto de perfil",
+    "profilePhotoHelp": "Sube una foto para personalizar tu cuenta",
     "title": "Configuración",
     "preferredName": "Nombre preferido",
     "uiLanguage": "Idioma de la Interfaz",

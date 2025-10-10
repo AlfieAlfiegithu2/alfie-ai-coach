@@ -157,6 +157,8 @@
     "deadlineOptional": "Срок (необязательно)"
   },
   "settings": {
+    "profilePhoto": "Фото профиля",
+    "profilePhotoHelp": "Загрузите фото, чтобы персонализировать аккаунт",
     "title": "Настройки",
     "preferredName": "Предпочитаемое имя",
     "uiLanguage": "Язык интерфейса",

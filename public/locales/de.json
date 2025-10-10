@@ -157,6 +157,8 @@
     "deadlineOptional": "Frist (optional)"
   },
   "settings": {
+    "profilePhoto": "Profilbild",
+    "profilePhotoHelp": "Laden Sie ein Foto hoch, um Ihr Konto zu personalisieren",
     "title": "Einstellungen",
     "preferredName": "Bevorzugter Name",
     "uiLanguage": "Oberflächensprache",

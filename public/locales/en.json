@@ -164,6 +164,8 @@
     "preferredName": "Preferred Name",
     "uiLanguage": "UI Language",
     "nativeLanguage": "Native Language",
+    "profilePhoto": "Profile Photo",
+    "profilePhotoHelp": "Upload a profile picture to personalize your account",
     "targetTestType": "Target Test Type",
     "targetScore": "Target Score",
     "targetDeadline": "Target Deadline",

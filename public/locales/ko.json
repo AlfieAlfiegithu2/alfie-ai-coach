@@ -159,6 +159,8 @@
     "preferredName": "선호하는 이름",
     "uiLanguage": "UI 언어",
     "nativeLanguage": "모국어",
+    "profilePhoto": "프로필 사진",
+    "profilePhotoHelp": "계정을 개인화하려면 프로필 사진을 업로드하세요",
     "targetTestType": "목표 시험 유형",
     "targetScore": "목표 점수",
     "targetDeadline": "목표 마감일",

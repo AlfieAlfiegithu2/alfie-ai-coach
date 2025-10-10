@@ -157,6 +157,8 @@
     "deadlineOptional": "Prazo (opcional)"
   },
   "settings": {
+    "profilePhoto": "Foto de perfil",
+    "profilePhotoHelp": "Envie uma foto para personalizar sua conta",
     "title": "Configurações",
     "preferredName": "Nome Preferido",
     "uiLanguage": "Idioma da Interface",

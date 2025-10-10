@@ -355,8 +355,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           )}
         </div>
         {aiOpen && (
-          <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center p-4 z-50">
-            <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5">
+          <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+            <DialogContent className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5 z-[61]">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-lg font-semibold text-slate-900">{t('studyPlan.quickAIPlan', { defaultValue: 'Quick AI Plan' })}</div>
                 <button className="text-slate-500" onClick={()=>setAiOpen(false)}>{t('common.close', { defaultValue: 'Close' })}</button>
@@ -370,7 +370,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     ))}
                   </select>
                 </label>
-                {/* Provider selection removed to simplify UI */}
                 <label className="text-sm text-slate-700">
                   {t('studyPlan.deadlineOptional', { defaultValue: 'Deadline (optional)' })}
                   <div className="flex gap-2 mt-1">
@@ -430,7 +429,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 </div>
                 <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
                   <input type="checkbox" checked={aiBilingual} onChange={(e)=>setAiBilingual((e.target as HTMLInputElement).checked)} />
-{t('studyPlan.showInFirstLanguage', { defaultValue: 'Show plan in first language' })}
+                  {t('studyPlan.showInFirstLanguage', { defaultValue: 'Show plan in first language' })}
                 </label>
                 <label className="text-sm text-slate-700 sm:col-span-2">
                   {t('studyPlan.optional', { defaultValue: 'Anything else to consider? (schedule limits, modules, focus)' })}
@@ -457,7 +456,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     });
                     if (error || !data?.success) throw error || new Error(data?.error || 'Failed to generate plan');
                     const planJson = data.plan as PlanData;
-                    // persist as current plan when signed in
                     try {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (user) {
@@ -466,35 +464,13 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                           .insert({ user_id: user.id, plan: planJson, goal: 'ielts', source: 'ai' })
                           .select('*')
                           .single();
-                        if (planErr) {
-                          console.error('Failed to save plan to database:', planErr);
-                          throw planErr;
-                        }
-                        const { error: profileErr } = await (supabase as any)
-                          .from('profiles')
-                          .update({ current_plan_id: planRow.id })
-                          .eq('id', user.id);
-                        if (profileErr) {
-                          console.error('Failed to update profile with plan ID:', profileErr);
-                        }
-                        console.log('✅ Plan saved to database successfully');
+                        if (planErr) throw planErr;
+                        await (supabase as any).from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
                       }
-                    } catch (dbError) {
-                      console.error('Database save failed:', dbError);
-                      // Don't throw - we still want to show the plan locally
-                    }
-                    // Apply immediately so closing the modal won't revert
-                    const freshTimestamp = Date.now();
-                    try { 
-                      localStorage.setItem('latest_plan', JSON.stringify({ 
-                        plan: planJson, 
-                        ts: freshTimestamp,
-                        fresh: true // Mark as freshly generated
-                      })); 
                     } catch {}
+                    const freshTimestamp = Date.now();
+                    try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planJson, ts: freshTimestamp, fresh: true })); } catch {}
                     setPlan(planJson);
-                    console.log('✅ Fresh plan set in state and localStorage');
-                    // Also update profile current_plan_id to the new row above
                     setAiOpen(false);
                   } catch (e) {
                     alert('Failed to generate plan. Please try again.');
@@ -503,8 +479,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   }
                 }}>{aiLoading ? t('studyPlan.generating', { defaultValue: 'Generating…' }) : t('studyPlan.generateButton', { defaultValue: 'Generate Plan' })}</Button>
               </div>
-            </div>
-          </div>
+            </DialogContent>
+          </Dialog>
         )}
         
         {/* Day popup inside modal */}

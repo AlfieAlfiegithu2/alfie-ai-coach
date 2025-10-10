@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent as ThemedAlertContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader as ThemedAlertHeader, AlertDialogTitle as ThemedAlertTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -66,6 +67,9 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [planId, setPlanId] = useState<string | null>(null);
   // Removed per UX request: in-modal language switcher
   const [aiOpen, setAiOpen] = useState(false);
+  const [resetAllOpen, setResetAllOpen] = useState(false);
+  const [resetPlanOpen, setResetPlanOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [miniDate, setMiniDate] = useState<Date | null>(null);
   // Provider choice removed; default server logic picks the best available
   const [aiTarget, setAiTarget] = useState<number>(7.0);
@@ -268,30 +272,39 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           )}
           {plan && (
             <div className="space-y-6">
-              <TodayQuickTodo plan={plan} />
+      <TodayQuickTodo key={refreshKey} plan={plan} />
               {/* Highlights/Quick Wins/Next removed per request */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-slate-800 font-semibold">This month</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => {
-                    const confirmReset = window.confirm('Reset all local study plan data (completions, custom tasks, notes)?');
-                    if (!confirmReset) return;
-                    const keysToRemove: string[] = [];
-                    for (let i = 0; i < localStorage.length; i++) {
-                      const k = localStorage.key(i) as string;
-                      if (!k) continue;
-                      if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
-                    }
-                    keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
-                    alert('All plan progress has been reset.');
-                  }}
-                >
-                  Reset All Plans
-                </Button>
+                <AlertDialog open={resetAllOpen} onOpenChange={setResetAllOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-xs">
+                      {t('studyPlan.resetAllPlans', { defaultValue: 'Reset All Plans' })}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <ThemedAlertContent>
+                    <ThemedAlertHeader>
+                      <ThemedAlertTitle>{t('studyPlan.resetAllPlans', { defaultValue: 'Reset All Plans' })}</ThemedAlertTitle>
+                      <AlertDialogDescription>
+                        {t('studyPlan.resetAllConfirm', { defaultValue: 'Reset all local study plan data (completions, custom tasks, notes)?' })}
+                      </AlertDialogDescription>
+                    </ThemedAlertHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => {
+                        const keysToRemove: string[] = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                          const k = localStorage.key(i) as string;
+                          if (!k) continue;
+                          if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
+                        }
+                        keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+                        setRefreshKey((v)=>v+1);
+                      }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </ThemedAlertContent>
+                </AlertDialog>
               </div>
               <ScrollableMiniCalendar plan={plan} onOpenDay={(date: Date) => setMiniDate(date)} />
             </div>
@@ -303,29 +316,39 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 >
                   {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Study Plan' })}
                 </Button>
-                <Button
-                  className="flex-1 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
-                  onClick={async () => {
-                    const ok = window.confirm('This will remove your current study plan. Continue?');
-                    if (!ok) return;
-                    try {
-                      try { localStorage.removeItem('latest_plan'); } catch {}
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (user) {
-                        if (planId) {
-                          try { await (supabase as any).from('study_plans').delete().eq('id', planId); } catch {}
+                <AlertDialog open={resetPlanOpen} onOpenChange={setResetPlanOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button className="flex-1 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200">
+                      {t('studyPlan.resetPlan', { defaultValue: 'Reset Plan' })}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <ThemedAlertContent>
+                    <ThemedAlertHeader>
+                      <ThemedAlertTitle>{t('studyPlan.resetPlan', { defaultValue: 'Reset Plan' })}</ThemedAlertTitle>
+                      <AlertDialogDescription>
+                        {t('studyPlan.resetPlanConfirm', { defaultValue: 'This will remove your current study plan. Continue?' })}
+                      </AlertDialogDescription>
+                    </ThemedAlertHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
+                      <AlertDialogAction onClick={async () => {
+                        try {
+                          try { localStorage.removeItem('latest_plan'); } catch {}
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (user) {
+                            if (planId) {
+                              try { await (supabase as any).from('study_plans').delete().eq('id', planId); } catch {}
+                            }
+                            try { await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id); } catch {}
+                          }
+                          setPlan(null); setPlanId(null); setAiOpen(false);
+                        } catch (e) {
+                          console.error('Failed to reset plan:', e);
                         }
-                        try { await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id); } catch {}
-                      }
-                      setPlan(null); setPlanId(null); setAiOpen(false);
-                    } catch (e) {
-                      console.error('Failed to reset plan:', e);
-                      alert('Failed to reset plan');
-                    }
-                  }}
-                >
-                  {t('studyPlan.resetPlan', { defaultValue: 'Reset Plan' })}
-                </Button>
+                      }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </ThemedAlertContent>
+                </AlertDialog>
               </div>
               {/* Debug controls removed */}
             </div>

@@ -406,9 +406,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-5 gap-2 lg:gap-3">
                 {skills.map(skill => {
                   const isSelected = selectedSkill === skill.id;
-                  const Icon = skill.icon;
                   return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                      <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
                       <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
                       fontFamily: 'Inter, sans-serif'
                     }}>
@@ -491,8 +489,6 @@ const Dashboard = () => {
                 {/* Test Results and Feedback Cards */}
                 <div className="flex flex-col gap-4 lg:gap-6">
                   {skills.map(skill => {
-                    const Icon = skill.icon;
-
                     // Get recent test results for this skill
                     const skillResults = testResults.filter(result => {
                       if (skill.id === 'writing') {
@@ -503,10 +499,9 @@ const Dashboard = () => {
                     const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
                     return <div key={skill.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                         <div className="flex items-center justify-between mb-3 lg:mb-4">
-                          <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold text-slate-800" style={{
+                          <h3 className="text-sm lg:text-base font-semibold text-slate-800" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                            <Icon className="w-4 h-4" />
                             {skill.label}
                           </h3>
                           {skill.id === 'writing' && <Button variant="ghost" size="sm" onClick={e => {

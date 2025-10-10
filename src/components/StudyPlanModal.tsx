@@ -250,7 +250,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       <DialogTrigger asChild>
         {children || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20 z-[58]">
         <DialogHeader>
       <DialogTitle className="text-slate-800">{t('studyPlan.title', { defaultValue: 'Your Study Plan' })}</DialogTitle>
         </DialogHeader>

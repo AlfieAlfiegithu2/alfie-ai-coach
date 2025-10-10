@@ -57,22 +57,6 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
   });
 
   const [nativeLanguage, setNativeLanguage] = useState('Spanish');
-  const [uiLanguage, setUiLanguage] = useState('en');
-
-  const uiLanguages = [
-    { value: 'en', label: 'English', flag: '🇺🇸' },
-    { value: 'ko', label: '한국어', flag: '🇰🇷' },
-    { value: 'zh', label: '中文', flag: '🇨🇳' },
-    { value: 'ja', label: '日本語', flag: '🇯🇵' },
-    { value: 'es', label: 'Español', flag: '🇪🇸' },
-    { value: 'pt', label: 'Português', flag: '🇵🇹' },
-    { value: 'fr', label: 'Français', flag: '🇫🇷' },
-    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
-    { value: 'ru', label: 'Русский', flag: '🇷🇺' },
-    { value: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
-    { value: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
-    { value: 'ar', label: 'العربية', flag: '🇸🇦' }
-  ];
 
   const languages = [
     { value: 'Spanish', label: 'Spanish (Español)' },
@@ -140,17 +124,6 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     }));
   };
 
-  const handleUILanguageChange = async (languageCode: string) => {
-    try {
-      await i18n.changeLanguage(languageCode);
-      localStorage.setItem('ui_language', languageCode);
-      setUiLanguage(languageCode);
-      toast.success('Language changed successfully');
-    } catch (error) {
-      console.error('Failed to change UI language:', error);
-      toast.error('Failed to change language');
-    }
-  };
 
   useEffect(() => {
     if (user && open) {
@@ -185,9 +158,6 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
         setNativeLanguage(profile.native_language);
       }
 
-      // Load current UI language from localStorage
-      const currentUILanguage = localStorage.getItem('ui_language') || i18n.language || 'en';
-      setUiLanguage(currentUILanguage);
 
       if (data) {
         const defaultScores = {
@@ -373,28 +343,6 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
             />
           </div>
 
-          <div>
-            <Label htmlFor="ui_language" className="text-slate-700">{t('settings.uiLanguage')}</Label>
-            <Select 
-              value={uiLanguage} 
-              onValueChange={handleUILanguageChange}
-            >
-              <SelectTrigger className="bg-white/50 border-white/30">
-                <SelectValue placeholder="Select UI language" />
-              </SelectTrigger>
-              <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
-                {uiLanguages.map(lang => (
-                  <SelectItem key={lang.value} value={lang.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{lang.flag}</span>
-                      <span>{lang.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-slate-600 mt-1">Change the interface language</p>
-          </div>
 
           <div>
             <Label htmlFor="native_language" className="text-slate-700">{t('settings.nativeLanguage')}</Label>

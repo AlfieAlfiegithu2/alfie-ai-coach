@@ -534,6 +534,12 @@ function TodayQuickTodo({ plan }: { plan: any }) {
     setChecked(next);
     try { localStorage.setItem(`quicktodo-${key}`, JSON.stringify(next)); } catch {}
   };
+  const toggleCustom = (i: number) => {
+    const customKey = `c${i}`;
+    const next = { ...checked, [customKey]: !checked[customKey] };
+    setChecked(next);
+    try { localStorage.setItem(`quicktodo-${key}`, JSON.stringify(next)); } catch {}
+  };
   const addCustom = () => {
     if (!custom.title.trim()) return;
     const next = [...customTasks, { title: custom.title.trim(), minutes: Math.max(5, Math.min(180, Number(custom.minutes)||15)) }];
@@ -561,13 +567,13 @@ function TodayQuickTodo({ plan }: { plan: any }) {
         {(day?.tasks || []).slice(0,5).map((t: any, i: number) => {
           if (hiddenAi.has(String(i))) return null;
           return (
-            <li key={i} className="flex items-center justify-between rounded-lg border p-3">
-              <label className="flex items-center gap-3">
-                <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)} />
+            <li key={i} className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-gray-50" onClick={() => toggle(i)}>
+              <div className="flex items-center gap-3">
+                <input type="checkbox" checked={!!checked[i]} onChange={() => {}} className="pointer-events-none" />
                 <span>{t.title}</span>
-              </label>
+              </div>
               <div className="text-xs text-slate-500 flex items-center gap-2 whitespace-nowrap">
-                <button aria-label="Remove" title="Remove" className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => hideAi(i)}>
+                <button aria-label="Remove" title="Remove" className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={(e) => { e.stopPropagation(); hideAi(i); }}>
                   ×
                 </button>
               </div>
@@ -575,13 +581,13 @@ function TodayQuickTodo({ plan }: { plan: any }) {
           );
         })}
         {customTasks.map((t, i) => (
-          <li key={`c${i}`} className="flex items-center justify-between rounded-lg border p-3">
-            <label className="flex items-center gap-3">
-              <input type="checkbox" />
+          <li key={`c${i}`} className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-gray-50" onClick={() => toggleCustom(i)}>
+            <div className="flex items-center gap-3">
+              <input type="checkbox" checked={!!checked[`c${i}`]} onChange={() => {}} className="pointer-events-none" />
               <span>{t.title}</span>
-            </label>
+            </div>
             <div className="text-xs text-slate-500 flex items-center gap-2">
-              <button aria-label='Remove' title='Remove' className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => removeCustom(i)}>×</button>
+              <button aria-label='Remove' title='Remove' className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={(e) => { e.stopPropagation(); removeCustom(i); }}>×</button>
             </div>
           </li>
         ))}
@@ -699,6 +705,12 @@ function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
     setChecked(next);
     try { localStorage.setItem(`quicktodo-${key}`, JSON.stringify(next)); } catch {}
   };
+  const toggleCustom = (i: number) => {
+    const customKey = `c${i}`;
+    const next = { ...checked, [customKey]: !checked[customKey] };
+    setChecked(next);
+    try { localStorage.setItem(`quicktodo-${key}`, JSON.stringify(next)); } catch {}
+  };
   const addCustom = () => {
     if (!custom.title.trim()) return;
     const next = [...customTasks, { title: custom.title.trim(), minutes: Math.max(5, Math.min(180, Number(custom.minutes)||15)) }];
@@ -735,26 +747,26 @@ function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
         {(day?.tasks || []).slice(0,5).map((t: any, i: number) => {
           if (hiddenAi.has(String(i))) return null;
           return (
-            <li key={`ai-${i}`} className="flex items-center justify-between rounded-lg border p-3">
-              <label className="flex items-center gap-3">
-                <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)} />
+            <li key={`ai-${i}`} className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-gray-50" onClick={() => toggle(i)}>
+              <div className="flex items-center gap-3">
+                <input type="checkbox" checked={!!checked[i]} onChange={() => {}} className="pointer-events-none" />
                 <span>{t.title}</span>
-              </label>
+              </div>
               <div className="text-xs text-slate-500 flex items-center gap-2 whitespace-nowrap">
                 <span>{t.minutes} min</span>
-                <button className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => hideAi(i)}>×</button>
+                <button className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={(e) => { e.stopPropagation(); hideAi(i); }}>×</button>
               </div>
             </li>
           );
         })}
         {customTasks.map((t, i) => (
-          <li key={`c${i}`} className="flex items-center justify-between rounded-lg border p-3">
-            <label className="flex items-center gap-3">
-              <input type="checkbox" />
+          <li key={`c${i}`} className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-gray-50" onClick={() => toggleCustom(i)}>
+            <div className="flex items-center gap-3">
+              <input type="checkbox" checked={!!checked[`c${i}`]} onChange={() => {}} className="pointer-events-none" />
               <span>{t.title}</span>
-            </label>
+            </div>
             <div className="text-xs text-slate-500 flex items-center gap-2">
-              <button className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => removeCustom(i)}>×</button>
+              <button className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={(e) => { e.stopPropagation(); removeCustom(i); }}>×</button>
             </div>
           </li>
         ))}

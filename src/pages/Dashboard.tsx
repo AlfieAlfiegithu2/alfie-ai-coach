@@ -295,7 +295,7 @@ const Dashboard = () => {
             
             
           </div>
-          <nav className="hidden lg:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2 pr-48">
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium absolute left-1/2 transform -translate-x-1/2 max-w-2xl overflow-hidden">
             <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
@@ -384,7 +384,7 @@ const Dashboard = () => {
               }}
               variant="ghost"
               size="sm"
-              className="hidden lg:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700"
+              className="hidden lg:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700 text-xs px-2 py-1 whitespace-nowrap"
             >
               {t('dashboard.resetResults')}
             </Button>
@@ -410,8 +410,8 @@ const Dashboard = () => {
               <div className="grid grid-cols-4 gap-2 lg:gap-3">
                 {skills.map(skill => {
                   const isSelected = selectedSkill === skill.id;
-                  return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center justify-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                      <span className={`text-xs lg:text-sm font-medium text-center ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
+                  return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border backdrop-blur-xl transition-all min-h-[60px] ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
+                      <span className={`text-xs lg:text-sm font-medium text-center leading-tight px-1 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
                       fontFamily: 'Inter, sans-serif'
                     }}>
                         {skill.label}

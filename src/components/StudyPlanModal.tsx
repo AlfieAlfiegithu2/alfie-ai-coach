@@ -293,24 +293,40 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     </ThemedAlertHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => {
-                        // Close overlays first to avoid focus trap and perceived freeze
+                      <AlertDialogAction onClick={async () => {
+                        // Close dialog immediately
                         setResetAllOpen(false);
-                        setOpen(false);
-                        // Defer heavy work to next tick
-                        setTimeout(() => {
-                          try {
-                            const keysToRemove: string[] = [];
-                            for (let i = 0; i < localStorage.length; i++) {
-                              const k = localStorage.key(i) as string;
-                              if (!k) continue;
-                              if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
+                        
+                        // Clear localStorage
+                        try {
+                          const keysToRemove: string[] = [];
+                          for (let i = 0; i < localStorage.length; i++) {
+                            const k = localStorage.key(i) as string;
+                            if (!k) continue;
+                            if (k.startsWith('plan-') || k.startsWith('quicktodo-') || k === 'latest_plan') {
+                              keysToRemove.push(k);
                             }
-                            keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
-                          } catch {}
-                          try { setMiniDate(null); } catch {}
-                          setRefreshKey((v)=>v+1);
-                        }, 0);
+                          }
+                          keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+                        } catch (e) {
+                          console.error('Failed to clear localStorage:', e);
+                        }
+                        
+                        // Delete plan from database
+                        try {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (user) {
+                            await (supabase as any).from('study_plans').delete().eq('user_id', user.id);
+                            await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id);
+                          }
+                        } catch (e) {
+                          console.error('Failed to delete plan from database:', e);
+                        }
+                        
+                        // Reset UI state
+                        setMiniDate(null);
+                        setPlan(null);
+                        setRefreshKey((v)=>v+1);
                       }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
                     </AlertDialogFooter>
                   </ThemedAlertContent>
@@ -448,7 +464,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
         {/* Day popup inside modal */}
         {miniDate && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setMiniDate(null)}>
-            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-xl min-h-[400px] p-6" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-slate-900">{new Date(miniDate.getFullYear(), miniDate.getMonth(), miniDate.getDate()).toLocaleDateString('en-CA')}</h3>
                 <button className="text-slate-500 hover:text-slate-700" onClick={() => setMiniDate(null)}>Close</button>
@@ -571,7 +587,13 @@ function TodayQuickTodo({ plan }: { plan: any }) {
         ))}
       </ul>
       <div className="mt-3 flex gap-2">
-        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task' })} className="flex-1 rounded-md border px-3 py-2" />
+        <input 
+          value={custom.title} 
+          onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} 
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
+          placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task' })} 
+          className="flex-1 rounded-md border px-3 py-2" 
+        />
         <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>{t('studyPlan.add', { defaultValue: 'Add' })}</button>
       </div>
     </div>
@@ -738,7 +760,13 @@ function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
         ))}
       </ul>
       <div className="mt-3 flex gap-2">
-        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task' })} className="flex-1 rounded-md border px-3 py-2" />
+        <input 
+          value={custom.title} 
+          onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} 
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
+          placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task' })} 
+          className="flex-1 rounded-md border px-3 py-2" 
+        />
         <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>{t('studyPlan.add', { defaultValue: 'Add' })}</button>
       </div>
       {/* Total planned minutes removed per UX request */}

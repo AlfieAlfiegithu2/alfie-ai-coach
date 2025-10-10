@@ -95,7 +95,8 @@
     "studyPlan": "학습 계획",
     "home": "홈",
     "settings": "설정",
-    "resetResults": "결과 초기화"
+    "resetResults": "결과 초기화",
+    "community": "커뮤니티"
   },
   "dashboard": {
     "myWordBook": "내 단어장",

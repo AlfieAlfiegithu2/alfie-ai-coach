@@ -321,7 +321,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-slate-800">{t('settings.title', { defaultValue: 'Settings' })}</DialogTitle>
+          <DialogTitle className="text-slate-800">{t('settings.title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           {/* Profile Photo Section */}
@@ -338,8 +338,8 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               )}
             </div>
             <div className="flex-1">
-              <Label className="text-slate-700 font-medium">{t('settings.profilePhoto', { defaultValue: 'Profile Photo' })}</Label>
-              <p className="text-sm text-slate-600 mb-2">{t('settings.profilePhotoHelp', { defaultValue: 'Upload a profile picture to personalize your account' })}</p>
+              <Label className="text-slate-700 font-medium">{t('settings.profilePhoto')}</Label>
+              <p className="text-sm text-slate-600 mb-2">{t('settings.profilePhotoHelp')}</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -349,7 +349,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
                   onClick={() => document.getElementById('avatar-upload')?.click()}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {avatarUploading ? t('common.loading', { defaultValue: 'Loading...' }) : t('settings.changePhoto', { defaultValue: 'Change Photo' })}
+                  {avatarUploading ? t('common.loading') : t('settings.changePhoto')}
                 </Button>
                 <input
                   id="avatar-upload"
@@ -363,7 +363,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="preferred_name" className="text-slate-700">{t('settings.preferredName', { defaultValue: 'Preferred Name' })}</Label>
+            <Label htmlFor="preferred_name" className="text-slate-700">{t('settings.preferredName')}</Label>
             <Input
               id="preferred_name"
               value={preferences.preferred_name}
@@ -374,7 +374,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="ui_language" className="text-slate-700">{t('settings.uiLanguage', { defaultValue: 'UI Language' })}</Label>
+            <Label htmlFor="ui_language" className="text-slate-700">{t('settings.uiLanguage')}</Label>
             <Select 
               value={uiLanguage} 
               onValueChange={handleUILanguageChange}
@@ -397,7 +397,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="native_language" className="text-slate-700">{t('settings.nativeLanguage', { defaultValue: 'Native Language' })}</Label>
+            <Label htmlFor="native_language" className="text-slate-700">{t('settings.nativeLanguage')}</Label>
             <Select 
               value={nativeLanguage} 
               onValueChange={setNativeLanguage}
@@ -416,7 +416,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="test_type" className="text-slate-700">{t('settings.targetTestType', { defaultValue: 'Target Test Type' })}</Label>
+            <Label htmlFor="test_type" className="text-slate-700">{t('settings.targetTestType')}</Label>
             <Select 
               value={preferences.target_test_type} 
               onValueChange={(value) => setPreferences(prev => ({ ...prev, target_test_type: value }))}
@@ -435,7 +435,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="target_score" className="text-slate-700">{t('settings.targetScore', { defaultValue: 'Target Score' })}</Label>
+            <Label htmlFor="target_score" className="text-slate-700">{t('settings.targetScore')}</Label>
             <Input
               id="target_score"
               type="number"
@@ -449,7 +449,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label className="text-slate-700">{t('settings.targetDeadline', { defaultValue: 'Target Deadline' })}</Label>
+            <Label className="text-slate-700">{t('settings.targetDeadline')}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -510,14 +510,14 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               disabled={loading}
               className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
             >
-              {loading ? t('common.loading', { defaultValue: 'Loading...' }) : t('settings.save', { defaultValue: 'Save' })}
+              {loading ? t('common.loading') : t('settings.save')}
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setOpen(false)}
               className="bg-white/50 border-white/30"
             >
-              {t('settings.cancel', { defaultValue: 'Cancel' })}
+              {t('settings.cancel')}
             </Button>
           </div>
 
@@ -531,7 +531,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
                 navigate('/onboarding/assessment');
               }}
             >
-              {t('studyPlan.retakeAssessment', { defaultValue: 'Retake Level Assessment' })}
+              {t('studyPlan.retakeAssessment')}
             </Button>
           </div>
           
@@ -542,7 +542,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               className="w-full bg-red-50/50 border-red-200/50 text-red-600 hover:bg-red-100/50 hover:text-red-700"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              {t('settings.signOut', { defaultValue: 'Sign Out' })}
+              {t('settings.signOut')}
             </Button>
           </div>
         </div>

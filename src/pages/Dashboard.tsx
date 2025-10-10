@@ -72,10 +72,10 @@ const Dashboard = () => {
     borderColor: "border-gray-500/20"
   }];
   const skills = [
-    { id: 'reading', label: t('skills.reading', { defaultValue: 'Reading' }), icon: BookOpen },
-    { id: 'listening', label: t('skills.listening', { defaultValue: 'Listening' }), icon: Volume2 },
-    { id: 'writing', label: t('skills.writing', { defaultValue: 'Writing' }), icon: PenTool },
-    { id: 'speaking', label: t('skills.speaking', { defaultValue: 'Speaking' }), icon: MessageSquare }
+    { id: 'reading', label: t('skills.reading'), icon: BookOpen },
+    { id: 'listening', label: t('skills.listening'), icon: Volume2 },
+    { id: 'writing', label: t('skills.writing'), icon: PenTool },
+    { id: 'speaking', label: t('skills.speaking'), icon: MessageSquare }
   ];
   const achievements = [{
     icon: Trophy,
@@ -298,13 +298,13 @@ const Dashboard = () => {
             <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
-              {t('dashboard.myWordBook', { defaultValue: 'My Word Book' })}
+              {t('dashboard.myWordBook')}
             </button>
             
             <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
-              {t('dashboard.tests', { defaultValue: 'Tests' })}
+              {t('dashboard.tests')}
             </button>
             
             {/* Study Plan Button next to Tests as nav text */}
@@ -312,18 +312,18 @@ const Dashboard = () => {
               <button type="button" className="text-slate-600 hover:text-blue-600 transition" style={{
                 fontFamily: 'Inter, sans-serif'
               }}>
-                {t('dashboard.studyPlan', { defaultValue: 'Study Plan' })}
+                {t('dashboard.studyPlan')}
               </button>
             </StudyPlanModal>
             
             <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
-            }}>{t('dashboard.home', { defaultValue: 'Home' })}</button>
+            }}>{t('dashboard.home')}</button>
             
             <button onClick={() => navigate('/community')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
-              {t('navigation.community', { defaultValue: 'Community' })}
+              {t('navigation.community')}
             </button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4 relative z-50">
@@ -382,7 +382,7 @@ const Dashboard = () => {
               size="sm"
               className="hidden lg:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700"
             >
-              {t('dashboard.resetResults', { defaultValue: 'Reset Results' })}
+              {t('dashboard.resetResults')}
             </Button>
           </div>
         </header>
@@ -398,8 +398,7 @@ const Dashboard = () => {
                 fontFamily: 'Bricolage Grotesque, sans-serif'
               }}>
                 {t('dashboard.helloUser', {
-                  name: (userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'),
-                  defaultValue: `Hello, ${userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'}`
+                  name: (userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner')
                 })}
               </h1>
 
@@ -422,7 +421,7 @@ const Dashboard = () => {
                   <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
                     fontFamily: 'Inter, sans-serif'
                   }}>
-                    {t('skills.overall', { defaultValue: 'Overall' })}
+                    {t('skills.overall')}
                   </span>
                 </button>
               </div>
@@ -443,7 +442,7 @@ const Dashboard = () => {
               <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                 <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{
                   fontFamily: 'Inter, sans-serif'
-                }}>{t('dashboard.studyProgress', { defaultValue: 'Study Progress' })}</h3>
+                }}>{t('dashboard.studyProgress')}</h3>
                 <div className="grid grid-cols-3 gap-3 lg:gap-4">
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
@@ -451,7 +450,7 @@ const Dashboard = () => {
                     }}>{userStats?.totalTests || 0}</p>
                     <p className="text-xs text-slate-600" style={{
                       fontFamily: 'Inter, sans-serif'
-                    }}>{t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}</p>
+                    }}>{t('dashboard.testsTaken')}</p>
                   </div>
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
@@ -459,7 +458,7 @@ const Dashboard = () => {
                     }}>{savedWords.length}</p>
                     <p className="text-xs text-slate-600" style={{
                       fontFamily: 'Inter, sans-serif'
-                    }}>{t('dashboard.wordsSaved', { defaultValue: 'Words Saved' })}</p>
+                    }}>{t('dashboard.wordsSaved')}</p>
                   </div>
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
@@ -467,7 +466,7 @@ const Dashboard = () => {
                     }}>7</p>
                     <p className="text-xs text-slate-600" style={{
                       fontFamily: 'Inter, sans-serif'
-                    }}>{t('dashboard.dayStreak', { defaultValue: 'Day Streak' })}</p>
+                    }}>{t('dashboard.dayStreak')}</p>
                   </div>
                 </div>
               </div>
@@ -481,7 +480,7 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 className="text-lg lg:text-xl font-semibold text-slate-800" style={{
                   fontFamily: 'Inter, sans-serif'
-                }}>{t('dashboard.practiceAreas', { defaultValue: 'Practice Areas' })}</h2>
+                }}>{t('dashboard.practiceAreas')}</h2>
                 <div className="flex items-center gap-3 text-sm">
                   
                   
@@ -524,7 +523,7 @@ const Dashboard = () => {
                                 <p className="font-medium text-slate-800" style={{
                               fontFamily: 'Inter, sans-serif'
                             }}>
-                                  {t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}:
+                                  {t('dashboard.testsTaken')}:
                                 </p>
                                 <p style={{
                               fontFamily: 'Inter, sans-serif'
@@ -534,7 +533,7 @@ const Dashboard = () => {
                                 <p className="font-medium text-slate-800" style={{
                               fontFamily: 'Inter, sans-serif'
                             }}>
-                                  {t('dashboard.averageScore', { defaultValue: 'Average Score' })}:
+                                  {t('dashboard.averageScore')}:
                                 </p>
                                 <p style={{
                               fontFamily: 'Inter, sans-serif'
@@ -544,7 +543,7 @@ const Dashboard = () => {
                                 <p className="font-medium text-slate-800" style={{
                               fontFamily: 'Inter, sans-serif'
                             }}>
-                                  {t('dashboard.latestScore', { defaultValue: 'Latest Score' })}:
+                                  {t('dashboard.latestScore')}:
                                 </p>
                                 <p style={{
                               fontFamily: 'Inter, sans-serif'
@@ -555,18 +554,18 @@ const Dashboard = () => {
                             <button onClick={() => handleViewResults(skill.id)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                              {t('dashboard.viewDetailedResults', { defaultValue: 'View Detailed Results' })} <ChevronRight className="w-4 h-4" />
+                              {t('dashboard.viewDetailedResults')} <ChevronRight className="w-4 h-4" />
                             </button>
                           </div> : <div className="text-center py-6">
                             <p className="text-slate-600 mb-4" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                              {t('dashboard.noTestsYet', { skill: skill.id, defaultValue: `No ${skill.id} tests taken yet` })}
+                              {t('dashboard.noTestsYet', { skill: skill.id })}
                             </p>
                             <button onClick={() => navigate('/ielts-portal')} className="text-sm font-medium bg-[#FFFFF0] backdrop-blur-sm text-black px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-[#F5F5DC] transition border border-white/20" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                              {t('dashboard.startFirstTest', { defaultValue: 'Start First Test' })} <ChevronRight className="w-4 h-4" />
+                              {t('dashboard.startFirstTest')} <ChevronRight className="w-4 h-4" />
                             </button>
                           </div>}
                       </div>;

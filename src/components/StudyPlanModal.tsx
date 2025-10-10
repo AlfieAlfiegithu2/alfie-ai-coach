@@ -301,7 +301,10 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                           if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
                         }
                         keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+                        // Close dialogs and refresh lightweight lists
+                        try { setMiniDate(null); } catch {}
                         setRefreshKey((v)=>v+1);
+                        setTimeout(() => setResetAllOpen(false), 0);
                       }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
                     </AlertDialogFooter>
                   </ThemedAlertContent>

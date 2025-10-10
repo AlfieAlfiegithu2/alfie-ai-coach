@@ -77,6 +77,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [aiMinutes, setAiMinutes] = useState<number>(60);
   const [aiDays, setAiDays] = useState<Set<number>>(new Set([1,2,3,4,5]));
   const [aiFirstLang, setAiFirstLang] = useState<string>(() => i18n.language || 'en');
+  // Plan language: choose explicit language for plan content
   const [aiBilingual, setAiBilingual] = useState<boolean>(true);
   const [aiWeak, setAiWeak] = useState<Set<string>>(new Set());
   const [aiNotes, setAiNotes] = useState<string>('');
@@ -261,7 +262,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
               <Button
                 variant="outline"
                 className="border-slate-300"
-                onClick={() => setAiOpen(true)}
+                onClick={() => { setMiniDate(null); setAiOpen(true); }}
               >
                 {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Study Plan' })}
               </Button>
@@ -312,7 +313,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => setAiOpen(true)}
+                  onClick={() => { setMiniDate(null); setAiOpen(true); }}
                 >
                   {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Study Plan' })}
                 </Button>
@@ -359,7 +360,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
             <DialogContent className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5 z-[61]">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-lg font-semibold text-slate-900">{t('studyPlan.quickAIPlan', { defaultValue: 'Quick AI Plan' })}</div>
-                <button className="text-slate-500" onClick={()=>setAiOpen(false)}>{t('common.close', { defaultValue: 'Close' })}</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="text-sm text-slate-700">
@@ -374,25 +374,14 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   {t('studyPlan.deadlineOptional', { defaultValue: 'Deadline (optional)' })}
                   <div className="flex gap-2 mt-1">
                     <input type="date" min={new Date().toISOString().slice(0,10)} value={aiDeadline} onChange={(e)=>setAiDeadline(e.target.value)} className="flex-1 rounded-md border px-2 py-2" />
-                    <button type="button" className="rounded-md border px-2 py-2 text-xs" onClick={async ()=>{
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) return;
-                      const { data: prefs } = await (supabase as any)
-                        .from('user_preferences')
-                        .select('target_deadline')
-                        .eq('user_id', user.id)
-                        .maybeSingle();
-                      if (prefs?.target_deadline) setAiDeadline(String(prefs.target_deadline));
-                    }}>{t('studyPlan.syncFromDashboard', { defaultValue: 'Sync from Dashboard' })}</button>
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">{t('studyPlan.syncDescription', { defaultValue: 'This will align plan duration to your dashboard deadline.' })}</div>
                 </label>
                 <label className="text-sm text-slate-700">
                   {t('studyPlan.minutesPerDay', { defaultValue: 'Minutes per day' })}
                   <input type="number" min={20} max={180} value={aiMinutes} onChange={(e)=>setAiMinutes(Number(e.target.value)||60)} className="mt-1 w-full rounded-md border px-2 py-2" />
                 </label>
                 <label className="text-sm text-slate-700">
-                  {t('studyPlan.firstLanguage', { defaultValue: 'First language' })}
+                  {t('studyPlan.planLanguage', { defaultValue: 'Plan language' })}
                   <select value={aiFirstLang} onChange={(e)=>setAiFirstLang(e.target.value)} className="mt-1 w-full rounded-md border px-2 py-2">
                     {LANGS.map(l => (<option key={l.code} value={l.code}>{l.flag} {l.name}</option>))}
                   </select>
@@ -427,10 +416,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     })}
                   </div>
                 </div>
-                <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
-                  <input type="checkbox" checked={aiBilingual} onChange={(e)=>setAiBilingual((e.target as HTMLInputElement).checked)} />
-                  {t('studyPlan.showInFirstLanguage', { defaultValue: 'Show plan in first language' })}
-                </label>
+                {/* Bilingual option removed; language is chosen explicitly */}
                 <label className="text-sm text-slate-700 sm:col-span-2">
                   {t('studyPlan.optional', { defaultValue: 'Anything else to consider? (schedule limits, modules, focus)' })}
                   <textarea value={aiNotes} onChange={(e)=>setAiNotes(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 min-h-[60px]" placeholder={t('studyPlan.placeholder', { defaultValue: 'e.g., Academic module, weak in Task 1 charts, only study Mon/Wed/Fri' })} />
@@ -449,7 +435,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                         minutesPerDay: aiMinutes,
                         studyDays: days,
                         firstLanguage: aiFirstLang,
-                        planNativeLanguage: aiBilingual ? 'yes' : 'no',
+                        planNativeLanguage: aiFirstLang !== 'en' ? 'yes' : 'no',
                         weakAreas: Array.from(aiWeak),
                         notes: aiNotes || ''
                       }

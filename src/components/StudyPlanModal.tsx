@@ -494,8 +494,16 @@ export default StudyPlanModal;
 function TodayQuickTodo({ plan }: { plan: any }) {
   const { t } = useTranslation();
   const today = new Date();
-  const start = plan?.meta?.startDateISO ? new Date(plan.meta.startDateISO) : new Date();
-  const diffDays = Math.max(0, Math.floor((today.getTime() - start.getTime()) / (24*60*60*1000)));
+  const start = (() => {
+    if (plan?.meta?.startDateISO) {
+      const sd = new Date(plan.meta.startDateISO);
+      return new Date(sd.getFullYear(), sd.getMonth(), sd.getDate());
+    }
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  })();
+  const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.max(0, Math.floor((todayNormalized.getTime() - start.getTime()) / (24*60*60*1000)));
   const w = Math.floor(diffDays / 7);
   const d = diffDays % 7;
   
@@ -596,7 +604,8 @@ function TodayQuickTodo({ plan }: { plan: any }) {
 
 function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (date: Date) => void }) {
   const startISO = plan?.meta?.startDateISO || new Date().toISOString();
-  const startDate = new Date(startISO);
+  const _sd = new Date(startISO);
+  const startDate = new Date(_sd.getFullYear(), _sd.getMonth(), _sd.getDate());
   const [offset, setOffset] = React.useState(0); // months from start
   const headers = ['Su','Mo','Tu','We','Th','Fr','Sa'];
   const first = new Date(startDate.getFullYear(), startDate.getMonth() + offset, 1);
@@ -642,7 +651,14 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
 // Tasks for an arbitrary date within the plan; supports local per-day check, custom tasks and hide/remove AI items
 function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
   const { t } = useTranslation();
-  const start = plan?.meta?.startDateISO ? new Date(plan.meta.startDateISO) : new Date();
+  const start = (() => {
+    if (plan?.meta?.startDateISO) {
+      const sd = new Date(plan.meta.startDateISO);
+      return new Date(sd.getFullYear(), sd.getMonth(), sd.getDate());
+    }
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  })();
   const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diffDays = Math.max(0, Math.floor((localDate.getTime() - start.getTime()) / (24*60*60*1000)));
   const w = Math.floor(diffDays / 7);
@@ -698,11 +714,6 @@ function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
   const totalMinutes = (day?.tasks||[]).slice(0,5).filter((_,i)=>!hiddenAi.has(String(i))).reduce((s: number,t: any)=>s+t.minutes,0) + customTasks.reduce((s,t)=>s+t.minutes,0);
   return (
     <div>
-      <div className="flex items-center justify-end gap-2 mb-2 text-xs">
-        <button className="rounded-md border px-2 py-1" onClick={hideAllAi}>Remove all AI tasks</button>
-        <button className="rounded-md border px-2 py-1" onClick={restoreAi}>Restore AI tasks</button>
-        <button className="rounded-md border px-2 py-1" onClick={resetDay}>Reset day</button>
-      </div>
       <ul className="space-y-2">
         {(day?.tasks || []).slice(0,5).map((t: any, i: number) => {
           if (hiddenAi.has(String(i))) return null;
@@ -735,7 +746,7 @@ function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
         <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task' })} className="flex-1 rounded-md border px-3 py-2" />
         <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>{t('studyPlan.add', { defaultValue: 'Add' })}</button>
       </div>
-      <div className="mt-2 text-xs text-slate-500">{t('studyPlan.totalPlannedMinutes', 'Total planned minutes: {{minutes}} min', { minutes: totalMinutes })}</div>
+      {/* Total planned minutes removed per UX request */}
     </div>
   );
 }

@@ -406,17 +406,17 @@ const Dashboard = () => {
               <div className="grid grid-cols-5 gap-2 lg:gap-3">
                 {skills.map(skill => {
                   const isSelected = selectedSkill === skill.id;
-                  return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                      <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
+                  return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center justify-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
+                      <span className={`text-xs lg:text-sm font-medium text-center ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
                       fontFamily: 'Inter, sans-serif'
                     }}>
                         {skill.label}
                       </span>
                     </button>;
                 })}
-                <button onClick={() => setSelectedSkill('overall')} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${selectedSkill === 'overall' ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
+                <button onClick={() => setSelectedSkill('overall')} className={`flex flex-col items-center justify-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${selectedSkill === 'overall' ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
                   <BarChart3 className={`w-5 h-5 lg:w-6 lg:h-6 ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} />
-                  <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
+                  <span className={`text-xs lg:text-sm font-medium text-center ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
                     fontFamily: 'Inter, sans-serif'
                   }}>
                     {t('skills.overall')}

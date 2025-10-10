@@ -1,0 +1,59 @@
+name: Translation Sync
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'public/locales/en.json'
+      - 'src/**/*'
+      - 'scripts/sync-translations.js'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-translations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run translation sync (DeepSeek preferred)
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node -v
+          node scripts/sync-translations.js || true
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "chore(i18n): auto-translate locales via CI"
+          else
+            echo "No translation changes to commit"
+          fi
+
+      - name: Create Pull Request
+        if: ${{ success() }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: chore(i18n): auto-translate locales via CI
+          title: "chore(i18n): auto-translate locales via CI"
+          body: |
+            This PR was generated automatically when English content changed.
+            It updates non-English locale files using the DeepSeek translator (with OpenAI fallback).
+          branch: ci/auto-translation
+          delete-branch: true
+

@@ -3,69 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
 
-// Language resources will be loaded dynamically
-const resources = {
-  en: {
-    translation: {
-      // English translations will be loaded from JSON files
-    }
-  },
-  es: {
-    translation: {
-      // Spanish translations will be loaded from JSON files
-    }
-  },
-  fr: {
-    translation: {
-      // French translations will be loaded from JSON files
-    }
-  },
-  de: {
-    translation: {
-      // German translations will be loaded from JSON files
-    }
-  },
-  ko: {
-    translation: {
-      // Korean translations will be loaded from JSON files
-    }
-  },
-  zh: {
-    translation: {
-      // Chinese translations will be loaded from JSON files
-    }
-  },
-  ja: {
-    translation: {
-      // Japanese translations will be loaded from JSON files
-    }
-  },
-  vi: {
-    translation: {
-      // Vietnamese translations will be loaded from JSON files
-    }
-  },
-  pt: {
-    translation: {
-      // Portuguese translations will be loaded from JSON files
-    }
-  },
-  ru: {
-    translation: {
-      // Russian translations will be loaded from JSON files
-    }
-  },
-  ar: {
-    translation: {
-      // Arabic translations will be loaded from JSON files
-    }
-  },
-  hi: {
-    translation: {
-      // Hindi translations will be loaded from JSON files
-    }
-  }
-};
+// Language resources will be loaded dynamically from JSON files via backend
 
 i18n
   // Load translations using http backend
@@ -75,7 +13,6 @@ i18n
   // Pass i18n down to react-i18next
   .use(initReactI18next)
   .init({
-    resources,
     fallbackLng: 'en',
     debug: false, // Disable debug in production
 

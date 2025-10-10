@@ -80,8 +80,12 @@ const Pay = () => {
   }, [planId]);
 
   const stripePromise = useMemo(() => {
-    const pk = (import.meta as any)?.env?.VITE_STRIPE_PUBLISHABLE_KEY as string;
-    return pk ? loadStripe(pk) : null;
+    const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string;
+    if (!pk) {
+      console.error('VITE_STRIPE_PUBLISHABLE_KEY is not set');
+      return null;
+    }
+    return loadStripe(pk);
   }, []);
 
   const options = useMemo(() => ({
@@ -106,6 +110,8 @@ const Pay = () => {
 
   const returnUrl = `${window.location.origin}/personal-page?plan=${planId}`;
 
+  const stripeKeyMissing = !import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
   return (
     <div className="min-h-screen w-full font-sans bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
@@ -118,12 +124,18 @@ const Pay = () => {
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
         </div>
-        {error && <div className="text-sm text-red-500 mb-4 text-center bg-red-50 p-4 rounded-xl">{error}</div>}
-        {clientSecret && stripePromise ? (
+        {(error || stripeKeyMissing) && (
+          <div className="text-sm text-red-500 mb-4 text-center bg-red-50 p-4 rounded-xl">
+            {stripeKeyMissing 
+              ? "Payment configuration error: Stripe publishable key is missing. Please contact support." 
+              : error}
+          </div>
+        )}
+        {!stripeKeyMissing && clientSecret && stripePromise ? (
           <Elements stripe={stripePromise} options={options}>
             <CheckoutForm returnUrl={returnUrl} />
           </Elements>
-        ) : (
+        ) : !stripeKeyMissing ? (
           <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -132,7 +144,7 @@ const Pay = () => {
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

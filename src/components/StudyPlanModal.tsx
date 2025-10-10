@@ -279,7 +279,28 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
               <TodayQuickTodo plan={plan} />
               {/* Highlights/Quick Wins/Next removed per request */}
             <div>
-              <h3 className="text-slate-800 font-semibold mb-2">This month</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-slate-800 font-semibold">This month</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    const confirmReset = window.confirm('Reset all local study plan data (completions, custom tasks, notes)?');
+                    if (!confirmReset) return;
+                    const keysToRemove: string[] = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                      const k = localStorage.key(i) as string;
+                      if (!k) continue;
+                      if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
+                    }
+                    keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+                    alert('All plan progress has been reset.');
+                  }}
+                >
+                  Reset All Plans
+                </Button>
+              </div>
               <ScrollableMiniCalendar plan={plan} onOpenDay={(date: Date) => setMiniDate(date)} />
             </div>
               <div className="flex flex-col sm:flex-row gap-3">

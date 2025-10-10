@@ -315,41 +315,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   className="flex-1"
                   onClick={() => { setMiniDate(null); setAiOpen(true); }}
                 >
-                  {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Study Plan' })}
+                  {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Plan' })}
                 </Button>
-                <AlertDialog open={resetPlanOpen} onOpenChange={setResetPlanOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button className="flex-1 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200">
-                      {t('studyPlan.resetPlan', { defaultValue: 'Reset Plan' })}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <ThemedAlertContent>
-                    <ThemedAlertHeader>
-                      <ThemedAlertTitle>{t('studyPlan.resetPlan', { defaultValue: 'Reset Plan' })}</ThemedAlertTitle>
-                      <AlertDialogDescription>
-                        {t('studyPlan.resetPlanConfirm', { defaultValue: 'This will remove your current study plan. Continue?' })}
-                      </AlertDialogDescription>
-                    </ThemedAlertHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
-                      <AlertDialogAction onClick={async () => {
-                        try {
-                          try { localStorage.removeItem('latest_plan'); } catch {}
-                          const { data: { user } } = await supabase.auth.getUser();
-                          if (user) {
-                            if (planId) {
-                              try { await (supabase as any).from('study_plans').delete().eq('id', planId); } catch {}
-                            }
-                            try { await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id); } catch {}
-                          }
-                          setPlan(null); setPlanId(null); setAiOpen(false);
-                        } catch (e) {
-                          console.error('Failed to reset plan:', e);
-                        }
-                      }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </ThemedAlertContent>
-                </AlertDialog>
               </div>
               {/* Debug controls removed */}
             </div>
@@ -628,8 +595,12 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm font-medium text-slate-800">{label}</div>
         <div className="flex items-center gap-2">
-          <button className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o-1)}>Prev</button>
-          <button className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o+1)}>Next</button>
+          <button aria-label="Previous" className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o-1)}>
+            ←
+          </button>
+          <button aria-label="Next" className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o+1)}>
+            →
+          </button>
         </div>
       </div>
       <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
@@ -637,15 +608,28 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
       </div>
       <div className="grid grid-cols-7 gap-2">
         {blanks.map(b => (<div key={`b${b}`} className="h-12" />))}
-        {days.map((d, di) => (
-          <button key={di} onClick={() => onOpenDay(new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()))} className={`relative h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
-            <span className="text-slate-900">{d.date.getDate()}</span>
-            {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
-            {(() => { const now=new Date(); const isToday = now.getFullYear()===d.date.getFullYear() && now.getMonth()===d.date.getMonth() && now.getDate()===d.date.getDate(); return isToday; })() && (
-              <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-500" />
-            )}
-          </button>
-        ))}
+        {days.map((d, di) => {
+          const now=new Date();
+          const isToday = now.getFullYear()===d.date.getFullYear() && now.getMonth()===d.date.getMonth() && now.getDate()===d.date.getDate();
+          // Completion state based on local quicktodo for that date
+          const key = new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()).toISOString().slice(0,10);
+          let completed = false;
+          try {
+            const checks = JSON.parse(localStorage.getItem(`quicktodo-${key}`)||'{}');
+            // consider completed if all visible AI indices marked true
+            const vals = Object.values(checks||{});
+            completed = Array.isArray(vals) ? vals.every(Boolean) : Object.values(checks).every(Boolean);
+          } catch {}
+          return (
+            <button key={di} onClick={() => onOpenDay(new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()))} className={`relative h-12 rounded-xl border text-sm ${completed ? 'bg-green-50 border-green-300' : d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
+              <span className={`text-slate-900 ${completed ? 'font-semibold text-green-700' : ''}`}>{d.date.getDate()}</span>
+              {d.hasTasks && !completed && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+              {isToday && (
+                <div className="absolute inset-0 rounded-xl ring-2 ring-blue-400 pointer-events-none"></div>
+              )}
+            </button>
+          )
+        })}
       </div>
     </div>
   );

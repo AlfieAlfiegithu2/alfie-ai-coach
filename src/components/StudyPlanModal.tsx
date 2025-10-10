@@ -251,7 +251,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       <DialogTrigger asChild>
         {children || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20 z-[58]">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] min-h-[400px] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20 z-[58]">
         <DialogHeader>
       <DialogTitle className="text-slate-800">{t('studyPlan.title', { defaultValue: 'Your Study Plan' })}</DialogTitle>
         </DialogHeader>
@@ -273,7 +273,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           )}
           {plan && (
             <div className="space-y-6">
-      <TodayQuickTodo key={refreshKey} plan={plan} />
+      <TodayQuickTodo plan={plan} />
               {/* Highlights/Quick Wins/Next removed per request */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -617,7 +617,7 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
   const label = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
   const leading = first.getDay();
   const blanks = Array.from({length: leading}).map((_,i)=>i);
-  const days: Array<{ date: Date; hasTasks: boolean }> = [];
+  const days: Array<{ date: Date; hasTasks: boolean; allCompleted: boolean }> = [];
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(first.getFullYear(), first.getMonth(), d);
     const diff = Math.floor((date.getTime() - startDate.getTime())/(24*60*60*1000));
@@ -625,15 +625,26 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
     const dayIdx = diff%7;
     // Only consider it has tasks if there are tasks and at least one is not hidden in local quicktodo
     let hasTasks = false;
+    let allCompleted = false;
     try {
       const tasks = plan.weekly?.[weekIdx]?.days?.[dayIdx]?.tasks;
       if (Array.isArray(tasks) && tasks.length > 0) {
         const key = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().slice(0,10);
         const hidden = new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]'));
-        hasTasks = tasks.some((_, idx) => !hidden.has(String(idx)));
+        const visibleTasks = tasks.filter((_, idx) => !hidden.has(String(idx)));
+        hasTasks = visibleTasks.length > 0;
+        
+        if (hasTasks) {
+          // Check if all visible tasks are completed
+          const checked = JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}');
+          const customTasks = JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]');
+          const allAiTasksCompleted = visibleTasks.every((_, idx) => checked[idx] === true);
+          const allCustomTasksCompleted = customTasks.every((_, idx) => checked[`c${idx}`] === true);
+          allCompleted = allAiTasksCompleted && allCustomTasksCompleted;
+        }
       }
-    } catch { hasTasks = false; }
-    days.push({ date, hasTasks });
+    } catch { hasTasks = false; allCompleted = false; }
+    days.push({ date, hasTasks, allCompleted });
   }
   return (
     <div className="rounded-2xl border border-white/40 bg-white/60 p-4">
@@ -659,7 +670,11 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
           return (
             <button key={di} onClick={() => onOpenDay(new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()))} className={`relative h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
               <span className="text-slate-900">{d.date.getDate()}</span>
-              {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+              {d.allCompleted ? (
+                <div className="mt-1 text-yellow-500 text-xs">⭐</div>
+              ) : d.hasTasks && (
+                <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />
+              )}
               {isToday && (
                 <div className="absolute inset-0 rounded-xl ring-2 ring-blue-400 pointer-events-none"></div>
               )}

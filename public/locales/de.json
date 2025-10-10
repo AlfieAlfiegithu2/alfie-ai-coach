@@ -14,7 +14,38 @@
     "features": {
       "aiTutor": "KI-Tutor",
       "practiceTests": "Übungstests",
-      "progressTracking": "Fortschrittsverfolgung"
+      "progressTracking": "Fortschrittsverfolgung",
+      "title": "Funktionen",
+      "aiPowered": "KI-gestütztes Lernen",
+      "personalized": "Personalisiertes Curriculum",
+      "instantFeedback": "Sofortiges Feedback"
+    },
+    "about": {
+      "title": "Über uns",
+      "content": "Verbessere deine Englischkenntnisse mit unserer KI-gestützten Plattform. Erhalte personalisierte Lektionen, sofortiges Feedback und verfolge deine Fortschritte Schritt für Schritt."
+    },
+    "programs": {
+      "title": "Lernprogramme",
+      "subtitle": "Wähle deinen Weg zur Englisch-Meisterschaft mit unseren umfassenden Programmen.",
+      "ielts": "IELTS Vorbereitung",
+      "general": "Alltagsenglisch",
+      "business": "Business-Englisch",
+      "academic": "Akademisches Englisch"
+    },
+    "pricing": {
+      "title": "Preise",
+      "subtitle": "Wähle den Plan, der zu deinen Lernzielen passt.",
+      "free": "Kostenlos",
+      "premium": "Premium",
+      "enterprise": "Enterprise"
+    },
+    "stories": {
+      "title": "Erfolgsgeschichten",
+      "subtitle": "Sieh, wie unsere Lernenden ihre Englischziele erreicht haben."
+    },
+    "contact": {
+      "title": "Kontakt",
+      "subtitle": "Nimm Kontakt mit unserem Support-Team auf."
     }
   },
   "auth": {
@@ -43,6 +74,152 @@
     "submit": "Absenden",
     "search": "Suchen",
     "filter": "Filtern",
-    "sort": "Sortieren"
+    "sort": "Sortieren",
+    "reset": "Zurücksetzen",
+    "days": "Tage",
+    "hours": "Stunden",
+    "minutes": "Minuten",
+    "seconds": "Sekunden",
+    "week": "Woche",
+    "month": "Monat",
+    "year": "Jahr"
+  },
+  "skills": {
+    "reading": "Lesen",
+    "listening": "Hören",
+    "writing": "Schreiben",
+    "speaking": "Sprechen",
+    "overall": "Gesamt"
+  },
+  "navigation": {
+    "myWordBook": "Mein Vokabelheft",
+    "tests": "Tests",
+    "studyPlan": "Lernplan",
+    "home": "Startseite",
+    "settings": "Einstellungen",
+    "resetResults": "Ergebnisse zurücksetzen"
+  },
+  "dashboard": {
+    "myWordBook": "Mein Vokabelheft",
+    "tests": "Tests",
+    "studyPlan": "Lernplan",
+    "home": "Startseite",
+    "resetResults": "Ergebnisse zurücksetzen",
+    "greeting": "Guten Morgen, {{name}}!",
+    "helloUser": "Hallo, {{name}}",
+    "overall": "Gesamt",
+    "studyProgress": "Lernfortschritt",
+    "testsTaken": "Tests absolviert",
+    "wordsSaved": "Gespeicherte Wörter",
+    "dayStreak": "Tage in Folge",
+    "practiceAreas": "Übungsbereiche",
+    "resultsFeedback": "{{skill}} Ergebnisse & Feedback",
+    "viewHistory": "Verlauf ansehen",
+    "viewDetailedResults": "Detaillierte Ergebnisse ansehen",
+    "averageScore": "Durchschnittspunktzahl",
+    "latestScore": "Letzte Punktzahl",
+    "noTestsYet": "Noch keine {{skill}}-Tests absolviert",
+    "startFirstTest": "Ersten Test starten",
+    "deadline": "Frist"
+  },
+  "studyPlan": {
+    "title": "Dein Lernplan",
+    "today": "Heute",
+    "thisMonth": "Diesen Monat",
+    "generateButton": "Plan erstellen",
+    "generating": "Wird erstellt...",
+    "targetIELTS": "IELTS-Ziel",
+    "deadline": "Frist",
+    "minutesPerDay": "Minuten pro Tag",
+    "firstLanguage": "Muttersprache",
+    "studyDays": "Lerntage",
+    "weakAreas": "Schwache Bereiche",
+    "quickAIPlan": "Schneller KI-Plan",
+    "retakeAssessment": "Einstufungstest wiederholen",
+    "removeAllTasks": "Alle KI-Aufgaben entfernen",
+    "restoreTasks": "KI-Aufgaben wiederherstellen",
+    "resetDay": "Tag zurücksetzen",
+    "takeAssessment": "5-Minuten-Einstufungstest für Planerstellung",
+    "quickAIPlanNoAssessment": "Schneller KI-Plan (ohne Einstufung)",
+    "syncFromDashboard": "Vom Dashboard synchronisieren",
+    "syncDescription": "Passt die Plandauer an deine Dashboard-Frist an.",
+    "optional": "Noch etwas zu beachten? (Zeitlimits, Module, Schwerpunkte)",
+    "placeholder": "z.B. Akademisches Modul, schwach bei Aufgabe 1 Diagrammen, nur Mo/Mi/Fr lernen",
+    "showInFirstLanguage": "Plan in Muttersprache anzeigen",
+    "totalPlannedMinutes": "Geplante Gesamtminuten: {{minutes}} min",
+    "addTask": "Aufgabe hinzufügen",
+    "add": "Hinzufügen",
+    "loadingPlan": "Lade deinen Plan…",
+    "noPlanYet": "Du hast noch keinen Plan.",
+    "dayOfWeek": "{{day}}={{number}}",
+    "studyDaysDescription": "Lerntage (So=0 … Sa=6)",
+    "weakAreasDescription": "Schwache Bereiche (optional)",
+    "deadlineOptional": "Frist (optional)"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "preferredName": "Bevorzugter Name",
+    "uiLanguage": "Oberflächensprache",
+    "nativeLanguage": "Muttersprache",
+    "targetTestType": "Zieltest-Typ",
+    "targetScore": "Zielpunktzahl",
+    "targetDeadline": "Ziel-Frist",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "signOut": "Abmelden",
+    "profileSettings": "Profileinstellungen",
+    "learningPreferences": "Lernpräferenzen",
+    "account": "Konto",
+    "uploadPhoto": "Foto hochladen",
+    "changePhoto": "Foto ändern",
+    "currentPhoto": "Aktuelles Foto"
+  },
+  "countdown": {
+    "deadline": "Frist",
+    "timeRemaining": "Verbleibende Zeit"
+  },
+  "welcome": {
+    "continueInLanguage": "Auf {{language}} fortfahren?",
+    "yes": "Ja",
+    "keepEnglish": "Auf Englisch belassen",
+    "detectedLanguage": "Wir haben erkannt, dass du {{language}} sprichst",
+    "switchLanguage": "Zu {{language}} wechseln",
+    "dismiss": "Schließen"
+  },
+  "testPortal": {
+    "ieltsPortal": "IELTS-Portal",
+    "generalPortal": "Alltagsenglisch-Portal",
+    "startTest": "Test starten",
+    "chooseSection": "Testbereich wählen",
+    "reading": "Lesen",
+    "listening": "Hören",
+    "writing": "Schreiben",
+    "speaking": "Sprechen",
+    "instructions": "Anleitung",
+    "timeLimit": "Zeitlimit",
+    "questions": "Fragen"
+  },
+  "testResults": {
+    "overallResults": "Gesamttestergebnisse",
+    "viewResults": "Ergebnisse ansehen",
+    "retakeTest": "Test wiederholen",
+    "nextTest": "Nächster Test",
+    "score": "Punktzahl",
+    "band": "Band",
+    "percentage": "Prozentsatz",
+    "correctAnswers": "Richtige Antworten",
+    "totalQuestions": "Gesamtfragen",
+    "timeTaken": "Benötigte Zeit",
+    "detailedFeedback": "Detailliertes Feedback",
+    "improvementTips": "Verbesserungstipps"
+  },
+  "timeUnits": {
+    "days": "Tage",
+    "hours": "Stunden",
+    "minutes": "Minuten",
+    "seconds": "Sekunden",
+    "weeks": "Wochen",
+    "months": "Monate",
+    "years": "Jahre"
   }
 }

@@ -15,7 +15,8 @@
     "sync": "chmod +x scripts/smart-sync.sh && ./scripts/smart-sync.sh",
     "sync:quick": "git add . && git commit -m '🔄 Quick sync' && git push origin main",
     "deploy:supabase": "chmod +x scripts/deploy-supabase.sh && ./scripts/deploy-supabase.sh",
-    "test:functions": "node scripts/test-functions.js"
+    "test:functions": "node scripts/test-functions.js",
+    "sync-translations": "node scripts/sync-translations.js"
   },
   "dependencies": {
     "@11labs/react": "^0.1.4",

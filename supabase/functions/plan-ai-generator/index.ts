@@ -59,7 +59,8 @@ serve(async (req) => {
     const cacheKey = `plan_${chosenProvider}_${targetScore}_${minutesPerDay}_${studyDays.join(',')}_${firstLangNorm}_${planNativeLanguage}_${weakAreas.join(',')}_${targetDeadline || 'none'}`;
     console.log('🔍 Plan cache key:', cacheKey.substring(0, 50) + '...');
 
-    const wantNative = String(planNativeLanguage) === 'yes' && firstLangNorm && firstLangNorm !== 'en';
+    // Force native-language output whenever a non-English first language is provided
+    const wantNative = Boolean(firstLangNorm && firstLangNorm !== 'en');
     
     console.log('🌍 Language settings:', {
       firstLanguage: firstLangNorm,
@@ -105,11 +106,9 @@ serve(async (req) => {
     const system = `You are an IELTS coach. Create a concise, practical study plan.
 
 LANGUAGE POLICY (STRICT):
-- If planNativeLanguage === "yes" and firstLanguage != "en":
-  - Write all content in the student's first language by default (highlights, quick wins, task titles).
-  - Keep only essential IELTS keywords in ENGLISH inside parentheses after the localized title, e.g. "本地化标题 (Vocabulary: 12 academic words)".
-  - Do not add any other English words outside the parentheses.
-- If planNativeLanguage === "no" or firstLanguage === "en": English only.
+- If firstLanguage != "en":
+  - Write ALL content in the student's first language (task titles and lists). Do NOT include English text.
+- If firstLanguage === "en": English only.
 
 PLANNING RULES:
 - 3–5 tasks per study day, total ~minutesPerDay.
@@ -119,12 +118,9 @@ PLANNING RULES:
     const user = `Create IELTS study plan:
 Target: ${Number(targetScore).toFixed(1)} | Deadline: ${targetDeadline || 'none'} | Daily: ${minutesPerDay}min | Days: ${Array.isArray(studyDays) ? studyDays.join(',') : ''} | Lang: ${firstLangNorm} | Bilingual: ${wantNative ? 'yes' : 'no'} | Weak: ${(weakAreas||[]).join(', ') || 'none'}
 
-${wantNative && firstLangNorm === 'zh' ? `
-MANDATORY CHINESE OUTPUT:
-- All text in Chinese except IELTS keywords in parentheses.
-- Example task: "词汇: 12个学术词汇 (Vocabulary: 12 academic words)"
-- Example highlight: "当前水平: B1 (雅思约5.5) • 目标: 雅思7.0"
-- Example quickWin: "每天模仿学术音频5–10分钟（发音+节奏）"
+${wantNative ? `
+MANDATORY NATIVE LANGUAGE OUTPUT:
+- All text MUST be in the student's first language (${firstLangNorm}). No English text. Use fully localized labels and counts (e.g., “8문항”, “8 preguntas”).
 ` : ''}
 
 Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}min. Prioritize weak areas first. 12 weeks default or match deadline. Keep IELTS terms in English. ${wantNative ? 'Bilingual titles: "Local (English)"' : 'English titles only'}. ${schema}`;
@@ -224,8 +220,8 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
       const toTitle = (w: string) => ({
         vocab: 'Vocabulary: 12 academic words',
         grammar: 'Grammar: articles & prepositions (12 items)',
-        listening: 'Listening: Section 1 detail (forms/dates/numbers) 10 Q',
-        reading: 'Reading: headings/para matching 8 Q',
+        listening: 'Listening: Section 1 details (forms, dates, numbers) – 10 questions',
+        reading: 'Reading: match headings to paragraphs – 8 questions',
         writing: 'Writing: Task 2 paragraph (claim + reason + example)',
         speaking: 'Speaking: mimic & shadow 3 sentences (pronunciation)'
       } as any)[w] || 'Study 20 minutes';
@@ -240,16 +236,8 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
       plan = {
         durationWeeks,
         weekly,
-        highlights: [
-          `Starting level ≈ ${Math.max(1, Math.min(9, Number(targetScore) - 2)).toFixed(1)}`,
-          `Target IELTS ${Number(targetScore).toFixed(1)} • Daily study ~${minutesPerDay} min`,
-          `Estimated timeline: ~${Math.max(1, Math.round(durationWeeks/4))} month(s)`
-        ],
-        quickWins: [
-          'Shadow 5–10 min academic audio daily (pronunciation + rhythm)',
-          'Target weak subskills with 10 focused items/day',
-          'Weekly mini‑mock to measure progress'
-        ],
+        highlights: [],
+        quickWins: [],
         meta: {
           currentLevel: 'B1',
           currentApproxIELTS: Math.max(4, Number(targetScore) - 1),
@@ -271,14 +259,19 @@ Rules: Empty tasks on non-study days. 3-5 tasks/day totaling ~${minutesPerDay}mi
           ko: { Vocabulary: '어휘', Listening: '리스닝', Reading: '리딩', Grammar: '문법', Writing: '라이팅', Speaking: '스피킹' },
           ja: { Vocabulary: '語彙', Listening: 'リスニング', Reading: 'リーディング', Grammar: '文法', Writing: 'ライティング', Speaking: 'スピーキング' },
           es: { Vocabulary: 'Vocabulario', Listening: 'Listening', Reading: 'Reading', Grammar: 'Gramática', Writing: 'Writing', Speaking: 'Speaking' },
-          fr: { Vocabulary: 'Vocabulaire', Listening: 'Listening', Reading: 'Reading', Grammar: 'Grammaire', Writing: 'Writing', Speaking: 'Speaking' }
+          pt: { Vocabulary: 'Vocabulário', Listening: 'Listening', Reading: 'Reading', Grammar: 'Gramática', Writing: 'Writing', Speaking: 'Speaking' },
+          fr: { Vocabulary: 'Vocabulaire', Listening: 'Listening', Reading: 'Reading', Grammar: 'Grammaire', Writing: 'Writing', Speaking: 'Speaking' },
+          de: { Vocabulary: 'Wortschatz', Listening: 'Listening', Reading: 'Reading', Grammar: 'Grammatik', Writing: 'Writing', Speaking: 'Speaking' },
+          ru: { Vocabulary: 'Лексика', Listening: 'Аудирование', Reading: 'Чтение', Grammar: 'Грамматика', Writing: 'Письмо', Speaking: 'Говорение' },
+          hi: { Vocabulary: 'शब्दावली', Listening: 'Listening', Reading: 'Reading', Grammar: 'व्याकरण', Writing: 'Writing', Speaking: 'Speaking' },
+          vi: { Vocabulary: 'Từ vựng', Listening: 'Listening', Reading: 'Reading', Grammar: 'Ngữ pháp', Writing: 'Writing', Speaking: 'Speaking' }
         };
         const labels = labelMap[firstLangNorm];
         if (labels) {
           const wrap = (title: string) => {
             const prefix = (title.split(':')[0] || '') as keyof typeof labels;
             const local = (labels as any)[prefix] || prefix;
-            return `${local}: ${title.slice(String(prefix).length + 2)} (${title})`;
+            return `${local}: ${title.slice(String(prefix).length + 2)}`;
           };
           plan.weekly.forEach((w: any) => w.days.forEach((d: any) => {
             d.tasks = d.tasks.map((t: any) => ({ ...t, title: wrap(t.title) }));

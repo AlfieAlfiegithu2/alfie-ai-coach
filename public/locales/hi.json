@@ -14,7 +14,38 @@
     "features": {
       "aiTutor": "एआई शिक्षक",
       "practiceTests": "अभ्यास परीक्षण",
-      "progressTracking": "प्रगति ट्रैकिंग"
+      "progressTracking": "प्रगति ट्रैकिंग",
+      "title": "विशेषताएँ",
+      "aiPowered": "एआई-संचालित सीखना",
+      "personalized": "व्यक्तिगत पाठ्यक्रम",
+      "instantFeedback": "तत्काल प्रतिक्रिया"
+    },
+    "about": {
+      "title": "हमारे बारे में",
+      "content": "हमारे एआई-संचालित प्लेटफॉर्म से अपनी अंग्रेजी कौशल को बदलें। व्यक्तिगत पाठ, तत्काल प्रतिक्रिया प्राप्त करें और हर कदम पर अपनी प्रगति को ट्रैक करें।"
+    },
+    "programs": {
+      "title": "सीखने के कार्यक्रम",
+      "subtitle": "हमारे व्यापक कार्यक्रमों के साथ अंग्रेजी में महारत हासिल करने का अपना रास्ता चुनें।",
+      "ielts": "IELTS तैयारी",
+      "general": "सामान्य अंग्रेजी",
+      "business": "व्यावसायिक अंग्रेजी",
+      "academic": "शैक्षणिक अंग्रेजी"
+    },
+    "pricing": {
+      "title": "मूल्य निर्धारण",
+      "subtitle": "अपने सीखने के लक्ष्यों के अनुरूप योजना चुनें।",
+      "free": "मुफ्त",
+      "premium": "प्रीमियम",
+      "enterprise": "एंटरप्राइज़"
+    },
+    "stories": {
+      "title": "सफलता की कहानियाँ",
+      "subtitle": "देखें कि कैसे हमारे छात्रों ने अपने अंग्रेजी लक्ष्यों को हासिल किया।"
+    },
+    "contact": {
+      "title": "संपर्क करें",
+      "subtitle": "हमारी सहायता टीम से संपर्क करें।"
     }
   },
   "auth": {
@@ -43,6 +74,152 @@
     "submit": "सबमिट करें",
     "search": "खोजें",
     "filter": "फ़िल्टर",
-    "sort": "क्रमबद्ध करें"
+    "sort": "क्रमबद्ध करें",
+    "reset": "रीसेट",
+    "days": "दिन",
+    "hours": "घंटे",
+    "minutes": "मिनट",
+    "seconds": "सेकंड",
+    "week": "सप्ताह",
+    "month": "माह",
+    "year": "वर्ष"
+  },
+  "skills": {
+    "reading": "रीडिंग",
+    "listening": "लिसनिंग",
+    "writing": "राइटिंग",
+    "speaking": "स्पीकिंग",
+    "overall": "कुल"
+  },
+  "navigation": {
+    "myWordBook": "मेरा वर्ड बुक",
+    "tests": "टेस्ट",
+    "studyPlan": "स्टडी प्लान",
+    "home": "होम",
+    "settings": "सेटिंग्स",
+    "resetResults": "परिणाम रीसेट"
+  },
+  "dashboard": {
+    "helloUser": "नमस्ते, {{name}}",
+    "studyProgress": "अध्ययन प्रगति",
+    "testsTaken": "दिए गए टेस्ट",
+    "wordsSaved": "सहेजे शब्द",
+    "dayStreak": "लगातार दिन",
+    "practiceAreas": "प्रैक्टिस क्षेत्र",
+    "averageScore": "औसत स्कोर",
+    "latestScore": "नवीनतम स्कोर",
+    "noTestsYet": "अभी तक {{skill}} टेस्ट नहीं दिया",
+    "startFirstTest": "पहला टेस्ट शुरू करें",
+    "viewDetailedResults": "विस्तृत परिणाम देखें",
+    "deadline": "समय सीमा",
+    "myWordBook": "मेरी शब्द पुस्तक",
+    "tests": "टेस्ट",
+    "studyPlan": "अध्ययन योजना",
+    "home": "होम",
+    "resetResults": "परिणाम रीसेट करें",
+    "greeting": "सुप्रभात, {{name}}!",
+    "overall": "समग्र",
+    "resultsFeedback": "{{skill}} परिणाम और प्रतिक्रिया",
+    "viewHistory": "इतिहास देखें"
+  },
+  "studyPlan": {
+    "title": "आपका स्टडी प्लान",
+    "generateButton": "प्लान बनाएं",
+    "generating": "बन रहा है...",
+    "targetIELTS": "लक्ष्य IELTS",
+    "deadline": "समय सीमा",
+    "minutesPerDay": "प्रति दिन मिनट",
+    "firstLanguage": "पहली भाषा",
+    "quickAIPlan": "त्वरित एआई प्लान",
+    "takeAssessment": "5‑मिनट आकलन से प्लान बनाएं",
+    "quickAIPlanNoAssessment": "त्वरित एआई प्लान (आकलन नहीं)",
+    "syncFromDashboard": "डैशबोर्ड से सिंक करें",
+    "syncDescription": "यह प्लान अवधि को आपकी समय सीमा से संरेखित करेगा।",
+    "optional": "कोई और बात? (समय-सारिणी, मॉड्यूल, फोकस)",
+    "placeholder": "उदा., Academic मॉड्यूल, Task 1 चार्ट कमजोर, सोम/बुध/शुक्र",
+    "showInFirstLanguage": "पहली भाषा में प्लान दिखाएं",
+    "loadingPlan": "प्लान लोड हो रहा है...",
+    "noPlanYet": "अभी कोई प्लान नहीं है।",
+    "deadlineOptional": "समय सीमा (वैकल्पिक)",
+    "totalPlannedMinutes": "कुल योजनाबद्ध समय: {{minutes}} मिनट",
+    "today": "आज",
+    "thisMonth": "इस महीने",
+    "studyDays": "अध्ययन के दिन",
+    "weakAreas": "कमजोर क्षेत्र",
+    "retakeAssessment": "स्तर मूल्यांकन फिर से लें",
+    "removeAllTasks": "सभी एआई कार्य हटाएँ",
+    "restoreTasks": "एआई कार्य पुनर्स्थापित करें",
+    "resetDay": "दिन रीसेट करें",
+    "addTask": "एक कार्य जोड़ें",
+    "add": "जोड़ें",
+    "dayOfWeek": "{{day}}={{number}}",
+    "studyDaysDescription": "अध्ययन के दिन (रवि=0 … शनि=6)",
+    "weakAreasDescription": "कमजोर क्षेत्र (वैकल्पिक)"
+  },
+  "countdown": {
+    "deadline": "समय सीमा",
+    "timeRemaining": "शेष समय"
+  },
+  "testPortal": {
+    "ieltsPortal": "IELTS पोर्टल",
+    "generalPortal": "जनरल इंग्लिश पोर्टल",
+    "startTest": "टेस्ट शुरू करें",
+    "chooseSection": "सेक्शन चुनें",
+    "reading": "रीडिंग",
+    "listening": "लिसनिंग",
+    "writing": "राइटिंग",
+    "speaking": "स्पीकिंग",
+    "instructions": "निर्देश",
+    "timeLimit": "समय सीमा",
+    "questions": "प्रश्न"
+  },
+  "testResults": {
+    "overallResults": "कुल टेस्ट परिणाम",
+    "viewResults": "परिणाम देखें",
+    "retakeTest": "दोबारा टेस्ट दें",
+    "nextTest": "अगला टेस्ट",
+    "score": "स्कोर",
+    "band": "बैंड",
+    "percentage": "प्रतिशत",
+    "correctAnswers": "सही उत्तर",
+    "totalQuestions": "कुल प्रश्न",
+    "timeTaken": "लगा समय",
+    "detailedFeedback": "विस्तृत फीडबैक",
+    "improvementTips": "सुधार के सुझाव"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "preferredName": "पसंदीदा नाम",
+    "uiLanguage": "यूआई भाषा",
+    "nativeLanguage": "मूल भाषा",
+    "targetTestType": "लक्ष्य परीक्षण प्रकार",
+    "targetScore": "लक्ष्य स्कोर",
+    "targetDeadline": "लक्ष्य समय सीमा",
+    "save": "सेव करें",
+    "cancel": "रद्द करें",
+    "signOut": "साइन आउट",
+    "profileSettings": "प्रोफाइल सेटिंग्स",
+    "learningPreferences": "सीखने की प्राथमिकताएँ",
+    "account": "खाता",
+    "uploadPhoto": "फोटो अपलोड करें",
+    "changePhoto": "फोटो बदलें",
+    "currentPhoto": "वर्तमान फोटो"
+  },
+  "welcome": {
+    "continueInLanguage": "{{language}} में जारी रखें?",
+    "yes": "हाँ",
+    "keepEnglish": "अंग्रेजी रखें",
+    "detectedLanguage": "हमने पता लगाया कि आप {{language}} बोलते हैं",
+    "switchLanguage": "{{language}} में बदलें",
+    "dismiss": "खारिज करें"
+  },
+  "timeUnits": {
+    "days": "दिन",
+    "hours": "घंटे",
+    "minutes": "मिनट",
+    "seconds": "सेकंड",
+    "weeks": "सप्ताह",
+    "months": "महीने",
+    "years": "साल"
   }
 }

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CountdownTimerProps {
   targetDate: string | null;
 }
 
 const CountdownTimer = ({ targetDate }: CountdownTimerProps) => {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -48,7 +50,7 @@ const CountdownTimer = ({ targetDate }: CountdownTimerProps) => {
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-4 h-4 text-slate-600" />
         <span className="text-sm font-medium text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-          Time to Target
+          {t('countdown.deadline', { defaultValue: 'Deadline' })}
         </span>
       </div>
       
@@ -58,7 +60,7 @@ const CountdownTimer = ({ targetDate }: CountdownTimerProps) => {
             {timeLeft.days}
           </div>
           <div className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Days
+            {t('timeUnits.days', { defaultValue: 'Days' })}
           </div>
         </div>
         <div className="text-center">
@@ -66,7 +68,7 @@ const CountdownTimer = ({ targetDate }: CountdownTimerProps) => {
             {timeLeft.hours}
           </div>
           <div className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Hours
+            {t('timeUnits.hours', { defaultValue: 'Hours' })}
           </div>
         </div>
         <div className="text-center">
@@ -74,7 +76,7 @@ const CountdownTimer = ({ targetDate }: CountdownTimerProps) => {
             {timeLeft.minutes}
           </div>
           <div className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Minutes
+            {t('timeUnits.minutes', { defaultValue: 'Minutes' })}
           </div>
         </div>
         <div className="text-center">
@@ -82,7 +84,7 @@ const CountdownTimer = ({ targetDate }: CountdownTimerProps) => {
             {timeLeft.seconds}
           </div>
           <div className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Seconds
+            {t('timeUnits.seconds', { defaultValue: 'Seconds' })}
           </div>
         </div>
       </div>

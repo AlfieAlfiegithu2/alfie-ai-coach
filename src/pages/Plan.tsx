@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Plan } from '@/lib/plans/templates';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { TASK_BANK, type TaskBankItem, SKILLS, LEVELS, filterTaskBank } from '@/lib/plans/taskBank';
 
 const PlanPage = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -216,6 +217,18 @@ const PlanPage = () => {
     setHiddenAiIds(next);
     if (openIso) saveHiddenAi(openIso, next);
   };
+  const hideAllAiTasks = () => {
+    const total = (getDay(openDayKey)?.tasks || []).length;
+    const next = new Set<string>();
+    for (let i = 0; i < total; i++) next.add(`ai-${i}`);
+    setHiddenAiIds(next);
+    if (openIso) saveHiddenAi(openIso, next);
+  };
+  const restoreAllAiTasks = () => {
+    const next = new Set<string>();
+    setHiddenAiIds(next);
+    if (openIso) saveHiddenAi(openIso, next);
+  };
   const duplicateToTomorrow = () => {
     if (!openIso) return;
     const date = new Date(openIso);
@@ -317,28 +330,7 @@ const PlanPage = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          <div className="rounded-2xl border border-white/40 bg-white/60 p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Highlights</h2>
-            <ul className="list-disc pl-5 space-y-1 text-slate-700">
-          {plan.highlights.map((h, i) => (<li key={i}>{h}</li>))}
-        </ul>
-      </div>
-          <div className="rounded-2xl border border-white/40 bg-white/60 p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Quick Wins</h2>
-            <ul className="list-disc pl-5 space-y-1 text-slate-700">
-          {plan.quickWins.map((h, i) => (<li key={i}>{h}</li>))}
-        </ul>
-      </div>
-          <div className="rounded-2xl border border-white/40 bg-white/60 p-5">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Study Pacing</h2>
-            <ul className="list-disc pl-5 space-y-1 text-slate-700">
-              <li>Recommended daily study: {plan.meta?.dailyMinutes || 60} min</li>
-              <li>Weekly checkpoint: mini‑mock and review</li>
-              <li>Deadline‑aligned schedule</li>
-            </ul>
-          </div>
-        </div>
+        {/* Highlights / Quick Wins removed; keep only essential pacing if needed */}
 
         {/* Today's Tasks Section */}
         {(() => {
@@ -484,8 +476,10 @@ const PlanPage = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-slate-800 mb-2">AI Tasks</h4>
-                  <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs">
                     <button className="rounded-md border px-2 py-1" onClick={duplicateToTomorrow}>Duplicate to tomorrow</button>
+                    <button className="rounded-md border px-2 py-1" onClick={hideAllAiTasks}>Remove all AI tasks</button>
+                    <button className="rounded-md border px-2 py-1" onClick={restoreAllAiTasks}>Restore AI tasks</button>
                     <button className="rounded-md border px-2 py-1" onClick={resetDay}>Reset day</button>
                   </div>
                 </div>
@@ -514,6 +508,14 @@ const PlanPage = () => {
                     <input type="number" value={newTaskMinutes} onChange={(e) => setNewTaskMinutes(Number(e.target.value))} className="w-24 rounded-md border px-3 py-2" />
                     <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustomTask}>Add</button>
                   </div>
+                  {/* Quick add from curated Task Bank */}
+                  <details className="mb-2">
+                    <summary className="cursor-pointer text-sm text-slate-700">Add from Task Bank</summary>
+                    <BankPicker onPick={(t)=>{
+                      setNewTaskTitle(t.label);
+                      setNewTaskMinutes(t.minutes);
+                    }} />
+                  </details>
                   <ul className="space-y-2">
                     {customTasks.map((t, i) => {
                       const id = `custom-${i}`;
@@ -551,4 +553,45 @@ const PlanPage = () => {
 
 export default PlanPage;
 
-
+// Lightweight picker of curated tasks for quick adding
+function BankPicker({ onPick }: { onPick: (t: TaskBankItem) => void }) {
+  const [skill, setSkill] = useState<typeof SKILLS[number]>('all');
+  const [level, setLevel] = useState<typeof LEVELS[number]>('any');
+  const [q, setQ] = useState('');
+  const groups = useMemo(() => {
+    const items = filterTaskBank({ skill, level, query: q });
+    const map = new Map<string, TaskBankItem[]>();
+    for (const item of items) {
+      if (!map.has(item.skill)) map.set(item.skill, []);
+      map.get(item.skill)!.push(item);
+    }
+    return Array.from(map.entries());
+  }, [skill, level, q]);
+  return (
+    <div className="mt-2 border rounded-lg p-3 bg-white/70">
+      <div className="flex gap-2 items-center mb-2">
+        <select value={skill} onChange={(e)=>setSkill(e.target.value as any)} className="rounded border px-2 py-1 text-sm">
+          {SKILLS.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={level} onChange={(e)=>setLevel(e.target.value as any)} className="rounded border px-2 py-1 text-sm">
+          {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+        </select>
+        <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search (e.g., inference)" className="flex-1 rounded border px-2 py-1 text-sm" />
+      </div>
+      <div className="max-h-64 overflow-auto">
+      {groups.map(([skill, items]) => (
+        <div key={skill} className="mb-2">
+          <div className="text-xs font-semibold text-slate-700 mb-1 uppercase">{skill}</div>
+          <div className="grid gap-2">
+            {items.map((t) => (
+              <button key={t.id} onClick={() => onPick(t)} className="text-left text-sm px-2 py-1 rounded border hover:bg-slate-50">
+                {t.label} <span className="text-xs text-slate-500">• {t.minutes} min</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      </div>
+    </div>
+  );
+}

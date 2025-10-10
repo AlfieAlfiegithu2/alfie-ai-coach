@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,7 @@ interface TestResultsChartProps {
 
 const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartProps) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState('1week');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,16 +143,18 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-slate-800">
-            {selectedSkill === 'overall' ? 'Overall Test Results' : `${selectedSkill.charAt(0).toUpperCase() + selectedSkill.slice(1)} Test Results`}
+            {selectedSkill === 'overall' 
+              ? t('testResults.overallResults', { defaultValue: 'Overall Test Results' })
+              : t('dashboard.resultsFeedback', { skill: selectedSkill, defaultValue: `${selectedSkill} Results & Feedback` })}
           </CardTitle>
           <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-32 bg-white/50 border-white/30">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
-              <SelectItem value="1week">1 Week</SelectItem>
-              <SelectItem value="1month">1 Month</SelectItem>
-              <SelectItem value="3months">3 Months</SelectItem>
+              <SelectItem value="1week">{t('common.week', { defaultValue: 'Week' })}</SelectItem>
+              <SelectItem value="1month">{t('studyPlan.thisMonth', { defaultValue: 'This month' })}</SelectItem>
+              <SelectItem value="3months">{t('timeUnits.months', { defaultValue: 'Months' })}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -158,11 +162,11 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
       <CardContent>
         {loading ? (
           <div className="h-64 flex items-center justify-center">
-            <p className="text-slate-600">Loading results...</p>
+            <p className="text-slate-600">{t('common.loading', { defaultValue: 'Loading...' })}</p>
           </div>
         ) : testResults.length === 0 ? (
           <div className="h-64 flex items-center justify-center">
-            <p className="text-slate-600">No test results found for this period</p>
+            <p className="text-slate-600">{t('testResults.noneForPeriod', { defaultValue: 'No test results found for this period' })}</p>
           </div>
         ) : (
           <>
@@ -234,7 +238,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   {testResults.length}
                 </p>
                 <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Tests Taken
+                  {t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}
                 </p>
               </div>
               <div className="text-center">
@@ -242,7 +246,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   {averageScore.toFixed(1)}
                 </p>
                 <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Average Score
+                  {t('dashboard.averageScore', { defaultValue: 'Average Score' })}
                 </p>
               </div>
               <div className="text-center">
@@ -250,7 +254,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}
                 </p>
                 <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Improvement
+                  {t('testResults.improvement', { defaultValue: 'Improvement' })}
                 </p>
               </div>
             </div>

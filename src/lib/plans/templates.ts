@@ -1,4 +1,5 @@
 import type { Score } from '../assessment/scoring';
+import { TASK_BANK, type TaskBankItem, selectTasks } from './taskBank';
 
 export type PlanTask = { title: string; minutes: number };
 export type PlanDay = { day: number; tasks: PlanTask[] };
@@ -19,41 +20,18 @@ export type Plan = {
     startDateISO?: string;
     firstLanguage?: string;
     planNativeLanguage?: 'yes' | 'no';
+    studyDays?: number[]; // 0=Sun..6=Sat
   };
 };
 
 // Pools used to diversify tasks and reduce repetition. Titles are prefixed by skill for UI coloring.
 const poolsByBand = (band: Score['band']) => {
-  const vocab: PlanTask[] = [
-    { title: 'Vocabulary: 12 academic words + 6 collocations', minutes: 20 },
-    { title: 'Vocabulary: 10 collocations (make 5 example sentences)', minutes: 20 },
-    { title: 'Vocabulary: review deck + 8 new words', minutes: 20 },
-  ];
-  const listening: PlanTask[] = [
-    { title: 'Listening: Section 1 detail (forms/dates/numbers) 10 Q', minutes: 20 },
-    { title: 'Listening: paraphrase/gist (short talk) 8 Q', minutes: 20 },
-    { title: 'Listening: map/plan completion 10 Q', minutes: 20 },
-  ];
-  const reading: PlanTask[] = [
-    { title: 'Reading: T/F/NG on short passage 8 Q', minutes: 20 },
-    { title: 'Reading: reference & inference 10 Q', minutes: 20 },
-    { title: 'Reading: headings/para matching 8 Q', minutes: 20 },
-  ];
-  const grammar: PlanTask[] = [
-    { title: 'Grammar: articles & prepositions (12 items)', minutes: 15 },
-    { title: 'Grammar: tense control & SVA (12 items)', minutes: 15 },
-    { title: 'Grammar: complex sentences & linkers (10 items)', minutes: 15 },
-  ];
-  const writing: PlanTask[] = [
-    { title: 'Writing: Task 1 outline (data selection + comparisons)', minutes: 20 },
-    { title: 'Writing: Task 2 paragraph (claim + reason + example)', minutes: 20 },
-    { title: 'Writing: 120‑word summary + cohesion markers', minutes: 20 },
-  ];
-  const speaking: PlanTask[] = [
-    { title: 'Speaking: Part 1 (2 prompts, 40s) + feedback highlights', minutes: 10 },
-    { title: 'Speaking: Part 2 cue card (prep 15s + speak 40s)', minutes: 15 },
-    { title: 'Speaking: mimic & shadow 3 sentences (pronunciation)', minutes: 10 },
-  ];
+  const vocab: PlanTask[] = selectTasks('vocab', band, 3).map(toPlanTask);
+  const listening: PlanTask[] = selectTasks('listening', band, 3).map(toPlanTask);
+  const reading: PlanTask[] = selectTasks('reading', band, 3).map(toPlanTask);
+  const grammar: PlanTask[] = selectTasks('grammar', band, 3).map(toPlanTask);
+  const writing: PlanTask[] = selectTasks('writing', band, 3).map(toPlanTask);
+  const speaking: PlanTask[] = selectTasks('speaking', band, 3).map(toPlanTask);
 
   // Adjust emphasis per band lightly
   const emphasize = (arr: PlanTask[], more: number): PlanTask[] => arr.concat(arr.slice(0, more));
@@ -85,39 +63,77 @@ const poolsByBand = (band: Score['band']) => {
 
 function pick<T>(arr: T[], index: number): T { return arr[index % arr.length]; }
 
+function toPlanTask(item: TaskBankItem): PlanTask {
+  return { title: item.label, minutes: item.minutes };
+}
+
 function buildDailyTasks(
   band: Score['band'],
   dayIndex: number,
   minutes: number,
   prioritizedSkills: ReadonlyArray<'vocab' | 'listening' | 'reading' | 'grammar' | 'writing' | 'speaking'> = ['vocab','listening','reading','grammar','writing','speaking']
 ): PlanTask[] {
-  const pools = poolsByBand(band);
-  // Start with prioritized skills (weakest first), then fill any remaining in the default order.
+  // Deterministic RNG so similar learners get stable variety
+  const rng = mulberry32(0x9E3779B1 ^ (dayIndex + 1));
+
+  // Allow one-level-up items after ~2 weeks for gentle progression
+  const levelOrder: Score['band'][] = ['A1','A2','B1','B2','C1'];
+  const bandIdx = levelOrder.indexOf(band);
+  const allowUp = dayIndex >= 14 ? 1 : 0;
+
+  const allowed = new Set<Score['band']>(levelOrder.filter((_, i) => i <= Math.min(levelOrder.length - 1, bandIdx + allowUp)));
+
+  const allBySkill: Record<string, PlanTask[]> = {
+    vocab: TASK_BANK.filter(t => t.skill === 'vocab' && allowed.has(t.level)).map(toPlanTask),
+    listening: TASK_BANK.filter(t => t.skill === 'listening' && allowed.has(t.level)).map(toPlanTask),
+    reading: TASK_BANK.filter(t => t.skill === 'reading' && allowed.has(t.level)).map(toPlanTask),
+    grammar: TASK_BANK.filter(t => t.skill === 'grammar' && allowed.has(t.level)).map(toPlanTask),
+    writing: TASK_BANK.filter(t => t.skill === 'writing' && allowed.has(t.level)).map(toPlanTask),
+    speaking: TASK_BANK.filter(t => t.skill === 'speaking' && allowed.has(t.level)).map(toPlanTask)
+  } as any;
+
+  // Start with prioritized skills (weakest first), then the rest in default order.
   const defaultOrder = ['vocab','listening','reading','grammar','writing','speaking'] as const;
   const seen = new Set<string>();
   const mergedOrder = [
     ...prioritizedSkills.filter((s) => defaultOrder.includes(s as any) && !seen.has(s) && (seen.add(s), true)),
     ...defaultOrder.filter((s) => !seen.has(s))
   ] as const;
+
   const tasks: PlanTask[] = [];
+  const usedTitles = new Set<string>();
   let time = 0;
-  // Rotate start skill by day for variety
-  const start = dayIndex % mergedOrder.length;
-  for (let i = 0; i < mergedOrder.length; i++) {
-    const skill = mergedOrder[(start + i) % mergedOrder.length];
-    const pool = pools[skill];
-    const task = pick(pool, dayIndex + i);
-    if (time + task.minutes <= Math.max(45, minutes)) {
-      tasks.push(task);
-      time += task.minutes;
-    }
-    if (time >= minutes - 10) break;
+
+  // Fill by rotating skills, selecting randomly within each pool, avoiding duplicates and capping at 5 tasks
+  let orderOffset = Math.floor(rng() * mergedOrder.length);
+  while (time < minutes - 5 && tasks.length < 5) {
+    const skill = mergedOrder[orderOffset % mergedOrder.length];
+    orderOffset += 1;
+    const pool = allBySkill[skill as keyof typeof allBySkill] || [];
+    if (pool.length === 0) continue;
+    const candidate = pool[Math.floor(rng() * pool.length)];
+    if (usedTitles.has(candidate.title)) continue;
+    if (time + candidate.minutes > Math.max(45, minutes)) continue;
+    tasks.push(candidate);
+    usedTitles.add(candidate.title);
+    time += candidate.minutes;
   }
+
   // Ensure at least three tasks
   while (tasks.length < 3) {
     tasks.push({ title: 'Review: flashcards & error log', minutes: 10 });
   }
   return tasks;
+}
+
+// Fast deterministic PRNG
+function mulberry32(a: number) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 type PlanContext = { targetScore?: number | null; targetDeadline?: string | null; studyDaysJson?: string; firstLanguage?: string; planNativeLanguage?: 'yes' | 'no' };
@@ -256,7 +272,36 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
       highlights = [...pack.hl, ...languageSpecificTips.highlights];
       quickWins = [...pack.qw, ...languageSpecificTips.quickWins];
       const localizeTitle = (t: string) => {
-        let out = t; for (const [re, lbl] of pack.map) { if (re.test(out)) { out = out.replace(re, lbl); break; } }
+        let out = t;
+        // Prefix localization (skill label)
+        for (const [re, lbl] of pack.map) { if (re.test(out)) { out = out.replace(re, lbl); break; } }
+        // Additional phrase localization for Korean for clarity
+        if (lang === 'ko') {
+          const replacements: Array<[RegExp, string]> = [
+            [/\bTrue\/False\/Not Given\b/gi, '참/거짓/주어지지 않음'],
+            [/\breference and inference\b/gi, '지시어/추론'],
+            [/\bmatch headings to paragraphs\b/gi, '단락과 제목 매칭'],
+            [/\bmap\/plan completion\b/gi, '지도/도면 완성'],
+            [/\bparaphrase and gist \(short talk\)\b/gi, '패러프레이즈/요지 파악(짧은 담화)'],
+            [/\bSection 1 details \(forms, dates, numbers\)\b/gi, '섹션 1 세부 정보(양식·날짜·숫자)'],
+            [/\bquestions\b/gi, '문항'],
+            [/\b12 academic words \+ 6 collocations\b/gi, '학술 어휘 12개 + 연어 6개'],
+            [/\b10 collocations \(make 5 example sentences\)\b/gi, '연어 10개(예문 5개 작성)'],
+            [/\breview deck \+ 8 new words\b/gi, '복습 카드 + 신규 단어 8개'],
+            [/\barticles & prepositions \(12 items\)\b/gi, '관사·전치사(12문항)'],
+            [/\btense control & SVA \(12 items\)\b/gi, '시제·주어-동사 일치(12문항)'],
+            [/\bcomplex sentences & linkers \(10 items\)\b/gi, '복문·연결어(10문항)'],
+            [/\bTask 1 outline \(data selection \+ comparisons\)\b/gi, 'Task 1 개요(데이터 선택+비교)'],
+            [/\bTask 2 paragraph \(claim \+ reason \+ example\)\b/gi, 'Task 2 단락(주장+이유+예시)'],
+            [/\b120‑word summary \+ cohesion markers\b/gi, '120단어 요약 + 응집 장치'],
+            [/\bmimic & shadow 3 sentences \(pronunciation\)\b/gi, '따라 말하기 3문장(발음)']
+          ];
+          for (const [re, rep] of replacements) {
+            out = out.replace(re, rep);
+          }
+          // En dash spacing to look clean in Korean
+          out = out.replace(/\s–\s(\d+)\s*문항/gi, ' – $1문항');
+        }
         return `${out} (${t})`;
       };
       weekly.forEach((w) => w.days.forEach((d) => { d.tasks = d.tasks.map((task) => ({ ...task, title: localizeTitle(task.title) })); }));
@@ -282,7 +327,8 @@ export function generateTemplatePlan(score: Score, goal: string, ctx: PlanContex
       targetDeadline: ctx.targetDeadline ?? null,
       startDateISO: new Date().toISOString(),
       firstLanguage: ctx.firstLanguage,
-      planNativeLanguage: ctx.planNativeLanguage
+      planNativeLanguage: ctx.planNativeLanguage,
+      studyDays
     }
   };
 }

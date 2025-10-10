@@ -14,7 +14,38 @@
     "features": {
       "aiTutor": "معلم ذكي",
       "practiceTests": "اختبارات تدريبية",
-      "progressTracking": "تتبع التقدم"
+      "progressTracking": "تتبع التقدم",
+      "title": "الميزات",
+      "aiPowered": "التعلم بالذكاء الاصطناعي",
+      "personalized": "منهج مخصص",
+      "instantFeedback": "تقييم فوري"
+    },
+    "about": {
+      "title": "عن المنصة",
+      "content": "طوّر مهاراتك في اللغة الإنجليزية مع منصتنا المدعومة بالذكاء الاصطناعي. احصل على دروس مخصصة، وتقييم فوري، وتتبع تقدمك في كل خطوة."
+    },
+    "programs": {
+      "title": "برامج التعلم",
+      "subtitle": "اختر مسارك نحو إتقان الإنجليزية مع برامجنا الشاملة.",
+      "ielts": "التحضير لاختبار IELTS",
+      "general": "الإنجليزية العامة",
+      "business": "الإنجليزية للأعمال",
+      "academic": "الإنجليزية الأكاديمية"
+    },
+    "pricing": {
+      "title": "الأسعار",
+      "subtitle": "اختر الخطة التي تناسب أهدافك التعليمية.",
+      "free": "مجاني",
+      "premium": "بريميوم",
+      "enterprise": "المؤسسات"
+    },
+    "stories": {
+      "title": "قصص النجاح",
+      "subtitle": "شاهد كيف حقق طلابنا أهدافهم في الإنجليزية."
+    },
+    "contact": {
+      "title": "اتصل بنا",
+      "subtitle": "تواصل مع فريق الدعم لدينا."
     }
   },
   "auth": {
@@ -43,6 +74,152 @@
     "submit": "إرسال",
     "search": "بحث",
     "filter": "تصفية",
-    "sort": "ترتيب"
+    "sort": "ترتيب",
+    "reset": "إعادة تعيين",
+    "days": "أيام",
+    "hours": "ساعات",
+    "minutes": "دقائق",
+    "seconds": "ثوانٍ",
+    "week": "أسبوع",
+    "month": "شهر",
+    "year": "سنة"
+  },
+  "skills": {
+    "reading": "القراءة",
+    "listening": "الاستماع",
+    "writing": "الكتابة",
+    "speaking": "المحادثة",
+    "overall": "الإجمالي"
+  },
+  "navigation": {
+    "myWordBook": "دفتر المفردات",
+    "tests": "اختبارات",
+    "studyPlan": "خطة الدراسة",
+    "home": "الرئيسية",
+    "settings": "الإعدادات",
+    "resetResults": "إعادة تعيين النتائج"
+  },
+  "dashboard": {
+    "helloUser": "مرحبًا، {{name}}",
+    "studyProgress": "تقدم الدراسة",
+    "testsTaken": "الاختبارات المقدمة",
+    "wordsSaved": "كلمات محفوظة",
+    "dayStreak": "أيام متتالية",
+    "practiceAreas": "مجالات التدريب",
+    "averageScore": "المعدل",
+    "latestScore": "أحدث نتيجة",
+    "noTestsYet": "لا توجد اختبارات {{skill}} بعد",
+    "startFirstTest": "ابدأ أول اختبار",
+    "viewDetailedResults": "عرض النتائج المفصلة",
+    "deadline": "الموعد النهائي",
+    "myWordBook": "كتابي للمفردات",
+    "tests": "الاختبارات",
+    "studyPlan": "خطة الدراسة",
+    "home": "الرئيسية",
+    "resetResults": "إعادة النتائج",
+    "greeting": "صباح الخير، {{name}}!",
+    "overall": "الإجمالي",
+    "resultsFeedback": "نتائج {{skill}} والتقييم",
+    "viewHistory": "عرض السجل"
+  },
+  "studyPlan": {
+    "title": "خطة الدراسة",
+    "generateButton": "إنشاء خطة",
+    "generating": "جارٍ الإنشاء...",
+    "targetIELTS": "هدف IELTS",
+    "deadline": "الموعد النهائي",
+    "minutesPerDay": "دقائق يوميًا",
+    "firstLanguage": "اللغة الأولى",
+    "quickAIPlan": "خطة سريعة بالذكاء الاصطناعي",
+    "takeAssessment": "إنشاء خطة عبر تقييم 5 دقائق",
+    "quickAIPlanNoAssessment": "خطة سريعة (بدون تقييم)",
+    "syncFromDashboard": "مزامنة من لوحة التحكم",
+    "syncDescription": "سيتم مواءمة مدة الخطة مع الموعد النهائي في لوحة التحكم.",
+    "optional": "أي شيء آخر؟ (الجدول، الوحدات، التركيز)",
+    "placeholder": "مثلًا: وحدة Academic، ضعف في Task 1، الدراسة أيام الأحد/الأربعاء/الجمعة",
+    "showInFirstLanguage": "عرض الخطة باللغة الأولى",
+    "loadingPlan": "جارٍ تحميل الخطة...",
+    "noPlanYet": "لا توجد خطة بعد.",
+    "deadlineOptional": "الموعد النهائي (اختياري)",
+    "totalPlannedMinutes": "إجمالي الدقائق المخططة: {{minutes}} دقيقة",
+    "today": "اليوم",
+    "thisMonth": "هذا الشهر",
+    "studyDays": "أيام الدراسة",
+    "weakAreas": "المجالات الضعيفة",
+    "retakeAssessment": "إعادة اختبار المستوى",
+    "removeAllTasks": "إزالة جميع مهام الذكاء الاصطناعي",
+    "restoreTasks": "استعادة مهام الذكاء الاصطناعي",
+    "resetDay": "إعادة تعيين اليوم",
+    "addTask": "إضافة مهمة",
+    "add": "إضافة",
+    "dayOfWeek": "{{day}}={{number}}",
+    "studyDaysDescription": "أيام الدراسة (الأحد=0 … السبت=6)",
+    "weakAreasDescription": "المجالات الضعيفة (اختياري)"
+  },
+  "countdown": {
+    "deadline": "الموعد النهائي",
+    "timeRemaining": "الوقت المتبقي"
+  },
+  "testPortal": {
+    "ieltsPortal": "بوابة IELTS",
+    "generalPortal": "بوابة الإنجليزية العامة",
+    "startTest": "ابدأ الاختبار",
+    "chooseSection": "اختر القسم",
+    "reading": "قراءة",
+    "listening": "استماع",
+    "writing": "كتابة",
+    "speaking": "محادثة",
+    "instructions": "التعليمات",
+    "timeLimit": "المدة الزمنية",
+    "questions": "الأسئلة"
+  },
+  "testResults": {
+    "overallResults": "النتائج الإجمالية",
+    "viewResults": "عرض النتائج",
+    "retakeTest": "إعادة الاختبار",
+    "nextTest": "الاختبار التالي",
+    "score": "النتيجة",
+    "band": "المستوى",
+    "percentage": "النسبة المئوية",
+    "correctAnswers": "إجابات صحيحة",
+    "totalQuestions": "إجمالي الأسئلة",
+    "timeTaken": "الوقت المستغرق",
+    "detailedFeedback": "ملاحظات مفصلة",
+    "improvementTips": "نصائح للتحسين"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "preferredName": "الاسم المفضل",
+    "uiLanguage": "لغة الواجهة",
+    "nativeLanguage": "اللغة الأم",
+    "targetTestType": "نوع الاختبار المستهدف",
+    "targetScore": "الدرجة المستهدفة",
+    "targetDeadline": "الموعد النهائي المستهدف",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "signOut": "تسجيل الخروج",
+    "profileSettings": "إعدادات الملف الشخصي",
+    "learningPreferences": "التفضيلات التعليمية",
+    "account": "الحساب",
+    "uploadPhoto": "رفع صورة",
+    "changePhoto": "تغيير الصورة",
+    "currentPhoto": "الصورة الحالية"
+  },
+  "welcome": {
+    "continueInLanguage": "المتابعة باللغة {{language}}؟",
+    "yes": "نعم",
+    "keepEnglish": "البقاء على الإنجليزية",
+    "detectedLanguage": "لقد اكتشفنا أنك تتحدث {{language}}",
+    "switchLanguage": "التبديل إلى {{language}}",
+    "dismiss": "تجاهل"
+  },
+  "timeUnits": {
+    "days": "أيام",
+    "hours": "ساعات",
+    "minutes": "دقائق",
+    "seconds": "ثواني",
+    "weeks": "أسابيع",
+    "months": "أشهر",
+    "years": "سنوات"
   }
 }

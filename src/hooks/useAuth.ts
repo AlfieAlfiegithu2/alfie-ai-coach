@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import i18n from '@/lib/i18n';
+import { normalizeLanguageCode } from '@/lib/languageUtils';
 
 interface Profile {
   id: string;
@@ -83,6 +85,18 @@ export function useAuth(): UseAuthReturn {
       }
 
       setProfile(data);
+      try {
+        const alreadyChosen = localStorage.getItem('ui_language');
+        if (!alreadyChosen && data?.native_language) {
+          const code = normalizeLanguageCode(data.native_language);
+          if (code) {
+            await i18n.changeLanguage(code);
+            localStorage.setItem('ui_language', code);
+          }
+        }
+      } catch (e) {
+        console.warn('Language sync skipped:', e);
+      }
       return data;
     } catch (error) {
       console.error('Error fetching profile:', error);

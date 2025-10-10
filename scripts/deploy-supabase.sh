@@ -38,6 +38,8 @@ functions_to_deploy=(
     "send-email-otp"
     "verify-email-otp"
     "send-magic-link"
+    "plan-ai-generator"
+    "plan-focus-to-todos"
 )
 
 for func in "${functions_to_deploy[@]}"; do

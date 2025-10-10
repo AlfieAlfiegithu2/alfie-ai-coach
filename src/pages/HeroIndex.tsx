@@ -341,7 +341,7 @@ const HeroIndex = () => {
               {/* Brand */}
               <div className="flex items-center gap-2">
 
-                <span className="text-lg font-semibold font-nunito">{t('header.brand', 'English AIdol')}</span>
+                <span className="text-lg font-semibold font-nunito">{t('header.brand', { defaultValue: 'English AIdol' })}</span>
               </div>
 
               {/* Desktop Nav */}
@@ -358,16 +358,16 @@ const HeroIndex = () => {
                 {user ? (
                   <>
                     <button onClick={() => navigate('/dashboard')} className="hidden md:inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                      {t('header.dashboard', 'Dashboard')}
+                      {t('header.dashboard', { defaultValue: 'Dashboard' })}
                     </button>
                     <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                       <Calendar className="h-4 w-4" />
-                      {user ? t('header.continueLearning', 'Continue Learning') : t('header.startFreeTrial', 'Start Free Trial')}
+                      {user ? t('header.continueLearning', { defaultValue: 'Continue Learning' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
                     </button>
                   </>
                 ) : (
                   <button onClick={() => navigate('/auth')} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                    {t('header.signIn', 'Sign In')}
+                    {t('header.signIn', { defaultValue: 'Sign In' })}
                   </button>
                 )}
               </div>
@@ -387,16 +387,16 @@ const HeroIndex = () => {
                     {user ? (
                       <>
                         <button onClick={() => navigate('/dashboard')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                          {t('header.dashboard', 'Dashboard')}
+                          {t('header.dashboard', { defaultValue: 'Dashboard' })}
                         </button>
                         <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                           <Calendar className="h-4 w-4" />
-                          {user ? t('header.continueLearning', 'Continue') : t('header.startFree', 'Start Free')}
+                          {user ? t('header.continueLearning', { defaultValue: 'Continue' }) : t('header.startFree', { defaultValue: 'Start Free' })}
                         </button>
                       </>
                     ) : (
                       <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                        {t('header.signIn', 'Sign In')}
+                        {t('header.signIn', { defaultValue: 'Sign In' })}
                       </button>
                     )}
                   </div>

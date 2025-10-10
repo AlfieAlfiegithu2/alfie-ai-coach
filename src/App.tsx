@@ -7,6 +7,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from './lib/i18n';
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
+import LanguageWelcomeBanner from "./components/LanguageWelcomeBanner";
 import Index from "./pages/Index";
 import HeroIndex from "./pages/HeroIndex";
 
@@ -105,6 +106,7 @@ const App = () => {
         <BrowserRouter>
           <TooltipProvider>
             <GlobalTextSelection>
+              <LanguageWelcomeBanner />
               <Toaster />
               <Sonner />
               <Routes>

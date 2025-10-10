@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 // Removed TTSTestButton (debug control)
 
@@ -58,18 +59,20 @@ const LANGS = [
 
 const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanData | null>(null);
-  const [lang, setLang] = useState<string>(() => i18n.language || 'en');
+  // Removed per UX request: in-modal language switcher
   const [aiOpen, setAiOpen] = useState(false);
+  const [miniDate, setMiniDate] = useState<Date | null>(null);
   // Provider choice removed; default server logic picks the best available
   const [aiTarget, setAiTarget] = useState<number>(7.0);
   const [aiDeadline, setAiDeadline] = useState<string>('');
   const [aiMinutes, setAiMinutes] = useState<number>(60);
   const [aiDays, setAiDays] = useState<Set<number>>(new Set([1,2,3,4,5]));
   const [aiFirstLang, setAiFirstLang] = useState<string>(() => i18n.language || 'en');
-  const [aiBilingual, setAiBilingual] = useState<boolean>(() => (i18n.language && i18n.language !== 'en'));
+  const [aiBilingual, setAiBilingual] = useState<boolean>(true);
   const [aiWeak, setAiWeak] = useState<Set<string>>(new Set());
   const [aiNotes, setAiNotes] = useState<string>('');
   const [aiLoading, setAiLoading] = useState<boolean>(false);
@@ -96,7 +99,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     // Load student's saved native language and set defaults
     (async () => {
       try {
-        const { supabase } = await import('@/integrations/supabase/client');
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         // Pull dashboard/user preferences deadline for default sync
@@ -137,6 +139,23 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      
+      // Check local cache first - if we have a recent plan, don't overwrite it with stale DB data
+      let localCache: any = null;
+      try {
+        const cached = JSON.parse(localStorage.getItem('latest_plan') || 'null');
+        if (cached?.plan && cached?.ts) {
+          localCache = cached;
+          // If it's marked as fresh, prioritize it heavily
+          if (cached.fresh) {
+            console.log('🔄 Using fresh local plan (marked as fresh)');
+            setPlan(cached.plan as PlanData);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
+      
       // Single round-trip: embed study_plans via FK
       const { data: profJoin } = await (supabase as any)
         .from('profiles')
@@ -145,15 +164,32 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
         .single();
       const joined = profJoin?.['study_plans'];
       const planRow = Array.isArray(joined) ? joined[0] : joined;
+      
       if (planRow?.plan) {
-        setPlan(planRow.plan as PlanData);
-        try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planRow.plan, ts: Date.now() })); } catch {}
-      } else {
+        // Recency guard: only use DB plan if it's newer than local cache (within 30 seconds tolerance)
+        const dbTime = new Date(planRow.updated_at).getTime();
+        const localTime = localCache?.ts || 0;
+        const timeDiff = Math.abs(dbTime - localTime);
+        
+        if (!localCache || timeDiff > 30000) { // 30 seconds tolerance
+          setPlan(planRow.plan as PlanData);
+          try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planRow.plan, ts: Date.now() })); } catch {}
+        } else {
+          // Keep the local cache if it's recent enough
+          setPlan(localCache.plan as PlanData);
+          // Clear the fresh flag after 5 minutes to allow normal DB updates
+          if (localCache.fresh && (Date.now() - localCache.ts) > 300000) {
+            try {
+              localStorage.setItem('latest_plan', JSON.stringify({ 
+                plan: localCache.plan, 
+                ts: localCache.ts 
+              }));
+            } catch {}
+          }
+        }
+      } else if (localCache?.plan) {
         // Fallback to local cache
-        try {
-          const cached = JSON.parse(localStorage.getItem('latest_plan') || 'null');
-          if (cached?.plan) setPlan(cached.plan as PlanData);
-        } catch {}
+        setPlan(localCache.plan as PlanData);
       }
     } finally {
       setLoading(false);
@@ -201,11 +237,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   };
   const calendar = buildCalendarPreview();
 
-  const switchLang = async (target: string) => {
-    if (lang === target) return;
-    await i18n.changeLanguage(target);
-    setLang(target);
-  };
+  // Language switching is handled globally; no per-modal selector
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -214,19 +246,12 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-white/20">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-slate-800">Your Study Plan</DialogTitle>
-            <div className="flex items-center gap-2 text-xs">
-              <select value={lang} onChange={(e)=>switchLang(e.target.value)} className="rounded-md border px-2 py-1">
-                {LANGS.map(l => (<option key={l.code} value={l.code}>{l.flag} {l.name}</option>))}
-              </select>
-            </div>
-          </div>
+          <DialogTitle className="text-slate-800">{t('studyPlan.title', { defaultValue: 'Your Study Plan' })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           {!loading && !plan && (
             <div className="text-slate-700">
-              <p className="mb-3">You don't have a plan yet.</p>
+              <p className="mb-3">{t('studyPlan.noPlanYet', { defaultValue: "You don't have a plan yet." })}</p>
               <Button
                 className="bg-slate-800 hover:bg-slate-700 text-white"
                 onClick={() => {
@@ -234,7 +259,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   navigate('/onboarding/assessment');
                 }}
               >
-                Take 5‑Minute Assessment to Generate Plan
+                {t('studyPlan.takeAssessment', { defaultValue: 'Take 5‑Minute Assessment to Generate Plan' })}
               </Button>
               <div className="my-3 text-center text-slate-500 text-xs">or</div>
               <Button
@@ -242,47 +267,20 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 className="border-slate-300"
                 onClick={() => setAiOpen(true)}
               >
-                Quick AI Plan (no assessment)
+                {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Quick AI Plan (no assessment)' })}
               </Button>
             </div>
           )}
           {loading && (
-            <div className="text-slate-600">Loading your plan…</div>
+            <div className="text-slate-600">{t('studyPlan.loadingPlan', { defaultValue: 'Loading your plan…' })}</div>
           )}
           {plan && (
             <div className="space-y-6">
               <TodayQuickTodo plan={plan} />
-              {plan.highlights?.length > 0 && (
-                <div>
-                  <h3 className="text-slate-800 font-semibold mb-2">Highlights</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                    {plan.highlights.slice(0, 5).map((h, i) => (
-                      <li key={i}>{h}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {plan.quickWins?.length > 0 && (
-                <div>
-                  <h3 className="text-slate-800 font-semibold mb-2">Quick Wins</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                    {plan.quickWins.slice(0, 5).map((q, i) => (
-                      <li key={i}>{q}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div>
-                <h3 className="text-slate-800 font-semibold mb-2">What to do next</h3>
-                <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                  {getNextActions().map((t, i) => (
-                    <li key={i}>{t.title}</li>
-                  ))}
-                </ul>
-              </div>
+              {/* Highlights/Quick Wins/Next removed per request */}
             <div>
               <h3 className="text-slate-800 font-semibold mb-2">This month</h3>
-              <ScrollableMiniCalendar plan={plan} onOpenFull={() => navigate('/plan')} />
+              <ScrollableMiniCalendar plan={plan} onOpenDay={(date: Date) => setMiniDate(date)} />
             </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
@@ -310,12 +308,12 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center p-4 z-50">
             <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5">
               <div className="flex items-center justify-between mb-3">
-                <div className="text-lg font-semibold text-slate-900">Quick AI Plan</div>
-                <button className="text-slate-500" onClick={()=>setAiOpen(false)}>Close</button>
+                <div className="text-lg font-semibold text-slate-900">{t('studyPlan.quickAIPlan', { defaultValue: 'Quick AI Plan' })}</div>
+                <button className="text-slate-500" onClick={()=>setAiOpen(false)}>{t('common.close', { defaultValue: 'Close' })}</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="text-sm text-slate-700">
-                  Target IELTS
+                  {t('studyPlan.targetIELTS', { defaultValue: 'Target IELTS' })}
                   <select value={aiTarget} onChange={(e)=>setAiTarget(Number(e.target.value))} className="mt-1 w-full rounded-md border px-2 py-2">
                     {[5.0,5.5,6.0,6.5,7.0,7.5,8.0].map(n=> (
                       <option key={n} value={n}>{n.toFixed(1)}</option>
@@ -324,7 +322,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 </label>
                 {/* Provider selection removed to simplify UI */}
                 <label className="text-sm text-slate-700">
-                  Deadline (optional)
+                  {t('studyPlan.deadlineOptional', { defaultValue: 'Deadline (optional)' })}
                   <div className="flex gap-2 mt-1">
                     <input type="date" min={new Date().toISOString().slice(0,10)} value={aiDeadline} onChange={(e)=>setAiDeadline(e.target.value)} className="flex-1 rounded-md border px-2 py-2" />
                     <button type="button" className="rounded-md border px-2 py-2 text-xs" onClick={async ()=>{
@@ -336,16 +334,16 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                         .eq('user_id', user.id)
                         .maybeSingle();
                       if (prefs?.target_deadline) setAiDeadline(String(prefs.target_deadline));
-                    }}>Sync from Dashboard</button>
+                    }}>{t('studyPlan.syncFromDashboard', { defaultValue: 'Sync from Dashboard' })}</button>
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">This will align plan duration to your dashboard deadline.</div>
+                  <div className="text-xs text-slate-500 mt-1">{t('studyPlan.syncDescription', { defaultValue: 'This will align plan duration to your dashboard deadline.' })}</div>
                 </label>
                 <label className="text-sm text-slate-700">
-                  Minutes per day
+                  {t('studyPlan.minutesPerDay', { defaultValue: 'Minutes per day' })}
                   <input type="number" min={20} max={180} value={aiMinutes} onChange={(e)=>setAiMinutes(Number(e.target.value)||60)} className="mt-1 w-full rounded-md border px-2 py-2" />
                 </label>
                 <label className="text-sm text-slate-700">
-                  First language
+                  {t('studyPlan.firstLanguage', { defaultValue: 'First language' })}
                   <select value={aiFirstLang} onChange={(e)=>setAiFirstLang(e.target.value)} className="mt-1 w-full rounded-md border px-2 py-2">
                     {LANGS.map(l => (<option key={l.code} value={l.code}>{l.flag} {l.name}</option>))}
                   </select>
@@ -382,15 +380,15 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 </div>
                 <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
                   <input type="checkbox" checked={aiBilingual} onChange={(e)=>setAiBilingual((e.target as HTMLInputElement).checked)} />
-                  Show plan in first language (keep IELTS keywords in English)
+{t('studyPlan.showInFirstLanguage', { defaultValue: 'Show plan in first language' })}
                 </label>
                 <label className="text-sm text-slate-700 sm:col-span-2">
-                  Anything else to consider? (schedule limits, modules, focus)
-                  <textarea value={aiNotes} onChange={(e)=>setAiNotes(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 min-h-[60px]" placeholder="e.g., Academic module, weak in Task 1 charts, only study Mon/Wed/Fri" />
+                  {t('studyPlan.optional', { defaultValue: 'Anything else to consider? (schedule limits, modules, focus)' })}
+                  <textarea value={aiNotes} onChange={(e)=>setAiNotes(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 min-h-[60px]" placeholder={t('studyPlan.placeholder', { defaultValue: 'e.g., Academic module, weak in Task 1 charts, only study Mon/Wed/Fri' })} />
                 </label>
               </div>
               <div className="mt-4 flex gap-3 justify-end">
-                <Button variant="outline" onClick={()=>setAiOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={()=>setAiOpen(false)}>{t('common.cancel', { defaultValue: 'Cancel' })}</Button>
                 <Button className="bg-slate-900 text-white" disabled={aiLoading} onClick={async ()=>{
                   setAiLoading(true);
                   try {
@@ -418,13 +416,34 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                           .insert({ user_id: user.id, plan: planJson, goal: 'ielts', source: 'ai' })
                           .select('*')
                           .single();
-                        if (planErr) throw planErr;
-                        await (supabase as any).from('profiles').update({ current_plan_id: planRow.id }).eq('id', user.id);
+                        if (planErr) {
+                          console.error('Failed to save plan to database:', planErr);
+                          throw planErr;
+                        }
+                        const { error: profileErr } = await (supabase as any)
+                          .from('profiles')
+                          .update({ current_plan_id: planRow.id })
+                          .eq('id', user.id);
+                        if (profileErr) {
+                          console.error('Failed to update profile with plan ID:', profileErr);
+                        }
+                        console.log('✅ Plan saved to database successfully');
                       }
-                    } catch {}
+                    } catch (dbError) {
+                      console.error('Database save failed:', dbError);
+                      // Don't throw - we still want to show the plan locally
+                    }
                     // Apply immediately so closing the modal won't revert
-                    try { localStorage.setItem('latest_plan', JSON.stringify({ plan: planJson, ts: Date.now() })); } catch {}
+                    const freshTimestamp = Date.now();
+                    try { 
+                      localStorage.setItem('latest_plan', JSON.stringify({ 
+                        plan: planJson, 
+                        ts: freshTimestamp,
+                        fresh: true // Mark as freshly generated
+                      })); 
+                    } catch {}
                     setPlan(planJson);
+                    console.log('✅ Fresh plan set in state and localStorage');
                     // Also update profile current_plan_id to the new row above
                     setAiOpen(false);
                   } catch (e) {
@@ -432,12 +451,24 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   } finally {
                     setAiLoading(false);
                   }
-                }}>{aiLoading ? 'Generating…' : 'Generate Plan'}</Button>
+                }}>{aiLoading ? t('studyPlan.generating', { defaultValue: 'Generating…' }) : t('studyPlan.generateButton', { defaultValue: 'Generate Plan' })}</Button>
               </div>
             </div>
           </div>
         )}
         
+        {/* Day popup inside modal */}
+        {miniDate && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setMiniDate(null)}>
+            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-xl p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">{miniDate.toISOString().slice(0,10)}</h3>
+                <button className="text-slate-500 hover:text-slate-700" onClick={() => setMiniDate(null)}>Close</button>
+              </div>
+              <DayQuickTodo plan={plan} date={miniDate} />
+            </div>
+          </div>
+        )}
         {/* Confirmation step removed */}
       </DialogContent>
     </Dialog>
@@ -543,14 +574,14 @@ function TodayQuickTodo({ plan }: { plan: any }) {
         ))}
       </ul>
       <div className="mt-3 flex gap-2">
-        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder="Add a task" className="flex-1 rounded-md border px-3 py-2" />
-        <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>Add</button>
+        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task' })} className="flex-1 rounded-md border px-3 py-2" />
+        <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>{t('studyPlan.add', { defaultValue: 'Add' })}</button>
       </div>
     </div>
   );
 }
 
-function ScrollableMiniCalendar({ plan, onOpenFull }: { plan: any; onOpenFull: () => void }) {
+function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (date: Date) => void }) {
   const startISO = plan?.meta?.startDateISO || new Date().toISOString();
   const startDate = new Date(startISO);
   const [offset, setOffset] = React.useState(0); // months from start
@@ -566,7 +597,8 @@ function ScrollableMiniCalendar({ plan, onOpenFull }: { plan: any; onOpenFull: (
     const diff = Math.floor((date.getTime() - startDate.getTime())/(24*60*60*1000));
     const weekIdx = Math.floor(diff/7);
     const dayIdx = diff%7;
-    const hasTasks = !!plan.weekly?.[weekIdx]?.days?.[dayIdx];
+    const tasks = plan.weekly?.[weekIdx]?.days?.[dayIdx]?.tasks;
+    const hasTasks = Array.isArray(tasks) && tasks.length > 0;
     days.push({ date, hasTasks });
   }
   return (
@@ -576,7 +608,6 @@ function ScrollableMiniCalendar({ plan, onOpenFull }: { plan: any; onOpenFull: (
         <div className="flex items-center gap-2">
           <button className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o-1)}>Prev</button>
           <button className="rounded-md border px-2 py-1 text-xs" onClick={() => setOffset(o=>o+1)}>Next</button>
-          <button className="text-xs underline text-slate-600" onClick={onOpenFull}>Open full plan</button>
         </div>
       </div>
       <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
@@ -585,7 +616,7 @@ function ScrollableMiniCalendar({ plan, onOpenFull }: { plan: any; onOpenFull: (
       <div className="grid grid-cols-7 gap-2">
         {blanks.map(b => (<div key={`b${b}`} className="h-12" />))}
         {days.map((d, di) => (
-          <button key={di} onClick={onOpenFull} className={`h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
+          <button key={di} onClick={() => onOpenDay(d.date)} className={`h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
             <span className="text-slate-900">{d.date.getDate()}</span>
             {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
           </button>
@@ -595,3 +626,102 @@ function ScrollableMiniCalendar({ plan, onOpenFull }: { plan: any; onOpenFull: (
   );
 }
 
+// Tasks for an arbitrary date within the plan; supports local per-day check, custom tasks and hide/remove AI items
+function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
+  const start = plan?.meta?.startDateISO ? new Date(plan.meta.startDateISO) : new Date();
+  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.max(0, Math.floor((localDate.getTime() - start.getTime()) / (24*60*60*1000)));
+  const w = Math.floor(diffDays / 7);
+  const d = diffDays % 7;
+  let day = plan?.weekly?.[w]?.days?.[d];
+  if (!day) day = plan?.weekly?.[0]?.days?.[0];
+
+  const key = localDate.toISOString().slice(0,10);
+  const [checked, setChecked] = React.useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}'); } catch { return {}; }
+  });
+  const [custom, setCustom] = React.useState<{ title: string; minutes: number }>({ title: "", minutes: 15 });
+  const [customTasks, setCustomTasks] = React.useState<Array<{ title: string; minutes: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]'); } catch { return []; }
+  });
+  const [hiddenAi, setHiddenAi] = React.useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]')); } catch { return new Set(); }
+  });
+  const toggle = (i: number) => {
+    const next = { ...checked, [i]: !checked[i] };
+    setChecked(next);
+    try { localStorage.setItem(`quicktodo-${key}`, JSON.stringify(next)); } catch {}
+  };
+  const addCustom = () => {
+    if (!custom.title.trim()) return;
+    const next = [...customTasks, { title: custom.title.trim(), minutes: Math.max(5, Math.min(180, Number(custom.minutes)||15)) }];
+    setCustomTasks(next);
+    setCustom({ title: "", minutes: 15 });
+    try { localStorage.setItem(`quicktodo-custom-${key}`, JSON.stringify(next)); } catch {}
+  };
+  const removeCustom = (idx: number) => {
+    const next = customTasks.slice(); next.splice(idx,1); setCustomTasks(next);
+    try { localStorage.setItem(`quicktodo-custom-${key}`, JSON.stringify(next)); } catch {}
+  };
+  const hideAi = (idx: number) => {
+    const next = new Set(hiddenAi); next.add(String(idx)); setHiddenAi(next);
+    try { localStorage.setItem(`quicktodo-hidden-ai-${key}`, JSON.stringify(Array.from(next))); } catch {}
+  };
+  const hideAllAi = () => {
+    const total = (day?.tasks||[]).length; const next = new Set<string>();
+    for (let i=0;i<total;i++) next.add(String(i)); setHiddenAi(next);
+    try { localStorage.setItem(`quicktodo-hidden-ai-${key}`, JSON.stringify(Array.from(next))); } catch {}
+  };
+  const restoreAi = () => { const next = new Set<string>(); setHiddenAi(next); try { localStorage.setItem(`quicktodo-hidden-ai-${key}`, JSON.stringify([])); } catch {} };
+  const resetDay = () => {
+    try {
+      localStorage.removeItem(`quicktodo-${key}`);
+      localStorage.removeItem(`quicktodo-custom-${key}`);
+      localStorage.removeItem(`quicktodo-hidden-ai-${key}`);
+    } catch {}
+    setChecked({}); setCustomTasks([]); setHiddenAi(new Set());
+  };
+  const totalMinutes = (day?.tasks||[]).slice(0,5).filter((_,i)=>!hiddenAi.has(String(i))).reduce((s: number,t: any)=>s+t.minutes,0) + customTasks.reduce((s,t)=>s+t.minutes,0);
+  return (
+    <div>
+      <div className="flex items-center justify-end gap-2 mb-2 text-xs">
+        <button className="rounded-md border px-2 py-1" onClick={hideAllAi}>Remove all AI tasks</button>
+        <button className="rounded-md border px-2 py-1" onClick={restoreAi}>Restore AI tasks</button>
+        <button className="rounded-md border px-2 py-1" onClick={resetDay}>Reset day</button>
+      </div>
+      <ul className="space-y-2">
+        {(day?.tasks || []).slice(0,5).map((t: any, i: number) => {
+          if (hiddenAi.has(String(i))) return null;
+          return (
+            <li key={`ai-${i}`} className="flex items-center justify-between rounded-lg border p-3">
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={!!checked[i]} onChange={() => toggle(i)} />
+                <span>{t.title}</span>
+              </label>
+              <div className="text-xs text-slate-500 flex items-center gap-2 whitespace-nowrap">
+                <span>{t.minutes} min</span>
+                <button className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => hideAi(i)}>×</button>
+              </div>
+            </li>
+          );
+        })}
+        {customTasks.map((t, i) => (
+          <li key={`c${i}`} className="flex items-center justify-between rounded-lg border p-3">
+            <label className="flex items-center gap-3">
+              <input type="checkbox" />
+              <span>{t.title}</span>
+            </label>
+            <div className="text-xs text-slate-500 flex items-center gap-2">
+              <button className="h-5 w-5 rounded-full border border-red-300 text-red-600 flex items-center justify-center hover:bg-red-50" onClick={() => removeCustom(i)}>×</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 flex gap-2">
+        <input value={custom.title} onChange={(e)=>setCustom(c=>({...c,title:e.target.value}))} placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task' })} className="flex-1 rounded-md border px-3 py-2" />
+        <button className="rounded-md bg-black text-white px-3 py-2" onClick={addCustom}>{t('studyPlan.add', { defaultValue: 'Add' })}</button>
+      </div>
+      <div className="mt-2 text-xs text-slate-500">{t('studyPlan.totalPlannedMinutes', 'Total planned minutes: {{minutes}} min', { minutes: totalMinutes })}</div>
+    </div>
+  );
+}

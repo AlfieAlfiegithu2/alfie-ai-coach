@@ -14,7 +14,38 @@
     "features": {
       "aiTutor": "ИИ-Репетитор",
       "practiceTests": "Практические Тесты",
-      "progressTracking": "Отслеживание Прогресса"
+      "progressTracking": "Отслеживание Прогресса",
+      "title": "Возможности",
+      "aiPowered": "Обучение с ИИ",
+      "personalized": "Персонализированная программа",
+      "instantFeedback": "Мгновенная обратная связь"
+    },
+    "about": {
+      "title": "О нас",
+      "content": "Преобразите свой английский с нашей платформой на базе ИИ. Получайте персонализированные уроки, мгновенную обратную связь и отслеживайте прогресс на каждом этапе."
+    },
+    "programs": {
+      "title": "Программы обучения",
+      "subtitle": "Выберите свой путь к совершенству в английском с нашими комплексными программами.",
+      "ielts": "Подготовка к IELTS",
+      "general": "Общий английский",
+      "business": "Деловой английский",
+      "academic": "Академический английский"
+    },
+    "pricing": {
+      "title": "Цены",
+      "subtitle": "Выберите план, соответствующий вашим целям обучения.",
+      "free": "Бесплатно",
+      "premium": "Премиум",
+      "enterprise": "Для бизнеса"
+    },
+    "stories": {
+      "title": "Истории успеха",
+      "subtitle": "Узнайте, как наши студенты достигли своих целей в английском."
+    },
+    "contact": {
+      "title": "Контакты",
+      "subtitle": "Свяжитесь с нашей службой поддержки."
     }
   },
   "auth": {
@@ -43,6 +74,152 @@
     "submit": "Отправить",
     "search": "Поиск",
     "filter": "Фильтр",
-    "sort": "Сортировка"
+    "sort": "Сортировка",
+    "reset": "Сбросить",
+    "days": "Дни",
+    "hours": "Часы",
+    "minutes": "Минуты",
+    "seconds": "Секунды",
+    "week": "Неделя",
+    "month": "Месяц",
+    "year": "Год"
+  },
+  "skills": {
+    "reading": "Чтение",
+    "listening": "Аудирование",
+    "writing": "Письмо",
+    "speaking": "Говорение",
+    "overall": "Общий"
+  },
+  "navigation": {
+    "myWordBook": "Мой словарь",
+    "tests": "Тесты",
+    "studyPlan": "План обучения",
+    "home": "Главная",
+    "settings": "Настройки",
+    "resetResults": "Сбросить результаты"
+  },
+  "dashboard": {
+    "myWordBook": "Мой словарь",
+    "tests": "Тесты",
+    "studyPlan": "План обучения",
+    "home": "Главная",
+    "resetResults": "Сбросить результаты",
+    "greeting": "Доброе утро, {{name}}!",
+    "helloUser": "Привет, {{name}}",
+    "overall": "Общий",
+    "studyProgress": "Прогресс обучения",
+    "testsTaken": "Пройдено тестов",
+    "wordsSaved": "Сохранено слов",
+    "dayStreak": "Дней подряд",
+    "practiceAreas": "Области практики",
+    "resultsFeedback": "Результаты и обратная связь по {{skill}}",
+    "viewHistory": "Посмотреть историю",
+    "viewDetailedResults": "Посмотреть детальные результаты",
+    "averageScore": "Средний балл",
+    "latestScore": "Последний балл",
+    "noTestsYet": "Тесты по {{skill}} еще не пройдены",
+    "startFirstTest": "Начать первый тест",
+    "deadline": "Срок"
+  },
+  "studyPlan": {
+    "title": "Ваш план обучения",
+    "today": "Сегодня",
+    "thisMonth": "Этот месяц",
+    "generateButton": "Создать план",
+    "generating": "Создание...",
+    "targetIELTS": "Целевой IELTS",
+    "deadline": "Срок",
+    "minutesPerDay": "Минут в день",
+    "firstLanguage": "Родной язык",
+    "studyDays": "Дни обучения",
+    "weakAreas": "Слабые стороны",
+    "quickAIPlan": "Быстрый план от ИИ",
+    "retakeAssessment": "Перепройти оценку уровня",
+    "removeAllTasks": "Удалить все задачи ИИ",
+    "restoreTasks": "Восстановить задачи ИИ",
+    "resetDay": "Сбросить день",
+    "takeAssessment": "Пройдите 5‑минутную оценку для создания плана",
+    "quickAIPlanNoAssessment": "Быстрый план от ИИ (без оценки)",
+    "syncFromDashboard": "Синхронизировать с главной",
+    "syncDescription": "Это согласует продолжительность плана с вашим сроком на главной.",
+    "optional": "Что еще учесть? (ограничения по расписанию, модули, фокус)",
+    "placeholder": "например, Академический модуль, слаб в диаграммах Задания 1, учиться только пн/ср/пт",
+    "showInFirstLanguage": "Показать план на родном языке",
+    "totalPlannedMinutes": "Всего запланировано минут: {{minutes}} мин",
+    "addTask": "Добавить задачу",
+    "add": "Добавить",
+    "loadingPlan": "Загрузка вашего плана…",
+    "noPlanYet": "У вас еще нет плана.",
+    "dayOfWeek": "{{day}}={{number}}",
+    "studyDaysDescription": "Дни обучения (Вс=0 … Сб=6)",
+    "weakAreasDescription": "Слабые стороны (необязательно)",
+    "deadlineOptional": "Срок (необязательно)"
+  },
+  "settings": {
+    "title": "Настройки",
+    "preferredName": "Предпочитаемое имя",
+    "uiLanguage": "Язык интерфейса",
+    "nativeLanguage": "Родной язык",
+    "targetTestType": "Целевой тип теста",
+    "targetScore": "Целевой балл",
+    "targetDeadline": "Целевой срок",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "signOut": "Выйти",
+    "profileSettings": "Настройки профиля",
+    "learningPreferences": "Предпочтения в обучении",
+    "account": "Аккаунт",
+    "uploadPhoto": "Загрузить фото",
+    "changePhoto": "Изменить фото",
+    "currentPhoto": "Текущее фото"
+  },
+  "countdown": {
+    "deadline": "Срок",
+    "timeRemaining": "Осталось времени"
+  },
+  "welcome": {
+    "continueInLanguage": "Продолжить на {{language}}?",
+    "yes": "Да",
+    "keepEnglish": "Оставить английский",
+    "detectedLanguage": "Мы определили, что вы говорите на {{language}}",
+    "switchLanguage": "Переключиться на {{language}}",
+    "dismiss": "Закрыть"
+  },
+  "testPortal": {
+    "ieltsPortal": "Портал IELTS",
+    "generalPortal": "Портал общего английского",
+    "startTest": "Начать тест",
+    "chooseSection": "Выберите раздел теста",
+    "reading": "Чтение",
+    "listening": "Аудирование",
+    "writing": "Письмо",
+    "speaking": "Говорение",
+    "instructions": "Инструкции",
+    "timeLimit": "Ограничение по времени",
+    "questions": "Вопросы"
+  },
+  "testResults": {
+    "overallResults": "Общие результаты теста",
+    "viewResults": "Посмотреть результаты",
+    "retakeTest": "Перепройти тест",
+    "nextTest": "Следующий тест",
+    "score": "Балл",
+    "band": "Балл",
+    "percentage": "Процент",
+    "correctAnswers": "Правильные ответы",
+    "totalQuestions": "Всего вопросов",
+    "timeTaken": "Затраченное время",
+    "detailedFeedback": "Детальная обратная связь",
+    "improvementTips": "Советы по улучшению"
+  },
+  "timeUnits": {
+    "days": "Дни",
+    "hours": "Часы",
+    "minutes": "Минуты",
+    "seconds": "Секунды",
+    "weeks": "Недели",
+    "months": "Месяцы",
+    "years": "Годы"
   }
 }

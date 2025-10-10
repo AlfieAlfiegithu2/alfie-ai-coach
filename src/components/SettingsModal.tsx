@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface SectionScores {
   reading: number;
@@ -37,6 +38,7 @@ interface SettingsModalProps {
 const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
   const { user, signOut, profile } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -55,6 +57,22 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
   });
 
   const [nativeLanguage, setNativeLanguage] = useState('Spanish');
+  const [uiLanguage, setUiLanguage] = useState('en');
+
+  const uiLanguages = [
+    { value: 'en', label: 'English', flag: '🇺🇸' },
+    { value: 'ko', label: '한국어', flag: '🇰🇷' },
+    { value: 'zh', label: '中文', flag: '🇨🇳' },
+    { value: 'ja', label: '日本語', flag: '🇯🇵' },
+    { value: 'es', label: 'Español', flag: '🇪🇸' },
+    { value: 'pt', label: 'Português', flag: '🇵🇹' },
+    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { value: 'ru', label: 'Русский', flag: '🇷🇺' },
+    { value: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
+    { value: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+    { value: 'ar', label: 'العربية', flag: '🇸🇦' }
+  ];
 
   const languages = [
     { value: 'Spanish', label: 'Spanish (Español)' },
@@ -122,6 +140,18 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     }));
   };
 
+  const handleUILanguageChange = async (languageCode: string) => {
+    try {
+      await i18n.changeLanguage(languageCode);
+      localStorage.setItem('ui_language', languageCode);
+      setUiLanguage(languageCode);
+      toast.success('Language changed successfully');
+    } catch (error) {
+      console.error('Failed to change UI language:', error);
+      toast.error('Failed to change language');
+    }
+  };
+
   useEffect(() => {
     if (user && open) {
       loadUserPreferences();
@@ -154,6 +184,10 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
       if (profile?.native_language) {
         setNativeLanguage(profile.native_language);
       }
+
+      // Load current UI language from localStorage
+      const currentUILanguage = localStorage.getItem('ui_language') || i18n.language || 'en';
+      setUiLanguage(currentUILanguage);
 
       if (data) {
         const defaultScores = {
@@ -287,7 +321,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-slate-800">Study Settings</DialogTitle>
+          <DialogTitle className="text-slate-800">{t('settings.title', { defaultValue: 'Settings' })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           {/* Profile Photo Section */}
@@ -304,8 +338,8 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               )}
             </div>
             <div className="flex-1">
-              <Label className="text-slate-700 font-medium">Profile Photo</Label>
-              <p className="text-sm text-slate-600 mb-2">Upload a profile picture to personalize your account</p>
+              <Label className="text-slate-700 font-medium">{t('settings.profilePhoto', { defaultValue: 'Profile Photo' })}</Label>
+              <p className="text-sm text-slate-600 mb-2">{t('settings.profilePhotoHelp', { defaultValue: 'Upload a profile picture to personalize your account' })}</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -315,7 +349,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
                   onClick={() => document.getElementById('avatar-upload')?.click()}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {avatarUploading ? 'Uploading...' : 'Change Photo'}
+                  {avatarUploading ? t('common.loading', { defaultValue: 'Loading...' }) : t('settings.changePhoto', { defaultValue: 'Change Photo' })}
                 </Button>
                 <input
                   id="avatar-upload"
@@ -329,7 +363,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="preferred_name" className="text-slate-700">Preferred Name</Label>
+            <Label htmlFor="preferred_name" className="text-slate-700">{t('settings.preferredName', { defaultValue: 'Preferred Name' })}</Label>
             <Input
               id="preferred_name"
               value={preferences.preferred_name}
@@ -340,7 +374,30 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="native_language" className="text-slate-700">Translation Language</Label>
+            <Label htmlFor="ui_language" className="text-slate-700">{t('settings.uiLanguage', { defaultValue: 'UI Language' })}</Label>
+            <Select 
+              value={uiLanguage} 
+              onValueChange={handleUILanguageChange}
+            >
+              <SelectTrigger className="bg-white/50 border-white/30">
+                <SelectValue placeholder="Select UI language" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
+                {uiLanguages.map(lang => (
+                  <SelectItem key={lang.value} value={lang.value}>
+                    <div className="flex items-center gap-2">
+                      <span>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-600 mt-1">Change the interface language</p>
+          </div>
+
+          <div>
+            <Label htmlFor="native_language" className="text-slate-700">{t('settings.nativeLanguage', { defaultValue: 'Native Language' })}</Label>
             <Select 
               value={nativeLanguage} 
               onValueChange={setNativeLanguage}
@@ -359,7 +416,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="test_type" className="text-slate-700">Target Test Type</Label>
+            <Label htmlFor="test_type" className="text-slate-700">{t('settings.targetTestType', { defaultValue: 'Target Test Type' })}</Label>
             <Select 
               value={preferences.target_test_type} 
               onValueChange={(value) => setPreferences(prev => ({ ...prev, target_test_type: value }))}
@@ -378,7 +435,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="target_score" className="text-slate-700">Target Score</Label>
+            <Label htmlFor="target_score" className="text-slate-700">{t('settings.targetScore', { defaultValue: 'Target Score' })}</Label>
             <Input
               id="target_score"
               type="number"
@@ -392,7 +449,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label className="text-slate-700">Target Deadline</Label>
+            <Label className="text-slate-700">{t('settings.targetDeadline', { defaultValue: 'Target Deadline' })}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -448,19 +505,19 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button 
+                <Button 
               onClick={savePreferences} 
               disabled={loading}
               className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
             >
-              {loading ? 'Saving...' : 'Save Settings'}
+              {loading ? t('common.loading', { defaultValue: 'Loading...' }) : t('settings.save', { defaultValue: 'Save' })}
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setOpen(false)}
               className="bg-white/50 border-white/30"
             >
-              Cancel
+              {t('settings.cancel', { defaultValue: 'Cancel' })}
             </Button>
           </div>
 
@@ -474,7 +531,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
                 navigate('/onboarding/assessment');
               }}
             >
-              Retake Level Assessment (5 min)
+              {t('studyPlan.retakeAssessment', { defaultValue: 'Retake Level Assessment' })}
             </Button>
           </div>
           
@@ -485,7 +542,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               className="w-full bg-red-50/50 border-red-200/50 text-red-600 hover:bg-red-100/50 hover:text-red-700"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Logout
+              {t('settings.signOut', { defaultValue: 'Sign Out' })}
             </Button>
           </div>
         </div>

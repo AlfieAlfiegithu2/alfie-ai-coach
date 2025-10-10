@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { getBandScore } from '@/lib/ielts-scoring';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,7 @@ const TestResults = ({
   testTitle 
 }: TestResultsProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const percentage = Math.round((score / totalQuestions) * 100);
   
   // Use official IELTS band score conversion based on correct answers
@@ -62,7 +64,7 @@ const TestResults = ({
       <Card className="rounded-2xl border-light-border shadow-soft" style={{ background: 'var(--gradient-card)' }}>
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-3xl font-georgia text-foreground mb-2">
-            Test Complete! 🎉
+            {t('testResults.viewResults', { defaultValue: 'View Results' })}
           </CardTitle>
           {testTitle && (
             <p className="text-warm-gray">{testTitle}</p>
@@ -75,7 +77,7 @@ const TestResults = ({
               <div className="text-4xl font-bold text-foreground">
                 {score}/{totalQuestions}
               </div>
-              <p className="text-sm text-warm-gray">Questions Correct</p>
+              <p className="text-sm text-warm-gray">{t('testResults.correctAnswers', { defaultValue: 'Correct Answers' })}</p>
               <Badge variant="outline" className="text-lg px-3 py-1">
                 {percentage}%
               </Badge>
@@ -86,19 +88,19 @@ const TestResults = ({
               <div className="text-4xl font-bold text-primary">
                 {bandScore}
               </div>
-              <p className="text-sm text-warm-gray">Estimated Band Score</p>
+              <p className="text-sm text-warm-gray">{t('testResults.band', { defaultValue: 'Band' })}</p>
               <Progress value={percentage} className="w-full h-2" />
             </div>
 
             {/* Performance */}
             <div className="space-y-2">
               <TrendingUp className="w-8 h-8 text-primary mx-auto" />
-              <p className="text-sm text-warm-gray">Performance</p>
+              <p className="text-sm text-warm-gray">{t('testResults.performance', { defaultValue: 'Performance' })}</p>
               <Badge 
                 variant={percentage >= 70 ? "default" : percentage >= 50 ? "secondary" : "destructive"}
                 className="text-sm px-3 py-1"
               >
-                {percentage >= 70 ? "Excellent" : percentage >= 50 ? "Good" : "Needs Work"}
+                {percentage >= 70 ? t('testResults.excellent', { defaultValue: 'Excellent' }) : percentage >= 50 ? t('testResults.good', { defaultValue: 'Good' }) : t('testResults.needsWork', { defaultValue: 'Needs Work' })}
               </Badge>
             </div>
           </div>
@@ -111,7 +113,7 @@ const TestResults = ({
               className="rounded-xl px-6"
             >
               <Home className="w-4 h-4 mr-2" />
-              Dashboard
+              {t('header.dashboard', { defaultValue: 'Dashboard' })}
             </Button>
             <Button 
               variant="outline" 
@@ -119,14 +121,14 @@ const TestResults = ({
               className="rounded-xl px-6"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Retake Test
+              {t('testResults.retakeTest', { defaultValue: 'Retake Test' })}
             </Button>
             <Button 
               onClick={onContinue}
               className="rounded-xl px-6"
               style={{ background: 'var(--gradient-button)' }}
             >
-              Continue Practice
+              {t('testResults.continuePractice', { defaultValue: 'Continue Practice' })}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -138,13 +140,13 @@ const TestResults = ({
         {/* Summary Stats */}
         <Card className="rounded-2xl border-light-border shadow-soft">
           <CardHeader>
-            <CardTitle className="text-xl font-georgia text-foreground">Summary</CardTitle>
+            <CardTitle className="text-xl font-georgia text-foreground">{t('testResults.summary', { defaultValue: 'Summary' })}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                <span className="text-foreground">Correct</span>
+                <span className="text-foreground">{t('testResults.correct', { defaultValue: 'Correct' })}</span>
               </div>
               <Badge variant="outline" className="bg-green-50 text-green-700">
                 {correctAnswers.length}
@@ -153,7 +155,7 @@ const TestResults = ({
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <XCircle className="w-5 h-5 text-red-500" />
-                <span className="text-foreground">Incorrect</span>
+                <span className="text-foreground">{t('testResults.incorrect', { defaultValue: 'Incorrect' })}</span>
               </div>
               <Badge variant="outline" className="bg-red-50 text-red-700">
                 {incorrectAnswers.length}
@@ -162,7 +164,7 @@ const TestResults = ({
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-full bg-gray-400"></div>
-                <span className="text-foreground">Skipped</span>
+                <span className="text-foreground">{t('testResults.skipped', { defaultValue: 'Skipped' })}</span>
               </div>
               <Badge variant="outline" className="bg-gray-50 text-gray-700">
                 {skippedAnswers.length}
@@ -174,7 +176,7 @@ const TestResults = ({
         {/* Question Type Breakdown */}
         <Card className="rounded-2xl border-light-border shadow-soft">
           <CardHeader>
-            <CardTitle className="text-xl font-georgia text-foreground">Question Types</CardTitle>
+            <CardTitle className="text-xl font-georgia text-foreground">{t('testResults.questionTypes', { defaultValue: 'Question Types' })}</CardTitle>
           </CardHeader>
           <CardContent>
             {(() => {
@@ -210,7 +212,7 @@ const TestResults = ({
       {/* Detailed Review */}
       <Card className="rounded-2xl border-light-border shadow-soft">
         <CardHeader>
-          <CardTitle className="text-xl font-georgia text-foreground">Answer Review</CardTitle>
+          <CardTitle className="text-xl font-georgia text-foreground">{t('testResults.answerReview', { defaultValue: 'Answer Review' })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {questions.map((question) => {
@@ -256,17 +258,17 @@ const TestResults = ({
                     
                     <div className="space-y-1">
                       <div className="flex gap-4 text-sm">
-                        <span className="text-warm-gray">Your answer:</span>
+                        <span className="text-warm-gray">{t('testResults.yourAnswer', { defaultValue: 'Your answer:' })}</span>
                         <span className={`font-medium ${
                           isCorrect ? 'text-green-700' : isSkipped ? 'text-gray-500' : 'text-red-700'
                         }`}>
-                          {userAnswer || 'Not answered'}
+                          {userAnswer || t('testResults.notAnswered', { defaultValue: 'Not answered' })}
                         </span>
                       </div>
                       
                       {!isCorrect && (
                         <div className="flex gap-4 text-sm">
-                          <span className="text-warm-gray">Correct answer:</span>
+                          <span className="text-warm-gray">{t('testResults.correctAnswer', { defaultValue: 'Correct answer:' })}</span>
                           <span className="font-medium text-green-700">
                             {question.correct_answer}
                           </span>
@@ -277,7 +279,7 @@ const TestResults = ({
                     {question.explanation && (
                       <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <p className="text-sm text-blue-800">
-                          <strong>Explanation:</strong> {question.explanation}
+                          <strong>{t('testResults.explanation', { defaultValue: 'Explanation:' })}</strong> {question.explanation}
                         </p>
                       </div>
                     )}

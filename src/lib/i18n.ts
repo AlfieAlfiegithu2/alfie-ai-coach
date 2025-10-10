@@ -83,6 +83,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'ui_language',
     },
 
     // Backend options
@@ -99,6 +100,16 @@ i18n
 
     interpolation: {
       escapeValue: false, // React already escapes by default
+    },
+
+    // If a key is missing in the current locale, show a readable fallback
+    parseMissingKeyHandler: (key) => {
+      try {
+        const last = String(key || '').split('.').pop() || '';
+        if (!last) return '';
+        // Humanize snake_case / kebab-case
+        return last.replace(/[-_]/g, ' ');
+      } catch { return ''; }
     },
 
     react: {

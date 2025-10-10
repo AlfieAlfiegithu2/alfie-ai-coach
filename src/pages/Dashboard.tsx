@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +19,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import ProfilePhotoSelector from "@/components/ProfilePhotoSelector";
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     user,
     profile,
@@ -69,7 +71,12 @@ const Dashboard = () => {
     bgColor: "bg-gray-500/10",
     borderColor: "border-gray-500/20"
   }];
-  const skills = ["Reading", "Listening", "Writing", "Speaking"];
+  const skills = [
+    { id: 'reading', label: t('skills.reading', { defaultValue: 'Reading' }), icon: BookOpen },
+    { id: 'listening', label: t('skills.listening', { defaultValue: 'Listening' }), icon: Volume2 },
+    { id: 'writing', label: t('skills.writing', { defaultValue: 'Writing' }), icon: PenTool },
+    { id: 'speaking', label: t('skills.speaking', { defaultValue: 'Speaking' }), icon: MessageSquare }
+  ];
   const achievements = [{
     icon: Trophy,
     label: "7-day streak",
@@ -229,15 +236,15 @@ const Dashboard = () => {
     // Route to IELTS portal for quick start
     navigate('/ielts-portal');
   };
-  const handleViewResults = (skillName: string) => {
+  const handleViewResults = (skillId: string) => {
     // Navigate to skill-specific detailed results page
     const skillRoutes = {
-      'Reading': '/reading-results',
-      'Writing': '/ielts-writing-results',
-      'Speaking': '/ielts-speaking-results',
-      'Listening': '/listening-results'
+      'reading': '/reading-results',
+      'writing': '/ielts-writing-results',
+      'speaking': '/ielts-speaking-results',
+      'listening': '/listening-results'
     };
-    const route = skillRoutes[skillName as keyof typeof skillRoutes];
+    const route = skillRoutes[skillId as keyof typeof skillRoutes];
     if (route) {
       navigate(route);
     } else {
@@ -291,27 +298,27 @@ const Dashboard = () => {
             <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
-              My Word Book
+              {t('dashboard.myWordBook', { defaultValue: 'My Word Book' })}
             </button>
             
             <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
-              Tests
+              {t('dashboard.tests', { defaultValue: 'Tests' })}
             </button>
             
             {/* Study Plan Button next to Tests as nav text */}
             <StudyPlanModal>
-              <button className="text-slate-600 hover:text-blue-600 transition" style={{
+              <button type="button" className="text-slate-600 hover:text-blue-600 transition" style={{
                 fontFamily: 'Inter, sans-serif'
               }}>
-                Study Plan
+                {t('dashboard.studyPlan', { defaultValue: 'Study Plan' })}
               </button>
             </StudyPlanModal>
             
             <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition" style={{
               fontFamily: 'Inter, sans-serif'
-            }}>Home</button>
+            }}>{t('dashboard.home', { defaultValue: 'Home' })}</button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4 relative z-50">
             {/* Settings Button */}
@@ -369,7 +376,7 @@ const Dashboard = () => {
               size="sm"
               className="hidden lg:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700"
             >
-              Reset Results
+              {t('dashboard.resetResults', { defaultValue: 'Reset Results' })}
             </Button>
           </div>
         </header>
@@ -384,34 +391,23 @@ const Dashboard = () => {
               <h1 className="text-3xl sm:text-4xl lg:text-5xl text-slate-800 tracking-tight font-semibold" style={{
                 fontFamily: 'Bricolage Grotesque, sans-serif'
               }}>
-                Good morning, {userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'}!
+                {t('dashboard.helloUser', {
+                  name: (userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'),
+                  defaultValue: `Hello, ${userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner'}`
+                })}
               </h1>
 
               {/* Skills Selection Card */}
               <div className="grid grid-cols-5 gap-2 lg:gap-3">
                 {skills.map(skill => {
-                  const isSelected = selectedSkill === skill.toLowerCase();
-                  const getIcon = (skillName: string) => {
-                    switch (skillName) {
-                      case 'Reading':
-                        return BookOpen;
-                      case 'Listening':
-                        return Volume2;
-                      case 'Writing':
-                        return PenTool;
-                      case 'Speaking':
-                        return MessageSquare;
-                      default:
-                        return BookOpen;
-                    }
-                  };
-                  const Icon = getIcon(skill);
-                  return <button key={skill} onClick={() => setSelectedSkill(skill.toLowerCase())} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
+                  const isSelected = selectedSkill === skill.id;
+                  const Icon = skill.icon;
+                  return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
                       <Icon className={`w-5 h-5 lg:w-6 lg:h-6 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} />
                       <span className={`text-xs lg:text-sm font-medium ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
                       fontFamily: 'Inter, sans-serif'
                     }}>
-                        {skill}
+                        {skill.label}
                       </span>
                     </button>;
                 })}
@@ -420,7 +416,7 @@ const Dashboard = () => {
                   <span className={`text-xs lg:text-sm font-medium ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
                     fontFamily: 'Inter, sans-serif'
                   }}>
-                    Overall
+                    {t('skills.overall', { defaultValue: 'Overall' })}
                   </span>
                 </button>
               </div>
@@ -441,7 +437,7 @@ const Dashboard = () => {
               <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                 <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{
                   fontFamily: 'Inter, sans-serif'
-                }}>Study Progress</h3>
+                }}>{t('dashboard.studyProgress', { defaultValue: 'Study Progress' })}</h3>
                 <div className="grid grid-cols-3 gap-3 lg:gap-4">
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
@@ -449,7 +445,7 @@ const Dashboard = () => {
                     }}>{userStats?.totalTests || 0}</p>
                     <p className="text-xs text-slate-600" style={{
                       fontFamily: 'Inter, sans-serif'
-                    }}>Tests Taken</p>
+                    }}>{t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}</p>
                   </div>
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
@@ -457,7 +453,7 @@ const Dashboard = () => {
                     }}>{savedWords.length}</p>
                     <p className="text-xs text-slate-600" style={{
                       fontFamily: 'Inter, sans-serif'
-                    }}>Words Saved</p>
+                    }}>{t('dashboard.wordsSaved', { defaultValue: 'Words Saved' })}</p>
                   </div>
                   <div>
                     <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
@@ -465,7 +461,7 @@ const Dashboard = () => {
                     }}>7</p>
                     <p className="text-xs text-slate-600" style={{
                       fontFamily: 'Inter, sans-serif'
-                    }}>Day Streak</p>
+                    }}>{t('dashboard.dayStreak', { defaultValue: 'Day Streak' })}</p>
                   </div>
                 </div>
               </div>
@@ -479,7 +475,7 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 className="text-lg lg:text-xl font-semibold text-slate-800" style={{
                   fontFamily: 'Inter, sans-serif'
-                }}>Practice Areas</h2>
+                }}>{t('dashboard.practiceAreas', { defaultValue: 'Practice Areas' })}</h2>
                 <div className="flex items-center gap-3 text-sm">
                   
                   
@@ -490,39 +486,25 @@ const Dashboard = () => {
                 {/* Test Results and Feedback Cards */}
                 <div className="flex flex-col gap-4 lg:gap-6">
                   {skills.map(skill => {
-                    const getIcon = (skillName: string) => {
-                      switch (skillName) {
-                        case 'Reading':
-                          return BookOpen;
-                        case 'Listening':
-                          return Volume2;
-                        case 'Writing':
-                          return PenTool;
-                        case 'Speaking':
-                          return MessageSquare;
-                        default:
-                          return BookOpen;
-                      }
-                    };
-                    const Icon = getIcon(skill);
+                    const Icon = skill.icon;
 
                     // Get recent test results for this skill
                     const skillResults = testResults.filter(result => {
-                      if (skill === 'Writing') {
+                      if (skill.id === 'writing') {
                         return result.test_type === 'writing';
                       }
-                      return result.test_type && result.test_type.toLowerCase().includes(skill.toLowerCase());
+                      return result.test_type && result.test_type.toLowerCase().includes(skill.id.toLowerCase());
                     }).slice(0, 3);
                     const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
-                    return <div key={skill} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
+                    return <div key={skill.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
                         <div className="flex items-center justify-between mb-3 lg:mb-4">
                           <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold text-slate-800" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                            
-                            {skill} Results & Feedback
+                            <Icon className="w-4 h-4" />
+                            {skill.label}
                           </h3>
-                          {skill === 'Writing' && <Button variant="ghost" size="sm" onClick={e => {
+                          {skill.id === 'writing' && <Button variant="ghost" size="sm" onClick={e => {
                           e.stopPropagation();
                           navigate('/dashboard/writing-history');
                         }} className="text-xs text-slate-600 hover:text-slate-800">
@@ -536,7 +518,7 @@ const Dashboard = () => {
                                 <p className="font-medium text-slate-800" style={{
                               fontFamily: 'Inter, sans-serif'
                             }}>
-                                  Tests Taken:
+                                  {t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}:
                                 </p>
                                 <p style={{
                               fontFamily: 'Inter, sans-serif'
@@ -546,7 +528,7 @@ const Dashboard = () => {
                                 <p className="font-medium text-slate-800" style={{
                               fontFamily: 'Inter, sans-serif'
                             }}>
-                                  Average Score:
+                                  {t('dashboard.averageScore', { defaultValue: 'Average Score' })}:
                                 </p>
                                 <p style={{
                               fontFamily: 'Inter, sans-serif'
@@ -556,7 +538,7 @@ const Dashboard = () => {
                                 <p className="font-medium text-slate-800" style={{
                               fontFamily: 'Inter, sans-serif'
                             }}>
-                                  Latest Score:
+                                  {t('dashboard.latestScore', { defaultValue: 'Latest Score' })}:
                                 </p>
                                 <p style={{
                               fontFamily: 'Inter, sans-serif'
@@ -564,21 +546,21 @@ const Dashboard = () => {
                               </div>
                             </div>
                             
-                            <button onClick={() => handleViewResults(skill)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
+                            <button onClick={() => handleViewResults(skill.id)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                              View Detailed Results <ChevronRight className="w-4 h-4" />
+                              {t('dashboard.viewDetailedResults', { defaultValue: 'View Detailed Results' })} <ChevronRight className="w-4 h-4" />
                             </button>
                           </div> : <div className="text-center py-6">
                             <p className="text-slate-600 mb-4" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                              No {skill.toLowerCase()} tests taken yet
+                              {t('dashboard.noTestsYet', { skill: skill.id, defaultValue: `No ${skill.id} tests taken yet` })}
                             </p>
                             <button onClick={() => navigate('/ielts-portal')} className="text-sm font-medium bg-[#FFFFF0] backdrop-blur-sm text-black px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-[#F5F5DC] transition border border-white/20" style={{
                           fontFamily: 'Inter, sans-serif'
                         }}>
-                              Start First Test <ChevronRight className="w-4 h-4" />
+                              {t('dashboard.startFirstTest', { defaultValue: 'Start First Test' })} <ChevronRight className="w-4 h-4" />
                             </button>
                           </div>}
                       </div>;

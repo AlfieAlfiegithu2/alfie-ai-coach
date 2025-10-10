@@ -17,6 +17,7 @@ import StudyPlanModal from "@/components/StudyPlanModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
 import ProfilePhotoSelector from "@/components/ProfilePhotoSelector";
+import LanguageSelector from "@/components/LanguageSelector";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -29,7 +30,7 @@ const Dashboard = () => {
     toast
   } = useToast();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
-  const [selectedSkill, setSelectedSkill] = useState("overall");
+  const [selectedSkill, setSelectedSkill] = useState("reading");
   const [userStats, setUserStats] = useState<any>(null);
   const [testResults, setTestResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -327,6 +328,9 @@ const Dashboard = () => {
             </button>
           </nav>
           <div className="flex items-center gap-3 lg:gap-4 relative z-50">
+            {/* Language Selector */}
+            <LanguageSelector />
+            
             {/* Settings Button */}
             <div className="relative z-50">
               <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
@@ -403,7 +407,7 @@ const Dashboard = () => {
               </h1>
 
               {/* Skills Selection Card */}
-              <div className="grid grid-cols-5 gap-2 lg:gap-3">
+              <div className="grid grid-cols-4 gap-2 lg:gap-3">
                 {skills.map(skill => {
                   const isSelected = selectedSkill === skill.id;
                   return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center justify-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
@@ -414,14 +418,6 @@ const Dashboard = () => {
                       </span>
                     </button>;
                 })}
-                <button onClick={() => setSelectedSkill('overall')} className={`flex flex-col items-center justify-center gap-2 p-3 lg:p-4 rounded-xl border backdrop-blur-xl transition-all ${selectedSkill === 'overall' ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                  <BarChart3 className={`w-5 h-5 lg:w-6 lg:h-6 ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} />
-                  <span className={`text-xs lg:text-sm font-medium text-center ${selectedSkill === 'overall' ? 'text-slate-800' : 'text-slate-600'}`} style={{
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                    {t('skills.overall')}
-                  </span>
-                </button>
               </div>
 
               {/* Target Score Display */}

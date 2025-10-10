@@ -277,7 +277,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
               {/* Highlights/Quick Wins/Next removed per request */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-slate-800 font-semibold">This month</h3>
+                <div />
                 <AlertDialog open={resetAllOpen} onOpenChange={setResetAllOpen}>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" className="text-xs">
@@ -294,17 +294,22 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => {
-                        const keysToRemove: string[] = [];
-                        for (let i = 0; i < localStorage.length; i++) {
-                          const k = localStorage.key(i) as string;
-                          if (!k) continue;
-                          if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
-                        }
-                        keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
-                        // Close dialogs and refresh lightweight lists
-                        try { setMiniDate(null); } catch {}
-                        setRefreshKey((v)=>v+1);
-                        setTimeout(() => setResetAllOpen(false), 0);
+                        // Close the dialog immediately to avoid overlay trapping
+                        setResetAllOpen(false);
+                        // Defer heavy work to next tick to avoid UI freeze
+                        setTimeout(() => {
+                          try {
+                            const keysToRemove: string[] = [];
+                            for (let i = 0; i < localStorage.length; i++) {
+                              const k = localStorage.key(i) as string;
+                              if (!k) continue;
+                              if (k.startsWith('plan-') || k.startsWith('quicktodo-')) keysToRemove.push(k);
+                            }
+                            keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+                          } catch {}
+                          try { setMiniDate(null); } catch {}
+                          setRefreshKey((v)=>v+1);
+                        }, 0);
                       }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
                     </AlertDialogFooter>
                   </ThemedAlertContent>

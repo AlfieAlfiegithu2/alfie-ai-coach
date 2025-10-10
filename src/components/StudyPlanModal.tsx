@@ -474,7 +474,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setMiniDate(null)}>
             <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-xl p-6" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">{miniDate.toISOString().slice(0,10)}</h3>
+                <h3 className="text-lg font-semibold text-slate-900">{new Date(miniDate.getFullYear(), miniDate.getMonth(), miniDate.getDate()).toLocaleDateString('en-CA')}</h3>
                 <button className="text-slate-500 hover:text-slate-700" onClick={() => setMiniDate(null)}>Close</button>
               </div>
               <DayQuickTodo plan={plan} date={miniDate} />
@@ -638,9 +638,12 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
       <div className="grid grid-cols-7 gap-2">
         {blanks.map(b => (<div key={`b${b}`} className="h-12" />))}
         {days.map((d, di) => (
-          <button key={di} onClick={() => onOpenDay(d.date)} className={`h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
+          <button key={di} onClick={() => onOpenDay(new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()))} className={`relative h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
             <span className="text-slate-900">{d.date.getDate()}</span>
             {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+            {(() => { const now=new Date(); const isToday = now.getFullYear()===d.date.getFullYear() && now.getMonth()===d.date.getMonth() && now.getDate()===d.date.getDate(); return isToday; })() && (
+              <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-500" />
+            )}
           </button>
         ))}
       </div>

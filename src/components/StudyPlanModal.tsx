@@ -324,7 +324,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
         </div>
         {aiOpen && (
           <Dialog open={aiOpen} onOpenChange={setAiOpen}>
-            <DialogContent className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5 z-[61]">
+            <DialogContent className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-5 z-[61] sm:max-w-lg">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-lg font-semibold text-slate-900">{t('studyPlan.quickAIPlan', { defaultValue: 'Quick AI Plan' })}</div>
               </div>
@@ -621,9 +621,12 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
             completed = Array.isArray(vals) ? vals.every(Boolean) : Object.values(checks).every(Boolean);
           } catch {}
           return (
-            <button key={di} onClick={() => onOpenDay(new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()))} className={`relative h-12 rounded-xl border text-sm ${completed ? 'bg-green-50 border-green-300' : d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
-              <span className={`text-slate-900 ${completed ? 'font-semibold text-green-700' : ''}`}>{d.date.getDate()}</span>
-              {d.hasTasks && !completed && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+            <button key={di} onClick={() => onOpenDay(new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()))} className={`relative h-12 rounded-xl border text-sm ${d.hasTasks ? 'bg-white hover:bg-white/90 border-slate-300' : 'bg-white/40 border-white/40'}`}>
+              <span className="text-slate-900">{d.date.getDate()}</span>
+              {d.hasTasks && <div className="mt-1 h-1.5 w-1.5 rounded-full bg-black mx-auto" />}
+              {completed && (
+                <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" title="Completed" />
+              )}
               {isToday && (
                 <div className="absolute inset-0 rounded-xl ring-2 ring-blue-400 pointer-events-none"></div>
               )}

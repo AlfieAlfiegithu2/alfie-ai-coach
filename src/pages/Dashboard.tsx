@@ -290,19 +290,21 @@ const Dashboard = () => {
       
       <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
         {/* Header */}
-        <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
-          <div className="flex items-center gap-3">
-            
+        <header className="flex flex-col lg:flex-row sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20 gap-4 lg:gap-0">
+          {/* Left section - empty for now */}
+          <div className="flex items-center gap-3 order-3 lg:order-1">
             
           </div>
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium absolute left-1/2 transform -translate-x-1/2 max-w-2xl overflow-hidden">
-            <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition" style={{
+          
+          {/* Center section - Navigation */}
+          <nav className="flex items-center gap-4 lg:gap-6 text-sm font-medium order-1 lg:order-2 flex-wrap justify-center">
+            <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
               {t('dashboard.myWordBook')}
             </button>
             
-            <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition" style={{
+            <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
               {t('dashboard.tests')}
@@ -310,24 +312,26 @@ const Dashboard = () => {
             
             {/* Study Plan Button next to Tests as nav text */}
             <StudyPlanModal>
-              <button type="button" className="text-slate-600 hover:text-blue-600 transition" style={{
+              <button type="button" className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
                 fontFamily: 'Inter, sans-serif'
               }}>
                 {t('dashboard.studyPlan')}
               </button>
             </StudyPlanModal>
             
-            <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition" style={{
+            <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
               fontFamily: 'Inter, sans-serif'
             }}>{t('dashboard.home')}</button>
             
-            <button onClick={() => navigate('/community')} className="text-slate-600 hover:text-blue-600 transition" style={{
+            <button onClick={() => navigate('/community')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
               fontFamily: 'Inter, sans-serif'
             }}>
               {t('navigation.community')}
             </button>
           </nav>
-          <div className="flex items-center gap-3 lg:gap-4 relative z-50">
+          
+          {/* Right section - Controls */}
+          <div className="flex items-center gap-2 lg:gap-3 order-2 lg:order-3 relative z-50">
             {/* Language Selector */}
             <LanguageSelector />
             
@@ -335,6 +339,45 @@ const Dashboard = () => {
             <div className="relative z-50">
               <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
             </div>
+            
+            {/* Mobile Reset Button - Icon only */}
+            <Button
+              onClick={async () => {
+                if (!user) return;
+                  const confirmed = window.confirm('This will permanently delete all your saved test results (reading, listening, writing, speaking). Continue?');
+                if (!confirmed) return;
+                try {
+                  setLoading(true);
+                  
+                  // Delete skill-specific results first (foreign keys)
+                  await supabase.from('writing_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('reading_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('listening_test_results').delete().eq('user_id', user.id);
+
+                  // Delete main test results
+                  const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
+                  if (tErr) throw tErr;
+                  
+                  // Clear local state for instant UI feedback
+                  setTestResults([]);
+                  setUserStats({ totalTests: 0, avgScore: 0, recentImprovement: 0, weeklyProgress: 0 });
+                  toast({ title: 'Results reset', description: 'All your test results have been removed.' });
+                  setRefreshKey(prev => prev + 1);
+                } catch (e: any) {
+                  console.error('Failed to reset results', e);
+                  toast({ title: 'Error', description: 'Failed to reset results. Please try again.', variant: 'destructive' });
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              variant="ghost"
+              size="sm"
+              className="xl:hidden bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700 p-2"
+              title={t('dashboard.resetResults')}
+            >
+              🔄
+            </Button>
             
             {/* Clickable User Avatar for Photo Upload */}
             <ProfilePhotoSelector onPhotoUpdate={() => {
@@ -384,9 +427,11 @@ const Dashboard = () => {
               }}
               variant="ghost"
               size="sm"
-              className="hidden lg:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700 text-xs px-2 py-1 whitespace-nowrap"
+              className="hidden xl:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700 text-xs px-2 py-1 whitespace-nowrap min-w-0"
             >
-              {t('dashboard.resetResults')}
+              <span className="truncate max-w-[120px]" title={t('dashboard.resetResults')}>
+                {t('dashboard.resetResults')}
+              </span>
             </Button>
           </div>
         </header>

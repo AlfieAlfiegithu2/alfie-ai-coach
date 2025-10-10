@@ -338,7 +338,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   </select>
                 </label>
                 <label className="text-sm text-slate-700">
-                  {t('studyPlan.deadlineOptional', { defaultValue: 'Deadline (optional)' })}
+                  {t('studyPlan.deadline', { defaultValue: 'Deadline' })}
                   <div className="flex gap-2 mt-1">
                     <input type="date" min={new Date().toISOString().slice(0,10)} value={aiDeadline} onChange={(e)=>setAiDeadline(e.target.value)} className="flex-1 rounded-md border px-2 py-2" />
                   </div>
@@ -354,7 +354,7 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                   </select>
                 </label>
                 <div className="sm:col-span-2">
-                  <div className="text-sm text-slate-700 mb-1">Study days (Sun=0 … Sat=6)</div>
+                  <div className="text-sm text-slate-700 mb-1">Study days</div>
                   <div className="flex flex-wrap gap-2">
                     {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d, i) => {
                       const active = aiDays.has(i);
@@ -586,8 +586,16 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
     const diff = Math.floor((date.getTime() - startDate.getTime())/(24*60*60*1000));
     const weekIdx = Math.floor(diff/7);
     const dayIdx = diff%7;
-    const tasks = plan.weekly?.[weekIdx]?.days?.[dayIdx]?.tasks;
-    const hasTasks = Array.isArray(tasks) && tasks.length > 0;
+    // Only consider it has tasks if there are tasks and at least one is not hidden in local quicktodo
+    let hasTasks = false;
+    try {
+      const tasks = plan.weekly?.[weekIdx]?.days?.[dayIdx]?.tasks;
+      if (Array.isArray(tasks) && tasks.length > 0) {
+        const key = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().slice(0,10);
+        const hidden = new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]'));
+        hasTasks = tasks.some((_, idx) => !hidden.has(String(idx)));
+      }
+    } catch { hasTasks = false; }
     days.push({ date, hasTasks });
   }
   return (
@@ -604,7 +612,7 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
         </div>
       </div>
       <div className="grid grid-cols-7 gap-2 text-xs text-slate-500 mb-2">
-        {headers.map(h => (<div key={h}>{h}</div>))}
+        {headers.map(h => (<div key={h} className="text-center">{h}</div>))}
       </div>
       <div className="grid grid-cols-7 gap-2">
         {blanks.map(b => (<div key={`b${b}`} className="h-12" />))}

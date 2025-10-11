@@ -132,6 +132,7 @@ const AdminVocabManager: React.FC = () => {
           <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
           <>
+            {/* Updated button text for 8K words with all languages */}
             <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(8000)} disabled={seeding}>
               {seeding ? 'Starting…' : 'Seed 8,000 EN→ALL LANGS'}
             </button>

@@ -27,10 +27,15 @@ export default function VocabTest() {
 
   useEffect(() => {
     const load = async () => {
-      if (!deckId) return;
+      if (!deckId) {
+        console.log('VocabTest: No deckId provided');
+        return;
+      }
+      console.log('VocabTest: Loading deckId:', deckId);
       // Ensure auth is resolved before RLS-sensitive queries
       await (supabase as any).auth.getSession();
       const safeDeckId = decodeURIComponent(String(deckId)).trim();
+      console.log('VocabTest: Safe deckId:', safeDeckId);
       const [cardsRes, deckNameViaJoin] = await Promise.all([
         (supabase as any)
           .from('vocab_cards')
@@ -44,10 +49,13 @@ export default function VocabTest() {
           .eq('deck_id', safeDeckId)
           .limit(1)
       ]);
+      console.log('VocabTest: Cards query result:', cardsRes);
+      console.log('VocabTest: Deck name query result:', deckNameViaJoin);
       const deckJoinRows = ((deckNameViaJoin as any)?.data as any[]) || [];
       const joinedName = deckJoinRows[0]?.vocab_decks?.name;
       setName(joinedName || 'Deck Test');
       let rows: any[] = ((cardsRes as any)?.data as any[]) || [];
+      console.log('VocabTest: Initial rows count:', rows.length);
       // Fallback 1: explicitly restrict to public if first query returned none
       if (rows.length === 0) {
         const { data: pubRows } = await (supabase as any)
@@ -58,6 +66,7 @@ export default function VocabTest() {
           .order('created_at', { ascending: true })
           .limit(1000);
         rows = (pubRows as any) || [];
+        console.log('VocabTest: Public fallback rows count:', rows.length);
       }
       // Fallback 2: inner join decks and filter by deck id via join
       if (rows.length === 0) {
@@ -77,7 +86,9 @@ export default function VocabTest() {
           examples_json: r.examples_json,
           synonyms_json: r.synonyms_json
         }));
+        console.log('VocabTest: Join fallback rows count:', rows.length);
       }
+      console.log('VocabTest: Final rows count:', rows.length);
       setRows(rows);
       setIndex(0);
     };

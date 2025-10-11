@@ -69,7 +69,7 @@ export default function VocabLevels() {
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">{d.count}/20</Badge>
                     <Button size="sm" asChild>
-                      <Link to={`/vocabulary/test/${d.id}`}>Start Test</Link>
+                      <Link to={`/vocabulary/test/${d.id}`} onClick={() => console.log('VocabLevels: Starting test for deckId:', d.id)}>Start Test</Link>
                     </Button>
                   </div>
                 </CardContent>

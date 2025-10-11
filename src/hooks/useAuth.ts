@@ -84,19 +84,32 @@ export function useAuth(): UseAuthReturn {
         return;
       }
 
-      setProfile(data);
-      try {
-        const alreadyChosen = localStorage.getItem('ui_language');
-        if (!alreadyChosen && data?.native_language) {
-          const code = normalizeLanguageCode(data.native_language);
-          if (code) {
-            await i18n.changeLanguage(code);
-            localStorage.setItem('ui_language', code);
+      if (data) {
+        const profileData: Profile = {
+          id: data.id,
+          full_name: data.full_name || '',
+          role: (data as any).role || 'user',
+          subscription_status: data.subscription_status || 'free',
+          native_language: data.native_language || 'en',
+          avatar_url: data.avatar_url,
+          created_at: data.created_at,
+        };
+        setProfile(profileData);
+        
+        try {
+          const alreadyChosen = localStorage.getItem('ui_language');
+          if (!alreadyChosen && data?.native_language) {
+            const code = normalizeLanguageCode(data.native_language);
+            if (code) {
+              await i18n.changeLanguage(code);
+              localStorage.setItem('ui_language', code);
+            }
           }
+        } catch (e) {
+          console.warn('Language sync skipped:', e);
         }
-      } catch (e) {
-        console.warn('Language sync skipped:', e);
       }
+      
       return data;
     } catch (error) {
       console.error('Error fetching profile:', error);

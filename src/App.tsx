@@ -86,6 +86,10 @@ import AdminListeningForDetailsTestDetail from "./pages/AdminListeningForDetails
 import ListeningQuiz from "./pages/ListeningQuiz";
 import VocabularyMap from "./pages/VocabularyMap";
 import VocabularyBook from "./pages/VocabularyBook";
+import VocabHome from "./pages/VocabHome";
+import VocabDeck from "./pages/VocabDeck";
+import VocabReview from "./pages/VocabReview";
+import VocabSeed from "./pages/VocabSeed";
 import Signup from "./pages/Signup";
 import VocabularyMapView from "./components/VocabularyMapView";
 import WritingHistory from "./pages/WritingHistory";
@@ -252,7 +256,11 @@ const App = () => {
             <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />
             <Route path="/skills/vocabulary-builder" element={<VocabularyMapView />} />
+            <Route path="/vocabulary" element={<VocabHome />} />
             <Route path="/vocabulary/book" element={<VocabularyBook />} />
+            <Route path="/vocabulary/deck/:deckId" element={<VocabDeck />} />
+            <Route path="/vocabulary/review/:deckId" element={<VocabReview />} />
+            <Route path="/vocabulary/seed" element={<VocabSeed />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />

@@ -18,15 +18,19 @@ serve(async (req) => {
 
     const system = `Enrich a vocabulary card. STRICT JSON only.
 Schema: {
-  "translation": string,
+  "translation": string,                 // translate to learner native
   "ipa": string|null,
   "pos": string|null,
-  "examples": string[],
+  "examples": string[],                 // 3 concise, natural sentences (8–12 words), everyday/news style
   "conjugation": object|null,
   "synonyms": string[]
-}`;
+}
+Rules:
+- Keep examples short and useful; avoid rare idioms.
+- Prefer common collocations and patterns.
+- If multiple senses exist, pick the most common for general/news contexts.`;
 
-    const user = `Term: ${term}\nTarget language: ${targetLanguage}\nLearner native: ${nativeLanguage}\nContext: ${context?.slice(0, 400)}\nReturn JSON.`;
+    const user = `Term: ${term}\nTarget language: ${targetLanguage}\nLearner native: ${nativeLanguage}\nContext: ${context?.slice(0, 400)}\nReturn JSON with exactly 3 examples.`;
 
     const prompt = {
       model: 'deepseek-chat',

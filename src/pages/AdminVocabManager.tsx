@@ -8,6 +8,12 @@ const AdminVocabManager: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [progress, setProgress] = useState<{ completed?: number; total?: number; last_term?: string; last_error?: string } | null>(null);
+  const [counts, setCounts] = useState<{ total: number; publicTotal: number }>({ total: 0, publicTotal: 0 });
+  const [newTerm, setNewTerm] = useState('');
+  const [newTranslation, setNewTranslation] = useState('');
+  const [newPos, setNewPos] = useState('');
+  const [newIpa, setNewIpa] = useState('');
+  const [newContext, setNewContext] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -20,7 +26,23 @@ const AdminVocabManager: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  const loadCounts = async () => {
+    const totalRes = await (supabase as any)
+      .from('vocab_cards')
+      .select('id', { count: 'exact', head: true });
+    const publicRes = await (supabase as any)
+      .from('vocab_cards')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_public', true);
+    setCounts({ total: totalRes.count || 0, publicTotal: publicRes.count || 0 });
+  };
+
+  const refresh = async () => {
+    await load();
+    await loadCounts();
+  };
+
+  useEffect(() => { load(); loadCounts(); }, []);
 
   useEffect(() => {
     const check = async () => {
@@ -38,9 +60,14 @@ const AdminVocabManager: React.FC = () => {
   const seed = async (total: number = 5000) => {
     setSeeding(true);
     try {
-      const { data, error } = await supabase.functions.invoke('vocab-admin-seed', {
-        body: { total, language: 'en', translateTo: 'ko' }
-      });
+      // Try admin-only function first; if forbidden, fall back to user bulk seeding
+      let data: any, error: any;
+      const adminAttempt = await supabase.functions.invoke('vocab-admin-seed', { body: { total, language: 'en', translateTo: 'ko' } });
+      data = adminAttempt.data; error = adminAttempt.error;
+      if (error || adminAttempt?.data?.error || adminAttempt?.error?.status === 403) {
+        const userAttempt = await supabase.functions.invoke('vocab-bulk-seed', { body: { total, language: 'en', translateTo: 'ko', asPublic: false } });
+        data = userAttempt.data; error = userAttempt.error;
+      }
       if (error || !data?.success) alert(data?.error || error?.message || 'Failed to start');
     } finally {
       setSeeding(false);
@@ -69,28 +96,67 @@ const AdminVocabManager: React.FC = () => {
 
   const filtered = rows.filter(r => r.term.toLowerCase().includes(q.toLowerCase()) || (r.translation||'').toLowerCase().includes(q.toLowerCase()));
 
+  const addWord = async () => {
+    if (!newTerm.trim()) { alert('Enter a term'); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { alert('You must be signed in'); return; }
+    const insert: any = {
+      user_id: user.id,
+      term: newTerm.trim(),
+      translation: newTranslation.trim() || null,
+      pos: newPos.trim() || null,
+      ipa: newIpa.trim() || null,
+      context_sentence: newContext.trim() || null,
+      language: 'en'
+    };
+    const { data, error } = await supabase
+      .from('vocab_cards')
+      .insert(insert)
+      .select('id, term, translation, pos, ipa, context_sentence, frequency_rank, created_at')
+      .single();
+    if (error) { alert(error.message); return; }
+    setRows(r => [data as any, ...r]);
+    setNewTerm(''); setNewTranslation(''); setNewPos(''); setNewIpa(''); setNewContext('');
+    await loadCounts();
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Admin • Vocabulary</h1>
         <div className="flex gap-2">
-          <button className="border rounded px-3 py-2" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+          <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
-          {isAdmin && (
-            <>
-              <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(5000)} disabled={seeding}>
-                {seeding ? 'Starting…' : 'Seed 5,000 EN→KO (public)'}
-              </button>
-              <button className="border rounded px-3 py-2" onClick={()=>seed(20)} disabled={seeding}>
-                {seeding ? 'Starting…' : 'Seed 20 (test)'}
-              </button>
-            </>
-          )}
+          <>
+            <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(5000)} disabled={seeding}>
+              {seeding ? 'Starting…' : 'Seed 5,000 EN→KO'}
+            </button>
+            <button className="border rounded px-3 py-2" onClick={()=>seed(20)} disabled={seeding}>
+              {seeding ? 'Starting…' : 'Seed 20 (test)'}
+            </button>
+          </>
         </div>
       </div>
-      {progress && (
-        <div className="mb-3 text-xs text-slate-600">Progress: {progress.completed||0} / {progress.total||0} {progress.last_term ? `• Last: ${progress.last_term}` : ''} {progress.last_error ? `• Error: ${progress.last_error}` : ''}</div>
+      {(progress || counts.total || counts.publicTotal) && (
+        <div className="mb-3 text-xs text-slate-600 flex flex-wrap gap-4">
+          {progress && (
+            <div>Progress: {progress.completed||0} / {progress.total||0} {progress.last_term ? `• Last: ${progress.last_term}` : ''} {progress.last_error ? `• Error: ${progress.last_error}` : ''}</div>
+          )}
+          <div>Totals: {counts.total} total • {counts.publicTotal} public</div>
+        </div>
       )}
+      {/* Add Word */}
+      <div className="mb-4 border rounded p-3 bg-white/50">
+        <div className="text-sm font-medium mb-2">Add Word</div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-center">
+          <input className="border rounded px-2 py-2" placeholder="Term (required)" value={newTerm} onChange={(e)=>setNewTerm(e.target.value)} />
+          <input className="border rounded px-2 py-2" placeholder="Translation" value={newTranslation} onChange={(e)=>setNewTranslation(e.target.value)} />
+          <input className="border rounded px-2 py-2" placeholder="POS" value={newPos} onChange={(e)=>setNewPos(e.target.value)} />
+          <input className="border rounded px-2 py-2" placeholder="IPA" value={newIpa} onChange={(e)=>setNewIpa(e.target.value)} />
+          <input className="border rounded px-2 py-2" placeholder="Context sentence" value={newContext} onChange={(e)=>setNewContext(e.target.value)} />
+          <button className="border rounded px-3 py-2 bg-black text-white" onClick={addWord}>Create</button>
+        </div>
+      </div>
       <div className="mb-3">
         <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search…" className="border rounded px-3 py-2 w-full" />
       </div>

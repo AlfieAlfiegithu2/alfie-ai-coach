@@ -113,7 +113,7 @@ serve(async (req) => {
         deckSeq += 1;
         const { data: deck, error: deckErr } = await supabase
           .from('vocab_decks')
-          .insert({ user_id: ownerUserId, name: `L${level} • Deck ${deckSeq}`, level, is_public: true })
+          .insert({ user_id: ownerUserId, name: `L${level} • Deck ${deckSeq}`, is_public: true })
           .select('id')
           .single();
         if (deckErr) throw deckErr;
@@ -146,6 +146,7 @@ serve(async (req) => {
             pos: card.pos || null,
             ipa: card.ipa || null,
             examples_json: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
+            synonyms_json: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
             frequency_rank: card.frequencyRank || rank || null,
             language,
             level,

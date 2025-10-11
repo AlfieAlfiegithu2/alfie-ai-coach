@@ -68,6 +68,7 @@ import AdminSkillManager from "./pages/AdminSkillManager";
 import SkillPractice from "./pages/SkillPractice";
 import AdminVocabularyTests from "./pages/AdminVocabularyTests";
 import AdminVocabBook from "./pages/AdminVocabBook";
+import AdminVocabManager from "./pages/AdminVocabManager";
 import AdminVocabularyTestDetail from "./pages/AdminVocabularyTestDetail";
 import VocabularyQuiz from "./pages/VocabularyQuiz";
 import AdminGrammarTests from "./pages/AdminGrammarTests";
@@ -89,6 +90,8 @@ import VocabularyBook from "./pages/VocabularyBook";
 import VocabHome from "./pages/VocabHome";
 import VocabDeck from "./pages/VocabDeck";
 import VocabReview from "./pages/VocabReview";
+import VocabLevels from "./pages/VocabLevels";
+import VocabTest from "./pages/VocabTest";
 import Signup from "./pages/Signup";
 import VocabularyMapView from "./components/VocabularyMapView";
 import WritingHistory from "./pages/WritingHistory";
@@ -173,6 +176,8 @@ const App = () => {
             <Route path="/admin/ielts/test/:testId/speaking" element={<AdminIELTSSpeaking />} />
             {/* Skills Practice Admin */}
             <Route path="/admin/skills" element={<AdminSkillsPractice />} />
+            <Route path="/admin/vocab" element={<AdminVocabManager />} />
+            <Route path="/admin/vocab/" element={<AdminVocabManager />} />
             <Route path="/admin/skills/vocabulary/tests" element={<AdminVocabularyTests />} />
             <Route path="/admin/vocab-book" element={<AdminVocabBook />} />
             <Route path="/admin/skills/vocabulary/tests/:id" element={<AdminVocabularyTestDetail />} />
@@ -253,9 +258,11 @@ const App = () => {
             <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />
             <Route path="/skills/vocabulary-builder" element={<VocabularyMapView />} />
-            <Route path="/vocabulary" element={<VocabHome />} />
+            <Route path="/vocabulary" element={<VocabLevels />} />
+            <Route path="/vocabulary/levels" element={<VocabLevels />} />
             <Route path="/vocabulary/book" element={<VocabularyBook />} />
             <Route path="/vocabulary/deck/:deckId" element={<VocabDeck />} />
+            <Route path="/vocabulary/test/:deckId" element={<VocabTest />} />
             <Route path="/vocabulary/review/:deckId" element={<VocabReview />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />

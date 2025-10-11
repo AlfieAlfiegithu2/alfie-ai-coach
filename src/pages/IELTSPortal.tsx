@@ -394,7 +394,7 @@ const IELTSPortal = () => {
                           ({vocabProgress.completed}/{vocabProgress.total} Completed)
                         </div>
                       </div>
-                      <Button size="sm" onClick={() => navigate('/vocabulary/book')}>
+                      <Button size="sm" onClick={() => navigate('/vocabulary')}>
                         Start Memorizing
                       </Button>
                     </div>

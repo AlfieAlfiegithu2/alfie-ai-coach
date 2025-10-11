@@ -59,7 +59,7 @@ export default function VocabDeck() {
         </Card>
 
         <div className="flex gap-2">
-          <Button asChild><Link to={`/vocabulary/review/${deckId}`}>Start Review</Link></Button>
+          <Button asChild><Link to={`/vocabulary/test/${deckId}`}>Start Test</Link></Button>
           <Button variant="outline" asChild><Link to="/vocabulary">All Decks</Link></Button>
         </div>
       </div>

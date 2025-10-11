@@ -22,6 +22,17 @@ const languages: Language[] = [
   { code: 'ru', name: 'Русский', flag: '🇷🇺', nativeName: 'Русский' },
   { code: 'ar', name: 'العربية', flag: '🇸🇦', nativeName: 'العربية' },
   { code: 'hi', name: 'हिन्दी', flag: '🇮🇳', nativeName: 'हिन्दी' },
+  { code: 'bn', name: 'বাংলা', flag: '🇧🇩', nativeName: 'বাংলা' },
+  { code: 'ur', name: 'اردو', flag: '🇵🇰', nativeName: 'اردو' },
+  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩', nativeName: 'Bahasa Indonesia' },
+  { code: 'tr', name: 'Türkçe', flag: '🇹🇷', nativeName: 'Türkçe' },
+  { code: 'fa', name: 'فارسی', flag: '🇮🇷', nativeName: 'فارسی' },
+  { code: 'ta', name: 'தமிழ்', flag: '🇮🇳', nativeName: 'தமிழ்' },
+  { code: 'ne', name: 'नेपाली', flag: '🇳🇵', nativeName: 'नेपाली' },
+  { code: 'th', name: 'ไทย', flag: '🇹🇭', nativeName: 'ไทย' },
+  { code: 'yue', name: '粵語', flag: '🇭🇰', nativeName: '粵語' },
+  { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾', nativeName: 'Bahasa Melayu' },
+  { code: 'kk', name: 'Қазақ тілі', flag: '🇰🇿', nativeName: 'Қазақша' },
 ];
 
 const LanguageSelector = () => {

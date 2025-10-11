@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent as ThemedAlertContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader as ThemedAlertHeader, AlertDialogTitle as ThemedAlertTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -66,6 +67,8 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [planId, setPlanId] = useState<string | null>(null);
   // Removed per UX request: in-modal language switcher
   const [aiOpen, setAiOpen] = useState(false);
+  const [resetAllOpen, setResetAllOpen] = useState(false);
+  const [resetPlanOpen, setResetPlanOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [miniDate, setMiniDate] = useState<Date | null>(null);
   // Provider choice removed; default server logic picks the best available
@@ -253,15 +256,94 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       <DialogTitle className="text-slate-800">{t('studyPlan.title', { defaultValue: 'Your Study Plan' })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
+          {!loading && !plan && (
+            <div className="text-slate-700">
+              <p className="mb-3">{t('studyPlan.noPlanYet', { defaultValue: "You don't have a plan yet." })}</p>
+              <Button
+                variant="outline"
+                className="border-slate-300"
+                onClick={() => { setMiniDate(null); setAiOpen(true); }}
+              >
+                {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Study Plan' })}
+              </Button>
+            </div>
+          )}
           {loading && (
             <div className="text-slate-600">{t('studyPlan.loadingPlan', { defaultValue: 'Loading your plan…' })}</div>
           )}
-          {!loading && (
+          {plan && (
             <div className="space-y-6">
-              <TodayQuickTodo plan={plan} />
-              <div>
-                <ScrollableMiniCalendar plan={plan} onOpenDay={(date: Date) => setMiniDate(date)} />
+      <TodayQuickTodo plan={plan} />
+              {/* Highlights/Quick Wins/Next removed per request */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div />
+                <AlertDialog open={resetAllOpen} onOpenChange={setResetAllOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-xs">
+                      {t('studyPlan.resetAllPlans', { defaultValue: 'Reset All Plans' })}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <ThemedAlertContent>
+                    <ThemedAlertHeader>
+                      <ThemedAlertTitle>{t('studyPlan.resetAllPlans', { defaultValue: 'Reset All Plans' })}</ThemedAlertTitle>
+                      <AlertDialogDescription>
+                        {t('studyPlan.resetAllConfirm', { defaultValue: 'Reset all local study plan data (completions, custom tasks, notes)?' })}
+                      </AlertDialogDescription>
+                    </ThemedAlertHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
+                      <AlertDialogAction onClick={async () => {
+                        // Close dialog immediately
+                        setResetAllOpen(false);
+                        
+                        // Clear localStorage
+                        try {
+                          const keysToRemove: string[] = [];
+                          for (let i = 0; i < localStorage.length; i++) {
+                            const k = localStorage.key(i) as string;
+                            if (!k) continue;
+                            if (k.startsWith('plan-') || k.startsWith('quicktodo-') || k === 'latest_plan') {
+                              keysToRemove.push(k);
+                            }
+                          }
+                          keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+                        } catch (e) {
+                          console.error('Failed to clear localStorage:', e);
+                        }
+                        
+                        // Delete plan from database
+                        try {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (user) {
+                            await (supabase as any).from('study_plans').delete().eq('user_id', user.id);
+                            await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id);
+                          }
+                        } catch (e) {
+                          console.error('Failed to delete plan from database:', e);
+                        }
+                        
+                        // Reset UI state
+                        setMiniDate(null);
+                        setPlan(null);
+                        setRefreshKey((v)=>v+1);
+                      }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </ThemedAlertContent>
+                </AlertDialog>
               </div>
+              <ScrollableMiniCalendar plan={plan} onOpenDay={(date: Date) => setMiniDate(date)} />
+            </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => { setMiniDate(null); setAiOpen(true); }}
+                >
+                  {t('studyPlan.quickAIPlanNoAssessment', { defaultValue: 'Create Plan' })}
+                </Button>
+              </div>
+              {/* Debug controls removed */}
             </div>
           )}
         </div>

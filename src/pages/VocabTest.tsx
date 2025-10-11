@@ -147,6 +147,13 @@ export default function VocabTest() {
                       )}
                     </div>
                     
+                    {/* Translation */}
+                    {current.translation && (
+                      <div className="vocab-translation">
+                        <div className="translation-text">{current.translation}</div>
+                      </div>
+                    )}
+                    
                     {/* Example sentence */}
                     {sentence && (
                       <div className="vocab-example">

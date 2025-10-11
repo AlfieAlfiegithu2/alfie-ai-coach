@@ -18,6 +18,20 @@
   left: 20px;
   z-index: 1000;
   pointer-events: auto;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.vocab-add-button {
+  position: fixed;
+  top: 20px;
+  left: 120px;
+  z-index: 1000;
+  pointer-events: auto;
+  height: 32px;
+  display: flex;
+  align-items: center;
 }
 
 .vocab-card-container {
@@ -371,6 +385,25 @@
   margin-bottom: 30px;
 }
 
+/* Inline layout for Test 1 so all four options fit under the word */
+.test1-mode .vocab-content {
+  justify-content: flex-start;
+}
+
+.test1-mode .vocab-quiz {
+  padding: 8px 0 0;
+  height: auto;
+  align-items: stretch;
+}
+
+.test1-mode .vocab-details {
+  margin-bottom: 16px;
+}
+
+.test1-mode .quiz-options {
+  max-width: 100%;
+}
+
 .quiz-option {
   padding: 16px 20px;
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -451,6 +484,41 @@
 }
 
 /* Responsive adjustments */
+
+/* Test 2 darken to avoid white-on-white */
+.test2-mode .vocab-card {
+  background: linear-gradient(145deg, rgba(17,24,39,0.8) 0%, rgba(31,41,55,0.7) 100%);
+}
+
+/* Toast notification */
+.vocab-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(34, 197, 94, 0.95);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @media (max-width: 768px) {
   .vocab-screen-container {
     min-height: 80vh;

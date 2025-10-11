@@ -51,8 +51,12 @@ const AdminVocabManager: React.FC = () => {
     };
     check();
     const id = setInterval(async () => {
-      const { data, error } = await supabase.functions.invoke('vocab-bulk-status');
-      if (data?.success) setProgress(data.job || {});
+      try {
+        const { data } = await supabase.functions.invoke('vocab-bulk-status');
+        if (data?.success) setProgress(data.job || {});
+      } catch (e) {
+        // Silent poll failures to avoid user-facing errors while function deploys
+      }
     }, 3000);
     return () => clearInterval(id);
   }, []);
@@ -128,12 +132,16 @@ const AdminVocabManager: React.FC = () => {
           <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
           <>
-            <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(5000)} disabled={seeding}>
-              {seeding ? 'Starting…' : 'Seed 5,000 EN→KO'}
+            <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(8000)} disabled={seeding}>
+              {seeding ? 'Starting…' : 'Seed 8,000 EN→ALL LANGS'}
             </button>
             <button className="border rounded px-3 py-2" onClick={()=>seed(20)} disabled={seeding}>
               {seeding ? 'Starting…' : 'Seed 20 (test)'}
             </button>
+            <button className="border rounded px-3 py-2" onClick={async()=>{
+              const { data, error } = await (supabase as any).functions.invoke('vocab-orchestrator', { body: { total: 20 } });
+              if (error || !data?.success) alert(data?.error || error?.message || 'Failed');
+            }}>Run 20-word pipeline</button>
           </>
         </div>
       </div>

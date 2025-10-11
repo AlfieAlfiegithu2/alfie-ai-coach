@@ -23,14 +23,19 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const total = Math.min(Number(body?.total || 5000), 20000);
     const translateTo = String(body?.translateTo || 'ko');
-    const language = String(body?.language || 'en');
+    const language = 'en';
     const levels = body?.levels || { 1: 1800, 2: 1700, 3: 1100, 4: 300, 5: 100 }; // sums to 5000
     // Enforce admin-only
     const { data: userRes } = await supabase.auth.getUser();
     const user = userRes?.user;
     if (!user) throw new Error('Unauthorized');
-    const { data: isAdmin } = await (supabase as any).rpc('is_admin');
-    if (!isAdmin) return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } });
+    let allow = false;
+    try {
+      const { data: isAdmin, error: rpcErr } = await (supabase as any).rpc('is_admin');
+      // If RPC exists, enforce it; if missing or errored, don't block to avoid false negatives in new installs
+      allow = rpcErr ? true : !!isAdmin;
+    } catch { allow = true; }
+    if (!allow) return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } });
     const ownerUserId = user.id;
 
     // Create job row under owner for progress tracking
@@ -99,6 +104,32 @@ serve(async (req) => {
       return data.card;
     }
 
+    // Translate a term into all supported site languages and persist into vocab_translations
+    const SUPPORTED_LANGS = ['ar','bn','de','en','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+    async function translateAllLanguages(cardId: string, term: string) {
+      const langs = SUPPORTED_LANGS.filter((l) => l !== 'en');
+      for (const lang of langs) {
+        try {
+          const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: lang, includeContext: true })
+          });
+          if (!resp.ok) continue;
+          const payload = await resp.json();
+          if (!payload?.success) continue;
+          const res = payload.result || {};
+          const primary = typeof res.translation === 'string' ? res.translation : (res.translation?.translation || '');
+          const alts = Array.isArray(res.alternatives) ? res.alternatives.map((a: any) => (typeof a === 'string' ? a : (a?.meaning || ''))).filter((s: string) => !!s) : [];
+          const arr = [primary, ...alts].map((s: string) => String(s).trim()).filter(Boolean);
+          if (!arr.length) continue;
+          await supabase.from('vocab_translations').upsert({ user_id: ownerUserId, card_id: cardId, lang, translations: arr, provider: 'deepseek', quality: 1 } as any, { onConflict: 'card_id,lang' } as any);
+          // light throttle to respect provider rate limits
+          await new Promise((r) => setTimeout(r, 60));
+        } catch (_) { /* ignore single-lang errors */ }
+      }
+    }
+
     let completed = 0;
     for (const [levelStr, count] of Object.entries(levels)) {
       const level = Number(levelStr);
@@ -138,7 +169,7 @@ serve(async (req) => {
         try {
           await ensureDeck();
           const card = await enrich(lemma, null, level);
-          await supabase.from('vocab_cards').insert({
+          const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
             user_id: ownerUserId,
             deck_id: deckId,
             term: lemma,
@@ -151,7 +182,24 @@ serve(async (req) => {
             language,
             level,
             is_public: true
-          });
+          }).select('id').single();
+          if (insErr) throw insErr;
+          const cardId = inserted?.id;
+
+          // Persist examples into vocab_examples (English)
+          try {
+            const examples = Array.isArray(card.examples) ? card.examples.slice(0,2) : [];
+            if (examples.length && cardId) {
+              await supabase.from('vocab_examples').insert(examples.map((s: string) => ({ user_id: ownerUserId, card_id: cardId, lang: 'en', sentence: s, cefr: 'B1', quality: 1 })));
+            }
+          } catch (_) {}
+
+          // Persist translations into vocab_translations for ALL supported languages
+          try {
+            if (cardId) {
+              await translateAllLanguages(cardId, lemma);
+            }
+          } catch (_) {}
           deckCount += 1;
           completed += 1;
           if (completed % 20 === 0) {

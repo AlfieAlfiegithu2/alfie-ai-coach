@@ -35,11 +35,11 @@ const AdminVocabManager: React.FC = () => {
     return () => clearInterval(id);
   }, []);
 
-  const seed = async () => {
+  const seed = async (total: number = 5000) => {
     setSeeding(true);
     try {
       const { data, error } = await supabase.functions.invoke('vocab-admin-seed', {
-        body: { total: 5000, language: 'en', translateTo: 'ko' }
+        body: { total, language: 'en', translateTo: 'ko' }
       });
       if (error || !data?.success) alert(data?.error || error?.message || 'Failed to start');
     } finally {
@@ -77,9 +77,14 @@ const AdminVocabManager: React.FC = () => {
           <button className="border rounded px-3 py-2" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
           {isAdmin && (
-            <button className="border rounded px-3 py-2 bg-black text-white" onClick={seed} disabled={seeding}>
-              {seeding ? 'Starting…' : 'Seed 5,000 EN→KO (public)'}
-            </button>
+            <>
+              <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(5000)} disabled={seeding}>
+                {seeding ? 'Starting…' : 'Seed 5,000 EN→KO (public)'}
+              </button>
+              <button className="border rounded px-3 py-2" onClick={()=>seed(20)} disabled={seeding}>
+                {seeding ? 'Starting…' : 'Seed 20 (test)'}
+              </button>
+            </>
           )}
         </div>
       </div>

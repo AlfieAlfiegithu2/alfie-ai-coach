@@ -222,7 +222,7 @@ export default function VocabTest() {
                         <div 
                           className="example-text"
                           dangerouslySetInnerHTML={{
-                            __html: `"${highlightWordInSentence(sentence, current?.term || '')}"`
+                            __html: highlightWordInSentence(sentence, current?.term || '')
                           }}
                         />
                       </div>

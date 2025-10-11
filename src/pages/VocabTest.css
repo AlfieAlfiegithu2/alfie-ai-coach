@@ -4,6 +4,11 @@
   min-height: 100vh;
   cursor: pointer;
   user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
 .vocab-card-wrapper {
@@ -274,6 +279,7 @@
 @media (max-width: 768px) {
   .vocab-screen-container {
     min-height: 80vh;
+    padding: 15px;
   }
   
   .vocab-card-wrapper {
@@ -303,6 +309,7 @@
 @media (max-width: 480px) {
   .vocab-screen-container {
     min-height: 70vh;
+    padding: 10px;
   }
   
   .vocab-card-wrapper {

@@ -28,20 +28,16 @@ export default function VocabTest() {
   useEffect(() => {
     const load = async () => {
       if (!deckId) return;
-      const { data: deck } = await (supabase as any)
-        .from('vocab_decks')
-        .select('name')
-        .eq('id', deckId)
-        .maybeSingle();
-      setName(deck?.name || 'Deck Test');
-
-      const { data } = await (supabase as any)
-        .from('vocab_cards')
-        .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
-        .eq('deck_id', deckId)
-        .order('created_at', { ascending: true })
-        .limit(50);
-      setRows((data as any) || []);
+      const [deckRes, cardsRes] = await Promise.all([
+        (supabase as any).from('vocab_decks').select('name').eq('id', deckId).maybeSingle(),
+        (supabase as any).from('vocab_cards')
+          .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
+          .eq('deck_id', deckId)
+          .order('created_at', { ascending: true })
+          .limit(50)
+      ]);
+      setName((deckRes as any)?.data?.name || 'Deck Test');
+      setRows(((cardsRes as any)?.data as any) || []);
       setIndex(0);
     };
     load();

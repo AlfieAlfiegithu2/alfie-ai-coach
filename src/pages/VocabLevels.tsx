@@ -17,47 +17,22 @@ export default function VocabLevels() {
 
   const load = async (level: number) => {
     setLoading(true);
-    // Step 1: find deck ids that have cards at this level (prefer user's decks, fallback to public)
-    const { data: mine } = await (supabase as any)
+    // Single query: join decks with cards filtered by level and aggregate counts
+    const { data, error } = await (supabase as any)
       .from('vocab_cards')
-      .select('deck_id')
+      .select('deck_id, vocab_decks!inner(id,name)', { count: 'exact', head: false })
       .eq('level', level)
-      .order('created_at', { ascending: true })
-      .limit(500);
-    let deckIds: string[] = Array.from(new Set(((mine as any) || []).map((r: any) => r.deck_id).filter(Boolean)));
-    if (deckIds.length === 0) {
-      const { data: pub } = await (supabase as any)
-        .from('vocab_cards')
-        .select('deck_id')
-        .eq('level', level)
-        .eq('is_public', true)
-        .order('created_at', { ascending: true })
-        .limit(500);
-      deckIds = Array.from(new Set(((pub as any) || []).map((r: any) => r.deck_id).filter(Boolean)));
-    }
-
-    if (deckIds.length === 0) { setDecks([]); setLoading(false); return; }
-
-    // Step 2: fetch names
-    const { data: deckRows } = await (supabase as any)
-      .from('vocab_decks')
-      .select('id, name')
-      .in('id', deckIds);
-
-    // Step 3: counts per deck (words in that deck at the level)
-    const counts: Record<string, number> = {};
-    for (const id of deckIds) {
-      const { count } = await (supabase as any)
-        .from('vocab_cards')
-        .select('id', { count: 'exact', head: true })
-        .eq('deck_id', id)
-        .eq('level', level);
-      counts[id] = count || 0;
-    }
-
-    const out: DeckRow[] = (deckRows as any || []).map((d: any) => ({ id: d.id, name: d.name, count: counts[d.id] || 0 }));
-    // Sort newest first, keep only those with at least 1 word
-    setDecks(out.filter(d => d.count > 0));
+      .limit(1000);
+    if (error) { setDecks([]); setLoading(false); return; }
+    const byDeck: Record<string, DeckRow> = {};
+    (data as any[]).forEach((row: any) => {
+      const d = row.vocab_decks;
+      if (!d?.id) return;
+      if (!byDeck[d.id]) byDeck[d.id] = { id: d.id, name: d.name, count: 0 };
+      byDeck[d.id].count += 1;
+    });
+    const list = Object.values(byDeck).filter(d => d.count > 0);
+    setDecks(list);
     setLoading(false);
   };
 

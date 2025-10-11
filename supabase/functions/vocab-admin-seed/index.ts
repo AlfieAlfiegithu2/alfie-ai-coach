@@ -102,25 +102,56 @@ serve(async (req) => {
     const SUPPORTED_LANGS = ['ar','bn','de','en','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
     async function translateAllLanguages(cardId: string, term: string) {
       const langs = SUPPORTED_LANGS.filter((l) => l !== 'en');
-      for (const lang of langs) {
-        try {
-          const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: lang, includeContext: true })
-          });
-          if (!resp.ok) continue;
-          const payload = await resp.json();
-          if (!payload?.success) continue;
-          const res = payload.result || {};
-          const primary = typeof res.translation === 'string' ? res.translation : (res.translation?.translation || '');
-          const alts = Array.isArray(res.alternatives) ? res.alternatives.map((a: any) => (typeof a === 'string' ? a : (a?.meaning || ''))).filter((s: string) => !!s) : [];
-          const arr = [primary, ...alts].map((s: string) => String(s).trim()).filter(Boolean);
-          if (!arr.length) continue;
-          await supabase.from('vocab_translations').upsert({ user_id: ownerUserId, card_id: cardId, lang, translations: arr, provider: 'deepseek', quality: 1 } as any, { onConflict: 'card_id,lang' } as any);
-          // light throttle to respect provider rate limits
-          await new Promise((r) => setTimeout(r, 60));
-        } catch (_) { /* ignore single-lang errors */ }
+      console.log(`vocab-admin-seed: translating ${term} into ${langs.length} languages`);
+      
+      // Process languages in smaller batches to avoid overwhelming the system
+      const batchSize = 5; // Process 5 languages at a time
+      for (let i = 0; i < langs.length; i += batchSize) {
+        const langBatch = langs.slice(i, i + batchSize);
+        
+        for (const lang of langBatch) {
+          try {
+            const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: lang, includeContext: true })
+            });
+            if (!resp.ok) {
+              console.log(`vocab-admin-seed: translation failed for ${lang}: ${resp.status}`);
+              continue;
+            }
+            const payload = await resp.json();
+            if (!payload?.success) {
+              console.log(`vocab-admin-seed: translation service error for ${lang}: ${payload?.error}`);
+              continue;
+            }
+            const res = payload.result || {};
+            const primary = typeof res.translation === 'string' ? res.translation : (res.translation?.translation || '');
+            const alts = Array.isArray(res.alternatives) ? res.alternatives.map((a: any) => (typeof a === 'string' ? a : (a?.meaning || ''))).filter((s: string) => !!s) : [];
+            const arr = [primary, ...alts].map((s: string) => String(s).trim()).filter(Boolean);
+            if (!arr.length) continue;
+            
+            await supabase.from('vocab_translations').upsert({ 
+              user_id: ownerUserId, 
+              card_id: cardId, 
+              lang, 
+              translations: arr, 
+              provider: 'deepseek', 
+              quality: 1 
+            } as any, { onConflict: 'card_id,lang' } as any);
+            
+            console.log(`vocab-admin-seed: translated ${term} to ${lang}: ${primary}`);
+            // Shorter throttle to speed up processing
+            await new Promise((r) => setTimeout(r, 30));
+          } catch (e) { 
+            console.log(`vocab-admin-seed: translation error for ${lang}:`, e);
+          }
+        }
+        
+        // Brief pause between language batches
+        if (i + batchSize < langs.length) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
       }
     }
 
@@ -138,10 +169,10 @@ serve(async (req) => {
     let currentLevel = existingJob?.level || 1;
     console.log('vocab-admin-seed: starting word generation loop', { existingJob: !!existingJob, completed, currentLevel });
     
-    // Process only one batch to avoid timeout, then return
+    // Process only one small batch to avoid timeout, then return
     const levelCount = levels[currentLevel] || 0;
     const remainingInLevel = Math.max(0, levelCount - completed);
-    const batchSize = Math.min(remainingInLevel, 50); // Limit to 50 words per batch
+    const batchSize = Math.min(remainingInLevel, 5); // Limit to 5 words per batch to avoid timeout
     
     console.log('vocab-admin-seed: processing batch', { level: currentLevel, batchSize, completed, total });
     const batch = await fetchBatch(currentLevel, batchSize);
@@ -214,12 +245,17 @@ serve(async (req) => {
           }
         } catch (_) {}
 
-        // Persist translations into vocab_translations for ALL supported languages
+        // Persist translations into vocab_translations for ALL supported languages (non-blocking)
         try {
           if (cardId) {
+            console.log(`vocab-admin-seed: starting translations for ${lemma}`);
             await translateAllLanguages(cardId, lemma);
+            console.log(`vocab-admin-seed: completed translations for ${lemma}`);
           }
-        } catch (_) {}
+        } catch (e) {
+          console.log(`vocab-admin-seed: translation error for ${lemma}:`, e);
+          // Don't fail the whole word if translations fail
+        }
         deckCount += 1;
         completed += 1;
         console.log('vocab-admin-seed: word completed', { lemma, completed, total });

@@ -113,36 +113,90 @@ export default function VocabTest() {
       <div className="space-y-4">
         <div className="text-xs text-muted-foreground">{total ? `${index + 1} / ${total}` : '0 / 0'}</div>
         {current ? (
-          <Card className="border-light-border">
-            <CardContent className="p-0">
-              {/* Image section (placeholder gradient) */}
-              <div className="h-40 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                <div className="text-5xl font-semibold text-slate-500 select-none">
-                  {current.term?.slice(0,1)?.toUpperCase() || 'A'}
-                </div>
-              </div>
-              <div className="p-5 space-y-3">
-                <div className="text-2xl font-semibold">
-                  {current.term} {current.pos ? <span className="text-xs text-muted-foreground">({current.pos})</span> : null}
-                </div>
-                {current.ipa && <div className="text-xs text-muted-foreground">/{current.ipa}/</div>}
-                {current.translation && (
-                  <div className="text-sm"><span className="font-medium">Translation:</span> {current.translation}</div>
-                )}
-                {sentence && (
-                  <div className="text-sm text-muted-foreground italic">“{sentence}”</div>
-                )}
-
-                <div className="flex items-center justify-between pt-2">
-                  <Button variant="outline" onClick={prev} disabled={index === 0}>Previous</Button>
-                  <div className="flex items-center gap-2">
-                    <Button asChild variant="secondary"><Link to={`/vocabulary/deck/${deckId}`}>Back to Deck</Link></Button>
-                    <Button onClick={next} disabled={index + 1 >= total}>Next</Button>
+          <div className="flex justify-center">
+            <Card className="border-2 border-gray-300 shadow-xl bg-white" style={{ width: '280px', height: '400px' }}>
+              <CardContent className="p-0 h-full flex flex-col">
+                {/* FIFA-style header with letter */}
+                <div className="h-32 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                  <div className="text-6xl font-bold text-white drop-shadow-lg select-none">
+                    {current.term?.slice(0,1)?.toUpperCase() || 'A'}
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                
+                {/* Main content area */}
+                <div className="flex-1 p-4 flex flex-col justify-between">
+                  {/* Word section */}
+                  <div className="text-center space-y-2">
+                    <div className="text-3xl font-bold text-gray-800">
+                      {current.term}
+                    </div>
+                    {current.pos && (
+                      <div className="text-sm text-blue-600 font-medium">
+                        {current.pos}
+                      </div>
+                    )}
+                    {current.ipa && (
+                      <div className="text-xs text-gray-500 font-mono">
+                        /{current.ipa}/
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Translation section */}
+                  {current.translation && (
+                    <div className="bg-gray-50 rounded-lg p-3 border">
+                      <div className="text-xs text-gray-600 font-medium mb-1">Translation</div>
+                      <div className="text-sm text-gray-800 font-medium">
+                        {current.translation}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Example sentence */}
+                  {sentence && (
+                    <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                      <div className="text-xs text-gray-600 font-medium mb-1">Example</div>
+                      <div className="text-sm text-gray-700 italic">
+                        "{sentence}"
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Navigation buttons */}
+                  <div className="flex items-center justify-between pt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={prev} 
+                      disabled={index === 0}
+                      className="text-xs"
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        asChild 
+                        variant="secondary" 
+                        size="sm"
+                        className="text-xs"
+                      >
+                        <Link to={`/vocabulary/deck/${deckId}`}>Back</Link>
+                      </Button>
+                      <Button 
+                        onClick={next} 
+                        disabled={index + 1 >= total}
+                        size="sm"
+                        className="text-xs bg-green-600 hover:bg-green-700"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           <Card>
             <CardContent className="p-6 text-sm text-muted-foreground">

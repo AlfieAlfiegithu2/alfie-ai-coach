@@ -7,8 +7,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 20px;
+  padding-top: 80px;
+}
+
+.vocab-back-button {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  pointer-events: auto;
 }
 
 .vocab-card-wrapper {
@@ -280,6 +289,12 @@
   .vocab-screen-container {
     min-height: 80vh;
     padding: 15px;
+    padding-top: 70px;
+  }
+  
+  .vocab-back-button {
+    top: 15px;
+    left: 15px;
   }
   
   .vocab-card-wrapper {
@@ -310,6 +325,12 @@
   .vocab-screen-container {
     min-height: 70vh;
     padding: 10px;
+    padding-top: 60px;
+  }
+  
+  .vocab-back-button {
+    top: 10px;
+    left: 10px;
   }
   
   .vocab-card-wrapper {

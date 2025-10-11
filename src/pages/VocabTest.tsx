@@ -172,8 +172,19 @@ export default function VocabTest() {
   };
 
   return (
-    <StudentLayout title={name} showBackButton>
+    <StudentLayout title={name}>
       <div className="space-y-4">
+        {/* Custom back button in top left */}
+        <Button 
+          asChild 
+          variant="secondary" 
+          size="sm"
+          className="vocab-back-button"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Link to={`/vocabulary`}>← Back</Link>
+        </Button>
+        
         <div className="text-xs text-muted-foreground">{total ? `${index + 1} / ${total}` : '0 / 0'}</div>
         {current ? (
           <div className="vocab-screen-container" onClick={handleScreenClick}>
@@ -243,14 +254,6 @@ export default function VocabTest() {
                   Previous
                 </Button>
                 <div className="nav-center">
-                  <Button 
-                    asChild 
-                    variant="secondary" 
-                    size="sm"
-                    className="nav-btn"
-                  >
-                    <Link to={`/vocabulary/deck/${deckId}`}>Back</Link>
-                  </Button>
                   <Button 
                     onClick={next} 
                     disabled={index + 1 >= total}

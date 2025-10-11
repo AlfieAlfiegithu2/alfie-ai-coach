@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent as ThemedAlertContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader as ThemedAlertHeader, AlertDialogTitle as ThemedAlertTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
+import { formatLocalISO, getPlanDayForLocalDate, normalizeToLocalMidnight } from '@/lib/date';
 // Removed TTSTestButton (debug control)
 
 interface PlanTask {
@@ -67,8 +67,6 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
   const [planId, setPlanId] = useState<string | null>(null);
   // Removed per UX request: in-modal language switcher
   const [aiOpen, setAiOpen] = useState(false);
-  const [resetAllOpen, setResetAllOpen] = useState(false);
-  const [resetPlanOpen, setResetPlanOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [miniDate, setMiniDate] = useState<Date | null>(null);
   // Provider choice removed; default server logic picks the best available
@@ -129,11 +127,21 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
       } catch {}
     })();
     // Load latest plan from DB (fallback to local cache inside loadPlan)
+    // Cache-first: if local cache exists, show it immediately and refresh in background
+    try {
+      const cached = JSON.parse(localStorage.getItem('latest_plan') || 'null');
+      if (cached?.plan) setPlan(cached.plan as any);
+    } catch {}
     void loadPlan();
   }, [open]);
 
   useEffect(() => {
-    const handler = () => { if (open) void loadPlan(); };
+    let t: any;
+    const handler = () => {
+      if (!open) return;
+      clearTimeout(t);
+      t = setTimeout(() => void loadPlan(), 250);
+    };
     window.addEventListener('focus', handler);
     return () => window.removeEventListener('focus', handler);
   }, [open]);
@@ -273,67 +281,19 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
           )}
           {plan && (
             <div className="space-y-6">
-      <TodayQuickTodo plan={plan} />
-              {/* Highlights/Quick Wins/Next removed per request */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div />
-                <AlertDialog open={resetAllOpen} onOpenChange={setResetAllOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      {t('studyPlan.resetAllPlans', { defaultValue: 'Reset All Plans' })}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <ThemedAlertContent>
-                    <ThemedAlertHeader>
-                      <ThemedAlertTitle>{t('studyPlan.resetAllPlans', { defaultValue: 'Reset All Plans' })}</ThemedAlertTitle>
-                      <AlertDialogDescription>
-                        {t('studyPlan.resetAllConfirm', { defaultValue: 'Reset all local study plan data (completions, custom tasks, notes)?' })}
-                      </AlertDialogDescription>
-                    </ThemedAlertHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
-                      <AlertDialogAction onClick={async () => {
-                        // Close dialog immediately
-                        setResetAllOpen(false);
-                        
-                        // Clear localStorage
-                        try {
-                          const keysToRemove: string[] = [];
-                          for (let i = 0; i < localStorage.length; i++) {
-                            const k = localStorage.key(i) as string;
-                            if (!k) continue;
-                            if (k.startsWith('plan-') || k.startsWith('quicktodo-') || k === 'latest_plan') {
-                              keysToRemove.push(k);
-                            }
-                          }
-                          keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
-                        } catch (e) {
-                          console.error('Failed to clear localStorage:', e);
-                        }
-                        
-                        // Delete plan from database
-                        try {
-                          const { data: { user } } = await supabase.auth.getUser();
-                          if (user) {
-                            await (supabase as any).from('study_plans').delete().eq('user_id', user.id);
-                            await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id);
-                          }
-                        } catch (e) {
-                          console.error('Failed to delete plan from database:', e);
-                        }
-                        
-                        // Reset UI state
-                        setMiniDate(null);
-                        setPlan(null);
-                        setRefreshKey((v)=>v+1);
-                      }}>{t('common.ok', { defaultValue: 'OK' })}</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </ThemedAlertContent>
-                </AlertDialog>
+              <TodayQuickTodo plan={plan} />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-slate-500">{t('studyPlan.status', { defaultValue: 'Loaded' })}</div>
+                  <button
+                    className="text-xs underline"
+                    onClick={() => setMiniDate(normalizeToLocalMidnight(new Date()))}
+                  >
+                    {t('studyPlan.goToToday', { defaultValue: 'Go to Today' })}
+                  </button>
+                </div>
+                <ScrollableMiniCalendar plan={plan} onOpenDay={(date: Date) => setMiniDate(date)} />
               </div>
-              <ScrollableMiniCalendar plan={plan} onOpenDay={(date: Date) => setMiniDate(date)} />
-            </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="outline"
@@ -470,6 +430,37 @@ const StudyPlanModal = ({ children }: StudyPlanModalProps) => {
                 <button className="text-slate-500 hover:text-slate-700" onClick={() => setMiniDate(null)}>Close</button>
               </div>
               <DayQuickTodo plan={plan} date={miniDate} />
+              <div className="mt-4 flex justify-end">
+                <button
+                  className="text-xs text-red-600 underline"
+                  onClick={() => {
+                    // Close first to avoid trapping focus; then clear in background
+                    setMiniDate(null);
+                    setTimeout(async () => {
+                      try {
+                        const keysToRemove: string[] = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                          const k = localStorage.key(i) as string;
+                          if (!k) continue;
+                          if (k.startsWith('quicktodo-') || k.startsWith('plan-') || k === 'latest_plan') keysToRemove.push(k);
+                        }
+                        keysToRemove.forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+                      } catch {}
+                      try {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                          await (supabase as any).from('study_plans').delete().eq('user_id', user.id);
+                          await (supabase as any).from('profiles').update({ current_plan_id: null }).eq('id', user.id);
+                        }
+                      } catch {}
+                      setPlan(null);
+                      setRefreshKey((v)=>v+1);
+                    }, 0);
+                  }}
+                >
+                  {t('studyPlan.resetAllPlans', { defaultValue: 'Reset All Plans' })}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -483,42 +474,16 @@ export default StudyPlanModal;
 
 
 // Lightweight components appended for modal UX
+// moved to shared helper in '@/lib/date'
 function TodayQuickTodo({ plan }: { plan: any }) {
+  // helper imported from '@/lib/date'
   const { t } = useTranslation();
   const today = new Date();
-  const start = (() => {
-    if (plan?.meta?.startDateISO) {
-      const sd = new Date(plan.meta.startDateISO);
-      return new Date(sd.getFullYear(), sd.getMonth(), sd.getDate());
-    }
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  })();
-  const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const diffDays = Math.max(0, Math.floor((todayNormalized.getTime() - start.getTime()) / (24*60*60*1000)));
-  const w = Math.floor(diffDays / 7);
-  const d = diffDays % 7;
+  const day = getPlanDayForLocalDate(plan, today);
   
-  // Find today's tasks or next available study day
-  let day = plan?.weekly?.[w]?.days?.[d];
-  if (!day || day.tasks.length === 0) {
-    // Look for next study day within the next 7 days
-    for (let offset = 1; offset <= 7; offset++) {
-      const nextD = (d + offset) % 7;
-      const nextW = w + Math.floor((d + offset) / 7);
-      const nextDay = plan?.weekly?.[nextW]?.days?.[nextD];
-      if (nextDay && nextDay.tasks.length > 0) {
-        day = nextDay;
-        break;
-      }
-    }
-  }
-  // Fallback to first available day
-  if (!day || day.tasks.length === 0) {
-    day = plan?.weekly?.[0]?.days?.find((d: any) => d.tasks.length > 0) || plan?.weekly?.[0]?.days?.[0];
-  }
-  
-  const key = today.toISOString().slice(0,10);
+  // Use local midnight for consistency with calendar/day view keys
+  const todayLocal = normalizeToLocalMidnight(today);
+  const key = formatLocalISO(todayLocal);
   const [checked, setChecked] = React.useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}'); } catch { return {}; }
   });
@@ -620,16 +585,14 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
   const days: Array<{ date: Date; hasTasks: boolean; allCompleted: boolean }> = [];
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(first.getFullYear(), first.getMonth(), d);
-    const diff = Math.floor((date.getTime() - startDate.getTime())/(24*60*60*1000));
-    const weekIdx = Math.floor(diff/7);
-    const dayIdx = diff%7;
     // Only consider it has tasks if there are tasks and at least one is not hidden in local quicktodo
     let hasTasks = false;
     let allCompleted = false;
     try {
-      const tasks = plan.weekly?.[weekIdx]?.days?.[dayIdx]?.tasks;
+      const dayObj = getPlanDayForLocalDate(plan, date);
+      const tasks = dayObj?.tasks;
       if (Array.isArray(tasks) && tasks.length > 0) {
-        const key = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().slice(0,10);
+        const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
         const hidden = new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]'));
         const visibleTasks = tasks.filter((_, idx) => !hidden.has(String(idx)));
         hasTasks = visibleTasks.length > 0;
@@ -688,23 +651,17 @@ function ScrollableMiniCalendar({ plan, onOpenDay }: { plan: any; onOpenDay: (da
 
 // Tasks for an arbitrary date within the plan; supports local per-day check, custom tasks and hide/remove AI items
 function DayQuickTodo({ plan, date }: { plan: any; date: Date }) {
+  const formatLocalISO = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
   const { t } = useTranslation();
-  const start = (() => {
-    if (plan?.meta?.startDateISO) {
-      const sd = new Date(plan.meta.startDateISO);
-      return new Date(sd.getFullYear(), sd.getMonth(), sd.getDate());
-    }
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  })();
   const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.max(0, Math.floor((localDate.getTime() - start.getTime()) / (24*60*60*1000)));
-  const w = Math.floor(diffDays / 7);
-  const d = diffDays % 7;
-  let day = plan?.weekly?.[w]?.days?.[d];
-  if (!day) day = plan?.weekly?.[0]?.days?.[0];
+  let day = getPlanDayForLocalDate(plan, localDate) || plan?.weekly?.[0]?.days?.[0];
 
-  const key = localDate.toISOString().slice(0,10);
+  const key = formatLocalISO(localDate);
   const [checked, setChecked] = React.useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}'); } catch { return {}; }
   });

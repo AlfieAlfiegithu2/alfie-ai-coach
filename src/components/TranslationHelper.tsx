@@ -6,6 +6,7 @@ import { X, BookPlus, Check, Volume2, VolumeX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import LottieLoadingAnimation from '@/components/animations/LottieLoadingAnimation';
+import VocabAddDialog from './VocabAddDialog';
 import FallbackTTS from './FallbackTTS';
 import MultiAccentTTS from './MultiAccentTTS';
 
@@ -32,6 +33,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   const [isSaved, setIsSaved] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [vocabOpen, setVocabOpen] = useState(false);
   const { toast } = useToast();
 
   // Simple cache to avoid repeated API calls
@@ -436,9 +438,28 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
                 )}
               </Button>
             )}
+
+          {/* Add to Vocab (AI) */}
+          {selectedText && (
+            <Button
+              onClick={() => setVocabOpen(true)}
+              className="w-full mt-2 border"
+              variant="outline"
+              size="sm"
+            >
+              Add to Vocab (AI)
+            </Button>
+          )}
           </div>
         </CardContent>
       </Card>
+    <VocabAddDialog
+      open={vocabOpen}
+      onOpenChange={setVocabOpen}
+      selectedText={selectedText}
+      targetLanguage={'en'}
+      nativeLanguage={language || 'en'}
+    />
     </div>
   );
 };

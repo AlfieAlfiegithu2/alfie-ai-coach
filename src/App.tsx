@@ -94,6 +94,7 @@ import Pay from "./pages/Pay";
 import ResetPassword from "./pages/ResetPassword";
 import MyWordBook from "./pages/MyWordBook";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminVocabManager from "./pages/AdminVocabManager";
 import OnboardingAssessment from "./pages/OnboardingAssessment";
 import PlanPage from "./pages/Plan";
 
@@ -171,6 +172,7 @@ const App = () => {
             {/* Skills Practice Admin */}
             <Route path="/admin/skills" element={<AdminSkillsPractice />} />
             <Route path="/admin/skills/vocabulary/tests" element={<AdminVocabularyTests />} />
+            <Route path="/admin/vocab" element={<AdminVocabManager />} />
             <Route path="/admin/vocab-book" element={<AdminVocabBook />} />
             <Route path="/admin/skills/vocabulary/tests/:id" element={<AdminVocabularyTestDetail />} />
             {/* aliases for direct access */}

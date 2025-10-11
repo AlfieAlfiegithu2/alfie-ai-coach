@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Plan } from '@/lib/plans/templates';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { TASK_BANK, type TaskBankItem, SKILLS, LEVELS, filterTaskBank } from '@/lib/plans/taskBank';
+import { formatLocalISO, normalizeToLocalMidnight } from '@/lib/date';
 
 const PlanPage = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -116,9 +117,9 @@ const PlanPage = () => {
         body: { focusText, minutesPerDay: minutes, days: 7, firstLanguage: firstLang, level }
       });
       if (error || !data?.success) throw error || new Error(data?.error || 'Failed to generate');
-      const tomorrow = new Date(startDate);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const iso = toISO(tomorrow);
+      // Target TODAY by default (timezone-safe)
+      const todayLocal = normalizeToLocalMidnight(new Date());
+      const iso = formatLocalISO(todayLocal);
       const existing = JSON.parse(localStorage.getItem(`plan-custom-tasks-${iso}`) || '[]');
       const pack = Array.isArray(data.days) && data.days.length > 0 ? (data.days[0]?.tasks || []) : [];
       const merged = Array.isArray(existing) ? [...existing, ...pack] : pack;

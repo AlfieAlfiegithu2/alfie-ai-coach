@@ -8,39 +8,93 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-interface VocabRow { id: string; word: string; language_code: string; translation: string }
+interface CardRow { id: string; term: string; translation: string; pos?: string | null; ipa?: string | null; context_sentence?: string | null }
 
 export default function VocabularyBook() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [words, setWords] = useState<VocabRow[]>([]);
+  const [cards, setCards] = useState<CardRow[]>([]);
   const [filter, setFilter] = useState("");
-  const [lang, setLang] = useState("ko");
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      // Pull up to 5,000 entries for selected language
+      if (!user) { setCards([]); setLoading(false); return; }
       const { data } = await (supabase as any)
-        .from("vocabulary_words")
-        .select("id,word,language_code,translation")
-        .eq("language_code", lang)
-        .order("usage_count", { ascending: false })
+        .from("vocab_cards")
+        .select("id, term, translation, pos, ipa, context_sentence")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
         .limit(5000);
-      setWords((data as any) || []);
+      const rows = (data as any) || [];
+      if (!rows.length) {
+        // Seed a demo deck with 20 words so the UI is not empty
+        try {
+          const demo = [
+            { term: 'local', translation: '지역의', pos: 'adj', level: 1 },
+            { term: 'update', translation: '업데이트하다', pos: 'verb', level: 1 },
+            { term: 'issue', translation: '문제', pos: 'noun', level: 1 },
+            { term: 'cause', translation: '원인', pos: 'noun', level: 1 },
+            { term: 'supply', translation: '공급', pos: 'noun', level: 2 },
+            { term: 'demand', translation: '수요', pos: 'noun', level: 2 },
+            { term: 'policy', translation: '정책', pos: 'noun', level: 2 },
+            { term: 'climate', translation: '기후', pos: 'noun', level: 2 },
+            { term: 'shortage', translation: '부족', pos: 'noun', level: 3 },
+            { term: 'expand', translation: '확장하다', pos: 'verb', level: 3 },
+            { term: 'negotiate', translation: '협상하다', pos: 'verb', level: 3 },
+            { term: 'impact', translation: '영향', pos: 'noun', level: 3 },
+            { term: 'infrastructure', translation: '사회 기반 시설', pos: 'noun', level: 4 },
+            { term: 'regulation', translation: '규제', pos: 'noun', level: 4 },
+            { term: 'forecast', translation: '전망, 예보', pos: 'noun', level: 4 },
+            { term: 'initiative', translation: '주도권/계획', pos: 'noun', level: 4 },
+            { term: 'sustainable', translation: '지속 가능한', pos: 'adj', level: 5 },
+            { term: 'emissions', translation: '배출', pos: 'noun', level: 5 },
+            { term: 'innovation', translation: '혁신', pos: 'noun', level: 5 },
+            { term: 'resilience', translation: '회복 탄력성', pos: 'noun', level: 5 },
+          ];
+          const { data: deck } = await (supabase as any)
+            .from('vocab_decks')
+            .insert({ user_id: user.id, name: 'Demo: General News (20 words)' })
+            .select('id')
+            .single();
+          const deckId = deck?.id || null;
+          const payload = demo.map((d) => ({
+            user_id: user.id,
+            deck_id: deckId,
+            language: 'en',
+            term: d.term,
+            translation: d.translation,
+            pos: d.pos,
+            level: (d as any).level,
+          }));
+          await (supabase as any).from('vocab_cards').insert(payload);
+          const { data: seeded } = await (supabase as any)
+            .from('vocab_cards')
+            .select('id, term, translation, pos, ipa, context_sentence')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(5000);
+          setCards((seeded as any) || []);
+        } catch {
+          setCards([]);
+        }
+      } else {
+        setCards(rows);
+      }
       setLoading(false);
     };
     load();
-  }, [lang]);
+  }, [user]);
 
   const filtered = useMemo(() => {
     const q = filter.toLowerCase();
-    return !q ? words : words.filter((w) => w.word.toLowerCase().includes(q) || w.translation.toLowerCase().includes(q));
-  }, [words, filter]);
+    return !q ? cards : cards.filter((c) => c.term.toLowerCase().includes(q) || (c.translation||'').toLowerCase().includes(q));
+  }, [cards, filter]);
 
-  const saveWord = async (row: VocabRow) => {
+  const removeCard = async (row: CardRow) => {
     if (!user) return;
-    await (supabase as any).from("user_vocabulary").upsert({ user_id: user.id, vocabulary_word_id: row.id }, { onConflict: "user_id,vocabulary_word_id" });
+    await (supabase as any).from("vocab_cards").delete().eq("id", row.id).eq("user_id", user.id);
+    setCards((prev) => prev.filter((x) => x.id !== row.id));
   };
 
   const progress = 0; // future: compute from user_vocabulary count
@@ -51,13 +105,6 @@ export default function VocabularyBook() {
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <Input placeholder="Search word or translation" value={filter} onChange={(e) => setFilter(e.target.value)} />
-            <select className="border rounded-md px-2 py-2" value={lang} onChange={(e) => setLang(e.target.value)}>
-              <option value="ko">Korean (ko)</option>
-              <option value="ja">Japanese (ja)</option>
-              <option value="vi">Vietnamese (vi)</option>
-              <option value="zh">Chinese (zh)</option>
-              <option value="es">Spanish (es)</option>
-            </select>
             <div className="ml-auto flex items-center gap-2">
               <Badge variant="secondary">{filtered.length} words</Badge>
             </div>
@@ -70,13 +117,14 @@ export default function VocabularyBook() {
               <div className="p-6 text-sm text-muted-foreground">Loading words…</div>
             ) : (
               <div className="divide-y">
-                {filtered.map((w) => (
-                  <div key={w.id} className="p-4 flex items-center justify-between">
+                {filtered.map((c) => (
+                  <div key={c.id} className="p-4 flex items-center justify-between">
                     <div>
-                      <div className="font-medium text-foreground">{w.word}</div>
-                      <div className="text-xs text-muted-foreground">{w.translation}</div>
+                      <div className="font-medium text-foreground">{c.term} {c.pos ? <span className="text-xs text-muted-foreground">({c.pos})</span> : null}</div>
+                      <div className="text-xs text-muted-foreground">{c.translation}</div>
+                      {c.context_sentence && <div className="text-xs text-muted-foreground italic">“{c.context_sentence}”</div>}
                     </div>
-                    <Button size="sm" onClick={() => saveWord(w)}>Save</Button>
+                    <Button size="sm" variant="outline" onClick={() => removeCard(c)}>Remove</Button>
                   </div>
                 ))}
                 {filtered.length === 0 && <div className="p-6 text-sm text-muted-foreground">No words match your search.</div>}

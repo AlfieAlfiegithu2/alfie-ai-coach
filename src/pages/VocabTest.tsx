@@ -184,9 +184,9 @@ export default function VocabTest() {
     setQuizResult(null);
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Don't flip if clicking on navigation or notes
-    if ((e.target as HTMLElement).closest('.vocab-navigation, .vocab-notes-section')) {
+  const handleScreenClick = (e: React.MouseEvent) => {
+    // Don't handle clicks on navigation, notes, or progress indicator
+    if ((e.target as HTMLElement).closest('.vocab-navigation, .vocab-notes-section, .vocab-progress, .vocab-back-button')) {
       return;
     }
     
@@ -204,11 +204,11 @@ export default function VocabTest() {
       next();
       return;
     }
-    
-    // If clicking on the card itself, flip it
-    if ((e.target as HTMLElement).closest('.vocab-card')) {
-      setIsFlipped(!isFlipped);
-    }
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent screen click handler from firing
+    setIsFlipped(!isFlipped);
   };
 
   const handleAnswerSelect = (answer: string) => {
@@ -267,7 +267,7 @@ export default function VocabTest() {
         </Button>
         
         {current ? (
-          <div className="vocab-screen-container" onClick={handleCardClick}>
+          <div className="vocab-screen-container" onClick={handleScreenClick}>
             {/* Progress indicator on top of card */}
             <div className="vocab-progress">
               <div className="text-sm text-white/80 font-medium">
@@ -277,6 +277,7 @@ export default function VocabTest() {
             
             <div 
               className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
+              onClick={handleCardClick}
               style={{
                 '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(220,15%,70%,0.1) 4%, hsla(220,10%,60%,0.05) 10%, hsla(220,5%,50%,0.02) 50%, hsla(220,0%,40%,0) 100%), radial-gradient(35% 52% at 55% 20%, hsla(210,20%,60%,0.1) 0%, hsla(210,15%,50%,0) 100%), radial-gradient(100% 100% at 50% 50%, hsla(200,25%,55%,0.05) 1%, hsla(200,20%,45%,0) 76%), conic-gradient(from 124deg at 50% 50%, hsla(215,20%,65%,0.1) 0%, hsla(215,15%,55%,0.08) 40%, hsla(215,15%,55%,0.08) 60%, hsla(215,20%,65%,0.1) 100%)',
                 '--inner-gradient': 'linear-gradient(145deg, hsla(220,10%,15%,0.6) 0%, hsla(210,15%,20%,0.4) 100%)'

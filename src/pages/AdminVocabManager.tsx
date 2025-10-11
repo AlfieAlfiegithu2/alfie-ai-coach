@@ -66,7 +66,8 @@ const AdminVocabManager: React.FC = () => {
     try {
       let completed = 0;
       let batchCount = 0;
-      const maxBatches = Math.ceil(total / 5); // 5 words per batch (reduced to prevent timeouts)
+      // EN-only mode uses 20 words per batch, full mode uses 5 words per batch
+      const maxBatches = Math.ceil(total / 20); // 20 words per batch for EN-only mode
       
       console.log(`Starting seeding process: ${total} words in ${maxBatches} batches`);
       

@@ -179,10 +179,11 @@ serve(async (req) => {
     let currentLevel = existingJob?.level || 1;
     console.log('vocab-admin-seed: starting word generation loop', { existingJob: !!existingJob, completed, currentLevel });
     
-    // Process only one small batch to avoid timeout, then return
+    // Process only one batch to avoid timeout, then return
     const levelCount = levels[currentLevel] || 0;
     const remainingInLevel = Math.max(0, levelCount - completed);
-    const batchSize = Math.min(remainingInLevel, 5); // Limit to 5 words per batch to avoid timeout
+    // In EN-only mode, we can process more words since no translations are needed
+    const batchSize = Math.min(remainingInLevel, enOnly ? 20 : 5); // 20 words for EN-only, 5 for full mode
     
     console.log('vocab-admin-seed: processing batch', { level: currentLevel, batchSize, completed, total });
     const batch = await fetchBatch(currentLevel, batchSize);
@@ -229,20 +230,20 @@ serve(async (req) => {
       }
       try {
         await ensureDeck();
-        let cardData: any = { translation: null, pos: null, ipa: null, examples: [], synonyms: [], frequencyRank: rank };
-        if (!enOnly) {
-          console.log('vocab-admin-seed: enriching word', { lemma });
-          const card = await enrich(lemma, null, currentLevel);
-          console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
-          cardData = {
-            translation: card.translation,
-            pos: card.pos || null,
-            ipa: card.ipa || null,
-            examples: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
-            synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
-            frequencyRank: card.frequencyRank || rank || null,
-          };
-        }
+        // Always enrich with IPA, POS, examples, synonyms for quality vocabulary
+        console.log('vocab-admin-seed: enriching word', { lemma, enOnly });
+        const card = await enrich(lemma, null, currentLevel);
+        console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
+        
+        const cardData = {
+          translation: enOnly ? null : card.translation, // Only translate if not EN-only mode
+          pos: card.pos || null,
+          ipa: card.ipa || null,
+          examples: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
+          synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
+          conjugation: card.conjugation || null,
+          frequencyRank: card.frequencyRank || rank || null,
+        };
 
         const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
           user_id: ownerUserId,
@@ -253,6 +254,7 @@ serve(async (req) => {
           ipa: cardData.ipa,
           examples_json: cardData.examples,
           synonyms_json: cardData.synonyms,
+          conjugation_json: cardData.conjugation,
           frequency_rank: cardData.frequencyRank || rank || null,
           language,
           level: currentLevel,
@@ -261,9 +263,9 @@ serve(async (req) => {
         if (insErr) throw insErr;
         const cardId = inserted?.id;
 
-        // Persist examples into vocab_examples (English)
+        // Persist examples into vocab_examples (English) - always do this for quality vocabulary
         try {
-          const examples = enOnly ? [] : (Array.isArray(cardData.examples) ? cardData.examples.slice(0,2) : []);
+          const examples = Array.isArray(cardData.examples) ? cardData.examples.slice(0,2) : [];
           if (examples.length && cardId) {
             await supabase.from('vocab_examples').insert(examples.map((s: string) => ({ user_id: ownerUserId, card_id: cardId, lang: 'en', sentence: s, cefr: 'B1', quality: 1 })));
           }
@@ -283,12 +285,18 @@ serve(async (req) => {
         deckCount += 1;
         completed += 1;
         console.log('vocab-admin-seed: word completed', { lemma, completed, total });
-        if (completed % 10 === 0) {
+        
+        // Update progress less frequently to reduce database load and prevent timeouts
+        const updateInterval = enOnly ? 5 : 10; // Update every 5 words in EN-only mode, 10 in full mode
+        if (completed % updateInterval === 0) {
           await supabase.from('jobs_vocab_seed').update({ completed, level: currentLevel, updated_at: new Date().toISOString() }).eq('id', job.id);
         }
       } catch (e) {
         console.log('vocab-admin-seed: word failed', { lemma, error: String((e as any)?.message || e) });
-        await supabase.from('jobs_vocab_seed').update({ last_error: String((e as any)?.message || e), last_term: lemma }).eq('id', job.id);
+        // Don't update job on every error to prevent database overload
+        if (completed % 20 === 0) {
+          await supabase.from('jobs_vocab_seed').update({ last_error: String((e as any)?.message || e), last_term: lemma }).eq('id', job.id);
+        }
       }
       if (completed >= total) break;
     }

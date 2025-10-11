@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import "./VocabTest.css";
 
 type Row = {
   id: string;
@@ -114,88 +115,93 @@ export default function VocabTest() {
         <div className="text-xs text-muted-foreground">{total ? `${index + 1} / ${total}` : '0 / 0'}</div>
         {current ? (
           <div className="flex justify-center">
-            <Card className="border-2 border-gray-300 shadow-xl bg-white" style={{ width: '280px', height: '400px' }}>
-              <CardContent className="p-0 h-full flex flex-col">
-                {/* FIFA-style header with letter */}
-                <div className="h-32 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-                  <div className="text-6xl font-bold text-white drop-shadow-lg select-none">
-                    {current.term?.slice(0,1)?.toUpperCase() || 'A'}
-                  </div>
-                </div>
-                
-                {/* Main content area */}
-                <div className="flex-1 p-4 flex flex-col justify-between">
-                  {/* Word section */}
-                  <div className="text-center space-y-2">
-                    <div className="text-3xl font-bold text-gray-800">
-                      {current.term}
+            <div 
+              className="vocab-card-wrapper"
+              style={{
+                '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(266,100%,90%,0.3) 4%, hsla(266,50%,80%,0.2) 10%, hsla(266,25%,70%,0.1) 50%, hsla(266,0%,60%,0) 100%), radial-gradient(35% 52% at 55% 20%, #00ffaac4 0%, #073aff00 100%), radial-gradient(100% 100% at 50% 50%, #00c1ffff 1%, #073aff00 76%), conic-gradient(from 124deg at 50% 50%, #c137ffff 0%, #07c6ffff 40%, #07c6ffff 60%, #c137ffff 100%)',
+                '--inner-gradient': 'linear-gradient(145deg, #60496e8c 0%, #71C4FF44 100%)'
+              }}
+            >
+              <section className="vocab-card">
+                <div className="vocab-inside">
+                  {/* Shine and glare effects */}
+                  <div className="vocab-shine" />
+                  <div className="vocab-glare" />
+                  
+                  {/* Image section - placeholder for word-related image */}
+                  <div className="vocab-image-content">
+                    <div className="word-image-placeholder">
+                      <div className="text-6xl font-bold text-white/80 select-none">
+                        {current.term?.slice(0,1)?.toUpperCase() || 'A'}
+                      </div>
                     </div>
-                    {current.pos && (
-                      <div className="text-sm text-blue-600 font-medium">
-                        {current.pos}
+                    <div className="vocab-word-info">
+                      <div className="vocab-level-badge">
+                        Level 1
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Main content */}
+                  <div className="vocab-content">
+                    <div className="vocab-details">
+                      <h3 className="vocab-term">{current.term}</h3>
+                      <p className="vocab-pos">{current.pos || 'word'}</p>
+                      {current.ipa && (
+                        <p className="vocab-ipa">/{current.ipa}/</p>
+                      )}
+                    </div>
+                    
+                    {/* Translation */}
+                    {current.translation && (
+                      <div className="vocab-translation">
+                        <div className="translation-label">Translation</div>
+                        <div className="translation-text">{current.translation}</div>
                       </div>
                     )}
-                    {current.ipa && (
-                      <div className="text-xs text-gray-500 font-mono">
-                        /{current.ipa}/
+                    
+                    {/* Example sentence */}
+                    {sentence && (
+                      <div className="vocab-example">
+                        <div className="example-label">Example</div>
+                        <div className="example-text">"{sentence}"</div>
                       </div>
                     )}
                   </div>
-
-                  {/* Translation section */}
-                  {current.translation && (
-                    <div className="bg-gray-50 rounded-lg p-3 border">
-                      <div className="text-xs text-gray-600 font-medium mb-1">Translation</div>
-                      <div className="text-sm text-gray-800 font-medium">
-                        {current.translation}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Example sentence */}
-                  {sentence && (
-                    <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
-                      <div className="text-xs text-gray-600 font-medium mb-1">Example</div>
-                      <div className="text-sm text-gray-700 italic">
-                        "{sentence}"
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Navigation buttons */}
-                  <div className="flex items-center justify-between pt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={prev} 
-                      disabled={index === 0}
-                      className="text-xs"
-                    >
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <Button 
-                        asChild 
-                        variant="secondary" 
-                        size="sm"
-                        className="text-xs"
-                      >
-                        <Link to={`/vocabulary/deck/${deckId}`}>Back</Link>
-                      </Button>
-                      <Button 
-                        onClick={next} 
-                        disabled={index + 1 >= total}
-                        size="sm"
-                        className="text-xs bg-green-600 hover:bg-green-700"
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </section>
+              
+              {/* Navigation buttons outside the card */}
+              <div className="vocab-navigation">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={prev} 
+                  disabled={index === 0}
+                  className="nav-btn"
+                >
+                  Previous
+                </Button>
+                <div className="nav-center">
+                  <Button 
+                    asChild 
+                    variant="secondary" 
+                    size="sm"
+                    className="nav-btn"
+                  >
+                    <Link to={`/vocabulary/deck/${deckId}`}>Back</Link>
+                  </Button>
+                  <Button 
+                    onClick={next} 
+                    disabled={index + 1 >= total}
+                    size="sm"
+                    className="nav-btn nav-btn-primary"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <Card>

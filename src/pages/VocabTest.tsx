@@ -31,8 +31,14 @@ export default function VocabTest() {
   const [pageTurnDirection, setPageTurnDirection] = useState<'next' | 'prev' | null>(null);
   const [showFinalTest, setShowFinalTest] = useState(false);
   const [finalTestResults, setFinalTestResults] = useState<{[key: string]: boolean}>({});
+  const [finalTestIndex, setFinalTestIndex] = useState(0);
+  const [finalTestFlipped, setFinalTestFlipped] = useState(false);
+  const [finalTestQuizOptions, setFinalTestQuizOptions] = useState<string[]>([]);
+  const [finalTestSelectedAnswer, setFinalTestSelectedAnswer] = useState<string | null>(null);
+  const [finalTestQuizResult, setFinalTestQuizResult] = useState<'correct' | 'incorrect' | null>(null);
   const total = rows.length;
   const current = rows[index] || null;
+  const finalTestCurrent = showFinalTest ? rows[finalTestIndex] : null;
 
   useEffect(() => {
     const load = async () => {
@@ -115,6 +121,12 @@ export default function VocabTest() {
     return current.context_sentence || '';
   }, [current]);
 
+  const finalTestSentence = useMemo(() => {
+    if (!finalTestCurrent) return '';
+    if (Array.isArray(finalTestCurrent.examples_json) && finalTestCurrent.examples_json[0]) return finalTestCurrent.examples_json[0];
+    return finalTestCurrent.context_sentence || '';
+  }, [finalTestCurrent]);
+
   // Function to highlight the vocabulary word in the example sentence
   const highlightWordInSentence = (text: string, word: string) => {
     if (!text || !word) return text;
@@ -183,6 +195,13 @@ export default function VocabTest() {
     }
   }, [isFlipped, current]);
 
+  // Generate quiz options for final test when card flips
+  useEffect(() => {
+    if (finalTestFlipped && finalTestCurrent) {
+      generateFinalTestQuizOptions();
+    }
+  }, [finalTestFlipped, finalTestCurrent]);
+
   const generateQuizOptions = () => {
     if (!current) return;
     
@@ -201,6 +220,88 @@ export default function VocabTest() {
     setQuizOptions(shuffled);
     setSelectedAnswer(null);
     setQuizResult(null);
+  };
+
+  const generateFinalTestQuizOptions = () => {
+    if (!finalTestCurrent) return;
+    
+    // Get random translations from other cards
+    const otherTranslations = rows
+      .filter(card => card.id !== finalTestCurrent.id && card.translation)
+      .map(card => card.translation)
+      .filter(translation => translation !== finalTestCurrent.translation)
+      .slice(0, 3);
+    
+    // Add the correct translation
+    const options = [finalTestCurrent.translation, ...otherTranslations];
+    
+    // Shuffle the options
+    const shuffled = options.sort(() => Math.random() - 0.5);
+    setFinalTestQuizOptions(shuffled);
+    setFinalTestSelectedAnswer(null);
+    setFinalTestQuizResult(null);
+  };
+
+  const finalTestNext = () => {
+    if (finalTestIndex < total - 1) {
+      setPageTurnDirection('next');
+      setTimeout(() => setPageTurnDirection(null), 600);
+      setFinalTestIndex(finalTestIndex + 1);
+      setFinalTestFlipped(false);
+    }
+  };
+
+  const finalTestPrev = () => {
+    if (finalTestIndex > 0) {
+      setPageTurnDirection('prev');
+      setTimeout(() => setPageTurnDirection(null), 600);
+      setFinalTestIndex(finalTestIndex - 1);
+      setFinalTestFlipped(false);
+    }
+  };
+
+  const handleFinalTestCardClick = (e: React.MouseEvent) => {
+    // Don't flip if clicking on quiz buttons
+    if ((e.target as HTMLElement).closest('.quiz-option')) {
+      return;
+    }
+    
+    e.stopPropagation();
+    setFinalTestFlipped(!finalTestFlipped);
+  };
+
+  const handleFinalTestScreenClick = (e: React.MouseEvent) => {
+    // Don't handle clicks on progress indicator
+    if ((e.target as HTMLElement).closest('.vocab-progress, .vocab-back-button')) {
+      return;
+    }
+    
+    // Check if we're in a click navigation zone
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const screenWidth = rect.width;
+    const leftZone = screenWidth * 0.4;
+    const rightZone = screenWidth * 0.6;
+    
+    if (clickX < leftZone) {
+      finalTestPrev();
+      return;
+    } else if (clickX > rightZone) {
+      finalTestNext();
+      return;
+    }
+  };
+
+  const handleFinalTestAnswerSelect = (answer: string) => {
+    setFinalTestSelectedAnswer(answer);
+    const isCorrect = answer === finalTestCurrent?.translation;
+    setFinalTestQuizResult(isCorrect ? 'correct' : 'incorrect');
+    
+    // Save result
+    if (finalTestCurrent) {
+      setFinalTestResults({...finalTestResults, [finalTestCurrent.id]: isCorrect});
+      saveSRSData(finalTestCurrent.id, isCorrect);
+    }
   };
 
   const handleScreenClick = (e: React.MouseEvent) => {
@@ -290,58 +391,126 @@ export default function VocabTest() {
           <Link to={`/vocabulary`}>← Back</Link>
         </Button>
         
-        {showFinalTest ? (
-          <div className="vocab-screen-container">
-            <div className="final-test-container">
-              <Card className="final-test-card">
-                <CardContent className="p-8">
-                  <h2 className="text-2xl font-bold mb-6 text-center">Final Test</h2>
-                  <p className="text-sm text-muted-foreground mb-6 text-center">
-                    Test yourself on all {total} words!
-                  </p>
-                  
-                  <div className="space-y-4">
-                    {rows.map((card, idx) => (
-                      <div key={card.id} className="final-test-item">
-                        <div className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex-1">
-                            <p className="font-medium">{idx + 1}. {card.term}</p>
-                            <p className="text-sm text-muted-foreground">{card.translation}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant={finalTestResults[card.id] === true ? "default" : "outline"}
-                              onClick={() => setFinalTestResults({...finalTestResults, [card.id]: true})}
-                            >
-                              ✓
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={finalTestResults[card.id] === false ? "destructive" : "outline"}
-                              onClick={() => setFinalTestResults({...finalTestResults, [card.id]: false})}
-                            >
-                              ✗
-                            </Button>
+        {showFinalTest && finalTestCurrent ? (
+          <div className="vocab-screen-container" onClick={handleFinalTestScreenClick}>
+            {/* Progress indicator */}
+            <div className="vocab-progress">
+              <div className="text-sm text-white/80 font-medium">
+                Final Test: {finalTestIndex + 1} / {total}
+              </div>
+              <div className="text-xs text-white/60 mt-1">
+                Score: {Object.values(finalTestResults).filter(r => r === true).length} correct
+              </div>
+            </div>
+            
+            <div className={`vocab-card-container ${pageTurnDirection ? `page-turn-${pageTurnDirection}` : ''}`}>
+              <div 
+                className={`vocab-card-wrapper ${finalTestFlipped ? 'flipped' : ''}`}
+                onClick={handleFinalTestCardClick}
+                style={{
+                  '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(220,15%,70%,0.1) 4%, hsla(220,10%,60%,0.05) 10%, hsla(220,5%,50%,0.02) 50%, hsla(220,0%,40%,0) 100%), radial-gradient(35% 52% at 55% 20%, hsla(210,20%,60%,0.1) 0%, hsla(210,15%,50%,0) 100%), radial-gradient(100% 100% at 50% 50%, hsla(200,25%,55%,0.05) 1%, hsla(200,20%,45%,0) 76%), conic-gradient(from 124deg at 50% 50%, hsla(215,20%,65%,0.1) 0%, hsla(215,15%,55%,0.08) 40%, hsla(215,15%,55%,0.08) 60%, hsla(215,20%,65%,0.1) 100%)',
+                  '--inner-gradient': 'linear-gradient(145deg, hsla(220,10%,15%,0.6) 0%, hsla(210,15%,20%,0.4) 100%)'
+                }}
+              >
+                <div className="vocab-card-inner">
+                  {/* Front face */}
+                  <section className="vocab-card front">
+                    <div className="vocab-inside">
+                      <div className="vocab-shine" />
+                      <div className="vocab-glare" />
+                      
+                      <div className="vocab-image-content">
+                        <div className="word-image-placeholder">
+                          <div className="text-6xl font-bold text-white/80 select-none">
+                            {finalTestCurrent.term?.slice(0,1)?.toUpperCase() || 'A'}
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-6 flex gap-4">
-                    <Button variant="outline" onClick={() => setShowFinalTest(false)}>
-                      Back to Cards
-                    </Button>
-                    <Button onClick={() => {
-                      const correct = Object.values(finalTestResults).filter(r => r === true).length;
-                      alert(`You got ${correct} out of ${total} correct!`);
-                    }}>
-                      See Results
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                      
+                      <div className="vocab-content">
+                        <div className="vocab-details">
+                          <h3 className="vocab-term">{finalTestCurrent.term}</h3>
+                          <p className="vocab-pos">{finalTestCurrent.pos || 'word'}</p>
+                          {finalTestCurrent.ipa && (
+                            <p className="vocab-ipa">/{finalTestCurrent.ipa}/</p>
+                          )}
+                        </div>
+                        
+                        {finalTestCurrent.translation && (
+                          <div className="vocab-translation">
+                            <div className="translation-text">{finalTestCurrent.translation}</div>
+                          </div>
+                        )}
+                        
+                        {finalTestSentence && (
+                          <div className="vocab-example">
+                            <div 
+                              className="example-text"
+                              dangerouslySetInnerHTML={{
+                                __html: highlightWordInSentence(finalTestSentence, finalTestCurrent?.term || '')
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Back face - quiz */}
+                  <section className="vocab-card back">
+                    <div className="vocab-inside">
+                      <div className="vocab-shine" />
+                      <div className="vocab-glare" />
+                      
+                      <div className="vocab-quiz">
+                        <div className="quiz-header">
+                          <h3 className="quiz-question">What is the translation of:</h3>
+                          <div className="quiz-word">{finalTestCurrent.term}</div>
+                        </div>
+                        
+                        <div className="quiz-options">
+                          {finalTestQuizOptions.map((option, idx) => (
+                            <button
+                              key={idx}
+                              className={`quiz-option ${
+                                finalTestSelectedAnswer === option 
+                                  ? finalTestQuizResult === 'correct' 
+                                    ? 'correct' 
+                                    : finalTestQuizResult === 'incorrect' 
+                                      ? 'incorrect' 
+                                      : 'selected'
+                                  : ''
+                              }`}
+                              onClick={() => !finalTestSelectedAnswer && handleFinalTestAnswerSelect(option)}
+                              disabled={!!finalTestSelectedAnswer}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {finalTestQuizResult && finalTestQuizResult === 'incorrect' && (
+                          <div className={`quiz-feedback ${finalTestQuizResult}`}>
+                            ✗ Incorrect
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+            
+            {/* Exit button at bottom */}
+            <div style={{textAlign: 'center', marginTop: '20px'}}>
+              <Button variant="outline" onClick={() => {
+                const correct = Object.values(finalTestResults).filter(r => r === true).length;
+                const message = `Final Test Results:\n${correct} out of ${total} correct (${Math.round(correct/total*100)}%)`;
+                alert(message);
+                setShowFinalTest(false);
+              }}>
+                Finish Test
+              </Button>
             </div>
           </div>
         ) : current ? (

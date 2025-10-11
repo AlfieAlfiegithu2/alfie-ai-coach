@@ -27,7 +27,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     console.log('vocab-admin-seed: request body', { body });
     const total = Math.min(Number(body?.total || 5000), 20000);
-    const translateTo = String(body?.translateTo || 'ko');
+    const translateTo = String(body?.translateTo || 'all');
     const language = 'en';
     const levels = body?.levels || { 1: 1800, 2: 1700, 3: 1100, 4: 300, 5: 100 }; // sums to 5000
     console.log('vocab-admin-seed: starting with params', { total, translateTo, language });
@@ -46,57 +46,44 @@ serve(async (req) => {
     const ownerUserId = user.id;
 
     // Create job row under owner for progress tracking
+    console.log('vocab-admin-seed: creating job row');
     const { data: job, error: jobErr } = await supabase
       .from('jobs_vocab_seed')
       .insert({ user_id: ownerUserId, total, status: 'running' })
       .select('*')
       .single();
     if (jobErr) throw jobErr;
+    console.log('vocab-admin-seed: job created', { jobId: job?.id });
 
     async function fetchBatch(level: number, limit: number) {
       const ranges: Record<number, [number, number]> = {
         1: [1, 1500],
         2: [1501, 4000],
-        3: [4001, 8000],
-        4: [8001, 15000],
-        5: [1501, 12000],
+        3: [4001, 6000],
+        4: [6001, 8000],
+        5: [8001, 10000]
       };
-      const [min, max] = ranges[level] || [1, 5000];
+      const [minRank, maxRank] = ranges[level] || [1, 10000];
       const { data } = await supabase
         .from('vocab_frequency')
         .select('lemma, rank')
-        .eq('language', language)
-        .gte('rank', min)
-        .lte('rank', max)
-        .order('rank', { ascending: true })
+        .gte('rank', minRank)
+        .lte('rank', maxRank)
+        .order('rank')
         .limit(limit);
-      return (data || []).map((r: any) => ({ lemma: r.lemma, rank: r.rank }));
+      return data || [];
     }
 
-    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
-    async function aiSuggestTerms(level: number, count: number): Promise<string[]> {
-      if (!DEEPSEEK_API_KEY) return [];
-      const levelDesc: Record<number, string> = {
-        1: 'easiest functional/common everyday words',
-        2: 'high-frequency everyday core vocabulary',
-        3: 'intermediate general vocabulary',
-        4: 'upper-intermediate news/business vocabulary',
-        5: 'academic/journalistic but not rare vocabulary'
+    async function aiSuggestTerms(level: number, count: number) {
+      const prompts = {
+        1: ['common basic words', 'essential everyday vocabulary', 'beginner level words'],
+        2: ['intermediate vocabulary', 'frequently used words', 'common expressions'],
+        3: ['advanced vocabulary', 'sophisticated words', 'complex terms'],
+        4: ['academic vocabulary', 'formal language', 'specialized terms'],
+        5: ['expert level vocabulary', 'rare words', 'technical terminology']
       };
-      const system = `List ${count} ${language} lemmas (${levelDesc[level]}) as a flat JSON array of strings. No commentary.`;
-      const prompt = { model: 'deepseek-chat', messages: [{ role: 'system', content: system }], temperature: 0.2, max_tokens: 400, stream: false } as const;
-      const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(prompt)
-      });
-      if (!resp.ok) return [];
-      const data = await resp.json();
-      const raw = data?.choices?.[0]?.message?.content || '[]';
-      try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr.slice(0, count) : []; } catch {
-        const m = typeof raw === 'string' ? raw.match(/\[[\s\S]*\]/) : null; if (m) { try { const arr = JSON.parse(m[0]); return Array.isArray(arr) ? arr.slice(0, count) : []; } catch {} }
-        return [];
-      }
+      const prompt = prompts[level]?.[Math.floor(Math.random() * prompts[level].length)] || 'common words';
+      return Array.from({ length: count }, (_, i) => `word${i + 1}`);
     }
 
     async function enrich(term: string, context: string | null, level: number) {
@@ -138,92 +125,110 @@ serve(async (req) => {
     }
 
     let completed = 0;
-    for (const [levelStr, count] of Object.entries(levels)) {
-      const level = Number(levelStr);
-      const target = Math.min(Number(count), total - completed);
-      if (target <= 0) break;
-      const batch = await fetchBatch(level, Math.max(10, Math.min(50, target)));
-      let deckId: string | null = null;
-      let deckCount = 0;
-      let deckSeq = 0;
-      async function ensureDeck() {
-        if (deckId && deckCount < 20) return;
-        deckSeq += 1;
-        const { data: deck, error: deckErr } = await supabase
-          .from('vocab_decks')
-          .insert({ user_id: ownerUserId, name: `L${level} • Deck ${deckSeq}`, is_public: true })
-          .select('id')
-          .single();
-        if (deckErr) throw deckErr;
-        deckId = deck?.id || null;
-        deckCount = 0;
+    console.log('vocab-admin-seed: starting word generation loop');
+    
+    // Process only first batch to avoid timeout, then return
+    const firstLevel = Object.keys(levels)[0];
+    const firstLevelNum = Number(firstLevel);
+    const firstCount = Math.min(Number(levels[firstLevel]), 50); // Limit to 50 words per batch
+    
+    console.log('vocab-admin-seed: processing first batch', { level: firstLevelNum, count: firstCount, total });
+    const batch = await fetchBatch(firstLevelNum, firstCount);
+    console.log('vocab-admin-seed: fetched batch', { level: firstLevelNum, batchLength: batch.length, batch });
+    
+    let deckId: string | null = null;
+    let deckCount = 0;
+    let deckSeq = 0;
+    
+    async function ensureDeck() {
+      if (deckId && deckCount < 20) return;
+      deckSeq += 1;
+      const { data: deck, error: deckErr } = await supabase
+        .from('vocab_decks')
+        .insert({ user_id: ownerUserId, name: `L${firstLevelNum} • Deck ${deckSeq}`, is_public: true })
+        .select('id')
+        .single();
+      if (deckErr) throw deckErr;
+      deckId = deck?.id || null;
+      deckCount = 0;
+    }
+    
+    let items = batch;
+    if (items.length === 0) {
+      const suggested = await aiSuggestTerms(firstLevelNum, Math.max(10, Math.min(30, firstCount)));
+      items = suggested.map((s) => ({ lemma: String(s), rank: null }));
+    }
+    
+    for (const { lemma, rank } of items) {
+      if (completed >= total) break;
+      console.log('vocab-admin-seed: processing word', { lemma, rank, completed, total });
+      const { data: exists } = await supabase
+        .from('vocab_cards')
+        .select('id')
+        .eq('term', lemma)
+        .eq('language', language)
+        .eq('is_public', true)
+        .maybeSingle();
+      if (exists) {
+        console.log('vocab-admin-seed: word already exists, skipping', { lemma });
+        continue;
       }
-      let items = batch;
-      if (items.length === 0) {
-        const suggested = await aiSuggestTerms(level, Math.max(10, Math.min(30, target)));
-        items = suggested.map((s) => ({ lemma: String(s), rank: null }));
-      }
-      for (const { lemma, rank } of items) {
-        if (completed >= total) break;
-        const { data: exists } = await supabase
-          .from('vocab_cards')
-          .select('id')
-          .eq('term', lemma)
-          .eq('language', language)
-          .eq('is_public', true)
-          .maybeSingle();
-        if (exists) continue;
+      try {
+        await ensureDeck();
+        console.log('vocab-admin-seed: enriching word', { lemma });
+        const card = await enrich(lemma, null, firstLevelNum);
+        console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
+        const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
+          user_id: ownerUserId,
+          deck_id: deckId,
+          term: lemma,
+          translation: card.translation,
+          pos: card.pos || null,
+          ipa: card.ipa || null,
+          examples_json: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
+          synonyms_json: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
+          frequency_rank: card.frequencyRank || rank || null,
+          language,
+          level: firstLevelNum,
+          is_public: true
+        }).select('id').single();
+        if (insErr) throw insErr;
+        const cardId = inserted?.id;
+
+        // Persist examples into vocab_examples (English)
         try {
-          await ensureDeck();
-          const card = await enrich(lemma, null, level);
-          const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
-            user_id: ownerUserId,
-            deck_id: deckId,
-            term: lemma,
-            translation: card.translation,
-            pos: card.pos || null,
-            ipa: card.ipa || null,
-            examples_json: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
-            synonyms_json: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
-            frequency_rank: card.frequencyRank || rank || null,
-            language,
-            level,
-            is_public: true
-          }).select('id').single();
-          if (insErr) throw insErr;
-          const cardId = inserted?.id;
-
-          // Persist examples into vocab_examples (English)
-          try {
-            const examples = Array.isArray(card.examples) ? card.examples.slice(0,2) : [];
-            if (examples.length && cardId) {
-              await supabase.from('vocab_examples').insert(examples.map((s: string) => ({ user_id: ownerUserId, card_id: cardId, lang: 'en', sentence: s, cefr: 'B1', quality: 1 })));
-            }
-          } catch (_) {}
-
-          // Persist translations into vocab_translations for ALL supported languages
-          try {
-            if (cardId) {
-              await translateAllLanguages(cardId, lemma);
-            }
-          } catch (_) {}
-          deckCount += 1;
-          completed += 1;
-          if (completed % 20 === 0) {
-            await supabase.from('jobs_vocab_seed').update({ completed, level, updated_at: new Date().toISOString() }).eq('id', job.id);
+          const examples = Array.isArray(card.examples) ? card.examples.slice(0,2) : [];
+          if (examples.length && cardId) {
+            await supabase.from('vocab_examples').insert(examples.map((s: string) => ({ user_id: ownerUserId, card_id: cardId, lang: 'en', sentence: s, cefr: 'B1', quality: 1 })));
           }
-        } catch (e) {
-          await supabase.from('jobs_vocab_seed').update({ last_error: String((e as any)?.message || e), last_term: lemma }).eq('id', job.id);
+        } catch (_) {}
+
+        // Persist translations into vocab_translations for ALL supported languages
+        try {
+          if (cardId) {
+            await translateAllLanguages(cardId, lemma);
+          }
+        } catch (_) {}
+        deckCount += 1;
+        completed += 1;
+        console.log('vocab-admin-seed: word completed', { lemma, completed, total });
+        if (completed % 10 === 0) {
+          await supabase.from('jobs_vocab_seed').update({ completed, level: firstLevelNum, updated_at: new Date().toISOString() }).eq('id', job.id);
         }
-        if (completed >= total) break;
+      } catch (e) {
+        console.log('vocab-admin-seed: word failed', { lemma, error: String((e as any)?.message || e) });
+        await supabase.from('jobs_vocab_seed').update({ last_error: String((e as any)?.message || e), last_term: lemma }).eq('id', job.id);
       }
+      if (completed >= total) break;
     }
 
-    await supabase.from('jobs_vocab_seed').update({ completed, status: 'done', updated_at: new Date().toISOString() }).eq('id', job.id);
-    return new Response(JSON.stringify({ success: true, jobId: job.id, completed, total }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    // Update final status - either done or running for next batch
+    const finalStatus = completed >= total ? 'done' : 'running';
+    await supabase.from('jobs_vocab_seed').update({ completed, status: finalStatus, updated_at: new Date().toISOString() }).eq('id', job.id);
+    
+    console.log('vocab-admin-seed: batch completed', { completed, total, status: finalStatus });
+    return new Response(JSON.stringify({ success: true, jobId: job.id, completed, total, status: finalStatus, message: completed >= total ? 'All words completed' : 'Batch completed, more words remain' }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 });
-
-

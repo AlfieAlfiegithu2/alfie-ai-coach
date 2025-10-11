@@ -118,8 +118,8 @@ export default function VocabTest() {
             <div 
               className="vocab-card-wrapper"
               style={{
-                '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(266,100%,90%,0.3) 4%, hsla(266,50%,80%,0.2) 10%, hsla(266,25%,70%,0.1) 50%, hsla(266,0%,60%,0) 100%), radial-gradient(35% 52% at 55% 20%, #00ffaac4 0%, #073aff00 100%), radial-gradient(100% 100% at 50% 50%, #00c1ffff 1%, #073aff00 76%), conic-gradient(from 124deg at 50% 50%, #c137ffff 0%, #07c6ffff 40%, #07c6ffff 60%, #c137ffff 100%)',
-                '--inner-gradient': 'linear-gradient(145deg, #60496e8c 0%, #71C4FF44 100%)'
+                '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(220,15%,70%,0.1) 4%, hsla(220,10%,60%,0.05) 10%, hsla(220,5%,50%,0.02) 50%, hsla(220,0%,40%,0) 100%), radial-gradient(35% 52% at 55% 20%, hsla(210,20%,60%,0.1) 0%, hsla(210,15%,50%,0) 100%), radial-gradient(100% 100% at 50% 50%, hsla(200,25%,55%,0.05) 1%, hsla(200,20%,45%,0) 76%), conic-gradient(from 124deg at 50% 50%, hsla(215,20%,65%,0.1) 0%, hsla(215,15%,55%,0.08) 40%, hsla(215,15%,55%,0.08) 60%, hsla(215,20%,65%,0.1) 100%)',
+                '--inner-gradient': 'linear-gradient(145deg, hsla(220,10%,15%,0.6) 0%, hsla(210,15%,20%,0.4) 100%)'
               }}
             >
               <section className="vocab-card">
@@ -135,11 +135,6 @@ export default function VocabTest() {
                         {current.term?.slice(0,1)?.toUpperCase() || 'A'}
                       </div>
                     </div>
-                    <div className="vocab-word-info">
-                      <div className="vocab-level-badge">
-                        Level 1
-                      </div>
-                    </div>
                   </div>
                   
                   {/* Main content */}
@@ -151,14 +146,6 @@ export default function VocabTest() {
                         <p className="vocab-ipa">/{current.ipa}/</p>
                       )}
                     </div>
-                    
-                    {/* Translation */}
-                    {current.translation && (
-                      <div className="vocab-translation">
-                        <div className="translation-label">Translation</div>
-                        <div className="translation-text">{current.translation}</div>
-                      </div>
-                    )}
                     
                     {/* Example sentence */}
                     {sentence && (

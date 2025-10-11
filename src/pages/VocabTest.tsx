@@ -24,6 +24,10 @@ export default function VocabTest() {
   const [index, setIndex] = useState(0);
   const [notes, setNotes] = useState<{[key: string]: string}>({});
   const [saveStatus, setSaveStatus] = useState<string>("");
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [quizOptions, setQuizOptions] = useState<string[]>([]);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(null);
   const total = rows.length;
   const current = rows[index] || null;
 
@@ -153,23 +157,100 @@ export default function VocabTest() {
 
   const currentNotes = current ? notes[current.id] || "" : "";
 
-  // Handle click navigation
-  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Generate quiz options when card flips
+  useEffect(() => {
+    if (isFlipped && current) {
+      generateQuizOptions();
+    }
+  }, [isFlipped, current]);
+
+  const generateQuizOptions = () => {
+    if (!current) return;
+    
+    // Get random translations from other cards
+    const otherTranslations = rows
+      .filter(card => card.id !== current.id && card.translation)
+      .map(card => card.translation)
+      .filter(translation => translation !== current.translation)
+      .slice(0, 3);
+    
+    // Add the correct translation
+    const options = [current.translation, ...otherTranslations];
+    
+    // Shuffle the options
+    const shuffled = options.sort(() => Math.random() - 0.5);
+    setQuizOptions(shuffled);
+    setSelectedAnswer(null);
+    setQuizResult(null);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't flip if clicking on navigation or notes
+    if ((e.target as HTMLElement).closest('.vocab-navigation, .vocab-notes-section')) {
+      return;
+    }
+    
+    // Check if we're in a click navigation zone
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const screenWidth = rect.width;
-    const leftZone = screenWidth * 0.4; // Left 40% of screen
-    const rightZone = screenWidth * 0.6; // Right 40% of screen
+    const leftZone = screenWidth * 0.4;
+    const rightZone = screenWidth * 0.6;
     
     if (clickX < leftZone) {
-      // Click on left side - go to previous
       prev();
+      return;
     } else if (clickX > rightZone) {
-      // Click on right side - go to next
       next();
+      return;
     }
-    // Middle 20% is neutral - no action
+    
+    // If clicking on the card itself, flip it
+    if ((e.target as HTMLElement).closest('.vocab-card')) {
+      setIsFlipped(!isFlipped);
+    }
   };
+
+  const handleAnswerSelect = (answer: string) => {
+    setSelectedAnswer(answer);
+    const isCorrect = answer === current?.translation;
+    setQuizResult(isCorrect ? 'correct' : 'incorrect');
+    
+    // Save SRS data
+    if (current) {
+      saveSRSData(current.id, isCorrect);
+    }
+  };
+
+  const saveSRSData = async (cardId: string, isCorrect: boolean) => {
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      if (!userRes?.user) return;
+
+      const { error } = await supabase
+        .from('vocab_reviews')
+        .insert({
+          user_id: userRes.user.id,
+          card_id: cardId,
+          rating: isCorrect ? 3 : 1, // 3 = correct, 1 = incorrect
+          reviewed_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error saving SRS data:', error);
+      }
+    } catch (error) {
+      console.error('Error saving SRS data:', error);
+    }
+  };
+
+  // Reset flip state when card changes
+  useEffect(() => {
+    setIsFlipped(false);
+    setQuizResult(null);
+    setSelectedAnswer(null);
+  }, [index]);
+
 
   return (
     <StudentLayout title={name}>
@@ -185,11 +266,17 @@ export default function VocabTest() {
           <Link to={`/vocabulary`}>← Back</Link>
         </Button>
         
-        <div className="text-xs text-muted-foreground">{total ? `${index + 1} / ${total}` : '0 / 0'}</div>
         {current ? (
-          <div className="vocab-screen-container" onClick={handleScreenClick}>
+          <div className="vocab-screen-container" onClick={handleCardClick}>
+            {/* Progress indicator on top of card */}
+            <div className="vocab-progress">
+              <div className="text-sm text-white/80 font-medium">
+                {total ? `${index + 1} / ${total}` : '0 / 0'}
+              </div>
+            </div>
+            
             <div 
-              className="vocab-card-wrapper"
+              className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
               style={{
                 '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(220,15%,70%,0.1) 4%, hsla(220,10%,60%,0.05) 10%, hsla(220,5%,50%,0.02) 50%, hsla(220,0%,40%,0) 100%), radial-gradient(35% 52% at 55% 20%, hsla(210,20%,60%,0.1) 0%, hsla(210,15%,50%,0) 100%), radial-gradient(100% 100% at 50% 50%, hsla(200,25%,55%,0.05) 1%, hsla(200,20%,45%,0) 76%), conic-gradient(from 124deg at 50% 50%, hsla(215,20%,65%,0.1) 0%, hsla(215,15%,55%,0.08) 40%, hsla(215,15%,55%,0.08) 60%, hsla(215,20%,65%,0.1) 100%)',
                 '--inner-gradient': 'linear-gradient(145deg, hsla(220,10%,15%,0.6) 0%, hsla(210,15%,20%,0.4) 100%)'
@@ -201,44 +288,84 @@ export default function VocabTest() {
                   <div className="vocab-shine" />
                   <div className="vocab-glare" />
                   
-                  {/* Image section - placeholder for word-related image */}
-                  <div className="vocab-image-content">
-                    <div className="word-image-placeholder">
-                      <div className="text-6xl font-bold text-white/80 select-none">
-                        {current.term?.slice(0,1)?.toUpperCase() || 'A'}
+                  {!isFlipped ? (
+                    // Front of card - word information
+                    <>
+                      {/* Image section - placeholder for word-related image */}
+                      <div className="vocab-image-content">
+                        <div className="word-image-placeholder">
+                          <div className="text-6xl font-bold text-white/80 select-none">
+                            {current.term?.slice(0,1)?.toUpperCase() || 'A'}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* Main content */}
-                  <div className="vocab-content">
-                    <div className="vocab-details">
-                      <h3 className="vocab-term">{current.term}</h3>
-                      <p className="vocab-pos">{current.pos || 'word'}</p>
-                      {current.ipa && (
-                        <p className="vocab-ipa">/{current.ipa}/</p>
+                      
+                      {/* Main content */}
+                      <div className="vocab-content">
+                        <div className="vocab-details">
+                          <h3 className="vocab-term">{current.term}</h3>
+                          <p className="vocab-pos">{current.pos || 'word'}</p>
+                          {current.ipa && (
+                            <p className="vocab-ipa">/{current.ipa}/</p>
+                          )}
+                        </div>
+                        
+                        {/* Translation */}
+                        {current.translation && (
+                          <div className="vocab-translation">
+                            <div className="translation-text">{current.translation}</div>
+                          </div>
+                        )}
+                        
+                        {/* Example sentence */}
+                        {sentence && (
+                          <div className="vocab-example">
+                            <div 
+                              className="example-text"
+                              dangerouslySetInnerHTML={{
+                                __html: highlightWordInSentence(sentence, current?.term || '')
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    // Back of card - quiz
+                    <div className="vocab-quiz">
+                      <div className="quiz-header">
+                        <h3 className="quiz-question">What is the translation of:</h3>
+                        <div className="quiz-word">{current.term}</div>
+                      </div>
+                      
+                      <div className="quiz-options">
+                        {quizOptions.map((option, idx) => (
+                          <button
+                            key={idx}
+                            className={`quiz-option ${
+                              selectedAnswer === option 
+                                ? quizResult === 'correct' 
+                                  ? 'correct' 
+                                  : quizResult === 'incorrect' 
+                                    ? 'incorrect' 
+                                    : 'selected'
+                                : ''
+                            }`}
+                            onClick={() => !selectedAnswer && handleAnswerSelect(option)}
+                            disabled={!!selectedAnswer}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {quizResult && (
+                        <div className={`quiz-feedback ${quizResult}`}>
+                          {quizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
+                        </div>
                       )}
                     </div>
-                    
-                    {/* Translation */}
-                    {current.translation && (
-                      <div className="vocab-translation">
-                        <div className="translation-text">{current.translation}</div>
-                      </div>
-                    )}
-                    
-                    {/* Example sentence */}
-                    {sentence && (
-                      <div className="vocab-example">
-                        <div 
-                          className="example-text"
-                          dangerouslySetInnerHTML={{
-                            __html: highlightWordInSentence(sentence, current?.term || '')
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </section>
               

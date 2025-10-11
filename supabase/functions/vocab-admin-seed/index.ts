@@ -4,38 +4,34 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-token',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   try {
-    const adminToken = req.headers.get('x-admin-token');
-    const expected = Deno.env.get('ADMIN_SEED_TOKEN');
-    if (!expected || adminToken !== expected) throw new Error('Unauthorized');
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Unauthorized');
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
+    // Use anon key bound to caller's JWT so RLS and rpc(is_admin) apply to the current user
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } }
+    );
 
     const body = await req.json().catch(() => ({}));
     const total = Math.min(Number(body?.total || 5000), 20000);
     const translateTo = String(body?.translateTo || 'ko');
     const language = String(body?.language || 'en');
     const levels = body?.levels || { 1: 1800, 2: 1700, 3: 1100, 4: 300, 5: 100 }; // sums to 5000
-    let ownerUserId = String(body?.ownerUserId || Deno.env.get('ADMIN_USER_ID') || '');
-    if (!ownerUserId) {
-      // Create a one-off system user to own the public decks
-      const email = `public-vocab-${Date.now()}@system.local`;
-      const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-        email,
-        password: crypto.randomUUID(),
-        email_confirm: true,
-        user_metadata: { system: true, purpose: 'public_vocab_owner' }
-      });
-      if (createErr || !created?.user?.id) throw new Error(`Failed to create system owner: ${createErr?.message || 'unknown'}`);
-      ownerUserId = created.user.id;
-    }
+    // Enforce admin-only
+    const { data: userRes } = await supabase.auth.getUser();
+    const user = userRes?.user;
+    if (!user) throw new Error('Unauthorized');
+    const { data: isAdmin } = await (supabase as any).rpc('is_admin');
+    if (!isAdmin) return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } });
+    const ownerUserId = user.id;
 
     // Create job row under owner for progress tracking
     const { data: job, error: jobErr } = await supabase

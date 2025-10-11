@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_sessions: {
         Row: {
           admin_id: string
@@ -345,33 +384,6 @@ export type Database = {
         }
         Relationships: []
       }
-      email_otps: {
-        Row: {
-          code: string
-          created_at: string | null
-          email: string
-          expires_at: string
-          id: string
-          purpose: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string | null
-          email: string
-          expires_at: string
-          id?: string
-          purpose?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string | null
-          email?: string
-          expires_at?: string
-          id?: string
-          purpose?: string | null
-        }
-        Relationships: []
-      }
       general_speaking_prompts: {
         Row: {
           band_criteria: Json | null
@@ -465,6 +477,45 @@ export type Database = {
           title?: string
           updated_at?: string
           word_limit?: number | null
+        }
+        Relationships: []
+      }
+      jobs_vocab_seed: {
+        Row: {
+          completed: number | null
+          created_at: string | null
+          id: string
+          last_error: string | null
+          last_term: string | null
+          level: number | null
+          status: string | null
+          total: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: number | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_term?: string | null
+          level?: number | null
+          status?: string | null
+          total: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: number | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_term?: string | null
+          level?: number | null
+          status?: string | null
+          total?: number
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -577,7 +628,6 @@ export type Database = {
           full_name: string | null
           id: string
           native_language: string | null
-          role: string | null
           subscription_status: string | null
         }
         Insert: {
@@ -587,7 +637,6 @@ export type Database = {
           full_name?: string | null
           id: string
           native_language?: string | null
-          role?: string | null
           subscription_status?: string | null
         }
         Update: {
@@ -597,7 +646,6 @@ export type Database = {
           full_name?: string | null
           id?: string
           native_language?: string | null
-          role?: string | null
           subscription_status?: string | null
         }
         Relationships: [
@@ -1386,6 +1434,7 @@ export type Database = {
           target_lang: string
           translation: string
           updated_at: string
+          user_id: string | null
           word: string
         }
         Insert: {
@@ -1397,6 +1446,7 @@ export type Database = {
           target_lang: string
           translation: string
           updated_at?: string
+          user_id?: string | null
           word: string
         }
         Update: {
@@ -1408,6 +1458,7 @@ export type Database = {
           target_lang?: string
           translation?: string
           updated_at?: string
+          user_id?: string | null
           word?: string
         }
         Relationships: []
@@ -1537,6 +1588,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_skill_progress: {
         Row: {
           created_at: string
@@ -1636,6 +1711,234 @@ export type Database = {
             columns: ["vocabulary_word_id"]
             isOneToOne: false
             referencedRelation: "vocabulary_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocab_cards: {
+        Row: {
+          conjugation: Json | null
+          context_sentence: string | null
+          created_at: string | null
+          deck_id: string | null
+          examples_json: string[] | null
+          frequency_rank: number | null
+          id: string
+          ipa: string | null
+          is_public: boolean | null
+          language: string | null
+          level: number | null
+          pos: string | null
+          suspended: boolean | null
+          synonyms: string[] | null
+          term: string
+          translation: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conjugation?: Json | null
+          context_sentence?: string | null
+          created_at?: string | null
+          deck_id?: string | null
+          examples_json?: string[] | null
+          frequency_rank?: number | null
+          id?: string
+          ipa?: string | null
+          is_public?: boolean | null
+          language?: string | null
+          level?: number | null
+          pos?: string | null
+          suspended?: boolean | null
+          synonyms?: string[] | null
+          term: string
+          translation: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conjugation?: Json | null
+          context_sentence?: string | null
+          created_at?: string | null
+          deck_id?: string | null
+          examples_json?: string[] | null
+          frequency_rank?: number | null
+          id?: string
+          ipa?: string | null
+          is_public?: boolean | null
+          language?: string | null
+          level?: number | null
+          pos?: string | null
+          suspended?: boolean | null
+          synonyms?: string[] | null
+          term?: string
+          translation?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_cards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocab_decks: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          level: number | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          level?: number | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          level?: number | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vocab_frequency: {
+        Row: {
+          created_at: string | null
+          id: string
+          language: string
+          lemma: string
+          rank: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          language: string
+          lemma: string
+          rank: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          language?: string
+          lemma?: string
+          rank?: number
+        }
+        Relationships: []
+      }
+      vocab_reviews: {
+        Row: {
+          card_id: string
+          created_at: string | null
+          ease_after: number | null
+          ease_before: number | null
+          id: string
+          interval_days_after: number | null
+          interval_days_before: number | null
+          next_due_at_after: string | null
+          next_due_at_before: string | null
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string | null
+          ease_after?: number | null
+          ease_before?: number | null
+          id?: string
+          interval_days_after?: number | null
+          interval_days_before?: number | null
+          next_due_at_after?: string | null
+          next_due_at_before?: string | null
+          rating: number
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string | null
+          ease_after?: number | null
+          ease_before?: number | null
+          id?: string
+          interval_days_after?: number | null
+          interval_days_before?: number | null
+          next_due_at_after?: string | null
+          next_due_at_before?: string | null
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_reviews_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocab_srs_state: {
+        Row: {
+          card_id: string
+          created_at: string | null
+          difficulty: number | null
+          ease: number | null
+          id: string
+          interval_days: number | null
+          last_reviewed_at: string | null
+          next_due_at: string | null
+          stability: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string | null
+          difficulty?: number | null
+          ease?: number | null
+          id?: string
+          interval_days?: number | null
+          last_reviewed_at?: string | null
+          next_due_at?: string | null
+          stability?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string | null
+          difficulty?: number | null
+          ease?: number | null
+          id?: string
+          interval_days?: number | null
+          last_reviewed_at?: string | null
+          next_due_at?: string | null
+          stability?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_srs_state_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_cards"
             referencedColumns: ["id"]
           },
         ]
@@ -1868,6 +2171,17 @@ export type Database = {
           total_bytes: number
         }[]
       }
+      grant_admin_role: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       invalidate_translations_on_content_change: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1894,7 +2208,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "premium" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2021,6 +2335,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "premium", "user"],
+    },
   },
 } as const

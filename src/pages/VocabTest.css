@@ -1,4 +1,11 @@
 /* Vocabulary Card Styles - Inspired by Profile Card */
+.vocab-screen-container {
+  position: relative;
+  min-height: 100vh;
+  cursor: pointer;
+  user-select: none;
+}
+
 .vocab-card-wrapper {
   position: relative;
   width: 520px;
@@ -265,6 +272,10 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .vocab-screen-container {
+    min-height: 80vh;
+  }
+  
   .vocab-card-wrapper {
     width: 420px;
     height: 580px;
@@ -290,6 +301,10 @@
 }
 
 @media (max-width: 480px) {
+  .vocab-screen-container {
+    min-height: 70vh;
+  }
+  
   .vocab-card-wrapper {
     width: 360px;
     height: 520px;

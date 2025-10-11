@@ -153,12 +153,30 @@ export default function VocabTest() {
 
   const currentNotes = current ? notes[current.id] || "" : "";
 
+  // Handle click navigation
+  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const screenWidth = rect.width;
+    const leftZone = screenWidth * 0.4; // Left 40% of screen
+    const rightZone = screenWidth * 0.6; // Right 40% of screen
+    
+    if (clickX < leftZone) {
+      // Click on left side - go to previous
+      prev();
+    } else if (clickX > rightZone) {
+      // Click on right side - go to next
+      next();
+    }
+    // Middle 20% is neutral - no action
+  };
+
   return (
     <StudentLayout title={name} showBackButton>
       <div className="space-y-4">
         <div className="text-xs text-muted-foreground">{total ? `${index + 1} / ${total}` : '0 / 0'}</div>
         {current ? (
-          <div className="flex justify-center">
+          <div className="vocab-screen-container" onClick={handleScreenClick}>
             <div 
               className="vocab-card-wrapper"
               style={{
@@ -201,7 +219,6 @@ export default function VocabTest() {
                     {/* Example sentence */}
                     {sentence && (
                       <div className="vocab-example">
-                        <div className="example-label">Example</div>
                         <div 
                           className="example-text"
                           dangerouslySetInnerHTML={{
@@ -215,7 +232,7 @@ export default function VocabTest() {
               </section>
               
               {/* Navigation buttons outside the card */}
-              <div className="vocab-navigation">
+              <div className="vocab-navigation" onClick={(e) => e.stopPropagation()}>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -246,7 +263,7 @@ export default function VocabTest() {
               </div>
 
               {/* Notes section */}
-              <div className="vocab-notes-section">
+              <div className="vocab-notes-section" onClick={(e) => e.stopPropagation()}>
                 <div className="notes-label">Personal Notes</div>
                 <textarea
                   className="notes-textarea"

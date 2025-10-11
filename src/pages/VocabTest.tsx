@@ -30,23 +30,55 @@ export default function VocabTest() {
       if (!deckId) return;
       // Ensure auth is resolved before RLS-sensitive queries
       await (supabase as any).auth.getSession();
+      const safeDeckId = decodeURIComponent(String(deckId)).trim();
       const [cardsRes, deckNameViaJoin] = await Promise.all([
         (supabase as any)
           .from('vocab_cards')
           .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
-          .eq('deck_id', deckId)
+          .eq('deck_id', safeDeckId)
           .order('created_at', { ascending: true })
           .limit(1000),
         (supabase as any)
           .from('vocab_cards')
           .select('vocab_decks!inner(name)')
-          .eq('deck_id', deckId)
+          .eq('deck_id', safeDeckId)
           .limit(1)
       ]);
       const deckJoinRows = ((deckNameViaJoin as any)?.data as any[]) || [];
       const joinedName = deckJoinRows[0]?.vocab_decks?.name;
       setName(joinedName || 'Deck Test');
-      setRows(((cardsRes as any)?.data as any) || []);
+      let rows: any[] = ((cardsRes as any)?.data as any[]) || [];
+      // Fallback 1: explicitly restrict to public if first query returned none
+      if (rows.length === 0) {
+        const { data: pubRows } = await (supabase as any)
+          .from('vocab_cards')
+          .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
+          .eq('deck_id', safeDeckId)
+          .eq('is_public', true)
+          .order('created_at', { ascending: true })
+          .limit(1000);
+        rows = (pubRows as any) || [];
+      }
+      // Fallback 2: inner join decks and filter by deck id via join
+      if (rows.length === 0) {
+        const { data: viaJoin } = await (supabase as any)
+          .from('vocab_cards')
+          .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json, vocab_decks!inner(id)')
+          .eq('vocab_decks.id', safeDeckId)
+          .order('created_at', { ascending: true })
+          .limit(1000);
+        rows = ((viaJoin as any) || []).map((r: any) => ({
+          id: r.id,
+          term: r.term,
+          translation: r.translation,
+          pos: r.pos,
+          ipa: r.ipa,
+          context_sentence: r.context_sentence,
+          examples_json: r.examples_json,
+          synonyms_json: r.synonyms_json
+        }));
+      }
+      setRows(rows);
       setIndex(0);
     };
     load();

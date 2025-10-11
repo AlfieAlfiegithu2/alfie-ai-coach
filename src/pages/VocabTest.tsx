@@ -36,11 +36,17 @@ export default function VocabTest() {
       await (supabase as any).auth.getSession();
       const safeDeckId = decodeURIComponent(String(deckId)).trim();
       console.log('VocabTest: Safe deckId:', safeDeckId);
+      // Get user ID first
+      const { data: userRes } = await supabase.auth.getUser();
+      const userId = userRes?.user?.id;
+      
+      // First try to get cards with explicit OR condition for user-owned OR public cards
       const [cardsRes, deckNameViaJoin] = await Promise.all([
         (supabase as any)
           .from('vocab_cards')
           .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
           .eq('deck_id', safeDeckId)
+          .or(`user_id.eq.${userId || 'null'},is_public.eq.true`)
           .order('created_at', { ascending: true })
           .limit(1000),
         (supabase as any)

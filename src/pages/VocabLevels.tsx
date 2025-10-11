@@ -17,11 +17,17 @@ export default function VocabLevels() {
 
   const load = async (level: number) => {
     setLoading(true);
+    // Get user ID first
+    const { data: userRes } = await supabase.auth.getUser();
+    const userId = userRes?.user?.id;
+    
     // Single query: join decks with cards filtered by level and aggregate counts
+    // Include both user-owned and public cards
     const { data, error } = await (supabase as any)
       .from('vocab_cards')
       .select('deck_id, vocab_decks!inner(id,name)', { count: 'exact', head: false })
       .eq('level', level)
+      .or(`user_id.eq.${userId || 'null'},is_public.eq.true`)
       .limit(1000);
     if (error) { setDecks([]); setLoading(false); return; }
     const byDeck: Record<string, DeckRow> = {};

@@ -108,6 +108,18 @@ export default function VocabTest() {
     return current.context_sentence || '';
   }, [current]);
 
+  // Function to highlight the vocabulary word in the example sentence
+  const highlightWordInSentence = (text: string, word: string) => {
+    if (!text || !word) return text;
+    
+    // Create a regex that matches the word (case-insensitive) but preserves the original case
+    const regex = new RegExp(`\\b(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'gi');
+    
+    return text.replace(regex, (match) => {
+      return `<mark class="highlighted-word">${match}</mark>`;
+    });
+  };
+
   const next = () => setIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
   const prev = () => setIndex((i) => Math.max(i - 1, 0));
 
@@ -190,7 +202,12 @@ export default function VocabTest() {
                     {sentence && (
                       <div className="vocab-example">
                         <div className="example-label">Example</div>
-                        <div className="example-text">"{sentence}"</div>
+                        <div 
+                          className="example-text"
+                          dangerouslySetInnerHTML={{
+                            __html: `"${highlightWordInSentence(sentence, current?.term || '')}"`
+                          }}
+                        />
                       </div>
                     )}
                   </div>

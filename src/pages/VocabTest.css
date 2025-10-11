@@ -173,6 +173,15 @@
   line-height: 1.5;
 }
 
+.highlighted-word {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1f2937;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-style: normal;
+}
+
 /* Navigation */
 .vocab-navigation {
   display: flex;
@@ -221,10 +230,10 @@
   width: 100%;
   min-height: 80px;
   padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
@@ -234,9 +243,9 @@
 
 .notes-textarea:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
 .notes-textarea::placeholder {

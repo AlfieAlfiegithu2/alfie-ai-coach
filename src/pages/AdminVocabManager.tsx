@@ -64,15 +64,51 @@ const AdminVocabManager: React.FC = () => {
   const seed = async (total: number = 5000) => {
     setSeeding(true);
     try {
-      // Try admin-only function first; if forbidden, fall back to user bulk seeding
-      let data: any, error: any;
-      const adminAttempt = await supabase.functions.invoke('vocab-admin-seed', { body: { total, language: 'en', translateTo: 'all' } });
-      data = adminAttempt.data; error = adminAttempt.error;
-      if (error || adminAttempt?.data?.error || adminAttempt?.error?.status === 403) {
-        const userAttempt = await supabase.functions.invoke('vocab-bulk-seed', { body: { total, language: 'en', translateTo: 'all', asPublic: false } });
-        data = userAttempt.data; error = userAttempt.error;
+      let completed = 0;
+      let batchCount = 0;
+      const maxBatches = Math.ceil(total / 50); // 50 words per batch
+      
+      console.log(`Starting seeding process: ${total} words in ${maxBatches} batches`);
+      
+      while (completed < total && batchCount < maxBatches) {
+        batchCount++;
+        console.log(`Processing batch ${batchCount}/${maxBatches}`);
+        
+        // Try admin-only function first; if forbidden, fall back to user bulk seeding
+        let data: any, error: any;
+        const adminAttempt = await supabase.functions.invoke('vocab-admin-seed', { body: { total, language: 'en', translateTo: 'all' } });
+        data = adminAttempt.data; error = adminAttempt.error;
+        if (error || adminAttempt?.data?.error || adminAttempt?.error?.status === 403) {
+          const userAttempt = await supabase.functions.invoke('vocab-bulk-seed', { body: { total, language: 'en', translateTo: 'all', asPublic: false } });
+          data = userAttempt.data; error = userAttempt.error;
+        }
+        
+        if (error || !data?.success) {
+          alert(`Batch ${batchCount} failed: ${data?.error || error?.message || 'Failed to process batch'}`);
+          break;
+        }
+        
+        completed = data.completed || completed;
+        console.log(`Batch ${batchCount} completed: ${completed}/${total} words`);
+        
+        // If all words are done, break
+        if (data.status === 'done' || completed >= total) {
+          console.log('All words completed!');
+          break;
+        }
+        
+        // Wait 2 seconds between batches to avoid overwhelming the system
+        if (batchCount < maxBatches) {
+          console.log('Waiting 2 seconds before next batch...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
-      if (error || !data?.success) alert(data?.error || error?.message || 'Failed to start');
+      
+      if (completed >= total) {
+        alert(`Seeding completed! Processed ${completed} words with translations for all languages.`);
+      } else {
+        alert(`Seeding stopped after ${batchCount} batches. Processed ${completed}/${total} words.`);
+      }
     } finally {
       setSeeding(false);
     }

@@ -124,17 +124,28 @@ serve(async (req) => {
       }
     }
 
-    let completed = 0;
-    console.log('vocab-admin-seed: starting word generation loop');
+    // Check if there's an existing job to continue from
+    const { data: existingJob } = await supabase
+      .from('jobs_vocab_seed')
+      .select('*')
+      .eq('user_id', ownerUserId)
+      .eq('status', 'running')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     
-    // Process only first batch to avoid timeout, then return
-    const firstLevel = Object.keys(levels)[0];
-    const firstLevelNum = Number(firstLevel);
-    const firstCount = Math.min(Number(levels[firstLevel]), 50); // Limit to 50 words per batch
+    let completed = existingJob?.completed || 0;
+    let currentLevel = existingJob?.level || 1;
+    console.log('vocab-admin-seed: starting word generation loop', { existingJob: !!existingJob, completed, currentLevel });
     
-    console.log('vocab-admin-seed: processing first batch', { level: firstLevelNum, count: firstCount, total });
-    const batch = await fetchBatch(firstLevelNum, firstCount);
-    console.log('vocab-admin-seed: fetched batch', { level: firstLevelNum, batchLength: batch.length, batch });
+    // Process only one batch to avoid timeout, then return
+    const levelCount = levels[currentLevel] || 0;
+    const remainingInLevel = Math.max(0, levelCount - completed);
+    const batchSize = Math.min(remainingInLevel, 50); // Limit to 50 words per batch
+    
+    console.log('vocab-admin-seed: processing batch', { level: currentLevel, batchSize, completed, total });
+    const batch = await fetchBatch(currentLevel, batchSize);
+    console.log('vocab-admin-seed: fetched batch', { level: currentLevel, batchLength: batch.length, batch });
     
     let deckId: string | null = null;
     let deckCount = 0;
@@ -145,7 +156,7 @@ serve(async (req) => {
       deckSeq += 1;
       const { data: deck, error: deckErr } = await supabase
         .from('vocab_decks')
-        .insert({ user_id: ownerUserId, name: `L${firstLevelNum} • Deck ${deckSeq}`, is_public: true })
+        .insert({ user_id: ownerUserId, name: `L${currentLevel} • Deck ${deckSeq}`, is_public: true })
         .select('id')
         .single();
       if (deckErr) throw deckErr;
@@ -155,7 +166,7 @@ serve(async (req) => {
     
     let items = batch;
     if (items.length === 0) {
-      const suggested = await aiSuggestTerms(firstLevelNum, Math.max(10, Math.min(30, firstCount)));
+      const suggested = await aiSuggestTerms(currentLevel, Math.max(10, Math.min(30, batchSize)));
       items = suggested.map((s) => ({ lemma: String(s), rank: null }));
     }
     
@@ -176,7 +187,7 @@ serve(async (req) => {
       try {
         await ensureDeck();
         console.log('vocab-admin-seed: enriching word', { lemma });
-        const card = await enrich(lemma, null, firstLevelNum);
+        const card = await enrich(lemma, null, currentLevel);
         console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
         const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
           user_id: ownerUserId,
@@ -189,7 +200,7 @@ serve(async (req) => {
           synonyms_json: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
           frequency_rank: card.frequencyRank || rank || null,
           language,
-          level: firstLevelNum,
+          level: currentLevel,
           is_public: true
         }).select('id').single();
         if (insErr) throw insErr;
@@ -213,7 +224,7 @@ serve(async (req) => {
         completed += 1;
         console.log('vocab-admin-seed: word completed', { lemma, completed, total });
         if (completed % 10 === 0) {
-          await supabase.from('jobs_vocab_seed').update({ completed, level: firstLevelNum, updated_at: new Date().toISOString() }).eq('id', job.id);
+          await supabase.from('jobs_vocab_seed').update({ completed, level: currentLevel, updated_at: new Date().toISOString() }).eq('id', job.id);
         }
       } catch (e) {
         console.log('vocab-admin-seed: word failed', { lemma, error: String((e as any)?.message || e) });

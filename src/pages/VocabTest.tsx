@@ -29,6 +29,8 @@ export default function VocabTest() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(null);
   const [pageTurnDirection, setPageTurnDirection] = useState<'next' | 'prev' | null>(null);
+  const [showFinalTest, setShowFinalTest] = useState(false);
+  const [finalTestResults, setFinalTestResults] = useState<{[key: string]: boolean}>({});
   const total = rows.length;
   const current = rows[index] || null;
 
@@ -130,6 +132,9 @@ export default function VocabTest() {
       setPageTurnDirection('next');
       setTimeout(() => setPageTurnDirection(null), 600);
       setIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
+    } else if (index === total - 1) {
+      // At the last card, show final test
+      setShowFinalTest(true);
     }
   };
   
@@ -285,7 +290,61 @@ export default function VocabTest() {
           <Link to={`/vocabulary`}>← Back</Link>
         </Button>
         
-        {current ? (
+        {showFinalTest ? (
+          <div className="vocab-screen-container">
+            <div className="final-test-container">
+              <Card className="final-test-card">
+                <CardContent className="p-8">
+                  <h2 className="text-2xl font-bold mb-6 text-center">Final Test</h2>
+                  <p className="text-sm text-muted-foreground mb-6 text-center">
+                    Test yourself on all {total} words!
+                  </p>
+                  
+                  <div className="space-y-4">
+                    {rows.map((card, idx) => (
+                      <div key={card.id} className="final-test-item">
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium">{idx + 1}. {card.term}</p>
+                            <p className="text-sm text-muted-foreground">{card.translation}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant={finalTestResults[card.id] === true ? "default" : "outline"}
+                              onClick={() => setFinalTestResults({...finalTestResults, [card.id]: true})}
+                            >
+                              ✓
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={finalTestResults[card.id] === false ? "destructive" : "outline"}
+                              onClick={() => setFinalTestResults({...finalTestResults, [card.id]: false})}
+                            >
+                              ✗
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-6 flex gap-4">
+                    <Button variant="outline" onClick={() => setShowFinalTest(false)}>
+                      Back to Cards
+                    </Button>
+                    <Button onClick={() => {
+                      const correct = Object.values(finalTestResults).filter(r => r === true).length;
+                      alert(`You got ${correct} out of ${total} correct!`);
+                    }}>
+                      See Results
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : current ? (
           <div className="vocab-screen-container" onClick={handleScreenClick}>
             {/* Progress indicator on top of card */}
             <div className="vocab-progress">
@@ -386,9 +445,9 @@ export default function VocabTest() {
                           ))}
                         </div>
                         
-                        {quizResult && (
+                        {quizResult && quizResult === 'incorrect' && (
                           <div className={`quiz-feedback ${quizResult}`}>
-                            {quizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
+                            ✗ Incorrect
                           </div>
                         )}
                       </div>

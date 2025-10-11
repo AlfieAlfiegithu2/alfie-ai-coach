@@ -384,9 +384,14 @@
   backdrop-filter: blur(8px);
 }
 
-.quiz-option:hover {
+.quiz-option:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
+.quiz-option:disabled {
+  cursor: default;
 }
 
 .quiz-option.selected {
@@ -423,6 +428,26 @@
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Final Test Styles */
+.final-test-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.final-test-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+.final-test-item {
+  transition: transform 0.2s ease;
+}
+
+.final-test-item:hover {
+  transform: translateX(4px);
 }
 
 /* Responsive adjustments */

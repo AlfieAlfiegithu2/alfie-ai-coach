@@ -303,56 +303,62 @@ export default function VocabTest() {
                   '--inner-gradient': 'linear-gradient(145deg, hsla(220,10%,15%,0.6) 0%, hsla(210,15%,20%,0.4) 100%)'
                 }}
               >
-                <section className="vocab-card">
-                  <div className="vocab-inside">
-                    {/* Shine and glare effects */}
-                    <div className="vocab-shine" />
-                    <div className="vocab-glare" />
-                    
-                    {!isFlipped ? (
-                      // Front of card - word information
-                      <>
-                        {/* Image section - placeholder for word-related image */}
-                        <div className="vocab-image-content">
-                          <div className="word-image-placeholder">
-                            <div className="text-6xl font-bold text-white/80 select-none">
-                              {current.term?.slice(0,1)?.toUpperCase() || 'A'}
-                            </div>
+                <div className="vocab-card-inner">
+                  {/* Front face - word information */}
+                  <section className="vocab-card front">
+                    <div className="vocab-inside">
+                      {/* Shine and glare effects */}
+                      <div className="vocab-shine" />
+                      <div className="vocab-glare" />
+                      
+                      {/* Image section - placeholder for word-related image */}
+                      <div className="vocab-image-content">
+                        <div className="word-image-placeholder">
+                          <div className="text-6xl font-bold text-white/80 select-none">
+                            {current.term?.slice(0,1)?.toUpperCase() || 'A'}
                           </div>
+                        </div>
+                      </div>
+                      
+                      {/* Main content */}
+                      <div className="vocab-content">
+                        <div className="vocab-details">
+                          <h3 className="vocab-term">{current.term}</h3>
+                          <p className="vocab-pos">{current.pos || 'word'}</p>
+                          {current.ipa && (
+                            <p className="vocab-ipa">/{current.ipa}/</p>
+                          )}
                         </div>
                         
-                        {/* Main content */}
-                        <div className="vocab-content">
-                          <div className="vocab-details">
-                            <h3 className="vocab-term">{current.term}</h3>
-                            <p className="vocab-pos">{current.pos || 'word'}</p>
-                            {current.ipa && (
-                              <p className="vocab-ipa">/{current.ipa}/</p>
-                            )}
+                        {/* Translation */}
+                        {current.translation && (
+                          <div className="vocab-translation">
+                            <div className="translation-text">{current.translation}</div>
                           </div>
-                          
-                          {/* Translation */}
-                          {current.translation && (
-                            <div className="vocab-translation">
-                              <div className="translation-text">{current.translation}</div>
-                            </div>
-                          )}
-                          
-                          {/* Example sentence */}
-                          {sentence && (
-                            <div className="vocab-example">
-                              <div 
-                                className="example-text"
-                                dangerouslySetInnerHTML={{
-                                  __html: highlightWordInSentence(sentence, current?.term || '')
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      // Back of card - quiz
+                        )}
+                        
+                        {/* Example sentence */}
+                        {sentence && (
+                          <div className="vocab-example">
+                            <div 
+                              className="example-text"
+                              dangerouslySetInnerHTML={{
+                                __html: highlightWordInSentence(sentence, current?.term || '')
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Back face - quiz */}
+                  <section className="vocab-card back">
+                    <div className="vocab-inside">
+                      {/* Shine and glare effects */}
+                      <div className="vocab-shine" />
+                      <div className="vocab-glare" />
+                      
                       <div className="vocab-quiz">
                         <div className="quiz-header">
                           <h3 className="quiz-question">What is the translation of:</h3>
@@ -386,9 +392,9 @@ export default function VocabTest() {
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </section>
+                    </div>
+                  </section>
+                </div>
               </div>
 
               {/* Notes section - outside the flip wrapper */}

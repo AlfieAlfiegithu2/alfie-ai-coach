@@ -14,7 +14,6 @@ type Row = {
   ipa: string | null;
   context_sentence: string | null;
   examples_json: string[] | null;
-  synonyms_json: string[] | null;
 };
 
 export default function VocabTest() {
@@ -44,7 +43,7 @@ export default function VocabTest() {
       const [cardsRes, deckNameViaJoin] = await Promise.all([
         (supabase as any)
           .from('vocab_cards')
-          .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
+          .select('id, term, translation, pos, ipa, context_sentence, examples_json')
           .eq('deck_id', safeDeckId)
           .or(`user_id.eq.${userId || 'null'},is_public.eq.true`)
           .order('created_at', { ascending: true })
@@ -66,7 +65,7 @@ export default function VocabTest() {
       if (rows.length === 0) {
         const { data: pubRows } = await (supabase as any)
           .from('vocab_cards')
-          .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
+          .select('id, term, translation, pos, ipa, context_sentence, examples_json')
           .eq('deck_id', safeDeckId)
           .eq('is_public', true)
           .order('created_at', { ascending: true })
@@ -78,7 +77,7 @@ export default function VocabTest() {
       if (rows.length === 0) {
         const { data: viaJoin } = await (supabase as any)
           .from('vocab_cards')
-          .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json, vocab_decks!inner(id)')
+          .select('id, term, translation, pos, ipa, context_sentence, examples_json, vocab_decks!inner(id)')
           .eq('vocab_decks.id', safeDeckId)
           .order('created_at', { ascending: true })
           .limit(1000);
@@ -89,8 +88,7 @@ export default function VocabTest() {
           pos: r.pos,
           ipa: r.ipa,
           context_sentence: r.context_sentence,
-          examples_json: r.examples_json,
-          synonyms_json: r.synonyms_json
+          examples_json: r.examples_json
         }));
         console.log('VocabTest: Join fallback rows count:', rows.length);
       }
@@ -130,14 +128,6 @@ export default function VocabTest() {
                 {current.ipa && <div className="text-xs text-muted-foreground">/{current.ipa}/</div>}
                 {current.translation && (
                   <div className="text-sm"><span className="font-medium">Translation:</span> {current.translation}</div>
-                )}
-                {Array.isArray(current.synonyms_json) && current.synonyms_json.length > 0 && (
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-xs text-muted-foreground">Synonyms:</span>
-                    {current.synonyms_json.slice(0,6).map((s, i) => (
-                      <Badge key={i} variant="secondary">{s}</Badge>
-                    ))}
-                  </div>
                 )}
                 {sentence && (
                   <div className="text-sm text-muted-foreground italic">“{sentence}”</div>

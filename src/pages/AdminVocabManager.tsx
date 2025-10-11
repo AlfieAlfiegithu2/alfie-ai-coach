@@ -172,6 +172,15 @@ const AdminVocabManager: React.FC = () => {
             <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(8000)} disabled={seeding}>
               {seeding ? 'Starting…' : 'Seed 8,000 EN→ALL LANGS'}
             </button>
+            <button className="border rounded px-3 py-2" onClick={async()=>{
+              try {
+                // English-only fast mode (no translations), ideal for overnight generation
+                const { data, error } = await (supabase as any).functions.invoke('vocab-admin-seed', { body: { total: 8000, language: 'en', translateTo: 'all', enOnly: true } });
+                if (error || !data?.success) alert(data?.error || error?.message || 'Failed to start EN-only job');
+              } catch (e:any) { alert(e?.message || 'Failed'); }
+            }} disabled={seeding}>
+              {seeding ? 'Starting…' : 'Seed 8,000 EN only (fast)'}
+            </button>
             <button className="border rounded px-3 py-2" onClick={()=>seed(20)} disabled={seeding}>
               {seeding ? 'Starting…' : 'Seed 20 (test)'}
             </button>

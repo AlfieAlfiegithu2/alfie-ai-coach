@@ -28,9 +28,10 @@ serve(async (req) => {
     console.log('vocab-admin-seed: request body', { body });
     const total = Math.min(Number(body?.total || 5000), 20000);
     const translateTo = String(body?.translateTo || 'all');
+    const enOnly = Boolean(body?.enOnly || false);
     const language = 'en';
     const levels = body?.levels || { 1: 1800, 2: 1700, 3: 1100, 4: 300, 5: 100 }; // sums to 5000
-    console.log('vocab-admin-seed: starting with params', { total, translateTo, language });
+    console.log('vocab-admin-seed: starting with params', { total, translateTo, language, enOnly });
     // Enforce admin-only
     const { data: userRes } = await supabase.auth.getUser();
     const user = userRes?.user;
@@ -75,15 +76,24 @@ serve(async (req) => {
     }
 
     async function aiSuggestTerms(level: number, count: number) {
-      const prompts = {
-        1: ['common basic words', 'essential everyday vocabulary', 'beginner level words'],
-        2: ['intermediate vocabulary', 'frequently used words', 'common expressions'],
-        3: ['advanced vocabulary', 'sophisticated words', 'complex terms'],
-        4: ['academic vocabulary', 'formal language', 'specialized terms'],
-        5: ['expert level vocabulary', 'rare words', 'technical terminology']
-      };
-      const prompt = prompts[level]?.[Math.floor(Math.random() * prompts[level].length)] || 'common words';
-      return Array.from({ length: count }, (_, i) => `word${i + 1}`);
+      // Use DeepSeek to propose real English headwords when frequency data is missing
+      try {
+        const prompt = `Give a JSON array of ${count} distinct, common English headwords suitable for CEFR level ${level}. Strict JSON array like ["run","make",...]. No numbering, no extra text.`;
+        const resp = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${Deno.env.get('DEEPSEEK_API_KEY')}`,'Content-Type':'application/json' },
+          body: JSON.stringify({ model: 'deepseek-chat', messages: [ { role: 'user', content: prompt } ], temperature: 0 })
+        });
+        if (!resp.ok) throw new Error('deepseek failure');
+        const data = await resp.json();
+        let content = String(data?.choices?.[0]?.message?.content || '[]').trim();
+        if (content.startsWith('```')) content = content.replace(/^```json?\s*/,'').replace(/\s*```$/,'');
+        const arr = JSON.parse(content);
+        return Array.isArray(arr) ? arr.map((s: unknown) => ({ lemma: String(s), rank: null })) : [];
+      } catch (_) {
+        // Final fallback to placeholders to keep pipeline running
+        return Array.from({ length: count }, (_, i) => ({ lemma: `word${i + 1}`, rank: null }));
+      }
     }
 
     async function enrich(term: string, context: string | null, level: number) {
@@ -198,7 +208,9 @@ serve(async (req) => {
     let items = batch;
     if (items.length === 0) {
       const suggested = await aiSuggestTerms(currentLevel, Math.max(10, Math.min(30, batchSize)));
-      items = suggested.map((s) => ({ lemma: String(s), rank: null }));
+      items = Array.isArray(suggested)
+        ? suggested.map((s: any) => (typeof s === 'string' ? { lemma: s, rank: null } : { lemma: String(s.lemma), rank: s.rank ?? null }))
+        : [];
     }
     
     for (const { lemma, rank } of items) {
@@ -217,19 +229,31 @@ serve(async (req) => {
       }
       try {
         await ensureDeck();
-        console.log('vocab-admin-seed: enriching word', { lemma });
-        const card = await enrich(lemma, null, currentLevel);
-        console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
+        let cardData: any = { translation: null, pos: null, ipa: null, examples: [], synonyms: [], frequencyRank: rank };
+        if (!enOnly) {
+          console.log('vocab-admin-seed: enriching word', { lemma });
+          const card = await enrich(lemma, null, currentLevel);
+          console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
+          cardData = {
+            translation: card.translation,
+            pos: card.pos || null,
+            ipa: card.ipa || null,
+            examples: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
+            synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
+            frequencyRank: card.frequencyRank || rank || null,
+          };
+        }
+
         const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
           user_id: ownerUserId,
           deck_id: deckId,
           term: lemma,
-          translation: card.translation,
-          pos: card.pos || null,
-          ipa: card.ipa || null,
-          examples_json: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
-          synonyms_json: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
-          frequency_rank: card.frequencyRank || rank || null,
+          translation: cardData.translation,
+          pos: cardData.pos,
+          ipa: cardData.ipa,
+          examples_json: cardData.examples,
+          synonyms_json: cardData.synonyms,
+          frequency_rank: cardData.frequencyRank || rank || null,
           language,
           level: currentLevel,
           is_public: true
@@ -239,7 +263,7 @@ serve(async (req) => {
 
         // Persist examples into vocab_examples (English)
         try {
-          const examples = Array.isArray(card.examples) ? card.examples.slice(0,2) : [];
+          const examples = enOnly ? [] : (Array.isArray(cardData.examples) ? cardData.examples.slice(0,2) : []);
           if (examples.length && cardId) {
             await supabase.from('vocab_examples').insert(examples.map((s: string) => ({ user_id: ownerUserId, card_id: cardId, lang: 'en', sentence: s, cefr: 'B1', quality: 1 })));
           }
@@ -247,7 +271,7 @@ serve(async (req) => {
 
         // Persist translations into vocab_translations for ALL supported languages (non-blocking)
         try {
-          if (cardId) {
+          if (cardId && !enOnly) {
             console.log(`vocab-admin-seed: starting translations for ${lemma}`);
             await translateAllLanguages(cardId, lemma);
             console.log(`vocab-admin-seed: completed translations for ${lemma}`);

@@ -20,6 +20,13 @@
   pointer-events: auto;
 }
 
+.vocab-card-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
 .vocab-card-wrapper {
   position: relative;
   width: 520px;
@@ -34,6 +41,11 @@
 }
 
 .vocab-card-wrapper.flipped {
+  transform: rotateX(180deg);
+}
+
+/* Ensure content inside is always readable */
+.vocab-card-wrapper.flipped .vocab-card {
   transform: rotateX(180deg);
 }
 
@@ -215,48 +227,10 @@
   font-style: normal;
 }
 
-/* Navigation */
-.vocab-navigation {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 30px;
-  padding: 0 24px 24px;
-}
-
-.nav-center {
-  display: flex;
-  gap: 8px;
-}
-
-.nav-btn {
-  font-size: 13px !important;
-  padding: 8px 16px !important;
-  border-radius: 10px !important;
-  font-weight: 500 !important;
-}
-
-.nav-btn-primary {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
-  border: none !important;
-  color: white !important;
-}
-
-.nav-btn-primary:hover {
-  background: linear-gradient(135deg, #5b6470 0%, #3f4852 100%) !important;
-}
-
 /* Notes section */
 .vocab-notes-section {
-  margin-top: 24px;
-  padding: 0 16px;
-}
-
-.notes-label {
-  font-size: 14px;
-  color: #1f2937;
-  margin-bottom: 8px;
-  font-weight: 500;
+  width: 520px;
+  padding: 0;
 }
 
 .notes-textarea {
@@ -401,8 +375,12 @@
     left: 15px;
   }
   
-  .vocab-card-wrapper {
+  .vocab-card-wrapper,
+  .vocab-notes-section {
     width: 420px;
+  }
+  
+  .vocab-card-wrapper {
     height: 580px;
   }
   
@@ -437,8 +415,12 @@
     left: 10px;
   }
   
-  .vocab-card-wrapper {
+  .vocab-card-wrapper,
+  .vocab-notes-section {
     width: 360px;
+  }
+  
+  .vocab-card-wrapper {
     height: 520px;
   }
   

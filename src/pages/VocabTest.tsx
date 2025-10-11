@@ -275,127 +275,105 @@ export default function VocabTest() {
               </div>
             </div>
             
-            <div 
-              className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
-              onClick={handleCardClick}
-              style={{
-                '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(220,15%,70%,0.1) 4%, hsla(220,10%,60%,0.05) 10%, hsla(220,5%,50%,0.02) 50%, hsla(220,0%,40%,0) 100%), radial-gradient(35% 52% at 55% 20%, hsla(210,20%,60%,0.1) 0%, hsla(210,15%,50%,0) 100%), radial-gradient(100% 100% at 50% 50%, hsla(200,25%,55%,0.05) 1%, hsla(200,20%,45%,0) 76%), conic-gradient(from 124deg at 50% 50%, hsla(215,20%,65%,0.1) 0%, hsla(215,15%,55%,0.08) 40%, hsla(215,15%,55%,0.08) 60%, hsla(215,20%,65%,0.1) 100%)',
-                '--inner-gradient': 'linear-gradient(145deg, hsla(220,10%,15%,0.6) 0%, hsla(210,15%,20%,0.4) 100%)'
-              }}
-            >
-              <section className="vocab-card">
-                <div className="vocab-inside">
-                  {/* Shine and glare effects */}
-                  <div className="vocab-shine" />
-                  <div className="vocab-glare" />
-                  
-                  {!isFlipped ? (
-                    // Front of card - word information
-                    <>
-                      {/* Image section - placeholder for word-related image */}
-                      <div className="vocab-image-content">
-                        <div className="word-image-placeholder">
-                          <div className="text-6xl font-bold text-white/80 select-none">
-                            {current.term?.slice(0,1)?.toUpperCase() || 'A'}
+            <div className="vocab-card-container">
+              <div 
+                className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
+                onClick={handleCardClick}
+                style={{
+                  '--behind-gradient': 'radial-gradient(farthest-side circle at 50% 50%, hsla(220,15%,70%,0.1) 4%, hsla(220,10%,60%,0.05) 10%, hsla(220,5%,50%,0.02) 50%, hsla(220,0%,40%,0) 100%), radial-gradient(35% 52% at 55% 20%, hsla(210,20%,60%,0.1) 0%, hsla(210,15%,50%,0) 100%), radial-gradient(100% 100% at 50% 50%, hsla(200,25%,55%,0.05) 1%, hsla(200,20%,45%,0) 76%), conic-gradient(from 124deg at 50% 50%, hsla(215,20%,65%,0.1) 0%, hsla(215,15%,55%,0.08) 40%, hsla(215,15%,55%,0.08) 60%, hsla(215,20%,65%,0.1) 100%)',
+                  '--inner-gradient': 'linear-gradient(145deg, hsla(220,10%,15%,0.6) 0%, hsla(210,15%,20%,0.4) 100%)'
+                }}
+              >
+                <section className="vocab-card">
+                  <div className="vocab-inside">
+                    {/* Shine and glare effects */}
+                    <div className="vocab-shine" />
+                    <div className="vocab-glare" />
+                    
+                    {!isFlipped ? (
+                      // Front of card - word information
+                      <>
+                        {/* Image section - placeholder for word-related image */}
+                        <div className="vocab-image-content">
+                          <div className="word-image-placeholder">
+                            <div className="text-6xl font-bold text-white/80 select-none">
+                              {current.term?.slice(0,1)?.toUpperCase() || 'A'}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      {/* Main content */}
-                      <div className="vocab-content">
-                        <div className="vocab-details">
-                          <h3 className="vocab-term">{current.term}</h3>
-                          <p className="vocab-pos">{current.pos || 'word'}</p>
-                          {current.ipa && (
-                            <p className="vocab-ipa">/{current.ipa}/</p>
+                        
+                        {/* Main content */}
+                        <div className="vocab-content">
+                          <div className="vocab-details">
+                            <h3 className="vocab-term">{current.term}</h3>
+                            <p className="vocab-pos">{current.pos || 'word'}</p>
+                            {current.ipa && (
+                              <p className="vocab-ipa">/{current.ipa}/</p>
+                            )}
+                          </div>
+                          
+                          {/* Translation */}
+                          {current.translation && (
+                            <div className="vocab-translation">
+                              <div className="translation-text">{current.translation}</div>
+                            </div>
+                          )}
+                          
+                          {/* Example sentence */}
+                          {sentence && (
+                            <div className="vocab-example">
+                              <div 
+                                className="example-text"
+                                dangerouslySetInnerHTML={{
+                                  __html: highlightWordInSentence(sentence, current?.term || '')
+                                }}
+                              />
+                            </div>
                           )}
                         </div>
-                        
-                        {/* Translation */}
-                        {current.translation && (
-                          <div className="vocab-translation">
-                            <div className="translation-text">{current.translation}</div>
-                          </div>
-                        )}
-                        
-                        {/* Example sentence */}
-                        {sentence && (
-                          <div className="vocab-example">
-                            <div 
-                              className="example-text"
-                              dangerouslySetInnerHTML={{
-                                __html: highlightWordInSentence(sentence, current?.term || '')
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    // Back of card - quiz
-                    <div className="vocab-quiz">
-                      <div className="quiz-header">
-                        <h3 className="quiz-question">What is the translation of:</h3>
-                        <div className="quiz-word">{current.term}</div>
-                      </div>
-                      
-                      <div className="quiz-options">
-                        {quizOptions.map((option, idx) => (
-                          <button
-                            key={idx}
-                            className={`quiz-option ${
-                              selectedAnswer === option 
-                                ? quizResult === 'correct' 
-                                  ? 'correct' 
-                                  : quizResult === 'incorrect' 
-                                    ? 'incorrect' 
-                                    : 'selected'
-                                : ''
-                            }`}
-                            onClick={() => !selectedAnswer && handleAnswerSelect(option)}
-                            disabled={!!selectedAnswer}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                      
-                      {quizResult && (
-                        <div className={`quiz-feedback ${quizResult}`}>
-                          {quizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
+                      </>
+                    ) : (
+                      // Back of card - quiz
+                      <div className="vocab-quiz">
+                        <div className="quiz-header">
+                          <h3 className="quiz-question">What is the translation of:</h3>
+                          <div className="quiz-word">{current.term}</div>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </section>
-              
-              {/* Navigation buttons outside the card */}
-              <div className="vocab-navigation" onClick={(e) => e.stopPropagation()}>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={prev} 
-                  disabled={index === 0}
-                  className="nav-btn"
-                >
-                  Previous
-                </Button>
-                <div className="nav-center">
-                  <Button 
-                    onClick={next} 
-                    disabled={index + 1 >= total}
-                    size="sm"
-                    className="nav-btn nav-btn-primary"
-                  >
-                    Next
-                  </Button>
-                </div>
+                        
+                        <div className="quiz-options">
+                          {quizOptions.map((option, idx) => (
+                            <button
+                              key={idx}
+                              className={`quiz-option ${
+                                selectedAnswer === option 
+                                  ? quizResult === 'correct' 
+                                    ? 'correct' 
+                                    : quizResult === 'incorrect' 
+                                      ? 'incorrect' 
+                                      : 'selected'
+                                  : ''
+                              }`}
+                              onClick={() => !selectedAnswer && handleAnswerSelect(option)}
+                              disabled={!!selectedAnswer}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {quizResult && (
+                          <div className={`quiz-feedback ${quizResult}`}>
+                            {quizResult === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
               </div>
 
-              {/* Notes section */}
+              {/* Notes section - outside the flip wrapper */}
               <div className="vocab-notes-section" onClick={(e) => e.stopPropagation()}>
-                <div className="notes-label">Personal Notes</div>
                 <textarea
                   className="notes-textarea"
                   placeholder="Write your own notes, mnemonics, or examples for this word..."

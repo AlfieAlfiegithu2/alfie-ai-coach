@@ -221,7 +221,7 @@
 
 .notes-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #1f2937;
   margin-bottom: 8px;
   font-weight: 500;
 }
@@ -230,10 +230,10 @@
   width: 100%;
   min-height: 80px;
   padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(251, 191, 36, 0.4);
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  color: #ffffff;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #1f2937;
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
@@ -243,18 +243,18 @@
 
 .notes-textarea:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+  border-color: rgba(251, 191, 36, 0.6);
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3);
 }
 
 .notes-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(31, 41, 55, 0.6);
 }
 
 .notes-save-indicator {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(31, 41, 55, 0.6);
   margin-top: 4px;
   text-align: right;
 }

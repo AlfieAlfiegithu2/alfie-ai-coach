@@ -39,38 +39,38 @@
 
 @keyframes pageTurnNext {
   0% {
-    transform: translateX(0) rotateY(0deg);
+    transform: translateX(0);
     opacity: 1;
   }
   50% {
-    transform: translateX(-100px) rotateY(-15deg);
-    opacity: 0.5;
+    transform: translateX(-20px);
+    opacity: 0.7;
   }
   51% {
-    transform: translateX(100px) rotateY(15deg);
-    opacity: 0.5;
+    transform: translateX(20px);
+    opacity: 0.7;
   }
   100% {
-    transform: translateX(0) rotateY(0deg);
+    transform: translateX(0);
     opacity: 1;
   }
 }
 
 @keyframes pageTurnPrev {
   0% {
-    transform: translateX(0) rotateY(0deg);
+    transform: translateX(0);
     opacity: 1;
   }
   50% {
-    transform: translateX(100px) rotateY(15deg);
-    opacity: 0.5;
+    transform: translateX(20px);
+    opacity: 0.7;
   }
   51% {
-    transform: translateX(-100px) rotateY(-15deg);
-    opacity: 0.5;
+    transform: translateX(-20px);
+    opacity: 0.7;
   }
   100% {
-    transform: translateX(0) rotateY(0deg);
+    transform: translateX(0);
     opacity: 1;
   }
 }

@@ -401,7 +401,7 @@ export default function VocabTest() {
               <div className="vocab-notes-section" onClick={(e) => e.stopPropagation()}>
                 <textarea
                   className="notes-textarea"
-                  placeholder="Write your own notes, mnemonics, or examples for this word..."
+                  placeholder=""
                   value={currentNotes}
                   onChange={(e) => current && handleNotesChange(current.id, e.target.value)}
                   rows={3}

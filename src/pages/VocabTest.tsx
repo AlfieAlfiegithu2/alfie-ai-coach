@@ -28,15 +28,24 @@ export default function VocabTest() {
   useEffect(() => {
     const load = async () => {
       if (!deckId) return;
-      const [deckRes, cardsRes] = await Promise.all([
-        (supabase as any).from('vocab_decks').select('name').eq('id', deckId).maybeSingle(),
-        (supabase as any).from('vocab_cards')
+      // Ensure auth is resolved before RLS-sensitive queries
+      await (supabase as any).auth.getSession();
+      const [cardsRes, deckNameViaJoin] = await Promise.all([
+        (supabase as any)
+          .from('vocab_cards')
           .select('id, term, translation, pos, ipa, context_sentence, examples_json, synonyms_json')
           .eq('deck_id', deckId)
           .order('created_at', { ascending: true })
-          .limit(50)
+          .limit(1000),
+        (supabase as any)
+          .from('vocab_cards')
+          .select('vocab_decks!inner(name)')
+          .eq('deck_id', deckId)
+          .limit(1)
       ]);
-      setName((deckRes as any)?.data?.name || 'Deck Test');
+      const deckJoinRows = ((deckNameViaJoin as any)?.data as any[]) || [];
+      const joinedName = deckJoinRows[0]?.vocab_decks?.name;
+      setName(joinedName || 'Deck Test');
       setRows(((cardsRes as any)?.data as any) || []);
       setIndex(0);
     };
@@ -96,7 +105,11 @@ export default function VocabTest() {
             </CardContent>
           </Card>
         ) : (
-          <Card><CardContent className="p-6 text-sm text-muted-foreground">Loading…</CardContent></Card>
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Loading… {total === 0 ? 'No cards found for this deck.' : ''}
+            </CardContent>
+          </Card>
         )}
       </div>
     </StudentLayout>

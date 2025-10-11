@@ -207,6 +207,11 @@ export default function VocabTest() {
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
+    // Don't flip if clicking on quiz buttons
+    if ((e.target as HTMLElement).closest('.quiz-option')) {
+      return;
+    }
+    
     e.stopPropagation(); // Prevent screen click handler from firing
     setIsFlipped(!isFlipped);
   };

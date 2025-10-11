@@ -41,12 +41,12 @@
 }
 
 .vocab-card-wrapper.flipped {
-  transform: rotateX(180deg);
+  transform: rotateY(180deg);
 }
 
 /* Ensure content inside is always readable */
 .vocab-card-wrapper.flipped .vocab-card {
-  transform: rotateX(180deg);
+  transform: rotateY(180deg);
 }
 
 .vocab-progress {

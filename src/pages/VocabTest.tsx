@@ -28,6 +28,7 @@ export default function VocabTest() {
   const [quizOptions, setQuizOptions] = useState<string[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(null);
+  const [pageTurnDirection, setPageTurnDirection] = useState<'next' | 'prev' | null>(null);
   const total = rows.length;
   const current = rows[index] || null;
 
@@ -124,8 +125,21 @@ export default function VocabTest() {
     });
   };
 
-  const next = () => setIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
-  const prev = () => setIndex((i) => Math.max(i - 1, 0));
+  const next = () => {
+    if (index < total - 1) {
+      setPageTurnDirection('next');
+      setTimeout(() => setPageTurnDirection(null), 600);
+      setIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
+    }
+  };
+  
+  const prev = () => {
+    if (index > 0) {
+      setPageTurnDirection('prev');
+      setTimeout(() => setPageTurnDirection(null), 600);
+      setIndex((i) => Math.max(i - 1, 0));
+    }
+  };
 
   // Load notes from localStorage on component mount
   useEffect(() => {
@@ -280,7 +294,7 @@ export default function VocabTest() {
               </div>
             </div>
             
-            <div className="vocab-card-container">
+            <div className={`vocab-card-container ${pageTurnDirection ? `page-turn-${pageTurnDirection}` : ''}`}>
               <div 
                 className={`vocab-card-wrapper ${isFlipped ? 'flipped' : ''}`}
                 onClick={handleCardClick}

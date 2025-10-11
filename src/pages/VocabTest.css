@@ -25,6 +25,54 @@
   flex-direction: column;
   align-items: center;
   gap: 24px;
+  transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Page turn animations */
+.vocab-card-container.page-turn-next {
+  animation: pageTurnNext 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vocab-card-container.page-turn-prev {
+  animation: pageTurnPrev 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pageTurnNext {
+  0% {
+    transform: translateX(0) rotateY(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-100px) rotateY(-15deg);
+    opacity: 0.5;
+  }
+  51% {
+    transform: translateX(100px) rotateY(15deg);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(0) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pageTurnPrev {
+  0% {
+    transform: translateX(0) rotateY(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(100px) rotateY(15deg);
+    opacity: 0.5;
+  }
+  51% {
+    transform: translateX(-100px) rotateY(-15deg);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(0) rotateY(0deg);
+    opacity: 1;
+  }
 }
 
 .vocab-card-wrapper {
@@ -44,11 +92,6 @@
   transform: rotateY(180deg);
 }
 
-/* Ensure content inside is always readable */
-.vocab-card-wrapper.flipped .vocab-card {
-  transform: rotateY(180deg);
-}
-
 .vocab-progress {
   margin-bottom: 20px;
   text-align: center;
@@ -63,6 +106,12 @@
   overflow: hidden;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease-in-out;
+}
+
+.vocab-card-wrapper.flipped .vocab-card {
+  transform: rotateY(180deg);
 }
 
 .vocab-inside {
@@ -72,6 +121,8 @@
   background: rgba(255, 255, 255, 0.03);
   border-radius: 24px;
   overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Shine and glare effects */

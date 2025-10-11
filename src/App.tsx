@@ -89,7 +89,6 @@ import VocabularyBook from "./pages/VocabularyBook";
 import VocabHome from "./pages/VocabHome";
 import VocabDeck from "./pages/VocabDeck";
 import VocabReview from "./pages/VocabReview";
-import VocabSeed from "./pages/VocabSeed";
 import Signup from "./pages/Signup";
 import VocabularyMapView from "./components/VocabularyMapView";
 import WritingHistory from "./pages/WritingHistory";
@@ -98,7 +97,6 @@ import Pay from "./pages/Pay";
 import ResetPassword from "./pages/ResetPassword";
 import MyWordBook from "./pages/MyWordBook";
 import AdminAnalytics from "./pages/AdminAnalytics";
-import AdminVocabManager from "./pages/AdminVocabManager";
 import OnboardingAssessment from "./pages/OnboardingAssessment";
 import PlanPage from "./pages/Plan";
 
@@ -176,7 +174,6 @@ const App = () => {
             {/* Skills Practice Admin */}
             <Route path="/admin/skills" element={<AdminSkillsPractice />} />
             <Route path="/admin/skills/vocabulary/tests" element={<AdminVocabularyTests />} />
-            <Route path="/admin/vocab" element={<AdminVocabManager />} />
             <Route path="/admin/vocab-book" element={<AdminVocabBook />} />
             <Route path="/admin/skills/vocabulary/tests/:id" element={<AdminVocabularyTestDetail />} />
             {/* aliases for direct access */}
@@ -260,7 +257,6 @@ const App = () => {
             <Route path="/vocabulary/book" element={<VocabularyBook />} />
             <Route path="/vocabulary/deck/:deckId" element={<VocabDeck />} />
             <Route path="/vocabulary/review/:deckId" element={<VocabReview />} />
-            <Route path="/vocabulary/seed" element={<VocabSeed />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />

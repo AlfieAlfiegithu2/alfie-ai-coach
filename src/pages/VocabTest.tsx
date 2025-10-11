@@ -22,6 +22,8 @@ export default function VocabTest() {
   const [name, setName] = useState<string>("Deck Test");
   const [rows, setRows] = useState<Row[]>([]);
   const [index, setIndex] = useState(0);
+  const [notes, setNotes] = useState<{[key: string]: string}>({});
+  const [saveStatus, setSaveStatus] = useState<string>("");
   const total = rows.length;
   const current = rows[index] || null;
 
@@ -109,6 +111,36 @@ export default function VocabTest() {
   const next = () => setIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
   const prev = () => setIndex((i) => Math.max(i - 1, 0));
 
+  // Load notes from localStorage on component mount
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('vocab-notes');
+    if (savedNotes) {
+      try {
+        setNotes(JSON.parse(savedNotes));
+      } catch (error) {
+        console.error('Error loading notes:', error);
+      }
+    }
+  }, []);
+
+  // Save notes to localStorage whenever notes change
+  useEffect(() => {
+    if (Object.keys(notes).length > 0) {
+      localStorage.setItem('vocab-notes', JSON.stringify(notes));
+      setSaveStatus("Saved");
+      setTimeout(() => setSaveStatus(""), 2000);
+    }
+  }, [notes]);
+
+  const handleNotesChange = (cardId: string, value: string) => {
+    setNotes(prev => ({
+      ...prev,
+      [cardId]: value
+    }));
+  };
+
+  const currentNotes = current ? notes[current.id] || "" : "";
+
   return (
     <StudentLayout title={name} showBackButton>
       <div className="space-y-4">
@@ -194,6 +226,23 @@ export default function VocabTest() {
                     Next
                   </Button>
                 </div>
+              </div>
+
+              {/* Notes section */}
+              <div className="vocab-notes-section">
+                <div className="notes-label">Personal Notes</div>
+                <textarea
+                  className="notes-textarea"
+                  placeholder="Write your own notes, mnemonics, or examples for this word..."
+                  value={currentNotes}
+                  onChange={(e) => current && handleNotesChange(current.id, e.target.value)}
+                  rows={3}
+                />
+                {saveStatus && (
+                  <div className={`notes-save-indicator ${saveStatus === "Saved" ? "notes-saved" : ""}`}>
+                    {saveStatus}
+                  </div>
+                )}
               </div>
             </div>
           </div>

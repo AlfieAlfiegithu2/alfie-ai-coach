@@ -1,11 +1,11 @@
 /* Vocabulary Card Styles - Inspired by Profile Card */
 .vocab-card-wrapper {
   position: relative;
-  width: 420px;
-  height: 580px;
+  width: 520px;
+  height: 680px;
   background: var(--behind-gradient);
-  border-radius: 24px;
-  padding: 12px;
+  border-radius: 28px;
+  padding: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
 }
 
@@ -14,7 +14,7 @@
   width: 100%;
   height: 100%;
   background: var(--inner-gradient);
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -25,7 +25,7 @@
   width: 100%;
   height: 100%;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
 }
 
@@ -59,25 +59,25 @@
 /* Image content section */
 .vocab-image-content {
   position: relative;
-  height: 220px;
+  height: 260px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.05) 100%);
-  border-radius: 20px 20px 0 0;
+  border-radius: 24px 24px 0 0;
 }
 
 .word-image-placeholder {
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 15px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -100,8 +100,8 @@
 
 /* Main content */
 .vocab-content {
-  padding: 24px;
-  height: calc(100% - 220px);
+  padding: 28px;
+  height: calc(100% - 260px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -113,22 +113,22 @@
 }
 
 .vocab-term {
-  font-size: 36px;
+  font-size: 42px;
   font-weight: 700;
   color: white;
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .vocab-pos {
-  font-size: 16px;
+  font-size: 18px;
   color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 6px 0;
+  margin: 0 0 8px 0;
   font-weight: 500;
 }
 
 .vocab-ipa {
-  font-size: 14px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.5);
   margin: 0;
   font-family: monospace;
@@ -204,8 +204,83 @@
   background: linear-gradient(135deg, #5b6470 0%, #3f4852 100%) !important;
 }
 
+/* Notes section */
+.vocab-notes-section {
+  margin-top: 24px;
+  padding: 0 16px;
+}
+
+.notes-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.notes-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.notes-textarea:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.notes-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.notes-save-indicator {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.notes-saved {
+  color: rgba(34, 197, 94, 0.8);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .vocab-card-wrapper {
+    width: 420px;
+    height: 580px;
+  }
+  
+  .vocab-image-content {
+    height: 200px;
+  }
+  
+  .word-image-placeholder {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .vocab-term {
+    font-size: 36px;
+  }
+  
+  .vocab-content {
+    padding: 24px;
+    height: calc(100% - 200px);
+  }
+}
+
+@media (max-width: 480px) {
   .vocab-card-wrapper {
     width: 360px;
     height: 520px;
@@ -216,8 +291,8 @@
   }
   
   .word-image-placeholder {
-    width: 120px;
-    height: 120px;
+    width: 110px;
+    height: 110px;
   }
   
   .vocab-term {
@@ -227,30 +302,5 @@
   .vocab-content {
     padding: 20px;
     height: calc(100% - 180px);
-  }
-}
-
-@media (max-width: 480px) {
-  .vocab-card-wrapper {
-    width: 320px;
-    height: 480px;
-  }
-  
-  .vocab-image-content {
-    height: 160px;
-  }
-  
-  .word-image-placeholder {
-    width: 100px;
-    height: 100px;
-  }
-  
-  .vocab-term {
-    font-size: 28px;
-  }
-  
-  .vocab-content {
-    padding: 18px;
-    height: calc(100% - 160px);
   }
 }

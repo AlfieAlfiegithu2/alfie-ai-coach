@@ -241,7 +241,6 @@ serve(async (req) => {
           ipa: card.ipa || null,
           examples: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
           synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
-          conjugation: card.conjugation || null,
           frequencyRank: card.frequencyRank || rank || null,
         };
 
@@ -254,7 +253,6 @@ serve(async (req) => {
           ipa: cardData.ipa,
           examples_json: cardData.examples,
           synonyms_json: cardData.synonyms,
-          conjugation_json: cardData.conjugation,
           frequency_rank: cardData.frequencyRank || rank || null,
           language,
           level: currentLevel,

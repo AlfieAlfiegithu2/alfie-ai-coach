@@ -66,10 +66,10 @@ const AdminVocabManager: React.FC = () => {
     try {
       // Try admin-only function first; if forbidden, fall back to user bulk seeding
       let data: any, error: any;
-      const adminAttempt = await supabase.functions.invoke('vocab-admin-seed', { body: { total, language: 'en', translateTo: 'ko' } });
+      const adminAttempt = await supabase.functions.invoke('vocab-admin-seed', { body: { total, language: 'en', translateTo: 'all' } });
       data = adminAttempt.data; error = adminAttempt.error;
       if (error || adminAttempt?.data?.error || adminAttempt?.error?.status === 403) {
-        const userAttempt = await supabase.functions.invoke('vocab-bulk-seed', { body: { total, language: 'en', translateTo: 'ko', asPublic: false } });
+        const userAttempt = await supabase.functions.invoke('vocab-bulk-seed', { body: { total, language: 'en', translateTo: 'all', asPublic: false } });
         data = userAttempt.data; error = userAttempt.error;
       }
       if (error || !data?.success) alert(data?.error || error?.message || 'Failed to start');

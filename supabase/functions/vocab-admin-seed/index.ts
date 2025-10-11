@@ -9,8 +9,12 @@ const cors = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
+  
+  console.log('vocab-admin-seed: request received', { method: req.method, url: req.url });
+  
   try {
     const authHeader = req.headers.get('Authorization');
+    console.log('vocab-admin-seed: auth header present', { hasAuth: !!authHeader });
     if (!authHeader) throw new Error('Unauthorized');
 
     // Use anon key bound to caller's JWT so RLS and rpc(is_admin) apply to the current user
@@ -21,10 +25,12 @@ serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
+    console.log('vocab-admin-seed: request body', { body });
     const total = Math.min(Number(body?.total || 5000), 20000);
     const translateTo = String(body?.translateTo || 'ko');
     const language = 'en';
     const levels = body?.levels || { 1: 1800, 2: 1700, 3: 1100, 4: 300, 5: 100 }; // sums to 5000
+    console.log('vocab-admin-seed: starting with params', { total, translateTo, language });
     // Enforce admin-only
     const { data: userRes } = await supabase.auth.getUser();
     const user = userRes?.user;

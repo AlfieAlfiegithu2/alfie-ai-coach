@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Deno Edge Function environment
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
@@ -109,57 +111,144 @@ serve(async (req) => {
     }
 
     // Translate a term into all supported site languages and persist into vocab_translations
-    const SUPPORTED_LANGS = ['ar','bn','de','en','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
-    async function translateAllLanguages(cardId: string, term: string) {
-      const langs = SUPPORTED_LANGS.filter((l) => l !== 'en');
-      console.log(`vocab-admin-seed: translating ${term} into ${langs.length} languages`);
-      
-      // Process languages in smaller batches to avoid overwhelming the system
-      const batchSize = 5; // Process 5 languages at a time
-      for (let i = 0; i < langs.length; i += batchSize) {
-        const langBatch = langs.slice(i, i + batchSize);
-        
-        for (const lang of langBatch) {
-          try {
-            const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: lang, includeContext: true })
-            });
-            if (!resp.ok) {
-              console.log(`vocab-admin-seed: translation failed for ${lang}: ${resp.status}`);
-              continue;
-            }
-            const payload = await resp.json();
-            if (!payload?.success) {
-              console.log(`vocab-admin-seed: translation service error for ${lang}: ${payload?.error}`);
-              continue;
-            }
-            const res = payload.result || {};
-            const primary = typeof res.translation === 'string' ? res.translation : (res.translation?.translation || '');
-            const alts = Array.isArray(res.alternatives) ? res.alternatives.map((a: any) => (typeof a === 'string' ? a : (a?.meaning || ''))).filter((s: string) => !!s) : [];
-            const arr = [primary, ...alts].map((s: string) => String(s).trim()).filter(Boolean);
-            if (!arr.length) continue;
-            
-            await supabase.from('vocab_translations').upsert({ 
-              user_id: ownerUserId, 
-              card_id: cardId, 
-              lang, 
-              translations: arr, 
-              provider: 'deepseek', 
-              quality: 1 
-            } as any, { onConflict: 'card_id,lang' } as any);
-            
-            console.log(`vocab-admin-seed: translated ${term} to ${lang}: ${primary}`);
-            // Shorter throttle to speed up processing
-            await new Promise((r) => setTimeout(r, 30));
-          } catch (e) { 
-            console.log(`vocab-admin-seed: translation error for ${lang}:`, e);
-          }
+    const SUPPORTED_LANGS: string[] = ['ar','bn','de','en','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+
+    // Queue translations for background processing to avoid blocking the main seeding process
+    async function queueTranslations(cardIds: string[], terms: string[]) {
+      console.log(`vocab-admin-seed: queuing ${cardIds.length} cards for background translation`);
+
+      // Insert translation jobs into a queue table for background processing
+      const translationJobs: any[] = [];
+      for (let i = 0; i < cardIds.length; i++) {
+        const cardId = cardIds[i];
+        const term = terms[i];
+
+        // Create jobs for all supported languages except English
+        const langs = SUPPORTED_LANGS.filter((l: string) => l !== 'en');
+        for (const lang of langs) {
+          translationJobs.push({
+            user_id: ownerUserId,
+            card_id: cardId,
+            term: term,
+            target_lang: lang,
+            status: 'pending',
+            created_at: new Date().toISOString()
+          });
         }
-        
-        // Brief pause between language batches
-        if (i + batchSize < langs.length) {
+      }
+
+      if (translationJobs.length > 0) {
+        // @ts-ignore - Deno Edge Function database operations
+        const { error: queueError } = await (supabase as any).from('vocab_translation_queue').insert(translationJobs);
+        if (queueError) {
+          console.log(`vocab-admin-seed: failed to queue translations: ${queueError.message}`);
+        } else {
+          console.log(`vocab-admin-seed: queued ${translationJobs.length} translation jobs`);
+        }
+      }
+    }
+
+    // Optimized translation function for individual words (used by background processor)
+    async function translateSingleWord(cardId: string, term: string, targetLang: string) {
+      try {
+        const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: targetLang, includeContext: true })
+        });
+
+        if (!resp.ok) {
+          console.log(`vocab-admin-seed: translation failed for ${targetLang}: ${resp.status}`);
+          return null;
+        }
+
+        const payload = await resp.json();
+        if (!payload?.success) {
+          console.log(`vocab-admin-seed: translation service error for ${targetLang}: ${payload?.error}`);
+          return null;
+        }
+
+        const res = payload.result || {};
+        const primary = typeof res.translation === 'string' ? res.translation : (res.translation?.translation || '');
+        const alts = Array.isArray(res.alternatives) ? res.alternatives.map((a: any) => (typeof a === 'string' ? a : (a?.meaning || ''))).filter((s: string) => !!s) : [];
+        const arr = [primary, ...alts].map((s: string) => String(s).trim()).filter(Boolean);
+
+        if (!arr.length) return null;
+
+        await supabase.from('vocab_translations').upsert({
+          user_id: ownerUserId,
+          card_id: cardId,
+          lang: targetLang,
+          translations: arr,
+          provider: 'deepseek',
+          quality: 1
+        } as any, { onConflict: 'card_id,lang' } as any);
+
+        return { lang: targetLang, translation: primary };
+      } catch (e) {
+        console.log(`vocab-admin-seed: translation error for ${targetLang}:`, e);
+        return null;
+      }
+    }
+
+    // Process translations in background (separate function to avoid blocking)
+    async function processBackgroundTranslations() {
+      // Process translations for current user and system imports
+      // @ts-ignore - Deno Edge Function database operations
+      const { data: pendingJobs } = await (supabase as any)
+        .from('vocab_translation_queue')
+        .select('*')
+        .in('user_id', [ownerUserId, 'system'])
+        .eq('status', 'pending')
+        .limit(20); // Process 20 at a time to avoid overwhelming
+
+      if (!pendingJobs || (pendingJobs as any[]).length === 0) return;
+
+      console.log(`Processing ${(pendingJobs as any[]).length} translation jobs in background`);
+
+      // Group jobs by term for efficient processing
+      const jobsByTerm = new Map<string, any[]>();
+      (pendingJobs as any[]).forEach((job: any) => {
+        if (!jobsByTerm.has(job.term)) {
+          jobsByTerm.set(job.term, []);
+        }
+        jobsByTerm.get(job.term)!.push(job);
+      });
+
+      // Process each term's translations
+      for (const [term, jobs] of jobsByTerm) {
+        const jobsArray = jobs as any[];
+        const cardId = jobsArray[0].card_id; // All jobs for same term have same card_id
+
+        // Process all languages for this term in parallel (up to 3 at a time)
+        const langBatches: any[] = [];
+        for (let i = 0; i < jobsArray.length; i += 3) {
+          langBatches.push(jobsArray.slice(i, i + 3));
+        }
+
+        for (const langBatch of langBatches) {
+          // @ts-ignore - Deno Edge Function database operations
+          const translationPromises: Promise<any>[] = (langBatch as any[]).map((job: any) =>
+            translateSingleWord(cardId, term, job.target_lang)
+              .then((result: any) => ({ jobId: job.id, result }))
+          );
+
+          const results = await Promise.allSettled(translationPromises);
+
+          // Mark completed jobs
+          for (const result of results) {
+            if (result.status === 'fulfilled') {
+              const value = result.value as { jobId: string; result: any };
+              const { jobId } = value;
+              // @ts-ignore - Deno Edge Function database operations
+              await (supabase as any)
+                .from('vocab_translation_queue')
+                .update({ status: 'completed', updated_at: new Date().toISOString() })
+                .eq('id', jobId);
+            }
+          }
+
+          // Small delay between batches
           await new Promise((r) => setTimeout(r, 100));
         }
       }
@@ -183,7 +272,8 @@ serve(async (req) => {
     const levelCount = levels[currentLevel] || 0;
     const remainingInLevel = Math.max(0, levelCount - completed);
     // In EN-only mode, we can process more words since no translations are needed
-    const batchSize = Math.min(remainingInLevel, enOnly ? 20 : 5); // 20 words for EN-only, 5 for full mode
+    // Dramatically increased batch sizes for better performance
+    const batchSize = Math.min(remainingInLevel, enOnly ? 100 : 50); // 100 words for EN-only, 50 for full mode
     
     console.log('vocab-admin-seed: processing batch', { level: currentLevel, batchSize, completed, total });
     const batch = await fetchBatch(currentLevel, batchSize);
@@ -192,6 +282,10 @@ serve(async (req) => {
     let deckId: string | null = null;
     let deckCount = 0;
     let deckSeq = 0;
+
+    // Track completed cards for translation queuing
+    const completedCards: string[] = [];
+    const completedTerms: string[] = [];
     
     async function ensureDeck() {
       if (deckId && deckCount < 20) return;
@@ -214,97 +308,183 @@ serve(async (req) => {
         : [];
     }
     
-    for (const { lemma, rank } of items) {
+    // Process words in parallel batches for better performance
+    const parallelBatchSize = 5; // Process 5 words simultaneously
+    const wordBatches: any[] = [];
+    for (let i = 0; i < items.length; i += parallelBatchSize) {
+      wordBatches.push(items.slice(i, i + parallelBatchSize));
+    }
+
+    for (const wordBatch of wordBatches) {
       if (completed >= total) break;
-      console.log('vocab-admin-seed: processing word', { lemma, rank, completed, total });
-      const { data: exists } = await supabase
-        .from('vocab_cards')
-        .select('id')
-        .eq('term', lemma)
-        .eq('language', language)
-        .eq('is_public', true)
-        .maybeSingle();
-      if (exists) {
-        console.log('vocab-admin-seed: word already exists, skipping', { lemma });
-        continue;
-      }
-      try {
-        await ensureDeck();
-        // Always enrich with IPA, POS, examples, synonyms for quality vocabulary
-        console.log('vocab-admin-seed: enriching word', { lemma, enOnly });
-        const card = await enrich(lemma, null, currentLevel);
-        console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
-        
-        const cardData = {
-          translation: enOnly ? null : card.translation, // Only translate if not EN-only mode
-          pos: card.pos || null,
-          ipa: card.ipa || null,
-          examples: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
-          synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
-          frequencyRank: card.frequencyRank || rank || null,
-        };
 
-        const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
-          user_id: ownerUserId,
-          deck_id: deckId,
-          term: lemma,
-          translation: cardData.translation,
-          pos: cardData.pos,
-          ipa: cardData.ipa,
-          examples_json: cardData.examples,
-          synonyms_json: cardData.synonyms,
-          frequency_rank: cardData.frequencyRank || rank || null,
-          language,
-          level: currentLevel,
-          is_public: true
-        }).select('id').single();
-        if (insErr) throw insErr;
-        const cardId = inserted?.id;
+      console.log(`vocab-admin-seed: processing batch of ${(wordBatch as any[]).length} words in parallel`);
 
-        // Persist examples into vocab_examples (English) - always do this for quality vocabulary
-        try {
-          const examples = Array.isArray(cardData.examples) ? cardData.examples.slice(0,2) : [];
-          if (examples.length && cardId) {
-            await supabase.from('vocab_examples').insert(examples.map((s: string) => ({ user_id: ownerUserId, card_id: cardId, lang: 'en', sentence: s, cefr: 'B1', quality: 1 })));
+      // Process multiple words in parallel
+      const parallelResults = await Promise.allSettled(
+        (wordBatch as any[]).map(async ({ lemma, rank }: any) => {
+          if (completed >= total) return { skipped: true };
+
+          console.log('vocab-admin-seed: processing word', { lemma, rank, completed, total });
+
+          // Check if word already exists
+          const { data: exists } = await supabase
+            .from('vocab_cards')
+            .select('id')
+            .eq('term', lemma)
+            .eq('language', language)
+            .eq('is_public', true)
+            .maybeSingle();
+
+          if (exists) {
+            console.log('vocab-admin-seed: word already exists, skipping', { lemma });
+            return { skipped: true, lemma };
           }
-        } catch (_) {}
 
-        // Persist translations into vocab_translations for ALL supported languages (non-blocking)
-        try {
+          // Ensure we have a deck
+          await ensureDeck();
+
+          // Enrich the word with AI
+          console.log('vocab-admin-seed: enriching word', { lemma, enOnly });
+          const card = await enrich(lemma, null, currentLevel);
+          console.log('vocab-admin-seed: enriched word result', { lemma, card: !!card });
+
+          const cardData = {
+            translation: enOnly ? '' : (typeof card.translation === 'string' ? card.translation : ''),
+            pos: card.pos || null,
+            ipa: card.ipa || null,
+            examples: Array.isArray(card.examples) ? card.examples.slice(0,3) : [],
+            synonyms: Array.isArray(card.synonyms) ? card.synonyms.slice(0,8) : [],
+            frequencyRank: card.frequencyRank || rank || null,
+            contextSentence: Array.isArray(card.examples) && card.examples.length > 0 ? card.examples[0] : null,
+          };
+
+          // Insert the card
+          const { data: inserted, error: insErr } = await supabase.from('vocab_cards').insert({
+            user_id: ownerUserId,
+            deck_id: deckId,
+            term: lemma,
+            translation: cardData.translation,
+            pos: cardData.pos,
+            ipa: cardData.ipa,
+            examples_json: cardData.examples,
+            synonyms_json: cardData.synonyms,
+            frequency_rank: cardData.frequencyRank || rank || null,
+            context_sentence: cardData.contextSentence,
+            language,
+            level: currentLevel,
+            is_public: true
+          }).select('id').single();
+
+          if (insErr) throw insErr;
+          const cardId = inserted?.id;
+
+          // Persist examples (English)
+          try {
+            const examples = Array.isArray(cardData.examples) ? cardData.examples.slice(0,2) : [];
+            if (examples.length && cardId) {
+              await supabase.from('vocab_examples').insert(examples.map((s: string) => ({
+                user_id: ownerUserId,
+                card_id: cardId,
+                lang: 'en',
+                sentence: s,
+                cefr: 'B1',
+                quality: 1
+              })));
+            }
+          } catch (_) {}
+
+          // Queue translations for later (don't block on them)
           if (cardId && !enOnly) {
-            console.log(`vocab-admin-seed: starting translations for ${lemma}`);
-            await translateAllLanguages(cardId, lemma);
-            console.log(`vocab-admin-seed: completed translations for ${lemma}`);
+            // Instead of translating immediately, we'll handle this separately
+            console.log(`vocab-admin-seed: card created for ${lemma}, translations will be processed later`);
           }
-        } catch (e) {
-          console.log(`vocab-admin-seed: translation error for ${lemma}:`, e);
-          // Don't fail the whole word if translations fail
-        }
-        deckCount += 1;
-        completed += 1;
-        console.log('vocab-admin-seed: word completed', { lemma, completed, total });
-        
-        // Update progress less frequently to reduce database load and prevent timeouts
-        const updateInterval = enOnly ? 5 : 10; // Update every 5 words in EN-only mode, 10 in full mode
-        if (completed % updateInterval === 0) {
-          await supabase.from('jobs_vocab_seed').update({ completed, level: currentLevel, updated_at: new Date().toISOString() }).eq('id', job.id);
-        }
-      } catch (e) {
-        console.log('vocab-admin-seed: word failed', { lemma, error: String((e as any)?.message || e) });
-        // Don't update job on every error to prevent database overload
-        if (completed % 20 === 0) {
-          await supabase.from('jobs_vocab_seed').update({ last_error: String((e as any)?.message || e), last_term: lemma }).eq('id', job.id);
+
+          deckCount += 1;
+          completed += 1;
+
+          // Track for translation queuing
+          if (cardId && !enOnly) {
+            completedCards.push(cardId!);
+            completedTerms.push(lemma);
+          }
+
+          return { success: true, lemma, cardId };
+        })
+      );
+
+      // Process results and update progress
+      for (const result of parallelResults) {
+        if (result.status === 'fulfilled') {
+          const wordResult = result.value;
+          if (!wordResult.skipped) {
+            console.log('vocab-admin-seed: word completed', {
+              lemma: wordResult.lemma,
+              completed,
+              total
+            });
+          }
+        } else {
+          console.log('vocab-admin-seed: word failed', {
+            error: String(result.reason?.message || result.reason),
+            completed,
+            total
+          });
         }
       }
+
+      // Update progress less frequently to reduce database load
+      const updateInterval = enOnly ? 20 : 10; // Update every 20 words in EN-only, 10 in full mode
+      if (completed % updateInterval === 0) {
+        await supabase.from('jobs_vocab_seed').update({
+          completed,
+          level: currentLevel,
+          updated_at: new Date().toISOString()
+        }).eq('id', job.id);
+      }
+
       if (completed >= total) break;
+
+      // Queue translations for completed cards (if not in EN-only mode)
+      if (completedCards.length > 0 && !enOnly) {
+        await queueTranslations(completedCards, completedTerms);
+        completedCards.length = 0; // Clear arrays
+        completedTerms.length = 0;
+
+        // Process some background translations to keep the queue moving
+        await processBackgroundTranslations();
+      }
+    }
+
+    // Process any remaining background translations before finishing
+    if (!enOnly) {
+      try {
+        await processBackgroundTranslations();
+      } catch (e) {
+        console.log('vocab-admin-seed: background translation processing error:', e);
+        // Don't fail the whole process if background translations fail
+      }
     }
 
     // Update final status - either done or running for next batch
     const finalStatus = completed >= total ? 'done' : 'running';
-    await supabase.from('jobs_vocab_seed').update({ completed, status: finalStatus, updated_at: new Date().toISOString() }).eq('id', job.id);
-    
+    await supabase.from('jobs_vocab_seed').update({
+      completed,
+      status: finalStatus,
+      updated_at: new Date().toISOString(),
+      last_term: null, // Clear last term on successful completion
+      last_error: null // Clear last error on successful completion
+    }).eq('id', job.id);
+
     console.log('vocab-admin-seed: batch completed', { completed, total, status: finalStatus });
-    return new Response(JSON.stringify({ success: true, jobId: job.id, completed, total, status: finalStatus, message: completed >= total ? 'All words completed' : 'Batch completed, more words remain' }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({
+      success: true,
+      jobId: job.id,
+      completed,
+      total,
+      status: finalStatus,
+      message: completed >= total ? 'All words completed' : 'Batch completed, more words remain'
+    }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
   }

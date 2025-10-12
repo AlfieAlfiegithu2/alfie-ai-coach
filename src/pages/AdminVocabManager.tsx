@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminVocabManager: React.FC = () => {
   const [rows, setRows] = useState<any[]>([]);
+  const [translations, setTranslations] = useState<Record<string, any>>({});
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -14,16 +15,30 @@ const AdminVocabManager: React.FC = () => {
   const [newPos, setNewPos] = useState('');
   const [newIpa, setNewIpa] = useState('');
   const [newContext, setNewContext] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('vocab_cards')
-      .select('id, term, translation, pos, ipa, context_sentence, frequency_rank, created_at')
+      .select('id, term, translation, pos, ipa, context_sentence, frequency_rank, level, created_at')
       .order('created_at', { ascending: false })
       .limit(500);
     if (!error) setRows(data || []);
     setLoading(false);
+  };
+
+  const loadTranslations = async () => {
+    const { data } = await supabase
+      .from('vocab_translations')
+      .select('card_id, lang, translations');
+
+    const transMap: Record<string, any> = {};
+    data?.forEach(t => {
+      if (!transMap[t.card_id]) transMap[t.card_id] = {};
+      transMap[t.card_id][t.lang] = t.translations?.[0] || '';
+    });
+    setTranslations(transMap);
   };
 
   const loadCounts = async () => {
@@ -40,9 +55,14 @@ const AdminVocabManager: React.FC = () => {
   const refresh = async () => {
     await load();
     await loadCounts();
+    await loadTranslations();
   };
 
-  useEffect(() => { load(); loadCounts(); }, []);
+  useEffect(() => {
+    load();
+    loadCounts();
+    loadTranslations();
+  }, []);
 
   useEffect(() => {
     const check = async () => {
@@ -61,55 +81,31 @@ const AdminVocabManager: React.FC = () => {
     return () => clearInterval(id);
   }, []);
 
-  const seed = async (total: number = 5000) => {
+  const seed = async (total: number = 5000, enOnly: boolean = false) => {
     setSeeding(true);
     try {
-      let completed = 0;
-      let batchCount = 0;
-      // EN-only mode uses 20 words per batch, full mode uses 5 words per batch
-      const maxBatches = Math.ceil(total / 20); // 20 words per batch for EN-only mode
-      
-      console.log(`Starting seeding process: ${total} words in ${maxBatches} batches`);
-      
-      while (completed < total && batchCount < maxBatches) {
-        batchCount++;
-        console.log(`Processing batch ${batchCount}/${maxBatches}`);
-        
-        // Try admin-only function first; if forbidden, fall back to user bulk seeding
-        let data: any, error: any;
-        const adminAttempt = await supabase.functions.invoke('vocab-admin-seed', { body: { total, language: 'en', translateTo: 'all' } });
-        data = adminAttempt.data; error = adminAttempt.error;
-        if (error || adminAttempt?.data?.error || adminAttempt?.error?.status === 403) {
-          const userAttempt = await supabase.functions.invoke('vocab-bulk-seed', { body: { total, language: 'en', translateTo: 'all', asPublic: false } });
-          data = userAttempt.data; error = userAttempt.error;
+      console.log(`Starting optimized seeding: ${total} words ${enOnly ? '(EN-only)' : '(with translations)'}`);
+
+      // Use the optimized vocab-admin-seed function directly
+      const { data, error } = await (supabase as any).functions.invoke('vocab-admin-seed', {
+        body: {
+          total,
+          language: 'en',
+          translateTo: enOnly ? 'none' : 'all',
+          enOnly: enOnly
         }
-        
-        if (error || !data?.success) {
-          alert(`Batch ${batchCount} failed: ${data?.error || error?.message || 'Failed to process batch'}`);
-          break;
-        }
-        
-        completed = data.completed || completed;
-        console.log(`Batch ${batchCount} completed: ${completed}/${total} words`);
-        
-        // If all words are done, break
-        if (data.status === 'done' || completed >= total) {
-          console.log('All words completed!');
-          break;
-        }
-        
-        // Wait 2 seconds between batches to avoid overwhelming the system
-        if (batchCount < maxBatches) {
-          console.log('Waiting 2 seconds before next batch...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+      });
+
+      if (error || !data?.success) {
+        alert(data?.error || error?.message || 'Failed to start seeding job');
+        return;
       }
-      
-      if (completed >= total) {
-        alert(`Seeding completed! Processed ${completed} words with translations for all languages.`);
-      } else {
-        alert(`Seeding stopped after ${batchCount} batches. Processed ${completed}/${total} words.`);
-      }
+
+      // The optimized function handles batching internally and returns progress
+      alert(`Seeding job started! ${data.completed || 0}/${total} words processed. Check progress below.`);
+
+    } catch (e: any) {
+      alert(e?.message || 'Failed to start seeding');
     } finally {
       setSeeding(false);
     }
@@ -133,6 +129,24 @@ const AdminVocabManager: React.FC = () => {
     const a = document.createElement('a');
     a.href = url; a.download = 'vocab_export.csv'; a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleCsvImport = async (file: File) => {
+    try {
+      const text = await file.text();
+      const { data, error } = await (supabase as any).functions.invoke('vocab-import', {
+        body: { csvText: text }
+      });
+
+      if (error || !data?.success) {
+        alert(`Import failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Successfully imported ${data.inserted} vocabulary words!`);
+        refresh(); // Refresh the list
+      }
+    } catch (e: any) {
+      alert(`Import failed: ${e?.message || 'Unknown error'}`);
+    }
   };
 
   const filtered = rows.filter(r => r.term.toLowerCase().includes(q.toLowerCase()) || (r.translation||'').toLowerCase().includes(q.toLowerCase()));
@@ -166,29 +180,41 @@ const AdminVocabManager: React.FC = () => {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Admin • Vocabulary</h1>
         <div className="flex gap-2">
-          <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+            <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleCsvImport(f);
+            }}
+          />
           <>
-            {/* Updated button text for 8K words with all languages */}
-            <button className="border rounded px-3 py-2 bg-black text-white" onClick={()=>seed(8000)} disabled={seeding}>
-              {seeding ? 'Starting…' : 'Seed 8,000 EN→ALL LANGS'}
+            {/* Essential vocabulary management buttons */}
+            <button className="border rounded px-3 py-2 bg-blue-600 text-white" onClick={() => fileInputRef.current?.click()}>
+              📥 Import CSV
             </button>
-            <button className="border rounded px-3 py-2" onClick={async()=>{
+            <button className="border rounded px-3 py-2 bg-green-600 text-white" onClick={async()=>{
               try {
-                // English-only fast mode (no translations), ideal for overnight generation
-                const { data, error } = await (supabase as any).functions.invoke('vocab-admin-seed', { body: { total: 8000, language: 'en', translateTo: 'all', enOnly: true } });
-                if (error || !data?.success) alert(data?.error || error?.message || 'Failed to start EN-only job');
-              } catch (e:any) { alert(e?.message || 'Failed'); }
+                setSeeding(true);
+                const { data, error } = await (supabase as any).functions.invoke('process-translations', { body: {} });
+                if (error || !data?.success) {
+                  alert(data?.error || error?.message || 'Failed to process translations');
+                } else {
+                  alert('✅ Translation processing completed!');
+                  loadTranslations(); // Refresh translations
+                }
+              } catch (e: any) {
+                alert(e?.message || 'Failed to process translations');
+              } finally {
+                setSeeding(false);
+              }
             }} disabled={seeding}>
-              {seeding ? 'Starting…' : 'Seed 8,000 EN only (fast)'}
+              {seeding ? 'Processing…' : '🔄 Process Translations'}
             </button>
-            <button className="border rounded px-3 py-2" onClick={()=>seed(20)} disabled={seeding}>
-              {seeding ? 'Starting…' : 'Seed 20 (test)'}
-            </button>
-            <button className="border rounded px-3 py-2" onClick={async()=>{
-              const { data, error } = await (supabase as any).functions.invoke('vocab-orchestrator', { body: { total: 20 } });
-              if (error || !data?.success) alert(data?.error || error?.message || 'Failed');
-            }}>Run 20-word pipeline</button>
           </>
         </div>
       </div>
@@ -220,10 +246,11 @@ const AdminVocabManager: React.FC = () => {
           <thead className="bg-slate-100">
             <tr>
               <th className="text-left p-2">Term</th>
-              <th className="text-left p-2">Translation</th>
+              <th className="text-left p-2">Translations</th>
               <th className="text-left p-2">POS</th>
               <th className="text-left p-2">IPA</th>
               <th className="text-left p-2">Context</th>
+              <th className="text-left p-2">Level</th>
               <th className="text-left p-2">Freq</th>
               <th className="text-left p-2">Actions</th>
             </tr>
@@ -232,10 +259,39 @@ const AdminVocabManager: React.FC = () => {
             {filtered.map(r => (
               <tr key={r.id} className="border-t">
                 <td className="p-2 font-medium">{r.term}</td>
-                <td className="p-2"><input className="border rounded px-2 py-1 w-48" defaultValue={r.translation||''} onBlur={(e)=>update(r.id,{ translation: e.target.value })} /></td>
+                <td className="p-2">
+                  <div className="space-y-1">
+                    {Object.entries(translations[r.id] || {}).map(([lang, trans]) => (
+                      <div key={lang} className="text-xs">
+                        <span className="font-medium text-blue-600">{lang.toUpperCase()}:</span> {trans}
+                      </div>
+                    ))}
+                    {(!translations[r.id] || Object.keys(translations[r.id]).length === 0) && (
+                      <span className="text-gray-400 text-xs">No translations yet</span>
+                    )}
+                    {Object.keys(translations[r.id] || {}).length > 0 && (
+                      <div className="text-xs text-green-600 mt-1">
+                        ✅ {Object.keys(translations[r.id]).length}/22 languages translated
+                      </div>
+                    )}
+                  </div>
+                </td>
                 <td className="p-2"><input className="border rounded px-2 py-1 w-24" defaultValue={r.pos||''} onBlur={(e)=>update(r.id,{ pos: e.target.value })} /></td>
                 <td className="p-2"><input className="border rounded px-2 py-1 w-28" defaultValue={r.ipa||''} onBlur={(e)=>update(r.id,{ ipa: e.target.value })} /></td>
                 <td className="p-2 max-w-[320px]"><textarea className="border rounded px-2 py-1 w-full" defaultValue={r.context_sentence||''} onBlur={(e)=>update(r.id,{ context_sentence: e.target.value })} /></td>
+                <td className="p-2 w-16 text-center">
+                  <select
+                    className="border rounded px-2 py-1 w-full"
+                    defaultValue={r.level || 1}
+                    onChange={(e)=>update(r.id,{ level: parseInt(e.target.value) })}
+                  >
+                    <option value={1}>A1</option>
+                    <option value={2}>A2</option>
+                    <option value={3}>B1</option>
+                    <option value={4}>B2</option>
+                    <option value={5}>C1-C2</option>
+                  </select>
+                </td>
                 <td className="p-2 w-16 text-center">{r.frequency_rank||''}</td>
                 <td className="p-2">
                   <button className="text-red-600 underline" onClick={()=>del(r.id)}>Delete</button>
@@ -243,7 +299,7 @@ const AdminVocabManager: React.FC = () => {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td className="p-3 text-slate-500" colSpan={7}>No items</td></tr>
+              <tr><td className="p-3 text-slate-500" colSpan={8}>No items</td></tr>
             )}
           </tbody>
         </table>

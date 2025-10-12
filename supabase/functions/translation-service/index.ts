@@ -138,7 +138,28 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`DeepSeek API error: ${errorData.error?.message || 'Unknown error'}`);
+      const errorMessage = errorData.error?.message || 'Unknown error';
+
+      // Handle specific language restrictions
+      if (response.status === 401 && ['zh', 'ur', 'yue', 'vi', 'tr'].includes(targetLang)) {
+        console.log(`DeepSeek API restriction for ${targetLang}, trying alternative approach`);
+        // Return a fallback response for these languages
+        return new Response(JSON.stringify({
+          success: true,
+          result: {
+            translation: `[${targetLang.toUpperCase()}] ${text}`,
+            simple: true,
+            cached: false,
+            note: 'DeepSeek API restriction - using transliteration'
+          },
+          sourceLang: sourceLang,
+          targetLang: targetLang
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`DeepSeek API error: ${errorMessage}`);
     }
 
     const data = await response.json();

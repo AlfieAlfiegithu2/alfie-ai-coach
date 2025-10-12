@@ -123,21 +123,25 @@ serve(async (req) => {
         })
       );
 
-      // Insert cards
-      const cardsToInsert = enrichedWords.map(w => ({
-        user_id: user.id,
-        deck_id: deck.id,
-        term: w.term,
-        translation: w.translation,
-        pos: w.pos,
-        ipa: w.ipa,
-        context_sentence: w.examples[0] || '',
-        examples_json: w.examples.slice(0, 3).filter(Boolean),
-        frequency_rank: w.frequencyRank,
-        language: 'en',
-        level: w.level,
-        is_public: true
-      }));
+      // Insert cards with proper level
+      const cardsToInsert = enrichedWords.map((w, idx) => {
+        const calculatedLevel = calculateLevel(startRank + b * batchSize + idx);
+        console.log(`Word "${w.term}" - Rank: ${w.frequencyRank}, Level: ${calculatedLevel}`);
+        return {
+          user_id: user.id,
+          deck_id: deck.id,
+          term: w.term,
+          translation: w.translation,
+          pos: w.pos,
+          ipa: w.ipa,
+          context_sentence: w.examples[0] || '',
+          examples_json: w.examples.slice(0, 3).filter(Boolean),
+          frequency_rank: w.frequencyRank,
+          language: 'en',
+          level: calculatedLevel,
+          is_public: true
+        };
+      });
 
       const { data: insertedCards, error: insertErr } = await supabase
         .from('vocab_cards')

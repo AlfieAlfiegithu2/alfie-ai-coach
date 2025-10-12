@@ -25,46 +25,88 @@ serve(async (req) => {
 
     console.log('Starting junk cleanup...');
 
-    // Delete problematic entries
+    // 1. Delete single letters and abbreviations
     const junkPatterns = [
-      // Single letters (a-z)
       ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i)),
-      // Common abbreviations
-      'cd', 'dvd', 'tv', 'pc', 'usa', 'uk', 'eu', 'ceo', 'cto', 'hr', 'it', 'pr',
-      // Numbers as words
-      'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'
+      'cd', 'dvd', 'tv', 'pc', 'usa', 'uk', 'eu', 'ceo', 'cto', 'hr', 'it', 'pr'
     ];
 
-    // Get all junk entries
     const { data: junkCards } = await supabase
       .from('vocab_cards')
       .select('id, term')
       .in('term', junkPatterns);
 
-    if (!junkCards || junkCards.length === 0) {
+    const junkIds = junkCards?.map(c => c.id) || [];
+    
+    // 2. Find exact duplicates (same term)
+    const { data: allCards } = await supabase
+      .from('vocab_cards')
+      .select('id, term, frequency_rank')
+      .order('term');
+
+    const duplicateIds: string[] = [];
+    if (allCards) {
+      const termMap = new Map<string, Array<{id: string, rank: number | null}>>();
+      
+      for (const card of allCards) {
+        if (!termMap.has(card.term)) {
+          termMap.set(card.term, []);
+        }
+        termMap.get(card.term)!.push({ id: card.id, rank: card.frequency_rank });
+      }
+
+      // Keep the one with lowest frequency_rank, delete others
+      for (const [term, cards] of termMap) {
+        if (cards.length > 1) {
+          cards.sort((a, b) => (a.rank || 999999) - (b.rank || 999999));
+          duplicateIds.push(...cards.slice(1).map(c => c.id));
+        }
+      }
+    }
+
+    // 3. Find plural forms where singular exists
+    const pluralIds: string[] = [];
+    if (allCards) {
+      const terms = new Set(allCards.map(c => c.term));
+      for (const card of allCards) {
+        if (card.term.endsWith('s') && card.term.length > 2) {
+          const singular = card.term.slice(0, -1);
+          // Check if singular form exists and isn't itself
+          if (terms.has(singular) && singular !== card.term) {
+            pluralIds.push(card.id);
+          }
+        }
+      }
+    }
+
+    const allDeleteIds = [...new Set([...junkIds, ...duplicateIds, ...pluralIds])];
+
+    if (allDeleteIds.length === 0) {
       return new Response(JSON.stringify({
         success: true,
-        message: 'No junk entries found',
+        message: 'No junk, duplicates, or unnecessary plurals found',
         deleted: 0
       }), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
-    const junkIds = junkCards.map(c => c.id);
-    console.log(`Found ${junkIds.length} junk entries to delete`);
+    console.log(`Found ${junkIds.length} junk, ${duplicateIds.length} duplicates, ${pluralIds.length} plurals to delete`);
 
-    // Delete them
     const { error: deleteError } = await supabase
       .from('vocab_cards')
       .delete()
-      .in('id', junkIds);
+      .in('id', allDeleteIds);
 
     if (deleteError) throw deleteError;
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Cleaned up ${junkIds.length} junk entries`,
-      deleted: junkIds.length,
-      deletedTerms: junkCards.map(c => c.term)
+      message: `Cleaned up ${allDeleteIds.length} entries (${junkIds.length} junk, ${duplicateIds.length} duplicates, ${pluralIds.length} plurals)`,
+      deleted: allDeleteIds.length,
+      breakdown: {
+        junk: junkIds.length,
+        duplicates: duplicateIds.length,
+        plurals: pluralIds.length
+      }
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
 
   } catch (e) {

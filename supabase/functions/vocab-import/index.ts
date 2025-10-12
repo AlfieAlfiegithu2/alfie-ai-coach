@@ -115,10 +115,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true, preview, totalRows: parsedRows.length }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Create Supabase client with service role for server-side import
+    // Create Supabase clients
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Missing Supabase service configuration');
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+    if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) throw new Error('Missing Supabase configuration');
+
+    // Get calling user from Authorization header
+    const authHeader = req.headers.get('Authorization') || '';
+    const supabaseAuthed = createClient(SUPABASE_URL, ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: { user } } = await supabaseAuthed.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -131,7 +141,7 @@ serve(async (req) => {
       const level = r.level ? Number(r.level) : undefined;
       const frequency_rank = r.frequency_rank ? Number(r.frequency_rank) : undefined;
       return {
-        user_id: 'system',
+        user_id: user.id,
         deck_id: null,
         term: r.word,
         translation: r.en || '',
@@ -157,7 +167,7 @@ serve(async (req) => {
       // Create a deck
       const { data: deck, error: deckError } = await supabase
         .from('vocab_decks')
-        .insert({ user_id: 'system', name: `CSV Import Level ${level} - ${new Date().toISOString().slice(0,10)}`, is_public: true })
+        .insert({ user_id: user.id, name: `CSV Import Level ${level} - ${new Date().toISOString().slice(0,10)}`, is_public: true })
         .select('id')
         .maybeSingle();
 
@@ -184,7 +194,7 @@ serve(async (req) => {
         .limit(withDeck.length);
 
       if (!selectErr && insertedCards && insertedCards.length) {
-        await queueTranslations(supabase, insertedCards);
+        await queueTranslations(supabase, insertedCards, user.id);
         // fire-and-forget background processing (best-effort)
         try {
           await supabase.functions.invoke('process-translations', { body: {} });
@@ -201,13 +211,17 @@ serve(async (req) => {
   }
 });
 
-async function queueTranslations(supabase: ReturnType<typeof createClient>, insertedCards: { id: string; term: string }[]) {
+async function queueTranslations(
+  supabase: ReturnType<typeof createClient>,
+  insertedCards: { id: string; term: string }[],
+  userId: string
+) {
   const languages = ['ko', 'ja', 'zh', 'es', 'fr', 'de', 'ar', 'hi', 'pt', 'ru', 'th', 'vi', 'tr', 'ur', 'yue', 'bn', 'fa', 'id', 'ms', 'ne', 'ta'];
-  const jobs = [] as any[];
+  const jobs: any[] = [];
   for (const c of insertedCards) {
     for (const lang of languages) {
       jobs.push({
-        user_id: 'system',
+        user_id: userId,
         card_id: c.id,
         term: c.term,
         target_lang: lang,

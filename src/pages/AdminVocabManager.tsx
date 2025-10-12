@@ -206,6 +206,24 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
+  const cleanupJunk = async () => {
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-cleanup-junk');
+      
+      if (error || !data?.success) {
+        alert(`Cleanup failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Cleaned up ${data.deleted} junk entries (single letters, abbreviations)`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`Cleanup failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const deleteAllWords = async () => {
     const confirm = window.confirm('⚠️ Are you sure you want to DELETE ALL vocabulary words? This cannot be undone!');
     if (!confirm) return;
@@ -247,11 +265,18 @@ const AdminVocabManager: React.FC = () => {
             {generating ? '⏳ Generating…' : '✨ Generate Real Words'}
           </button>
           <button 
+            className="border rounded px-3 py-2 bg-orange-600 text-white font-medium" 
+            onClick={cleanupJunk} 
+            disabled={deleting}
+          >
+            {deleting ? '⏳ Cleaning…' : '🧹 Clean Junk'}
+          </button>
+          <button 
             className="border rounded px-3 py-2 bg-red-600 text-white font-medium" 
             onClick={deleteAllWords} 
             disabled={deleting}
           >
-            {deleting ? '⏳ Deleting…' : '🗑️ Delete All Words'}
+            {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
           </button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
           <input

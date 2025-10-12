@@ -116,3 +116,6 @@ verify_jwt = false
 
 [functions.vocab-frequency-seed]
 verify_jwt = true
+
+[functions.vocab-cleanup-junk]
+verify_jwt = true

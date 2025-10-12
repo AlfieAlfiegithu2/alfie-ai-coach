@@ -16,6 +16,8 @@ const AdminVocabManager: React.FC = () => {
   const [newIpa, setNewIpa] = useState('');
   const [newContext, setNewContext] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -175,12 +177,82 @@ const AdminVocabManager: React.FC = () => {
     await loadCounts();
   };
 
+  const generateFrequencyVocab = async () => {
+    const total = prompt('How many words to generate? (max 10000)', '1000');
+    if (!total) return;
+    const count = Math.min(parseInt(total), 10000);
+    if (isNaN(count) || count < 1) { alert('Invalid number'); return; }
+    
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-frequency-seed', {
+        body: {
+          total: count,
+          startRank: 0,
+          languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
+        }
+      });
+      
+      if (error || !data?.success) {
+        alert(`Generation failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Successfully generated ${data.importedCount} real English words from frequency list!`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`Generation failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const deleteAllWords = async () => {
+    const confirm = window.confirm('⚠️ Are you sure you want to DELETE ALL vocabulary words? This cannot be undone!');
+    if (!confirm) return;
+    
+    const doubleConfirm = window.confirm('⚠️⚠️ FINAL WARNING: This will permanently delete ALL words and translations. Type YES to confirm.');
+    if (!doubleConfirm) return;
+    
+    setDeleting(true);
+    try {
+      // Delete all vocab cards (cascading will handle translations)
+      const { error } = await supabase.from('vocab_cards').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      if (error) {
+        alert(`Delete failed: ${error.message}`);
+      } else {
+        alert('✅ All vocabulary words deleted successfully');
+        setRows([]);
+        setTranslations({});
+        await loadCounts();
+      }
+    } catch (e: any) {
+      alert(`Delete failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Admin • Vocabulary</h1>
-        <div className="flex gap-2">
-            <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+        <div className="flex gap-2 flex-wrap">
+          <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+          <button 
+            className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
+            onClick={generateFrequencyVocab} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Generating…' : '✨ Generate Real Words'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-red-600 text-white font-medium" 
+            onClick={deleteAllWords} 
+            disabled={deleting}
+          >
+            {deleting ? '⏳ Deleting…' : '🗑️ Delete All Words'}
+          </button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
           <input
             ref={fileInputRef}

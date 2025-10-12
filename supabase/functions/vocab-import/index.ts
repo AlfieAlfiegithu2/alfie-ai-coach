@@ -31,9 +31,18 @@ serve(async (req) => {
   }
 
   try {
-    const { csvText, delimiter = ",", previewOnly = false } = await req.json();
+    const { csvText: bodyCsvText, githubRawUrl, delimiter = ",", previewOnly = false, queueTranslations = false, languages, batchSize: batchSizeParam } = await req.json();
+
+    let csvText = bodyCsvText;
+
+    if ((!csvText || typeof csvText !== "string") && githubRawUrl) {
+      const res = await fetch(githubRawUrl);
+      if (!res.ok) throw new Error(`Failed to fetch CSV from GitHub URL (${res.status})`);
+      csvText = await res.text();
+    }
+
     if (!csvText || typeof csvText !== "string") {
-      throw new Error("csvText is required");
+      throw new Error("csvText is required (or provide githubRawUrl)");
     }
 
     // Robust CSV parsing with quoted values support
@@ -157,7 +166,7 @@ serve(async (req) => {
     });
 
     // Process in batches and create a deck per level per batch for organization
-    const batchSize = 500;
+    const batchSize = Math.min(Math.max(Number(batchSizeParam) || 200, 50), 500);
     let inserted = 0;
 
     for (let i = 0; i < cards.length; i += batchSize) {
@@ -177,7 +186,10 @@ serve(async (req) => {
       }
 
       const withDeck = batch.map(c => ({ ...c, deck_id: deck.id }));
-      const { error: insertErr } = await supabase.from('vocab_cards').insert(withDeck);
+      const { data: insertedCards, error: insertErr } = await supabase
+        .from('vocab_cards')
+        .insert(withDeck)
+        .select('id, term');
       if (insertErr) {
         console.error('Card insert error:', insertErr);
         throw new Error(`Card insert failed: ${insertErr.message}`);
@@ -185,17 +197,9 @@ serve(async (req) => {
 
       inserted += withDeck.length;
 
-      // Retrieve inserted card ids for translation queue
-      const { data: insertedCards, error: selectErr } = await supabase
-        .from('vocab_cards')
-        .select('id, term')
-        .eq('deck_id', deck.id)
-        .order('created_at', { ascending: false })
-        .limit(withDeck.length);
-
-      if (!selectErr && insertedCards && insertedCards.length) {
-        await queueTranslations(supabase, insertedCards, user.id);
-        // fire-and-forget background processing (best-effort)
+      if (queueTranslations && insertedCards && insertedCards.length) {
+        const langs = Array.isArray(languages) && languages.length ? languages : ['ko','ja','zh','es','fr','de'];
+        await queueTranslationsJobs(supabase, insertedCards, user.id, langs);
         try {
           await supabase.functions.invoke('process-translations', { body: {} });
         } catch (_) {
@@ -211,15 +215,15 @@ serve(async (req) => {
   }
 });
 
-async function queueTranslations(
+async function queueTranslationsJobs(
   supabase: ReturnType<typeof createClient>,
   insertedCards: { id: string; term: string }[],
-  userId: string
+  userId: string,
+  langs: string[]
 ) {
-  const languages = ['ko', 'ja', 'zh', 'es', 'fr', 'de', 'ar', 'hi', 'pt', 'ru', 'th', 'vi', 'tr', 'ur', 'yue', 'bn', 'fa', 'id', 'ms', 'ne', 'ta'];
   const jobs: any[] = [];
   for (const c of insertedCards) {
-    for (const lang of languages) {
+    for (const lang of langs) {
       jobs.push({
         user_id: userId,
         card_id: c.id,
@@ -231,7 +235,14 @@ async function queueTranslations(
     }
   }
   if (jobs.length) {
-    const { error } = await supabase.from('vocab_translation_queue').insert(jobs as any);
-    if (error) console.log('translation queue insert error:', error.message);
+    const chunkSize = 1000;
+    for (let i = 0; i < jobs.length; i += chunkSize) {
+      const chunk = jobs.slice(i, i + chunkSize);
+      const { error } = await supabase.from('vocab_translation_queue').insert(chunk as any);
+      if (error) {
+        console.log('translation queue insert error:', error.message);
+        break;
+      }
+    }
   }
 }

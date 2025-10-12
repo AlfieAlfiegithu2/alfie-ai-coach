@@ -40,7 +40,9 @@ serve(async (req) => {
     const listResp = await fetch(FREQUENCY_LIST_URL);
     if (!listResp.ok) throw new Error('Failed to fetch frequency list');
     const listText = await listResp.text();
-    const allWords = listText.trim().split('\n').filter(w => w.length > 0);
+    const allWords = listText.trim().split('\n')
+      .filter(w => w.length > 1)  // Filter out single letters
+      .filter(w => /^[a-z]+$/.test(w));  // Only alphabetic words
 
     // Take requested slice
     const targetWords = allWords.slice(startRank, startRank + total);

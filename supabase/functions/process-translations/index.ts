@@ -40,15 +40,14 @@ serve(async (req) => {
   }
 });
 
-// Process translations in background (simplified version)
+  // Process translations in background (simplified version)
 async function processBackgroundTranslations(supabase: any) {
   // @ts-ignore - Deno Edge Function database operations
   const { data: pendingJobs } = await (supabase as any)
     .from('vocab_translation_queue')
     .select('*')
-    .in('user_id', ['system']) // Only process system imports for now
     .eq('status', 'pending')
-    .limit(50); // Process more at once for efficiency
+    .limit(100); // Process more at once for efficiency
 
   if (!pendingJobs || (pendingJobs as any[]).length === 0) {
     console.log('No pending translation jobs found');
@@ -133,7 +132,7 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
     if (!arr.length) return null;
 
     await supabase.from('vocab_translations').upsert({
-      user_id: 'system',
+      user_id: cardId, // Use card_id as user_id for system-wide translations
       card_id: cardId,
       lang: targetLang,
       translations: arr,

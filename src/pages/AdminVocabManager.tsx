@@ -29,12 +29,12 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const loadTranslations = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('vocab_translations')
       .select('card_id, lang, translations');
 
     const transMap: Record<string, any> = {};
-    data?.forEach(t => {
+    (data as any[])?.forEach((t: any) => {
       if (!transMap[t.card_id]) transMap[t.card_id] = {};
       transMap[t.card_id][t.lang] = t.translations?.[0] || '';
     });
@@ -263,7 +263,7 @@ const AdminVocabManager: React.FC = () => {
                   <div className="space-y-1">
                     {Object.entries(translations[r.id] || {}).map(([lang, trans]) => (
                       <div key={lang} className="text-xs">
-                        <span className="font-medium text-blue-600">{lang.toUpperCase()}:</span> {trans}
+                        <span className="font-medium text-blue-600">{lang.toUpperCase()}:</span> {String(trans)}
                       </div>
                     ))}
                     {(!translations[r.id] || Object.keys(translations[r.id]).length === 0) && (

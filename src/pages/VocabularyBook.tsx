@@ -206,7 +206,7 @@ export default function VocabularyBook() {
                               .filter(([lang]) => lang !== preferredLanguage)
                               .slice(0, 2)
                               .map(([lang, trans]) => (
-                                <span key={lang} className="mr-2">{lang.toUpperCase()}: {trans}</span>
+                                <span key={lang} className="mr-2">{lang.toUpperCase()}: {String(trans)}</span>
                               ))}
                           </div>
                         )}

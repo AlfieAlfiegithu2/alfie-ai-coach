@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.vocab-import]
 verify_jwt = false
+
+[functions.vocab-frequency-seed]
+verify_jwt = true

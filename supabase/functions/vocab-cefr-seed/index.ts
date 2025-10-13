@@ -20,6 +20,21 @@ type ImportRow = {
   example_3?: string;
 };
 
+function normalizeTerm(s: string): string {
+  return (s || '').trim().toLowerCase();
+}
+
+function mapCEFRLabelToLevel(label?: string): number | null {
+  if (!label) return null;
+  const L = label.trim().toUpperCase();
+  if (L === 'A1') return 1;
+  if (L === 'A2') return 2;
+  if (L === 'B1') return 3;
+  if (L === 'B2') return 4;
+  if (L === 'C1' || L === 'C2') return 5;
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
@@ -61,13 +76,93 @@ serve(async (req) => {
 
     const startFromRank = (maxRankRow?.frequency_rank ?? 0) + 1;
 
-    // Fetch CSV
+    // Fetch data
     const resp = await fetch(csvUrl);
-    if (!resp.ok) throw new Error(`Failed to fetch CEFR CSV: ${resp.status}`);
-    const csvText = await resp.text();
+    if (!resp.ok) throw new Error(`Failed to fetch CEFR source: ${resp.status}`);
+    const sourceText = await resp.text();
+
+    // If plain TXT list (e.g., GitHub B2.txt), treat each non-empty line as a word at level B2
+    if (csvUrl.toLowerCase().endsWith('.txt')) {
+      const lines = sourceText.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const rows: ImportRow[] = [];
+      const seen = new Set<string>();
+      for (const w of lines) {
+        const norm = normalizeTerm(w);
+        if (!norm || seen.has(norm)) continue;
+        seen.add(norm);
+        rows.push({ word: w, en: w, level: 4 }); // B2
+        if (rows.length >= total) break;
+      }
+
+      // Insert using common batching logic
+      let imported = 0;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const originalTerms = batch.map(r => r.word);
+        const { data: existingRaw } = await supabase
+          .from('vocab_cards')
+          .select('term')
+          .eq('language', 'en')
+          .eq('is_public', true)
+          .in('term', originalTerms);
+
+        const dbExisting = new Set<string>((existingRaw || []).map((e: any) => normalizeTerm(e.term)));
+        const toInsert = batch.filter(r => !dbExisting.has(normalizeTerm(r.word))).map(r => ({
+          user_id: user.id,
+          deck_id: null,
+          term: r.word,
+          translation: r.en || '',
+          pos: r.pos || null,
+          ipa: r.ipa || null,
+          context_sentence: r.context_sentence || null,
+          examples_json: [r.example_1, r.example_2, r.example_3].filter(Boolean),
+          frequency_rank: r.frequency_rank ?? null,
+          language: 'en',
+          level: r.level ?? null,
+          is_public: true,
+        }));
+
+        if (!toInsert.length) continue;
+
+        const { data: deck } = await supabase
+          .from('vocab_decks')
+          .insert({ user_id: user.id, name: `CEFR Import • ${new Date().toISOString().slice(0,10)}`, is_public: true })
+          .select('id')
+          .maybeSingle();
+        const withDeck = toInsert.map(c => ({ ...c, deck_id: deck?.id || null }));
+
+        // Try bulk insert; on duplicate constraint, fallback to per-row
+        const bulk = await supabase.from('vocab_cards').insert(withDeck);
+        if (bulk.error) {
+          const msg = String(bulk.error.message || '');
+          if (msg.includes('duplicate key') || bulk.error.code === '23505') {
+            for (const c of withDeck) {
+              const one = await supabase.from('vocab_cards').insert(c);
+              if (one.error) {
+                const m = String(one.error.message || '');
+                if (m.includes('duplicate key') || one.error.code === '23505') continue;
+                throw new Error(one.error.message);
+              }
+              imported += 1;
+            }
+          } else {
+            throw new Error(bulk.error.message);
+          }
+        } else {
+          imported += withDeck.length;
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        importedCount: imported,
+        isResume: startFromRank > 1,
+        startedFromRank: startFromRank,
+      }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
 
     // Parse CSV (supports quotes)
-    const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+    const lines = sourceText.split(/\r?\n/).filter(l => l.trim().length > 0);
     if (lines.length < 2) throw new Error('Empty CEFR CSV');
 
     const parseLine = (line: string): string[] => {
@@ -90,25 +185,31 @@ serve(async (req) => {
 
     const headers = parseLine(lines[0]).map(h => h.toLowerCase());
     const idx = (name: string) => headers.findIndex(h => h === name);
-    const wordIdx = idx('word');
-    const enIdx = idx('en');
-    if (wordIdx === -1 || enIdx === -1) throw new Error("CSV must include 'word' and 'en' headers");
+    let wordIdx = idx('word');
+    if (wordIdx === -1) wordIdx = idx('headword');
+    let enIdx = idx('en');
+    if (wordIdx === -1) throw new Error("CSV must include 'word' or 'headword' header");
 
     const posIdx = idx('pos');
     const ipaIdx = idx('ipa');
     const freqIdx = idx('frequency_rank');
     const levelIdx = idx('level');
+    const cefrIdx = levelIdx === -1 ? idx('cefr') : -1;
     const ctxIdx = idx('context_sentence');
     const ex1Idx = idx('example_1');
     const ex2Idx = idx('example_2');
     const ex3Idx = idx('example_3');
 
     const rows: ImportRow[] = [];
+    const seen = new Set<string>();
     for (let i = 1; i < lines.length && rows.length < total; i++) {
       const vals = parseLine(lines[i]);
       const word = vals[wordIdx];
-      const en = vals[enIdx];
+      const en = enIdx >= 0 ? vals[enIdx] : word; // fallback if 'en' missing
       if (!word || !en) continue;
+      const norm = normalizeTerm(word);
+      if (!norm || seen.has(norm)) continue;
+      seen.add(norm);
       const freq = freqIdx >= 0 ? Number(vals[freqIdx]) : NaN;
       if (Number.isFinite(freq) && freq < startFromRank) continue; // resume
       rows.push({
@@ -117,7 +218,7 @@ serve(async (req) => {
         pos: posIdx >= 0 ? vals[posIdx] : undefined,
         ipa: ipaIdx >= 0 ? vals[ipaIdx] : undefined,
         frequency_rank: Number.isFinite(freq) ? freq : null,
-        level: levelIdx >= 0 && Number.isFinite(Number(vals[levelIdx])) ? Number(vals[levelIdx]) : null,
+        level: levelIdx >= 0 && Number.isFinite(Number(vals[levelIdx])) ? Number(vals[levelIdx]) : (cefrIdx >= 0 ? mapCEFRLabelToLevel(vals[cefrIdx]) : null),
         context_sentence: ctxIdx >= 0 ? vals[ctxIdx] : undefined,
         example_1: ex1Idx >= 0 ? vals[ex1Idx] : undefined,
         example_2: ex2Idx >= 0 ? vals[ex2Idx] : undefined,
@@ -134,16 +235,16 @@ serve(async (req) => {
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
 
-      const terms = batch.map(r => r.word.toLowerCase());
-      const { data: existing } = await supabase
+      const originalTerms = batch.map(r => r.word);
+      const { data: existingRaw } = await supabase
         .from('vocab_cards')
         .select('term')
         .eq('language', 'en')
         .eq('is_public', true)
-        .in('term', terms);
+        .in('term', originalTerms);
 
-      const exists = new Set((existing || []).map((e: any) => String(e.term).toLowerCase()));
-      const toInsert = batch.filter(r => !exists.has(r.word.toLowerCase())).map(r => ({
+      const dbExisting = new Set((existingRaw || []).map((e: any) => normalizeTerm(e.term)));
+      const toInsert = batch.filter(r => !dbExisting.has(normalizeTerm(r.word))).map(r => ({
         user_id: user.id,
         deck_id: null,
         term: r.word,
@@ -168,9 +269,26 @@ serve(async (req) => {
         .maybeSingle();
 
       const withDeck = toInsert.map(c => ({ ...c, deck_id: deck?.id || null }));
-      const { error: insErr } = await supabase.from('vocab_cards').insert(withDeck);
-      if (insErr) throw new Error(insErr.message);
-      imported += withDeck.length;
+      // Try bulk insert; on duplicate constraint, fallback to per-row
+      const bulk = await supabase.from('vocab_cards').insert(withDeck);
+      if (bulk.error) {
+        const msg = String(bulk.error.message || '');
+        if (msg.includes('duplicate key') || bulk.error.code === '23505') {
+          for (const c of withDeck) {
+            const one = await supabase.from('vocab_cards').insert(c);
+            if (one.error) {
+              const m = String(one.error.message || '');
+              if (m.includes('duplicate key') || one.error.code === '23505') continue;
+              throw new Error(one.error.message);
+            }
+            imported += 1;
+          }
+        } else {
+          throw new Error(bulk.error.message);
+        }
+      } else {
+        imported += withDeck.length;
+      }
     }
 
     return new Response(JSON.stringify({

@@ -296,9 +296,11 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const generateFrequencyVocab = async (minLevel?: number, maxLevel?: number) => {
-    // Auto-generate without prompts - use default values
-    const count = 10000; // Default to maximum
     const levelText = minLevel && maxLevel ? ` (Level ${minLevel}-${maxLevel})` : '';
+    const total = prompt(`How many words to generate${levelText}? (max 1000 per batch, function will auto-resume)`, '500');
+    if (!total) return;
+    const count = Math.min(parseInt(total), 1000);
+    if (isNaN(count) || count < 1) { alert('Invalid number'); return; }
     
     setGenerating(true);
     try {

@@ -2143,7 +2143,7 @@ export type Database = {
           quality: number | null
           translations: Json
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           card_id?: string | null
@@ -2155,7 +2155,7 @@ export type Database = {
           quality?: number | null
           translations?: Json
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           card_id?: string | null
@@ -2167,7 +2167,7 @@ export type Database = {
           quality?: number | null
           translations?: Json
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

@@ -45,10 +45,18 @@ serve(async (req) => {
     
     console.log(`Loaded ${allCards?.length || 0} public vocabulary cards for cleanup`);
 
+    // Normalize: lowercase, trim, unify dashes to spaces, collapse whitespace
+    const baseNormalize = (s: string) => s
+      .trim()
+      .toLowerCase()
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\-]/g, ' ')
+      .replace(/\s+/g, ' ');
+
+
     // 2) Detect junk (case/space insensitive)
     const junkIds: string[] = [];
     for (const c of allCards || []) {
-      const norm = (c.term || '').trim().toLowerCase();
+      const norm = baseNormalize(c.term || '');
       if (junkSet.has(norm)) junkIds.push(c.id);
     }
 
@@ -56,7 +64,7 @@ serve(async (req) => {
     const duplicateIds: string[] = [];
     const byNorm = new Map<string, Array<{ id: string; rank: number; created_at: string }>>();
     for (const c of allCards || []) {
-      const norm = (c.term || '').trim().toLowerCase();
+      const norm = baseNormalize(c.term || '');
       if (!norm) continue;
       const rank = typeof c.frequency_rank === 'number' ? c.frequency_rank : 999999;
       if (!byNorm.has(norm)) byNorm.set(norm, []);
@@ -81,19 +89,29 @@ serve(async (req) => {
     // 4) Detect British/American spelling variants (s/z differences)
     const normalizeSpelling = (w: string) => {
       const word = w.trim().toLowerCase();
-      // Convert British spellings to American (ise->ize, yse->yze)
+      // British -> American normalization focused on s/z variants (+common inflections)
       return word
-        .replace(/ise$/, 'ize')
+        // -ise family
         .replace(/isation$/, 'ization')
-        .replace(/yse$/, 'yze')
-        .replace(/yser$/, 'yzer');
+        .replace(/ising$/, 'izing')
+        .replace(/ised$/, 'ized')
+        .replace(/ises$/, 'izes')
+        .replace(/iser$/, 'izer')
+        .replace(/ise$/, 'ize')
+        // -yse family (analyse -> analyze)
+        .replace(/ysation$/, 'yzation')
+        .replace(/ysing$/, 'yzing')
+        .replace(/ysed$/, 'yzed')
+        .replace(/yses$/, 'yzes')
+        .replace(/yser$/, 'yzer')
+        .replace(/yse$/, 'yze');
     };
 
     const spellingVariantIds: string[] = [];
     const bySpellingNorm = new Map<string, Array<{ id: string; term: string; rank: number; created_at: string }>>();
     
     for (const c of allCards || []) {
-      const norm = (c.term || '').trim().toLowerCase();
+      const norm = baseNormalize(c.term || '');
       if (!norm) continue;
       const spellingNorm = normalizeSpelling(norm);
       const rank = typeof c.frequency_rank === 'number' ? c.frequency_rank : 999999;
@@ -107,10 +125,10 @@ serve(async (req) => {
         spellingVariantCount++;
         // Keep American spelling (with 'z') or lowest rank, delete others
         arr.sort((a, b) => {
-          // Prefer 'z' spelling
-          const aHasZ = a.term.includes('ize') || a.term.includes('yze');
-          const bHasZ = b.term.includes('ize') || b.term.includes('yze');
-          if (aHasZ !== bHasZ) return bHasZ ? 1 : -1;
+          // Prefer 'z' spelling across inflections
+          const aHasZ = /(iz|yz)/.test(a.term);
+          const bHasZ = /(iz|yz)/.test(b.term);
+          if (aHasZ !== bHasZ) return aHasZ ? -1 : 1;
           // Then by rank
           if (a.rank !== b.rank) return a.rank - b.rank;
           // Finally by date

@@ -88,8 +88,9 @@ serve(async (req) => {
 
     // 4) Detect British/American spelling variants (s/z differences)
     const normalizeSpelling = (w: string) => {
-      const word = w.trim().toLowerCase();
-      // British -> American normalization focused on s/z variants (+common inflections)
+      // First apply base normalization (handles hyphens/spaces)
+      const word = baseNormalize(w);
+      // Then British -> American normalization focused on s/z variants (+common inflections)
       return word
         // -ise family
         .replace(/isation$/, 'ization')
@@ -113,7 +114,7 @@ serve(async (req) => {
     for (const c of allCards || []) {
       const norm = baseNormalize(c.term || '');
       if (!norm) continue;
-      const spellingNorm = normalizeSpelling(norm);
+      const spellingNorm = normalizeSpelling(c.term || '');
       const rank = typeof c.frequency_rank === 'number' ? c.frequency_rank : 999999;
       if (!bySpellingNorm.has(spellingNorm)) bySpellingNorm.set(spellingNorm, []);
       bySpellingNorm.get(spellingNorm)!.push({ id: c.id, term: norm, rank, created_at: c.created_at });

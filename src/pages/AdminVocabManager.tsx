@@ -505,23 +505,37 @@ const AdminVocabManager: React.FC = () => {
           >
             {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
           </button>
-          <button className="border rounded px-3 py-2 bg-green-600 text-white" onClick={async()=>{
+          <button className="border rounded px-3 py-2 bg-green-600 text-white font-medium" onClick={async()=>{
             try {
               setSeeding(true);
-              const { data, error } = await (supabase as any).functions.invoke('process-translations', { body: {} });
+              const confirmed = confirm('This will translate all vocabulary words to 22 languages. This may take several minutes. Continue?');
+              if (!confirmed) {
+                setSeeding(false);
+                return;
+              }
+              
+              // Call the new batch translation function
+              const { data, error } = await (supabase as any).functions.invoke('vocab-batch-translate', { 
+                body: { 
+                  languages: ['ar', 'bn', 'de', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'],
+                  maxWords: 5000, // Translate up to 5000 words
+                  onlyMissing: true // Only translate if not already translated
+                } 
+              });
+              
               if (error || !data?.success) {
-                alert(data?.error || error?.message || 'Failed to process translations');
+                alert(`Translation failed: ${data?.error || error?.message || 'Unknown error'}`);
               } else {
-                alert('✅ Translation processing completed!');
-                loadTranslations();
+                alert(`✅ Translation completed!\n\nTranslated: ${data.processed} translations\nWords: ${data.totalWords}\nLanguages: ${data.totalLanguages}\nErrors: ${data.errors || 0}`);
+                await loadTranslations();
               }
             } catch (e: any) {
-              alert(e?.message || 'Failed to process translations');
+              alert(`Translation failed: ${e?.message || 'Unknown error'}`);
             } finally {
               setSeeding(false);
             }
           }} disabled={seeding}>
-            {seeding ? 'Processing…' : '🔄 Process Translations'}
+            {seeding ? '⏳ Translating…' : '🌐 Translate All to 22 Languages'}
           </button>
         </div>
       </div>
@@ -581,6 +595,12 @@ const AdminVocabManager: React.FC = () => {
           placeholder="Search terms or translations…" 
           className="border rounded px-3 py-2 flex-1 min-w-[200px]" 
         />
+        <button
+          onClick={toggleShuffle}
+          className={`border rounded px-4 py-2 whitespace-nowrap ${shuffleEnabled ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+        >
+          🔀 {shuffleEnabled ? 'Shuffled' : 'Shuffle'}
+        </button>
         <select
           value={selectedLevel || ''}
           onChange={(e) => {

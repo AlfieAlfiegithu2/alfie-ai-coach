@@ -12,20 +12,16 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('Unauthorized');
+    const authHeader = req.headers.get('Authorization') || '';
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } }
+      { global: { headers: authHeader ? { Authorization: authHeader } : {} as any }, auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
     // Process background translations (works for any user, including system imports)
-    await processBackgroundTranslations(supabase);
+    await processBackgroundTranslations(supabase, authHeader);
 
     return new Response(JSON.stringify({
       success: true,
@@ -41,7 +37,7 @@ serve(async (req) => {
 });
 
   // Process translations in background (simplified version)
-async function processBackgroundTranslations(supabase: any) {
+async function processBackgroundTranslations(supabase: any, authHeader: string) {
   // @ts-ignore - Deno Edge Function database operations
   const { data: pendingJobs } = await (supabase as any)
     .from('vocab_translation_queue')
@@ -79,7 +75,7 @@ async function processBackgroundTranslations(supabase: any) {
     for (const langBatch of langBatches) {
       // @ts-ignore - Deno Edge Function database operations
       const translationPromises: Promise<any>[] = (langBatch as any[]).map((job: any) =>
-        translateSingleWord(cardId, term, job.target_lang, supabase)
+        translateSingleWord(cardId, term, job.target_lang, supabase, authHeader)
           .then((result: any) => ({ jobId: job.id, result }))
       );
 
@@ -105,11 +101,11 @@ async function processBackgroundTranslations(supabase: any) {
 }
 
 // Simplified translation function
-async function translateSingleWord(cardId: string, term: string, targetLang: string, supabase: any) {
+async function translateSingleWord(cardId: string, term: string, targetLang: string, supabase: any, authHeader: string) {
   try {
     const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
       body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: targetLang, includeContext: true })
     });
 

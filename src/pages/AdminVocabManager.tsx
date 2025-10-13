@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { TranslationProgressModal } from '@/components/TranslationProgressModal';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminVocabManager: React.FC = () => {
   const [rows, setRows] = useState<any[]>([]);
@@ -19,15 +21,67 @@ const AdminVocabManager: React.FC = () => {
   const [auditResults, setAuditResults] = useState<any>(null);
   const [generating, setGenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Pagination and filtering
+  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  
+  // Translation progress state
+  const [translationProgress, setTranslationProgress] = useState({
+    current: 0,
+    total: 0,
+    currentCard: '',
+    currentLang: '',
+    errors: 0
+  });
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [lastProcessedCard, setLastProcessedCard] = useState<string | null>(null);
+  const [lastProcessedLang, setLastProcessedLang] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Build query
+    let query = supabase
       .from('vocab_cards')
-      .select('id, term, translation, pos, ipa, context_sentence, frequency_rank, level, created_at')
+      .select('id, term, translation, pos, ipa, context_sentence, frequency_rank, level, created_at', { count: 'exact' });
+    
+    // Apply level filter
+    if (selectedLevel !== null) {
+      query = query.eq('level', selectedLevel);
+    }
+    
+    // Apply search filter (server-side)
+    if (q.trim()) {
+      query = query.or(`term.ilike.%${q}%,translation.ilike.%${q}%`);
+    }
+    
+    // Apply pagination
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    
+    query = query
       .order('created_at', { ascending: false })
-      .limit(500);
-    if (!error) setRows(data || []);
+      .range(from, to);
+    
+    const { data, error, count } = await query;
+    
+    if (!error) {
+      let finalData = data || [];
+      
+      // Apply shuffle if enabled
+      if (shuffleEnabled) {
+        finalData = [...finalData].sort(() => Math.random() - 0.5);
+      }
+      
+      setRows(finalData);
+      setTotalCount(count || 0);
+    }
     setLoading(false);
   };
 
@@ -66,6 +120,15 @@ const AdminVocabManager: React.FC = () => {
     loadCounts();
     loadTranslations();
   }, []);
+  
+  // Reload when filters, page, or shuffle changes
+  useEffect(() => {
+    load();
+  }, [selectedLevel, page, q, shuffleEnabled]);
+  
+  const toggleShuffle = () => {
+    setShuffleEnabled(!shuffleEnabled);
+  };
 
   useEffect(() => {
     const check = async () => {
@@ -151,8 +214,6 @@ const AdminVocabManager: React.FC = () => {
       alert(`Import failed: ${e?.message || 'Unknown error'}`);
     }
   };
-
-  const filtered = rows.filter(r => r.term.toLowerCase().includes(q.toLowerCase()) || (r.translation||'').toLowerCase().includes(q.toLowerCase()));
 
   const handleRemoveDuplicates = async () => {
     if (!confirm('This will remove all duplicate words, keeping only the first occurrence of each. Continue?')) return;
@@ -329,7 +390,7 @@ const AdminVocabManager: React.FC = () => {
           total: count,
           // startRank: not provided - function will auto-resume
           minLevel: minLevel || 1,
-          maxLevel: maxLevel || 5,
+          maxLevel: maxLevel || 4,
           languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
         }
       });
@@ -419,6 +480,74 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
+  const startBatchTranslation = async (resumeFrom?: { cardId: string; lang: string }) => {
+    try {
+      setIsTranslating(true);
+      setShowProgressModal(true);
+      
+      const languages = ['ar', 'bn', 'de', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
+      const maxWords = 5000;
+      
+      setTranslationProgress({
+        current: 0,
+        total: maxWords * languages.length,
+        currentCard: '',
+        currentLang: '',
+        errors: 0
+      });
+      
+      const { data, error } = await supabase.functions.invoke('vocab-batch-translate', { 
+        body: { 
+          languages,
+          maxWords,
+          onlyMissing: true,
+          startCardId: resumeFrom?.cardId,
+          startLang: resumeFrom?.lang
+        } 
+      });
+      
+      if (error || !data?.success) {
+        toast({
+          title: "Translation Failed",
+          description: data?.error || error?.message || 'Unknown error',
+          variant: "destructive"
+        });
+      } else {
+        setTranslationProgress({
+          current: data.processed || 0,
+          total: data.totalWords * data.totalLanguages,
+          currentCard: '',
+          currentLang: '',
+          errors: data.errors || 0
+        });
+        
+        setLastProcessedCard(data.lastProcessedCardId);
+        setLastProcessedLang(data.lastProcessedLang);
+        
+        toast({
+          title: "Translation Complete",
+          description: `Translated ${data.processed} items with ${data.errors || 0} errors`,
+        });
+        
+        await loadTranslations();
+      }
+    } catch (e: any) {
+      toast({
+        title: "Translation Error",
+        description: e?.message || 'Unknown error',
+        variant: "destructive"
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleResumeTranslation = () => {
+    if (lastProcessedCard && lastProcessedLang) {
+      startBatchTranslation({ cardId: lastProcessedCard, lang: lastProcessedLang });
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex items-center justify-between mb-4">
@@ -439,21 +568,7 @@ const AdminVocabManager: React.FC = () => {
           >
             {generating ? '⏳ Generating…' : '📚 Generate CEFR (A1-B2)'}
           </button>
-          <button 
-            className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
-            onClick={generateB2Words} 
-            disabled={generating}
-          >
-            {generating ? '⏳ Importing…' : '📖 Import B2 Words'}
-          </button>
-          <button 
-            className="border rounded px-3 py-2 bg-purple-700 text-white font-medium" 
-            onClick={generateC1Words} 
-            disabled={generating}
-          >
-            {generating ? '⏳ Importing…' : '🎓 Import C1 Words'}
-          </button>
-          <button 
+          <button
             className="border rounded px-3 py-2 bg-blue-500 text-white font-medium" 
             onClick={importIELTSWords} 
             disabled={generating}
@@ -598,9 +713,66 @@ const AdminVocabManager: React.FC = () => {
           <button className="border rounded px-3 py-2 bg-black text-white" onClick={addWord}>Create</button>
         </div>
       </div>
-      <div className="mb-3">
-        <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search…" className="border rounded px-3 py-2 w-full" />
+      
+      {/* Filters and Search */}
+      <div className="mb-3 flex gap-3 items-center flex-wrap">
+        <input 
+          value={q} 
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1); // Reset to page 1 on search
+          }} 
+          placeholder="Search terms or translations…" 
+          className="border rounded px-3 py-2 flex-1 min-w-[200px]" 
+        />
+        <button
+          onClick={toggleShuffle}
+          className={`border rounded px-4 py-2 whitespace-nowrap ${shuffleEnabled ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+        >
+          🔀 {shuffleEnabled ? 'Shuffled' : 'Shuffle'}
+        </button>
+        <select
+          value={selectedLevel || ''}
+          onChange={(e) => {
+            setSelectedLevel(e.target.value ? parseInt(e.target.value) : null);
+            setPage(1); // Reset to page 1 on filter change
+          }}
+          className="border rounded px-3 py-2 bg-white"
+        >
+          <option value="">All Levels</option>
+          <option value="1">A1</option>
+          <option value="2">A2</option>
+          <option value="3">B1</option>
+          <option value="4">B2</option>
+        </select>
+        <div className="text-sm text-slate-600">
+          Showing {rows.length} of {totalCount} words
+        </div>
       </div>
+      
+      {/* Pagination */}
+      <div className="mb-3 flex gap-2 items-center justify-between">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page === 1 || loading}
+            className="border rounded px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Previous
+          </button>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page * pageSize >= totalCount || loading}
+            className="border rounded px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next →
+          </button>
+        </div>
+        <div className="text-sm text-slate-600">
+          Page {page} of {Math.ceil(totalCount / pageSize)}
+        </div>
+      </div>
+      
       <div className="overflow-auto border rounded">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-100">
@@ -616,7 +788,7 @@ const AdminVocabManager: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(r => (
+            {rows.map(r => (
               <tr key={r.id} className="border-t">
                 <td className="p-2 font-medium">{r.term}</td>
                 <td className="p-2">
@@ -649,7 +821,6 @@ const AdminVocabManager: React.FC = () => {
                     <option value={2}>A2</option>
                     <option value={3}>B1</option>
                     <option value={4}>B2</option>
-                    <option value={5}>C1-C2</option>
                   </select>
                 </td>
                 <td className="p-2 w-16 text-center">{r.frequency_rank||''}</td>
@@ -658,12 +829,21 @@ const AdminVocabManager: React.FC = () => {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {rows.length === 0 && (
               <tr><td className="p-3 text-slate-500" colSpan={8}>No items</td></tr>
             )}
           </tbody>
         </table>
       </div>
+      
+      <TranslationProgressModal
+        open={showProgressModal}
+        onOpenChange={setShowProgressModal}
+        progress={translationProgress}
+        isRunning={isTranslating}
+        onResume={handleResumeTranslation}
+        canResume={!isTranslating && lastProcessedCard !== null && translationProgress.errors > 0}
+      />
     </div>
   );
 };

@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 type DeckRow = { id: string; name: string; count: number };
 
 export default function VocabLevels() {
-  const levels = [1, 2, 3, 4, 5];
+  const levels = [1, 2, 3, 4];
   const [active, setActive] = useState<string>("1");
   const [decks, setDecks] = useState<DeckRow[]>([]);
   const [loading, setLoading] = useState(false);

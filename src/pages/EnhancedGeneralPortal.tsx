@@ -370,7 +370,7 @@ const EnhancedGeneralPortal = () => {
                 >
                   <span className="font-semibold">{level.charAt(0).toUpperCase() + level.slice(1)}</span>
                   <span className="text-xs opacity-75">
-                    {level === 'beginner' ? 'A1-A2' : level === 'intermediate' ? 'B1-B2' : 'C1-C2'}
+                    {level === 'beginner' ? 'A1-A2' : 'B1-B2'}
                   </span>
                 </Button>
               ))}

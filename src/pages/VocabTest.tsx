@@ -49,6 +49,10 @@ export default function VocabTest() {
   const [showSecondResults, setShowSecondResults] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [shuffleEnabled, setShuffleEnabled] = useState(() => {
+    const saved = localStorage.getItem('vocab-shuffle-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
   const total = rows.length;
   const current = rows[index] || null;
   const finalTestCurrent = showFinalTest ? rows[finalTestIndex] : null;
@@ -124,6 +128,13 @@ export default function VocabTest() {
         console.log('VocabTest: Join fallback rows count:', rows.length);
       }
       console.log('VocabTest: Final rows count:', rows.length);
+      
+      // Apply shuffle if enabled
+      const shouldShuffle = localStorage.getItem('vocab-shuffle-enabled');
+      if (shouldShuffle && JSON.parse(shouldShuffle)) {
+        rows = rows.sort(() => Math.random() - 0.5);
+      }
+      
       setRows(rows);
       setIndex(0);
     };
@@ -199,6 +210,20 @@ export default function VocabTest() {
       ...prev,
       [cardId]: value
     }));
+  };
+
+  const toggleShuffle = () => {
+    const newValue = !shuffleEnabled;
+    setShuffleEnabled(newValue);
+    localStorage.setItem('vocab-shuffle-enabled', JSON.stringify(newValue));
+    
+    // Re-shuffle or restore order
+    if (newValue) {
+      setRows(prev => [...prev].sort(() => Math.random() - 0.5));
+    } else {
+      // Reload to restore original order
+      window.location.reload();
+    }
   };
 
   const currentNotes = current ? notes[current.id] || "" : "";
@@ -509,6 +534,18 @@ export default function VocabTest() {
           onClick={(e) => e.stopPropagation()}
         >
           <Link to={`/vocabulary`}>← Back</Link>
+        </Button>
+        {/* Shuffle button */}
+        <Button 
+          variant={shuffleEnabled ? "default" : "outline"}
+          size="sm"
+          className="vocab-shuffle-button ml-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleShuffle();
+          }}
+        >
+          🔀 {shuffleEnabled ? 'Shuffled' : 'Shuffle'}
         </Button>
         {/* Add button */}
         <Button 

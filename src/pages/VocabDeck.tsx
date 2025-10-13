@@ -12,6 +12,10 @@ export default function VocabDeck() {
   const { deckId } = useParams();
   const [name, setName] = useState<string>("Deck");
   const [cards, setCards] = useState<CardRow[]>([]);
+  const [shuffleEnabled, setShuffleEnabled] = useState(() => {
+    const saved = localStorage.getItem('vocab-deck-shuffle-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -24,10 +28,18 @@ export default function VocabDeck() {
         .eq('deck_id', deckId)
         .order('created_at', { ascending: true })
         .limit(50);
-      setCards((data as any) || []);
+      
+      let cards = (data as any) || [];
+      
+      // Apply shuffle if enabled
+      if (shuffleEnabled) {
+        cards = cards.sort(() => Math.random() - 0.5);
+      }
+      
+      setCards(cards);
     };
     load();
-  }, [deckId]);
+  }, [deckId, shuffleEnabled]);
 
   const toggleKnown = async (c: CardRow) => {
     const next = !c.is_known;
@@ -35,9 +47,24 @@ export default function VocabDeck() {
     setCards(prev => prev.map(x => x.id === c.id ? { ...x, is_known: next } : x));
   };
 
+  const toggleShuffle = () => {
+    const newValue = !shuffleEnabled;
+    setShuffleEnabled(newValue);
+    localStorage.setItem('vocab-deck-shuffle-enabled', JSON.stringify(newValue));
+  };
+
   return (
     <StudentLayout title={name} showBackButton>
       <div className="space-y-4">
+        <div className="flex justify-end mb-2">
+          <Button
+            variant={shuffleEnabled ? "default" : "outline"}
+            size="sm"
+            onClick={toggleShuffle}
+          >
+            🔀 {shuffleEnabled ? 'Shuffled' : 'Shuffle'}
+          </Button>
+        </div>
         <Card>
           <CardContent className="p-0 divide-y">
             {cards.map((c) => (

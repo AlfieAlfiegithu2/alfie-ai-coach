@@ -25,6 +25,7 @@ const AdminVocabManager: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -55,7 +56,14 @@ const AdminVocabManager: React.FC = () => {
     const { data, error, count } = await query;
     
     if (!error) {
-      setRows(data || []);
+      let finalData = data || [];
+      
+      // Apply shuffle if enabled
+      if (shuffleEnabled) {
+        finalData = [...finalData].sort(() => Math.random() - 0.5);
+      }
+      
+      setRows(finalData);
       setTotalCount(count || 0);
     }
     setLoading(false);
@@ -97,10 +105,14 @@ const AdminVocabManager: React.FC = () => {
     loadTranslations();
   }, []);
   
-  // Reload when filters or page changes
+  // Reload when filters, page, or shuffle changes
   useEffect(() => {
     load();
-  }, [q, selectedLevel, page]);
+  }, [selectedLevel, page, q, shuffleEnabled]);
+  
+  const toggleShuffle = () => {
+    setShuffleEnabled(!shuffleEnabled);
+  };
 
   useEffect(() => {
     const check = async () => {

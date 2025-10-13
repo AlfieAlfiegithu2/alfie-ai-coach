@@ -130,20 +130,48 @@ serve(async (req) => {
             continue;
           }
 
-          const result = payload.result || {};
-          const primary = typeof result.translation === 'string' 
-            ? result.translation 
-            : (result.translation?.translation || '');
-          
-          const alternatives = Array.isArray(result.alternatives) 
-            ? result.alternatives.map((a: any) => 
-                typeof a === 'string' ? a : (a?.meaning || '')
-              ).filter((s: string) => !!s) 
-            : [];
-          
-          const translations = [primary, ...alternatives]
-            .map((s: string) => String(s).trim())
-            .filter(Boolean);
+const rawResult = payload.result;
+
+// Clean helper: remove code fences and extract JSON translation when present
+const cleanText = (s: string) => {
+  try {
+    let t = String(s).trim();
+    // Strip code fences
+    t = t.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+    // Try JSON parse to extract { translation }
+    try {
+      const obj = JSON.parse(t);
+      if (typeof obj?.translation === 'string') return String(obj.translation).trim();
+      if (obj?.translation && typeof obj.translation.translation === 'string') return String(obj.translation.translation).trim();
+    } catch { /* not JSON, keep raw */ }
+    // Remove surrounding quotes if any
+    t = t.replace(/^"|"$/g, '').trim();
+    return t;
+  } catch { return String(s); }
+};
+
+let primary = '';
+let alternatives: string[] = [];
+
+if (typeof rawResult === 'string') {
+  primary = cleanText(rawResult);
+} else if (rawResult && typeof rawResult === 'object') {
+  if (typeof (rawResult as any).translation === 'string') {
+    primary = cleanText((rawResult as any).translation);
+  } else if ((rawResult as any).translation && typeof (rawResult as any).translation.translation === 'string') {
+    primary = cleanText((rawResult as any).translation.translation);
+  }
+  if (Array.isArray((rawResult as any).alternatives)) {
+    alternatives = (rawResult as any).alternatives
+      .map((a: any) => typeof a === 'string' ? cleanText(a) : cleanText(a?.meaning || ''))
+      .filter((s: string) => !!s);
+  }
+}
+
+const translations = Array.from(new Set([primary, ...alternatives]
+  .map((s: string) => String(s).trim())
+  .filter(Boolean)));
+
 
           if (translations.length === 0) {
             console.error(`No valid translations for ${card.term} -> ${targetLang}`);

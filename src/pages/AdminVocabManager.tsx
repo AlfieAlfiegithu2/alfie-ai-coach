@@ -269,16 +269,13 @@ const AdminVocabManager: React.FC = () => {
     const count = Math.min(parseInt(total), 10000);
     if (isNaN(count) || count < 1) { alert('Invalid number'); return; }
     
-    const startRank = prompt('Start from rank? (0 = most common)', '0');
-    if (startRank === null) return;
-    const startRankNum = Math.max(parseInt(startRank || '0'), 0);
-    
     setGenerating(true);
     try {
+      // Don't pass startRank - let the function auto-resume from where it left off
       const { data, error } = await supabase.functions.invoke('vocab-frequency-seed', {
         body: {
           total: count,
-          startRank: startRankNum,
+          // startRank: not provided - function will auto-resume
           minLevel: minLevel || 1,
           maxLevel: maxLevel || 5,
           languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']

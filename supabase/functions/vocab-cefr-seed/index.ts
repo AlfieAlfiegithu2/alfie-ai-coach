@@ -51,13 +51,10 @@ serve(async (req) => {
     });
 
     const body = await req.json().catch(() => ({}));
-    const csvUrl: string | undefined = body?.csvUrl || Deno.env.get('CEFR_CSV_URL') || undefined;
+    const defaultCEFR = 'https://huggingface.co/spaces/nontgcob/T2E_Vocabulary_Exam_Generator/resolve/b420ca4bc1b0423aa5fd4d94df1e0f0a100564e8/cefr-vocab.csv';
+    const csvUrl: string = body?.csvUrl || Deno.env.get('CEFR_CSV_URL') || defaultCEFR;
     const total: number = Math.min(Number(body?.total || 8000), 20000);
     const batchSize: number = Math.min(Math.max(Number(body?.batchSize || 400), 50), 500);
-
-    if (!csvUrl) {
-      throw new Error('Missing CEFR CSV URL. Provide body.csvUrl or set CEFR_CSV_URL environment variable to a public RAW CSV URL.');
-    }
 
     // Get user
     const { data: { user } } = await supabase.auth.getUser();

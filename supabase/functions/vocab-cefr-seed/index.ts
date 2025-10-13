@@ -60,6 +60,7 @@ serve(async (req) => {
     const csvUrl: string = body?.csvUrl || Deno.env.get('CEFR_CSV_URL') || defaultCEFR;
     const total: number = Math.min(Number(body?.total || 8000), 20000);
     const batchSize: number = Math.min(Math.max(Number(body?.batchSize || 400), 50), 500);
+    const targetLevel: number | null = body?.level !== undefined ? Number(body.level) : null; // For .txt imports
 
     // Get user
     const { data: { user } } = await supabase.auth.getUser();
@@ -94,8 +95,24 @@ serve(async (req) => {
     const sourceText = await resp.text();
     console.log(`✓ CSV parsed, length: ${sourceText.length} characters`);
 
-    // If plain TXT list (e.g., GitHub B2.txt), treat each non-empty line as a word at level B2
+    // If plain TXT list (e.g., GitHub B2.txt, C1.txt), treat each non-empty line as a word at specified level
     if (csvUrl.toLowerCase().endsWith('.txt')) {
+      console.log(`📝 Processing TXT file, target level: ${targetLevel || 'auto-detect'}`);
+      
+      // Auto-detect level from URL if not specified
+      let detectedLevel = targetLevel;
+      if (detectedLevel === null) {
+        const urlLower = csvUrl.toLowerCase();
+        if (urlLower.includes('c1') || urlLower.includes('/c1.txt')) detectedLevel = 5;
+        else if (urlLower.includes('c2') || urlLower.includes('/c2.txt')) detectedLevel = 5;
+        else if (urlLower.includes('b2') || urlLower.includes('/b2.txt')) detectedLevel = 4;
+        else if (urlLower.includes('b1') || urlLower.includes('/b1.txt')) detectedLevel = 3;
+        else if (urlLower.includes('a2') || urlLower.includes('/a2.txt')) detectedLevel = 2;
+        else if (urlLower.includes('a1') || urlLower.includes('/a1.txt')) detectedLevel = 1;
+        else detectedLevel = 4; // Default to B2
+      }
+      console.log(`✓ Using level ${detectedLevel} for TXT import`);
+      
       const lines = sourceText.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
       const rows: ImportRow[] = [];
       const seen = new Set<string>();
@@ -103,9 +120,10 @@ serve(async (req) => {
         const norm = normalizeTerm(w);
         if (!norm || seen.has(norm)) continue;
         seen.add(norm);
-        rows.push({ word: w, en: w, level: 4 }); // B2
+        rows.push({ word: w, en: w, level: detectedLevel });
         if (rows.length >= total) break;
       }
+      console.log(`✓ Parsed ${rows.length} unique words from TXT`);
 
       // Insert using common batching logic
       let imported = 0;

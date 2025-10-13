@@ -286,6 +286,56 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
+  const generateC1Words = async () => {
+    // Import C1 vocabulary from GitHub
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-cefr-seed', {
+        body: {
+          csvUrl: 'https://raw.githubusercontent.com/anig1scur/CEFR-Vocabulary-List/slave/C1.txt',
+          total: 2000,
+          level: 5 // C1/C2 level
+        }
+      });
+      
+      if (error || !data?.success) {
+        alert(`C1 import failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Successfully imported ${data.importedCount} C1 level words!`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`C1 import failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const generateB2Words = async () => {
+    // Import B2 vocabulary from GitHub
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-cefr-seed', {
+        body: {
+          csvUrl: 'https://raw.githubusercontent.com/anig1scur/CEFR-Vocabulary-List/slave/B2.txt',
+          total: 3000,
+          level: 4 // B2 level
+        }
+      });
+      
+      if (error || !data?.success) {
+        alert(`B2 import failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Successfully imported ${data.importedCount} B2 level words!`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`B2 import failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const generateFrequencyVocab = async (minLevel?: number, maxLevel?: number) => {
     const levelText = minLevel && maxLevel ? ` (Level ${minLevel}-${maxLevel})` : '';
     const total = prompt(`How many words to generate${levelText}? (max 1000 per batch, function will auto-resume)`, '500');
@@ -409,7 +459,21 @@ const AdminVocabManager: React.FC = () => {
             onClick={generateAdvancedWords} 
             disabled={generating}
           >
-            {generating ? '⏳ Generating…' : '📚 Generate CEFR Vocabulary'}
+            {generating ? '⏳ Generating…' : '📚 Generate CEFR (A1-B2)'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
+            onClick={generateB2Words} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Importing…' : '📖 Import B2 Words'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-purple-700 text-white font-medium" 
+            onClick={generateC1Words} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Importing…' : '🎓 Import C1 Words'}
           </button>
           <button 
             className="border rounded px-3 py-2 bg-orange-600 text-white font-medium" 

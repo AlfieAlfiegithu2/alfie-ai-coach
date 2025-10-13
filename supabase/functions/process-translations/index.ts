@@ -100,13 +100,20 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
   }
 }
 
-// Simplified translation function
+// Enhanced translation function with rich data
 async function translateSingleWord(cardId: string, term: string, targetLang: string, supabase: any, authHeader: string) {
   try {
     const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
-      body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: targetLang, includeContext: true })
+      body: JSON.stringify({ 
+        text: term, 
+        sourceLang: 'en', 
+        targetLang: targetLang, 
+        includeContext: true,
+        includePOS: true,
+        includeIPA: true
+      })
     });
 
     if (!resp.ok) {
@@ -127,16 +134,27 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
 
     if (!arr.length) return null;
 
+    // Store rich translation data including POS, IPA, and context
     await supabase.from('vocab_translations').upsert({
       user_id: cardId, // Use card_id as user_id for system-wide translations
       card_id: cardId,
       lang: targetLang,
       translations: arr,
       provider: 'deepseek',
-      quality: 1
+      quality: 1,
+      // Add rich data fields
+      pos: res.pos || null,
+      ipa: res.ipa || null,
+      context_sentence: res.context || null
     } as any, { onConflict: 'card_id,lang' } as any);
 
-    return { lang: targetLang, translation: primary };
+    return { 
+      lang: targetLang, 
+      translation: primary, 
+      pos: res.pos, 
+      ipa: res.ipa, 
+      context: res.context 
+    };
   } catch (e) {
     console.log(`Translation error for ${targetLang}:`, e);
     return null;

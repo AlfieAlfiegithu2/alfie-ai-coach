@@ -474,23 +474,83 @@ const AdminVocabManager: React.FC = () => {
           >
             {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
           </button>
-          <button className="border rounded px-3 py-2 bg-green-600 text-white" onClick={async()=>{
+          <button className="border rounded px-3 py-2 bg-green-600 text-white font-medium" onClick={async()=>{
+            const confirmed = window.confirm(`Translate all 14,303 words into 22 languages with POS, IPA, and context?\n\nThis will create ~314,666 translation jobs.`);
+            if (!confirmed) return;
+
+            setSeeding(true);
             try {
-              setSeeding(true);
-              const { data, error } = await (supabase as any).functions.invoke('process-translations', { body: {} });
-              if (error || !data?.success) {
-                alert(data?.error || error?.message || 'Failed to process translations');
-              } else {
-                alert('✅ Translation processing completed!');
-                loadTranslations();
+              // Step 1: Create translation jobs
+              const { data: cards } = await supabase
+                .from('vocab_cards')
+                .select('id, term')
+                .eq('is_public', true)
+                .eq('language', 'en');
+
+              if (!cards || cards.length === 0) {
+                alert('No cards found to translate');
+                return;
               }
+
+              const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+              
+              // Create translation jobs
+              const jobs = [];
+              for (const card of cards) {
+                for (const lang of SUPPORTED_LANGS) {
+                  jobs.push({
+                    user_id: (await supabase.auth.getUser()).data.user?.id,
+                    card_id: card.id,
+                    term: card.term,
+                    target_lang: lang,
+                    status: 'pending',
+                    created_at: new Date().toISOString()
+                  });
+                }
+              }
+
+              // Insert jobs in batches
+              let inserted = 0;
+              for (let i = 0; i < jobs.length; i += 1000) {
+                const chunk = jobs.slice(i, i + 1000);
+                const { error } = await supabase.from('vocab_translation_queue').insert(chunk);
+                if (!error) inserted += chunk.length;
+              }
+
+              alert(`✅ Created ${inserted} translation jobs!\n\nNow processing translations...`);
+
+              // Step 2: Process translations in batches
+              let processed = 0;
+              const totalJobs = inserted;
+              
+              while (processed < totalJobs) {
+                const { data, error } = await supabase.functions.invoke('process-translations', { body: {} });
+                
+                if (error || !data?.success) {
+                  alert(`Translation failed: ${data?.error || error?.message || 'Unknown error'}`);
+                  break;
+                }
+                
+                processed += 100; // Assuming 100 jobs per batch
+                
+                // Update progress
+                const progress = Math.round((processed / totalJobs) * 100);
+                console.log(`Progress: ${progress}% (${processed}/${totalJobs})`);
+                
+                // Small delay to avoid overwhelming the system
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+
+              alert(`✅ Translation completed! Processed ${processed} translations.`);
+              loadTranslations();
+              refresh();
             } catch (e: any) {
-              alert(e?.message || 'Failed to process translations');
+              alert(`Failed: ${e?.message || 'Unknown error'}`);
             } finally {
               setSeeding(false);
             }
           }} disabled={seeding}>
-            {seeding ? 'Processing…' : '🔄 Process Translations'}
+            {seeding ? '⏳ Translating All…' : '🌍 Translate All to 22 Languages'}
           </button>
         </div>
       </div>

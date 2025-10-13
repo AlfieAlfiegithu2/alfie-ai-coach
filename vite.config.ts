@@ -7,8 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
-    // Prefer PORT env var (e.g., when running in cloud/dev containers). Fallback to 5173.
-    port: Number(process.env.PORT) || 5173,
+    port: 8080,
     strictPort: true,
   },
   plugins: [

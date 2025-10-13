@@ -1,6 +1,7 @@
 // Deno Edge Function environment
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,320 +10,239 @@ const corsHeaders = {
 
 type ImportRow = Record<string, string>;
 
+type CardPayload = {
+  user_id: string;
+  deck_id: string | null;
+  term: string;
+  translation: string;
+  pos?: string | null;
+  ipa?: string | null;
+  context_sentence?: string | null;
+  examples_json?: string[] | null;
+  frequency_rank?: number | null;
+  language: string;
+  level?: number | null;
+  is_public: boolean;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { csvText, delimiter = ",", previewOnly = false } = await req.json();
-    if (!csvText || typeof csvText !== "string") {
-      throw new Error("csvText is required");
+    const { csvText: bodyCsvText, githubRawUrl, delimiter = ",", previewOnly = false, queueTranslations = false, languages, batchSize: batchSizeParam } = await req.json();
+
+    let csvText = bodyCsvText;
+
+    if ((!csvText || typeof csvText !== "string") && githubRawUrl) {
+      const res = await fetch(githubRawUrl);
+      if (!res.ok) throw new Error(`Failed to fetch CSV from GitHub URL (${res.status})`);
+      csvText = await res.text();
     }
 
-    // Parse CSV (simple, supports quoted values)
+    if (!csvText || typeof csvText !== "string") {
+      throw new Error("csvText is required (or provide githubRawUrl)");
+    }
+
+    // Robust CSV parsing with quoted values support
     const lines = csvText.split(/\r?\n/).filter((l: string) => l.trim().length > 0);
     if (lines.length < 2) throw new Error("CSV must contain header and at least one row");
 
     const parseLine = (line: string): string[] => {
       const out: string[] = [];
-      let current = "";
+      let cur = "";
       let inQuotes = false;
       for (let i = 0; i < line.length; i++) {
         const ch = line[i];
         const next = line[i + 1];
         if (ch === '"') {
-          if (inQuotes && next === '"') { current += '"'; i++; }
+          if (inQuotes && next === '"') { cur += '"'; i++; }
           else { inQuotes = !inQuotes; }
         } else if (ch === delimiter && !inQuotes) {
-          out.push(current);
-          current = "";
+          out.push(cur);
+          cur = "";
         } else {
-          current += ch;
+          cur += ch;
         }
       }
-      out.push(current);
-      return out.map((s) => s.trim());
+      out.push(cur);
+      return out.map(s => s.trim());
     };
 
-    const headers = parseLine(lines[0]).map((h) => h.trim());
-    // Expect: word and language columns (e.g., en, ko, ja ...)
-    const wordIdx = headers.findIndex((h) => h.toLowerCase() === "word");
+    const headers = parseLine(lines[0]).map(h => h.trim());
+
+    // Mandatory columns
+    const wordIdx = headers.findIndex(h => h.toLowerCase() === 'word');
+    const enIdx = headers.findIndex(h => h.toLowerCase() === 'en');
     if (wordIdx === -1) throw new Error("CSV must include a 'word' column");
+    if (enIdx === -1) throw new Error("CSV must include an 'en' column for translation/meaning");
 
-    // Check if this is simple format (just English) or multi-language format
-    const enIdx = headers.findIndex((h) => h.toLowerCase() === "en");
+    // Optional columns
+    const find = (name: string) => headers.findIndex(h => h.toLowerCase() === name);
+    const posIdx = find('pos');
+    const ipaIdx = find('ipa');
+    const freqIdx = find('frequency_rank');
+    const levelIdx = find('level');
+    const contextIdx = find('context_sentence');
+    const ex1Idx = find('example_1');
+    const ex2Idx = find('example_2');
+    const ex3Idx = find('example_3');
 
-    let rows: ImportRow[] = [];
-    if (enIdx !== -1) {
-      // Simple format: just English words with examples
-      for (let i = 1; i < lines.length; i++) {
-        const vals = parseLine(lines[i]);
-        if (!vals[wordIdx] || !vals[enIdx]) continue;
-        const word = vals[wordIdx];
-        const english = vals[enIdx];
-        if (english && english.length > 0) {
-          rows.push({ word, language_code: 'en', translation: english });
-        }
-      }
-    } else {
-      // Multi-language format (legacy)
-      const langCols = headers
-        .map((h, idx) => ({ h, idx }))
-        .filter(({ h }) => h.toLowerCase() !== "word" && /^[a-z]{2}(-[a-z]{2})?$/i.test(h))
-        .map(({ h, idx }) => ({ code: h.toLowerCase(), idx }));
-
-      if (langCols.length === 0) throw new Error("CSV must include at least one language column like 'ko', 'ja', 'vi', 'zh', 'es'");
-
-      for (let i = 1; i < lines.length; i++) {
-        const vals = parseLine(lines[i]);
-        if (!vals[wordIdx]) continue;
-        const word = vals[wordIdx];
-        for (const { code, idx } of langCols) {
-          const translation = vals[idx];
-          if (translation && translation.length > 0) {
-            rows.push({ word, language_code: code, translation });
-          }
-        }
-      }
+    const parsedRows: ImportRow[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const vals = parseLine(lines[i]);
+      const word = vals[wordIdx];
+      const en = vals[enIdx];
+      if (!word || !en) continue;
+      parsedRows.push({
+        word,
+        en,
+        pos: posIdx >= 0 ? vals[posIdx] : '',
+        ipa: ipaIdx >= 0 ? vals[ipaIdx] : '',
+        frequency_rank: freqIdx >= 0 ? vals[freqIdx] : '',
+        level: levelIdx >= 0 ? vals[levelIdx] : '',
+        context_sentence: contextIdx >= 0 ? vals[contextIdx] : '',
+        example_1: ex1Idx >= 0 ? vals[ex1Idx] : '',
+        example_2: ex2Idx >= 0 ? vals[ex2Idx] : '',
+        example_3: ex3Idx >= 0 ? vals[ex3Idx] : '',
+      });
     }
 
     if (previewOnly) {
-      return new Response(JSON.stringify({ success: true, preview: rows.slice(0, 100), totalRows: rows.length }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Return a compact preview including examples count
+      const preview = parsedRows.slice(0, 100).map(r => ({
+        word: r.word,
+        language_code: 'en',
+        translation: r.en,
+        pos: r.pos,
+        ipa: r.ipa,
+        level: r.level,
+        frequency_rank: r.frequency_rank,
+        examples: [r.example_1, r.example_2, r.example_3].filter(Boolean).length
+      }));
+      return new Response(JSON.stringify({ success: true, preview, totalRows: parsedRows.length }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Insert into vocab_cards instead of vocabulary_words for proper level handling
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceKey) {
-      console.error("Missing environment variables:", { supabaseUrl: !!supabaseUrl, serviceKey: !!serviceKey });
-      throw new Error("Missing service role configuration");
-    }
+    // Create Supabase clients
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+    if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) throw new Error('Missing Supabase configuration');
 
-    // Group rows by word - for simple CSV with just English data
-    const wordGroups = new Map();
-    rows.forEach(row => {
-      if (!wordGroups.has(row.word)) {
-        wordGroups.set(row.word, { word: row.word, english: row.translation });
-      }
+    // Get calling user from Authorization header
+    const authHeader = req.headers.get('Authorization') || '';
+    const supabaseAuthed = createClient(SUPABASE_URL, ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: { user } } = await supabaseAuthed.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: `Bearer ${SERVICE_KEY}` } }
     });
 
-    // Convert to vocab_cards format with proper level detection
-    const cardsToInsert = Array.from(wordGroups.values()).map(group => {
-      const level = detectLevelFromFrequency(group.word);
+    // Build card payloads
+    const cards: CardPayload[] = parsedRows.map((r) => {
+      const examples = [r.example_1, r.example_2, r.example_3].filter(Boolean);
+      const level = r.level ? Number(r.level) : undefined;
+      const frequency_rank = r.frequency_rank ? Number(r.frequency_rank) : undefined;
       return {
-        user_id: 'system', // System import
-        deck_id: null, // Will be assigned later
-        term: group.word,
-        translation: group.english || '',
-        pos: detectPartOfSpeech(group.word),
-        ipa: generateIPA(group.word),
-        context_sentence: generateContextSentence(group.word),
-        examples_json: generateExamples(group.word),
-        frequency_rank: estimateFrequencyRank(group.word, level),
+        user_id: user.id,
+        deck_id: null,
+        term: r.word,
+        translation: r.en || '',
+        pos: r.pos || null,
+        ipa: r.ipa || null,
+        context_sentence: r.context_sentence || null,
+        examples_json: examples.length ? examples : null,
+        frequency_rank: Number.isFinite(frequency_rank) ? frequency_rank! : null,
         language: 'en',
-        level: level,
-        is_public: true
+        level: Number.isFinite(level) ? level! : null,
+        is_public: true,
       };
     });
 
-    // Batch insert cards
-    const batchSize = 500;
+    // Process in batches and create a deck per level per batch for organization
+    const batchSize = Math.min(Math.max(Number(batchSizeParam) || 200, 50), 500);
     let inserted = 0;
-    for (let i = 0; i < cardsToInsert.length; i += batchSize) {
-      const batch = cardsToInsert.slice(i, i + batchSize);
 
-      // Create a deck for this batch using direct database insert
-      const deckData = {
-        user_id: 'system',
-        name: `Imported Level ${batch[0]?.level || 1} (${new Date().toISOString().slice(0, 10)})`,
-        is_public: true
-      };
+    for (let i = 0; i < cards.length; i += batchSize) {
+      const batch = cards.slice(i, i + batchSize);
+      const level = batch[0]?.level ?? 1;
 
-      const { data: deck, error: deckError } = await (supabase as any)
+      // Create a deck
+      const { data: deck, error: deckError } = await supabase
         .from('vocab_decks')
-        .insert(deckData)
+        .insert({ user_id: user.id, name: `CSV Import Level ${level} - ${new Date().toISOString().slice(0,10)}`, is_public: true })
         .select('id')
-        .single();
+        .maybeSingle();
 
       if (deckError || !deck?.id) {
         console.error('Deck creation failed:', deckError);
         throw new Error('Failed to create deck');
       }
 
-      // Update cards with deck_id
-      const cardsWithDeck = batch.map(card => ({ ...card, deck_id: deck.id }));
-
-      const { error: cardError } = await (supabase as any)
+      const withDeck = batch.map(c => ({ ...c, deck_id: deck.id }));
+      const { data: insertedCards, error: insertErr } = await supabase
         .from('vocab_cards')
-        .insert(cardsWithDeck);
-
-      if (cardError) {
-        console.error('Card insertion failed:', cardError);
-        throw new Error(`Card insert failed: ${cardError.message}`);
+        .insert(withDeck)
+        .select('id, term');
+      if (insertErr) {
+        console.error('Card insert error:', insertErr);
+        throw new Error(`Card insert failed: ${insertErr.message}`);
       }
 
-      inserted += batch.length;
+      inserted += withDeck.length;
 
-      // Queue translations for the inserted cards
-      // Since we're using batch insert, we need to get the inserted cards back
-      const { data: insertedCards, error: selectError } = await (supabase as any)
-        .from('vocab_cards')
-        .select('id, term')
-        .eq('deck_id', deck.id)
-        .order('created_at', { ascending: false })
-        .limit(batch.length);
-
-      if (selectError || !insertedCards) {
-        console.error('Failed to retrieve inserted cards:', selectError);
-        // Continue anyway, translations will be processed later
-      } else {
-        await queueTranslationsForImport(insertedCards);
-
-        // Process some translations immediately
+      if (queueTranslations && insertedCards && insertedCards.length) {
+        const langs = Array.isArray(languages) && languages.length ? languages : ['ko','ja','zh','es','fr','de'];
+        await queueTranslationsJobs(supabase, insertedCards, user.id, langs);
         try {
-          // Call process-translations function via HTTP
-          const processResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/process-translations`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-            },
-            body: JSON.stringify({}),
-          });
-
-          if (!processResp.ok) {
-            console.log('Background translation processing request failed:', processResp.status);
-          }
-        } catch (error) {
-          console.log('Background translation processing failed:', error);
-          // Don't fail the import if background processing fails
+          await supabase.functions.invoke('process-translations', { body: {} });
+        } catch (_) {
+          // ignore background failure
         }
       }
     }
 
     return new Response(JSON.stringify({ success: true, inserted }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
+    console.error('vocab-import error:', e);
     return new Response(JSON.stringify({ success: false, error: (e as Error).message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
 
-// Helper functions for vocabulary import
-function detectLevelFromFrequency(word: string): number {
-  // Simple heuristic based on word complexity
-  const complexWords = ['epistemological', 'hermeneutics', 'phenomenological', 'dialectical', 'existential'];
-  const advancedWords = ['sophisticated', 'methodology', 'infrastructure', 'paradigm', 'hypothesis'];
-  const intermediateWords = ['environment', 'technology', 'communication', 'education', 'government'];
-
-  if (complexWords.some(w => word.toLowerCase().includes(w))) return 5;
-  if (advancedWords.some(w => word.toLowerCase().includes(w))) return 4;
-  if (intermediateWords.some(w => word.toLowerCase().includes(w))) return 3;
-
-  // Default to level 2 for common words
-  return 2;
-}
-
-function detectPartOfSpeech(word: string): string {
-  // Simple POS detection based on common patterns
-  if (word.endsWith('ing')) return 'verb';
-  if (word.endsWith('ed')) return 'verb';
-  if (word.endsWith('er') || word.endsWith('est')) return 'adjective';
-  if (word.endsWith('ly')) return 'adverb';
-  if (word.endsWith('tion') || word.endsWith('ment') || word.endsWith('ness')) return 'noun';
-
-  return 'noun'; // Default
-}
-
-function generateIPA(word: string): string {
-  // Very basic IPA generation - in reality you'd want a proper IPA library
-  const simpleIPAMap: Record<string, string> = {
-    'house': '/haʊs/',
-    'water': '/ˈwɔːtər/',
-    'environment': '/ɪnˈvaɪrənmənt/',
-    'sophisticated': '/səˈfɪstɪkeɪtɪd/',
-    'epistemological': '/ɪˌpɪstəməˈlɒdʒɪkəl/'
-  };
-
-  return simpleIPAMap[word.toLowerCase()] || `/${word}/`;
-}
-
-function generateContextSentence(word: string): string {
-  const contexts: Record<string, string> = {
-    'house': 'The house has a beautiful garden in the backyard.',
-    'water': 'I drink eight glasses of water every day.',
-    'environment': 'We must protect the environment for future generations.',
-    'sophisticated': 'Her sophisticated analysis impressed the committee.',
-    'epistemological': 'The epistemological foundations of the theory are sound.'
-  };
-
-  return contexts[word.toLowerCase()] || `This ${word} is important for learning.`;
-}
-
-function generateExamples(word: string): string[] {
-  const examples: Record<string, string[]> = {
-    'house': [
-      'I need to clean my house before guests arrive.',
-      'We bought a new house in the suburbs.',
-      'The house has three bedrooms and two bathrooms.'
-    ],
-    'water': [
-      'The water in this lake is very clean.',
-      'Please pass me a bottle of water.',
-      'Plants need water to grow properly.'
-    ],
-    'environment': [
-      'The company is committed to environmental sustainability.',
-      'Environmental issues are becoming increasingly important.',
-      'We should all work to protect our environment.'
-    ]
-  };
-
-  return examples[word.toLowerCase()] || [
-    `I use ${word} every day.`,
-    `The ${word} is very important.`,
-    `Many people study ${word}.`
-  ];
-}
-
-function estimateFrequencyRank(word: string, level: number): number {
-  // Estimate frequency rank based on level
-  const baseRanks = {
-    1: 100,    // Most common
-    2: 2000,   // Common
-    3: 5000,   // Intermediate
-    4: 8000,   // Advanced
-    5: 9500    // Most advanced
-  };
-
-  return baseRanks[level] + Math.floor(Math.random() * 500);
-}
-
-async function queueTranslationsForImport(insertedCards: any[]) {
-  // Queue translations for the imported cards
-  for (const card of insertedCards) {
-    try {
-      // Create translation jobs for all supported languages except English
-      const languages = ['ko', 'ja', 'zh', 'es', 'fr', 'de', 'ar', 'hi', 'pt', 'ru', 'th', 'vi', 'tr', 'ur', 'yue', 'bn', 'fa', 'id', 'ms', 'ne', 'ta'];
-
-      for (const lang of languages) {
-        await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/vocab_translation_queue`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({
-            user_id: 'system',
-            card_id: card.id,
-            term: card.term,
-            target_lang: lang,
-            status: 'pending'
-          }),
-        });
+async function queueTranslationsJobs(
+  supabase: ReturnType<typeof createClient>,
+  insertedCards: { id: string; term: string }[],
+  userId: string,
+  langs: string[]
+) {
+  const jobs: any[] = [];
+  for (const c of insertedCards) {
+    for (const lang of langs) {
+      jobs.push({
+        user_id: userId,
+        card_id: c.id,
+        term: c.term,
+        target_lang: lang,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
+    }
+  }
+  if (jobs.length) {
+    const chunkSize = 1000;
+    for (let i = 0; i < jobs.length; i += chunkSize) {
+      const chunk = jobs.slice(i, i + chunkSize);
+      const { error } = await supabase.from('vocab_translation_queue').insert(chunk as any);
+      if (error) {
+        console.log('translation queue insert error:', error.message);
+        break;
       }
-    } catch (error) {
-      console.error(`Failed to queue translations for ${card.term}:`, error);
     }
   }
 }

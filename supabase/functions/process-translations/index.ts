@@ -12,20 +12,16 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('Unauthorized');
+    const authHeader = req.headers.get('Authorization') || '';
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } }
+      { global: { headers: authHeader ? { Authorization: authHeader } : {} as any }, auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
     // Process background translations (works for any user, including system imports)
-    await processBackgroundTranslations(supabase);
+    await processBackgroundTranslations(supabase, authHeader);
 
     return new Response(JSON.stringify({
       success: true,
@@ -40,15 +36,14 @@ serve(async (req) => {
   }
 });
 
-// Process translations in background (simplified version)
-async function processBackgroundTranslations(supabase: any) {
+  // Process translations in background (simplified version)
+async function processBackgroundTranslations(supabase: any, authHeader: string) {
   // @ts-ignore - Deno Edge Function database operations
   const { data: pendingJobs } = await (supabase as any)
     .from('vocab_translation_queue')
     .select('*')
-    .in('user_id', ['system']) // Only process system imports for now
     .eq('status', 'pending')
-    .limit(50); // Process more at once for efficiency
+    .limit(100); // Process more at once for efficiency
 
   if (!pendingJobs || (pendingJobs as any[]).length === 0) {
     console.log('No pending translation jobs found');
@@ -80,7 +75,7 @@ async function processBackgroundTranslations(supabase: any) {
     for (const langBatch of langBatches) {
       // @ts-ignore - Deno Edge Function database operations
       const translationPromises: Promise<any>[] = (langBatch as any[]).map((job: any) =>
-        translateSingleWord(cardId, term, job.target_lang, supabase)
+        translateSingleWord(cardId, term, job.target_lang, supabase, authHeader)
           .then((result: any) => ({ jobId: job.id, result }))
       );
 
@@ -106,11 +101,11 @@ async function processBackgroundTranslations(supabase: any) {
 }
 
 // Simplified translation function
-async function translateSingleWord(cardId: string, term: string, targetLang: string, supabase: any) {
+async function translateSingleWord(cardId: string, term: string, targetLang: string, supabase: any, authHeader: string) {
   try {
     const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
       body: JSON.stringify({ text: term, sourceLang: 'en', targetLang: targetLang, includeContext: true })
     });
 
@@ -133,7 +128,7 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
     if (!arr.length) return null;
 
     await supabase.from('vocab_translations').upsert({
-      user_id: 'system',
+      user_id: cardId, // Use card_id as user_id for system-wide translations
       card_id: cardId,
       lang: targetLang,
       translations: arr,

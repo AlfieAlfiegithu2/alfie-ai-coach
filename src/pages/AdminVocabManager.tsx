@@ -17,6 +17,8 @@ const AdminVocabManager: React.FC = () => {
   const [newContext, setNewContext] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [auditResults, setAuditResults] = useState<any>(null);
+  const [generating, setGenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -30,12 +32,12 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const loadTranslations = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('vocab_translations')
       .select('card_id, lang, translations');
 
     const transMap: Record<string, any> = {};
-    data?.forEach(t => {
+    (data as any[])?.forEach((t: any) => {
       if (!transMap[t.card_id]) transMap[t.card_id] = {};
       transMap[t.card_id][t.lang] = t.translations?.[0] || '';
     });
@@ -260,12 +262,148 @@ const AdminVocabManager: React.FC = () => {
     await loadCounts();
   };
 
+  const generateFrequencyVocab = async (minLevel?: number, maxLevel?: number) => {
+    const levelText = minLevel && maxLevel ? ` (Level ${minLevel}-${maxLevel})` : '';
+    const total = prompt(`How many words to generate${levelText}? (max 10000)`, '1000');
+    if (!total) return;
+    const count = Math.min(parseInt(total), 10000);
+    if (isNaN(count) || count < 1) { alert('Invalid number'); return; }
+    
+    const startRank = prompt('Start from rank? (0 = most common)', '0');
+    if (startRank === null) return;
+    const startRankNum = Math.max(parseInt(startRank || '0'), 0);
+    
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-frequency-seed', {
+        body: {
+          total: count,
+          startRank: startRankNum,
+          minLevel: minLevel || 1,
+          maxLevel: maxLevel || 5,
+          languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
+        }
+      });
+      
+      if (error || !data?.success) {
+        alert(`Generation failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Successfully generated ${data.importedCount} real English words${levelText}!`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`Generation failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const classifyWithAI = async () => {
+    if (!window.confirm('This will use AI to classify all level 1 words by difficulty. Continue?')) return;
+    
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-level-classifier');
+      
+      if (error || !data?.success) {
+        alert(`Classification failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Classified ${data.classified} words using AI!`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`Classification failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const cleanupJunk = async () => {
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-cleanup-junk');
+      
+      if (error || !data?.success) {
+        alert(`Cleanup failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Cleaned up ${data.deleted} junk entries (single letters, abbreviations)`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`Cleanup failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteAllWords = async () => {
+    const confirm = window.confirm('⚠️ Are you sure you want to DELETE ALL vocabulary words? This cannot be undone!');
+    if (!confirm) return;
+    
+    const doubleConfirm = window.confirm('⚠️⚠️ FINAL WARNING: This will permanently delete ALL words and translations. Type YES to confirm.');
+    if (!doubleConfirm) return;
+    
+    setDeleting(true);
+    try {
+      // Delete all vocab cards (cascading will handle translations)
+      const { error } = await supabase.from('vocab_cards').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      if (error) {
+        alert(`Delete failed: ${error.message}`);
+      } else {
+        alert('✅ All vocabulary words deleted successfully');
+        setRows([]);
+        setTranslations({});
+        await loadCounts();
+      }
+    } catch (e: any) {
+      alert(`Delete failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Admin • Vocabulary</h1>
-        <div className="flex gap-2">
-            <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+        <div className="flex gap-2 flex-wrap">
+          <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
+          <button 
+            className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
+            onClick={() => generateFrequencyVocab()} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Generating…' : '📚 Generate All Levels'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-blue-600 text-white font-medium" 
+            onClick={() => generateFrequencyVocab(3, 5)} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Generating…' : '🎓 Advanced (B1-C2)'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-green-600 text-white font-medium" 
+            onClick={classifyWithAI} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Classifying…' : '🤖 AI Classify Levels'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-orange-600 text-white font-medium" 
+            onClick={cleanupJunk} 
+            disabled={deleting}
+          >
+            {deleting ? '⏳ Cleaning…' : '🧹 Clean Junk & Plurals'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-red-600 text-white font-medium" 
+            onClick={deleteAllWords} 
+            disabled={deleting}
+          >
+            {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
+          </button>
           <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
           <input
             ref={fileInputRef}
@@ -384,7 +522,7 @@ const AdminVocabManager: React.FC = () => {
                   <div className="space-y-1">
                     {Object.entries(translations[r.id] || {}).map(([lang, trans]) => (
                       <div key={lang} className="text-xs">
-                        <span className="font-medium text-blue-600">{lang.toUpperCase()}:</span> {trans}
+                        <span className="font-medium text-blue-600">{lang.toUpperCase()}:</span> {String(trans)}
                       </div>
                     ))}
                     {(!translations[r.id] || Object.keys(translations[r.id]).length === 0) && (

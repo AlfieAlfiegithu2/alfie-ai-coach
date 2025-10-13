@@ -109,6 +109,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
+    // One-time kick on first load
     try {
       const key = 'vocabRunnerStartedGlobal';
       if (!localStorage.getItem(key)) {
@@ -116,6 +117,22 @@ const App = () => {
         supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 150 } }).catch(() => {});
       }
     } catch {}
+
+    // Watchdog: periodically re-kick in case a prior run was interrupted and didn't self-chain
+    const LAST_KEY = 'vocabRunnerLastPing';
+    const intervalMs = 120000; // 2 minutes
+    const ping = async () => {
+      try {
+        const last = Number(localStorage.getItem(LAST_KEY) || '0');
+        const now = Date.now();
+        if (now - last < intervalMs - 5000) return; // another tab recently pinged
+        localStorage.setItem(LAST_KEY, String(now));
+        await supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 150 } });
+      } catch {}
+    };
+    ping(); // immediate check
+    const id = setInterval(ping, intervalMs);
+    return () => clearInterval(id);
   }, []);
 
   return (

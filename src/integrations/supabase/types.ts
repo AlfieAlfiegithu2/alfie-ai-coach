@@ -1731,6 +1731,7 @@ export type Database = {
           pos: string | null
           suspended: boolean | null
           synonyms: string[] | null
+          synonyms_json: Json | null
           term: string
           translation: string
           updated_at: string | null
@@ -1751,6 +1752,7 @@ export type Database = {
           pos?: string | null
           suspended?: boolean | null
           synonyms?: string[] | null
+          synonyms_json?: Json | null
           term: string
           translation: string
           updated_at?: string | null
@@ -1771,6 +1773,7 @@ export type Database = {
           pos?: string | null
           suspended?: boolean | null
           synonyms?: string[] | null
+          synonyms_json?: Json | null
           term?: string
           translation?: string
           updated_at?: string | null
@@ -1819,6 +1822,53 @@ export type Database = {
         }
         Relationships: []
       }
+      vocab_examples: {
+        Row: {
+          card_id: string | null
+          cefr: string | null
+          created_at: string | null
+          id: string
+          lang: string | null
+          quality: number | null
+          sentence: string
+          source: string | null
+          translation: string | null
+          user_id: string
+        }
+        Insert: {
+          card_id?: string | null
+          cefr?: string | null
+          created_at?: string | null
+          id?: string
+          lang?: string | null
+          quality?: number | null
+          sentence: string
+          source?: string | null
+          translation?: string | null
+          user_id: string
+        }
+        Update: {
+          card_id?: string | null
+          cefr?: string | null
+          created_at?: string | null
+          id?: string
+          lang?: string | null
+          quality?: number | null
+          sentence?: string
+          source?: string | null
+          translation?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_examples_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vocab_frequency: {
         Row: {
           created_at: string | null
@@ -1842,6 +1892,106 @@ export type Database = {
           rank?: number
         }
         Relationships: []
+      }
+      vocab_images: {
+        Row: {
+          card_id: string | null
+          created_at: string | null
+          format: string | null
+          height: number | null
+          id: string
+          prompt: string | null
+          provider: string | null
+          style: string | null
+          url: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          card_id?: string | null
+          created_at?: string | null
+          format?: string | null
+          height?: number | null
+          id?: string
+          prompt?: string | null
+          provider?: string | null
+          style?: string | null
+          url: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          card_id?: string | null
+          created_at?: string | null
+          format?: string | null
+          height?: number | null
+          id?: string
+          prompt?: string | null
+          provider?: string | null
+          style?: string | null
+          url?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_images_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocab_pronunciations: {
+        Row: {
+          accent: string | null
+          card_id: string | null
+          created_at: string | null
+          duration_ms: number | null
+          format: string | null
+          gender: string | null
+          id: string
+          provider: string | null
+          url: string
+          user_id: string
+          voice_id: string | null
+        }
+        Insert: {
+          accent?: string | null
+          card_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          format?: string | null
+          gender?: string | null
+          id?: string
+          provider?: string | null
+          url: string
+          user_id: string
+          voice_id?: string | null
+        }
+        Update: {
+          accent?: string | null
+          card_id?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          format?: string | null
+          gender?: string | null
+          id?: string
+          provider?: string | null
+          url?: string
+          user_id?: string
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_pronunciations_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vocab_reviews: {
         Row: {
@@ -1936,6 +2086,89 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vocab_srs_state_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocab_translation_queue: {
+        Row: {
+          card_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          retry_count: number | null
+          status: string
+          target_lang: string
+          term: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          retry_count?: number | null
+          status?: string
+          target_lang: string
+          term: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          retry_count?: number | null
+          status?: string
+          target_lang?: string
+          term?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vocab_translations: {
+        Row: {
+          card_id: string | null
+          created_at: string | null
+          id: string
+          lang: string
+          provider: string | null
+          quality: number | null
+          translations: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          card_id?: string | null
+          created_at?: string | null
+          id?: string
+          lang: string
+          provider?: string | null
+          quality?: number | null
+          translations?: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          card_id?: string | null
+          created_at?: string | null
+          id?: string
+          lang?: string
+          provider?: string | null
+          quality?: number | null
+          translations?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_translations_card_id_fkey"
             columns: ["card_id"]
             isOneToOne: false
             referencedRelation: "vocab_cards"

@@ -460,11 +460,53 @@ const AdminVocabManager: React.FC = () => {
             <button className="border rounded px-3 py-2 bg-green-600 text-white" onClick={async()=>{
               try {
                 setSeeding(true);
-                const { data, error } = await (supabase as any).functions.invoke('process-translations', { body: {} });
+                
+                // First check how many jobs are pending
+                const { data: queueStats, error: statsError } = await supabase
+                  .from('vocab_translation_queue')
+                  .select('status', { count: 'exact', head: false })
+                  .eq('status', 'pending');
+                
+                if (statsError) {
+                  alert(`Failed to check queue: ${statsError.message}`);
+                  setSeeding(false);
+                  return;
+                }
+                
+                const pendingCount = queueStats?.length || 0;
+                
+                if (pendingCount === 0) {
+                  alert('ℹ️ No pending translations found.\n\nAll translations are already processed or no words have been generated yet.\n\n💡 Generate words first, then process translations.');
+                  setSeeding(false);
+                  return;
+                }
+                
+                alert(`🔄 Processing ${pendingCount} pending translation jobs...\n\nThis may take a few minutes. You'll be notified when complete.`);
+                
+                // Invoke the function
+                const { data, error } = await (supabase as any).functions.invoke('process-translations', { 
+                  body: {},
+                  headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` }
+                });
+                
                 if (error || !data?.success) {
                   alert(data?.error || error?.message || 'Failed to process translations');
                 } else {
-                  alert('✅ Translation processing completed!');
+                  // Check completion status
+                  const { data: afterStats, error: afterError } = await supabase
+                    .from('vocab_translation_queue')
+                    .select('status', { count: 'exact', head: false })
+                    .eq('status', 'pending');
+                  
+                  const remainingCount = afterStats?.length || 0;
+                  const completedCount = pendingCount - remainingCount;
+                  
+                  if (remainingCount > 0) {
+                    alert(`✅ Translation batch completed!\n\nProcessed ${completedCount} translations.\n\n⏳ ${remainingCount} jobs remaining.\n\n💡 Click "Process Translations" again to continue.`);
+                  } else {
+                    alert(`✅ All translations completed!\n\nProcessed ${completedCount} translations.\n\n🎉 All pending jobs finished!`);
+                  }
+                  
                   loadTranslations(); // Refresh translations
                 }
               } catch (e: any) {

@@ -74,7 +74,7 @@ serve(async (req) => {
     const startFromRank = (maxRankRow?.frequency_rank ?? 0) + 1;
 
     // Fetch data
-    const resp = await fetch(csvUrl);
+    const resp = await fetch(csvUrl, { headers: { 'Accept': 'text/csv, text/plain;q=0.9, */*;q=0.8' } });
     if (!resp.ok) throw new Error(`Failed to fetch CEFR source: ${resp.status}`);
     const sourceText = await resp.text();
 
@@ -296,7 +296,7 @@ serve(async (req) => {
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
 
   } catch (e) {
-    return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 });
 

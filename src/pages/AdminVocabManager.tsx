@@ -177,18 +177,25 @@ const AdminVocabManager: React.FC = () => {
     await loadCounts();
   };
 
-  const generateFrequencyVocab = async () => {
-    const total = prompt('How many words to generate? (max 10000)', '1000');
+  const generateFrequencyVocab = async (minLevel?: number, maxLevel?: number) => {
+    const levelText = minLevel && maxLevel ? ` (Level ${minLevel}-${maxLevel})` : '';
+    const total = prompt(`How many words to generate${levelText}? (max 10000)`, '1000');
     if (!total) return;
     const count = Math.min(parseInt(total), 10000);
     if (isNaN(count) || count < 1) { alert('Invalid number'); return; }
+    
+    const startRank = prompt('Start from rank? (0 = most common)', '0');
+    if (startRank === null) return;
+    const startRankNum = Math.max(parseInt(startRank || '0'), 0);
     
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('vocab-frequency-seed', {
         body: {
           total: count,
-          startRank: 0,
+          startRank: startRankNum,
+          minLevel: minLevel || 1,
+          maxLevel: maxLevel || 5,
           languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
         }
       });
@@ -196,11 +203,31 @@ const AdminVocabManager: React.FC = () => {
       if (error || !data?.success) {
         alert(`Generation failed: ${data?.error || error?.message || 'Unknown error'}`);
       } else {
-        alert(`✅ Successfully generated ${data.importedCount} real English words from frequency list!`);
+        alert(`✅ Successfully generated ${data.importedCount} real English words${levelText}!`);
         refresh();
       }
     } catch (e: any) {
       alert(`Generation failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const classifyWithAI = async () => {
+    if (!window.confirm('This will use AI to classify all level 1 words by difficulty. Continue?')) return;
+    
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-level-classifier');
+      
+      if (error || !data?.success) {
+        alert(`Classification failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        alert(`✅ Classified ${data.classified} words using AI!`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`Classification failed: ${e?.message || 'Unknown error'}`);
     } finally {
       setGenerating(false);
     }
@@ -259,17 +286,31 @@ const AdminVocabManager: React.FC = () => {
           <button className="border rounded px-3 py-2" onClick={refresh} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
           <button 
             className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
-            onClick={generateFrequencyVocab} 
+            onClick={() => generateFrequencyVocab()} 
             disabled={generating}
           >
-            {generating ? '⏳ Generating…' : '✨ Generate Real Words'}
+            {generating ? '⏳ Generating…' : '📚 Generate All Levels'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-blue-600 text-white font-medium" 
+            onClick={() => generateFrequencyVocab(3, 5)} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Generating…' : '🎓 Advanced (B1-C2)'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-green-600 text-white font-medium" 
+            onClick={classifyWithAI} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Classifying…' : '🤖 AI Classify Levels'}
           </button>
           <button 
             className="border rounded px-3 py-2 bg-orange-600 text-white font-medium" 
             onClick={cleanupJunk} 
             disabled={deleting}
           >
-            {deleting ? '⏳ Cleaning…' : '🧹 Clean Junk'}
+            {deleting ? '⏳ Cleaning…' : '🧹 Clean Junk & Plurals'}
           </button>
           <button 
             className="border rounded px-3 py-2 bg-red-600 text-white font-medium" 

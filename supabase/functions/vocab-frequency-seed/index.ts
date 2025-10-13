@@ -31,6 +31,8 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const total = Math.min(Number(body?.total || 1000), 10000);
     const startRank = Math.max(Number(body?.startRank || 0), 0);
+    const minLevel = Number(body?.minLevel || 1);
+    const maxLevel = Number(body?.maxLevel || 5);
     const languages = body?.languages || ['ko', 'ja', 'zh', 'es', 'fr', 'de'];
     const batchSize = 20; // Process 20 words at a time
 
@@ -123,25 +125,35 @@ serve(async (req) => {
         })
       );
 
-      // Insert cards with proper level
-      const cardsToInsert = enrichedWords.map((w, idx) => {
-        const calculatedLevel = calculateLevel(startRank + b * batchSize + idx);
-        console.log(`Word "${w.term}" - Rank: ${w.frequencyRank}, Level: ${calculatedLevel}`);
-        return {
-          user_id: user.id,
-          deck_id: deck.id,
-          term: w.term,
-          translation: w.translation,
-          pos: w.pos,
-          ipa: w.ipa,
-          context_sentence: w.examples[0] || '',
-          examples_json: w.examples.slice(0, 3).filter(Boolean),
-          frequency_rank: w.frequencyRank,
-          language: 'en',
-          level: calculatedLevel,
-          is_public: true
-        };
-      });
+      // Insert cards with proper level, skip if outside level range
+      const cardsToInsert = enrichedWords
+        .map((w, idx) => {
+          const calculatedLevel = calculateLevel(startRank + b * batchSize + idx);
+          return { ...w, calculatedLevel, idx };
+        })
+        .filter(w => w.calculatedLevel >= minLevel && w.calculatedLevel <= maxLevel)
+        .map(w => {
+          console.log(`Word "${w.term}" - Rank: ${w.frequencyRank}, Level: ${w.calculatedLevel}`);
+          return {
+            user_id: user.id,
+            deck_id: deck.id,
+            term: w.term,
+            translation: w.translation,
+            pos: w.pos,
+            ipa: w.ipa,
+            context_sentence: w.examples[0] || '',
+            examples_json: w.examples.slice(0, 3).filter(Boolean),
+            frequency_rank: w.frequencyRank,
+            language: 'en',
+            level: w.calculatedLevel,
+            is_public: true
+          };
+        });
+
+      if (cardsToInsert.length === 0) {
+        console.log(`Batch ${b + 1}: No words in level range ${minLevel}-${maxLevel}, skipping`);
+        continue;
+      }
 
       const { data: insertedCards, error: insertErr } = await supabase
         .from('vocab_cards')

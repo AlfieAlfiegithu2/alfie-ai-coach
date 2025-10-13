@@ -91,17 +91,25 @@ serve(async (req) => {
 
     console.log(`Found ${junkIds.length} junk, ${duplicateIds.length} duplicates, ${pluralIds.length} plurals to delete`);
 
-    const { error: deleteError } = await supabase
-      .from('vocab_cards')
-      .delete()
-      .in('id', allDeleteIds);
-
-    if (deleteError) throw deleteError;
+    // Delete in batches of 100 to avoid "Bad Request" error
+    const batchSize = 100;
+    let totalDeleted = 0;
+    for (let i = 0; i < allDeleteIds.length; i += batchSize) {
+      const batch = allDeleteIds.slice(i, i + batchSize);
+      const { error: deleteError } = await supabase
+        .from('vocab_cards')
+        .delete()
+        .in('id', batch);
+      
+      if (deleteError) throw deleteError;
+      totalDeleted += batch.length;
+      console.log(`Deleted batch ${Math.floor(i / batchSize) + 1}: ${batch.length} items`);
+    }
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Cleaned up ${allDeleteIds.length} entries (${junkIds.length} junk, ${duplicateIds.length} duplicates, ${pluralIds.length} plurals)`,
-      deleted: allDeleteIds.length,
+      message: `Cleaned up ${totalDeleted} entries (${junkIds.length} junk, ${duplicateIds.length} duplicates, ${pluralIds.length} plurals)`,
+      deleted: totalDeleted,
       breakdown: {
         junk: junkIds.length,
         duplicates: duplicateIds.length,

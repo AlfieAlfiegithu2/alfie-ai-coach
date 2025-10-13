@@ -14,10 +14,30 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')!;
-    const supabaseClient = createClient(
+    
+    // User client for authentication check
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
+    );
+    
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Unauthorized');
+    }
+    
+    // Service role client for database operations (bypass RLS)
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
     const { languages, maxWords, onlyMissing = true, startCardId, startLang } = await req.json();

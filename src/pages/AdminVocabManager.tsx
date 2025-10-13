@@ -286,51 +286,29 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
-  const generateC1Words = async () => {
-    // Import C1 vocabulary from GitHub
+  const importIELTSWords = async () => {
+    // Import IELTS-style lists (CSV or TXT) by URL using the CEFR importer
+    const defaultUrl = 'https://raw.githubusercontent.com/anig1scur/CEFR-Vocabulary-List/slave/B2.txt';
+    const url = window.prompt('Enter RAW URL for IELTS/AWL wordlist (CSV or TXT)', defaultUrl);
+    if (!url) return;
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('vocab-cefr-seed', {
         body: {
-          csvUrl: 'https://raw.githubusercontent.com/anig1scur/CEFR-Vocabulary-List/slave/C1.txt',
-          total: 2000,
-          level: 5 // C1/C2 level
+          total: 10000,
+          csvUrl: url.trim()
         }
       });
-      
-      if (error || !data?.success) {
-        alert(`C1 import failed: ${data?.error || error?.message || 'Unknown error'}`);
-      } else {
-        alert(`✅ Successfully imported ${data.importedCount} C1 level words!`);
-        refresh();
-      }
-    } catch (e: any) {
-      alert(`C1 import failed: ${e?.message || 'Unknown error'}`);
-    } finally {
-      setGenerating(false);
-    }
-  };
 
-  const generateB2Words = async () => {
-    // Import B2 vocabulary from GitHub
-    setGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('vocab-cefr-seed', {
-        body: {
-          csvUrl: 'https://raw.githubusercontent.com/anig1scur/CEFR-Vocabulary-List/slave/B2.txt',
-          total: 3000,
-          level: 4 // B2 level
-        }
-      });
-      
       if (error || !data?.success) {
-        alert(`B2 import failed: ${data?.error || error?.message || 'Unknown error'}`);
+        alert(`Import failed: ${data?.error || error?.message || 'Unknown error'}`);
       } else {
-        alert(`✅ Successfully imported ${data.importedCount} B2 level words!`);
+        const resumeInfo = data.isResume ? `\n\n📍 Resumed from rank ${data.startedFromRank}` : '';
+        alert(`✅ Imported ${data.importedCount} IELTS/AWL words!${resumeInfo}`);
         refresh();
       }
     } catch (e: any) {
-      alert(`B2 import failed: ${e?.message || 'Unknown error'}`);
+      alert(`Import failed: ${e?.message || 'Unknown error'}`);
     } finally {
       setGenerating(false);
     }
@@ -474,6 +452,13 @@ const AdminVocabManager: React.FC = () => {
             disabled={generating}
           >
             {generating ? '⏳ Importing…' : '🎓 Import C1 Words'}
+          </button>
+          <button 
+            className="border rounded px-3 py-2 bg-blue-500 text-white font-medium" 
+            onClick={importIELTSWords} 
+            disabled={generating}
+          >
+            {generating ? '⏳ Importing…' : '📥 Import IELTS/AWL by URL'}
           </button>
           <button 
             className="border rounded px-3 py-2 bg-orange-600 text-white font-medium" 

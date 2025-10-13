@@ -130,47 +130,66 @@ serve(async (req) => {
             continue;
           }
 
-          const rawResult = payload.result;
-
-          // Clean helper: remove code fences and extract JSON translation when present
-          const cleanText = (s: string) => {
+          // Clean and extract translations from API response
+          const extractTranslations = (result: any): string[] => {
             try {
-              let t = String(s).trim();
-              // Strip code fences
-              t = t.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-              // Try JSON parse to extract { translation }
+              let text = '';
+              
+              // Extract text from result
+              if (typeof result === 'string') {
+                text = result;
+              } else if (result && typeof result === 'object') {
+                text = JSON.stringify(result);
+              } else {
+                return [];
+              }
+              
+              // Remove code fences
+              text = text.replace(/^```json\s*/im, '').replace(/^```\s*/m, '').replace(/```\s*$/m, '').trim();
+              
+              // Try to parse as JSON
               try {
-                const obj = JSON.parse(t);
-                if (typeof obj?.translation === 'string') return String(obj.translation).trim();
-                if (obj?.translation && typeof obj.translation.translation === 'string') return String(obj.translation.translation).trim();
-              } catch { /* not JSON, keep raw */ }
-              // Remove surrounding quotes if any
-              t = t.replace(/^"|"$/g, '').trim();
-              return t;
-            } catch { return String(s); }
+                const parsed = JSON.parse(text);
+                const translations: string[] = [];
+                
+                // Extract primary translation
+                if (typeof parsed.translation === 'string') {
+                  translations.push(parsed.translation.trim());
+                }
+                
+                // Extract alternatives
+                if (Array.isArray(parsed.alternatives)) {
+                  parsed.alternatives.forEach((alt: any) => {
+                    if (typeof alt === 'string') {
+                      translations.push(alt.trim());
+                    } else if (alt && typeof alt.meaning === 'string') {
+                      translations.push(alt.meaning.trim());
+                    }
+                  });
+                }
+                
+                if (translations.length > 0) {
+                  return translations.filter(Boolean);
+                }
+              } catch (e) {
+                // Not valid JSON, treat as plain text
+              }
+              
+              // Fallback: split by common separators and clean
+              const fallback = text
+                .replace(/["'\[\]{}]/g, ' ')
+                .split(/[,،\s]+/)
+                .map(t => t.trim())
+                .filter(t => t.length > 0 && t.length < 100);
+              
+              return fallback.length > 0 ? fallback.slice(0, 5) : [text.slice(0, 100)];
+            } catch (e) {
+              console.error('Failed to extract translations:', e);
+              return [];
+            }
           };
 
-          let primary = '';
-          let alternatives: string[] = [];
-
-          if (typeof rawResult === 'string') {
-            primary = cleanText(rawResult);
-          } else if (rawResult && typeof rawResult === 'object') {
-            if (typeof (rawResult as any).translation === 'string') {
-              primary = cleanText((rawResult as any).translation);
-            } else if ((rawResult as any).translation && typeof (rawResult as any).translation.translation === 'string') {
-              primary = cleanText((rawResult as any).translation.translation);
-            }
-            if (Array.isArray((rawResult as any).alternatives)) {
-              alternatives = (rawResult as any).alternatives
-                .map((a: any) => typeof a === 'string' ? cleanText(a) : cleanText(a?.meaning || ''))
-                .filter((s: string) => !!s);
-            }
-          }
-
-          const translations = Array.from(new Set([primary, ...alternatives]
-            .map((s: string) => String(s).trim())
-            .filter(Boolean)));
+          const translations = extractTranslations(payload.result);
 
 
           if (translations.length === 0) {

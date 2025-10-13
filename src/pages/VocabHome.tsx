@@ -14,7 +14,7 @@ export default function VocabHome() {
   const { user } = useAuth();
   const [active, setActive] = useState<string>("all");
   const [decks, setDecks] = useState<DeckRow[]>([]);
-  const levels = [1,2,3,4,5];
+  const levels = [1,2,3,4];
 
   useEffect(() => {
     const load = async () => {

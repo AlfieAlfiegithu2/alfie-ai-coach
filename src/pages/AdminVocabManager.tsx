@@ -362,7 +362,7 @@ const AdminVocabManager: React.FC = () => {
           total: count,
           // startRank: not provided - function will auto-resume
           minLevel: minLevel || 1,
-          maxLevel: maxLevel || 5,
+          maxLevel: maxLevel || 4,
           languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
         }
       });
@@ -582,7 +582,6 @@ const AdminVocabManager: React.FC = () => {
           <option value="2">A2</option>
           <option value="3">B1</option>
           <option value="4">B2</option>
-          <option value="5">C1-C2</option>
         </select>
         <div className="text-sm text-slate-600">
           Showing {rows.length} of {totalCount} words
@@ -660,7 +659,6 @@ const AdminVocabManager: React.FC = () => {
                     <option value={2}>A2</option>
                     <option value={3}>B1</option>
                     <option value={4}>B2</option>
-                    <option value={5}>C1-C2</option>
                   </select>
                 </td>
                 <td className="p-2 w-16 text-center">{r.frequency_rank||''}</td>

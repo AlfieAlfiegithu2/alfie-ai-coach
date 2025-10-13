@@ -33,7 +33,7 @@ serve(async (req) => {
     const minLevel = Number(body?.minLevel || 1);
     const maxLevel = Number(body?.maxLevel || 5);
     const languages = body?.languages || ['ko', 'ja', 'zh', 'es', 'fr', 'de'];
-    const batchSize = 20; // Process 20 words at a time
+    const batchSize = 50; // Process 50 words at a time (faster processing)
     
     // Auto-calculate starting rank based on minLevel if not specified
     const defaultStartRank = minLevel === 1 ? 0 :
@@ -268,8 +268,8 @@ serve(async (req) => {
         }
       }
 
-      // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Minimal delay between batches (reduced from 300ms to 50ms for faster processing)
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     // Calculate if this was a resume or fresh start

@@ -122,3 +122,6 @@ verify_jwt = true
 
 [functions.vocab-level-classifier]
 verify_jwt = true
+
+[functions.vocab-cefr-seed]
+verify_jwt = true

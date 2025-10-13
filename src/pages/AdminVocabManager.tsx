@@ -263,29 +263,20 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const generateAdvancedWords = async () => {
-    // Auto-generate up to 10,000 words from most popular, all levels
+    // Auto-generate CEFR vocabulary from CSV via edge function
     setGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('vocab-frequency-seed', {
+      const { data, error } = await supabase.functions.invoke('vocab-cefr-seed', {
         body: {
-          total: 10000, // Generate up to 10,000 words
-          minLevel: 1,  // Start from A1 (most popular)
-          maxLevel: 5,  // Go up to C2 (advanced)
-          languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
+          total: 8000
         }
       });
       
       if (error || !data?.success) {
         alert(`Generation failed: ${data?.error || error?.message || 'Unknown error'}`);
       } else {
-        const resumeInfo = data.isResume 
-          ? `\n\n📍 Resumed from rank ${data.startedFromRank} (continuing from where you left off)`
-          : '';
-        const skipInfo = data.skippedCount > 0 
-          ? `\n⏭️ Skipped ${data.skippedCount} words outside level range`
-          : '';
-        
-        alert(`✅ Successfully generated ${data.importedCount} words from most popular!${resumeInfo}${skipInfo}\n\n💡 Click again to continue generating more words automatically.`);
+        const resumeInfo = data.isResume ? `\n\n📍 Resumed from rank ${data.startedFromRank}` : '';
+        alert(`✅ Successfully generated ${data.importedCount} CEFR-graded words!${resumeInfo}\n\n💡 Click again to continue generating more words automatically.`);
         refresh();
       }
     } catch (e: any) {
@@ -418,14 +409,7 @@ const AdminVocabManager: React.FC = () => {
             onClick={generateAdvancedWords} 
             disabled={generating}
           >
-            {generating ? '⏳ Generating…' : '🚀 Generate 10K Words (All Levels)'}
-          </button>
-          <button 
-            className="border rounded px-3 py-2 bg-green-600 text-white font-medium" 
-            onClick={classifyWithAI} 
-            disabled={generating}
-          >
-            {generating ? '⏳ Classifying…' : '🤖 AI Classify Levels'}
+            {generating ? '⏳ Generating…' : '📚 Generate CEFR Vocabulary'}
           </button>
           <button 
             className="border rounded px-3 py-2 bg-orange-600 text-white font-medium" 
@@ -441,95 +425,24 @@ const AdminVocabManager: React.FC = () => {
           >
             {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
           </button>
-          <button className="border rounded px-3 py-2" onClick={exportCsv}>Export CSV</button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleCsvImport(f);
-            }}
-          />
-          <>
-            {/* Essential vocabulary management buttons */}
-            <button className="border rounded px-3 py-2 bg-blue-600 text-white" onClick={() => fileInputRef.current?.click()}>
-              📥 Import CSV
-            </button>
-            <button className="border rounded px-3 py-2 bg-green-600 text-white" onClick={async()=>{
-              try {
-                setSeeding(true);
-                
-                // First check how many jobs are pending
-                const { data: queueStats, error: statsError } = await supabase
-                  .from('vocab_translation_queue')
-                  .select('status', { count: 'exact', head: false })
-                  .eq('status', 'pending');
-                
-                if (statsError) {
-                  alert(`Failed to check queue: ${statsError.message}`);
-                  setSeeding(false);
-                  return;
-                }
-                
-                const pendingCount = queueStats?.length || 0;
-                
-                if (pendingCount === 0) {
-                  alert('ℹ️ No pending translations found.\n\nAll translations are already processed or no words have been generated yet.\n\n💡 Generate words first, then process translations.');
-                  setSeeding(false);
-                  return;
-                }
-                
-                alert(`🔄 Processing ${pendingCount} pending translation jobs...\n\nThis may take a few minutes. You'll be notified when complete.`);
-                
-                // Invoke the function
-                const { data, error } = await (supabase as any).functions.invoke('process-translations', { 
-                  body: {},
-                  headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` }
-                });
-                
-                if (error || !data?.success) {
-                  alert(data?.error || error?.message || 'Failed to process translations');
-                } else {
-                  // Check completion status
-                  const { data: afterStats, error: afterError } = await supabase
-                    .from('vocab_translation_queue')
-                    .select('status', { count: 'exact', head: false })
-                    .eq('status', 'pending');
-                  
-                  const remainingCount = afterStats?.length || 0;
-                  const completedCount = pendingCount - remainingCount;
-                  
-                  if (remainingCount > 0) {
-                    alert(`✅ Translation batch completed!\n\nProcessed ${completedCount} translations.\n\n⏳ ${remainingCount} jobs remaining.\n\n💡 Click "Process Translations" again to continue.`);
-                  } else {
-                    alert(`✅ All translations completed!\n\nProcessed ${completedCount} translations.\n\n🎉 All pending jobs finished!`);
-                  }
-                  
-                  loadTranslations(); // Refresh translations
-                }
-              } catch (e: any) {
-                alert(e?.message || 'Failed to process translations');
-              } finally {
-                setSeeding(false);
+          <button className="border rounded px-3 py-2 bg-green-600 text-white" onClick={async()=>{
+            try {
+              setSeeding(true);
+              const { data, error } = await (supabase as any).functions.invoke('process-translations', { body: {} });
+              if (error || !data?.success) {
+                alert(data?.error || error?.message || 'Failed to process translations');
+              } else {
+                alert('✅ Translation processing completed!');
+                loadTranslations();
               }
-            }} disabled={seeding}>
-              {seeding ? 'Processing…' : '🔄 Process Translations'}
-            </button>
-            <button className="border rounded px-3 py-2 bg-red-600 text-white" onClick={handleRemoveDuplicates} disabled={loading}>
-              🗑️ Remove Duplicates
-            </button>
-            <button className="border rounded px-3 py-2 bg-orange-600 text-white" onClick={handleRemovePlurals} disabled={loading}>
-              Remove Trailing 's'
-            </button>
-            <button className="border rounded px-3 py-2 bg-purple-600 text-white" onClick={handleAuditLevels} disabled={loading}>
-              🔍 Audit Levels
-            </button>
-            <button className="border rounded px-3 py-2 bg-blue-600 text-white" onClick={handleAuditTranslations} disabled={loading}>
-              🔍 Audit Translations
-            </button>
-          </>
+            } catch (e: any) {
+              alert(e?.message || 'Failed to process translations');
+            } finally {
+              setSeeding(false);
+            }
+          }} disabled={seeding}>
+            {seeding ? 'Processing…' : '🔄 Process Translations'}
+          </button>
         </div>
       </div>
       {(progress || counts.total || counts.publicTotal) && (

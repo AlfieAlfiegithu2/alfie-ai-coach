@@ -20,13 +20,13 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { languages, maxWords, onlyMissing } = await req.json();
+    const { languages, maxWords, onlyMissing = true, startCardId, startLang } = await req.json();
     
     // Default to all 22 languages if not specified
     const targetLanguages = languages || ['ar', 'bn', 'de', 'en', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
     const limit = maxWords || 100;
 
-    console.log(`Starting batch translation for ${targetLanguages.length} languages, limit: ${limit}`);
+    console.log(`Starting batch translation for ${targetLanguages.length} languages, limit: ${limit}, resume from card: ${startCardId || 'beginning'}, lang: ${startLang || 'first'}`);
 
     // Get vocabulary words that need translation
     const { data: vocabCards, error: fetchError } = await supabaseClient
@@ -50,35 +50,52 @@ serve(async (req) => {
 
     let translatedCount = 0;
     let errorCount = 0;
+    let shouldResume = !!startCardId;
+    let lastProcessedCardId = startCardId;
+    let lastProcessedLang = startLang;
 
     // Process each card
     for (const card of vocabCards) {
-      for (const targetLang of targetLanguages) {
-        try {
-          // Check if translation already exists (if onlyMissing is true)
-          if (onlyMissing) {
-            const { data: existing } = await supabaseClient
-              .from('vocab_translations')
-              .select('id')
-              .eq('card_id', card.id)
-              .eq('lang', targetLang)
-              .maybeSingle();
+      // Skip cards until we reach the resume point
+      if (shouldResume && card.id !== startCardId) {
+        continue;
+      }
+      shouldResume = false;
 
-            if (existing) {
-              console.log(`Translation already exists for ${card.term} -> ${targetLang}, skipping`);
-              continue;
-            }
+      for (const targetLang of targetLanguages) {
+        // Skip languages until we reach the resume point
+        if (lastProcessedLang && lastProcessedCardId === card.id && targetLang !== lastProcessedLang) {
+          continue;
+        }
+        lastProcessedLang = null; // Reset after finding resume point
+
+        try {
+          // Check if translation already exists
+          const { data: existing } = await supabaseClient
+            .from('vocab_translations')
+            .select('id')
+            .eq('card_id', card.id)
+            .eq('lang', targetLang)
+            .maybeSingle();
+
+          if (existing) {
+            console.log(`Translation already exists for ${card.term} -> ${targetLang}, skipping`);
+            continue;
           }
 
-          // Call translation service
+          // Call translation service with context
           const translationResp = await supabaseClient.functions.invoke('translation-service', {
             body: {
               text: card.term,
               sourceLang: 'en',
               targetLang: targetLang,
-              includeContext: true
+              includeContext: true,
+              context: card.context_sentence || undefined
             }
           });
+
+          lastProcessedCardId = card.id;
+          lastProcessedLang = targetLang;
 
           if (translationResp.error) {
             console.error(`Translation error for ${card.term} -> ${targetLang}:`, translationResp.error);
@@ -155,7 +172,10 @@ serve(async (req) => {
         processed: translatedCount,
         errors: errorCount,
         totalWords: vocabCards.length,
-        totalLanguages: targetLanguages.length
+        totalLanguages: targetLanguages.length,
+        lastProcessedCardId: lastProcessedCardId,
+        lastProcessedLang: lastProcessedLang,
+        canResume: errorCount > 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

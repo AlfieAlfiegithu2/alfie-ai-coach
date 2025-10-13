@@ -78,7 +78,51 @@ serve(async (req) => {
     }
     console.log(`Found ${duplicateCount} duplicate terms with ${duplicateIds.length} total entries to remove`);
 
-    // 4) Singularize obvious plurals (tools -> tool, boxes -> box, cities -> city)
+    // 4) Detect British/American spelling variants (s/z differences)
+    const normalizeSpelling = (w: string) => {
+      const word = w.trim().toLowerCase();
+      // Convert British spellings to American (ise->ize, yse->yze)
+      return word
+        .replace(/ise$/, 'ize')
+        .replace(/isation$/, 'ization')
+        .replace(/yse$/, 'yze')
+        .replace(/yser$/, 'yzer');
+    };
+
+    const spellingVariantIds: string[] = [];
+    const bySpellingNorm = new Map<string, Array<{ id: string; term: string; rank: number; created_at: string }>>();
+    
+    for (const c of allCards || []) {
+      const norm = (c.term || '').trim().toLowerCase();
+      if (!norm) continue;
+      const spellingNorm = normalizeSpelling(norm);
+      const rank = typeof c.frequency_rank === 'number' ? c.frequency_rank : 999999;
+      if (!bySpellingNorm.has(spellingNorm)) bySpellingNorm.set(spellingNorm, []);
+      bySpellingNorm.get(spellingNorm)!.push({ id: c.id, term: norm, rank, created_at: c.created_at });
+    }
+
+    let spellingVariantCount = 0;
+    for (const [normalized, arr] of bySpellingNorm) {
+      if (arr.length > 1) {
+        spellingVariantCount++;
+        // Keep American spelling (with 'z') or lowest rank, delete others
+        arr.sort((a, b) => {
+          // Prefer 'z' spelling
+          const aHasZ = a.term.includes('ize') || a.term.includes('yze');
+          const bHasZ = b.term.includes('ize') || b.term.includes('yze');
+          if (aHasZ !== bHasZ) return bHasZ ? 1 : -1;
+          // Then by rank
+          if (a.rank !== b.rank) return a.rank - b.rank;
+          // Finally by date
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
+        spellingVariantIds.push(...arr.slice(1).map(x => x.id));
+        console.log(`Spelling variant: "${arr[0].term}" vs "${arr.slice(1).map(x => x.term).join('", "')}" - keeping first`);
+      }
+    }
+    console.log(`Found ${spellingVariantCount} spelling variant groups with ${spellingVariantIds.length} total entries to remove`);
+
+    // 5) Singularize obvious plurals (tools -> tool, boxes -> box, cities -> city)
     // Be more conservative - only handle clear plural patterns
     const exceptionPlurals = new Set([
       'news','physics','mathematics','economics','series','species','means',
@@ -138,7 +182,7 @@ serve(async (req) => {
       }
     }
 
-    // 5) Apply updates in small batches (distinct values per row -> per-row updates)
+    // 6) Apply updates in small batches (distinct values per row -> per-row updates)
     let updatedCount = 0;
     for (const u of updates) {
       const { error } = await supabase
@@ -152,8 +196,8 @@ serve(async (req) => {
       updatedCount++;
     }
 
-    // 6) Delete all marked IDs (junk + dupes + plurals)
-    const allDeleteIds = [...new Set([...junkIds, ...duplicateIds, ...pluralDeleteIds])];
+    // 7) Delete all marked IDs (junk + dupes + spelling variants + plurals)
+    const allDeleteIds = [...new Set([...junkIds, ...duplicateIds, ...spellingVariantIds, ...pluralDeleteIds])];
 
     let totalDeleted = 0;
     if (allDeleteIds.length) {
@@ -178,12 +222,14 @@ serve(async (req) => {
       breakdown: {
         junk_entries: junkIds.length,
         exact_duplicates: duplicateIds.length,
+        spelling_variants: spellingVariantIds.length,
         plural_forms_removed: pluralDeleteIds.length,
         terms_singularized: updatedCount
       },
       details: {
         junk_patterns_removed: junkIds.length > 0 ? 'Single letters and obvious junk' : 'None',
         duplicate_strategy: 'Kept oldest entry for each term',
+        spelling_variant_strategy: 'British/American (s/z) - kept American spelling',
         plural_strategy: 'Conservative - only clear plural patterns'
       }
     };

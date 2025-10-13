@@ -39,8 +39,13 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
+    console.log('🚀 vocab-cefr-seed: Starting...');
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('Unauthorized');
+    if (!authHeader) {
+      console.error('❌ No authorization header');
+      throw new Error('Unauthorized');
+    }
+    console.log('✓ Authorization header present');
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -58,7 +63,11 @@ serve(async (req) => {
 
     // Get user
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+    if (!user) {
+      console.error('❌ User not authenticated');
+      throw new Error('Unauthorized');
+    }
+    console.log('✓ User authenticated:', user.id);
 
     // Auto-resume: find highest frequency_rank we've already imported
     const { data: maxRankRow } = await supabase
@@ -72,11 +81,18 @@ serve(async (req) => {
       .maybeSingle();
 
     const startFromRank = (maxRankRow?.frequency_rank ?? 0) + 1;
+    console.log(`📊 Resume from rank: ${startFromRank}`);
 
     // Fetch data
+    console.log(`📥 Fetching CSV from: ${csvUrl}`);
     const resp = await fetch(csvUrl, { headers: { 'Accept': 'text/csv, text/plain;q=0.9, */*;q=0.8' } });
-    if (!resp.ok) throw new Error(`Failed to fetch CEFR source: ${resp.status}`);
+    if (!resp.ok) {
+      console.error(`❌ CSV fetch failed with status ${resp.status}`);
+      throw new Error(`Failed to fetch CEFR source: ${resp.status}`);
+    }
+    console.log('✓ CSV fetched successfully');
     const sourceText = await resp.text();
+    console.log(`✓ CSV parsed, length: ${sourceText.length} characters`);
 
     // If plain TXT list (e.g., GitHub B2.txt), treat each non-empty line as a word at level B2
     if (csvUrl.toLowerCase().endsWith('.txt')) {
@@ -296,7 +312,10 @@ serve(async (req) => {
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
 
   } catch (e) {
-    return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
+    const errorMsg = String((e as any).message || e);
+    console.error('❌ vocab-cefr-seed error:', errorMsg);
+    console.error('Stack:', (e as any).stack);
+    return new Response(JSON.stringify({ success: false, error: errorMsg }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 });
 

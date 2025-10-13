@@ -262,6 +262,39 @@ const AdminVocabManager: React.FC = () => {
     await loadCounts();
   };
 
+  const generateAdvancedWords = async () => {
+    // Auto-generate advanced words without prompts
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vocab-frequency-seed', {
+        body: {
+          total: 1000, // Default to 1000 words
+          minLevel: 3,
+          maxLevel: 5,
+          languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
+        }
+      });
+      
+      if (error || !data?.success) {
+        alert(`Generation failed: ${data?.error || error?.message || 'Unknown error'}`);
+      } else {
+        const resumeInfo = data.isResume 
+          ? `\n\n📍 Resumed from rank ${data.startedFromRank} (continuing from where you left off)`
+          : '';
+        const skipInfo = data.skippedCount > 0 
+          ? `\n⏭️ Skipped ${data.skippedCount} words outside level range`
+          : '';
+        
+        alert(`✅ Successfully generated ${data.importedCount} advanced B1-C2 words!${resumeInfo}${skipInfo}\n\n💡 Click again to generate more advanced words automatically.`);
+        refresh();
+      }
+    } catch (e: any) {
+      alert(`Generation failed: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const generateFrequencyVocab = async (minLevel?: number, maxLevel?: number) => {
     const levelText = minLevel && maxLevel ? ` (Level ${minLevel}-${maxLevel})` : '';
     const total = prompt(`How many words to generate${levelText}? (max 10000)`, '1000');
@@ -382,7 +415,7 @@ const AdminVocabManager: React.FC = () => {
           </button>
           <button 
             className="border rounded px-3 py-2 bg-blue-600 text-white font-medium" 
-            onClick={() => generateFrequencyVocab(3, 5)} 
+            onClick={generateAdvancedWords} 
             disabled={generating}
           >
             {generating ? '⏳ Generating…' : '🎓 Advanced (B1-C2)'}

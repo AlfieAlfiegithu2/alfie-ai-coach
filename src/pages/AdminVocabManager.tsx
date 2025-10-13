@@ -263,14 +263,14 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const generateAdvancedWords = async () => {
-    // Auto-generate advanced words without prompts
+    // Auto-generate up to 10,000 words from most popular, all levels
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('vocab-frequency-seed', {
         body: {
-          total: 1000, // Default to 1000 words
-          minLevel: 3,
-          maxLevel: 5,
+          total: 10000, // Generate up to 10,000 words
+          minLevel: 1,  // Start from A1 (most popular)
+          maxLevel: 5,  // Go up to C2 (advanced)
           languages: ['en', 'ko', 'ja', 'zh', 'es', 'fr', 'de']
         }
       });
@@ -285,7 +285,7 @@ const AdminVocabManager: React.FC = () => {
           ? `\n⏭️ Skipped ${data.skippedCount} words outside level range`
           : '';
         
-        alert(`✅ Successfully generated ${data.importedCount} advanced B1-C2 words!${resumeInfo}${skipInfo}\n\n💡 Click again to generate more advanced words automatically.`);
+        alert(`✅ Successfully generated ${data.importedCount} words from most popular!${resumeInfo}${skipInfo}\n\n💡 Click again to continue generating more words automatically.`);
         refresh();
       }
     } catch (e: any) {
@@ -418,7 +418,7 @@ const AdminVocabManager: React.FC = () => {
             onClick={generateAdvancedWords} 
             disabled={generating}
           >
-            {generating ? '⏳ Generating…' : '🎓 Advanced (B1-C2)'}
+            {generating ? '⏳ Generating…' : '🚀 Generate 10K Words (All Levels)'}
           </button>
           <button 
             className="border rounded px-3 py-2 bg-green-600 text-white font-medium" 

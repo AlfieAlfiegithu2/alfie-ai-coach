@@ -28,12 +28,13 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     console.log('vocab-admin-seed: request body', { body });
+    const action = body?.action || 'seed'; // 'seed', 'remove_duplicates', 'remove_plurals', 'audit_levels', 'audit_translations'
     const total = Math.min(Number(body?.total || 5000), 20000);
     const translateTo = String(body?.translateTo || 'all');
     const enOnly = Boolean(body?.enOnly || false);
     const language = 'en';
     const levels = body?.levels || { 1: 1800, 2: 1700, 3: 1100, 4: 300, 5: 100 }; // sums to 5000
-    console.log('vocab-admin-seed: starting with params', { total, translateTo, language, enOnly });
+    console.log('vocab-admin-seed: starting with params', { action, total, translateTo, language, enOnly });
     // Enforce admin-only
     const { data: userRes } = await supabase.auth.getUser();
     const user = userRes?.user;
@@ -47,6 +48,17 @@ serve(async (req) => {
     // } catch { allow = true; }
     // if (!allow) return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } });
     const ownerUserId = user.id;
+
+    // Handle different actions
+    if (action === 'remove_duplicates') {
+      return await handleRemoveDuplicates(supabase);
+    } else if (action === 'remove_plurals') {
+      return await handleRemovePlurals(supabase);
+    } else if (action === 'audit_levels') {
+      return await handleAuditLevels(supabase);
+    } else if (action === 'audit_translations') {
+      return await handleAuditTranslations(supabase);
+    }
 
     // Create job row under owner for progress tracking
     console.log('vocab-admin-seed: creating job row');
@@ -489,3 +501,205 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 });
+
+// Handler functions for cleanup and audit operations
+async function handleRemoveDuplicates(supabase: any) {
+  try {
+    console.log('vocab-admin-seed: removing duplicates');
+    
+    // Find duplicate terms
+    const { data: duplicates, error: dupError } = await supabase
+      .from('vocab_cards')
+      .select('term, COUNT(*) as count')
+      .group('term')
+      .having('COUNT(*) > 1');
+    
+    if (dupError) throw dupError;
+    
+    let removedCount = 0;
+    const duplicateTerms = duplicates?.map(d => d.term) || [];
+    
+    for (const term of duplicateTerms) {
+      // Get all cards with this term, keep the first one (oldest)
+      const { data: cards, error: cardsError } = await supabase
+        .from('vocab_cards')
+        .select('id, created_at')
+        .eq('term', term)
+        .order('created_at', { ascending: true });
+      
+      if (cardsError) continue;
+      
+      // Delete all except the first one
+      const toDelete = cards.slice(1);
+      for (const card of toDelete) {
+        await supabase.from('vocab_cards').delete().eq('id', card.id);
+        removedCount++;
+      }
+    }
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Removed ${removedCount} duplicate words`,
+      removedCount,
+      duplicateTerms: duplicateTerms.length
+    }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
+      status: 500,
+      headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleRemovePlurals(supabase: any) {
+  try {
+    console.log('vocab-admin-seed: removing plural forms');
+    
+    // Get all words ending in 's' that might be plurals
+    const { data: pluralCandidates, error: candidatesError } = await supabase
+      .from('vocab_cards')
+      .select('id, term')
+      .like('term', '%s')
+      .not('term', 'like', '%ss')
+      .not('term', 'like', '%us')
+      .not('term', 'like', '%is')
+      .not('term', 'like', '%as');
+    
+    if (candidatesError) throw candidatesError;
+    
+    let removedCount = 0;
+    const removedWords: string[] = [];
+    
+    for (const candidate of pluralCandidates || []) {
+      const term = candidate.term;
+      if (term.length <= 3) continue; // Skip very short words
+      
+      // Check if singular form exists
+      const singular = term.slice(0, -1);
+      const { data: singularExists } = await supabase
+        .from('vocab_cards')
+        .select('id')
+        .eq('term', singular)
+        .limit(1);
+      
+      if (singularExists && singularExists.length > 0) {
+        // Remove the plural form
+        await supabase.from('vocab_cards').delete().eq('id', candidate.id);
+        removedCount++;
+        removedWords.push(term);
+      }
+    }
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Removed ${removedCount} plural forms`,
+      removedCount,
+      removedWords: removedWords.slice(0, 20) // Show first 20 for preview
+    }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
+      status: 500,
+      headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleAuditLevels(supabase: any) {
+  try {
+    console.log('vocab-admin-seed: auditing levels');
+    
+    // Count words with invalid levels
+    const { data: invalidLevels, error: invalidError } = await supabase
+      .from('vocab_cards')
+      .select('id, term, level')
+      .or('level.is.null,level.lt.1,level.gt.5');
+    
+    if (invalidError) throw invalidError;
+    
+    // Count total words
+    const { count: totalWords } = await supabase
+      .from('vocab_cards')
+      .select('*', { count: 'exact', head: true });
+    
+    // Count by level
+    const { data: levelCounts } = await supabase
+      .from('vocab_cards')
+      .select('level')
+      .not('level', 'is', null);
+    
+    const levelStats = levelCounts?.reduce((acc: any, item: any) => {
+      acc[item.level] = (acc[item.level] || 0) + 1;
+      return acc;
+    }, {}) || {};
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Level audit completed',
+      totalWords,
+      invalidLevels: invalidLevels?.length || 0,
+      levelStats,
+      sampleInvalid: invalidLevels?.slice(0, 10) || []
+    }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
+      status: 500,
+      headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleAuditTranslations(supabase: any) {
+  try {
+    console.log('vocab-admin-seed: auditing translations');
+    
+    // Count cards with different translation coverage
+    const { data: translationStats, error: transError } = await supabase
+      .from('vocab_translations')
+      .select('card_id, lang')
+      .not('card_id', 'is', null);
+    
+    if (transError) throw transError;
+    
+    // Group by card_id to count translations per card
+    const cardTranslationCounts = translationStats?.reduce((acc: any, item: any) => {
+      acc[item.card_id] = (acc[item.card_id] || 0) + 1;
+      return acc;
+    }, {}) || {};
+    
+    const noTranslations = Object.keys(cardTranslationCounts).length === 0 ? 
+      (await supabase.from('vocab_cards').select('*', { count: 'exact', head: true })).count || 0 : 0;
+    
+    const partialTranslations = Object.values(cardTranslationCounts).filter((count: any) => count > 0 && count < 22).length;
+    const fullTranslations = Object.values(cardTranslationCounts).filter((count: any) => count >= 22).length;
+    
+    // Check translation queue
+    const { data: queueStats, error: queueError } = await supabase
+      .from('vocab_translation_queue')
+      .select('status')
+      .not('status', 'is', null);
+    
+    const queueCounts = queueStats?.reduce((acc: any, item: any) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {}) || {};
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Translation audit completed',
+      noTranslations,
+      partialTranslations,
+      fullTranslations,
+      queueCounts,
+      totalCardsWithTranslations: Object.keys(cardTranslationCounts).length
+    }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, error: String((e as any).message || e) }), {
+      status: 500,
+      headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+}

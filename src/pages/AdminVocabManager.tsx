@@ -16,6 +16,7 @@ const AdminVocabManager: React.FC = () => {
   const [newIpa, setNewIpa] = useState('');
   const [newContext, setNewContext] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [auditResults, setAuditResults] = useState<any>(null);
 
   const load = async () => {
     setLoading(true);
@@ -151,6 +152,90 @@ const AdminVocabManager: React.FC = () => {
 
   const filtered = rows.filter(r => r.term.toLowerCase().includes(q.toLowerCase()) || (r.translation||'').toLowerCase().includes(q.toLowerCase()));
 
+  const handleRemoveDuplicates = async () => {
+    if (!confirm('This will remove all duplicate words, keeping only the first occurrence of each. Continue?')) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke('vocab-admin-seed', {
+        body: { action: 'remove_duplicates' }
+      });
+      
+      if (error || !data?.success) {
+        alert(data?.error || error?.message || 'Failed to remove duplicates');
+      } else {
+        alert(`✅ Removed ${data.removedCount} duplicate words!`);
+        await refresh();
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Failed to remove duplicates');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemovePlurals = async () => {
+    if (!confirm('This will remove words ending in "s" if their singular form exists. Continue?')) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke('vocab-admin-seed', {
+        body: { action: 'remove_plurals' }
+      });
+      
+      if (error || !data?.success) {
+        alert(data?.error || error?.message || 'Failed to remove plurals');
+      } else {
+        alert(`✅ Removed ${data.removedCount} plural forms!`);
+        await refresh();
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Failed to remove plurals');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAuditLevels = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke('vocab-admin-seed', {
+        body: { action: 'audit_levels' }
+      });
+      
+      if (error || !data?.success) {
+        alert(data?.error || error?.message || 'Failed to audit levels');
+      } else {
+        setAuditResults({ type: 'levels', data });
+        alert(`Level Audit Results:\nTotal words: ${data.totalWords}\nInvalid levels: ${data.invalidLevels}\nLevel distribution: ${JSON.stringify(data.levelStats)}`);
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Failed to audit levels');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAuditTranslations = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke('vocab-admin-seed', {
+        body: { action: 'audit_translations' }
+      });
+      
+      if (error || !data?.success) {
+        alert(data?.error || error?.message || 'Failed to audit translations');
+      } else {
+        setAuditResults({ type: 'translations', data });
+        alert(`Translation Audit Results:\nNo translations: ${data.noTranslations}\nPartial translations: ${data.partialTranslations}\nFull translations: ${data.fullTranslations}\nQueue status: ${JSON.stringify(data.queueCounts)}`);
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Failed to audit translations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const addWord = async () => {
     if (!newTerm.trim()) { alert('Enter a term'); return; }
     const { data: { user } } = await supabase.auth.getUser();
@@ -215,6 +300,18 @@ const AdminVocabManager: React.FC = () => {
             }} disabled={seeding}>
               {seeding ? 'Processing…' : '🔄 Process Translations'}
             </button>
+            <button className="border rounded px-3 py-2 bg-red-600 text-white" onClick={handleRemoveDuplicates} disabled={loading}>
+              🗑️ Remove Duplicates
+            </button>
+            <button className="border rounded px-3 py-2 bg-orange-600 text-white" onClick={handleRemovePlurals} disabled={loading}>
+              Remove Trailing 's'
+            </button>
+            <button className="border rounded px-3 py-2 bg-purple-600 text-white" onClick={handleAuditLevels} disabled={loading}>
+              🔍 Audit Levels
+            </button>
+            <button className="border rounded px-3 py-2 bg-blue-600 text-white" onClick={handleAuditTranslations} disabled={loading}>
+              🔍 Audit Translations
+            </button>
           </>
         </div>
       </div>
@@ -224,6 +321,30 @@ const AdminVocabManager: React.FC = () => {
             <div>Progress: {progress.completed||0} / {progress.total||0} {progress.last_term ? `• Last: ${progress.last_term}` : ''} {progress.last_error ? `• Error: ${progress.last_error}` : ''}</div>
           )}
           <div>Totals: {counts.total} total • {counts.publicTotal} public</div>
+        </div>
+      )}
+      {auditResults && (
+        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded">
+          <div className="text-sm font-medium text-blue-800 mb-2">
+            Last Audit Results ({auditResults.type})
+          </div>
+          <div className="text-xs text-blue-700">
+            {auditResults.type === 'levels' && (
+              <div>
+                Total words: {auditResults.data.totalWords} • 
+                Invalid levels: {auditResults.data.invalidLevels} • 
+                Level distribution: {JSON.stringify(auditResults.data.levelStats)}
+              </div>
+            )}
+            {auditResults.type === 'translations' && (
+              <div>
+                No translations: {auditResults.data.noTranslations} • 
+                Partial: {auditResults.data.partialTranslations} • 
+                Full: {auditResults.data.fullTranslations} • 
+                Queue: {JSON.stringify(auditResults.data.queueCounts)}
+              </div>
+            )}
+          </div>
         </div>
       )}
       {/* Add Word */}

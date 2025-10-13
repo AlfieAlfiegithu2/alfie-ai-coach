@@ -131,16 +131,17 @@ serve(async (req) => {
             continue;
           }
 
-          // Store translation in vocab_translations table
+          // Store translation in vocab_translations table as system translation
           const { error: upsertError } = await supabaseClient
             .from('vocab_translations')
             .upsert({
-              user_id: card.id, // Use card_id as user_id for system-wide translations
+              user_id: null, // System translations have no user_id
               card_id: card.id,
               lang: targetLang,
               translations: translations,
               provider: 'deepseek',
               quality: 1,
+              is_system: true, // Mark as system-wide translation
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }, {

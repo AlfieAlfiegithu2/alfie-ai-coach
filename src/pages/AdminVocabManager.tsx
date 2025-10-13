@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { TranslationProgressModal } from '@/components/TranslationProgressModal';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminVocabManager: React.FC = () => {
   const [rows, setRows] = useState<any[]>([]);
@@ -26,6 +28,20 @@ const AdminVocabManager: React.FC = () => {
   const [pageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  
+  // Translation progress state
+  const [translationProgress, setTranslationProgress] = useState({
+    current: 0,
+    total: 0,
+    currentCard: '',
+    currentLang: '',
+    errors: 0
+  });
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [lastProcessedCard, setLastProcessedCard] = useState<string | null>(null);
+  const [lastProcessedLang, setLastProcessedLang] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const load = async () => {
     setLoading(true);
@@ -464,6 +480,74 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
+  const startBatchTranslation = async (resumeFrom?: { cardId: string; lang: string }) => {
+    try {
+      setIsTranslating(true);
+      setShowProgressModal(true);
+      
+      const languages = ['ar', 'bn', 'de', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
+      const maxWords = 5000;
+      
+      setTranslationProgress({
+        current: 0,
+        total: maxWords * languages.length,
+        currentCard: '',
+        currentLang: '',
+        errors: 0
+      });
+      
+      const { data, error } = await supabase.functions.invoke('vocab-batch-translate', { 
+        body: { 
+          languages,
+          maxWords,
+          onlyMissing: true,
+          startCardId: resumeFrom?.cardId,
+          startLang: resumeFrom?.lang
+        } 
+      });
+      
+      if (error || !data?.success) {
+        toast({
+          title: "Translation Failed",
+          description: data?.error || error?.message || 'Unknown error',
+          variant: "destructive"
+        });
+      } else {
+        setTranslationProgress({
+          current: data.processed || 0,
+          total: data.totalWords * data.totalLanguages,
+          currentCard: '',
+          currentLang: '',
+          errors: data.errors || 0
+        });
+        
+        setLastProcessedCard(data.lastProcessedCardId);
+        setLastProcessedLang(data.lastProcessedLang);
+        
+        toast({
+          title: "Translation Complete",
+          description: `Translated ${data.processed} items with ${data.errors || 0} errors`,
+        });
+        
+        await loadTranslations();
+      }
+    } catch (e: any) {
+      toast({
+        title: "Translation Error",
+        description: e?.message || 'Unknown error',
+        variant: "destructive"
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleResumeTranslation = () => {
+    if (lastProcessedCard && lastProcessedLang) {
+      startBatchTranslation({ cardId: lastProcessedCard, lang: lastProcessedLang });
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex items-center justify-between mb-4">
@@ -505,37 +589,17 @@ const AdminVocabManager: React.FC = () => {
           >
             {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
           </button>
-          <button className="border rounded px-3 py-2 bg-green-600 text-white font-medium" onClick={async()=>{
-            try {
-              setSeeding(true);
+          <button 
+            className="border rounded px-3 py-2 bg-green-600 text-white font-medium" 
+            onClick={() => {
               const confirmed = confirm('This will translate all vocabulary words to 22 languages. This may take several minutes. Continue?');
-              if (!confirmed) {
-                setSeeding(false);
-                return;
+              if (confirmed) {
+                startBatchTranslation();
               }
-              
-              // Call the new batch translation function
-              const { data, error } = await (supabase as any).functions.invoke('vocab-batch-translate', { 
-                body: { 
-                  languages: ['ar', 'bn', 'de', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'],
-                  maxWords: 5000, // Translate up to 5000 words
-                  onlyMissing: true // Only translate if not already translated
-                } 
-              });
-              
-              if (error || !data?.success) {
-                alert(`Translation failed: ${data?.error || error?.message || 'Unknown error'}`);
-              } else {
-                alert(`✅ Translation completed!\n\nTranslated: ${data.processed} translations\nWords: ${data.totalWords}\nLanguages: ${data.totalLanguages}\nErrors: ${data.errors || 0}`);
-                await loadTranslations();
-              }
-            } catch (e: any) {
-              alert(`Translation failed: ${e?.message || 'Unknown error'}`);
-            } finally {
-              setSeeding(false);
-            }
-          }} disabled={seeding}>
-            {seeding ? '⏳ Translating…' : '🌐 Translate All to 22 Languages'}
+            }} 
+            disabled={isTranslating}
+          >
+            {isTranslating ? '⏳ Translating…' : '🌐 Translate All to 22 Languages'}
           </button>
         </div>
       </div>
@@ -705,6 +769,15 @@ const AdminVocabManager: React.FC = () => {
           </tbody>
         </table>
       </div>
+      
+      <TranslationProgressModal
+        open={showProgressModal}
+        onOpenChange={setShowProgressModal}
+        progress={translationProgress}
+        isRunning={isTranslating}
+        onResume={handleResumeTranslation}
+        canResume={!isTranslating && lastProcessedCard !== null && translationProgress.errors > 0}
+      />
     </div>
   );
 };

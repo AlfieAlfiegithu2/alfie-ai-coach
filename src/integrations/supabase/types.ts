@@ -2137,6 +2137,7 @@ export type Database = {
           card_id: string | null
           created_at: string | null
           id: string
+          is_system: boolean | null
           lang: string
           provider: string | null
           quality: number | null
@@ -2148,6 +2149,7 @@ export type Database = {
           card_id?: string | null
           created_at?: string | null
           id?: string
+          is_system?: boolean | null
           lang: string
           provider?: string | null
           quality?: number | null
@@ -2159,6 +2161,7 @@ export type Database = {
           card_id?: string | null
           created_at?: string | null
           id?: string
+          is_system?: boolean | null
           lang?: string
           provider?: string | null
           quality?: number | null

@@ -70,24 +70,17 @@ serve(async (req) => {
 
     let translatedCount = 0;
     let errorCount = 0;
-    let shouldResume = !!startCardId;
-    let lastProcessedCardId = startCardId;
-    let lastProcessedLang = startLang;
+    let lastProcessedCardId = startCardId || null;
+    let lastProcessedLang = startLang || null;
 
-    // Process each card
+    // Process each card across ALL languages
     for (const card of vocabCards) {
-      // Skip cards until we reach the resume point
-      if (shouldResume && card.id !== startCardId) {
-        continue;
-      }
-      shouldResume = false;
-
       for (const targetLang of targetLanguages) {
-        // Skip languages until we reach the resume point
-        if (lastProcessedLang && lastProcessedCardId === card.id && targetLang !== lastProcessedLang) {
-          continue;
+        // Skip until we reach resume point (if resuming)
+        if (startCardId && startLang) {
+          if (card.id !== startCardId) continue;
+          if (targetLang !== startLang && lastProcessedCardId === startCardId) continue;
         }
-        lastProcessedLang = null; // Reset after finding resume point
 
         try {
           // Check if translation already exists
@@ -144,8 +137,8 @@ serve(async (req) => {
                 return [];
               }
               
-              // Remove code fences
-              text = text.replace(/^```json\s*/im, '').replace(/^```\s*/m, '').replace(/```\s*$/m, '').trim();
+              // Remove ALL code fences (```json, ```, etc.) more aggressively
+              text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
               
               // Try to parse as JSON
               try {
@@ -154,22 +147,25 @@ serve(async (req) => {
                 
                 // Extract primary translation
                 if (typeof parsed.translation === 'string') {
-                  translations.push(parsed.translation.trim());
+                  const cleaned = parsed.translation.trim();
+                  if (cleaned) translations.push(cleaned);
                 }
                 
                 // Extract alternatives
                 if (Array.isArray(parsed.alternatives)) {
                   parsed.alternatives.forEach((alt: any) => {
                     if (typeof alt === 'string') {
-                      translations.push(alt.trim());
+                      const cleaned = alt.trim();
+                      if (cleaned) translations.push(cleaned);
                     } else if (alt && typeof alt.meaning === 'string') {
-                      translations.push(alt.meaning.trim());
+                      const cleaned = alt.meaning.trim();
+                      if (cleaned) translations.push(cleaned);
                     }
                   });
                 }
                 
                 if (translations.length > 0) {
-                  return translations.filter(Boolean);
+                  return translations.filter(Boolean).slice(0, 5);
                 }
               } catch (e) {
                 // Not valid JSON, treat as plain text
@@ -178,6 +174,7 @@ serve(async (req) => {
               // Fallback: split by common separators and clean
               const fallback = text
                 .replace(/["'\[\]{}]/g, ' ')
+                .replace(/```/g, '')
                 .split(/[,،\s]+/)
                 .map(t => t.trim())
                 .filter(t => t.length > 0 && t.length < 100);
@@ -220,7 +217,7 @@ serve(async (req) => {
             errorCount++;
           } else {
             translatedCount++;
-            console.log(`✓ Translated ${card.term} -> ${targetLang}: ${primary}`);
+            console.log(`✓ Translated ${card.term} -> ${targetLang}: ${translations[0]}`);
           }
 
           // Small delay to avoid rate limiting

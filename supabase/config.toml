@@ -125,3 +125,7 @@ verify_jwt = true
 
 [functions.vocab-cefr-seed]
 verify_jwt = true
+
+# New: background runner to translate ALL cards in chunks without UI
+[functions.vocab-translate-runner]
+verify_jwt = false

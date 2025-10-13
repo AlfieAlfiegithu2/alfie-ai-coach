@@ -135,6 +135,20 @@ const AdminVocabManager: React.FC = () => {
     load();
     loadCounts();
     loadTranslations();
+
+    // Fire-and-forget background runner so admin doesn't need to click
+    (async () => {
+      try {
+        const already = localStorage.getItem('vocabRunnerStarted');
+        if (!already) {
+          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 150 } });
+          localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
+          toast({ title: 'Auto-translation started', description: 'Translating all words in background.' });
+        }
+      } catch (e) {
+        // ignore start failures
+      }
+    })();
   }, []);
   
   // Reload when filters, page, or shuffle changes

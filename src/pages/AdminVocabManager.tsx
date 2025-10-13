@@ -288,7 +288,14 @@ const AdminVocabManager: React.FC = () => {
       if (error || !data?.success) {
         alert(`Generation failed: ${data?.error || error?.message || 'Unknown error'}`);
       } else {
-        alert(`✅ Successfully generated ${data.importedCount} real English words${levelText}!`);
+        const resumeInfo = data.isResume 
+          ? `\n\n📍 Resumed from rank ${data.startedFromRank} (continuing from where you left off)`
+          : '';
+        const skipInfo = data.skippedCount > 0 
+          ? `\n⏭️ Skipped ${data.skippedCount} words outside level range`
+          : '';
+        
+        alert(`✅ Successfully generated ${data.importedCount} real English words${levelText}!${resumeInfo}${skipInfo}\n\n💡 Click again to generate more advanced words automatically.`);
         refresh();
       }
     } catch (e: any) {

@@ -339,18 +339,23 @@ serve(async (req) => {
 
           console.log('vocab-admin-seed: processing word', { lemma, rank, completed, total });
 
-          // Check if word already exists
-          const { data: exists } = await supabase
+          // Check if word already exists (case-insensitive check)
+          const { data: exists, error: checkError } = await supabase
             .from('vocab_cards')
-            .select('id')
-            .eq('term', lemma)
+            .select('id, term')
             .eq('language', language)
             .eq('is_public', true)
+            .ilike('term', lemma)
             .maybeSingle();
 
+          if (checkError) {
+            console.log('vocab-admin-seed: error checking for existing word', { lemma, error: checkError.message });
+            // Continue anyway - the unique constraint will catch duplicates
+          }
+
           if (exists) {
-            console.log('vocab-admin-seed: word already exists, skipping', { lemma });
-            return { skipped: true, lemma };
+            console.log('vocab-admin-seed: word already exists, skipping', { lemma, existingTerm: exists.term });
+            return { skipped: true, lemma, reason: 'already_exists' };
           }
 
           // Ensure we have a deck
@@ -388,8 +393,27 @@ serve(async (req) => {
             is_public: true
           }).select('id').single();
 
-          if (insErr) throw insErr;
+          if (insErr) {
+            // Check if it's a duplicate key error from the unique constraint
+            const isDuplicate = insErr.message?.includes('duplicate key') || 
+                               insErr.message?.includes('unique constraint') ||
+                               insErr.code === '23505';
+            
+            if (isDuplicate) {
+              console.log('vocab-admin-seed: duplicate caught by unique constraint, skipping', { lemma });
+              return { skipped: true, lemma, reason: 'duplicate_constraint' };
+            }
+            
+            // For other errors, throw
+            console.error('vocab-admin-seed: insert error', { lemma, error: insErr.message });
+            throw insErr;
+          }
+          
           const cardId = inserted?.id;
+          if (!cardId) {
+            console.log('vocab-admin-seed: no card ID returned after insert', { lemma });
+            return { skipped: true, lemma, reason: 'no_card_id' };
+          }
 
           // Persist examples (English)
           try {

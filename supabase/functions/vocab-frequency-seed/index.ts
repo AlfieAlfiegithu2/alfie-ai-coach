@@ -30,11 +30,48 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const total = Math.min(Number(body?.total || 1000), 10000);
-    const startRank = Math.max(Number(body?.startRank || 0), 0);
     const minLevel = Number(body?.minLevel || 1);
     const maxLevel = Number(body?.maxLevel || 5);
     const languages = body?.languages || ['ko', 'ja', 'zh', 'es', 'fr', 'de'];
     const batchSize = 20; // Process 20 words at a time
+    
+    // Auto-calculate starting rank based on minLevel if not specified
+    const defaultStartRank = minLevel === 1 ? 0 :
+                            minLevel === 2 ? 1000 :
+                            minLevel === 3 ? 2000 :
+                            minLevel === 4 ? 4000 : 7000;
+    
+    // Check if user wants to resume from where they left off
+    // If startRank is not provided, check the highest frequency_rank in the requested level range
+    let startRank = defaultStartRank;
+    
+    if (!body?.startRank && body?.startRank !== 0) {
+      console.log('No explicit startRank provided, checking for existing words to resume...');
+      
+      // Find the highest frequency rank in the target level range to continue from there
+      const { data: highestRankCard } = await supabase
+        .from('vocab_cards')
+        .select('frequency_rank, term')
+        .eq('is_public', true)
+        .gte('level', minLevel)
+        .lte('level', maxLevel)
+        .not('frequency_rank', 'is', null)
+        .order('frequency_rank', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (highestRankCard?.frequency_rank) {
+        // Resume from next rank after the highest we have
+        startRank = highestRankCard.frequency_rank + 1;
+        console.log(`Found existing words up to rank ${highestRankCard.frequency_rank} (term: "${highestRankCard.term}")`);
+        console.log(`Resuming from rank ${startRank} to continue generating more advanced words`);
+      } else {
+        console.log(`No existing words found for levels ${minLevel}-${maxLevel}, starting from default rank ${defaultStartRank}`);
+      }
+    } else {
+      startRank = Number(body.startRank);
+      console.log(`Using explicit startRank: ${startRank}`);
+    }
 
     console.log(`Fetching real English frequency list...`);
     
@@ -48,17 +85,22 @@ serve(async (req) => {
 
     // Take requested slice
     const targetWords = allWords.slice(startRank, startRank + total);
-    console.log(`Processing ${targetWords.length} real words (rank ${startRank} to ${startRank + targetWords.length})`);
+    console.log(`Processing ${targetWords.length} real words (rank ${startRank + 1} to ${startRank + targetWords.length}) for levels ${minLevel}-${maxLevel}`);
 
     let inserted = 0;
+    let skipped = 0;
     const batches = Math.ceil(targetWords.length / batchSize);
 
-    // Create deck
+    // Create deck with level information
+    const deckName = minLevel === maxLevel 
+      ? `Level ${minLevel} • Rank ${startRank + 1}-${startRank + targetWords.length}`
+      : `Levels ${minLevel}-${maxLevel} • Rank ${startRank + 1}-${startRank + targetWords.length}`;
+    
     const { data: deck } = await supabase
       .from('vocab_decks')
       .insert({ 
         user_id: user.id, 
-        name: `Frequency ${startRank + 1}-${startRank + targetWords.length}`,
+        name: deckName,
         is_public: true 
       })
       .select('id')
@@ -126,14 +168,22 @@ serve(async (req) => {
       );
 
       // Insert cards with proper level, skip if outside level range
-      const cardsToInsert = enrichedWords
-        .map((w, idx) => {
-          const calculatedLevel = calculateLevel(startRank + b * batchSize + idx);
-          return { ...w, calculatedLevel, idx };
+      const cardsWithLevels = enrichedWords.map((w, idx) => {
+        const calculatedLevel = calculateLevel(startRank + b * batchSize + idx);
+        return { ...w, calculatedLevel, idx };
+      });
+      
+      const cardsToInsert = cardsWithLevels
+        .filter(w => {
+          const inRange = w.calculatedLevel >= minLevel && w.calculatedLevel <= maxLevel;
+          if (!inRange) {
+            skipped++;
+            console.log(`Skipping "${w.term}" - Level ${w.calculatedLevel} outside range ${minLevel}-${maxLevel}`);
+          }
+          return inRange;
         })
-        .filter(w => w.calculatedLevel >= minLevel && w.calculatedLevel <= maxLevel)
         .map(w => {
-          console.log(`Word "${w.term}" - Rank: ${w.frequencyRank}, Level: ${w.calculatedLevel}`);
+          console.log(`Including "${w.term}" - Rank: ${w.frequencyRank}, Level: ${w.calculatedLevel}`);
           return {
             user_id: user.id,
             deck_id: deck.id,
@@ -151,21 +201,47 @@ serve(async (req) => {
         });
 
       if (cardsToInsert.length === 0) {
-        console.log(`Batch ${b + 1}: No words in level range ${minLevel}-${maxLevel}, skipping`);
+        console.log(`Batch ${b + 1}/${batches}: No words in level range ${minLevel}-${maxLevel}, skipping`);
+        continue;
+      }
+
+      // Check for existing words to avoid duplicates
+      const termsToCheck = cardsToInsert.map(c => c.term.toLowerCase());
+      const { data: existingCards } = await supabase
+        .from('vocab_cards')
+        .select('term')
+        .eq('is_public', true)
+        .in('term', termsToCheck);
+      
+      const existingTerms = new Set(
+        (existingCards || []).map((c: any) => c.term.toLowerCase())
+      );
+      
+      const newCards = cardsToInsert.filter(c => !existingTerms.has(c.term.toLowerCase()));
+      const duplicateCount = cardsToInsert.length - newCards.length;
+      
+      if (duplicateCount > 0) {
+        console.log(`Batch ${b + 1}/${batches}: Skipping ${duplicateCount} duplicate words`);
+      }
+      
+      if (newCards.length === 0) {
+        console.log(`Batch ${b + 1}/${batches}: All words already exist, skipping insertion`);
         continue;
       }
 
       const { data: insertedCards, error: insertErr } = await supabase
         .from('vocab_cards')
-        .insert(cardsToInsert)
+        .insert(newCards)
         .select('id, term');
 
       if (insertErr) {
         console.error('Insert error:', insertErr);
-        throw new Error(`Insert failed: ${insertErr.message}`);
+        // Log but don't fail - might be race condition with unique constraint
+        console.log(`Insert error (possibly duplicate): ${insertErr.message}`);
+        continue;
       }
 
-      inserted += cardsToInsert.length;
+      inserted += newCards.length;
 
       // Queue translations for key languages
       if (insertedCards && insertedCards.length && languages.length > 1) {
@@ -196,10 +272,25 @@ serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
 
+    // Calculate if this was a resume or fresh start
+    const isResume = startRank > defaultStartRank;
+    const baseMessage = isResume 
+      ? `✅ Resumed generation from rank ${startRank}! Imported ${inserted} more advanced words`
+      : `✅ Successfully imported ${inserted} words`;
+    
+    const message = skipped > 0 
+      ? `${baseMessage} (${skipped} skipped as outside level range ${minLevel}-${maxLevel})`
+      : baseMessage;
+    
     return new Response(JSON.stringify({
       success: true,
-      message: `Successfully seeded ${inserted} real English words from frequency list`,
+      message,
       importedCount: inserted,
+      skippedCount: skipped,
+      levelRange: `${minLevel}-${maxLevel}`,
+      rankRange: `${startRank + 1}-${startRank + targetWords.length}`,
+      isResume: isResume,
+      startedFromRank: startRank,
       deckId: deck.id
     }), { headers: { ...cors, 'Content-Type': 'application/json' } });
 

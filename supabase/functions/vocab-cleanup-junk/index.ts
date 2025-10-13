@@ -26,17 +26,24 @@ serve(async (req) => {
     console.log('Starting junk cleanup...');
 
     // 1) Load cards and prepare helpers
+    // Only remove truly junk entries: single letters and very short abbreviations
+    // Exclude common words that happen to be short (e.g., 'it', 'us', 'a', 'i')
     const junkPatterns = [
-      ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i)), // a..z
-      'cd','dvd','tv','pc','usa','uk','eu','ceo','cto','hr','it','pr'
+      ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i)), // a..z single letters
     ];
-    const junkSet = new Set(junkPatterns.map((t) => t.toLowerCase()));
+    // Remove common abbreviations that ARE actually valid words
+    const commonWords = new Set(['a', 'i', 'it', 'us', 'tv', 'pc', 'ok', 'hr', 'pr', 'ad', 'am', 'pm', 'go', 'no', 'so', 'do', 'to', 'be', 'he', 'me', 'we', 'or', 'in', 'on', 'at', 'by', 'up', 'is', 'as', 'an']);
+    const junkSet = new Set(junkPatterns.map((t) => t.toLowerCase()).filter(t => !commonWords.has(t)));
 
+    // Only process public vocabulary cards to avoid affecting user's personal words
     const { data: allCards, error: loadErr } = await supabase
       .from('vocab_cards')
-      .select('id, term, frequency_rank')
+      .select('id, term, frequency_rank, created_at')
+      .eq('is_public', true)
       .order('term');
     if (loadErr) throw loadErr;
+    
+    console.log(`Loaded ${allCards?.length || 0} public vocabulary cards for cleanup`);
 
     // 2) Detect junk (case/space insensitive)
     const junkIds: string[] = [];
@@ -47,32 +54,65 @@ serve(async (req) => {
 
     // 3) Normalize duplicates by trimmed, lowercase key
     const duplicateIds: string[] = [];
-    const byNorm = new Map<string, Array<{ id: string; rank: number }>>();
+    const byNorm = new Map<string, Array<{ id: string; rank: number; created_at: string }>>();
     for (const c of allCards || []) {
       const norm = (c.term || '').trim().toLowerCase();
       if (!norm) continue;
       const rank = typeof c.frequency_rank === 'number' ? c.frequency_rank : 999999;
       if (!byNorm.has(norm)) byNorm.set(norm, []);
-      byNorm.get(norm)!.push({ id: c.id, rank });
+      byNorm.get(norm)!.push({ id: c.id, rank, created_at: c.created_at });
     }
-    for (const [, arr] of byNorm) {
+    
+    let duplicateCount = 0;
+    for (const [term, arr] of byNorm) {
       if (arr.length > 1) {
-        arr.sort((a, b) => a.rank - b.rank); // keep lowest rank
+        duplicateCount++;
+        // Keep the one with lowest frequency rank, or oldest if ranks are equal
+        arr.sort((a, b) => {
+          if (a.rank !== b.rank) return a.rank - b.rank;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
         duplicateIds.push(...arr.slice(1).map((x) => x.id));
+        console.log(`Duplicate found: "${term}" has ${arr.length} entries, keeping oldest/lowest rank`);
       }
     }
+    console.log(`Found ${duplicateCount} duplicate terms with ${duplicateIds.length} total entries to remove`);
 
     // 4) Singularize obvious plurals (tools -> tool, boxes -> box, cities -> city)
-    const exceptionPlurals = new Set(['news','physics','mathematics','economics','series','species','means']);
+    // Be more conservative - only handle clear plural patterns
+    const exceptionPlurals = new Set([
+      'news','physics','mathematics','economics','series','species','means',
+      'success','business','process','progress','address','access','stress',
+      'class','mass','pass','grass','brass','glass','boss','loss','cross',
+      'focus','genius','virus','status','census','thus','bus','plus',
+      'atlas','gas','canvas','yes','lens','chorus'
+    ]);
+    
     const singularize = (w: string) => {
       const word = w.trim().toLowerCase();
-      if (exceptionPlurals.has(word)) return word; // don't touch
-      // ies -> y
-      if (/[^aeiou]ies$/.test(word)) return word.replace(/ies$/, 'y');
+      
+      // Don't touch exception words
+      if (exceptionPlurals.has(word)) return word;
+      
+      // Don't touch very short words (likely not plurals)
+      if (word.length < 4) return word;
+      
+      // ies -> y (cities -> city, berries -> berry)
+      if (/[^aeiou]ies$/.test(word) && word.length > 4) {
+        return word.replace(/ies$/, 'y');
+      }
+      
       // es after sibilants: boxes/watches/buses -> box/watch/bus
-      if (/(xes|ches|shes|sses|zes|ses)$/.test(word)) return word.replace(/es$/, '');
-      // default: trailing 's' -> remove
-      if (/^[a-z]{3,}s$/.test(word)) return word.slice(0, -1);
+      if (/(xes|ches|shes|sses|zes)$/.test(word) && word.length > 4) {
+        return word.replace(/es$/, '');
+      }
+      
+      // Regular plurals: only if word ends in 's' and is 5+ chars
+      // This avoids false positives like "this", "thus", "as", etc.
+      if (/^[a-z]{4,}[^s]s$/.test(word)) {
+        return word.slice(0, -1);
+      }
+      
       return word;
     };
 
@@ -130,17 +170,29 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({
+    const summary = {
       success: true,
-      message: `Cleaned ${totalDeleted} deleted, ${updatedCount} singularized` ,
+      message: `Cleanup complete: ${totalDeleted} deleted, ${updatedCount} singularized`,
       deleted: totalDeleted,
       updated_to_singular: updatedCount,
       breakdown: {
-        junk: junkIds.length,
-        duplicates: duplicateIds.length,
-        plurals_deleted: pluralDeleteIds.length,
+        junk_entries: junkIds.length,
+        exact_duplicates: duplicateIds.length,
+        plural_forms_removed: pluralDeleteIds.length,
+        terms_singularized: updatedCount
+      },
+      details: {
+        junk_patterns_removed: junkIds.length > 0 ? 'Single letters and obvious junk' : 'None',
+        duplicate_strategy: 'Kept oldest entry for each term',
+        plural_strategy: 'Conservative - only clear plural patterns'
       }
-    }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    };
+    
+    console.log('Cleanup summary:', summary);
+    
+    return new Response(JSON.stringify(summary), { 
+      headers: { ...cors, 'Content-Type': 'application/json' } 
+    });
 
   } catch (e) {
     console.error('Cleanup error:', e);

@@ -439,21 +439,7 @@ const AdminVocabManager: React.FC = () => {
           >
             {generating ? '⏳ Generating…' : '📚 Generate CEFR (A1-B2)'}
           </button>
-          <button 
-            className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
-            onClick={generateB2Words} 
-            disabled={generating}
-          >
-            {generating ? '⏳ Importing…' : '📖 Import B2 Words'}
-          </button>
-          <button 
-            className="border rounded px-3 py-2 bg-purple-700 text-white font-medium" 
-            onClick={generateC1Words} 
-            disabled={generating}
-          >
-            {generating ? '⏳ Importing…' : '🎓 Import C1 Words'}
-          </button>
-          <button 
+          <button
             className="border rounded px-3 py-2 bg-blue-500 text-white font-medium" 
             onClick={importIELTSWords} 
             disabled={generating}

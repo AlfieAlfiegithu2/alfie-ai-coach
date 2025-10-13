@@ -45,10 +45,22 @@ const AdminVocabManager: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [showTranslationViewer, setShowTranslationViewer] = useState(false);
   const [translationViewerData, setTranslationViewerData] = useState<any[]>([]);
+  const [selectedLang, setSelectedLang] = useState<string>('all');
   const { toast } = useToast();
 
   const load = async () => {
     setLoading(true);
+    // Auto-resume if a translation batch was active before a reload
+    try {
+      const active = localStorage.getItem('vocabBatchActive') === 'true';
+      if (active && !isTranslating) {
+        const savedOffset = Number(localStorage.getItem('vocabBatchOffset') || 0);
+        const savedCard = localStorage.getItem('vocabBatchLastCard') || undefined;
+        const savedLang = localStorage.getItem('vocabBatchLastLang') || undefined;
+        // Don't await to avoid blocking load
+        startBatchTranslation({ offset: savedOffset, cardId: savedCard, lang: savedLang }, true);
+      }
+    } catch {}
     
     // Build query
     let query = supabase
@@ -484,105 +496,105 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
-  const startBatchTranslation = async (resumeFrom?: { cardId: string; lang: string }, isAutoRetry = false) => {
+  const startBatchTranslation = async (
+    options?: { offset?: number; cardId?: string; lang?: string },
+    isAutoRetry = false
+  ) => {
+    const CHUNK_SIZE = 250;
+    const languages = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+    const offset = options?.offset ?? Number(localStorage.getItem('vocabBatchOffset') || 0);
+
     try {
       if (!isAutoRetry) {
         setIsTranslating(true);
         setShowProgressModal(true);
         setRetryCount(0);
       }
-      
-      const languages = ['ar', 'bn', 'de', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
-      const maxWords = 5000;
-      
-      setTranslationProgress({
-        current: 0,
-        total: maxWords * languages.length,
-        currentCard: '',
-        currentLang: '',
-        errors: 0
-      });
-      
-      const { data, error } = await supabase.functions.invoke('vocab-batch-translate', { 
-        body: { 
+
+      // Mark job active in localStorage for auto-resume after reloads
+      localStorage.setItem('vocabBatchActive', 'true');
+      localStorage.setItem('vocabBatchOffset', String(offset));
+
+      setTranslationProgress((p) => ({ ...p, currentLang: options?.lang || '', currentCard: options?.cardId || '' }));
+
+      const { data, error } = await supabase.functions.invoke('vocab-batch-translate', {
+        body: {
           languages,
-          maxWords,
+          maxWords: CHUNK_SIZE,
           onlyMissing: true,
-          startCardId: resumeFrom?.cardId,
-          startLang: resumeFrom?.lang
-        } 
+          startCardId: options?.cardId,
+          startLang: options?.lang,
+          offset
+        }
       });
-      
+
       if (error || !data?.success) {
         const errorMsg = data?.error || error?.message || 'Unknown error';
-        
-        // Auto-retry logic
         if (autoRetryEnabled && retryCount < 10) {
-          setRetryCount(prev => prev + 1);
+          setRetryCount((prev) => prev + 1);
           toast({
             title: `Translation Failed (Retry ${retryCount + 1}/10)`,
             description: `${errorMsg}. Retrying in 5 seconds...`,
-            variant: "default"
+            variant: 'default'
           });
-          
-          // Wait 5 seconds and retry from last position
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          await startBatchTranslation(
-            { cardId: lastProcessedCard || '', lang: lastProcessedLang || '' },
-            true
-          );
+          await new Promise((r) => setTimeout(r, 5000));
+          await startBatchTranslation({ offset, cardId: lastProcessedCard || undefined, lang: lastProcessedLang || undefined }, true);
           return;
         } else {
-          toast({
-            title: "Translation Failed",
-            description: errorMsg,
-            variant: "destructive"
-          });
+          toast({ title: 'Translation Failed', description: errorMsg, variant: 'destructive' });
         }
       } else {
-        setTranslationProgress({
-          current: data.processed || 0,
-          total: data.totalWords * data.totalLanguages,
-          currentCard: '',
-          currentLang: '',
-          errors: data.errors || 0
-        });
-        
+        // Persist progress so we can resume after reloads
+        if (data.lastProcessedCardId) localStorage.setItem('vocabBatchLastCard', data.lastProcessedCardId);
+        if (data.lastProcessedLang) localStorage.setItem('vocabBatchLastLang', data.lastProcessedLang);
+        if (typeof data.nextOffset === 'number') localStorage.setItem('vocabBatchOffset', String(data.nextOffset));
+
         setLastProcessedCard(data.lastProcessedCardId);
         setLastProcessedLang(data.lastProcessedLang);
         setRetryCount(0);
-        
-        toast({
-          title: "Translation Complete",
-          description: `Translated ${data.processed} items with ${data.errors || 0} errors`,
+
+        setTranslationProgress({
+          current: data.processed || 0,
+          total: (data.totalWords || CHUNK_SIZE) * languages.length,
+          currentCard: data.lastProcessedCardId || '',
+          currentLang: data.lastProcessedLang || '',
+          errors: data.errors || 0
         });
-        
-        await loadTranslations();
+
+        // Continue to next chunk automatically
+        if (data.hasMore) {
+          await startBatchTranslation({ offset: data.nextOffset }, true);
+          return;
+        }
+
+        toast({ title: 'Batch chunk complete', description: `Processed ${data.processed} items, errors ${data.errors || 0}` });
+
+        // If this chunk processed less than CHUNK_SIZE, we've likely reached the end
+        if ((data.totalWords || 0) < CHUNK_SIZE) {
+          localStorage.removeItem('vocabBatchActive');
+          toast({ title: 'Translation Complete', description: 'All chunks processed.' });
+          await loadTranslations();
+        } else {
+          // Move to next offset window
+          const nextOffset = typeof data.nextOffset === 'number' ? data.nextOffset : offset + CHUNK_SIZE;
+          await startBatchTranslation({ offset: nextOffset }, true);
+          return;
+        }
       }
     } catch (e: any) {
       const errorMsg = e?.message || 'Unknown error';
-      
-      // Auto-retry on exception
       if (autoRetryEnabled && retryCount < 10) {
-        setRetryCount(prev => prev + 1);
+        setRetryCount((prev) => prev + 1);
         toast({
           title: `Translation Error (Retry ${retryCount + 1}/10)`,
           description: `${errorMsg}. Retrying in 5 seconds...`,
-          variant: "default"
+          variant: 'default'
         });
-        
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        await startBatchTranslation(
-          { cardId: lastProcessedCard || '', lang: lastProcessedLang || '' },
-          true
-        );
+        await new Promise((r) => setTimeout(r, 5000));
+        await startBatchTranslation({ offset, cardId: lastProcessedCard || undefined, lang: lastProcessedLang || undefined }, true);
         return;
       } else {
-        toast({
-          title: "Translation Error",
-          description: errorMsg,
-          variant: "destructive"
-        });
+        toast({ title: 'Translation Error', description: errorMsg, variant: 'destructive' });
       }
     } finally {
       if (!isAutoRetry) {
@@ -592,15 +604,16 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const handleResumeTranslation = () => {
-    if (lastProcessedCard && lastProcessedLang) {
-      startBatchTranslation({ cardId: lastProcessedCard, lang: lastProcessedLang });
-    }
+    const savedOffset = Number(localStorage.getItem('vocabBatchOffset') || 0);
+    const savedCard = localStorage.getItem('vocabBatchLastCard') || undefined;
+    const savedLang = localStorage.getItem('vocabBatchLastLang') || undefined;
+    startBatchTranslation({ offset: savedOffset, cardId: savedCard, lang: savedLang });
   };
 
   const viewTranslations = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('vocab_translations')
         .select(`
           id,
@@ -612,16 +625,21 @@ const AdminVocabManager: React.FC = () => {
         `)
         .order('created_at', { ascending: false })
         .limit(100);
-      
+
+      if (selectedLang !== 'all') {
+        query = query.eq('lang', selectedLang);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      
+
       setTranslationViewerData(data || []);
       setShowTranslationViewer(true);
     } catch (e: any) {
       toast({
-        title: "Failed to load translations",
+        title: 'Failed to load translations',
         description: e?.message || 'Unknown error',
-        variant: "destructive"
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);

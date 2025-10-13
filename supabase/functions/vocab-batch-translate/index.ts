@@ -40,7 +40,7 @@ serve(async (req) => {
       }
     );
 
-    const { languages, maxWords, onlyMissing = true, startCardId, startLang } = await req.json();
+    const { languages, maxWords, onlyMissing = true, startCardId, startLang, offset = 0 } = await req.json();
     
     // Default to all 22 languages if not specified
     const targetLanguages = languages || ['ar', 'bn', 'de', 'en', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
@@ -51,9 +51,10 @@ serve(async (req) => {
     // Get vocabulary words that need translation
     const { data: vocabCards, error: fetchError } = await supabaseClient
       .from('vocab_cards')
-      .select('id, term')
+      .select('id, term, context_sentence')
       .eq('is_public', true)
-      .limit(limit);
+      .order('id', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (fetchError) {
       throw new Error(`Failed to fetch vocab cards: ${fetchError.message}`);
@@ -240,7 +241,9 @@ serve(async (req) => {
         totalLanguages: targetLanguages.length,
         lastProcessedCardId: lastProcessedCardId,
         lastProcessedLang: lastProcessedLang,
-        canResume: errorCount > 0
+        canResume: errorCount > 0,
+        nextOffset: offset + vocabCards.length,
+        hasMore: vocabCards.length === limit
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

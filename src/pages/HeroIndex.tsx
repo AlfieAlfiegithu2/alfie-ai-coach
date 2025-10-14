@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -800,10 +800,10 @@ const HeroIndex = () => {
             <div>
               <h4 className="text-sm font-semibold tracking-tight font-nunito">{getText(['footer', 'resources', 'title'])}</h4>
               <ul className="mt-3 space-y-2 text-sm text-black/70">
-                <li><a className="hover:text-black font-nunito" href="/practice">{getText(['footer', 'resources', 'practice'])}</a></li>
-                <li><a className="hover:text-black font-nunito" href="/writing">{getText(['footer', 'resources', 'writing'])}</a></li>
-                <li><a className="hover:text-black font-nunito" href="/speaking">{getText(['footer', 'resources', 'speaking'])}</a></li>
-                <li><a className="hover:text-black font-nunito" href="/vocabulary">{getText(['footer', 'resources', 'vocabulary'])}</a></li>
+                <li><Link className="hover:text-black font-nunito" to="/practice">{getText(['footer', 'resources', 'practice'])}</Link></li>
+                <li><Link className="hover:text-black font-nunito" to="/writing">{getText(['footer', 'resources', 'writing'])}</Link></li>
+                <li><Link className="hover:text-black font-nunito" to="/speaking">{getText(['footer', 'resources', 'speaking'])}</Link></li>
+                <li><Link className="hover:text-black font-nunito" to="/vocabulary">{getText(['footer', 'resources', 'vocabulary'])}</Link></li>
               </ul>
             </div>
             <div>
@@ -824,9 +824,9 @@ const HeroIndex = () => {
           <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 text-xs sm:flex-row border-black/10 text-black/60">
             <p className="font-nunito">{getText(['footer', 'copyright'])}</p>
             <div className="flex items-center gap-4">
-              <a className="hover:text-black font-nunito" href="/privacy">{getText(['footer', 'privacy'])}</a>
-              <a className="hover:text-black font-nunito" href="/terms">{getText(['footer', 'terms'])}</a>
-              <a className="hover:text-black font-nunito" href="/support">{getText(['footer', 'support'])}</a>
+              <Link className="hover:text-black font-nunito" to="/privacy">{getText(['footer', 'privacy'])}</Link>
+              <Link className="hover:text-black font-nunito" to="/terms">{getText(['footer', 'terms'])}</Link>
+              <Link className="hover:text-black font-nunito" to="/support">{getText(['footer', 'support'])}</Link>
             </div>
           </div>
         </div>

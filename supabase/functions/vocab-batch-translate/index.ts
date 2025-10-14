@@ -40,7 +40,7 @@ serve(async (req) => {
       }
     );
 
-    const { languages, maxWords, onlyMissing = true, startCardId, startLang } = await req.json();
+    const { languages, maxWords, onlyMissing = true, startCardId, startLang, offset = 0 } = await req.json();
     
     // Default to all 22 languages if not specified
     const targetLanguages = languages || ['ar', 'bn', 'de', 'en', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
@@ -51,9 +51,10 @@ serve(async (req) => {
     // Get vocabulary words that need translation
     const { data: vocabCards, error: fetchError } = await supabaseClient
       .from('vocab_cards')
-      .select('id, term')
+      .select('id, term, context_sentence')
       .eq('is_public', true)
-      .limit(limit);
+      .order('id', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (fetchError) {
       throw new Error(`Failed to fetch vocab cards: ${fetchError.message}`);
@@ -70,24 +71,17 @@ serve(async (req) => {
 
     let translatedCount = 0;
     let errorCount = 0;
-    let shouldResume = !!startCardId;
-    let lastProcessedCardId = startCardId;
-    let lastProcessedLang = startLang;
+    let lastProcessedCardId = startCardId || null;
+    let lastProcessedLang = startLang || null;
 
-    // Process each card
+    // Process each card across ALL languages
     for (const card of vocabCards) {
-      // Skip cards until we reach the resume point
-      if (shouldResume && card.id !== startCardId) {
-        continue;
-      }
-      shouldResume = false;
-
       for (const targetLang of targetLanguages) {
-        // Skip languages until we reach the resume point
-        if (lastProcessedLang && lastProcessedCardId === card.id && targetLang !== lastProcessedLang) {
-          continue;
+        // Skip until we reach resume point (if resuming)
+        if (startCardId && startLang) {
+          if (card.id !== startCardId) continue;
+          if (targetLang !== startLang && lastProcessedCardId === startCardId) continue;
         }
-        lastProcessedLang = null; // Reset after finding resume point
 
         try {
           // Check if translation already exists
@@ -130,20 +124,71 @@ serve(async (req) => {
             continue;
           }
 
-          const result = payload.result || {};
-          const primary = typeof result.translation === 'string' 
-            ? result.translation 
-            : (result.translation?.translation || '');
-          
-          const alternatives = Array.isArray(result.alternatives) 
-            ? result.alternatives.map((a: any) => 
-                typeof a === 'string' ? a : (a?.meaning || '')
-              ).filter((s: string) => !!s) 
-            : [];
-          
-          const translations = [primary, ...alternatives]
-            .map((s: string) => String(s).trim())
-            .filter(Boolean);
+          // Clean and extract translations from API response
+          const extractTranslations = (result: any): string[] => {
+            try {
+              let text = '';
+              
+              // Extract text from result
+              if (typeof result === 'string') {
+                text = result;
+              } else if (result && typeof result === 'object') {
+                text = JSON.stringify(result);
+              } else {
+                return [];
+              }
+              
+              // Remove ALL code fences (```json, ```, etc.) more aggressively
+              text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+              
+              // Try to parse as JSON
+              try {
+                const parsed = JSON.parse(text);
+                const translations: string[] = [];
+                
+                // Extract primary translation
+                if (typeof parsed.translation === 'string') {
+                  const cleaned = parsed.translation.trim();
+                  if (cleaned) translations.push(cleaned);
+                }
+                
+                // Extract alternatives
+                if (Array.isArray(parsed.alternatives)) {
+                  parsed.alternatives.forEach((alt: any) => {
+                    if (typeof alt === 'string') {
+                      const cleaned = alt.trim();
+                      if (cleaned) translations.push(cleaned);
+                    } else if (alt && typeof alt.meaning === 'string') {
+                      const cleaned = alt.meaning.trim();
+                      if (cleaned) translations.push(cleaned);
+                    }
+                  });
+                }
+                
+                if (translations.length > 0) {
+                  return translations.filter(Boolean).slice(0, 5);
+                }
+              } catch (e) {
+                // Not valid JSON, treat as plain text
+              }
+              
+              // Fallback: split by common separators and clean
+              const fallback = text
+                .replace(/["'\[\]{}]/g, ' ')
+                .replace(/```/g, '')
+                .split(/[,،\s]+/)
+                .map(t => t.trim())
+                .filter(t => t.length > 0 && t.length < 100);
+              
+              return fallback.length > 0 ? fallback.slice(0, 5) : [text.slice(0, 100)];
+            } catch (e) {
+              console.error('Failed to extract translations:', e);
+              return [];
+            }
+          };
+
+          const translations = extractTranslations(payload.result);
+
 
           if (translations.length === 0) {
             console.error(`No valid translations for ${card.term} -> ${targetLang}`);
@@ -173,7 +218,7 @@ serve(async (req) => {
             errorCount++;
           } else {
             translatedCount++;
-            console.log(`✓ Translated ${card.term} -> ${targetLang}: ${primary}`);
+            console.log(`✓ Translated ${card.term} -> ${targetLang}: ${translations[0]}`);
           }
 
           // Small delay to avoid rate limiting
@@ -196,7 +241,9 @@ serve(async (req) => {
         totalLanguages: targetLanguages.length,
         lastProcessedCardId: lastProcessedCardId,
         lastProcessedLang: lastProcessedLang,
-        canResume: errorCount > 0
+        canResume: errorCount > 0,
+        nextOffset: offset + vocabCards.length,
+        hasMore: vocabCards.length === limit
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

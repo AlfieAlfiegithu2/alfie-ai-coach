@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 // Inline Google brand icon (multi-color)
 const GoogleIcon = () => (
@@ -152,7 +152,7 @@ const Auth = () => {
                 <GoogleIcon /> Continue with Google
                             </button>
               <div className="text-center text-sm text-muted-foreground mt-2">
-                Please allow me to <a className="text-primary font-medium hover:underline" href="/signup">Create account</a>
+                Please allow me to <Link className="text-primary font-medium hover:underline" to="/signup">Create account</Link>
               </div>
             </form>
           ) : (

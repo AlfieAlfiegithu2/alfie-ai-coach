@@ -2143,7 +2143,7 @@ export type Database = {
           quality: number | null
           translations: Json
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           card_id?: string | null
@@ -2155,7 +2155,7 @@ export type Database = {
           quality?: number | null
           translations?: Json
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           card_id?: string | null
@@ -2167,7 +2167,7 @@ export type Database = {
           quality?: number | null
           translations?: Json
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2405,6 +2405,14 @@ export type Database = {
           bucket_id: string
           file_count: number
           total_bytes: number
+        }[]
+      }
+      get_translation_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          last_translation: string
+          total_translations: number
+          unique_cards: number
         }[]
       }
       grant_admin_role: {

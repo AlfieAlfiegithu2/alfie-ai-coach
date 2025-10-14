@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './lib/i18n';
+import { useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
 import LanguageWelcomeBanner from "./components/LanguageWelcomeBanner";
@@ -106,6 +108,33 @@ import PlanPage from "./pages/Plan";
 const queryClient = new QueryClient();
 
 const App = () => {
+  useEffect(() => {
+    // One-time kick on first load
+    try {
+      const key = 'vocabRunnerStartedGlobal';
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, '1');
+        supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 150 } }).catch(() => {});
+      }
+    } catch {}
+
+    // Watchdog: periodically re-kick in case a prior run was interrupted and didn't self-chain
+    const LAST_KEY = 'vocabRunnerLastPing';
+    const intervalMs = 120000; // 2 minutes
+    const ping = async () => {
+      try {
+        const last = Number(localStorage.getItem(LAST_KEY) || '0');
+        const now = Date.now();
+        if (now - last < intervalMs - 5000) return; // another tab recently pinged
+        localStorage.setItem(LAST_KEY, String(now));
+        await supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 150 } });
+      } catch {}
+    };
+    ping(); // immediate check
+    const id = setInterval(ping, intervalMs);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>

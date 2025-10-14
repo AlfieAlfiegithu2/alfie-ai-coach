@@ -15,6 +15,71 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper: extract first valid JSON array from a string, tolerant to extra text/code fences
+function extractJsonArray(input: string): string | null {
+  if (!input) return null;
+  let s = input.trim();
+  if (s.startsWith('```')) {
+    // remove code fences
+    s = s.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
+  }
+  const start = s.indexOf('[');
+  if (start === -1) return null;
+  let inString = false;
+  let escape = false;
+  let depth = 0;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\') { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (!inString) {
+      if (ch === '[') depth++;
+      else if (ch === ']') {
+        depth--;
+        if (depth === 0) return s.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+// Helper: translate a single text with strict JSON instruction (fallback for batch)
+async function translateSingleViaApi(text: string, sourceLang: string, targetLang: string): Promise<{ translation: string; alternatives: string[] }> {
+  const systemPrompt = `You are a professional translator. Return ONLY valid JSON with this exact shape: {"translation": "...", "alternatives": []}. Use double quotes and escape internal quotes. No extra text.`;
+  const userPrompt = sourceLang === 'auto'
+    ? `Translate to ${targetLang}: "${text}"`
+    : `Translate from ${sourceLang} to ${targetLang}: "${text}"`;
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${deepSeekApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0,
+      max_tokens: 120,
+    }),
+  });
+
+  const data = await res.json();
+  const content: string = data?.choices?.[0]?.message?.content ?? '';
+  try {
+    let c = content.trim();
+    if (c.startsWith('```')) c = c.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
+    const obj = JSON.parse(c);
+    return { translation: obj.translation ?? String(text), alternatives: Array.isArray(obj.alternatives) ? obj.alternatives : [] };
+  } catch {
+    return { translation: content || String(text), alternatives: [] };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -37,87 +102,122 @@ serve(async (req) => {
 
     console.log('✅ DeepSeek API key found for translation, length:', deepSeekApiKey.length);
 
-    const { text, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
+    const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
+    
+    // Support batch translation
+    const isBatch = Array.isArray(texts);
+    const textArray = isBatch ? texts : [text];
 
-    if (!text || !targetLang) {
-      throw new Error('Text and target language are required');
+    if ((!text && !isBatch) || !targetLang) {
+      throw new Error('Text/texts and target language are required');
     }
 
-    console.log('🌐 Translation request:', { text: text.substring(0, 50) + '...', sourceLang, targetLang });
+    console.log('🌐 Translation request:', { 
+      count: textArray.length, 
+      sample: textArray[0]?.substring(0, 30) + '...', 
+      sourceLang, 
+      targetLang 
+    });
 
-    // Only cache if text is reasonable length (avoid storage bloat)
-    const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
-    let cachedTranslation = null;
+    // Batch processing - check cache for all texts
+    const results: any[] = [];
+    const uncachedIndices: number[] = [];
+    const uncachedTexts: string[] = [];
 
-    if (shouldCache) {
-      // Check cache first
-      console.log('🔍 Checking translation cache...');
-      const { data } = await supabase
-        .from('translation_cache')
-        .select('translation, hit_count')
-        .eq('word', text.toLowerCase().trim())
-        .eq('source_lang', sourceLang)
-        .eq('target_lang', targetLang)
-        .gt('expires_at', new Date().toISOString())
-        .single();
-
-      if (data) {
-        console.log('🚀 Translation cache hit! Hit count:', data.hit_count);
+    if (isBatch) {
+      for (let i = 0; i < textArray.length; i++) {
+        const currentText = textArray[i];
+        const shouldCache = currentText.length <= 50 && currentText.trim().split(/\s+/).length <= 5;
         
-        // Update hit count and extend expiry for popular translations
-        const newExpiry = data.hit_count >= 5 ? 
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : // 30 days for popular
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);   // 7 days for normal
+        if (shouldCache) {
+          const { data } = await supabase
+            .from('translation_cache')
+            .select('translation, hit_count')
+            .eq('word', currentText.toLowerCase().trim())
+            .eq('source_lang', sourceLang)
+            .eq('target_lang', targetLang)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+          if (data) {
+            results[i] = {
+              translation: data.translation,
+              cached: true
+            };
+            continue;
+          }
+        }
         
-        await supabase
+        uncachedIndices.push(i);
+        uncachedTexts.push(currentText);
+      }
+    } else {
+      // Single text cache check
+      const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
+      if (shouldCache) {
+        const { data } = await supabase
           .from('translation_cache')
-          .update({ 
-            hit_count: data.hit_count + 1,
-            expires_at: newExpiry.toISOString(),
-            updated_at: new Date().toISOString()
-          })
+          .select('translation, hit_count')
           .eq('word', text.toLowerCase().trim())
           .eq('source_lang', sourceLang)
-          .eq('target_lang', targetLang);
+          .eq('target_lang', targetLang)
+          .gt('expires_at', new Date().toISOString())
+          .single();
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          result: includeContext ? {
-            translation: data.translation,
-            context: null,
-            alternatives: [],
-            grammar_notes: null,
-            cached: true
-          } : {
-            translation: data.translation,
-            simple: true,
-            cached: true
-          },
-          sourceLang: sourceLang,
-          targetLang: targetLang
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        if (data) {
+          console.log('🚀 Translation cache hit!');
+          return new Response(JSON.stringify({ 
+            success: true, 
+            result: {
+              translation: data.translation,
+              simple: true,
+              cached: true
+            },
+            sourceLang: sourceLang,
+            targetLang: targetLang
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
     }
 
-    console.log('💨 Translation cache miss, calling DeepSeek API...');
+    console.log('💨 Calling DeepSeek API...', { 
+      batch: isBatch, 
+      uncached: isBatch ? uncachedTexts.length : 1 
+    });
 
-    const systemPrompt = includeContext ?
-      `Professional translator. Return JSON format only:
-       {
-         "translation": "primary translation",
-         "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
-         "context": null,
-         "grammar_notes": null
-       }
-       
-       Rules: "translation"=most common meaning, "alternatives"=other meanings with part-of-speech, include ALL meanings that exist, "pos"=noun/verb/adj/adv/prep/etc, set context/grammar_notes to null for speed.` :
-      `Translate accurately and concisely. For multiple meanings use format: "meaning1 / meaning2". Just the translation, no extra text.`;
+    const textsToTranslate = isBatch ? uncachedTexts : [text];
+    
+    const systemPrompt = isBatch ?
+      `You are a professional translator. Translate each input to ${targetLang}.
+       Output STRICT, valid JSON array ONLY (no prose, no markdown, no comments).
+       Rules:
+       - Use double quotes for all strings
+       - Escape any internal quotes in strings
+       - No trailing commas, no extra keys
+       - For each item, include: {"translation": "primary", "alternatives": ["alt1", "alt2", "alt3"]}
+       Example output:
+       [
+         {"translation": "primary", "alternatives": ["alt1", "alt2"]},
+         {"translation": "primary", "alternatives": ["alt1", "alt2"]}
+       ]` :
+      (includeContext ?
+        `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
+         {
+           "translation": "primary translation",
+           "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
+           "context": null,
+           "grammar_notes": null
+         }
+         Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.` :
+        `Translate accurately and concisely. If there are multiple common meanings, format as: "meaning1 / meaning2". Return only the translation text.`);
 
-    const userPrompt = sourceLang === "auto" ? 
-      `Translate this text to ${targetLang}: "${text}"` :
-      `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`;
+    const userPrompt = isBatch ?
+      `Translate these ${textsToTranslate.length} words to ${targetLang}:\n${textsToTranslate.map((t, i) => `${i + 1}. ${t}`).join('\n')}` :
+      (sourceLang === "auto" ? 
+        `Translate this text to ${targetLang}: "${text}"` :
+        `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`);
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -131,7 +231,11 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
+<<<<<<< HEAD
         max_tokens: 500,
+=======
+        max_tokens: 200,
+>>>>>>> 11d061336c3ed67815a713977d11fa4bcd1fd5d2
         temperature: 0, // Zero temperature for fastest, most deterministic responses
       }),
     });
@@ -165,9 +269,99 @@ serve(async (req) => {
     const data = await response.json();
     const translationResult = data.choices[0].message.content;
 
+    // Handle batch results
+    if (isBatch) {
+      try {
+        // Try robust extraction of a JSON array
+        const extracted = extractJsonArray(translationResult);
+        let batchResults: any[] | null = null;
+        if (extracted) {
+          try {
+            batchResults = JSON.parse(extracted);
+          } catch (e) {
+            console.error('Primary JSON.parse failed on extracted array:', e);
+          }
+        }
+
+        if (!batchResults || !Array.isArray(batchResults)) {
+          console.warn('⚠️ Falling back to per-item translation due to batch parse failure.');
+          // Fallback: translate each uncached text individually (limited concurrency)
+          const concurrency = 3;
+          for (let i = 0; i < uncachedTexts.length; i += concurrency) {
+            const chunk = uncachedTexts.slice(i, i + concurrency);
+            const idxChunk = uncachedIndices.slice(i, i + concurrency);
+            const translated = await Promise.all(
+              chunk.map((t) => translateSingleViaApi(t, sourceLang, targetLang))
+            );
+            for (let j = 0; j < translated.length; j++) {
+              const idx = idxChunk[j];
+              const { translation, alternatives } = translated[j];
+              results[idx] = { translation, alternatives: alternatives || [], cached: false };
+              const currentText = chunk[j];
+              if (currentText.length <= 50 && translation) {
+                await supabase
+                  .from('translation_cache')
+                  .insert({
+                    word: currentText.toLowerCase().trim(),
+                    source_lang: sourceLang,
+                    target_lang: targetLang,
+                    translation,
+                    hit_count: 1,
+                    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                  })
+                  .catch(() => {});
+              }
+            }
+          }
+        } else {
+          // Parsed ok — map results
+          for (let i = 0; i < uncachedIndices.length; i++) {
+            const idx = uncachedIndices[i];
+            const batchResult = batchResults[i] || { translation: uncachedTexts[i] };
+            results[idx] = {
+              translation: batchResult.translation,
+              alternatives: Array.isArray(batchResult.alternatives) ? batchResult.alternatives : [],
+              cached: false,
+            };
+            const currentText = uncachedTexts[i];
+            if (currentText.length <= 50 && batchResult.translation) {
+              await supabase
+                .from('translation_cache')
+                .insert({
+                  word: currentText.toLowerCase().trim(),
+                  source_lang: sourceLang,
+                  target_lang: targetLang,
+                  translation: batchResult.translation,
+                  hit_count: 1,
+                  expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                })
+                .catch(() => {});
+            }
+          }
+        }
+
+        console.log('✅ Batch translation completed:', results.length, 'words');
+        return new Response(JSON.stringify({
+          success: true,
+          results,
+          sourceLang,
+          targetLang,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (parseError) {
+        console.error('Batch parsing failed:', parseError);
+        // As a last resort, return an error to caller (runner will retry/skip)
+        return new Response(JSON.stringify({ success: false, error: 'Batch parse and fallback failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Single text handling
     let result;
     if (includeContext) {
       try {
+<<<<<<< HEAD
         // Enhanced JSON parsing with multiple fallback strategies
         let cleanedResult = translationResult.trim();
         
@@ -177,6 +371,13 @@ serve(async (req) => {
           if (jsonMatch) {
             cleanedResult = jsonMatch[1].trim();
           }
+=======
+        let cleanedResult = translationResult.trim();
+        if (cleanedResult.startsWith('```json')) {
+          cleanedResult = cleanedResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanedResult.startsWith('```')) {
+          cleanedResult = cleanedResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
+>>>>>>> 11d061336c3ed67815a713977d11fa4bcd1fd5d2
         }
         
         // Strategy 2: Extract JSON from mixed content
@@ -193,6 +394,7 @@ serve(async (req) => {
           .trim();
         
         result = JSON.parse(cleanedResult);
+<<<<<<< HEAD
         
         // Validate and clean the result
         if (!result.translation) {
@@ -244,6 +446,13 @@ serve(async (req) => {
           }
         }
         
+=======
+        result.alternatives = Array.isArray(result.alternatives) ? result.alternatives.filter((alt: any) => 
+          alt && (typeof alt === 'string' ? alt.trim().length > 0 : alt.meaning && alt.meaning.trim().length > 0)
+        ) : [];
+      } catch (parseError) {
+        console.warn('JSON parsing failed, treating as simple translation:', parseError);
+>>>>>>> 11d061336c3ed67815a713977d11fa4bcd1fd5d2
         result = {
           translation: fallbackTranslation,
           context: null,
@@ -260,7 +469,8 @@ serve(async (req) => {
 
     console.log('✅ Translation completed successfully');
 
-    // Cache the translation if it should be cached
+    // Cache single result
+    const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
     if (shouldCache && result.translation) {
       try {
         const translationText = typeof result.translation === 'string' ? 
@@ -275,20 +485,16 @@ serve(async (req) => {
             target_lang: targetLang,  
             translation: translationText,
             hit_count: 1,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
           });
         
         console.log('💾 Translation cached successfully');
       } catch (cacheError) {
         console.warn('⚠️ Failed to cache translation:', cacheError);
-        // Don't fail the request if caching fails
       }
     }
 
-    // Add cached flag to response
-    if (typeof result === 'object') {
-      result.cached = false;
-    }
+    result.cached = false;
 
     return new Response(JSON.stringify({ 
       success: true, 

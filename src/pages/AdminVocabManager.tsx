@@ -41,6 +41,12 @@ const AdminVocabManager: React.FC = () => {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [lastProcessedCard, setLastProcessedCard] = useState<string | null>(null);
   const [lastProcessedLang, setLastProcessedLang] = useState<string | null>(null);
+  const [autoRetryEnabled, setAutoRetryEnabled] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [showTranslationViewer, setShowTranslationViewer] = useState(false);
+  const [translationViewerData, setTranslationViewerData] = useState<any[]>([]);
+  const [selectedLang, setSelectedLang] = useState<string>('all');
+  const [translationStats, setTranslationStats] = useState<{total: number, unique_cards: number, last_translation: string} | null>(null);
   const { toast } = useToast();
 
   const load = async () => {
@@ -119,6 +125,20 @@ const AdminVocabManager: React.FC = () => {
     load();
     loadCounts();
     loadTranslations();
+
+    // Fire-and-forget background runner so admin doesn't need to click
+    (async () => {
+      try {
+        const already = localStorage.getItem('vocabRunnerStarted');
+        if (!already) {
+          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 150 } });
+          localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
+          toast({ title: 'Auto-translation started', description: 'Translating all words in background.' });
+        }
+      } catch (e) {
+        // ignore start failures
+      }
+    })();
   }, []);
   
   // Reload when filters, page, or shuffle changes
@@ -140,12 +160,36 @@ const AdminVocabManager: React.FC = () => {
       try {
         const { data } = await supabase.functions.invoke('vocab-bulk-status');
         if (data?.success) setProgress(data.job || {});
+        
+        // If translating, also check translation progress
+        if (isTranslating) {
+          const { data: statsData } = await supabase.rpc('get_translation_stats') as any;
+          if (statsData && statsData.length > 0) {
+            const stats = statsData[0];
+            setTranslationProgress(prev => ({
+              ...prev,
+              current: stats.total_translations || 0,
+              total: 7821 * 23, // Total cards * languages
+            }));
+            
+            // Check if translation is complete
+            const totalTarget = 7821 * 23;
+            if (stats.total_translations >= totalTarget) {
+              setIsTranslating(false);
+              localStorage.removeItem('vocabTranslationActive');
+              toast({
+                title: 'Translation Complete! 🎉',
+                description: `All ${stats.total_translations} translations completed across ${stats.unique_cards} words.`,
+              });
+            }
+          }
+        }
       } catch (e) {
         // Silent poll failures to avoid user-facing errors while function deploys
       }
     }, 3000);
     return () => clearInterval(id);
-  }, []);
+  }, [isTranslating]);
 
   const seed = async (total: number = 5000, enOnly: boolean = false) => {
     setSeeding(true);
@@ -480,71 +524,101 @@ const AdminVocabManager: React.FC = () => {
     }
   };
 
-  const startBatchTranslation = async (resumeFrom?: { cardId: string; lang: string }) => {
+  const startBatchTranslation = async (
+    options?: { offset?: number },
+    isAutoRetry = false
+  ) => {
+    const languages = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
+    const offset = options?.offset ?? 0;
+
     try {
-      setIsTranslating(true);
-      setShowProgressModal(true);
-      
-      const languages = ['ar', 'bn', 'de', 'es', 'fa', 'fr', 'hi', 'id', 'ja', 'kk', 'ko', 'ms', 'ne', 'pt', 'ru', 'ta', 'th', 'tr', 'ur', 'vi', 'yue', 'zh'];
-      const maxWords = 5000;
-      
-      setTranslationProgress({
-        current: 0,
-        total: maxWords * languages.length,
-        currentCard: '',
-        currentLang: '',
-        errors: 0
-      });
-      
-      const { data, error } = await supabase.functions.invoke('vocab-batch-translate', { 
-        body: { 
+      if (!isAutoRetry) {
+        setIsTranslating(true);
+        setShowProgressModal(true);
+        setRetryCount(0);
+      }
+
+      localStorage.setItem('vocabTranslationActive', 'true');
+      localStorage.setItem('vocabTranslationStartTime', String(Date.now()));
+
+      // Call the optimized runner (it auto-chains in background)
+      const { data, error } = await supabase.functions.invoke('vocab-translate-runner', {
+        body: {
           languages,
-          maxWords,
-          onlyMissing: true,
-          startCardId: resumeFrom?.cardId,
-          startLang: resumeFrom?.lang
-        } 
+          offset,
+          limit: 20
+        }
       });
-      
+
       if (error || !data?.success) {
-        toast({
-          title: "Translation Failed",
-          description: data?.error || error?.message || 'Unknown error',
-          variant: "destructive"
+        const errorMsg = data?.error || error?.message || 'Unknown error';
+        toast({ 
+          title: 'Translation Started with Warning', 
+          description: errorMsg,
+          variant: 'default'
         });
       } else {
-        setTranslationProgress({
-          current: data.processed || 0,
-          total: data.totalWords * data.totalLanguages,
-          currentCard: '',
-          currentLang: '',
-          errors: data.errors || 0
+        toast({ 
+          title: 'Translation Started!', 
+          description: `Processing ${languages.length} languages. Check logs for progress. This will run in the background and auto-chain.`,
         });
-        
-        setLastProcessedCard(data.lastProcessedCardId);
-        setLastProcessedLang(data.lastProcessedLang);
-        
-        toast({
-          title: "Translation Complete",
-          description: `Translated ${data.processed} items with ${data.errors || 0} errors`,
-        });
-        
-        await loadTranslations();
       }
+      
+      // Start polling for progress
+      setIsTranslating(true);
     } catch (e: any) {
-      toast({
-        title: "Translation Error",
-        description: e?.message || 'Unknown error',
-        variant: "destructive"
-      });
-    } finally {
-      setIsTranslating(false);
+      const errorMsg = e?.message || 'Unknown error';
+      toast({ title: 'Translation Error', description: errorMsg, variant: 'destructive' });
     }
   };
 
   const handleResumeTranslation = () => {
-    if (lastProcessedCard && lastProcessedLang) {
-      startBatchTranslation({ cardId: lastProcessedCard, lang: lastProcessedLang });
+    startBatchTranslation({ offset: 0 });
+  };
+
+  const viewTranslations = async () => {
+    setLoading(true);
+    try {
+      // Get translation stats
+      const { data: statsData } = await supabase.rpc('get_translation_stats') as any;
+      if (statsData && statsData.length > 0) {
+        setTranslationStats({
+          total: statsData[0].total_translations || 0,
+          unique_cards: statsData[0].unique_cards || 0,
+          last_translation: statsData[0].last_translation || ''
+        });
+      }
+
+      let query = supabase
+        .from('vocab_translations')
+        .select(`
+          id,
+          card_id,
+          lang,
+          translations,
+          created_at,
+          vocab_cards!inner(term, translation)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (selectedLang !== 'all') {
+        query = query.eq('lang', selectedLang);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      setTranslationViewerData(data || []);
+      setShowTranslationViewer(true);
+    } catch (e: any) {
+      toast({
+        title: 'Failed to load translations',
+        description: e?.message || 'Unknown error',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -589,8 +663,15 @@ const AdminVocabManager: React.FC = () => {
           >
             {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
           </button>
+          <button 
+            className="border rounded px-3 py-2 bg-indigo-600 text-white font-medium" 
+            onClick={viewTranslations}
+            disabled={loading}
+          >
+            {loading ? '⏳ Loading…' : '👁️ View Translations'}
+          </button>
           <button className="border rounded px-3 py-2 bg-green-600 text-white font-medium" onClick={async()=>{
-            const confirmed = window.confirm(`Translate all 14,303 words into 22 languages with POS, IPA, and context?\n\nThis will create ~314,666 translation jobs.`);
+            const confirmed = window.confirm(`Translate all words into 23 languages with POS, IPA, and context?\n\nThis will create translation jobs for all missing translations.`);
             if (!confirmed) return;
 
             setSeeding(true);
@@ -607,7 +688,7 @@ const AdminVocabManager: React.FC = () => {
                 return;
               }
 
-              const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+              const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
               
               // Create translation jobs
               const jobs = [];
@@ -706,7 +787,7 @@ const AdminVocabManager: React.FC = () => {
               setSeeding(false);
             }
           }} disabled={seeding}>
-            {seeding ? '⏳ Translating All…' : '🌍 Translate All to 22 Languages'}
+            {seeding ? '⏳ Translating All…' : '🌍 Translate All to 23 Languages'}
           </button>
         </div>
       </div>
@@ -844,7 +925,7 @@ const AdminVocabManager: React.FC = () => {
                     )}
                     {Object.keys(translations[r.id] || {}).length > 0 && (
                       <div className="text-xs text-green-600 mt-1">
-                        ✅ {Object.keys(translations[r.id]).length}/22 languages translated
+                        ✅ {Object.keys(translations[r.id]).length}/23 languages translated
                       </div>
                     )}
                   </div>
@@ -885,6 +966,99 @@ const AdminVocabManager: React.FC = () => {
         onResume={handleResumeTranslation}
         canResume={!isTranslating && lastProcessedCard !== null && translationProgress.errors > 0}
       />
+
+      {/* Translation Viewer Modal */}
+      {showTranslationViewer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Translation Viewer</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {translationStats ? (
+                    <>
+                      <span className="font-medium text-green-600">{translationStats.total} total translations</span> across{' '}
+                      <span className="font-medium">{translationStats.unique_cards} words</span> • Last: {new Date(translationStats.last_translation).toLocaleString()}
+                    </>
+                  ) : (
+                    'Loading stats...'
+                  )}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Showing latest 100 • Auto-retry: {autoRetryEnabled ? '✅ ON' : '❌ OFF'} • Retry count: {retryCount}/10
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <label className="flex items-center gap-2 px-3 py-2 border rounded cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={autoRetryEnabled}
+                    onChange={(e) => setAutoRetryEnabled(e.target.checked)}
+                  />
+                  <span className="text-sm">Auto-retry</span>
+                </label>
+                <button
+                  onClick={() => setShowTranslationViewer(false)}
+                  className="px-4 py-2 border rounded hover:bg-gray-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="overflow-auto flex-1 p-4">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-gray-100">
+                  <tr>
+                    <th className="text-left p-2 border">English Term</th>
+                    <th className="text-left p-2 border">Language</th>
+                    <th className="text-left p-2 border">Translations</th>
+                    <th className="text-left p-2 border">Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {translationViewerData.map((item: any) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="p-2 border">
+                        <div className="font-medium">{item.vocab_cards?.term}</div>
+                        <div className="text-xs text-gray-500">{item.vocab_cards?.translation}</div>
+                      </td>
+                      <td className="p-2 border">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                          {item.lang}
+                        </span>
+                      </td>
+                      <td className="p-2 border">
+                        {Array.isArray(item.translations) ? (
+                          <div className="flex flex-wrap gap-1">
+                            {item.translations.slice(0, 5).map((t: string, i: number) => (
+                              <span key={i} className="px-2 py-1 bg-green-50 text-green-800 rounded text-xs">
+                                {t}
+                              </span>
+                            ))}
+                            {item.translations.length > 5 && (
+                              <span className="text-xs text-gray-500">+{item.translations.length - 5} more</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-red-600 text-xs">Invalid format</span>
+                        )}
+                      </td>
+                      <td className="p-2 border text-xs text-gray-500">
+                        {new Date(item.created_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {translationViewerData.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No translations found
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

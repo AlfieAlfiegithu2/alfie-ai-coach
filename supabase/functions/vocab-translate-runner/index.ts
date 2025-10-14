@@ -156,15 +156,13 @@ serve(async (req) => {
             const { error: upErr } = await supabase
               .from('vocab_translations')
               .upsert({
-                user_id: null,
+                user_id: null, // System translations have no user_id
                 card_id: card.id,
                 lang,
                 translations: translations.filter(Boolean),
                 provider: 'deepseek',
                 quality: 1,
-                is_system: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
+                is_system: true
               }, { onConflict: 'card_id,lang' });
 
             if (upErr) {

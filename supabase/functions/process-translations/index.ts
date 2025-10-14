@@ -154,16 +154,17 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
 
     if (!arr.length) return null;
 
-    // Store translation (only defined columns)
+    // Store translation (only valid columns: user_id, card_id, lang, translations, provider, quality, is_system)
     const { error: upsertError } = await (supabase as any)
       .from('vocab_translations')
       .upsert({
-        user_id: cardId, // use card_id as system identifier
+        user_id: null, // System translations have no user_id
         card_id: cardId,
         lang: targetLang,
         translations: arr,
         provider: 'deepseek',
         quality: 1,
+        is_system: true
       } as any, { onConflict: 'card_id,lang' } as any);
 
     if (upsertError) {

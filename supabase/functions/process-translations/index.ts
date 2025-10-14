@@ -80,25 +80,39 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
       // @ts-ignore - Deno Edge Function database operations
       const translationPromises: Promise<any>[] = (langBatch as any[]).map((job: any) =>
         translateSingleWord(cardId, term, job.target_lang, supabase, authHeader)
-          .then((result: any) => ({ jobId: job.id, result }))
+          .then((res: any) => ({ jobId: job.id, ok: !!res }))
       );
 
       const results = await Promise.allSettled(translationPromises);
 
-      // Mark completed jobs
+      // Mark job outcomes
       for (const result of results) {
         if (result.status === 'fulfilled') {
-          const value = result.value as { jobId: string; result: any };
-          const { jobId } = value;
-          processedCount++;
-          // @ts-ignore - Deno Edge Function database operations
-          await (supabase as any)
-            .from('vocab_translation_queue')
-            .update({ status: 'completed', updated_at: new Date().toISOString() })
-            .eq('id', jobId);
+          const value = result.value as { jobId: string; ok: boolean };
+          if (value.ok) {
+            processedCount++;
+            await (supabase as any)
+              .from('vocab_translation_queue')
+              .update({ status: 'completed', updated_at: new Date().toISOString() })
+              .eq('id', value.jobId);
+          } else {
+            errorCount++;
+            await (supabase as any)
+              .from('vocab_translation_queue')
+              .update({ status: 'failed', error_message: 'Empty translation', updated_at: new Date().toISOString() })
+              .eq('id', value.jobId);
+          }
         } else {
           errorCount++;
-          console.error(`Translation failed for job:`, result.reason);
+          const reason = (result as PromiseRejectedResult).reason;
+          console.error('Translation failed for job:', reason);
+          const jobId = (reason && reason.jobId) ? reason.jobId : null;
+          if (jobId) {
+            await (supabase as any)
+              .from('vocab_translation_queue')
+              .update({ status: 'failed', error_message: String(reason), updated_at: new Date().toISOString() })
+              .eq('id', jobId);
+          }
         }
       }
 
@@ -113,65 +127,52 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
 // Enhanced translation function with rich data
 async function translateSingleWord(cardId: string, term: string, targetLang: string, supabase: any, authHeader: string) {
   try {
-    const resp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/translation-service`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
-      body: JSON.stringify({ 
-        text: term, 
-        sourceLang: 'en', 
-        targetLang: targetLang, 
-        includeContext: true,
-        includePOS: true,
-        includeIPA: true
-      })
+    // Call translation-service via Supabase client
+    const { data, error } = await (supabase as any).functions.invoke('translation-service', {
+      body: {
+        text: term,
+        sourceLang: 'en',
+        targetLang,
+        includeContext: true
+      },
+      headers: authHeader ? { Authorization: authHeader } : undefined,
     });
 
-    if (!resp.ok) {
-      console.log(`Translation failed for ${targetLang}: ${resp.status}`);
+    if (error || !data?.success) {
+      console.log(`Translation service error for ${targetLang}:`, error || data?.error);
       return null;
     }
 
-    const payload = await resp.json();
-    if (!payload?.success) {
-      console.log(`Translation service error for ${targetLang}: ${payload?.error}`);
-      return null;
-    }
-
-    const res = payload.result || {};
+    const res = data.result || {};
     const primary = typeof res.translation === 'string' ? res.translation : (res.translation?.translation || '');
-    const alts = Array.isArray(res.alternatives) ? res.alternatives.map((a: any) => (typeof a === 'string' ? a : (a?.meaning || ''))).filter((s: string) => !!s) : [];
+    const alts = Array.isArray(res.alternatives)
+      ? res.alternatives
+          .map((a: any) => (typeof a === 'string' ? a : (a?.meaning || '')))
+          .filter((s: string) => !!s)
+      : [];
     const arr = [primary, ...alts].map((s: string) => String(s).trim()).filter(Boolean);
 
     if (!arr.length) return null;
 
-    // Store rich translation data including POS, IPA, and context
-    const { error: upsertError } = await supabase.from('vocab_translations').upsert({
-      user_id: cardId, // Use card_id as user_id for system-wide translations
-      card_id: cardId,
-      lang: targetLang,
-      translations: arr,
-      provider: 'deepseek',
-      quality: 1,
-      // Add rich data fields
-      pos: res.pos || null,
-      ipa: res.ipa || null,
-      context_sentence: res.context || null
-    } as any, { onConflict: 'card_id,lang' } as any);
-    
+    // Store translation (only defined columns)
+    const { error: upsertError } = await (supabase as any)
+      .from('vocab_translations')
+      .upsert({
+        user_id: cardId, // use card_id as system identifier
+        card_id: cardId,
+        lang: targetLang,
+        translations: arr,
+        provider: 'deepseek',
+        quality: 1,
+      } as any, { onConflict: 'card_id,lang' } as any);
+
     if (upsertError) {
       console.error(`Failed to store translation for ${targetLang}:`, upsertError);
       return null;
     }
-    
-    console.log(`✅ Stored translation: ${term} -> ${targetLang}: ${primary}`);
 
-    return { 
-      lang: targetLang, 
-      translation: primary, 
-      pos: res.pos, 
-      ipa: res.ipa, 
-      context: res.context 
-    };
+    console.log(`✅ Stored translation: ${term} -> ${targetLang}: ${primary}`);
+    return { lang: targetLang, translation: primary };
   } catch (e) {
     console.log(`Translation error for ${targetLang}:`, e);
     return null;

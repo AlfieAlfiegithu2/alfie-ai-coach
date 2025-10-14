@@ -2407,6 +2407,14 @@ export type Database = {
           total_bytes: number
         }[]
       }
+      get_translation_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          last_translation: string
+          total_translations: number
+          unique_cards: number
+        }[]
+      }
       grant_admin_role: {
         Args: { user_email: string }
         Returns: undefined

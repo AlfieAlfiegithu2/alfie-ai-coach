@@ -46,6 +46,7 @@ const AdminVocabManager: React.FC = () => {
   const [showTranslationViewer, setShowTranslationViewer] = useState(false);
   const [translationViewerData, setTranslationViewerData] = useState<any[]>([]);
   const [selectedLang, setSelectedLang] = useState<string>('all');
+  const [translationStats, setTranslationStats] = useState<{total: number, unique_cards: number, last_translation: string} | null>(null);
   const { toast } = useToast();
 
   const load = async () => {
@@ -515,7 +516,7 @@ const AdminVocabManager: React.FC = () => {
     isAutoRetry = false
   ) => {
     const CHUNK_SIZE = 250;
-    const languages = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+    const languages = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
     const offset = options?.offset ?? Number(localStorage.getItem('vocabBatchOffset') || 0);
 
     try {
@@ -627,6 +628,16 @@ const AdminVocabManager: React.FC = () => {
   const viewTranslations = async () => {
     setLoading(true);
     try {
+      // Get translation stats
+      const { data: statsData } = await supabase.rpc('get_translation_stats') as any;
+      if (statsData && statsData.length > 0) {
+        setTranslationStats({
+          total: statsData[0].total_translations || 0,
+          unique_cards: statsData[0].unique_cards || 0,
+          last_translation: statsData[0].last_translation || ''
+        });
+      }
+
       let query = supabase
         .from('vocab_translations')
         .select(`
@@ -709,7 +720,7 @@ const AdminVocabManager: React.FC = () => {
             {loading ? '⏳ Loading…' : '👁️ View Translations'}
           </button>
           <button className="border rounded px-3 py-2 bg-green-600 text-white font-medium" onClick={async()=>{
-            const confirmed = window.confirm(`Translate all 14,303 words into 22 languages with POS, IPA, and context?\n\nThis will create ~314,666 translation jobs.`);
+            const confirmed = window.confirm(`Translate all words into 23 languages with POS, IPA, and context?\n\nThis will create translation jobs for all missing translations.`);
             if (!confirmed) return;
 
             setSeeding(true);
@@ -726,7 +737,7 @@ const AdminVocabManager: React.FC = () => {
                 return;
               }
 
-              const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh'];
+              const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
               
               // Create translation jobs
               const jobs = [];
@@ -784,7 +795,7 @@ const AdminVocabManager: React.FC = () => {
               setSeeding(false);
             }
           }} disabled={seeding}>
-            {seeding ? '⏳ Translating All…' : '🌍 Translate All to 22 Languages'}
+            {seeding ? '⏳ Translating All…' : '🌍 Translate All to 23 Languages'}
           </button>
         </div>
       </div>
@@ -922,7 +933,7 @@ const AdminVocabManager: React.FC = () => {
                     )}
                     {Object.keys(translations[r.id] || {}).length > 0 && (
                       <div className="text-xs text-green-600 mt-1">
-                        ✅ {Object.keys(translations[r.id]).length}/22 languages translated
+                        ✅ {Object.keys(translations[r.id]).length}/23 languages translated
                       </div>
                     )}
                   </div>
@@ -972,7 +983,17 @@ const AdminVocabManager: React.FC = () => {
               <div>
                 <h2 className="text-xl font-semibold">Translation Viewer</h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  Showing latest 100 translations • Auto-retry: {autoRetryEnabled ? '✅ ON' : '❌ OFF'} • Retry count: {retryCount}/10
+                  {translationStats ? (
+                    <>
+                      <span className="font-medium text-green-600">{translationStats.total} total translations</span> across{' '}
+                      <span className="font-medium">{translationStats.unique_cards} words</span> • Last: {new Date(translationStats.last_translation).toLocaleString()}
+                    </>
+                  ) : (
+                    'Loading stats...'
+                  )}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Showing latest 100 • Auto-retry: {autoRetryEnabled ? '✅ ON' : '❌ OFF'} • Retry count: {retryCount}/10
                 </p>
               </div>
               <div className="flex gap-2">

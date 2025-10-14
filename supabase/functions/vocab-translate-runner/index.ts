@@ -116,17 +116,15 @@ serve(async (req) => {
     let errors = 0;
     let lastCardId: string | null = null;
     let lastLang: string | null = null;
-    let ops = 0;
+    let translationAttempts = 0; // Only count actual translation attempts
     let interrupted = false;
 
     for (const card of cards) {
-      if (ops >= MAX_OPS_PER_RUN) { interrupted = true; break; }
+      if (translationAttempts >= MAX_OPS_PER_RUN) { interrupted = true; break; }
       for (const lang of targetLangs) {
-        if (ops >= MAX_OPS_PER_RUN) { interrupted = true; break; }
-        // Count each attempt (including skips) toward the budget
-        ops++;
+        if (translationAttempts >= MAX_OPS_PER_RUN) { interrupted = true; break; }
         try {
-          // Skip if already translated
+          // Skip if already translated (don't count toward limit)
           const { data: existing } = await supabase
             .from('vocab_translations')
             .select('id')
@@ -134,6 +132,9 @@ serve(async (req) => {
             .eq('lang', lang)
             .maybeSingle();
           if (existing) continue;
+
+          // Count only actual translation attempts
+          translationAttempts++;
 
           const { data: resp, error: invErr } = await supabase.functions.invoke('translation-service', {
             body: {
@@ -195,7 +196,7 @@ serve(async (req) => {
 
     // Chain next batch in background so UI doesn't have to keep calling
     if (interrupted) {
-      console.log(`Runner: interrupted after ${ops} ops, resuming same offset=${offset}`);
+      console.log(`Runner: interrupted after ${translationAttempts} translation attempts, resuming same offset=${offset}`);
       const chain = (async () => {
         try {
           await supabase.functions.invoke('vocab-translate-runner', {

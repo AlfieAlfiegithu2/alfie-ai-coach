@@ -66,6 +66,12 @@ serve(async (req) => {
   try {
     const { offset = 0, limit = 150, languages } = await req.json().catch(() => ({ offset: 0, limit: 150 }));
 
+    // Cap per-invocation work to avoid timeouts and allow safe self-chaining
+    const MAX_CARDS_PER_RUN = 8;
+    const MAX_OPS_PER_RUN = 60;
+    const requestedLimit = typeof limit === 'number' && limit > 0 ? limit : 150;
+    const effectiveLimit = Math.min(requestedLimit, MAX_CARDS_PER_RUN);
+
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
@@ -82,7 +88,7 @@ serve(async (req) => {
 
     const targetLangs: string[] = languages || ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
 
-    console.log(`Runner: fetching cards offset=${offset} limit=${limit}`);
+    console.log(`Runner: fetching cards offset=${offset} limit=${effectiveLimit} (requested=${requestedLimit})`);
 
     const { data: cards, error: fetchErr } = await supabase
       .from('vocab_cards')
@@ -90,7 +96,7 @@ serve(async (req) => {
       .eq('is_public', true)
       .eq('language', 'en')
       .order('id', { ascending: true })
-      .range(offset, offset + limit - 1);
+      .range(offset, offset + effectiveLimit - 1);
 
     if (fetchErr) {
       console.error('Fetch error:', fetchErr);
@@ -110,9 +116,15 @@ serve(async (req) => {
     let errors = 0;
     let lastCardId: string | null = null;
     let lastLang: string | null = null;
+    let ops = 0;
+    let interrupted = false;
 
     for (const card of cards) {
+      if (ops >= MAX_OPS_PER_RUN) { interrupted = true; break; }
       for (const lang of targetLangs) {
+        if (ops >= MAX_OPS_PER_RUN) { interrupted = true; break; }
+        // Count each attempt (including skips) toward the budget
+        ops++;
         try {
           // Skip if already translated
           const { data: existing } = await supabase
@@ -170,7 +182,7 @@ serve(async (req) => {
           }
 
           // Soft rate limit
-          await new Promise(r => setTimeout(r, 100));
+          await new Promise(r => setTimeout(r, 10));
         } catch (e) {
           console.error('loop error', e);
           errors++;
@@ -179,20 +191,31 @@ serve(async (req) => {
     }
 
     const nextOffset = offset + cards.length;
-    const hasMore = cards.length === limit;
+    const hasMore = cards.length === effectiveLimit;
 
     // Chain next batch in background so UI doesn't have to keep calling
-    if (hasMore) {
+    if (interrupted) {
+      console.log(`Runner: interrupted after ${ops} ops, resuming same offset=${offset}`);
       const chain = (async () => {
         try {
           await supabase.functions.invoke('vocab-translate-runner', {
-            body: { offset: nextOffset, limit, languages: targetLangs },
+            body: { offset, limit: effectiveLimit, languages: targetLangs },
+          });
+        } catch (e) {
+          console.error('self-chain (resume) failed', e);
+        }
+      })();
+      EdgeRuntime?.waitUntil?.(chain);
+    } else if (hasMore) {
+      const chain = (async () => {
+        try {
+          await supabase.functions.invoke('vocab-translate-runner', {
+            body: { offset: nextOffset, limit: effectiveLimit, languages: targetLangs },
           });
         } catch (e) {
           console.error('self-chain invoke failed', e);
         }
       })();
-      // Ensure it keeps running after responding
       EdgeRuntime?.waitUntil?.(chain);
     }
 
@@ -204,6 +227,7 @@ serve(async (req) => {
       lastLang,
       nextOffset,
       hasMore,
+      interrupted,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('runner error', e);

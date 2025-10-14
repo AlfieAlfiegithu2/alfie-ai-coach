@@ -663,13 +663,63 @@ const AdminVocabManager: React.FC = () => {
           >
             {deleting ? '⏳ Deleting…' : '🗑️ Delete All'}
           </button>
-          <button 
-            className="border rounded px-3 py-2 bg-indigo-600 text-white font-medium" 
-            onClick={viewTranslations}
-            disabled={loading}
-          >
-            {loading ? '⏳ Loading…' : '👁️ View Translations'}
-          </button>
+           <button 
+             className="border rounded px-3 py-2 bg-indigo-600 text-white font-medium" 
+             onClick={viewTranslations}
+             disabled={loading}
+           >
+             {loading ? '⏳ Loading…' : '👁️ View Translations'}
+           </button>
+           <button 
+             className="border rounded px-3 py-2 bg-purple-600 text-white font-medium" 
+             onClick={async () => {
+               console.log('📊 Checking translation status...');
+               
+               // Count total words
+               const { count: totalWords } = await supabase
+                 .from('vocab_cards')
+                 .select('*', { count: 'exact', head: true })
+                 .eq('is_public', true)
+                 .eq('language', 'en');
+               
+               // Count total translations
+               const { count: totalTranslations } = await supabase
+                 .from('vocab_translations')
+                 .select('*', { count: 'exact', head: true });
+               
+               // Count by language
+               const { data: allTrans } = await supabase
+                 .from('vocab_translations')
+                 .select('lang');
+               
+               const langCounts: Record<string, number> = {};
+               (allTrans || []).forEach((t: any) => {
+                 langCounts[t.lang] = (langCounts[t.lang] || 0) + 1;
+               });
+               
+               const langReport = Object.entries(langCounts)
+                 .sort((a, b) => b[1] - a[1])
+                 .map(([lang, count]) => `${lang}: ${count}`)
+                 .join('\n');
+               
+               const expectedTotal = (totalWords || 0) * 23;
+               const coverage = totalTranslations && expectedTotal 
+                 ? ((totalTranslations / expectedTotal) * 100).toFixed(2)
+                 : '0';
+               
+               console.log('Translation Status:', {
+                 totalWords,
+                 totalTranslations,
+                 expectedTotal,
+                 coverage: `${coverage}%`,
+                 byLanguage: langCounts
+               });
+               
+               alert(`📊 Translation Status\n\nTotal English words: ${totalWords}\nTotal translations: ${totalTranslations}\nExpected: ${expectedTotal}\nCoverage: ${coverage}%\n\nBy language:\n${langReport}`);
+             }}
+           >
+             📊 Check Status
+           </button>
           <button className="border rounded px-3 py-2 bg-green-600 text-white font-medium" onClick={async()=>{
             const confirmed = window.confirm(`Translate all words into 23 languages with POS, IPA, and context?\n\nThis will create translation jobs for all missing translations.`);
             if (!confirmed) return;
@@ -699,27 +749,12 @@ const AdminVocabManager: React.FC = () => {
               
               console.log(`👤 User ID: ${user.id}`);
               
-              // Check existing jobs/translations to avoid duplicates
-              console.log('🔍 Checking for existing translations...');
-              const { data: existingTranslations } = await supabase
-                .from('vocab_translations')
-                .select('card_id, lang');
+              // FORCE RETRANSLATION - Create jobs for ALL words
+              console.log('🔄 Creating fresh translation jobs for ALL words...');
               
-              const existingSet = new Set(
-                (existingTranslations || []).map((t: any) => `${t.card_id}-${t.lang}`)
-              );
-              console.log(`📊 Found ${existingSet.size} existing translations`);
-              
-              // Create translation jobs (skip already translated)
               const jobs = [];
-              let skipped = 0;
               for (const card of cards) {
                 for (const lang of SUPPORTED_LANGS) {
-                  const key = `${card.id}-${lang}`;
-                  if (existingSet.has(key)) {
-                    skipped++;
-                    continue; // Skip if already translated
-                  }
                   jobs.push({
                     user_id: user.id,
                     card_id: card.id,
@@ -729,14 +764,6 @@ const AdminVocabManager: React.FC = () => {
                     created_at: new Date().toISOString()
                   });
                 }
-              }
-              
-              console.log(`⏭️ Skipped ${skipped} already-translated pairs`);
-              
-              if (jobs.length === 0) {
-                alert('✅ All words are already translated!');
-                loadTranslations();
-                return;
               }
 
               // Insert jobs in batches

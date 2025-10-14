@@ -145,7 +145,7 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
     if (!arr.length) return null;
 
     // Store rich translation data including POS, IPA, and context
-    await supabase.from('vocab_translations').upsert({
+    const { error: upsertError } = await supabase.from('vocab_translations').upsert({
       user_id: cardId, // Use card_id as user_id for system-wide translations
       card_id: cardId,
       lang: targetLang,
@@ -157,6 +157,13 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
       ipa: res.ipa || null,
       context_sentence: res.context || null
     } as any, { onConflict: 'card_id,lang' } as any);
+    
+    if (upsertError) {
+      console.error(`Failed to store translation for ${targetLang}:`, upsertError);
+      return null;
+    }
+    
+    console.log(`✅ Stored translation: ${term} -> ${targetLang}: ${primary}`);
 
     return { 
       lang: targetLang, 

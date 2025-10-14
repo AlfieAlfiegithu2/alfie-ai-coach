@@ -15,6 +15,71 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper: extract first valid JSON array from a string, tolerant to extra text/code fences
+function extractJsonArray(input: string): string | null {
+  if (!input) return null;
+  let s = input.trim();
+  if (s.startsWith('```')) {
+    // remove code fences
+    s = s.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
+  }
+  const start = s.indexOf('[');
+  if (start === -1) return null;
+  let inString = false;
+  let escape = false;
+  let depth = 0;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\') { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (!inString) {
+      if (ch === '[') depth++;
+      else if (ch === ']') {
+        depth--;
+        if (depth === 0) return s.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+// Helper: translate a single text with strict JSON instruction (fallback for batch)
+async function translateSingleViaApi(text: string, sourceLang: string, targetLang: string): Promise<{ translation: string; alternatives: string[] }> {
+  const systemPrompt = `You are a professional translator. Return ONLY valid JSON with this exact shape: {"translation": "...", "alternatives": []}. Use double quotes and escape internal quotes. No extra text.`;
+  const userPrompt = sourceLang === 'auto'
+    ? `Translate to ${targetLang}: "${text}"`
+    : `Translate from ${sourceLang} to ${targetLang}: "${text}"`;
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${deepSeekApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0,
+      max_tokens: 120,
+    }),
+  });
+
+  const data = await res.json();
+  const content: string = data?.choices?.[0]?.message?.content ?? '';
+  try {
+    let c = content.trim();
+    if (c.startsWith('```')) c = c.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
+    const obj = JSON.parse(c);
+    return { translation: obj.translation ?? String(text), alternatives: Array.isArray(obj.alternatives) ? obj.alternatives : [] };
+  } catch {
+    return { translation: content || String(text), alternatives: [] };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -125,22 +190,28 @@ serve(async (req) => {
     const textsToTranslate = isBatch ? uncachedTexts : [text];
     
     const systemPrompt = isBatch ?
-      `Professional translator. Translate each word/phrase to ${targetLang}. Return JSON array format only:
+      `You are a professional translator. Translate each input to ${targetLang}.
+       Output STRICT, valid JSON array ONLY (no prose, no markdown, no comments).
+       Rules:
+       - Use double quotes for all strings
+       - Escape any internal quotes in strings
+       - No trailing commas, no extra keys
+       - For each item, include: {"translation": "primary", "alternatives": ["alt1", "alt2", "alt3"]}
+       Example output:
        [
          {"translation": "primary", "alternatives": ["alt1", "alt2"]},
          {"translation": "primary", "alternatives": ["alt1", "alt2"]}
-       ]
-       Keep alternatives concise. Return ONLY the JSON array, no other text.` :
+       ]` :
       (includeContext ?
-        `Professional translator. Return JSON format only:
+        `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
          {
            "translation": "primary translation",
            "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
            "context": null,
            "grammar_notes": null
          }
-         Rules: "translation"=most common meaning, "alternatives"=other meanings with part-of-speech, "pos"=noun/verb/adj/adv/prep/etc, set context/grammar_notes to null for speed.` :
-        `Translate accurately and concisely. For multiple meanings use format: "meaning1 / meaning2". Just the translation, no extra text.`);
+         Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.` :
+        `Translate accurately and concisely. If there are multiple common meanings, format as: "meaning1 / meaning2". Return only the translation text.`);
 
     const userPrompt = isBatch ?
       `Translate these ${textsToTranslate.length} words to ${targetLang}:\n${textsToTranslate.map((t, i) => `${i + 1}. ${t}`).join('\n')}` :
@@ -160,7 +231,7 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 100,
+        max_tokens: 200,
         temperature: 0, // Zero temperature for fastest, most deterministic responses
       }),
     });
@@ -197,56 +268,88 @@ serve(async (req) => {
     // Handle batch results
     if (isBatch) {
       try {
-        let cleanedResult = translationResult.trim();
-        if (cleanedResult.startsWith('```json')) {
-          cleanedResult = cleanedResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        } else if (cleanedResult.startsWith('```')) {
-          cleanedResult = cleanedResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
-        }
-        
-        const batchResults = JSON.parse(cleanedResult);
-        
-        // Fill in the results array
-        for (let i = 0; i < uncachedIndices.length; i++) {
-          const idx = uncachedIndices[i];
-          const batchResult = batchResults[i] || { translation: uncachedTexts[i] };
-          results[idx] = {
-            translation: batchResult.translation,
-            alternatives: batchResult.alternatives || [],
-            cached: false
-          };
-          
-          // Cache each result
-          const currentText = uncachedTexts[i];
-          if (currentText.length <= 50 && batchResult.translation) {
-            await supabase
-              .from('translation_cache')
-              .insert({
-                word: currentText.toLowerCase().trim(),
-                source_lang: sourceLang,
-                target_lang: targetLang,
-                translation: batchResult.translation,
-                hit_count: 1,
-                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-              })
-              .then(() => console.log('💾 Cached:', currentText))
-              .catch(() => {});
+        // Try robust extraction of a JSON array
+        const extracted = extractJsonArray(translationResult);
+        let batchResults: any[] | null = null;
+        if (extracted) {
+          try {
+            batchResults = JSON.parse(extracted);
+          } catch (e) {
+            console.error('Primary JSON.parse failed on extracted array:', e);
           }
         }
-        
+
+        if (!batchResults || !Array.isArray(batchResults)) {
+          console.warn('⚠️ Falling back to per-item translation due to batch parse failure.');
+          // Fallback: translate each uncached text individually (limited concurrency)
+          const concurrency = 3;
+          for (let i = 0; i < uncachedTexts.length; i += concurrency) {
+            const chunk = uncachedTexts.slice(i, i + concurrency);
+            const idxChunk = uncachedIndices.slice(i, i + concurrency);
+            const translated = await Promise.all(
+              chunk.map((t) => translateSingleViaApi(t, sourceLang, targetLang))
+            );
+            for (let j = 0; j < translated.length; j++) {
+              const idx = idxChunk[j];
+              const { translation, alternatives } = translated[j];
+              results[idx] = { translation, alternatives: alternatives || [], cached: false };
+              const currentText = chunk[j];
+              if (currentText.length <= 50 && translation) {
+                await supabase
+                  .from('translation_cache')
+                  .insert({
+                    word: currentText.toLowerCase().trim(),
+                    source_lang: sourceLang,
+                    target_lang: targetLang,
+                    translation,
+                    hit_count: 1,
+                    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                  })
+                  .catch(() => {});
+              }
+            }
+          }
+        } else {
+          // Parsed ok — map results
+          for (let i = 0; i < uncachedIndices.length; i++) {
+            const idx = uncachedIndices[i];
+            const batchResult = batchResults[i] || { translation: uncachedTexts[i] };
+            results[idx] = {
+              translation: batchResult.translation,
+              alternatives: Array.isArray(batchResult.alternatives) ? batchResult.alternatives : [],
+              cached: false,
+            };
+            const currentText = uncachedTexts[i];
+            if (currentText.length <= 50 && batchResult.translation) {
+              await supabase
+                .from('translation_cache')
+                .insert({
+                  word: currentText.toLowerCase().trim(),
+                  source_lang: sourceLang,
+                  target_lang: targetLang,
+                  translation: batchResult.translation,
+                  hit_count: 1,
+                  expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                })
+                .catch(() => {});
+            }
+          }
+        }
+
         console.log('✅ Batch translation completed:', results.length, 'words');
-        
-        return new Response(JSON.stringify({ 
-          success: true, 
-          results: results,
-          sourceLang: sourceLang,
-          targetLang: targetLang
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({
+          success: true,
+          results,
+          sourceLang,
+          targetLang,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (parseError) {
         console.error('Batch parsing failed:', parseError);
-        throw new Error('Failed to parse batch translation results');
+        // As a last resort, return an error to caller (runner will retry/skip)
+        return new Response(JSON.stringify({ success: false, error: 'Batch parse and fallback failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 

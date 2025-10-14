@@ -131,7 +131,7 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 100,
+        max_tokens: 500,
         temperature: 0, // Zero temperature for fastest, most deterministic responses
       }),
     });
@@ -168,32 +168,84 @@ serve(async (req) => {
     let result;
     if (includeContext) {
       try {
-        // Clean the response to ensure it's valid JSON
+        // Enhanced JSON parsing with multiple fallback strategies
         let cleanedResult = translationResult.trim();
         
-        // Remove any markdown code block formatting if present
-        if (cleanedResult.startsWith('```json')) {
-          cleanedResult = cleanedResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        } else if (cleanedResult.startsWith('```')) {
-          cleanedResult = cleanedResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        // Strategy 1: Remove markdown code blocks
+        if (cleanedResult.includes('```')) {
+          const jsonMatch = cleanedResult.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            cleanedResult = jsonMatch[1].trim();
+          }
         }
+        
+        // Strategy 2: Extract JSON from mixed content
+        const jsonStart = cleanedResult.indexOf('{');
+        const jsonEnd = cleanedResult.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+          cleanedResult = cleanedResult.substring(jsonStart, jsonEnd + 1);
+        }
+        
+        // Strategy 3: Clean common issues
+        cleanedResult = cleanedResult
+          .replace(/^[^{]*/, '') // Remove text before first {
+          .replace(/[^}]*$/, '') // Remove text after last }
+          .trim();
         
         result = JSON.parse(cleanedResult);
         
-        // Ensure alternatives is an array with part of speech info
+        // Validate and clean the result
+        if (!result.translation) {
+          throw new Error('No translation field found');
+        }
+        
+        // Ensure alternatives is an array with proper structure
         if (result.alternatives && Array.isArray(result.alternatives)) {
-          result.alternatives = result.alternatives.filter((alt: any) => 
-            alt && (typeof alt === 'string' ? alt.trim().length > 0 : alt.meaning && alt.meaning.trim().length > 0)
-          );
+          result.alternatives = result.alternatives
+            .filter((alt: any) => {
+              if (typeof alt === 'string') {
+                return alt.trim().length > 0;
+              }
+              if (alt && typeof alt === 'object') {
+                return alt.meaning && alt.meaning.trim().length > 0;
+              }
+              return false;
+            })
+            .map((alt: any) => {
+              if (typeof alt === 'string') {
+                return { meaning: alt.trim(), pos: 'noun' };
+              }
+              return alt;
+            });
         } else {
           result.alternatives = [];
         }
         
+        // Ensure required fields exist
+        result.context = result.context || null;
+        result.grammar_notes = result.grammar_notes || null;
+        
       } catch (parseError) {
-        console.warn('JSON parsing failed, treating as simple translation:', parseError);
-        // If JSON parsing fails, treat as simple translation
+        console.warn('Enhanced JSON parsing failed, using fallback:', parseError);
+        console.log('Raw response:', translationResult);
+        
+        // Fallback: Extract simple translation from any format
+        let fallbackTranslation = translationResult.trim();
+        
+        // Try to extract translation from various formats
+        const translationMatch = fallbackTranslation.match(/"translation":\s*"([^"]+)"/);
+        if (translationMatch) {
+          fallbackTranslation = translationMatch[1];
+        } else if (fallbackTranslation.includes(':')) {
+          // Try to extract from "word: translation" format
+          const colonMatch = fallbackTranslation.match(/:\s*"?([^"]+)"?/);
+          if (colonMatch) {
+            fallbackTranslation = colonMatch[1].trim();
+          }
+        }
+        
         result = {
-          translation: translationResult,
+          translation: fallbackTranslation,
           context: null,
           alternatives: [],
           grammar_notes: null

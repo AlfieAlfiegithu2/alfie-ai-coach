@@ -61,6 +61,9 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
     jobsByTerm.get(job.term)!.push(job);
   });
 
+  let processedCount = 0;
+  let errorCount = 0;
+
   // Process each term's translations
   for (const [term, jobs] of jobsByTerm) {
     const jobsArray = jobs as any[];
@@ -86,11 +89,15 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
         if (result.status === 'fulfilled') {
           const value = result.value as { jobId: string; result: any };
           const { jobId } = value;
+          processedCount++;
           // @ts-ignore - Deno Edge Function database operations
           await (supabase as any)
             .from('vocab_translation_queue')
             .update({ status: 'completed', updated_at: new Date().toISOString() })
             .eq('id', jobId);
+        } else {
+          errorCount++;
+          console.error(`Translation failed for job:`, result.reason);
         }
       }
 
@@ -98,6 +105,8 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
       await new Promise((r) => setTimeout(r, 200));
     }
   }
+
+  console.log(`✅ Translation batch completed: ${processedCount} successful, ${errorCount} failed`);
 }
 
 // Enhanced translation function with rich data

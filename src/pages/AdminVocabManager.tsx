@@ -634,29 +634,70 @@ const AdminVocabManager: React.FC = () => {
 
               alert(`✅ Created ${inserted} translation jobs!\n\nNow processing translations...`);
 
-              // Step 2: Process translations in batches
+              // Step 2: Process translations in batches with progress tracking
               let processed = 0;
               const totalJobs = inserted;
+              let consecutiveErrors = 0;
+              const maxConsecutiveErrors = 3;
               
-              while (processed < totalJobs) {
-                const { data, error } = await supabase.functions.invoke('process-translations', { body: {} });
-                
-                if (error || !data?.success) {
-                  alert(`Translation failed: ${data?.error || error?.message || 'Unknown error'}`);
-                  break;
+              console.log(`🚀 Starting translation processing: ${totalJobs} jobs`);
+              
+              while (processed < totalJobs && consecutiveErrors < maxConsecutiveErrors) {
+                try {
+                  const { data, error } = await supabase.functions.invoke('process-translations', { body: {} });
+                  
+                  if (error || !data?.success) {
+                    console.error(`Translation batch failed: ${data?.error || error?.message || 'Unknown error'}`);
+                    consecutiveErrors++;
+                    
+                    if (consecutiveErrors >= maxConsecutiveErrors) {
+                      alert(`❌ Translation stopped after ${maxConsecutiveErrors} consecutive failures.\n\nProcessed: ${processed}/${totalJobs} translations\n\nYou can click the button again to resume from where it left off.`);
+                      break;
+                    }
+                    
+                    // Wait longer before retry
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    continue;
+                  }
+                  
+                  // Reset error counter on success
+                  consecutiveErrors = 0;
+                  
+                  // Estimate progress (process-translations handles 100 jobs at a time)
+                  const batchSize = 100;
+                  processed = Math.min(processed + batchSize, totalJobs);
+                  
+                  // Update progress
+                  const progress = Math.round((processed / totalJobs) * 100);
+                  console.log(`📊 Translation progress: ${progress}% (${processed}/${totalJobs})`);
+                  
+                  // Update UI with progress (if you want to show it)
+                  if (processed % 1000 === 0 || processed === totalJobs) {
+                    console.log(`✅ Processed ${processed} translations so far...`);
+                  }
+                  
+                  // Small delay to avoid overwhelming the system
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  
+                } catch (batchError) {
+                  console.error('Batch processing error:', batchError);
+                  consecutiveErrors++;
+                  
+                  if (consecutiveErrors >= maxConsecutiveErrors) {
+                    alert(`❌ Translation stopped due to errors.\n\nProcessed: ${processed}/${totalJobs} translations\n\nError: ${batchError.message}`);
+                    break;
+                  }
+                  
+                  // Wait before retry
+                  await new Promise(resolve => setTimeout(resolve, 3000));
                 }
-                
-                processed += 100; // Assuming 100 jobs per batch
-                
-                // Update progress
-                const progress = Math.round((processed / totalJobs) * 100);
-                console.log(`Progress: ${progress}% (${processed}/${totalJobs})`);
-                
-                // Small delay to avoid overwhelming the system
-                await new Promise(resolve => setTimeout(resolve, 1000));
               }
 
-              alert(`✅ Translation completed! Processed ${processed} translations.`);
+              if (processed >= totalJobs) {
+                alert(`🎉 Translation completed successfully!\n\n✅ Processed: ${processed} translations\n🌍 Languages: 22\n📚 Words: ${cards.length}\n\nAll translations are now available!`);
+              } else {
+                alert(`⚠️ Translation partially completed.\n\n📊 Processed: ${processed}/${totalJobs} translations\n\nYou can click the button again to continue from where it left off.`);
+              }
               loadTranslations();
               refresh();
             } catch (e: any) {

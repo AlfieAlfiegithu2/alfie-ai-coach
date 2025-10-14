@@ -7,52 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type TranslationResult = { success: boolean; result?: unknown; error?: string };
-
-// Small helper copied from batch function, simplified and robust
-function extractTranslations(result: any): string[] {
-  try {
-    let text = '';
-    if (typeof result === 'string') {
-      text = result;
-    } else if (result && typeof result === 'object') {
-      text = JSON.stringify(result);
-    } else {
-      return [];
-    }
-    text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-    try {
-      const parsed = JSON.parse(text);
-      const translations: string[] = [];
-      if (typeof (parsed as any).translation === 'string') {
-        const cleaned = ((parsed as any).translation as string).trim();
-        if (cleaned) translations.push(cleaned);
-      }
-      if (Array.isArray((parsed as any).alternatives)) {
-        (parsed as any).alternatives.forEach((alt: any) => {
-          if (typeof alt === 'string') {
-            const cleaned = alt.trim();
-            if (cleaned) translations.push(cleaned);
-          } else if (alt && typeof alt.meaning === 'string') {
-            const cleaned = alt.meaning.trim();
-            if (cleaned) translations.push(cleaned);
-          }
-        });
-      }
-      if (translations.length > 0) return translations.filter(Boolean).slice(0, 5);
-    } catch { /* not valid JSON */ }
-
-    const fallback = text
-      .replace(/[\"'\[\]{}]/g, ' ')
-      .replace(/```/g, '')
-      .split(/[,،\s]+/)
-      .map(t => t.trim())
-      .filter(t => t.length > 0 && t.length < 100);
-    return fallback.length > 0 ? fallback.slice(0, 5) : [text.slice(0, 100)];
-  } catch {
-    return [];
-  }
-}
 
 // Deno EdgeRuntime global is injected by Supabase; declare for TS
 // deno-lint-ignore no-explicit-any
@@ -66,9 +20,10 @@ serve(async (req) => {
   try {
     const { offset = 0, limit = 150, languages } = await req.json().catch(() => ({ offset: 0, limit: 150 }));
 
-    // Cap per-invocation work to avoid timeouts and allow safe self-chaining
-    const MAX_CARDS_PER_RUN = 8;
-    const MAX_OPS_PER_RUN = 60;
+    // Optimized limits for faster processing
+    const MAX_CARDS_PER_RUN = 20;
+    const BATCH_SIZE = 8; // Words per API call
+    const MAX_RETRIES = 3;
     const requestedLimit = typeof limit === 'number' && limit > 0 ? limit : 150;
     const effectiveLimit = Math.min(requestedLimit, MAX_CARDS_PER_RUN);
 
@@ -112,109 +67,144 @@ serve(async (req) => {
       });
     }
 
+    // Pre-fetch all existing translations for these cards in one query
+    const cardIds = cards.map(c => c.id);
+    const { data: existingTranslations } = await supabase
+      .from('vocab_translations')
+      .select('card_id, lang')
+      .in('card_id', cardIds);
+    
+    const existingSet = new Set(
+      (existingTranslations || []).map(t => `${t.card_id}:${t.lang}`)
+    );
+
     let processed = 0;
     let errors = 0;
-    let lastCardId: string | null = null;
-    let lastLang: string | null = null;
-    let translationAttempts = 0; // Only count actual translation attempts
-    let interrupted = false;
+    let skipped = 0;
+    const failedCards = new Map<string, number>(); // Track retry attempts
 
-    for (const card of cards) {
-      if (translationAttempts >= MAX_OPS_PER_RUN) { interrupted = true; break; }
-      for (const lang of targetLangs) {
-        if (translationAttempts >= MAX_OPS_PER_RUN) { interrupted = true; break; }
+    console.log(`Processing ${cards.length} cards across ${targetLangs.length} languages`);
+
+    // Process each language separately with batching
+    for (const lang of targetLangs) {
+      const cardsToTranslate: typeof cards = [];
+      
+      // Collect cards that need translation for this language
+      for (const card of cards) {
+        const key = `${card.id}:${lang}`;
+        if (!existingSet.has(key)) {
+          const retries = failedCards.get(key) || 0;
+          if (retries < MAX_RETRIES) {
+            cardsToTranslate.push(card);
+          } else {
+            console.log(`⏭️  Skipping ${card.term} (${lang}) after ${MAX_RETRIES} failures`);
+            skipped++;
+          }
+        }
+      }
+
+      if (cardsToTranslate.length === 0) continue;
+
+      // Process in batches
+      for (let i = 0; i < cardsToTranslate.length; i += BATCH_SIZE) {
+        const batch = cardsToTranslate.slice(i, i + BATCH_SIZE);
+        const texts = batch.map(c => c.term);
+        
         try {
-          // Skip if already translated (don't count toward limit)
-          const { data: existing } = await supabase
-            .from('vocab_translations')
-            .select('id')
-            .eq('card_id', card.id)
-            .eq('lang', lang)
-            .maybeSingle();
-          if (existing) continue;
-
-          // Count only actual translation attempts
-          translationAttempts++;
-
+          console.log(`📦 Translating batch of ${batch.length} words to ${lang}`);
+          
           const { data: resp, error: invErr } = await supabase.functions.invoke('translation-service', {
             body: {
-              text: card.term,
+              texts: texts,
               sourceLang: 'en',
               targetLang: lang,
-              includeContext: true,
-              context: card.context_sentence || undefined,
+              includeContext: false,
             },
           });
 
-          lastCardId = card.id;
-          lastLang = lang;
-
           if (invErr || !resp?.success) {
-            console.error(`translate error ${card.term} -> ${lang}`, invErr || resp);
-            errors++;
+            console.error(`Batch translate error for ${lang}:`, invErr || resp);
+            // Mark all cards in batch as failed
+            batch.forEach(card => {
+              const key = `${card.id}:${lang}`;
+              failedCards.set(key, (failedCards.get(key) || 0) + 1);
+            });
+            errors += batch.length;
             continue;
           }
 
-          const translations = extractTranslations((resp as TranslationResult).result);
-          if (translations.length === 0) {
-            errors++;
-            continue;
+          const results = resp.results || [];
+          
+          // Process each result
+          for (let j = 0; j < batch.length; j++) {
+            const card = batch[j];
+            const result = results[j];
+            
+            if (!result || !result.translation) {
+              console.warn(`No translation for ${card.term} -> ${lang}`);
+              const key = `${card.id}:${lang}`;
+              failedCards.set(key, (failedCards.get(key) || 0) + 1);
+              errors++;
+              continue;
+            }
+
+            const translations = [result.translation];
+            if (result.alternatives) {
+              translations.push(...result.alternatives.slice(0, 4));
+            }
+
+            const { error: upErr } = await supabase
+              .from('vocab_translations')
+              .upsert({
+                user_id: null,
+                card_id: card.id,
+                lang,
+                translations: translations.filter(Boolean),
+                provider: 'deepseek',
+                quality: 1,
+                is_system: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'card_id,lang' });
+
+            if (upErr) {
+              console.error('Upsert error:', card.term, lang, upErr);
+              const key = `${card.id}:${lang}`;
+              failedCards.set(key, (failedCards.get(key) || 0) + 1);
+              errors++;
+            } else {
+              processed++;
+            }
           }
 
-          const { error: upErr } = await supabase
-            .from('vocab_translations')
-            .upsert({
-              user_id: null,
-              card_id: card.id,
-              lang,
-              translations,
-              provider: 'deepseek',
-              quality: 1,
-              is_system: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'card_id,lang' });
-
-          if (upErr) {
-            console.error('upsert error', upErr);
-            errors++;
-          } else {
-            processed++;
-          }
-
-          // Soft rate limit
-          await new Promise(r => setTimeout(r, 10));
+          // Small delay between batches to avoid rate limits
+          await new Promise(r => setTimeout(r, 50));
         } catch (e) {
-          console.error('loop error', e);
-          errors++;
+          console.error(`Batch processing error for ${lang}:`, e);
+          batch.forEach(card => {
+            const key = `${card.id}:${lang}`;
+            failedCards.set(key, (failedCards.get(key) || 0) + 1);
+          });
+          errors += batch.length;
         }
       }
     }
 
+    console.log(`✅ Completed: ${processed} translations, ${errors} errors, ${skipped} skipped`);
+
     const nextOffset = offset + cards.length;
     const hasMore = cards.length === effectiveLimit;
 
-    // Chain next batch in background so UI doesn't have to keep calling
-    if (interrupted) {
-      console.log(`Runner: interrupted after ${translationAttempts} translation attempts, resuming same offset=${offset}`);
+    // Auto-chain to next batch
+    if (hasMore) {
       const chain = (async () => {
         try {
-          await supabase.functions.invoke('vocab-translate-runner', {
-            body: { offset, limit: effectiveLimit, languages: targetLangs },
-          });
-        } catch (e) {
-          console.error('self-chain (resume) failed', e);
-        }
-      })();
-      EdgeRuntime?.waitUntil?.(chain);
-    } else if (hasMore) {
-      const chain = (async () => {
-        try {
+          console.log(`⛓️  Chaining to next batch: offset=${nextOffset}`);
           await supabase.functions.invoke('vocab-translate-runner', {
             body: { offset: nextOffset, limit: effectiveLimit, languages: targetLangs },
           });
         } catch (e) {
-          console.error('self-chain invoke failed', e);
+          console.error('Self-chain failed:', e);
         }
       })();
       EdgeRuntime?.waitUntil?.(chain);
@@ -224,11 +214,10 @@ serve(async (req) => {
       success: true,
       processed,
       errors,
-      lastCardId,
-      lastLang,
+      skipped,
       nextOffset,
       hasMore,
-      interrupted,
+      failedCount: failedCards.size,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('runner error', e);

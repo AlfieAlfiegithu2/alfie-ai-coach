@@ -37,87 +37,116 @@ serve(async (req) => {
 
     console.log('✅ DeepSeek API key found for translation, length:', deepSeekApiKey.length);
 
-    const { text, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
+    const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
+    
+    // Support batch translation
+    const isBatch = Array.isArray(texts);
+    const textArray = isBatch ? texts : [text];
 
-    if (!text || !targetLang) {
-      throw new Error('Text and target language are required');
+    if ((!text && !isBatch) || !targetLang) {
+      throw new Error('Text/texts and target language are required');
     }
 
-    console.log('🌐 Translation request:', { text: text.substring(0, 50) + '...', sourceLang, targetLang });
+    console.log('🌐 Translation request:', { 
+      count: textArray.length, 
+      sample: textArray[0]?.substring(0, 30) + '...', 
+      sourceLang, 
+      targetLang 
+    });
 
-    // Only cache if text is reasonable length (avoid storage bloat)
-    const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
-    let cachedTranslation = null;
+    // Batch processing - check cache for all texts
+    const results: any[] = [];
+    const uncachedIndices: number[] = [];
+    const uncachedTexts: string[] = [];
 
-    if (shouldCache) {
-      // Check cache first
-      console.log('🔍 Checking translation cache...');
-      const { data } = await supabase
-        .from('translation_cache')
-        .select('translation, hit_count')
-        .eq('word', text.toLowerCase().trim())
-        .eq('source_lang', sourceLang)
-        .eq('target_lang', targetLang)
-        .gt('expires_at', new Date().toISOString())
-        .single();
-
-      if (data) {
-        console.log('🚀 Translation cache hit! Hit count:', data.hit_count);
+    if (isBatch) {
+      for (let i = 0; i < textArray.length; i++) {
+        const currentText = textArray[i];
+        const shouldCache = currentText.length <= 50 && currentText.trim().split(/\s+/).length <= 5;
         
-        // Update hit count and extend expiry for popular translations
-        const newExpiry = data.hit_count >= 5 ? 
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : // 30 days for popular
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);   // 7 days for normal
+        if (shouldCache) {
+          const { data } = await supabase
+            .from('translation_cache')
+            .select('translation, hit_count')
+            .eq('word', currentText.toLowerCase().trim())
+            .eq('source_lang', sourceLang)
+            .eq('target_lang', targetLang)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+          if (data) {
+            results[i] = {
+              translation: data.translation,
+              cached: true
+            };
+            continue;
+          }
+        }
         
-        await supabase
+        uncachedIndices.push(i);
+        uncachedTexts.push(currentText);
+      }
+    } else {
+      // Single text cache check
+      const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
+      if (shouldCache) {
+        const { data } = await supabase
           .from('translation_cache')
-          .update({ 
-            hit_count: data.hit_count + 1,
-            expires_at: newExpiry.toISOString(),
-            updated_at: new Date().toISOString()
-          })
+          .select('translation, hit_count')
           .eq('word', text.toLowerCase().trim())
           .eq('source_lang', sourceLang)
-          .eq('target_lang', targetLang);
+          .eq('target_lang', targetLang)
+          .gt('expires_at', new Date().toISOString())
+          .single();
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          result: includeContext ? {
-            translation: data.translation,
-            context: null,
-            alternatives: [],
-            grammar_notes: null,
-            cached: true
-          } : {
-            translation: data.translation,
-            simple: true,
-            cached: true
-          },
-          sourceLang: sourceLang,
-          targetLang: targetLang
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        if (data) {
+          console.log('🚀 Translation cache hit!');
+          return new Response(JSON.stringify({ 
+            success: true, 
+            result: {
+              translation: data.translation,
+              simple: true,
+              cached: true
+            },
+            sourceLang: sourceLang,
+            targetLang: targetLang
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
     }
 
-    console.log('💨 Translation cache miss, calling DeepSeek API...');
+    console.log('💨 Calling DeepSeek API...', { 
+      batch: isBatch, 
+      uncached: isBatch ? uncachedTexts.length : 1 
+    });
 
-    const systemPrompt = includeContext ?
-      `Professional translator. Return JSON format only:
-       {
-         "translation": "primary translation",
-         "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
-         "context": null,
-         "grammar_notes": null
-       }
-       
-       Rules: "translation"=most common meaning, "alternatives"=other meanings with part-of-speech, include ALL meanings that exist, "pos"=noun/verb/adj/adv/prep/etc, set context/grammar_notes to null for speed.` :
-      `Translate accurately and concisely. For multiple meanings use format: "meaning1 / meaning2". Just the translation, no extra text.`;
+    const textsToTranslate = isBatch ? uncachedTexts : [text];
+    
+    const systemPrompt = isBatch ?
+      `Professional translator. Translate each word/phrase to ${targetLang}. Return JSON array format only:
+       [
+         {"translation": "primary", "alternatives": ["alt1", "alt2"]},
+         {"translation": "primary", "alternatives": ["alt1", "alt2"]}
+       ]
+       Keep alternatives concise. Return ONLY the JSON array, no other text.` :
+      (includeContext ?
+        `Professional translator. Return JSON format only:
+         {
+           "translation": "primary translation",
+           "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
+           "context": null,
+           "grammar_notes": null
+         }
+         Rules: "translation"=most common meaning, "alternatives"=other meanings with part-of-speech, "pos"=noun/verb/adj/adv/prep/etc, set context/grammar_notes to null for speed.` :
+        `Translate accurately and concisely. For multiple meanings use format: "meaning1 / meaning2". Just the translation, no extra text.`);
 
-    const userPrompt = sourceLang === "auto" ? 
-      `Translate this text to ${targetLang}: "${text}"` :
-      `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`;
+    const userPrompt = isBatch ?
+      `Translate these ${textsToTranslate.length} words to ${targetLang}:\n${textsToTranslate.map((t, i) => `${i + 1}. ${t}`).join('\n')}` :
+      (sourceLang === "auto" ? 
+        `Translate this text to ${targetLang}: "${text}"` :
+        `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`);
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -165,13 +194,67 @@ serve(async (req) => {
     const data = await response.json();
     const translationResult = data.choices[0].message.content;
 
+    // Handle batch results
+    if (isBatch) {
+      try {
+        let cleanedResult = translationResult.trim();
+        if (cleanedResult.startsWith('```json')) {
+          cleanedResult = cleanedResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanedResult.startsWith('```')) {
+          cleanedResult = cleanedResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        const batchResults = JSON.parse(cleanedResult);
+        
+        // Fill in the results array
+        for (let i = 0; i < uncachedIndices.length; i++) {
+          const idx = uncachedIndices[i];
+          const batchResult = batchResults[i] || { translation: uncachedTexts[i] };
+          results[idx] = {
+            translation: batchResult.translation,
+            alternatives: batchResult.alternatives || [],
+            cached: false
+          };
+          
+          // Cache each result
+          const currentText = uncachedTexts[i];
+          if (currentText.length <= 50 && batchResult.translation) {
+            await supabase
+              .from('translation_cache')
+              .insert({
+                word: currentText.toLowerCase().trim(),
+                source_lang: sourceLang,
+                target_lang: targetLang,
+                translation: batchResult.translation,
+                hit_count: 1,
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+              })
+              .then(() => console.log('💾 Cached:', currentText))
+              .catch(() => {});
+          }
+        }
+        
+        console.log('✅ Batch translation completed:', results.length, 'words');
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          results: results,
+          sourceLang: sourceLang,
+          targetLang: targetLang
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (parseError) {
+        console.error('Batch parsing failed:', parseError);
+        throw new Error('Failed to parse batch translation results');
+      }
+    }
+
+    // Single text handling
     let result;
     if (includeContext) {
       try {
-        // Clean the response to ensure it's valid JSON
         let cleanedResult = translationResult.trim();
-        
-        // Remove any markdown code block formatting if present
         if (cleanedResult.startsWith('```json')) {
           cleanedResult = cleanedResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
         } else if (cleanedResult.startsWith('```')) {
@@ -179,19 +262,11 @@ serve(async (req) => {
         }
         
         result = JSON.parse(cleanedResult);
-        
-        // Ensure alternatives is an array with part of speech info
-        if (result.alternatives && Array.isArray(result.alternatives)) {
-          result.alternatives = result.alternatives.filter((alt: any) => 
-            alt && (typeof alt === 'string' ? alt.trim().length > 0 : alt.meaning && alt.meaning.trim().length > 0)
-          );
-        } else {
-          result.alternatives = [];
-        }
-        
+        result.alternatives = Array.isArray(result.alternatives) ? result.alternatives.filter((alt: any) => 
+          alt && (typeof alt === 'string' ? alt.trim().length > 0 : alt.meaning && alt.meaning.trim().length > 0)
+        ) : [];
       } catch (parseError) {
         console.warn('JSON parsing failed, treating as simple translation:', parseError);
-        // If JSON parsing fails, treat as simple translation
         result = {
           translation: translationResult,
           context: null,
@@ -208,7 +283,8 @@ serve(async (req) => {
 
     console.log('✅ Translation completed successfully');
 
-    // Cache the translation if it should be cached
+    // Cache single result
+    const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
     if (shouldCache && result.translation) {
       try {
         const translationText = typeof result.translation === 'string' ? 
@@ -223,20 +299,16 @@ serve(async (req) => {
             target_lang: targetLang,  
             translation: translationText,
             hit_count: 1,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
           });
         
         console.log('💾 Translation cached successfully');
       } catch (cacheError) {
         console.warn('⚠️ Failed to cache translation:', cacheError);
-        // Don't fail the request if caching fails
       }
     }
 
-    // Add cached flag to response
-    if (typeof result === 'object') {
-      result.cached = false;
-    }
+    result.cached = false;
 
     return new Response(JSON.stringify({ 
       success: true, 

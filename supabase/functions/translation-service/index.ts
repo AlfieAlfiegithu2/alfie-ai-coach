@@ -295,17 +295,19 @@ serve(async (req) => {
               results[idx] = { translation, alternatives: alternatives || [], cached: false };
               const currentText = chunk[j];
               if (currentText.length <= 50 && translation) {
-                await supabase
-                  .from('translation_cache')
-                  .insert({
-                    word: currentText.toLowerCase().trim(),
-                    source_lang: sourceLang,
-                    target_lang: targetLang,
-                    translation,
-                    hit_count: 1,
-                    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                  })
-                  .catch(() => {});
+            try {
+              await supabase
+                .from('translation_cache')
+                .insert({
+                  word: currentText.toLowerCase().trim(),
+                  source_lang: sourceLang,
+                  target_lang: targetLang,
+                  translation,
+                  hit_count: 1,
+                  expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                });
+            } catch (_) {}
+
               }
             }
           }
@@ -321,6 +323,7 @@ serve(async (req) => {
             };
             const currentText = uncachedTexts[i];
             if (currentText.length <= 50 && batchResult.translation) {
+            try {
               await supabase
                 .from('translation_cache')
                 .insert({
@@ -330,8 +333,9 @@ serve(async (req) => {
                   translation: batchResult.translation,
                   hit_count: 1,
                   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                })
-                .catch(() => {});
+                });
+            } catch (_) {}
+
             }
           }
         }

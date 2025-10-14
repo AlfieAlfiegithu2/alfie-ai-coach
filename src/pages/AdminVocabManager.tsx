@@ -690,12 +690,38 @@ const AdminVocabManager: React.FC = () => {
 
               const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
               
-              // Create translation jobs
+              // Get user_id ONCE before the loop
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user?.id) {
+                alert('❌ Not logged in! Please log in first.');
+                return;
+              }
+              
+              console.log(`👤 User ID: ${user.id}`);
+              
+              // Check existing jobs/translations to avoid duplicates
+              console.log('🔍 Checking for existing translations...');
+              const { data: existingTranslations } = await supabase
+                .from('vocab_translations')
+                .select('card_id, lang');
+              
+              const existingSet = new Set(
+                (existingTranslations || []).map((t: any) => `${t.card_id}-${t.lang}`)
+              );
+              console.log(`📊 Found ${existingSet.size} existing translations`);
+              
+              // Create translation jobs (skip already translated)
               const jobs = [];
+              let skipped = 0;
               for (const card of cards) {
                 for (const lang of SUPPORTED_LANGS) {
+                  const key = `${card.id}-${lang}`;
+                  if (existingSet.has(key)) {
+                    skipped++;
+                    continue; // Skip if already translated
+                  }
                   jobs.push({
-                    user_id: (await supabase.auth.getUser()).data.user?.id,
+                    user_id: user.id,
                     card_id: card.id,
                     term: card.term,
                     target_lang: lang,
@@ -703,6 +729,14 @@ const AdminVocabManager: React.FC = () => {
                     created_at: new Date().toISOString()
                   });
                 }
+              }
+              
+              console.log(`⏭️ Skipped ${skipped} already-translated pairs`);
+              
+              if (jobs.length === 0) {
+                alert('✅ All words are already translated!');
+                loadTranslations();
+                return;
               }
 
               // Insert jobs in batches
@@ -733,12 +767,22 @@ const AdminVocabManager: React.FC = () => {
               while (processed < totalJobs && consecutiveErrors < maxConsecutiveErrors) {
                 try {
                   console.log(`🔄 Calling process-translations... (${processed}/${totalJobs})`);
+                  const startTime = Date.now();
                   const { data, error } = await supabase.functions.invoke('process-translations', { body: {} });
+                  const duration = Date.now() - startTime;
                   
-                  console.log('📦 Response:', { data, error });
+                  console.log(`📦 Response (${duration}ms):`, JSON.stringify({ data, error }, null, 2));
                   
-                  if (error || !data?.success) {
-                    console.error(`❌ Translation batch failed:`, { data, error });
+                  if (error) {
+                    console.error(`❌ Edge Function Error:`, {
+                      message: error.message,
+                      status: error.status,
+                      statusText: error.statusText,
+                      details: error
+                    });
+                    consecutiveErrors++;
+                  } else if (!data?.success) {
+                    console.error(`❌ Translation batch failed:`, { data });
                     consecutiveErrors++;
                     
                     if (consecutiveErrors >= maxConsecutiveErrors) {

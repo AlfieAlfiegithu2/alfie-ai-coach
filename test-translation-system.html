@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Translation System Diagnostics</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>Translation System Diagnostics</h1>
+  <div id="results"></div>
+  
+  <script>
+    const SUPABASE_URL = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQxNzQ4NzEsImV4cCI6MjA0OTc1MDg3MX0.pz3roUuZ8s9BS97OuMaWVOiGqSH8xqxSPMkKCM0KZDA';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const results = document.getElementById('results');
+    
+    async function runDiagnostics() {
+      results.innerHTML = '<h2>Running diagnostics...</h2>';
+      let output = '';
+      
+      // 1. Check vocab_cards count
+      output += '<h3>1. Checking vocab_cards...</h3>';
+      const { data: cards, error: cardsError } = await supabase
+        .from('vocab_cards')
+        .select('id, term')
+        .eq('is_public', true)
+        .eq('language', 'en')
+        .limit(5);
+      
+      if (cardsError) {
+        output += `<p style="color:red">❌ Error: ${cardsError.message}</p>`;
+      } else {
+        output += `<p style="color:green">✅ Found ${cards?.length || 0} cards (showing first 5)</p>`;
+        output += `<pre>${JSON.stringify(cards, null, 2)}</pre>`;
+      }
+      
+      // 2. Check translation queue
+      output += '<h3>2. Checking vocab_translation_queue...</h3>';
+      const { data: queue, error: queueError, count } = await supabase
+        .from('vocab_translation_queue')
+        .select('*', { count: 'exact' })
+        .limit(10);
+      
+      if (queueError) {
+        output += `<p style="color:red">❌ Error: ${queueError.message}</p>`;
+      } else {
+        output += `<p style="color:green">✅ Found ${count || 0} jobs in queue (showing first 10)</p>`;
+        output += `<pre>${JSON.stringify(queue, null, 2)}</pre>`;
+      }
+      
+      // 3. Check existing translations
+      output += '<h3>3. Checking vocab_translations...</h3>';
+      const { data: translations, error: transError, count: transCount } = await supabase
+        .from('vocab_translations')
+        .select('*', { count: 'exact' })
+        .limit(10);
+      
+      if (transError) {
+        output += `<p style="color:red">❌ Error: ${transError.message}</p>`;
+      } else {
+        output += `<p style="color:green">✅ Found ${transCount || 0} translations (showing first 10)</p>`;
+        output += `<pre>${JSON.stringify(translations, null, 2)}</pre>`;
+      }
+      
+      // 4. Test process-translations function
+      output += '<h3>4. Testing process-translations function...</h3>';
+      output += '<p>Calling edge function...</p>';
+      
+      const { data: funcData, error: funcError } = await supabase.functions.invoke('process-translations', { 
+        body: {} 
+      });
+      
+      if (funcError) {
+        output += `<p style="color:red">❌ Function Error: ${funcError.message}</p>`;
+        output += `<pre>${JSON.stringify(funcError, null, 2)}</pre>`;
+      } else {
+        output += `<p style="color:green">✅ Function Response:</p>`;
+        output += `<pre>${JSON.stringify(funcData, null, 2)}</pre>`;
+      }
+      
+      results.innerHTML = output;
+    }
+    
+    runDiagnostics();
+  </script>
+</body>
+</html>
+

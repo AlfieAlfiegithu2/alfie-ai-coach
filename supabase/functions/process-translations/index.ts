@@ -14,10 +14,11 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization') || '';
 
+    // Use service role key for background processing to bypass RLS
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: authHeader ? { Authorization: authHeader } : {} as any }, auth: { persistSession: false, autoRefreshToken: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
     // Process background translations (works for any user, including system imports)

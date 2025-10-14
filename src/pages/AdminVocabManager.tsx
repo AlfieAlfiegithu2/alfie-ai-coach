@@ -707,12 +707,19 @@ const AdminVocabManager: React.FC = () => {
 
               // Insert jobs in batches
               let inserted = 0;
+              console.log(`📝 Creating ${jobs.length} translation jobs...`);
               for (let i = 0; i < jobs.length; i += 1000) {
                 const chunk = jobs.slice(i, i + 1000);
-                const { error } = await supabase.from('vocab_translation_queue').insert(chunk);
-                if (!error) inserted += chunk.length;
+                const { error, data } = await supabase.from('vocab_translation_queue').insert(chunk);
+                if (error) {
+                  console.error(`❌ Error inserting jobs batch ${i}:`, error);
+                } else {
+                  inserted += chunk.length;
+                  console.log(`✅ Inserted batch ${i}: ${chunk.length} jobs`);
+                }
               }
 
+              console.log(`📊 Total jobs created: ${inserted}/${jobs.length}`);
               alert(`✅ Created ${inserted} translation jobs!\n\nNow processing translations...`);
 
               // Step 2: Process translations in batches with progress tracking
@@ -725,10 +732,13 @@ const AdminVocabManager: React.FC = () => {
               
               while (processed < totalJobs && consecutiveErrors < maxConsecutiveErrors) {
                 try {
+                  console.log(`🔄 Calling process-translations... (${processed}/${totalJobs})`);
                   const { data, error } = await supabase.functions.invoke('process-translations', { body: {} });
                   
+                  console.log('📦 Response:', { data, error });
+                  
                   if (error || !data?.success) {
-                    console.error(`Translation batch failed: ${data?.error || error?.message || 'Unknown error'}`);
+                    console.error(`❌ Translation batch failed:`, { data, error });
                     consecutiveErrors++;
                     
                     if (consecutiveErrors >= maxConsecutiveErrors) {

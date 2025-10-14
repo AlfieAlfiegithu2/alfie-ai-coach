@@ -231,11 +231,7 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-<<<<<<< HEAD
         max_tokens: 500,
-=======
-        max_tokens: 200,
->>>>>>> 11d061336c3ed67815a713977d11fa4bcd1fd5d2
         temperature: 0, // Zero temperature for fastest, most deterministic responses
       }),
     });
@@ -361,7 +357,6 @@ serve(async (req) => {
     let result;
     if (includeContext) {
       try {
-<<<<<<< HEAD
         // Enhanced JSON parsing with multiple fallback strategies
         let cleanedResult = translationResult.trim();
         
@@ -371,13 +366,6 @@ serve(async (req) => {
           if (jsonMatch) {
             cleanedResult = jsonMatch[1].trim();
           }
-=======
-        let cleanedResult = translationResult.trim();
-        if (cleanedResult.startsWith('```json')) {
-          cleanedResult = cleanedResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        } else if (cleanedResult.startsWith('```')) {
-          cleanedResult = cleanedResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
->>>>>>> 11d061336c3ed67815a713977d11fa4bcd1fd5d2
         }
         
         // Strategy 2: Extract JSON from mixed content
@@ -394,7 +382,6 @@ serve(async (req) => {
           .trim();
         
         result = JSON.parse(cleanedResult);
-<<<<<<< HEAD
         
         // Validate and clean the result
         if (!result.translation) {
@@ -446,13 +433,6 @@ serve(async (req) => {
           }
         }
         
-=======
-        result.alternatives = Array.isArray(result.alternatives) ? result.alternatives.filter((alt: any) => 
-          alt && (typeof alt === 'string' ? alt.trim().length > 0 : alt.meaning && alt.meaning.trim().length > 0)
-        ) : [];
-      } catch (parseError) {
-        console.warn('JSON parsing failed, treating as simple translation:', parseError);
->>>>>>> 11d061336c3ed67815a713977d11fa4bcd1fd5d2
         result = {
           translation: fallbackTranslation,
           context: null,

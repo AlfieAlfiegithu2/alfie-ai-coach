@@ -22,7 +22,18 @@ const LanguageWelcomeBanner: React.FC<LanguageWelcomeBannerProps> = ({ onLanguag
     { code: 'ru', name: 'Русский', flag: '🇷🇺' },
     { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
     { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
-    { code: 'ar', name: 'العربية', flag: '🇸🇦' }
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
+    { code: 'ur', name: 'اردو', flag: '🇵🇰' },
+    { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
+    { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+    { code: 'fa', name: 'فارسی', flag: '🇮🇷' },
+    { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
+    { code: 'ne', name: 'नेपाली', flag: '🇳🇵' },
+    { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+    { code: 'yue', name: '粵語', flag: '🇭🇰' },
+    { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾' },
+    { code: 'kk', name: 'Қазақша', flag: '🇰🇿' }
   ];
 
   useEffect(() => {

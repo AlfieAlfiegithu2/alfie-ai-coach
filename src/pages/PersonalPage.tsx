@@ -22,6 +22,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
+import LanguagePicker from '@/components/LanguagePicker';
+import { normalizeLanguageCode } from '@/lib/languageUtils';
 
 interface TestResult {
   id: string;
@@ -53,6 +55,7 @@ const PersonalPage = () => {
     testsThisWeek: 0
   });
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [nativeLanguage, setNativeLanguage] = useState<string>('en');
 
   // Redirect if not authenticated
   if (!loading && !user) {
@@ -62,8 +65,42 @@ const PersonalPage = () => {
   useEffect(() => {
     if (user) {
       loadDashboardData();
+      loadNativeLanguage();
     }
   }, [user]);
+
+  const loadNativeLanguage = async () => {
+    try {
+      const { data } = await supabase
+        .from('user_preferences')
+        .select('native_language')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (data?.native_language) {
+        setNativeLanguage(normalizeLanguageCode(data.native_language));
+      }
+    } catch (error) {
+      console.error('Error loading native language:', error);
+    }
+  };
+
+  const handleLanguageChange = async (language: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user?.id,
+          native_language: language,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      setNativeLanguage(language);
+    } catch (error) {
+      console.error('Error updating language:', error);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -367,6 +404,12 @@ const PersonalPage = () => {
           </TabsContent>
 
           <TabsContent value="study-plan" className="space-y-6">
+            {/* Language Preference */}
+            <LanguagePicker 
+              selectedLanguage={nativeLanguage}
+              onLanguageChange={handleLanguageChange}
+            />
+            
             <Card>
               <CardHeader>
                 <CardTitle>AI-Powered Study Plan</CardTitle>

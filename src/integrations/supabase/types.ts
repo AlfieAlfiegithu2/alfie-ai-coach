@@ -1556,6 +1556,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          native_language: string | null
           preferred_name: string | null
           target_deadline: string | null
           target_score: number | null
@@ -1567,6 +1568,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          native_language?: string | null
           preferred_name?: string | null
           target_deadline?: string | null
           target_score?: number | null
@@ -1578,6 +1580,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          native_language?: string | null
           preferred_name?: string | null
           target_deadline?: string | null
           target_score?: number | null

@@ -18,6 +18,8 @@ import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
 import ProfilePhotoSelector from "@/components/ProfilePhotoSelector";
 import LanguageSelector from "@/components/LanguageSelector";
+import LanguagePicker from "@/components/LanguagePicker";
+import { normalizeLanguageCode } from "@/lib/languageUtils";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -332,7 +334,7 @@ const Dashboard = () => {
           
           {/* Right section - Controls */}
           <div className="flex items-center gap-2 lg:gap-3 order-2 lg:order-3 relative z-50">
-            {/* Language Selector */}
+            {/* Language Selector - Compact for header */}
             <LanguageSelector />
             
             {/* Settings Button */}

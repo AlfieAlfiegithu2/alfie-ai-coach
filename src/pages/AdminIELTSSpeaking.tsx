@@ -144,6 +144,21 @@ const AdminIELTSSpeaking = () => {
     try {
       const result = await uploadAudio(file);
       if (result.success) {
+        console.log('🎵 Audio URL received:', result.url);
+        
+        // Test if URL is accessible
+        try {
+          const testResponse = await fetch(result.url, { method: 'HEAD' });
+          console.log('✅ Audio URL accessible:', testResponse.status, testResponse.headers.get('content-type'));
+        } catch (fetchError) {
+          console.error('❌ Audio URL not accessible:', fetchError);
+          toast({
+            title: "Warning",
+            description: "Audio uploaded but may not be publicly accessible. Check R2 bucket settings.",
+            variant: "destructive"
+          });
+        }
+        
         if (partNumber === 1 && index !== undefined) {
           const updated = [...part1Prompts];
           updated[index].audio_url = result.url;
@@ -162,6 +177,7 @@ const AdminIELTSSpeaking = () => {
         });
       }
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: "Error",
         description: "Failed to upload audio",
@@ -448,12 +464,28 @@ const AdminIELTSSpeaking = () => {
                           Remove
                         </Button>
                       </div>
-                      <audio controls className="w-full" preload="metadata">
-                        <source src={prompt.audio_url} type="audio/wav" />
-                        <source src={prompt.audio_url} type="audio/mpeg" />
-                        <source src={prompt.audio_url} type="audio/mp3" />
-                        Your browser does not support the audio element.
-                      </audio>
+                      <div className="space-y-2">
+                        <audio 
+                          controls 
+                          className="w-full" 
+                          preload="metadata"
+                          onError={(e) => {
+                            console.error('❌ Audio playback error:', {
+                              url: prompt.audio_url,
+                              error: (e.target as HTMLAudioElement).error
+                            });
+                          }}
+                          onLoadedMetadata={() => console.log('✅ Audio metadata loaded:', prompt.audio_url)}
+                        >
+                          <source src={prompt.audio_url} type="audio/wav" />
+                          <source src={prompt.audio_url} type="audio/mpeg" />
+                          <source src={prompt.audio_url} type="audio/mp3" />
+                          Your browser does not support the audio element.
+                        </audio>
+                        <p className="text-xs text-gray-500 break-all">
+                          URL: {prompt.audio_url}
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
@@ -629,12 +661,28 @@ const AdminIELTSSpeaking = () => {
                           Remove
                         </Button>
                       </div>
-                      <audio controls className="w-full" preload="metadata">
-                        <source src={prompt.audio_url} type="audio/wav" />
-                        <source src={prompt.audio_url} type="audio/mpeg" />
-                        <source src={prompt.audio_url} type="audio/mp3" />
-                        Your browser does not support the audio element.
-                      </audio>
+                      <div className="space-y-2">
+                        <audio 
+                          controls 
+                          className="w-full" 
+                          preload="metadata"
+                          onError={(e) => {
+                            console.error('❌ Audio playback error:', {
+                              url: prompt.audio_url,
+                              error: (e.target as HTMLAudioElement).error
+                            });
+                          }}
+                          onLoadedMetadata={() => console.log('✅ Audio metadata loaded:', prompt.audio_url)}
+                        >
+                          <source src={prompt.audio_url} type="audio/wav" />
+                          <source src={prompt.audio_url} type="audio/mpeg" />
+                          <source src={prompt.audio_url} type="audio/mp3" />
+                          Your browser does not support the audio element.
+                        </audio>
+                        <p className="text-xs text-gray-500 break-all">
+                          URL: {prompt.audio_url}
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 transition-colors">

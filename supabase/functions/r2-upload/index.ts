@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
+import { createHmac, createHash } from "https://deno.land/std@0.168.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,7 +15,16 @@ const R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME') || 'alfie-ai-au
 const R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
 
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-  console.error('Missing Cloudflare R2 configuration');
+  console.error('Missing Cloudflare R2 configuration', {
+    hasAccountId: !!R2_ACCOUNT_ID,
+    hasAccessKeyId: !!R2_ACCESS_KEY_ID,
+    hasSecret: !!R2_SECRET_ACCESS_KEY,
+  });
+}
+
+// Validate Account ID format (should be 32 hex chars)
+if (R2_ACCOUNT_ID && !/^[a-f0-9]{32}$/i.test(R2_ACCOUNT_ID)) {
+  console.error(`Invalid CLOUDFLARE_ACCOUNT_ID format: "${R2_ACCOUNT_ID.slice(0, 8)}..." (expected 32 hex characters)`);
 }
 
 // Generate AWS Signature V4
@@ -28,9 +37,9 @@ function getSignatureKey(key: string, dateStamp: string, regionName: string, ser
 }
 
 function sha256(data: string | ArrayBuffer) {
-  const hashSum = createHmac('sha256', '');
-  hashSum.update(typeof data === 'string' ? data : new Uint8Array(data));
-  return hashSum.digest('hex');
+  const hash = createHash('sha256');
+  hash.update(typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data));
+  return hash.digest('hex');
 }
 
 serve(async (req) => {
@@ -44,9 +53,12 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
-    if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-      throw new Error('Missing Cloudflare R2 configuration');
-    }
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
+  throw new Error('Missing Cloudflare R2 configuration (check CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY)');
+}
+if (!/^[a-f0-9]{32}$/i.test(R2_ACCOUNT_ID)) {
+  throw new Error('Invalid CLOUDFLARE_ACCOUNT_ID format: expected 32 hex characters');
+}
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -62,8 +74,9 @@ serve(async (req) => {
 
     // Prepare the upload
     const fileBuffer = await file.arrayBuffer();
-    const endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-    const url = `${endpoint}/${R2_BUCKET_NAME}/${path}`;
+const endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+const canonicalPath = `/${R2_BUCKET_NAME}/${path.split('/').map(encodeURIComponent).join('/')}`;
+const url = `${endpoint}${canonicalPath}`;
     
     // Create signature
     const now = new Date();
@@ -72,18 +85,18 @@ serve(async (req) => {
     
     const payloadHash = sha256(fileBuffer);
     
-    const canonicalRequest = [
-      'PUT',
-      `/${R2_BUCKET_NAME}/${path}`,
-      '',
-      `content-type:${contentType}`,
-      `host:${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      `x-amz-content-sha256:${payloadHash}`,
-      `x-amz-date:${amzDate}`,
-      '',
-      'content-type;host;x-amz-content-sha256;x-amz-date',
-      payloadHash
-    ].join('\n');
+const canonicalRequest = [
+  'PUT',
+  canonicalPath,
+  '',
+  `content-type:${contentType}`,
+  `host:${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  `x-amz-content-sha256:${payloadHash}`,
+  `x-amz-date:${amzDate}`,
+  '',
+  'content-type;host;x-amz-content-sha256;x-amz-date',
+  payloadHash
+].join('\n');
     
     const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
     const stringToSign = [

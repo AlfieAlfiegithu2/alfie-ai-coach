@@ -253,13 +253,13 @@ export function useAdminContent() {
 
       // Get the Supabase function URL
       const { data: { session } } = await supabase.auth.getSession();
-      const functionUrl = `${supabase.supabaseUrl}/functions/v1/r2-upload`;
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-upload`;
 
       // Upload to R2 via edge function using fetch (supabase.functions.invoke doesn't support FormData)
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session?.access_token || supabase.supabaseKey}`,
+          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
         },
         body: formData,
       });

@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import MinimalisticChatbot from "@/components/MinimalisticChatbot";
 import LanguageSelector from "@/components/LanguageSelector";
+import LanguageWelcomeBanner from "@/components/LanguageWelcomeBanner";
 import { usePageTranslation, PageContent } from "@/hooks/usePageTranslation";
 import { PricingCard } from "@/components/PricingCard";
 const HeroIndex = () => {
@@ -333,6 +334,14 @@ const HeroIndex = () => {
   return <div className="min-h-screen antialiased text-black bg-neutral-50" style={{
     fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'"
   }}>
+      {/* Language Welcome Banner */}
+      <LanguageWelcomeBanner onLanguageSelected={(lang) => {
+        toast({
+          title: "Language Updated",
+          description: `Interface language changed to your preference.`
+        });
+      }} />
+      
       {/* Header */}
       <header className="fixed z-50 top-0 right-0 left-0">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

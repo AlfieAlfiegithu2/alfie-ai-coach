@@ -240,25 +240,46 @@ export function useAdminContent() {
     setLoading(true);
     try {
       const fileName = `${Date.now()}-${file.name}`;
-      const path = `admin-audio/${fileName}`;
+      const path = `admin/speaking/${fileName}`;
+      
+      console.log('📤 Uploading audio to R2:', { fileName, size: file.size, type: file.type });
+      
+      // Create FormData for R2 upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('path', path);
+      formData.append('contentType', file.type || 'audio/mpeg');
+      formData.append('cacheControl', 'public, max-age=31536000');
 
-      // Use the R2 upload edge function
-      const { data, error } = await supabase.functions.invoke('r2-upload', {
-        body: {
-          file,
-          path,
-          contentType: file.type,
-          cacheControl: 'public, max-age=31536000'
+      // Get the Supabase function URL
+      const { data: { session } } = await supabase.auth.getSession();
+      const functionUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/r2-upload';
+      
+      // Upload to R2 via edge function using fetch (supabase.functions.invoke doesn't support FormData)
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI'}`,
         },
+        body: formData,
       });
 
-      if (error) {
-        throw new Error(`Upload failed: ${error.message}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ R2 upload error:', errorText);
+        throw new Error(`Upload failed: ${response.statusText}`);
       }
 
-      return { success: true, url: data.url, key: data.key };
+      const data = await response.json();
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Upload failed');
+      }
+
+      console.log('✅ Audio uploaded successfully:', data.url);
+      return { success: true, url: data.url };
     } catch (error: any) {
-      console.error('Audio upload error:', error);
+      console.error('Upload error:', error);
       throw new Error(error.message || 'Upload failed');
     } finally {
       setLoading(false);

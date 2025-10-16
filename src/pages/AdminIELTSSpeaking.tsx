@@ -189,6 +189,31 @@ const AdminIELTSSpeaking = () => {
     });
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent, partNumber: number, index?: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isLocked && !isModifying) return;
+    
+    const files = Array.from(e.dataTransfer.files);
+    const audioFile = files.find(file => file.type.startsWith('audio/'));
+    
+    if (audioFile) {
+      await handleAudioUpload(audioFile, partNumber, index);
+    } else {
+      toast({
+        title: "Invalid file",
+        description: "Please drop an audio file",
+        variant: "destructive"
+      });
+    }
+  };
+
   const updatePart3Questions = (count: number) => {
     setPart3Questions(count);
     const newPrompts = Array.from({ length: count }, (_, index) => 
@@ -376,7 +401,11 @@ const AdminIELTSSpeaking = () => {
           <CardContent className="space-y-4">
             {part1Prompts.map((prompt, index) => (
               <Card key={index} className="border-light-border bg-white/50">
-                <CardContent className="p-4 space-y-3">
+                <CardContent 
+                  className="p-4 space-y-3"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, 1, index)}
+                >
                   <div className="flex items-center justify-between">
                     <Badge variant="outline">Audio Question {index + 1}</Badge>
                     <div className="flex items-center space-x-2">
@@ -425,9 +454,10 @@ const AdminIELTSSpeaking = () => {
                       </audio>
                     </div>
                   ) : (
-                    <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
                       <Mic className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                       <p className="text-sm text-gray-500">Upload audio for this question</p>
+                      <p className="text-xs text-gray-400 mt-1">or drag & drop an audio file here</p>
                     </div>
                   )}
                   
@@ -550,7 +580,11 @@ const AdminIELTSSpeaking = () => {
           <CardContent className="space-y-4">
             {part3Prompts.map((prompt, index) => (
               <Card key={index} className="border-light-border bg-white/50">
-                <CardContent className="p-4 space-y-3">
+                <CardContent 
+                  className="p-4 space-y-3"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, 3, index)}
+                >
                   <div className="flex items-center justify-between">
                     <Badge variant="outline">Audio Question {index + 1}</Badge>
                     <div className="flex items-center space-x-2">
@@ -599,12 +633,13 @@ const AdminIELTSSpeaking = () => {
                       </audio>
                     </div>
                   ) : (
-                    <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 transition-colors">
                       <Mic className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                       <p className="text-sm text-gray-500">Upload audio for this question</p>
+                      <p className="text-xs text-gray-400 mt-1">or drag & drop an audio file here</p>
                     </div>
                   )}
-                  
+                   
                   {/* Question Transcription Field */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">

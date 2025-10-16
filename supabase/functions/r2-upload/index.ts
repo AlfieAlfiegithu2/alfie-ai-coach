@@ -1,107 +1,40 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-// Cloudflare R2 Configuration
-const R2_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
-const R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_ACCESS_KEY_ID');
-const R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_SECRET_ACCESS_KEY');
-const R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET') || 'alfie-ai-audio';
-const R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
+import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_PUBLIC_URL) {
-  throw new Error('Missing Cloudflare R2 configuration');
+// Cloudflare R2 Configuration
+const R2_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
+const R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
+const R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+const R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME') || 'alfie-ai-audio';
+const R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
+
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
+  console.error('Missing Cloudflare R2 configuration');
 }
 
-// AWS Signature V4 utility functions
-function createSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string): Uint8Array {
-  const kDate = hmac('AWS4' + key, dateStamp);
-  const kRegion = hmac(kDate, regionName);
-  const kService = hmac(kRegion, serviceName);
-  const kSigning = hmac(kService, 'aws4_request');
+// Generate AWS Signature V4
+function getSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string) {
+  const kDate = createHmac('sha256', 'AWS4' + key).update(dateStamp).digest();
+  const kRegion = createHmac('sha256', kDate).update(regionName).digest();
+  const kService = createHmac('sha256', kRegion).update(serviceName).digest();
+  const kSigning = createHmac('sha256', kService).update('aws4_request').digest();
   return kSigning;
 }
 
-function hmac(key: Uint8Array, msg: string): Uint8Array {
-  const encoder = new TextEncoder();
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(msg));
-  return new Uint8Array(signature);
-}
-
-function getSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string): Uint8Array {
-  const kDate = hmac(new TextEncoder().encode('AWS4' + key), dateStamp);
-  const kRegion = hmac(kDate, regionName);
-  const kService = hmac(kRegion, serviceName);
-  const kSigning = hmac(kService, 'aws4_request');
-  return kSigning;
-}
-
-async function createSignedHeaders(method: string, url: string, headers: Record<string, string>, body: string = '') {
-  const now = new Date();
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-  const dateStamp = amzDate.substring(0, 8);
-
-  const canonicalHeaders = Object.keys(headers)
-    .sort()
-    .map(key => `${key.toLowerCase()}:${headers[key]}`)
-    .join('\n');
-
-  const signedHeaders = Object.keys(headers)
-    .sort()
-    .join(';');
-
-  const payloadHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body));
-  const payloadHashHex = Array.from(new Uint8Array(payloadHash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  const canonicalRequest = [
-    method,
-    new URL(url).pathname,
-    new URL(url).search.substring(1),
-    canonicalHeaders + '\n',
-    signedHeaders,
-    payloadHashHex
-  ].join('\n');
-
-  const algorithm = 'AWS4-HMAC-SHA256';
-  const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
-  const canonicalRequestHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalRequest));
-  const canonicalRequestHashHex = Array.from(new Uint8Array(canonicalRequestHash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  const stringToSign = [
-    algorithm,
-    amzDate,
-    credentialScope,
-    canonicalRequestHashHex
-  ].join('\n');
-
-  const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY, dateStamp, 'auto', 's3');
-  const signature = hmac(signingKey, stringToSign);
-  const signatureHex = Array.from(signature)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  headers['Authorization'] = `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signatureHex}`;
-  headers['X-Amz-Date'] = amzDate;
-
-  return headers;
+function sha256(data: string | ArrayBuffer) {
+  const hashSum = createHmac('sha256', '');
+  hashSum.update(typeof data === 'string' ? data : new Uint8Array(data));
+  return hashSum.digest('hex');
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -109,6 +42,10 @@ serve(async (req) => {
   try {
     if (req.method !== 'POST') {
       throw new Error('Method not allowed');
+    }
+
+    if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
+      throw new Error('Missing Cloudflare R2 configuration');
     }
 
     const formData = await req.formData();
@@ -123,28 +60,62 @@ serve(async (req) => {
 
     console.log('📤 Uploading to R2:', { path, size: file.size, type: contentType });
 
-    // Convert file to array buffer
+    // Prepare the upload
     const fileBuffer = await file.arrayBuffer();
+    const endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+    const url = `${endpoint}/${R2_BUCKET_NAME}/${path}`;
+    
+    // Create signature
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
+    const dateStamp = amzDate.slice(0, 8);
+    
+    const payloadHash = sha256(fileBuffer);
+    
+    const canonicalRequest = [
+      'PUT',
+      `/${R2_BUCKET_NAME}/${path}`,
+      '',
+      `content-type:${contentType}`,
+      `host:${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      `x-amz-content-sha256:${payloadHash}`,
+      `x-amz-date:${amzDate}`,
+      '',
+      'content-type;host;x-amz-content-sha256;x-amz-date',
+      payloadHash
+    ].join('\n');
+    
+    const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
+      sha256(canonicalRequest)
+    ].join('\n');
+    
+    const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY, dateStamp, 'auto', 's3');
+    const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+    
+    const authorizationHeader = `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=${signature}`;
 
-    // Create signed PUT request to R2
-    const url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${path}`;
-
-    const headers: Record<string, string> = {
-      'Content-Type': contentType,
-      'Cache-Control': cacheControl,
-      'Content-Length': fileBuffer.byteLength.toString(),
-    };
-
-    const signedHeaders = await createSignedHeaders('PUT', url, headers, fileBuffer);
-
-    const response = await fetch(url, {
+    // Upload to R2
+    const uploadResponse = await fetch(url, {
       method: 'PUT',
-      headers: signedHeaders,
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': cacheControl,
+        'x-amz-content-sha256': payloadHash,
+        'x-amz-date': amzDate,
+        'Authorization': authorizationHeader,
+        'Host': `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      },
       body: fileBuffer,
     });
 
-    if (!response.ok) {
-      throw new Error(`R2 upload failed: ${response.status} ${response.statusText}`);
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('R2 upload failed:', uploadResponse.status, errorText);
+      throw new Error(`Upload failed: ${uploadResponse.statusText}`);
     }
 
     const publicUrl = `${R2_PUBLIC_URL}/${path}`;

@@ -189,9 +189,6 @@ serve(async (req) => {
 
     const textsToTranslate = isBatch ? uncachedTexts : [text];
     
-    // Optimize prompts based on text length - shorter prompts = faster responses
-    const isShortText = !isBatch && text && text.trim().split(/\s+/).length <= 3;
-    
     const systemPrompt = isBatch ?
       `You are a professional translator. Translate each input to ${targetLang}.
        Output STRICT, valid JSON array ONLY (no prose, no markdown, no comments).
@@ -206,18 +203,14 @@ serve(async (req) => {
          {"translation": "primary", "alternatives": ["alt1", "alt2"]}
        ]` :
       (includeContext ?
-        (isShortText ?
-          // Simplified prompt for short texts (1-3 words) - faster response
-          `Translate to ${targetLang}. Return JSON: {"translation":"main","alternatives":[{"meaning":"alt1","pos":"noun"}]}` :
-          // Full context for longer texts
-          `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
+        `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
          {
            "translation": "primary translation",
            "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
            "context": null,
            "grammar_notes": null
          }
-         Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.`) :
+         Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.` :
         `Translate accurately and concisely. If there are multiple common meanings, format as: "meaning1 / meaning2". Return only the translation text.`);
 
     const userPrompt = isBatch ?
@@ -238,8 +231,7 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        // Optimize max_tokens based on request type for faster responses
-        max_tokens: isBatch ? 500 : (isShortText ? 80 : 300),
+        max_tokens: 500,
         temperature: 0, // Zero temperature for fastest, most deterministic responses
       }),
     });
@@ -303,18 +295,19 @@ serve(async (req) => {
               results[idx] = { translation, alternatives: alternatives || [], cached: false };
               const currentText = chunk[j];
               if (currentText.length <= 50 && translation) {
-                await supabase
-                  .from('translation_cache')
-                  .insert({
-                    word: currentText.toLowerCase().trim(),
-                    source_lang: sourceLang,
-                    target_lang: targetLang,
-                    translation,
-                    hit_count: 1,
-                    // Extended cache: 30 days for better performance
-                    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-                  })
-                  .catch(() => {});
+            try {
+              await supabase
+                .from('translation_cache')
+                .insert({
+                  word: currentText.toLowerCase().trim(),
+                  source_lang: sourceLang,
+                  target_lang: targetLang,
+                  translation,
+                  hit_count: 1,
+                  expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                });
+            } catch (_) {}
+
               }
             }
           }
@@ -330,6 +323,7 @@ serve(async (req) => {
             };
             const currentText = uncachedTexts[i];
             if (currentText.length <= 50 && batchResult.translation) {
+            try {
               await supabase
                 .from('translation_cache')
                 .insert({
@@ -338,10 +332,10 @@ serve(async (req) => {
                   target_lang: targetLang,
                   translation: batchResult.translation,
                   hit_count: 1,
-                  // Extended cache: 30 days for better performance
-                  expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-                })
-                .catch(() => {});
+                  expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                });
+            } catch (_) {}
+
             }
           }
         }
@@ -475,8 +469,7 @@ serve(async (req) => {
             target_lang: targetLang,  
             translation: translationText,
             hit_count: 1,
-            // Extended cache: 30 days for better performance
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
           });
         
         console.log('💾 Translation cached successfully');

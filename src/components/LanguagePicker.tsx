@@ -14,21 +14,28 @@ const LanguagePicker: React.FC<LanguagePickerProps> = ({
 }) => {
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'es', name: 'Spanish', flag: '🇪🇸' },
-    { code: 'fr', name: 'French', flag: '🇫🇷' },
-    { code: 'de', name: 'German', flag: '🇩🇪' },
-    { code: 'it', name: 'Italian', flag: '🇮🇹' },
-    { code: 'pt', name: 'Portuguese', flag: '🇵🇹' },
-    { code: 'ru', name: 'Russian', flag: '🇷🇺' },
-    { code: 'zh', name: 'Chinese', flag: '🇨🇳' },
-    { code: 'ja', name: 'Japanese', flag: '🇯🇵' },
-    { code: 'ko', name: 'Korean', flag: '🇰🇷' },
-    { code: 'ar', name: 'Arabic', flag: '🇸🇦' },
-    { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
-    { code: 'vi', name: 'Vietnamese', flag: '🇻🇳' },
-    { code: 'th', name: 'Thai', flag: '🇹🇭' },
-    { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
-    { code: 'sv', name: 'Swedish', flag: '🇸🇪' }
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'ko', name: '한국어', flag: '🇰🇷' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+    { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+    { code: 'pt', name: 'Português', flag: '🇵🇹' },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+    { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
+    { code: 'ur', name: 'اردو', flag: '🇵🇰' },
+    { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
+    { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+    { code: 'fa', name: 'فارسی', flag: '🇮🇷' },
+    { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
+    { code: 'ne', name: 'नेपाली', flag: '🇳🇵' },
+    { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+    { code: 'yue', name: '粵語', flag: '🇭🇰' },
+    { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾' },
+    { code: 'kk', name: 'Қазақша', flag: '🇰🇿' }
   ];
 
   const selectedLang = languages.find(lang => lang.code === selectedLanguage);

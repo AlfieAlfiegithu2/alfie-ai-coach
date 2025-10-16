@@ -45,13 +45,41 @@ serve(async (req) => {
 
     console.log(`Runner: fetching cards offset=${offset} limit=${effectiveLimit} (requested=${requestedLimit})`);
 
-    const { data: cards, error: fetchErr } = await supabase
-      .from('vocab_cards')
-      .select('id, term, context_sentence')
-      .eq('is_public', true)
-      .eq('language', 'en')
-      .order('id', { ascending: true })
-      .range(offset, offset + effectiveLimit - 1);
+    // Optimized query: Only fetch cards that are missing translations for target languages
+    let cards: any[] = [];
+    const { data: fetchedCards, error: fetchErr } = await supabase.rpc('get_cards_needing_translation', {
+      p_offset: offset,
+      p_limit: effectiveLimit,
+      p_languages: targetLangs
+    });
+
+    // Fallback to simple query if RPC doesn't exist yet
+    if (fetchErr && fetchErr.message?.includes('get_cards_needing_translation')) {
+      console.log('Using fallback query...');
+      const { data: fallbackCards, error: fallbackErr } = await supabase
+        .from('vocab_cards')
+        .select('id, term, context_sentence')
+        .eq('is_public', true)
+        .eq('language', 'en')
+        .order('id', { ascending: true })
+        .range(offset, offset + effectiveLimit - 1);
+      
+      if (fallbackErr) {
+        return new Response(JSON.stringify({ success: false, error: fallbackErr.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      cards = fallbackCards || [];
+    } else if (fetchErr) {
+      console.error('Fetch error:', fetchErr);
+      return new Response(JSON.stringify({ success: false, error: fetchErr.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } else {
+      cards = fetchedCards || [];
+    }
 
     if (fetchErr) {
       console.error('Fetch error:', fetchErr);
@@ -156,15 +184,13 @@ serve(async (req) => {
             const { error: upErr } = await supabase
               .from('vocab_translations')
               .upsert({
-                user_id: null,
+                user_id: null, // System translations have no user_id
                 card_id: card.id,
                 lang,
                 translations: translations.filter(Boolean),
                 provider: 'deepseek',
                 quality: 1,
-                is_system: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
+                is_system: true
               }, { onConflict: 'card_id,lang' });
 
             if (upErr) {
@@ -195,8 +221,8 @@ serve(async (req) => {
     const nextOffset = offset + cards.length;
     const hasMore = cards.length === effectiveLimit;
 
-    // Auto-chain to next batch
-    if (hasMore) {
+    // Only auto-chain if we actually processed translations (not just skipping already-translated cards)
+    if (hasMore && processed > 0) {
       const chain = (async () => {
         try {
           console.log(`⛓️  Chaining to next batch: offset=${nextOffset}`);

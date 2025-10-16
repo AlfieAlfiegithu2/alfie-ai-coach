@@ -240,21 +240,35 @@ export function useAdminContent() {
     setLoading(true);
     try {
       const fileName = `${Date.now()}-${file.name}`;
-      // TODO: Implement R2 upload instead of Supabase storage
-      console.log('Admin audio upload disabled - implement R2 upload');
-      // const { data, error } = await supabase.storage
-      //   .from('audio-files')
-      //   .upload(fileName, file);
+      const path = `admin/speaking/${fileName}`;
+      
+      console.log('📤 Uploading audio to R2:', { fileName, size: file.size, type: file.type });
+      
+      // Create FormData for R2 upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('path', path);
+      formData.append('contentType', file.type || 'audio/mpeg');
+      formData.append('cacheControl', 'public, max-age=31536000');
 
-      // if (error) throw error;
+      // Upload to R2 via edge function
+      const { data, error } = await supabase.functions.invoke('r2-upload', {
+        body: formData,
+      });
 
-      // const { data: publicData } = supabase.storage
-      //   .from('audio-files')
-      //   .getPublicUrl(fileName);
-      const publicData = { publicUrl: `https://your-bucket.your-domain.com/${fileName}` };
+      if (error) {
+        console.error('❌ R2 upload error:', error);
+        throw error;
+      }
 
-      return { success: true, url: publicData.publicUrl };
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Upload failed');
+      }
+
+      console.log('✅ Audio uploaded successfully:', data.url);
+      return { success: true, url: data.url };
     } catch (error: any) {
+      console.error('Upload error:', error);
       throw new Error(error.message || 'Upload failed');
     } finally {
       setLoading(false);

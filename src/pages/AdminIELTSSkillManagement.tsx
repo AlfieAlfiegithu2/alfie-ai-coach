@@ -10,7 +10,7 @@ import { BookOpen, Headphones, PenTool, Mic, Plus, Edit3, Check, X, Trash2 } fro
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { adminSupabase } from "@/integrations/supabase/client";
 
 const skillIcons = {
   listening: Headphones,
@@ -61,19 +61,43 @@ const AdminIELTSSkillManagement = () => {
 
   const loadSkillTests = async () => {
     if (!skill) return;
-    
+
     try {
-      const { data, error } = await supabase
+      console.log(`🔍 Loading ${skillName} tests...`);
+      console.log(`Module: ${skill.charAt(0).toUpperCase() + skill.slice(1)}`);
+
+      // First, let's check if there are any speaking prompts to understand the test structure
+      if (skill === 'speaking') {
+        const { data: prompts, error: promptsError } = await adminSupabase
+          .from('speaking_prompts')
+          .select('*')
+          .limit(5);
+
+        console.log('Speaking prompts in database:', prompts?.length || 0, promptsError ? 'Error:' + promptsError.message : '');
+      }
+
+      const { data, error } = await adminSupabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('skill_category', skill.charAt(0).toUpperCase() + skill.slice(1))
-        .order('created_at', { ascending: true });
+        .eq('module', skill.charAt(0).toUpperCase() + skill.slice(1))
+        .order('test_number', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+
+      console.log(`✅ Found ${data?.length || 0} ${skillName} tests:`, data);
       setTests(data || []);
     } catch (error) {
-      console.error('Error loading skill tests:', error);
+      console.error('❌ Error loading skill tests:', error);
       toast.error(`Failed to load ${skillName} tests`);
     }
   };
@@ -86,13 +110,28 @@ const AdminIELTSSkillManagement = () => {
 
     setIsCreating(true);
     try {
-      const { data, error } = await supabase
+      // Get the next test number for this skill
+      const { data: maxTest } = await adminSupabase
+        .from('tests')
+        .select('test_number')
+        .eq('test_type', 'IELTS')
+        .eq('module', skillName)
+        .order('test_number', { ascending: false })
+        .limit(1)
+        .single();
+
+      const newTestNumber = (maxTest?.test_number || 0) + 1;
+
+      const { data, error } = await adminSupabase
         .from('tests')
         .insert({
           test_name: newTestName,
           test_type: 'IELTS',
-          module: skill === 'speaking' ? 'Speaking' : 'academic',
-          skill_category: skillName
+          module: skillName,
+          test_number: newTestNumber,
+          status: 'incomplete',
+          parts_completed: 0,
+          total_questions: 0
         })
         .select()
         .single();
@@ -130,7 +169,7 @@ const AdminIELTSSkillManagement = () => {
 
   const startEditingTest = (test: any) => {
     setEditingTestId(test.id);
-    setEditingTestName(test.test_name);
+    setEditingTestName(`${skillName} Test ${test.test_number}`);
   };
 
   const cancelEditingTest = () => {
@@ -145,7 +184,7 @@ const AdminIELTSSkillManagement = () => {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await adminSupabase
         .from('tests')
         .update({ test_name: editingTestName })
         .eq('id', editingTestId);
@@ -184,10 +223,10 @@ const AdminIELTSSkillManagement = () => {
     }
   };
 
-  const deleteTest = async (testId: string, testName: string) => {
+  const deleteTest = async (testId: string, testNumber: number) => {
     try {
       // First, delete any questions associated with this test
-      const { error: questionsError } = await supabase
+      const { error: questionsError } = await adminSupabase
         .from('questions')
         .delete()
         .eq('test_id', testId);
@@ -198,14 +237,14 @@ const AdminIELTSSkillManagement = () => {
       }
 
       // Then delete the test itself
-      const { error } = await supabase
+      const { error } = await adminSupabase
         .from('tests')
         .delete()
         .eq('id', testId);
 
       if (error) throw error;
 
-      toast.success(`Test "${testName}" deleted successfully`);
+      toast.success(`Test "${skillName} Test ${testNumber}" deleted successfully`);
       loadSkillTests(); // Refresh the test list
     } catch (error) {
       console.error('Error deleting test:', error);
@@ -313,7 +352,7 @@ const AdminIELTSSkillManagement = () => {
                             </Button>
                           </div>
                         ) : (
-                          <span>{test.test_name}</span>
+                          <span>{skillName} Test {test.test_number}</span>
                         )}
                       </div>
                       {editingTestId !== test.id && (
@@ -342,13 +381,13 @@ const AdminIELTSSkillManagement = () => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Test</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete "{test.test_name}"? This will also delete all questions associated with this test. This action cannot be undone.
+                                  Are you sure you want to delete "{skillName} Test {test.test_number}"? This will also delete all questions associated with this test. This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction 
-                                  onClick={() => deleteTest(test.id, test.test_name)}
+                                  onClick={() => deleteTest(test.id, test.test_number)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
                                   Delete
@@ -366,7 +405,7 @@ const AdminIELTSSkillManagement = () => {
                   <CardContent>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>Type: {test.test_type}</span>
-                      <span>Skill: {test.skill_category}</span>
+                      <span>Skill: {test.module}</span>
                     </div>
                     <Button 
                       size="sm" 

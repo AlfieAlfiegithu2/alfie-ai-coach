@@ -31,7 +31,7 @@ interface TestData {
 }
 
 const IELTSSpeakingTest = () => {
-  const { testName } = useParams();
+  const { testName: testId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -126,17 +126,25 @@ const IELTSSpeakingTest = () => {
   }, [testData, currentPart, currentQuestion]);
 
   const loadTestData = async () => {
-    if (!testName) return;
+    if (!testId) return;
     
     setIsLoading(true);
     try {
-      console.log(`🔍 Loading speaking test data for: ${testName}`);
-      
+      console.log(`🔍 Loading speaking test data for test ID: ${testId}`);
+
+      // First get the test details to understand which prompts to load
+      const { data: testData, error: testError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('id', testId)
+        .single();
+
+      if (testError) throw testError;
+
       // Try multiple query patterns to find speaking content
       const queries = [
-        supabase.from('speaking_prompts').select('*').eq('cambridge_book', `Test ${testName}`),
-        supabase.from('speaking_prompts').select('*').eq('test_number', parseInt(testName.match(/\d+/)?.[0] || '1')),
-        supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%${testName}%`)
+        supabase.from('speaking_prompts').select('*').eq('test_number', testData.test_number),
+        supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%Test ${testData.test_number}%`)
       ];
 
       let prompts = null;
@@ -156,8 +164,8 @@ const IELTSSpeakingTest = () => {
         const part3 = prompts.filter(p => p.part_number === 3);
 
         setTestData({
-          id: testName,
-          test_name: testName,
+          id: testData.id,
+          test_name: `IELTS Speaking Test ${testData.test_number}`,
           part1_prompts: part1,
           part2_prompt: part2 || null,
           part3_prompts: part3
@@ -165,11 +173,11 @@ const IELTSSpeakingTest = () => {
         
         console.log(`📝 Test data loaded: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
       } else {
-        console.log(`⚠️ No speaking content found for test ${testName} - showing placeholder interface`);
+        console.log(`⚠️ No speaking content found for test ${testId} - showing placeholder interface`);
         // Show interface even without content, with helpful message
         setTestData({
-          id: testName,
-          test_name: testName,
+          id: testData.id,
+          test_name: `IELTS Speaking Test ${testData.test_number}`,
           part1_prompts: [],
           part2_prompt: null,
           part3_prompts: []

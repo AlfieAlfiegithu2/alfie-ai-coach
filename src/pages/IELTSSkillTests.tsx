@@ -43,19 +43,18 @@ const IELTSSkillTests = () => {
 
   const loadSkillTests = async () => {
     if (!skill) return;
-    
+
     setIsLoading(true);
     try {
       let testsData = [];
-      
-      // Fetch from tests table - unified approach for all skills (individual tests only)
+
+      // Fetch from tests table - using new database structure
       const { data, error } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('skill_category', skillName)
-        .eq('test_category', 'individual')
-        .order('created_at', { ascending: true });
+        .eq('module', skillName)
+        .order('test_number', { ascending: true });
 
       if (error) throw error;
       testsData = data || [];
@@ -67,7 +66,7 @@ const IELTSSkillTests = () => {
             .from('questions')
             .select('*', { count: 'exact', head: true })
             .eq('test_id', test.id);
-          
+
           if (!questionsError) {
             test.questionsCount = count || 0;
           }
@@ -136,7 +135,7 @@ const IELTSSkillTests = () => {
       // For writing, navigate to IELTS Writing Test interface
       navigate(`/ielts-writing-test/${test.id}`);
     } else if (skill === 'speaking') {
-      navigate(`/ielts-speaking-test/${test.test_name}`);
+      navigate(`/ielts-speaking-test/${test.id}`);
     } else {
       // Fallback to general test modules
       navigate(`/ielts-test-modules/${test.id}`);
@@ -186,19 +185,21 @@ const IELTSSkillTests = () => {
               {tests.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   {tests.map((test) => {
-                    const result = userResults[test.test_name] || userResults[test.cambridge_book];
+                    // Create a display name from module and test number (e.g., "Speaking Test 1")
+                    const displayName = `${skillName} Test ${test.test_number}`;
+                    const result = userResults[displayName] || userResults[test.test_name];
                     const hasResult = !!result;
                     const band = hasResult ? percentageToIELTSBand(result.score_percentage) : null;
-                    
+
                     return (
-                      <Card 
+                      <Card
                         key={test.id}
                         className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm"
                         onClick={() => handleTestStart(test)}
                       >
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base md:text-lg flex items-center justify-between">
-                            <span>{test.test_name}</span>
+                            <span>{displayName}</span>
                             {hasResult && (
                               <Badge variant="secondary" className="text-xs">Band {band}</Badge>
                             )}

@@ -36,8 +36,7 @@ export default function AdminIELTSReadingDashboard() {
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('skill_category', 'Reading')
-        .eq('test_category', 'individual') // Individual skill tests
+        .eq('module', 'Reading')
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -55,23 +54,27 @@ export default function AdminIELTSReadingDashboard() {
     setError(null);
     
     try {
-      const { count } = await supabase
+      const { data: maxTest } = await supabase
         .from('tests')
-        .select('*', { count: 'exact', head: true })
+        .select('test_number')
         .eq('test_type', testType)
-        .eq('skill_category', 'Reading')
-        .eq('test_category', 'individual'); // Individual skill test
+        .eq('module', 'Reading')
+        .order('test_number', { ascending: false })
+        .limit(1)
+        .single();
 
-      const newTestNumber = (count || 0) + 1;
-      
+      const newTestNumber = (maxTest?.test_number || 0) + 1;
+
       const { data, error } = await supabase
         .from('tests')
         .insert({
           test_name: `IELTS Reading Test ${newTestNumber}`,
           test_type: 'IELTS',
-          module: 'academic',
-          skill_category: 'Reading',
-          test_category: 'individual'
+          module: 'Reading',
+          test_number: newTestNumber,
+          status: 'incomplete',
+          parts_completed: 0,
+          total_questions: 0
         })
         .select()
         .single();
@@ -125,8 +128,7 @@ export default function AdminIELTSReadingDashboard() {
           .from('tests')
           .select('*')
           .eq('test_type', 'IELTS')
-          .eq('skill_category', 'Reading')
-          .eq('test_category', 'individual')
+          .eq('module', 'Reading')
           .order('created_at', { ascending: false });
         
         if (error) {
@@ -171,8 +173,7 @@ export default function AdminIELTSReadingDashboard() {
           .from('tests')
           .select('*')
           .eq('test_type', 'IELTS')
-          .eq('skill_category', 'Reading')
-          .eq('test_category', 'individual')
+          .eq('module', 'Reading')
           .order('created_at', { ascending: false });
         
         if (error) {

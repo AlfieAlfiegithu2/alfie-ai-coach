@@ -34,9 +34,38 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Simple cache to avoid repeated API calls
+  // Enhanced in-memory cache with larger capacity for instant lookups
   const translationCache = useRef<Map<string, TranslationResult>>(new Map());
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Session storage for persistent cache across component remounts
+  const getFromSessionCache = (key: string): TranslationResult | null => {
+    try {
+      const cached = sessionStorage.getItem(`trans_${key}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        // Check if cache is still valid (within 1 hour)
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 3600000) {
+          return parsed.data;
+        }
+        sessionStorage.removeItem(`trans_${key}`);
+      }
+    } catch (e) {
+      // Ignore cache errors
+    }
+    return null;
+  };
+  
+  const saveToSessionCache = (key: string, data: TranslationResult) => {
+    try {
+      sessionStorage.setItem(`trans_${key}`, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      // Ignore if storage is full
+    }
+  };
 
   useEffect(() => {
     if (selectedText.trim()) {
@@ -47,23 +76,37 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   const fetchTranslation = async (text: string) => {
     const cacheKey = `${text.toLowerCase()}-${language}`;
     
-    // Check cache first
-    const cached = translationCache.current.get(cacheKey);
-    if (cached) {
-      setTranslationResult(cached);
+    // Check in-memory cache first (instant)
+    const memoryCached = translationCache.current.get(cacheKey);
+    if (memoryCached) {
+      setTranslationResult(memoryCached);
+      return;
+    }
+    
+    // Check session storage cache (near-instant)
+    const sessionCached = getFromSessionCache(cacheKey);
+    if (sessionCached) {
+      setTranslationResult(sessionCached);
+      translationCache.current.set(cacheKey, sessionCached);
       return;
     }
 
     setIsLoading(true);
+    
     try {
-      // Use simple translation service
+      // Two-tier approach: For single words, prioritize speed
+      const wordCount = text.trim().split(/\s+/).length;
+      const isShortText = wordCount <= 3;
+      
+      // Use simple translation service with optimized settings
       const { supabase } = await import('@/integrations/supabase/client');
       const { data, error } = await supabase.functions.invoke('translation-service', {
         body: {
           text: text,
           targetLang: language,
           sourceLang: 'auto',
-          includeContext: true // Enable full context to get multiple translations and alternatives
+          // For short texts, request full context but API will use simplified prompt
+          includeContext: true
         }
       });
 
@@ -76,9 +119,12 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
         });
         setTranslationResult(null);
       } else {
-        setTranslationResult(data.result);
-        // Cache the result
-        translationCache.current.set(cacheKey, data.result);
+        const result = data.result;
+        setTranslationResult(result);
+        
+        // Cache the result in both memory and session storage
+        translationCache.current.set(cacheKey, result);
+        saveToSessionCache(cacheKey, result);
       }
     } catch (error) {
       console.error('Translation error:', error);

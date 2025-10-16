@@ -9,13 +9,12 @@ interface Admin {
 interface UseAdminAuthReturn {
   admin: Admin | null;
   loading: boolean;
-  login: (keypass: string) => Promise<{ success?: boolean; error?: string }>;
+  login: () => Promise<{ success?: boolean; error?: string }>;
   logout: () => void;
   validateSession: () => boolean;
 }
 
-const ADMIN_KEYPASS = 'myye65402086';
-const ADMIN_SESSION_KEY = 'admin_keypass_session';
+const ADMIN_SESSION_KEY = 'admin_session';
 
 export function useAdminAuth(): UseAdminAuthReturn {
   const [admin, setAdmin] = useState<Admin | null>(null);
@@ -27,39 +26,39 @@ export function useAdminAuth(): UseAdminAuthReturn {
   };
 
   useEffect(() => {
-    console.log('🔍 Checking admin keypass session...');
+    console.log('🔍 Checking admin session...');
     const session = localStorage.getItem(ADMIN_SESSION_KEY);
-    
+
     if (session === 'true') {
-      console.log('✅ Valid keypass session found');
+      console.log('✅ Valid admin session found');
       setAdmin({
         id: 'admin',
         email: 'admin@system.local',
         name: 'Admin'
       });
     } else {
-      console.log('❌ No valid keypass session');
+      console.log('❌ No valid admin session');
       setAdmin(null);
     }
-    
+
     setLoading(false);
   }, []);
 
-  const login = async (keypass: string): Promise<{ success?: boolean; error?: string }> => {
-    console.log('🔐 Attempting admin login with keypass...');
-    
-    if (keypass === ADMIN_KEYPASS) {
-      console.log('✅ Keypass correct, granting admin access');
+  const login = async (): Promise<{ success?: boolean; error?: string }> => {
+    console.log('🔐 Granting admin access...');
+
+    try {
       localStorage.setItem(ADMIN_SESSION_KEY, 'true');
       setAdmin({
         id: 'admin',
         email: 'admin@system.local',
         name: 'Admin'
       });
+
       return { success: true };
-    } else {
-      console.log('❌ Invalid keypass provided');
-      return { error: 'Invalid keypass' };
+    } catch (error) {
+      console.error('❌ Error during admin login:', error);
+      return { error: 'Failed to login' };
     }
   };
 

@@ -1,19 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Settings, ArrowLeft } from "lucide-react";
-
-const keypassSchema = z.object({
-  keypass: z.string().min(1, "Keypass is required"),
-});
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -21,18 +12,11 @@ const AdminLogin = () => {
   const { login } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof keypassSchema>>({
-    resolver: zodResolver(keypassSchema),
-    defaultValues: {
-      keypass: "",
-    },
-  });
-
-  const onLogin = async (values: z.infer<typeof keypassSchema>) => {
+  const onLogin = async () => {
     setIsLoading(true);
     try {
-      const result = await login(values.keypass);
-      
+      const result = await login();
+
       if (result.success) {
         toast({
           title: "Access granted",
@@ -42,7 +26,7 @@ const AdminLogin = () => {
       } else {
         toast({
           title: "Access denied",
-          description: result.error || "Invalid keypass",
+          description: result.error || "Failed to login",
           variant: "destructive",
         });
       }
@@ -74,14 +58,14 @@ const AdminLogin = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Home
             </Button>
-            
+
             <div className="flex justify-center">
               <div className="w-16 h-16 bg-white/10 border border-white/20 backdrop-blur-xl rounded-full flex items-center justify-center">
                 <Settings className="w-8 h-8 text-white" />
               </div>
             </div>
             <h1 className="text-2xl font-light text-zinc-950">Admin Panel</h1>
-            <p className="text-zinc-700">Enter admin keypass to access</p>
+            <p className="text-zinc-700">Click to access admin panel</p>
           </div>
 
           <Card className="bg-white/10 border border-white/20 backdrop-blur-xl">
@@ -89,30 +73,9 @@ const AdminLogin = () => {
               <CardTitle className="text-zinc-950 font-normal">Admin Access</CardTitle>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onLogin)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="keypass"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Admin Keypass</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Enter admin keypass" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Authenticating..." : "Access Admin Panel"}
-                  </Button>
-                </form>
-              </Form>
+              <Button onClick={onLogin} className="w-full" disabled={isLoading}>
+                {isLoading ? "Accessing..." : "Access Admin Panel"}
+              </Button>
             </CardContent>
           </Card>
         </div>

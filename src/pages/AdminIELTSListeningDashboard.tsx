@@ -55,8 +55,8 @@ const AdminIELTSListeningDashboard = () => {
       const allQuestions = questionsResponse?.data || [];
 
       // Filter for IELTS Listening tests (individual skill tests only)
-      const ieltsListeningTests = allTests.filter((test: any) => 
-        test.test_type === 'IELTS' && test.skill_category === 'Listening' && test.test_category === 'individual'
+      const ieltsListeningTests = allTests.filter((test: any) =>
+        test.test_type === 'IELTS' && test.module === 'Listening'
       );
 
       // Group by test number to create test list
@@ -132,29 +132,29 @@ const AdminIELTSListeningDashboard = () => {
       const nextNumber = testMatch ? parseInt(testMatch[1]) : Math.max(...existingNumbers, 0) + 1;
       
       // Create new test record in universal tests table
-      const testData = {
-        test_name: newTestName,
-        test_type: 'IELTS',
-        module: 'academic',
-        skill_category: 'Listening',
-        test_category: 'individual',
-        test_number: nextNumber,
-        status: 'incomplete',
-        parts_completed: 0,
-        total_questions: 0
-      };
+      const { data, error } = await supabase
+        .from('tests')
+        .insert({
+          test_name: newTestName,
+          test_type: 'IELTS',
+          module: 'Listening',
+          test_number: nextNumber,
+          status: 'incomplete',
+          parts_completed: 0,
+          total_questions: 0
+        })
+        .select()
+        .single();
 
-      await createContent('tests', testData);
-      
+      if (error) throw error;
+
+      toast.success('Test created successfully');
+      setNewTestName('');
+
       // Navigate to the management page for this test
-      navigate(`/admin/ielts/test/${nextNumber}/listening`);
-      
+      navigate(`/admin/ielts/test/${data.id}/listening`);
+
       setShowCreateDialog(false);
-      setNewTestName("");
-      toast.success(`Created ${newTestName} successfully`);
-      
-      // Reload the tests list
-      loadTests();
     } catch (error: any) {
       console.error('Error creating test:', error);
       toast.error(`Failed to create test: ${error.message || 'Unknown error'}`);

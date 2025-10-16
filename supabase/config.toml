@@ -129,3 +129,7 @@ verify_jwt = true
 # New: background runner to translate ALL cards in chunks without UI
 [functions.vocab-translate-runner]
 verify_jwt = false
+
+# R2 file upload function
+[functions.r2-upload]
+verify_jwt = false

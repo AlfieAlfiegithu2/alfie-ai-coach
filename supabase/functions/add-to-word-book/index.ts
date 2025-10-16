@@ -82,12 +82,76 @@ serve(async (req) => {
       translationsCount: translationArray.length 
     });
 
-    // Check if word already exists for this user
-    const { data: existingWord, error: checkError } = await supabase
+    // Use service role client for vocabulary_words operations (RLS restricts normal users)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const normalizedWord = word.trim().toLowerCase();
+    const primaryTranslation = translationArray[0];
+    
+    // Get user's language from profiles (default to 'en' if not set)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('native_language')
+      .eq('id', user.id)
+      .single();
+    
+    const languageCode = profile?.native_language?.toLowerCase().substring(0, 2) || 'en';
+
+    // Step 1: Ensure the word exists in vocabulary_words table (using service role)
+    let vocabularyWordId: string;
+    
+    const { data: existingVocabWord } = await supabaseAdmin
+      .from('vocabulary_words')
+      .select('id, usage_count')
+      .eq('word', normalizedWord)
+      .eq('language_code', languageCode)
+      .single();
+
+    if (existingVocabWord) {
+      vocabularyWordId = existingVocabWord.id;
+      
+      // Increment usage count
+      await supabaseAdmin
+        .from('vocabulary_words')
+        .update({ usage_count: existingVocabWord.usage_count + 1 })
+        .eq('id', vocabularyWordId);
+    } else {
+      // Create new vocabulary word
+      const { data: newVocabWord, error: vocabError } = await supabaseAdmin
+        .from('vocabulary_words')
+        .insert({
+          word: normalizedWord,
+          language_code: languageCode,
+          translation: primaryTranslation,
+          usage_count: 1,
+          verified: false
+        })
+        .select('id')
+        .single();
+
+      if (vocabError || !newVocabWord) {
+        console.error('Error creating vocabulary word:', vocabError);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Failed to save word to vocabulary database' 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      vocabularyWordId = newVocabWord.id;
+    }
+
+    // Step 2: Check if user already has this word
+    const { data: existingUserWord, error: checkError } = await supabase
       .from('user_vocabulary')
       .select('id')
       .eq('user_id', user.id)
-      .eq('word', word.trim().toLowerCase())
+      .eq('vocabulary_word_id', vocabularyWordId)
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
@@ -101,7 +165,7 @@ serve(async (req) => {
       });
     }
 
-    if (existingWord) {
+    if (existingUserWord) {
       console.log('Word already exists in user vocabulary');
       return new Response(JSON.stringify({ 
         success: false, 
@@ -113,20 +177,23 @@ serve(async (req) => {
       });
     }
 
-    // Insert the new word with all translations
+    // Step 3: Add word to user's vocabulary
+    const context = translationArray.length > 1 
+      ? `Alternatives: ${translationArray.slice(1).join(', ')}`
+      : null;
+
     const { data, error: insertError } = await supabase
       .from('user_vocabulary')
       .insert({
         user_id: user.id,
-        word: word.trim().toLowerCase(),
-        part_of_speech: part_of_speech || null,
-        translations: translationArray.map((t: string) => t.trim())
+        vocabulary_word_id: vocabularyWordId,
+        context: context
       })
-      .select('id, word, created_at')
+      .select('id, saved_at')
       .single();
 
     if (insertError) {
-      console.error('Error inserting word:', insertError);
+      console.error('Error inserting user vocabulary:', insertError);
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Failed to save word to your Word Book' 
@@ -143,8 +210,8 @@ serve(async (req) => {
       message: 'Word successfully added to your Word Book',
       data: {
         id: data.id,
-        word: data.word,
-        created_at: data.created_at
+        word: normalizedWord,
+        created_at: data.saved_at
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

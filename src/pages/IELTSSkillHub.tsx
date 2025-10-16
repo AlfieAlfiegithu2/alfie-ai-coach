@@ -56,7 +56,7 @@ const IELTSSkillHub = () => {
       // Load test counts per skill
       const { data: tests, error: testsError } = await supabase
         .from('tests')
-        .select('skill_category')
+        .select('module')
         .eq('test_type', 'IELTS');
 
       if (testsError) throw testsError;
@@ -65,7 +65,7 @@ const IELTSSkillHub = () => {
       const counts: Record<string, { tests: number; lastScore?: string }> = {};
       skillCategories.forEach(skill => {
         counts[skill.skill] = { 
-          tests: tests?.filter(t => t.skill_category === skill.skill).length || 0 
+          tests: tests?.filter(t => t.module === skill.skill).length || 0 
         };
       });
 

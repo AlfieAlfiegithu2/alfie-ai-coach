@@ -240,21 +240,25 @@ export function useAdminContent() {
     setLoading(true);
     try {
       const fileName = `${Date.now()}-${file.name}`;
-      // TODO: Implement R2 upload instead of Supabase storage
-      console.log('Admin audio upload disabled - implement R2 upload');
-      // const { data, error } = await supabase.storage
-      //   .from('audio-files')
-      //   .upload(fileName, file);
+      const path = `admin-audio/${fileName}`;
 
-      // if (error) throw error;
+      // Use the R2 upload edge function
+      const { data, error } = await supabase.functions.invoke('r2-upload', {
+        body: {
+          file,
+          path,
+          contentType: file.type,
+          cacheControl: 'public, max-age=31536000'
+        },
+      });
 
-      // const { data: publicData } = supabase.storage
-      //   .from('audio-files')
-      //   .getPublicUrl(fileName);
-      const publicData = { publicUrl: `https://your-bucket.your-domain.com/${fileName}` };
+      if (error) {
+        throw new Error(`Upload failed: ${error.message}`);
+      }
 
-      return { success: true, url: publicData.publicUrl };
+      return { success: true, url: data.url, key: data.key };
     } catch (error: any) {
+      console.error('Audio upload error:', error);
       throw new Error(error.message || 'Upload failed');
     } finally {
       setLoading(false);

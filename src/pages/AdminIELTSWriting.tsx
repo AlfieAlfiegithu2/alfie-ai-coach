@@ -37,9 +37,8 @@ const AdminIELTSWriting = () => {
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('skill_category', 'Writing')
-        .eq('test_category', 'individual')
-        .order('created_at', { ascending: false });
+        .eq('module', 'Writing')
+        .order('test_number', { ascending: false });
 
       if (error) throw error;
       setTests(data || []);
@@ -54,23 +53,27 @@ const AdminIELTSWriting = () => {
   const handleCreateTest = async () => {
     try {
       setLoading(true);
-      const { count } = await supabase
+      const { data: maxTest } = await supabase
         .from('tests')
-        .select('*', { count: 'exact', head: true })
+        .select('test_number')
         .eq('test_type', 'IELTS')
-        .eq('skill_category', 'Writing')
-        .eq('test_category', 'individual');
+        .eq('module', 'Writing')
+        .order('test_number', { ascending: false })
+        .limit(1)
+        .single();
 
-      const newTestNumber = (count || 0) + 1;
+      const newTestNumber = (maxTest?.test_number || 0) + 1;
       
       const { data, error } = await supabase
         .from('tests')
         .insert({
           test_name: `IELTS Writing Test ${newTestNumber}`,
           test_type: 'IELTS',
-          module: 'academic',
-          skill_category: 'Writing',
-          test_category: 'individual'
+          module: 'Writing',
+          test_number: newTestNumber,
+          status: 'incomplete',
+          parts_completed: 0,
+          total_questions: 0
         })
         .select()
         .single();

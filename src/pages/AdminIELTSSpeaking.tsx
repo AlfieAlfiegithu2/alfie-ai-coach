@@ -448,8 +448,10 @@ const AdminIELTSSpeaking = () => {
                           Remove
                         </Button>
                       </div>
-                      <audio controls className="w-full">
+                      <audio controls className="w-full" preload="metadata">
+                        <source src={prompt.audio_url} type="audio/wav" />
                         <source src={prompt.audio_url} type="audio/mpeg" />
+                        <source src={prompt.audio_url} type="audio/mp3" />
                         Your browser does not support the audio element.
                       </audio>
                     </div>
@@ -627,8 +629,10 @@ const AdminIELTSSpeaking = () => {
                           Remove
                         </Button>
                       </div>
-                      <audio controls className="w-full">
+                      <audio controls className="w-full" preload="metadata">
+                        <source src={prompt.audio_url} type="audio/wav" />
                         <source src={prompt.audio_url} type="audio/mpeg" />
+                        <source src={prompt.audio_url} type="audio/mp3" />
                         Your browser does not support the audio element.
                       </audio>
                     </div>

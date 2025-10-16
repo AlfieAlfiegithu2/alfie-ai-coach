@@ -54,7 +54,7 @@ const IELTSSkillTests = () => {
         .select('*')
         .eq('test_type', 'IELTS')
         .eq('module', skillName)
-        .order('test_number', { ascending: true });
+        .order('test_name', { ascending: true });
 
       if (error) throw error;
       testsData = data || [];
@@ -185,8 +185,8 @@ const IELTSSkillTests = () => {
               {tests.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   {tests.map((test) => {
-                    // Create a display name from module and test number (e.g., "Speaking Test 1")
-                    const displayName = `${skillName} Test ${test.test_number}`;
+                    // Use test_name directly as display name
+                    const displayName = test.test_name;
                     const result = userResults[displayName] || userResults[test.test_name];
                     const hasResult = !!result;
                     const band = hasResult ? percentageToIELTSBand(result.score_percentage) : null;

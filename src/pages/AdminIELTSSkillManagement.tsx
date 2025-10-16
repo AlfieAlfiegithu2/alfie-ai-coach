@@ -111,27 +111,21 @@ const AdminIELTSSkillManagement = () => {
     setIsCreating(true);
     try {
       // Get the next test number for this skill
-      const { data: maxTest } = await adminSupabase
+      const { data: existingTests } = await adminSupabase
         .from('tests')
-        .select('test_number')
+        .select('test_name')
         .eq('test_type', 'IELTS')
         .eq('module', skillName)
-        .order('test_number', { ascending: false })
-        .limit(1)
-        .single();
+        .order('created_at', { ascending: false });
 
-      const newTestNumber = (maxTest?.test_number || 0) + 1;
+      const newTestNumber = (existingTests?.length || 0) + 1;
 
       const { data, error } = await adminSupabase
         .from('tests')
         .insert({
           test_name: newTestName,
           test_type: 'IELTS',
-          module: skillName,
-          test_number: newTestNumber,
-          status: 'incomplete',
-          parts_completed: 0,
-          total_questions: 0
+          module: skillName
         })
         .select()
         .single();

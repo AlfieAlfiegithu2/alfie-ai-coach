@@ -84,7 +84,7 @@ const IELTSSpeakingTest = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [testName]);
+  }, [testId]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -143,8 +143,7 @@ const IELTSSpeakingTest = () => {
 
       // Try multiple query patterns to find speaking content
       const queries = [
-        supabase.from('speaking_prompts').select('*').eq('test_number', testData.test_number),
-        supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%Test ${testData.test_number}%`)
+        supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%${testData.test_name}%`)
       ];
 
       let prompts = null;
@@ -165,7 +164,7 @@ const IELTSSpeakingTest = () => {
 
         setTestData({
           id: testData.id,
-          test_name: `IELTS Speaking Test ${testData.test_number}`,
+          test_name: testData.test_name,
           part1_prompts: part1,
           part2_prompt: part2 || null,
           part3_prompts: part3
@@ -177,7 +176,7 @@ const IELTSSpeakingTest = () => {
         // Show interface even without content, with helpful message
         setTestData({
           id: testData.id,
-          test_name: `IELTS Speaking Test ${testData.test_number}`,
+          test_name: testData.test_name,
           part1_prompts: [],
           part2_prompt: null,
           part3_prompts: []

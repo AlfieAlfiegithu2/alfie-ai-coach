@@ -53,27 +53,21 @@ const AdminIELTSWriting = () => {
   const handleCreateTest = async () => {
     try {
       setLoading(true);
-      const { data: maxTest } = await supabase
+      const { data: existingTests } = await supabase
         .from('tests')
-        .select('test_number')
+        .select('test_name')
         .eq('test_type', 'IELTS')
         .eq('module', 'Writing')
-        .order('test_number', { ascending: false })
-        .limit(1)
-        .single();
+        .order('created_at', { ascending: false });
 
-      const newTestNumber = (maxTest?.test_number || 0) + 1;
+      const newTestNumber = (existingTests?.length || 0) + 1;
       
       const { data, error } = await supabase
         .from('tests')
         .insert({
           test_name: `IELTS Writing Test ${newTestNumber}`,
           test_type: 'IELTS',
-          module: 'Writing',
-          test_number: newTestNumber,
-          status: 'incomplete',
-          parts_completed: 0,
-          total_questions: 0
+          module: 'Writing'
         })
         .select()
         .single();

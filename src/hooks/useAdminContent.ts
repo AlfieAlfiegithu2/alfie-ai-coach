@@ -253,13 +253,13 @@ export function useAdminContent() {
 
       // Get the Supabase function URL
       const { data: { session } } = await supabase.auth.getSession();
-      const functionUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/r2-upload';
-      
+      const functionUrl = `${supabase.supabaseUrl}/functions/v1/r2-upload`;
+
       // Upload to R2 via edge function using fetch (supabase.functions.invoke doesn't support FormData)
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session?.access_token || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI'}`,
+          'Authorization': `Bearer ${session?.access_token || supabase.supabaseKey}`,
         },
         body: formData,
       });

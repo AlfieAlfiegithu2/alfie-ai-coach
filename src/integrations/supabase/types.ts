@@ -2401,6 +2401,14 @@ export type Database = {
           unique_questions: number
         }[]
       }
+      get_cards_needing_translation: {
+        Args: { p_languages: string[]; p_limit: number; p_offset: number }
+        Returns: {
+          context_sentence: string
+          id: string
+          term: string
+        }[]
+      }
       get_storage_stats: {
         Args: Record<PropertyKey, never>
         Returns: {

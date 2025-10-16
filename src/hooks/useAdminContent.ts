@@ -253,7 +253,7 @@ export function useAdminContent() {
 
       // Get the Supabase function URL
       const { data: { session } } = await supabase.auth.getSession();
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-upload`;
+      const functionUrl = `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/r2-upload`;
 
       // Upload to R2 via edge function using fetch (supabase.functions.invoke doesn't support FormData)
       const response = await fetch(functionUrl, {

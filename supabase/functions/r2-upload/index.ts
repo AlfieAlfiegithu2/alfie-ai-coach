@@ -49,10 +49,94 @@ serve(async (req) => {
   }
 
   try {
+    const urlObj = new URL(req.url);
+
+    // Diagnostic mode: quick signed GET to list 1 object from the bucket
+    if (req.method === 'GET' && urlObj.searchParams.get('diagnose') === '1') {
+      if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            reason: 'missing_config',
+            details: {
+              hasAccountId: !!R2_ACCOUNT_ID,
+              hasAccessKeyId: !!R2_ACCESS_KEY_ID,
+              hasSecret: !!R2_SECRET_ACCESS_KEY,
+              bucket: R2_BUCKET_NAME,
+              accountIdLooksValid: !!R2_ACCOUNT_ID && /^[a-f0-9]{32}$/i.test(R2_ACCOUNT_ID),
+            },
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+      const canonicalPath = `/${R2_BUCKET_NAME}/`;
+      const canonicalQueryString = 'list-type=2&max-keys=1';
+      const listUrl = `${endpoint}${canonicalPath}?${canonicalQueryString}`;
+
+      const now = new Date();
+      const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
+      const dateStamp = amzDate.slice(0, 8);
+      const payloadHash = 'UNSIGNED-PAYLOAD';
+
+      const diagnosticCanonicalRequest = [
+        'GET',
+        canonicalPath,
+        canonicalQueryString,
+        `host:${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+        `x-amz-content-sha256:${payloadHash}`,
+        `x-amz-date:${amzDate}`,
+        '',
+        'host;x-amz-content-sha256;x-amz-date',
+        payloadHash,
+      ].join('\n');
+
+      const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
+      const diagnosticStringToSign = [
+        'AWS4-HMAC-SHA256',
+        amzDate,
+        credentialScope,
+        sha256(diagnosticCanonicalRequest),
+      ].join('\n');
+
+      const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY, dateStamp, 'auto', 's3');
+      const signature = createHmac('sha256', signingKey).update(diagnosticStringToSign).digest('hex');
+      const authorizationHeader = `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=${signature}`;
+
+      const diagResp = await fetch(listUrl, {
+        method: 'GET',
+        headers: {
+          'x-amz-content-sha256': payloadHash,
+          'x-amz-date': amzDate,
+          'Authorization': authorizationHeader,
+        },
+      });
+
+      const diagText = await diagResp.text();
+      const r2Code = diagText.match(/<Code>([\s\S]*?)<\/Code>/)?.[1] || null;
+      const r2StringToSign = diagText.match(/<StringToSign>([\s\S]*?)<\/StringToSign>/)?.[1] || null;
+
+      return new Response(
+        JSON.stringify({
+          ok: diagResp.ok,
+          status: diagResp.status,
+          r2_code: r2Code,
+          endpoint,
+          bucket: R2_BUCKET_NAME,
+          account_id_valid: !!R2_ACCOUNT_ID && /^[a-f0-9]{32}$/i.test(R2_ACCOUNT_ID),
+          access_key_id_masked: R2_ACCESS_KEY_ID ? `${R2_ACCESS_KEY_ID.slice(0, 4)}...${R2_ACCESS_KEY_ID.slice(-4)}` : null,
+          public_url: R2_PUBLIC_URL || null,
+          our_string_to_sign: diagnosticStringToSign,
+          r2_string_to_sign: r2StringToSign,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (req.method !== 'POST') {
       throw new Error('Method not allowed');
     }
-
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   throw new Error('Missing Cloudflare R2 configuration (check CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY)');
 }
@@ -119,7 +203,6 @@ const canonicalRequest = [
         'x-amz-content-sha256': payloadHash,
         'x-amz-date': amzDate,
         'Authorization': authorizationHeader,
-        'Host': `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       },
       body: fileBuffer,
     });

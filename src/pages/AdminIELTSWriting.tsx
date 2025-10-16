@@ -38,7 +38,7 @@ const AdminIELTSWriting = () => {
         .select('*')
         .eq('test_type', 'IELTS')
         .eq('module', 'Writing')
-        .order('test_number', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setTests(data || []);

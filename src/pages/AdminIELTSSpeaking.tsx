@@ -265,7 +265,7 @@ const AdminIELTSSpeaking = () => {
       const { error: deleteError } = await supabase
         .from('speaking_prompts')
         .delete()
-        .eq('test_number', parseInt(testName) || 1)
+        .eq('cambridge_book', `Test ${testName}`)
         .eq('part_number', partNumber);
 
       if (deleteError) throw deleteError;

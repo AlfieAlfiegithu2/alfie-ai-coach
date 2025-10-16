@@ -81,7 +81,7 @@ const AdminIELTSSkillManagement = () => {
         .select('*')
         .eq('test_type', 'IELTS')
         .eq('module', skill.charAt(0).toUpperCase() + skill.slice(1))
-        .order('test_number', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('❌ Database error:', error);
@@ -163,7 +163,7 @@ const AdminIELTSSkillManagement = () => {
 
   const startEditingTest = (test: any) => {
     setEditingTestId(test.id);
-    setEditingTestName(`${skillName} Test ${test.test_number}`);
+    setEditingTestName(test.test_name);
   };
 
   const cancelEditingTest = () => {
@@ -217,7 +217,7 @@ const AdminIELTSSkillManagement = () => {
     }
   };
 
-  const deleteTest = async (testId: string, testNumber: number) => {
+  const deleteTest = async (testId: string, testName: string) => {
     try {
       // First, delete any questions associated with this test
       const { error: questionsError } = await adminSupabase
@@ -238,7 +238,7 @@ const AdminIELTSSkillManagement = () => {
 
       if (error) throw error;
 
-      toast.success(`Test "${skillName} Test ${testNumber}" deleted successfully`);
+      toast.success(`Test "${testName}" deleted successfully`);
       loadSkillTests(); // Refresh the test list
     } catch (error) {
       console.error('Error deleting test:', error);
@@ -346,7 +346,7 @@ const AdminIELTSSkillManagement = () => {
                             </Button>
                           </div>
                         ) : (
-                          <span>{skillName} Test {test.test_number}</span>
+                          <span>{test.test_name}</span>
                         )}
                       </div>
                       {editingTestId !== test.id && (
@@ -375,13 +375,13 @@ const AdminIELTSSkillManagement = () => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Test</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete "{skillName} Test {test.test_number}"? This will also delete all questions associated with this test. This action cannot be undone.
+                                  Are you sure you want to delete "{test.test_name}"? This will also delete all questions associated with this test. This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction 
-                                  onClick={() => deleteTest(test.id, test.test_number)}
+                                  onClick={() => deleteTest(test.id, test.test_name)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
                                   Delete

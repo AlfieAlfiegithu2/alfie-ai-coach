@@ -89,12 +89,11 @@ const canonicalRequest = [
   'PUT',
   canonicalPath,
   '',
-  `content-type:${contentType}`,
   `host:${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   `x-amz-content-sha256:${payloadHash}`,
   `x-amz-date:${amzDate}`,
   '',
-  'content-type;host;x-amz-content-sha256;x-amz-date',
+  'host;x-amz-content-sha256;x-amz-date',
   payloadHash
 ].join('\n');
     
@@ -109,7 +108,7 @@ const canonicalRequest = [
     const signingKey = getSignatureKey(R2_SECRET_ACCESS_KEY, dateStamp, 'auto', 's3');
     const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex');
     
-    const authorizationHeader = `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=${signature}`;
+    const authorizationHeader = `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=${signature}`;
 
     // Upload to R2
     const uploadResponse = await fetch(url, {

@@ -239,10 +239,20 @@ export function useAdminContent() {
   const uploadAudio = async (file: File) => {
     setLoading(true);
     try {
-      const fileName = `${Date.now()}-${file.name}`;
+      const originalName = file.name || 'audio.wav';
+      const ext = originalName.includes('.') ? originalName.split('.').pop()!.toLowerCase() : 'wav';
+      const base = originalName.replace(/\.[^/.]+$/, '');
+      const safeBase = base
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '') // strip diacritics
+        .replace(/[^a-zA-Z0-9_-]+/g, '-') // replace spaces & specials with '-'
+        .replace(/-+/g, '-') // collapse dashes
+        .replace(/^-|-$/g, '') // trim dashes
+        .toLowerCase();
+      const fileName = `${Date.now()}-${safeBase}.${ext}`;
       const path = `admin/speaking/${fileName}`;
       
-      console.log('📤 Uploading audio to R2:', { fileName, size: file.size, type: file.type });
+      console.log('📤 Uploading audio to R2:', { originalName, fileName, size: file.size, type: file.type });
       
       // Create FormData for R2 upload
       const formData = new FormData();
@@ -266,8 +276,8 @@ export function useAdminContent() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ R2 upload error:', errorText);
-        throw new Error(`Upload failed: ${response.statusText}`);
+        console.error('❌ R2 upload error:', response.status, errorText);
+        throw new Error(`Upload failed ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();

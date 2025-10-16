@@ -83,7 +83,7 @@ const url = `${endpoint}${canonicalPath}`;
     const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = amzDate.slice(0, 8);
     
-    const payloadHash = sha256(fileBuffer);
+    const payloadHash = 'UNSIGNED-PAYLOAD';
     
 const canonicalRequest = [
   'PUT',
@@ -128,10 +128,27 @@ const canonicalRequest = [
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
       console.error('R2 upload failed:', uploadResponse.status, errorText);
-      throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
     }
 
-    const publicUrl = `${R2_PUBLIC_URL}/${path}`;
+    let publicUrl: string;
+    if (R2_PUBLIC_URL) {
+      if (R2_PUBLIC_URL.includes('.r2.dev')) {
+        // Expecting format: https://<bucket>.<account_id>.r2.dev
+        publicUrl = `${R2_PUBLIC_URL}/${path}`;
+      } else if (R2_PUBLIC_URL.includes('cloudflarestorage.com')) {
+        // Expecting format: https://<account_id>.r2.cloudflarestorage.com[/<bucket>]
+        const base = R2_PUBLIC_URL.endsWith(`/${R2_BUCKET_NAME}`)
+          ? R2_PUBLIC_URL
+          : `${R2_PUBLIC_URL}/${R2_BUCKET_NAME}`;
+        publicUrl = `${base}/${path}`;
+      } else {
+        publicUrl = `${R2_PUBLIC_URL}/${path}`;
+      }
+    } else {
+      // Fallback to public r2.dev domain
+      publicUrl = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.dev/${path}`;
+    }
 
     console.log('✅ Upload successful:', publicUrl);
 

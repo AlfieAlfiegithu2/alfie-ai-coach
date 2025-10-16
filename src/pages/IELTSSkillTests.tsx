@@ -49,6 +49,7 @@ const IELTSSkillTests = () => {
       let testsData = [];
 
       // Fetch from tests table - using new database structure
+      console.log(`Loading IELTS ${skillName} tests...`);
       const { data, error } = await supabase
         .from('tests')
         .select('*')
@@ -56,7 +57,10 @@ const IELTSSkillTests = () => {
         .eq('module', skillName)
         .order('test_name', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading skill tests:', error);
+        throw error;
+      }
       testsData = data || [];
 
       // For writing tests, also get question count to show task info

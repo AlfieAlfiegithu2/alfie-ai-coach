@@ -31,9 +31,15 @@ interface TestData {
 }
 
 const IELTSSpeakingTest = () => {
-  const { testName: testId } = useParams();
+  const params = useParams();
+  const testId = params.testName;
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Safety check for testId
+  if (!testId) {
+    console.error('No testId provided in route params');
+  }
   
   const [testData, setTestData] = useState<TestData | null>(null);
   const [currentPart, setCurrentPart] = useState(1);

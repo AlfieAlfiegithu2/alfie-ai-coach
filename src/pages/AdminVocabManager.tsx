@@ -133,14 +133,20 @@ const AdminVocabManager: React.FC = () => {
     load();
     loadCounts();
 
-    // Fire-and-forget background runner so admin doesn't need to click
+    // Auto-queue and start translation processing in background once
     (async () => {
       try {
         const already = localStorage.getItem('vocabRunnerStarted');
         if (!already) {
-          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 150 } });
+          // Queue translation jobs (service role handles RLS)
+          const { data: qData, error: qErr } = await supabase.functions.invoke('vocab-queue-translations', { body: {} });
+          if (qErr || !qData?.success) {
+            console.warn('Queue start failed', qErr || qData);
+          }
+          // Kick off background processing (function will self-chain until done)
+          await supabase.functions.invoke('process-translations', { body: { reason: 'auto-start' } });
           localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
-          toast({ title: 'Auto-translation started', description: 'Translating all words in background.' });
+          toast({ title: 'Auto-translation started', description: 'Processing queued translations in background.' });
         }
       } catch (e) {
         // ignore start failures

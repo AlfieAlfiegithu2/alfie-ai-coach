@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 
 // Initialize Supabase client for caching
 const supabase = createClient(
@@ -51,14 +51,14 @@ async function translateSingleViaApi(text: string, sourceLang: string, targetLan
     ? `Translate to ${targetLang}: "${text}"`
     : `Translate from ${sourceLang} to ${targetLang}: "${text}"`;
 
-  const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'deepseek-chat',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -87,20 +87,20 @@ serve(async (req) => {
   }
 
   try {
-    // Check if Lovable AI Gateway key is configured
-    if (!LOVABLE_API_KEY) {
-      console.error('❌ LOVABLE_API_KEY not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
+    // Check if DeepSeek API key is configured
+    if (!DEEPSEEK_API_KEY) {
+      console.error('❌ DEEPSEEK_API_KEY not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Translation service temporarily unavailable. Please try again in a moment.',
-        details: 'LOVABLE_API_KEY not configured'
+        details: 'DEEPSEEK_API_KEY not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ Lovable AI key found for translation');
+    console.log('✅ DeepSeek key found for translation');
 
     const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
     
@@ -219,14 +219,14 @@ serve(async (req) => {
         `Translate this text to ${targetLang}: "${text}"` :
         `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`);
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -298,14 +298,14 @@ serve(async (req) => {
             try {
               await supabase
                 .from('translation_cache')
-                .insert({
+                .upsert({
                   word: currentText.toLowerCase().trim(),
                   source_lang: sourceLang,
                   target_lang: targetLang,
                   translation,
                   hit_count: 1,
                   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                });
+                }, { onConflict: 'word,source_lang,target_lang' });
             } catch (_) {}
 
               }
@@ -326,14 +326,14 @@ serve(async (req) => {
             try {
               await supabase
                 .from('translation_cache')
-                .insert({
+                .upsert({
                   word: currentText.toLowerCase().trim(),
                   source_lang: sourceLang,
                   target_lang: targetLang,
                   translation: batchResult.translation,
                   hit_count: 1,
                   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                });
+                }, { onConflict: 'word,source_lang,target_lang' });
             } catch (_) {}
 
             }
@@ -463,14 +463,14 @@ serve(async (req) => {
 
         await supabase
           .from('translation_cache')
-          .insert({
+          .upsert({
             word: text.toLowerCase().trim(),
             source_lang: sourceLang,
             target_lang: targetLang,  
             translation: translationText,
             hit_count: 1,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          });
+          }, { onConflict: 'word,source_lang,target_lang' });
         
         console.log('💾 Translation cached successfully');
       } catch (cacheError) {

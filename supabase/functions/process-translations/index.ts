@@ -181,7 +181,7 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
         card_id: cardId,
         lang: targetLang,
         translations: arr,
-        provider: 'gemini',
+        provider: 'deepseek',
         quality: 1,
         is_system: true
       } as any, { onConflict: 'card_id,lang' } as any);

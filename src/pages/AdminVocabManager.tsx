@@ -169,38 +169,54 @@ const AdminVocabManager: React.FC = () => {
       setIsAdmin(!!data);
     };
     check();
+    
+    // Poll for translation progress every 5 seconds
     const id = setInterval(async () => {
       try {
         const { data } = await supabase.functions.invoke('vocab-bulk-status');
         if (data?.success) setProgress(data.job || {});
         
-        // If translating, also check translation progress
-        if (isTranslating) {
-          const { data: statsData } = await supabase.rpc('get_translation_stats') as any;
-          if (statsData && statsData.length > 0) {
-            const stats = statsData[0];
-            setTranslationProgress(prev => ({
-              ...prev,
-              current: stats.total_translations || 0,
-              total: 7821 * 23, // Total cards * languages
-            }));
-            
-            // Check if translation is complete
-            const totalTarget = 7821 * 23;
-            if (stats.total_translations >= totalTarget) {
-              setIsTranslating(false);
-              localStorage.removeItem('vocabTranslationActive');
-              toast({
-                title: 'Translation Complete! 🎉',
-                description: `All ${stats.total_translations} translations completed across ${stats.unique_cards} words.`,
-              });
-            }
+        // Always check translation progress (auto-show when translations are happening)
+        const { count: pendingCount } = await supabase
+          .from('vocab_translation_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+        
+        const { data: statsData } = await supabase.rpc('get_translation_stats') as any;
+        
+        if (statsData && statsData.length > 0) {
+          const stats = statsData[0];
+          const pending = pendingCount || 0;
+          
+          setTranslationProgress({
+            current: stats.total_translations || 0,
+            total: stats.total_translations + pending,
+            currentCard: '',
+            currentLang: '',
+            errors: 0
+          });
+          
+          // Auto-show modal if translations are in progress
+          if (pending > 0 && !isTranslating) {
+            setIsTranslating(true);
+            setShowProgressModal(true);
+          }
+          
+          // Auto-hide when complete
+          if (pending === 0 && isTranslating) {
+            setIsTranslating(false);
+            setShowProgressModal(false);
+            localStorage.removeItem('vocabTranslationActive');
+            toast({
+              title: 'Translation Complete! 🎉',
+              description: `All ${stats.total_translations} translations completed.`,
+            });
           }
         }
       } catch (e) {
-        // Silent poll failures to avoid user-facing errors while function deploys
+        // Silent poll failures
       }
-    }, 3000);
+    }, 5000);
     return () => clearInterval(id);
   }, [isTranslating]);
 

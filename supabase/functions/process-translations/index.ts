@@ -122,6 +122,25 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
   }
 
   console.log(`✅ Translation batch completed: ${processedCount} successful, ${errorCount} failed`);
+
+  // Check remaining jobs and chain next batch(es) so UI doesn't need to stay open
+  const { count: remaining } = await (supabase as any)
+    .from('vocab_translation_queue')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+
+  const rem = remaining || 0;
+  if (rem > 0 && processedCount > 0) {
+    // Fire-and-forget up to 3 parallel next batches
+    const parallel = Math.min(3, Math.ceil(rem / 100));
+    const kicks = Array.from({ length: parallel }).map(() =>
+      (supabase as any).functions.invoke('process-translations', { body: { reason: 'chain' } }).catch(() => null)
+    );
+    await Promise.allSettled(kicks);
+    console.log(`🔁 Chained ${parallel} next batch(es), remaining: ${rem}`);
+  } else {
+    console.log('🎉 No remaining jobs or no progress this round, stopping chain.');
+  }
 }
 
 // Enhanced translation function with rich data

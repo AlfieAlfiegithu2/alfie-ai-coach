@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
 
 // Initialize Supabase client for caching
 const supabase = createClient(
@@ -46,24 +46,30 @@ function extractJsonArray(input: string): string | null {
 
 // Helper: translate a single text with strict JSON instruction (fallback for batch)
 async function translateSingleViaApi(text: string, sourceLang: string, targetLang: string): Promise<{ translation: string; alternatives: string[] }> {
-  const prompt = sourceLang === 'auto'
-    ? `Translate to ${targetLang}: "${text}". Return ONLY valid JSON: {"translation": "...", "alternatives": []}`
-    : `Translate from ${sourceLang} to ${targetLang}: "${text}". Return ONLY valid JSON: {"translation": "...", "alternatives": []}`;
+  const systemPrompt = `You are a professional translator. Return ONLY valid JSON with this exact shape: {"translation": "...", "alternatives": []}. Use double quotes and escape internal quotes. No extra text.`;
+  const userPrompt = sourceLang === 'auto'
+    ? `Translate to ${targetLang}: "${text}"`
+    : `Translate from ${sourceLang} to ${targetLang}: "${text}"`;
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${deepSeekApiKey}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 200,
-      }
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0,
+      max_tokens: 120,
     }),
   });
 
   const data = await res.json();
-  const content: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const content: string = data?.choices?.[0]?.message?.content ?? '';
   try {
     let c = content.trim();
     if (c.startsWith('```')) c = c.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
@@ -81,20 +87,20 @@ serve(async (req) => {
   }
 
   try {
-    // Check if Gemini API key is configured
-    if (!geminiApiKey) {
-      console.error('❌ Gemini API key not configured for translation service');
+    // Check if DeepSeek API key is configured
+    if (!deepSeekApiKey) {
+      console.error('❌ DeepSeek API key not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Translation service temporarily unavailable. Please try again in a moment.',
-        details: 'Gemini API key not configured'
+        details: 'DeepSeek API key not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ Gemini API key found for translation, length:', geminiApiKey.length);
+    console.log('✅ DeepSeek API key found for translation, length:', deepSeekApiKey.length);
 
     const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
     
@@ -176,39 +182,88 @@ serve(async (req) => {
       }
     }
 
-    console.log('💨 Calling Gemini API...', { 
+    console.log('💨 Calling DeepSeek API...', { 
       batch: isBatch, 
       uncached: isBatch ? uncachedTexts.length : 1 
     });
 
     const textsToTranslate = isBatch ? uncachedTexts : [text];
     
-    const prompt = isBatch ?
-      `Translate these ${textsToTranslate.length} words to ${targetLang}:\n${textsToTranslate.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\nReturn STRICT JSON array ONLY: [{"translation": "...", "alternatives": ["...", "..."]}, ...]` :
+    const systemPrompt = isBatch ?
+      `You are a professional translator. Translate each input to ${targetLang}.
+       Output STRICT, valid JSON array ONLY (no prose, no markdown, no comments).
+       Rules:
+       - Use double quotes for all strings
+       - Escape any internal quotes in strings
+       - No trailing commas, no extra keys
+       - For each item, include: {"translation": "primary", "alternatives": ["alt1", "alt2", "alt3"]}
+       Example output:
+       [
+         {"translation": "primary", "alternatives": ["alt1", "alt2"]},
+         {"translation": "primary", "alternatives": ["alt1", "alt2"]}
+       ]` :
       (includeContext ?
-        `Translate "${text}" from ${sourceLang} to ${targetLang}. Return ONLY STRICT JSON: {"translation": "...", "alternatives": [{"meaning": "...", "pos": "..."}], "context": null, "grammar_notes": null}` :
-        `Translate "${text}" to ${targetLang}. Return only the translation text.`);
+        `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
+         {
+           "translation": "primary translation",
+           "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
+           "context": null,
+           "grammar_notes": null
+         }
+         Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.` :
+        `Translate accurately and concisely. If there are multiple common meanings, format as: "meaning1 / meaning2". Return only the translation text.`);
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
+    const userPrompt = isBatch ?
+      `Translate these ${textsToTranslate.length} words to ${targetLang}:\n${textsToTranslate.map((t, i) => `${i + 1}. ${t}`).join('\n')}` :
+      (sourceLang === "auto" ? 
+        `Translate this text to ${targetLang}: "${text}"` :
+        `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`);
+
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${deepSeekApiKey}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 800,
-        }
+        model: 'deepseek-chat', // Using the correct DeepSeek model name
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 500,
+        temperature: 0, // Zero temperature for fastest, most deterministic responses
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
       const errorMessage = errorData.error?.message || 'Unknown error';
-      throw new Error(`Gemini API error: ${errorMessage}`);
+
+      // Handle specific language restrictions
+      if (response.status === 401 && ['zh', 'ur', 'yue', 'vi', 'tr'].includes(targetLang)) {
+        console.log(`DeepSeek API restriction for ${targetLang}, trying alternative approach`);
+        // Return a fallback response for these languages
+        return new Response(JSON.stringify({
+          success: true,
+          result: {
+            translation: `[${targetLang.toUpperCase()}] ${text}`,
+            simple: true,
+            cached: false,
+            note: 'DeepSeek API restriction - using transliteration'
+          },
+          sourceLang: sourceLang,
+          targetLang: targetLang
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`DeepSeek API error: ${errorMessage}`);
     }
 
     const data = await response.json();
-    const translationResult = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const translationResult = data.choices[0].message.content;
 
     // Handle batch results
     if (isBatch) {

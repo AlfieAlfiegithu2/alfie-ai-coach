@@ -130,6 +130,10 @@ verify_jwt = true
 [functions.vocab-translate-runner]
 verify_jwt = false
 
+# Queue translation jobs with service role
+[functions.vocab-queue-translations]
+verify_jwt = false
+
 # R2 file upload function
 [functions.r2-upload]
 verify_jwt = false

@@ -133,20 +133,28 @@ const AdminVocabManager: React.FC = () => {
     load();
     loadCounts();
 
-    // Auto-queue and start translation processing in background once
+    // Auto-queue and start translation processing in background
     (async () => {
       try {
+        // If there are pending jobs, always kick the runner again
+        const { count: pending } = await (supabase as any)
+          .from('vocab_translation_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
         const already = localStorage.getItem('vocabRunnerStarted');
-        if (!already) {
-          // Queue translation jobs (service role handles RLS)
-          const { data: qData, error: qErr } = await supabase.functions.invoke('vocab-queue-translations', { body: {} });
-          if (qErr || !qData?.success) {
-            console.warn('Queue start failed', qErr || qData);
-          }
-          // Kick off background processing (function will self-chain until done)
+        if ((pending && pending > 0)) {
+          await supabase.functions.invoke('process-translations', { body: { reason: 'resume-pending' } });
+          setIsTranslating(true);
+          setShowProgressModal(true);
+        } else if (!already) {
+          // First time: queue + kick
+          const { data: qData } = await supabase.functions.invoke('vocab-queue-translations', { body: { onlyMissing: true } });
           await supabase.functions.invoke('process-translations', { body: { reason: 'auto-start' } });
           localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
           toast({ title: 'Auto-translation started', description: 'Processing queued translations in background.' });
+          setIsTranslating(true);
+          setShowProgressModal(true);
         }
       } catch (e) {
         // ignore start failures

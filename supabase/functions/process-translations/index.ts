@@ -130,8 +130,8 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
     .eq('status', 'pending');
 
   const rem = remaining || 0;
-  if (rem > 0 && processedCount > 0) {
-    // Fire-and-forget up to 3 parallel next batches
+  if (rem > 0) {
+    // Fire-and-forget up to 3 parallel next batches (continue even if previous batch had only failures)
     const parallel = Math.min(3, Math.ceil(rem / 100));
     const kicks = Array.from({ length: parallel }).map(() =>
       (supabase as any).functions.invoke('process-translations', { body: { reason: 'chain' } }).catch(() => null)
@@ -139,7 +139,7 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
     await Promise.allSettled(kicks);
     console.log(`🔁 Chained ${parallel} next batch(es), remaining: ${rem}`);
   } else {
-    console.log('🎉 No remaining jobs or no progress this round, stopping chain.');
+    console.log('🎉 No remaining jobs, stopping chain.');
   }
 }
 
@@ -181,7 +181,7 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
         card_id: cardId,
         lang: targetLang,
         translations: arr,
-        provider: 'deepseek',
+        provider: 'gemini',
         quality: 1,
         is_system: true
       } as any, { onConflict: 'card_id,lang' } as any);

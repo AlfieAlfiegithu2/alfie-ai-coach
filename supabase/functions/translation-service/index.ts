@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 // Initialize Supabase client for caching
 const supabase = createClient(
@@ -51,14 +51,14 @@ async function translateSingleViaApi(text: string, sourceLang: string, targetLan
     ? `Translate to ${targetLang}: "${text}"`
     : `Translate from ${sourceLang} to ${targetLang}: "${text}"`;
 
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
+  const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${deepSeekApiKey}`,
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -87,20 +87,20 @@ serve(async (req) => {
   }
 
   try {
-    // Check if DeepSeek API key is configured
-    if (!deepSeekApiKey) {
-      console.error('❌ DeepSeek API key not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
+    // Check if Lovable AI Gateway key is configured
+    if (!LOVABLE_API_KEY) {
+      console.error('❌ LOVABLE_API_KEY not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Translation service temporarily unavailable. Please try again in a moment.',
-        details: 'DeepSeek API key not configured'
+        details: 'LOVABLE_API_KEY not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ DeepSeek API key found for translation, length:', deepSeekApiKey.length);
+    console.log('✅ Lovable AI key found for translation');
 
     const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
     
@@ -219,20 +219,20 @@ serve(async (req) => {
         `Translate this text to ${targetLang}: "${text}"` :
         `Translate this text from ${sourceLang} to ${targetLang}: "${text}"`);
 
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${deepSeekApiKey}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat', // Using the correct DeepSeek model name
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         max_tokens: 500,
-        temperature: 0, // Zero temperature for fastest, most deterministic responses
+        temperature: 0,
       }),
     });
 

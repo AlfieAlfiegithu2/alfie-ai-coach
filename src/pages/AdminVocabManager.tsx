@@ -92,9 +92,15 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const loadTranslations = async () => {
+    // Only load translations for currently visible cards to avoid memory issues
+    if (rows.length === 0) return;
+    
+    const cardIds = rows.map(r => r.id);
     const { data } = await (supabase as any)
       .from('vocab_translations')
-      .select('card_id, lang, translations');
+      .select('card_id, lang, translations')
+      .in('card_id', cardIds)
+      .eq('is_system', true);
 
     const transMap: Record<string, any> = {};
     (data as any[])?.forEach((t: any) => {
@@ -118,13 +124,14 @@ const AdminVocabManager: React.FC = () => {
   const refresh = async () => {
     await load();
     await loadCounts();
+    // Load translations after cards are loaded
+    await new Promise(resolve => setTimeout(resolve, 100));
     await loadTranslations();
   };
 
   useEffect(() => {
     load();
     loadCounts();
-    loadTranslations();
 
     // Fire-and-forget background runner so admin doesn't need to click
     (async () => {
@@ -599,6 +606,7 @@ const AdminVocabManager: React.FC = () => {
           created_at,
           vocab_cards!inner(term, translation)
         `)
+        .eq('is_system', true)
         .order('created_at', { ascending: false })
         .limit(100);
 

@@ -137,3 +137,7 @@ verify_jwt = false
 # R2 file upload function
 [functions.r2-upload]
 verify_jwt = false
+
+# Public kicker to aggressively resume translations without admin
+[functions.kick-translations]
+verify_jwt = false

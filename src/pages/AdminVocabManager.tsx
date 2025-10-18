@@ -145,12 +145,15 @@ const AdminVocabManager: React.FC = () => {
         const already = localStorage.getItem('vocabRunnerStarted');
         if ((pending && pending > 0)) {
           await supabase.functions.invoke('process-translations', { body: { reason: 'resume-pending' } });
+          // Extra kick to ensure background chaining keeps going even if a previous run stalled
+          await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
           setIsTranslating(true);
           setShowProgressModal(true);
         } else if (!already) {
           // First time: queue + kick
           const { data: qData } = await supabase.functions.invoke('vocab-queue-translations', { body: { onlyMissing: true } });
           await supabase.functions.invoke('process-translations', { body: { reason: 'auto-start' } });
+          await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
           localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
           toast({ title: 'Auto-translation started', description: 'Processing queued translations in background.' });
           setIsTranslating(true);

@@ -2096,6 +2096,57 @@ export type Database = {
           },
         ]
       }
+      vocab_translation_enrichments: {
+        Row: {
+          card_id: string
+          conjugation: Json | null
+          context: string | null
+          created_at: string
+          examples_json: Json | null
+          id: string
+          ipa: string | null
+          lang: string
+          pos: string | null
+          provider: string | null
+          quality: number | null
+          synonyms_json: Json | null
+          translation: string | null
+          updated_at: string
+        }
+        Insert: {
+          card_id: string
+          conjugation?: Json | null
+          context?: string | null
+          created_at?: string
+          examples_json?: Json | null
+          id?: string
+          ipa?: string | null
+          lang: string
+          pos?: string | null
+          provider?: string | null
+          quality?: number | null
+          synonyms_json?: Json | null
+          translation?: string | null
+          updated_at?: string
+        }
+        Update: {
+          card_id?: string
+          conjugation?: Json | null
+          context?: string | null
+          created_at?: string
+          examples_json?: Json | null
+          id?: string
+          ipa?: string | null
+          lang?: string
+          pos?: string | null
+          provider?: string | null
+          quality?: number | null
+          synonyms_json?: Json | null
+          translation?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vocab_translation_queue: {
         Row: {
           card_id: string

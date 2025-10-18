@@ -206,8 +206,10 @@ serve(async (req) => {
         `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
          {
            "translation": "primary translation",
+           "pos": "noun",
+           "ipa": "ˈtɹæn.zˌleɪ.ʃən",
            "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
-           "context": null,
+           "context": "A short natural example sentence in the TARGET LANGUAGE using the primary translation.",
            "grammar_notes": null
          }
          Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.` :

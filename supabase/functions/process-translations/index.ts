@@ -191,6 +191,27 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
       return null;
     }
 
+    // Store enrichment details (POS, IPA, Context, etc.)
+    try {
+      await (supabase as any)
+        .from('vocab_translation_enrichments')
+        .upsert({
+          card_id: cardId,
+          lang: targetLang,
+          translation: primary,
+          pos: (res as any)?.pos ?? null,
+          ipa: (res as any)?.ipa ?? null,
+          context: typeof (res as any)?.context === 'string' ? (res as any).context : null,
+          examples_json: (res as any)?.examples ?? null,
+          synonyms_json: (res as any)?.synonyms ?? null,
+          conjugation: (res as any)?.conjugation ?? null,
+          provider: 'deepseek',
+          quality: 1
+        } as any, { onConflict: 'card_id,lang' } as any);
+    } catch (e) {
+      console.warn('Failed to store enrichment for', targetLang, e);
+    }
+
     console.log(`✅ Stored translation: ${term} -> ${targetLang}: ${primary}`);
     return { lang: targetLang, translation: primary };
   } catch (e) {

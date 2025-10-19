@@ -531,60 +531,45 @@ const HeroIndex = () => {
             </button>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
             {/* IELTS Card */}
-            <div className="group text-center">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
-                  <img src="/IELTS.png" alt="IELTS" className="w-full h-full object-contain" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
-                <p className="text-sm text-gray-600 font-nunito">International English Language Testing System</p>
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/IELTS.png" alt="IELTS" className="w-full h-full object-contain" />
               </div>
+              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
             </div>
 
             {/* TOEFL Card */}
-            <div className="group text-center">
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
-                  <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
-                <p className="text-sm text-gray-600 font-nunito">Test of English as a Foreign Language</p>
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
               </div>
+              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
             </div>
 
             {/* TOEIC Card */}
-            <div className="group text-center">
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
-                  <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
-                <p className="text-sm text-gray-600 font-nunito">Test of English for International Communication</p>
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
               </div>
+              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
             </div>
 
             {/* PTE Card */}
-            <div className="group text-center">
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
-                  <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
-                <p className="text-sm text-gray-600 font-nunito">Pearson Test of English Academic</p>
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
               </div>
+              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
             </div>
 
             {/* General English Card */}
-            <div className="group text-center">
-              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6 border border-indigo-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 bg-indigo-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">GE</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'general', 'title'])}</h3>
-                <p className="text-sm text-gray-600 font-nunito">Comprehensive English language skills</p>
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                <span className="text-gray-600 font-bold text-2xl">GE</span>
               </div>
+              <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
             </div>
           </div>
         </div>

@@ -57,7 +57,6 @@ const HeroIndex = () => {
     programs: {
       title: "Learning Programs",
       subtitle: "Choose your path to English mastery with our comprehensive programs.",
-      viewProgress: "View Progress",
       cards: {
         ielts: {
           title: "IELTS"
@@ -525,25 +524,21 @@ const HeroIndex = () => {
                 {getText(['programs', 'subtitle'])}
               </p>
             </div>
-            <button onClick={() => navigate('/dashboard')} className="hidden sm:inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black hover:bg-black/5 font-nunito">
-              <Map className="h-4 w-4" />
-              {getText(['programs', 'viewProgress'])}
-            </button>
           </div>
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
             {/* IELTS Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-white relative">
-                <img src="/IELTS.png" alt="IELTS" className="w-full h-full object-contain absolute inset-0" />
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/IELTS.png" alt="IELTS" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
             </div>
 
             {/* TOEFL Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-white relative">
-                <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain absolute inset-0" />
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
             </div>
@@ -551,15 +546,15 @@ const HeroIndex = () => {
             {/* TOEIC Card */}
             <div className="text-center">
               <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/REAL TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
+                <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
             </div>
 
             {/* PTE Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-white relative">
-                <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain absolute inset-0" />
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
             </div>
@@ -567,7 +562,7 @@ const HeroIndex = () => {
             {/* General English Card */}
             <div className="text-center">
               <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/REEAL GENERAL ENGLISH.png" alt="General English" className="w-full h-full object-contain" />
+                <img src="/general english.png" alt="General English" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
             </div>

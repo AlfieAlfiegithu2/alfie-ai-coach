@@ -551,7 +551,7 @@ const HeroIndex = () => {
             {/* TOEIC Card - Coming Soon */}
             <div className="text-center">
               <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
-                <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
+                <img src="/REAL TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
             </div>
@@ -567,7 +567,7 @@ const HeroIndex = () => {
             {/* General English Card - Coming Soon */}
             <div className="text-center">
               <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
-                <img src="/general english.png" alt="General English" className="w-full h-full object-contain" />
+                <img src="/REEAL GENERAL ENGLISH.png" alt="General English" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
             </div>

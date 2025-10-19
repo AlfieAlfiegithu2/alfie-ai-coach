@@ -158,13 +158,13 @@ const HeroIndex = () => {
     },
     comparison: {
       title: "Why our scoring system dominates the competition",
-      columns: ["Human tutors", "🚀 Our IELTS-calibrated AI", "Traditional self-study"],
+      columns: ["Human tutors", "Our IELTS-calibrated AI", "Traditional self-study"],
       rows: [
-        { label: "Scoring consistency", traditional: "Varies by tutor mood/fatigue", ai: "🔥 100% consistent (exam-aligned)", self: "Guesswork" },
-        { label: "Feedback accuracy", traditional: "Subjective", ai: "🎯 94% correlation with real exams", self: "No feedback" },
-        { label: "Cost per month", traditional: "$1000–$5000 for intensive tutoring", ai: "💰 $50 unlimited access", self: "Free but unreliable" },
-        { label: "Certified by examiners", traditional: "Depends", ai: "✅ Former/current IELTS examiners", self: "❌" },
-        { label: "Band descriptors used", traditional: "Tutor's interpretation", ai: "📋 Exact IELTS Band Descriptors", self: "None" }
+        { label: "Scoring consistency", traditional: "Varies by tutor mood/fatigue", ai: "100% consistent (exam-aligned)", self: "Guesswork" },
+        { label: "Feedback accuracy", traditional: "Subjective", ai: "98% correlation with real exams", self: "No feedback" },
+        { label: "Cost per month", traditional: "$1000–$5000 for intensive tutoring", ai: "$50 unlimited access", self: "Free but unreliable" },
+        { label: "Certified by examiners", traditional: "Depends", ai: "Former/current IELTS examiners", self: "No" },
+        { label: "Band descriptors used", traditional: "Tutor's interpretation", ai: "Exact IELTS Band Descriptors", self: "None" }
       ]
     },
     faq: {
@@ -174,9 +174,9 @@ const HeroIndex = () => {
           q: "Why should I trust an AI built by IELTS examiners?", 
           a: "Because it's not just AI—it's IELTS examiners' methodology in code. Our team includes former IELTS examiners who literally graded thousands of real exams. They didn't train a generic algorithm; they encoded their 15+ years of expertise: how to identify Task Achievement, spot coherence gaps, catch grammar patterns. Every scoring rule mirrors what examiners look for. You're practicing against the minds who created the test." 
         },
-        { 
-          q: "Is your AI 94% accurate because it cheats or because it's actually good?", 
-          a: "It's good because IELTS examiners built it. The 94% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence." 
+        {
+          q: "Is your AI 98% accurate because it cheats or because it's actually good?",
+          a: "It's good because IELTS examiners built it. The 98% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence."
         },
         { 
           q: "What makes your AI different from Grammarly or ChatGPT feedback?", 
@@ -550,8 +550,8 @@ const HeroIndex = () => {
 
             {/* TOEIC Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-white relative">
-                <img src="/REAL TOEIC.png" alt="TOEIC" className="w-full h-full object-contain absolute inset-0" />
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/REAL TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
             </div>
@@ -566,8 +566,8 @@ const HeroIndex = () => {
 
             {/* General English Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-white relative">
-                <img src="/REEAL GENERAL ENGLISH.png" alt="General English" className="w-full h-full object-contain absolute inset-0" />
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
+                <img src="/REEAL GENERAL ENGLISH.png" alt="General English" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
             </div>

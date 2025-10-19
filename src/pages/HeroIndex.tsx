@@ -567,7 +567,7 @@ const HeroIndex = () => {
             {/* General English Card */}
             <div className="text-center">
               <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-purple-50">
-                <img src="/rabbit.png" alt="General English" className="w-full h-full object-contain" />
+                <img src="/general english.png" alt="General English" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
             </div>

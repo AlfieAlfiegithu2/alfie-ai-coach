@@ -535,8 +535,8 @@ const HeroIndex = () => {
             {/* IELTS Card */}
             <div className="group text-center">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">I</span>
+                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
+                  <img src="/IELTS.png" alt="IELTS" className="w-full h-full object-contain" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
                 <p className="text-sm text-gray-600 font-nunito">International English Language Testing System</p>
@@ -546,8 +546,8 @@ const HeroIndex = () => {
             {/* TOEFL Card */}
             <div className="group text-center">
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">T</span>
+                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
+                  <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
                 <p className="text-sm text-gray-600 font-nunito">Test of English as a Foreign Language</p>
@@ -557,8 +557,8 @@ const HeroIndex = () => {
             {/* TOEIC Card */}
             <div className="group text-center">
               <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">T</span>
+                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
+                  <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
                 <p className="text-sm text-gray-600 font-nunito">Test of English for International Communication</p>
@@ -568,8 +568,8 @@ const HeroIndex = () => {
             {/* PTE Card */}
             <div className="group text-center">
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="w-16 h-16 mx-auto mb-4 bg-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">P</span>
+                <div className="w-16 h-16 mx-auto mb-4 overflow-hidden rounded-full bg-white flex items-center justify-center">
+                  <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
                 <p className="text-sm text-gray-600 font-nunito">Pearson Test of English Academic</p>

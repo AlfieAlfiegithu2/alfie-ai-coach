@@ -534,7 +534,7 @@ const HeroIndex = () => {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
             {/* IELTS Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-white">
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
                 <img src="/IELTS.png" alt="IELTS" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
@@ -542,32 +542,32 @@ const HeroIndex = () => {
 
             {/* TOEFL Card - Coming Soon */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-500 font-semibold text-sm">Coming Soon</span>
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+                <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
             </div>
 
             {/* TOEIC Card - Coming Soon */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-500 font-semibold text-sm">Coming Soon</span>
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+                <img src="/TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
             </div>
 
             {/* PTE Card - Coming Soon */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-500 font-semibold text-sm">Coming Soon</span>
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+                <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
             </div>
 
             {/* General English Card - Coming Soon */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-500 font-semibold text-sm">Coming Soon</span>
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+                <img src="/general english.png" alt="General English" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>
             </div>

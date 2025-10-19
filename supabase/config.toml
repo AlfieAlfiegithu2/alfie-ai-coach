@@ -52,7 +52,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.translation-service]
-verify_jwt = true
+verify_jwt = false
 
 [functions.text-to-speech]
 verify_jwt = true
@@ -130,6 +130,14 @@ verify_jwt = true
 [functions.vocab-translate-runner]
 verify_jwt = false
 
+# Queue translation jobs with service role
+[functions.vocab-queue-translations]
+verify_jwt = false
+
 # R2 file upload function
 [functions.r2-upload]
+verify_jwt = false
+
+# Public kicker to aggressively resume translations without admin
+[functions.kick-translations]
 verify_jwt = false

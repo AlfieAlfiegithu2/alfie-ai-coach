@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 
 // Initialize Supabase client for caching
 const supabase = createClient(
@@ -54,7 +54,7 @@ async function translateSingleViaApi(text: string, sourceLang: string, targetLan
   const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${deepSeekApiKey}`,
+      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -88,19 +88,19 @@ serve(async (req) => {
 
   try {
     // Check if DeepSeek API key is configured
-    if (!deepSeekApiKey) {
-      console.error('❌ DeepSeek API key not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
+    if (!DEEPSEEK_API_KEY) {
+      console.error('❌ DEEPSEEK_API_KEY not configured for translation service. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Translation service temporarily unavailable. Please try again in a moment.',
-        details: 'DeepSeek API key not configured'
+        details: 'DEEPSEEK_API_KEY not configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ DeepSeek API key found for translation, length:', deepSeekApiKey.length);
+    console.log('✅ DeepSeek key found for translation');
 
     const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
     
@@ -206,8 +206,10 @@ serve(async (req) => {
         `You are a professional translator. Return ONLY STRICT JSON with this exact shape:
          {
            "translation": "primary translation",
+           "pos": "noun",
+           "ipa": "ˈtɹæn.zˌleɪ.ʃən",
            "alternatives": [{"meaning": "alt1", "pos": "noun"}, {"meaning": "alt2", "pos": "verb"}],
-           "context": null,
+           "context": "A short natural example sentence in the TARGET LANGUAGE using the primary translation.",
            "grammar_notes": null
          }
          Rules: Use double quotes, escape internal quotes, no trailing commas, no extra text.` :
@@ -222,17 +224,17 @@ serve(async (req) => {
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${deepSeekApiKey}`,
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat', // Using the correct DeepSeek model name
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         max_tokens: 500,
-        temperature: 0, // Zero temperature for fastest, most deterministic responses
+        temperature: 0,
       }),
     });
 
@@ -298,14 +300,14 @@ serve(async (req) => {
             try {
               await supabase
                 .from('translation_cache')
-                .insert({
+                .upsert({
                   word: currentText.toLowerCase().trim(),
                   source_lang: sourceLang,
                   target_lang: targetLang,
                   translation,
                   hit_count: 1,
                   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                });
+                }, { onConflict: 'word,source_lang,target_lang' });
             } catch (_) {}
 
               }
@@ -326,14 +328,14 @@ serve(async (req) => {
             try {
               await supabase
                 .from('translation_cache')
-                .insert({
+                .upsert({
                   word: currentText.toLowerCase().trim(),
                   source_lang: sourceLang,
                   target_lang: targetLang,
                   translation: batchResult.translation,
                   hit_count: 1,
                   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                });
+                }, { onConflict: 'word,source_lang,target_lang' });
             } catch (_) {}
 
             }
@@ -463,14 +465,14 @@ serve(async (req) => {
 
         await supabase
           .from('translation_cache')
-          .insert({
+          .upsert({
             word: text.toLowerCase().trim(),
             source_lang: sourceLang,
             target_lang: targetLang,  
             translation: translationText,
             hit_count: 1,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          });
+          }, { onConflict: 'word,source_lang,target_lang' });
         
         console.log('💾 Translation cached successfully');
       } catch (cacheError) {

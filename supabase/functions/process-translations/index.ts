@@ -122,6 +122,25 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
   }
 
   console.log(`✅ Translation batch completed: ${processedCount} successful, ${errorCount} failed`);
+
+  // Check remaining jobs and chain next batch(es) so UI doesn't need to stay open
+  const { count: remaining } = await (supabase as any)
+    .from('vocab_translation_queue')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+
+  const rem = remaining || 0;
+  if (rem > 0) {
+    // Fire-and-forget up to 3 parallel next batches (continue even if previous batch had only failures)
+    const parallel = Math.min(3, Math.ceil(rem / 100));
+    const kicks = Array.from({ length: parallel }).map(() =>
+      (supabase as any).functions.invoke('process-translations', { body: { reason: 'chain' } }).catch(() => null)
+    );
+    await Promise.allSettled(kicks);
+    console.log(`🔁 Chained ${parallel} next batch(es), remaining: ${rem}`);
+  } else {
+    console.log('🎉 No remaining jobs, stopping chain.');
+  }
 }
 
 // Enhanced translation function with rich data
@@ -170,6 +189,27 @@ async function translateSingleWord(cardId: string, term: string, targetLang: str
     if (upsertError) {
       console.error(`Failed to store translation for ${targetLang}:`, upsertError);
       return null;
+    }
+
+    // Store enrichment details (POS, IPA, Context, etc.)
+    try {
+      await (supabase as any)
+        .from('vocab_translation_enrichments')
+        .upsert({
+          card_id: cardId,
+          lang: targetLang,
+          translation: primary,
+          pos: (res as any)?.pos ?? null,
+          ipa: (res as any)?.ipa ?? null,
+          context: typeof (res as any)?.context === 'string' ? (res as any).context : null,
+          examples_json: (res as any)?.examples ?? null,
+          synonyms_json: (res as any)?.synonyms ?? null,
+          conjugation: (res as any)?.conjugation ?? null,
+          provider: 'deepseek',
+          quality: 1
+        } as any, { onConflict: 'card_id,lang' } as any);
+    } catch (e) {
+      console.warn('Failed to store enrichment for', targetLang, e);
     }
 
     console.log(`✅ Stored translation: ${term} -> ${targetLang}: ${primary}`);

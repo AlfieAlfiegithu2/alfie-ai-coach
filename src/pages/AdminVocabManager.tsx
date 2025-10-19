@@ -92,9 +92,15 @@ const AdminVocabManager: React.FC = () => {
   };
 
   const loadTranslations = async () => {
+    // Only load translations for currently visible cards to avoid memory issues
+    if (rows.length === 0) return;
+    
+    const cardIds = rows.map(r => r.id);
     const { data } = await (supabase as any)
       .from('vocab_translations')
-      .select('card_id, lang, translations');
+      .select('card_id, lang, translations')
+      .in('card_id', cardIds)
+      .eq('is_system', true);
 
     const transMap: Record<string, any> = {};
     (data as any[])?.forEach((t: any) => {
@@ -118,22 +124,40 @@ const AdminVocabManager: React.FC = () => {
   const refresh = async () => {
     await load();
     await loadCounts();
+    // Load translations after cards are loaded
+    await new Promise(resolve => setTimeout(resolve, 100));
     await loadTranslations();
   };
 
   useEffect(() => {
     load();
     loadCounts();
-    loadTranslations();
 
-    // Fire-and-forget background runner so admin doesn't need to click
+    // Auto-queue and start translation processing in background
     (async () => {
       try {
+        // If there are pending jobs, always kick the runner again
+        const { count: pending } = await (supabase as any)
+          .from('vocab_translation_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
         const already = localStorage.getItem('vocabRunnerStarted');
-        if (!already) {
-          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 150 } });
+        if ((pending && pending > 0)) {
+          await supabase.functions.invoke('process-translations', { body: { reason: 'resume-pending' } });
+          // Extra kick to ensure background chaining keeps going even if a previous run stalled
+          await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
+          setIsTranslating(true);
+          setShowProgressModal(true);
+        } else if (!already) {
+          // First time: queue + kick
+          const { data: qData } = await supabase.functions.invoke('vocab-queue-translations', { body: { onlyMissing: true } });
+          await supabase.functions.invoke('process-translations', { body: { reason: 'auto-start' } });
+          await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
           localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
-          toast({ title: 'Auto-translation started', description: 'Translating all words in background.' });
+          toast({ title: 'Auto-translation started', description: 'Processing queued translations in background.' });
+          setIsTranslating(true);
+          setShowProgressModal(true);
         }
       } catch (e) {
         // ignore start failures
@@ -599,6 +623,7 @@ const AdminVocabManager: React.FC = () => {
           created_at,
           vocab_cards!inner(term, translation)
         `)
+        .eq('is_system', true)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -726,72 +751,43 @@ const AdminVocabManager: React.FC = () => {
 
             setSeeding(true);
             try {
-              // Step 1: Create translation jobs
-              const { data: cards } = await supabase
-                .from('vocab_cards')
-                .select('id, term')
-                .eq('is_public', true)
-                .eq('language', 'en');
-
-              if (!cards || cards.length === 0) {
-                alert('No cards found to translate');
-                return;
-              }
-
               const SUPPORTED_LANGS = ['ar','bn','de','es','fa','fr','hi','id','ja','kk','ko','ms','ne','pt','ru','ta','th','tr','ur','vi','yue','zh','zh-TW'];
               
-              // Get user_id ONCE before the loop
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user?.id) {
-                alert('❌ Not logged in! Please log in first.');
+              // Queue translation jobs securely via edge function (service role)
+              const { data: queueData, error: queueError } = await supabase.functions.invoke('vocab-queue-translations', {
+                body: { languages: SUPPORTED_LANGS }
+              });
+
+              if (queueError || !queueData?.success) {
+                console.error('❌ Failed to queue translation jobs', queueError || queueData);
+                alert(queueData?.error || queueError?.message || 'Failed to queue translation jobs');
                 return;
               }
-              
-              console.log(`👤 User ID: ${user.id}`);
-              
-              // FORCE RETRANSLATION - Create jobs for ALL words
-              console.log('🔄 Creating fresh translation jobs for ALL words...');
-              
-              const jobs = [];
-              for (const card of cards) {
-                for (const lang of SUPPORTED_LANGS) {
-                  jobs.push({
-                    user_id: user.id,
-                    card_id: card.id,
-                    term: card.term,
-                    target_lang: lang,
-                    status: 'pending',
-                    created_at: new Date().toISOString()
-                  });
-                }
-              }
 
-              // Insert jobs in batches
-              let inserted = 0;
-              console.log(`📝 Creating ${jobs.length} translation jobs...`);
-              for (let i = 0; i < jobs.length; i += 1000) {
-                const chunk = jobs.slice(i, i + 1000);
-                const { error, data } = await supabase.from('vocab_translation_queue').insert(chunk);
-                if (error) {
-                  console.error(`❌ Error inserting jobs batch ${i}:`, error);
-                } else {
-                  inserted += chunk.length;
-                  console.log(`✅ Inserted batch ${i}: ${chunk.length} jobs`);
-                }
-              }
+              console.log(`📝 Queued jobs via edge function:`, queueData);
 
-              console.log(`📊 Total jobs created: ${inserted}/${jobs.length}`);
-              alert(`✅ Created ${inserted} translation jobs!\n\nNow processing translations...`);
+              // Check how many jobs are actually pending
+              const { count: pendingCount } = await supabase
+                .from('vocab_translation_queue')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'pending');
+              
+              const actualPendingJobs = pendingCount || 0;
+              
+              alert(`✅ Queued translation jobs!\n\n📊 Total pending: ${actualPendingJobs} jobs\n\n⚠️ IMPORTANT: Keep this tab open!\nTranslations will process automatically.\nDo not close or refresh the page.`);
 
               // Step 2: Process translations in batches with progress tracking
               let processed = 0;
-              const totalJobs = inserted;
+              const totalJobs = actualPendingJobs;
               let consecutiveErrors = 0;
-              const maxConsecutiveErrors = 3;
+              const maxConsecutiveErrors = 5;
+              let emptyBatchCount = 0;
+              const maxEmptyBatches = 3;
               
               console.log(`🚀 Starting translation processing: ${totalJobs} jobs`);
+              console.log(`⚠️ Keep this tab open - closing it will stop translations!`);
               
-              while (processed < totalJobs && consecutiveErrors < maxConsecutiveErrors) {
+              while (processed < totalJobs && consecutiveErrors < maxConsecutiveErrors && emptyBatchCount < maxEmptyBatches) {
                 try {
                   console.log(`🔄 Calling process-translations... (${processed}/${totalJobs})`);
                   const startTime = Date.now();
@@ -799,6 +795,15 @@ const AdminVocabManager: React.FC = () => {
                   const duration = Date.now() - startTime;
                   
                   console.log(`📦 Response (${duration}ms):`, JSON.stringify({ data, error }, null, 2));
+                  
+                  // Check remaining pending jobs
+                  const { count: remainingCount } = await supabase
+                    .from('vocab_translation_queue')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'pending');
+                  
+                  const remainingJobs = remainingCount || 0;
+                  console.log(`📊 Remaining pending jobs: ${remainingJobs}`);
                   
                   if (error) {
                     console.error(`❌ Edge Function Error:`, {
@@ -825,21 +830,41 @@ const AdminVocabManager: React.FC = () => {
                   // Reset error counter on success
                   consecutiveErrors = 0;
                   
-                  // Estimate progress (process-translations handles 100 jobs at a time)
-                  const batchSize = 100;
-                  processed = Math.min(processed + batchSize, totalJobs);
+                  // Check if batch was empty (no jobs processed)
+                  if (remainingJobs === totalJobs - processed) {
+                    emptyBatchCount++;
+                    console.log(`⚠️ Empty batch detected (${emptyBatchCount}/${maxEmptyBatches})`);
+                    if (emptyBatchCount >= maxEmptyBatches) {
+                      console.log(`✅ All jobs completed (no more pending jobs)`);
+                      processed = totalJobs;
+                      break;
+                    }
+                  } else {
+                    emptyBatchCount = 0;
+                  }
+                  
+                  // Update processed count based on remaining jobs
+                  const actualProcessed = totalJobs - remainingJobs;
+                  processed = actualProcessed;
                   
                   // Update progress
                   const progress = Math.round((processed / totalJobs) * 100);
                   console.log(`📊 Translation progress: ${progress}% (${processed}/${totalJobs})`);
                   
-                  // Update UI with progress (if you want to show it)
-                  if (processed % 1000 === 0 || processed === totalJobs) {
-                    console.log(`✅ Processed ${processed} translations so far...`);
+                  // Update UI with progress
+                  if (processed % 500 === 0 || processed === totalJobs || remainingJobs === 0) {
+                    console.log(`✅ Processed ${processed}/${totalJobs} translations (${remainingJobs} remaining)`);
+                  }
+                  
+                  // Exit if no jobs remaining
+                  if (remainingJobs === 0) {
+                    console.log(`🎉 All translations completed!`);
+                    processed = totalJobs;
+                    break;
                   }
                   
                   // Small delay to avoid overwhelming the system
-                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  await new Promise(resolve => setTimeout(resolve, 1000));
                   
                 } catch (batchError) {
                   console.error('Batch processing error:', batchError);
@@ -855,10 +880,24 @@ const AdminVocabManager: React.FC = () => {
                 }
               }
 
-              if (processed >= totalJobs) {
-                alert(`🎉 Translation completed successfully!\n\n✅ Processed: ${processed} translations\n🌍 Languages: 22\n📚 Words: ${cards.length}\n\nAll translations are now available!`);
+              // Final check for remaining jobs
+              const { count: finalPendingCount } = await supabase
+                .from('vocab_translation_queue')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'pending');
+              
+              const finalRemaining = finalPendingCount || 0;
+              
+              if (finalRemaining === 0 || processed >= totalJobs) {
+                alert(`🎉 Translation completed successfully!\n\n✅ Processed: ${processed} translations\n🌍 Languages: 23\n✅ No pending jobs remaining\n\nAll translations are now available!`);
               } else {
-                alert(`⚠️ Translation partially completed.\n\n📊 Processed: ${processed}/${totalJobs} translations\n\nYou can click the button again to continue from where it left off.`);
+                const { count: stillPendingCount } = await supabase
+                  .from('vocab_translation_queue')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('status', 'pending');
+                
+                const stillPending = stillPendingCount || 0;
+                alert(`⚠️ Translation incomplete\n\n✅ Processed: ${processed}/${totalJobs}\n⏸️ Still pending: ${stillPending} jobs\n\n${consecutiveErrors >= maxConsecutiveErrors ? '❌ Stopped due to errors' : '⏸️ Processing paused'}\n\nClick "🌍 Translate All" again to resume.`);
               }
               loadTranslations();
               refresh();

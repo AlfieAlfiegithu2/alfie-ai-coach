@@ -49,14 +49,18 @@ const IELTSSkillTests = () => {
       let testsData = [];
 
       // Fetch from tests table - using new database structure
+      console.log(`Loading IELTS ${skillName} tests...`);
       const { data, error } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
         .eq('module', skillName)
-        .order('test_number', { ascending: true });
+        .order('test_name', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading skill tests:', error);
+        throw error;
+      }
       testsData = data || [];
 
       // For writing tests, also get question count to show task info
@@ -185,8 +189,8 @@ const IELTSSkillTests = () => {
               {tests.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   {tests.map((test) => {
-                    // Create a display name from module and test number (e.g., "Speaking Test 1")
-                    const displayName = `${skillName} Test ${test.test_number}`;
+                    // Use test_name directly as display name
+                    const displayName = test.test_name;
                     const result = userResults[displayName] || userResults[test.test_name];
                     const hasResult = !!result;
                     const band = hasResult ? percentageToIELTSBand(result.score_percentage) : null;

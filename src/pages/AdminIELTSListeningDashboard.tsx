@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -137,11 +138,7 @@ const AdminIELTSListeningDashboard = () => {
         .insert({
           test_name: newTestName,
           test_type: 'IELTS',
-          module: 'Listening',
-          test_number: nextNumber,
-          status: 'incomplete',
-          parts_completed: 0,
-          total_questions: 0
+          module: 'Listening'
         })
         .select()
         .single();

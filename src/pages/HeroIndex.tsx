@@ -540,33 +540,33 @@ const HeroIndex = () => {
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
             </div>
 
-            {/* TOEFL Card - Coming Soon */}
+            {/* TOEFL Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
                 <img src="/Generated Image October 19, 2025 - 11_14PM.png" alt="TOEFL" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
             </div>
 
-            {/* TOEIC Card - Coming Soon */}
+            {/* TOEIC Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
                 <img src="/REAL TOEIC.png" alt="TOEIC" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
             </div>
 
-            {/* PTE Card - Coming Soon */}
+            {/* PTE Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
                 <img src="/PTE.png" alt="PTE" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
             </div>
 
-            {/* General English Card - Coming Soon */}
+            {/* General English Card */}
             <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg opacity-60">
+              <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
                 <img src="/REEAL GENERAL ENGLISH.png" alt="General English" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'general', 'title'])}</h3>

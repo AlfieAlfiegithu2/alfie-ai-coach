@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Calendar, Menu, X, Hand, Compass, Baby, GraduationCap, Shield, HeartHandshake, Rainbow, Puzzle, Rocket, Check, MessageCircle, DoorOpen, MapPin, Send, Mail, Instagram, Facebook, Twitter, Map, ArrowRight, BookOpen, Headphones, PenTool, Mic, Volume2, FileText, Target, Star, Brain, Trophy, Languages, TrendingUp } from "lucide-react";
+import { Phone, Calendar, Menu, X, Hand, Compass, Baby, GraduationCap, Shield, HeartHandshake, Rainbow, Puzzle, Rocket, Check, MessageCircle, DoorOpen, MapPin, Send, Mail, Instagram, Facebook, Twitter, Map, ArrowRight, BookOpen, Headphones, PenTool, Mic, Volume2, FileText, Target, Star, Brain, Trophy, Languages, TrendingUp, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,8 @@ import LanguageSelector from "@/components/LanguageSelector";
 import LanguageWelcomeBanner from "@/components/LanguageWelcomeBanner";
 import { usePageTranslation, PageContent } from "@/hooks/usePageTranslation";
 import { PricingCard } from "@/components/PricingCard";
+import SkillsProgressChart from "@/components/SkillsProgressChart";
+import { motion } from "framer-motion";
 const HeroIndex = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -58,22 +60,19 @@ const HeroIndex = () => {
       viewProgress: "View Progress",
       cards: {
         ielts: {
-          badge: "All levels",
-          title: "IELTS Mastery",
-          description: "Complete IELTS preparation with AI feedback",
-          learnMore: "Learn More"
+          title: "IELTS"
+        },
+        toefl: {
+          title: "TOEFL"
+        },
+        toeic: {
+          title: "TOEIC"
+        },
+        pte: {
+          title: "PTE"
         },
         general: {
-          badge: "Beginner to Advanced",
-          title: "General English",
-          description: "Build confident everyday English skills",
-          learnMore: "Learn More"
-        },
-        speaking: {
-          badge: "All levels",
-          title: "Speaking Practice",
-          description: "AI-powered pronunciation and fluency training",
-          learnMore: "Learn More"
+          title: "General English"
         }
       }
     },
@@ -153,6 +152,41 @@ const HeroIndex = () => {
     testimonials: {
       title: "Student Success Stories",
       subtitle: "Real achievements from learners who trusted our platform."
+    },
+    experts: {
+      line: "Created by TESOL‑certified experts and former/current IELTS examiners."
+    },
+    comparison: {
+      title: "Why our scoring system dominates the competition",
+      columns: ["Human tutors", "🚀 Our IELTS-calibrated AI", "Traditional self-study"],
+      rows: [
+        { label: "Scoring consistency", traditional: "Varies by tutor mood/fatigue", ai: "🔥 100% consistent (exam-aligned)", self: "Guesswork" },
+        { label: "Feedback accuracy", traditional: "Subjective", ai: "🎯 94% correlation with real exams", self: "No feedback" },
+        { label: "Cost per month", traditional: "$1000–$5000 for intensive tutoring", ai: "💰 $50 unlimited access", self: "Free but unreliable" },
+        { label: "Certified by examiners", traditional: "Depends", ai: "✅ Former/current IELTS examiners", self: "❌" },
+        { label: "Band descriptors used", traditional: "Tutor's interpretation", ai: "📋 Exact IELTS Band Descriptors", self: "None" }
+      ]
+    },
+    faq: {
+      title: "How our expert-validated scoring works",
+      items: [
+        { 
+          q: "Why should I trust an AI built by IELTS examiners?", 
+          a: "Because it's not just AI—it's IELTS examiners' methodology in code. Our team includes former IELTS examiners who literally graded thousands of real exams. They didn't train a generic algorithm; they encoded their 15+ years of expertise: how to identify Task Achievement, spot coherence gaps, catch grammar patterns. Every scoring rule mirrors what examiners look for. You're practicing against the minds who created the test." 
+        },
+        { 
+          q: "Is your AI 94% accurate because it cheats or because it's actually good?", 
+          a: "It's good because IELTS examiners built it. The 94% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence." 
+        },
+        { 
+          q: "What makes your AI different from Grammarly or ChatGPT feedback?", 
+          a: "Grammarly flags grammar; ChatGPT generates. We *score*—like an examiner. Grammarly says 'comma needed.' We say 'You scored 6.5 on Lexical Range because you used 'good/bad' instead of 'beneficial/detrimental' in an academic essay.' ChatGPT rewords sentences. We explain your band score and exactly how to hit 7.0. Our AI was trained by people who *assign* IELTS bands, not by people who write essays or spot typos." 
+        },
+        { 
+          q: "Can an AI truly replace an examiner for practice?", 
+          a: "For practice? Yes—better than most tutors, actually. Why? Consistency. A tutor marks 20 essays and gets tired; scores drift. Our AI marks 1,000 essays with identical standards. A tutor marks an essay 7.0 on one day, 6.5 on another. Our AI always applies the same rubric. For *feedback quality*, you get the rubric instantly + explanations. For *reliability*, an examiner-built system beats subjective humans. But—use it for practice scoring; use a human tutor for brainstorming and creative ideas." 
+        },
+      ]
     },
     cta: {
       badge: "Start Your English Journey",
@@ -315,22 +349,6 @@ const HeroIndex = () => {
     description: getText(['features', 'list', 'community', 'description']),
     icon: Star
   }];
-  const testimonials = [{
-    name: "Sarah Chen",
-    role: "IELTS Student",
-    quote: "The AI feedback helped me improve from 6.5 to 8.0 in just 3 months. Incredible platform!",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-  }, {
-    name: "Ahmed Hassan",
-    role: "Professional English Learner",
-    quote: "Real-time feedback and community support made all the difference in my learning journey.",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-  }, {
-    name: "Maria Rodriguez",
-    role: "General English Student",
-    quote: "The personalized study plans are amazing. I finally feel confident speaking English.",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
-  }];
   return <div className="min-h-screen antialiased text-black bg-neutral-50" style={{
     fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'"
   }}>
@@ -371,7 +389,7 @@ const HeroIndex = () => {
                     </button>
                     <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                       <Calendar className="h-4 w-4" />
-                      {user ? t('header.continueLearning', { defaultValue: 'Continue Learning' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
+                      {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
                     </button>
                   </>
                 ) : (
@@ -400,7 +418,7 @@ const HeroIndex = () => {
                         </button>
                         <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                           <Calendar className="h-4 w-4" />
-                          {user ? t('header.continueLearning', { defaultValue: 'Continue' }) : t('header.startFree', { defaultValue: 'Start Free' })}
+                          {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
                         </button>
                       </>
                     ) : (
@@ -513,69 +531,61 @@ const HeroIndex = () => {
             </button>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-8">
-            {/* IELTS Mastery Card */}
-            <article className="group overflow-hidden bg-black/5 border-black/10 border rounded-2xl shadow-xl backdrop-blur-none">
-              <div className="relative overflow-hidden">
-                <div className="h-48 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center transition duration-500 group-hover:scale-[1.03]">
-                  <Trophy className="w-16 h-16 text-black/60" />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
+            {/* IELTS Card */}
+            <div className="group text-center">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div className="w-16 h-16 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">I</span>
                 </div>
+                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
+                <p className="text-sm text-gray-600 font-nunito">International English Language Testing System</p>
               </div>
-              <div className="pt-6 pr-6 pb-6 pl-6">
-                <div className="inline-flex text-[11px] font-medium text-black/80 border-black/10 border rounded-full pt-1 pr-2.5 pb-1 pl-2.5 gap-x-2 gap-y-2 items-center font-nunito">
-                  {getText(['programs', 'cards', 'ielts', 'badge'])}
-                  <Star className="h-3.5 w-3.5" />
+            </div>
+
+            {/* TOEFL Card */}
+            <div className="group text-center">
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">T</span>
                 </div>
-                <h3 className="text-xl font-semibold tracking-tight font-nunito mt-3">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
-                <p className="text-sm text-black/70 mt-2 font-nunito">{getText(['programs', 'cards', 'ielts', 'description'])}</p>
-                <button onClick={() => navigate('/ielts-portal')} className="inline-flex items-center gap-2 hover:text-black text-sm font-medium text-black/80 mt-4 font-nunito">
-                  {getText(['programs', 'cards', 'ielts', 'learnMore'])}
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                </button>
+                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'toefl', 'title'])}</h3>
+                <p className="text-sm text-gray-600 font-nunito">Test of English as a Foreign Language</p>
               </div>
-            </article>
+            </div>
+
+            {/* TOEIC Card */}
+            <div className="group text-center">
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div className="w-16 h-16 mx-auto mb-4 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">T</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'toeic', 'title'])}</h3>
+                <p className="text-sm text-gray-600 font-nunito">Test of English for International Communication</p>
+              </div>
+            </div>
+
+            {/* PTE Card */}
+            <div className="group text-center">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div className="w-16 h-16 mx-auto mb-4 bg-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">P</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'pte', 'title'])}</h3>
+                <p className="text-sm text-gray-600 font-nunito">Pearson Test of English Academic</p>
+              </div>
+            </div>
 
             {/* General English Card */}
-            <article className="group overflow-hidden bg-black/5 border-black/10 border rounded-2xl shadow-xl backdrop-blur-none">
-              <div className="relative overflow-hidden">
-                <div className="h-48 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center transition duration-500 group-hover:scale-[1.03]">
-                  <Languages className="w-16 h-16 text-black/60" />
+            <div className="group text-center">
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6 border border-indigo-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div className="w-16 h-16 mx-auto mb-4 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">GE</span>
                 </div>
+                <h3 className="text-lg font-semibold text-gray-800 font-nunito mb-2">{getText(['programs', 'cards', 'general', 'title'])}</h3>
+                <p className="text-sm text-gray-600 font-nunito">Comprehensive English language skills</p>
               </div>
-              <div className="pt-6 pr-6 pb-6 pl-6">
-                <div className="inline-flex text-[11px] font-medium text-black/80 border-black/10 border rounded-full pt-1 pr-2.5 pb-1 pl-2.5 gap-x-2 gap-y-2 items-center font-nunito">
-                  {getText(['programs', 'cards', 'general', 'badge'])}
-                  <Star className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-xl font-semibold tracking-tight font-nunito mt-3">{getText(['programs', 'cards', 'general', 'title'])}</h3>
-                <p className="text-sm text-black/70 mt-2 font-nunito">{getText(['programs', 'cards', 'general', 'description'])}</p>
-                <button onClick={() => navigate('/general-portal')} className="inline-flex items-center gap-2 hover:text-black text-sm font-medium text-black/80 mt-4 font-nunito">
-                  {getText(['programs', 'cards', 'general', 'learnMore'])}
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                </button>
-              </div>
-            </article>
-
-            {/* Speaking Practice Card */}
-            <article className="group overflow-hidden bg-black/5 border-black/10 border rounded-2xl shadow-xl backdrop-blur-none">
-              <div className="relative overflow-hidden">
-                <div className="h-48 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center transition duration-500 group-hover:scale-[1.03]">
-                  <Mic className="w-16 h-16 text-black/60" />
-                </div>
-              </div>
-              <div className="pt-6 pr-6 pb-6 pl-6">
-                <div className="inline-flex text-[11px] font-medium text-black/80 border-black/10 border rounded-full pt-1 pr-2.5 pb-1 pl-2.5 gap-x-2 gap-y-2 items-center font-nunito">
-                  {getText(['programs', 'cards', 'speaking', 'badge'])}
-                  <Star className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-xl font-semibold tracking-tight font-nunito mt-3">{getText(['programs', 'cards', 'speaking', 'title'])}</h3>
-                <p className="text-sm text-black/70 mt-2 font-nunito">{getText(['programs', 'cards', 'speaking', 'description'])}</p>
-                <button onClick={() => navigate('/speaking')} className="inline-flex items-center gap-2 hover:text-black text-sm font-medium text-black/80 mt-4 font-nunito">
-                  {getText(['programs', 'cards', 'speaking', 'learnMore'])}
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                </button>
-              </div>
-            </article>
+            </div>
           </div>
         </div>
       </section>
@@ -638,6 +648,110 @@ const HeroIndex = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Improvement Chart Section */}
+      <section className="sm:py-20 pt-16 pb-16" id="improvement">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
+              Track Your English Progress
+            </h2>
+            <p className="mt-2 text-sm text-black/70 font-nunito max-w-2xl mx-auto">
+              Click on any skill below to see your personalized improvement journey • Based on 5,683 active students achieving their goals in just 4.6 months average
+            </p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <SkillsProgressChart />
+          </div>
+          {/* Expert trust line */}
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center rounded-full border px-4 py-2 text-[12px] font-medium border-black/10 bg-black/5 text-black/80 font-nunito">
+              {getText(['experts', 'line'])}
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* Comparison Section */}
+      <section className="sm:py-16 pt-10 pb-10" id="comparison">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
+            {getText(['comparison', 'title'])}
+          </h2>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mt-8 overflow-x-auto rounded-2xl border border-black/10 bg-white shadow-lg"
+          >
+            <table className="w-full text-sm font-nunito">
+              <thead className="bg-black/5">
+                <tr>
+                  <th className="text-left px-4 py-3 text-black/70 font-semibold">&nbsp;</th>
+                  {getArray(['comparison', 'columns']).map((col: string, i: number) => (
+                    <th key={i} className="text-left px-4 py-3 text-black font-semibold">{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {getArray(['comparison', 'rows']).map((row: any, rIdx: number) => (
+                  <motion.tr 
+                    key={rIdx} 
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: rIdx * 0.05 }}
+                    className="border-t border-black/10 hover:bg-blue-50/50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-black/70 font-medium">{row.label}</td>
+                    <td className="px-4 py-3 text-black/60">{row.traditional}</td>
+                    <td className="px-4 py-3 font-semibold text-black bg-green-50/30">{row.ai}</td>
+                    <td className="px-4 py-3 text-black/60">{row.self}</td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </motion.div>
+        </div>
+      </section>
+
+
+      {/* FAQ Section */}
+      <section className="sm:py-16 pt-10 pb-10" id="faq">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold text-center">
+            {getText(['faq', 'title'])}
+          </h2>
+          <div className="mt-8 space-y-3">
+            {getArray(['faq', 'items']).map((item: any, idx: number) => (
+              <motion.details
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className="group rounded-xl border border-black/10 bg-white hover:border-black/20 transition-all shadow-sm hover:shadow-md"
+              >
+                <summary className="cursor-pointer font-semibold font-nunito text-black px-5 py-4 flex items-center justify-between hover:text-black/80 transition-colors select-none">
+                  <span>{item.q}</span>
+                  <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+                </summary>
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <p className="px-5 pb-4 text-sm text-black/70 font-nunito leading-relaxed border-t border-black/5 pt-4">{item.a}</p>
+                </motion.div>
+              </motion.details>
+            ))}
           </div>
         </div>
       </section>
@@ -712,69 +826,6 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Stories / Testimonials */}
-      <section className="sm:py-20 pt-16 pb-16" id="stories">
-        <div className="sm:px-6 lg:px-8 max-w-7xl mr-auto ml-auto pr-4 pl-4">
-          <div className="flex items-end justify-between gap-6">
-            <div>
-              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">{getText(['testimonials', 'title'])}</h2>
-              <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['testimonials', 'subtitle'])}</p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {testimonials.map((testimonial, index) => <article key={index} className="rounded-2xl border p-6 border-black/10 bg-black/5">
-                <div className="flex items-center gap-3">
-                  <img className="h-10 w-10 rounded-full object-cover" src={testimonial.avatar} alt={`${testimonial.name} portrait`} />
-                  <div>
-                    <div className="text-sm font-semibold tracking-tight font-nunito">{testimonial.name}</div>
-                    <div className="text-[11px] text-black/60 font-nunito">{testimonial.role}</div>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm text-black/80 font-nunito">"{testimonial.quote}"</p>
-              </article>)}
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action */}
-      <section className="pb-20" id="contact">
-        <div className="sm:px-6 lg:px-8 max-w-7xl mr-auto ml-auto pr-4 pl-4">
-          <div className="overflow-hidden bg-zinc-50 border-black/10 border rounded-2xl shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)]">
-            <div className="grid md:grid-cols-2">
-              <div className="sm:p-10 pt-8 pr-8 pb-8 pl-8">
-                <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium backdrop-blur border-black/10 bg-black/5 text-black/80 font-nunito">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {getText(['cta', 'badge'])}
-                </div>
-                <h3 className="mt-4 text-2xl sm:text-3xl tracking-tight font-nunito font-semibold">{getText(['cta', 'title'])}</h3>
-                <p className="mt-2 text-sm text-black/70 font-nunito">{getText(['cta', 'subtitle'])}</p>
-
-                <div className="mt-6 space-y-4">
-                  <button onClick={handleAuthAction} className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                    <Send className="h-4 w-4" />
-                    {getText(['cta', 'startTrial'])}
-                  </button>
-                  <button onClick={() => navigate('/ielts-portal')} className="w-full inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                    <FileText className="h-4 w-4" />
-                    {getText(['cta', 'tryTest'])}
-                  </button>
-                </div>
-                <p className="mt-3 text-[11px] text-black/60 font-nunito">{getText(['cta', 'note'])}</p>
-              </div>
-              <div className="relative">
-                <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center min-h-[300px]">
-                  <div className="text-center">
-                    <Trophy className="w-20 h-20 mx-auto text-black/40 mb-4" />
-                    <h4 className="text-xl font-semibold text-black/80 font-nunito">{getText(['cta', 'successTitle'])}</h4>
-                    <p className="text-sm text-black/60 font-nunito mt-2">{getText(['cta', 'successSubtitle'])}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="border-black/10 border-t pt-10 pb-10">

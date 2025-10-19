@@ -411,15 +411,10 @@ const HeroIndex = () => {
                   {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
                   <div className="mt-2 flex gap-2">
                     {user ? (
-                      <>
-                        <button onClick={() => navigate('/dashboard')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                          {t('header.dashboard', { defaultValue: 'Dashboard' })}
-                        </button>
-                        <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                          <Calendar className="h-4 w-4" />
-                          {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
-                        </button>
-                      </>
+                      <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                        <Calendar className="h-4 w-4" />
+                        {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
+                      </button>
                     ) : (
                       <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                         {t('header.signIn', { defaultValue: 'Sign In' })}
@@ -570,67 +565,6 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="sm:py-20 pt-16 pb-16" id="features">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div className="order-2 lg:order-1">
-              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
-                {getText(['features', 'title'])}
-              </h2>
-              <p className="mt-3 text-sm text-black/70 font-nunito">
-                {getText(['features', 'subtitle'])}
-              </p>
-              <ul className="mt-6 grid gap-3 text-sm">
-                {featureItems.map((feature, index) => <li key={index} className="inline-flex items-start gap-3 font-nunito">
-                    <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-md bg-black text-neutral-100">
-                      <Check className="h-3.5 w-3.5" />
-                    </span>
-                    <div>
-                      <div className="font-medium">{feature.title}</div>
-                      <div className="text-black/70">{feature.description}</div>
-                    </div>
-                  </li>)}
-              </ul>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button onClick={() => navigate('/contact')} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition border-black/10 bg-black/0 text-black hover:bg-black/5 font-nunito">
-                  <MessageCircle className="h-4 w-4" />
-                  {getText(['features', 'askQuestion'])}
-                </button>
-                <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                  <DoorOpen className="h-4 w-4" />
-                  {getText(['features', 'startLearning'])}
-                </button>
-              </div>
-            </div>
-            <div className="order-1 lg:order-2">
-              <div className="overflow-hidden bg-black/5 border-black/10 border rounded-2xl pt-2 pr-2 pb-2 pl-2 relative shadow-xl">
-                <div className="aspect-video w-full rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
-                  <div className="text-center">
-                    <Brain className="w-16 h-16 mx-auto text-black/60 mb-4" />
-                    <h3 className="text-xl font-semibold text-black font-nunito">{getText(['features', 'engineTitle'])}</h3>
-                    <p className="text-sm text-black/70 font-nunito mt-2">{getText(['features', 'engineSubtitle'])}</p>
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-3">
-                  <div className="rounded-xl border p-4 text-center border-black/10 bg-black/5">
-                    <div className="text-2xl tracking-tight font-nunito font-semibold">50K+</div>
-                    <div className="mt-1 text-[11px] text-black/60 font-nunito">{getText(['features', 'stats', 'students'])}</div>
-                  </div>
-                  <div className="rounded-xl border p-4 text-center border-black/10 bg-black/5">
-                    <div className="text-2xl tracking-tight font-nunito font-semibold">95%</div>
-                    <div className="mt-1 text-[11px] text-black/60 font-nunito">{getText(['features', 'stats', 'success'])}</div>
-                  </div>
-                  <div className="rounded-xl border p-4 text-center border-black/10 bg-black/5">
-                    <div className="text-2xl font-semibold tracking-tight font-nunito">24/7</div>
-                    <div className="mt-1 text-[11px] text-black/60 font-nunito">{getText(['features', 'stats', 'support'])}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Improvement Chart Section */}
       <section className="sm:py-20 pt-16 pb-16" id="improvement">

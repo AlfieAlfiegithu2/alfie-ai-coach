@@ -1,39 +1,22 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import StudentLayout from '@/components/StudentLayout';
-import LoadingAnimation from '@/components/animations/LoadingAnimation';
 
 const SentenceMastery = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we have a valid session from the auth hook
-    const sessionData = sessionStorage.getItem('sentence_mastery_auth');
-    
-    if (sessionData) {
-      try {
-        const context = JSON.parse(sessionData);
-        if (context?.token && context?.userId) {
-          // Redirect to the Sentence Mastery application
-          // This will be proxied to the Earthworm app via Vite proxy (/earthworm -> localhost:5174)
-          window.location.href = '/earthworm/';
-          return;
-        }
-      } catch (error) {
-        console.error('Error parsing session data:', error);
-      }
-    }
-
-    // If no valid session, redirect back to dashboard
-    navigate('/ielts-portal');
+    // Directly redirect to the proxied Earthworm app
+    // The /earthworm path is proxied to localhost:3000 (Earthworm dev server)
+    window.location.href = '/earthworm/';
   }, [navigate]);
 
   return (
-    <StudentLayout title="Sentence Mastery" showBackButton backPath="/ielts-portal">
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <LoadingAnimation size="lg" message="Loading Sentence Mastery..." />
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4">Loading Sentence Mastery...</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
       </div>
-    </StudentLayout>
+    </div>
   );
 };
 

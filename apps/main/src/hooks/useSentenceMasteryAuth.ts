@@ -14,9 +14,9 @@ export const useSentenceMasteryAuth = () => {
    */
   const navigateToSentenceMastery = useCallback(async () => {
     if (!user) {
-      // If not logged in, just redirect to Sentence Mastery
-      // Sentence Mastery will show login screen
-      window.location.href = '/sentence-mastery';
+      // If not logged in, redirect to Sentence Mastery anyway
+      // Earthworm will handle the authentication
+      window.location.href = '/earthworm/';
       return;
     }
 
@@ -36,16 +36,16 @@ export const useSentenceMasteryAuth = () => {
           expiresAt: Date.now() + 3600000, // 1 hour from now
         }));
         
-        // Redirect to Sentence Mastery
-        window.location.href = '/sentence-mastery';
+        // Redirect to the proxied Earthworm app
+        window.location.href = '/earthworm/';
       } else {
         console.error('Failed to get authentication session');
-        window.location.href = '/sentence-mastery';
+        window.location.href = '/earthworm/';
       }
     } catch (error) {
       console.error('Error navigating to Sentence Mastery:', error);
-      // Fallback: redirect anyway, let Sentence Mastery handle auth
-      window.location.href = '/sentence-mastery';
+      // Fallback: redirect anyway, let Earthworm handle auth
+      window.location.href = '/earthworm/';
     }
   }, [user]);
 

@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // Proxy Earthworm requests to Earthworm dev server
       '/earthworm': {
-        target: 'http://localhost:5174',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/earthworm/, ''),
       },

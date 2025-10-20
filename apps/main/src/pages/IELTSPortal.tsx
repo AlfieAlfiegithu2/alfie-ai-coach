@@ -7,7 +7,6 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
-import { useSentenceMasteryAuth } from '@/hooks/useSentenceMasteryAuth';
 import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 
@@ -38,7 +37,6 @@ const IELTS_SKILLS = [
 const IELTSPortal = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { navigateToSentenceMastery } = useSentenceMasteryAuth();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
@@ -349,7 +347,7 @@ const IELTSPortal = () => {
 
   const handleSkillClick = (skillSlug: string) => {
     if (skillSlug === 'sentence-mastery') {
-      navigateToSentenceMastery();
+      navigate('/sentence-mastery');
     } else {
       navigate(`/skills/${skillSlug}`);
     }

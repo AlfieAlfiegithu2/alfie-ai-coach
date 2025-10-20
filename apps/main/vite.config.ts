@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   // Production environment variables
   const isProd = mode === 'production';
   const earthwormTarget = isProd ? 'https://sentence-mastery.yourdomain.com' : 'http://localhost:3000';
-  const earthwormApiTarget = isProd ? 'https://api.sentence-mastery.yourdomain.com' : 'http://localhost:3001';
+  const earthwormApiTarget = isProd ? 'https://api.sentence-mastery.yourdomain.com' : 'http://localhost:3000';
 
   return {
     server: {

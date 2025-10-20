@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { useSentenceMasteryAuth } from "@/hooks/useSentenceMasteryAuth";
 import { Menu, X, LogOut, Settings, User, Shield, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -18,7 +17,7 @@ const Header = () => {
   const {
     admin
   } = useAdminAuth();
-  const { navigateToSentenceMastery } = useSentenceMasteryAuth();
+  const navigateToSentenceMastery = () => navigate('/earthworm');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const handleSignOut = async () => {

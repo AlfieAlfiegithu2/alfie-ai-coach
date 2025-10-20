@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "dev:main": "pnpm --filter main dev",
-    "dev:earthworm": "pnpm --filter earthworm dev:client",
+    "dev:earthworm": "pnpm --filter earthworm dev",
     "build": "pnpm -r build",
     "build:main": "pnpm --filter main build",
-    "build:earthworm": "pnpm --filter earthworm build:client",
+    "build:earthworm": "pnpm --filter earthworm build",
     "build:all": "pnpm run build:main && pnpm run build:earthworm",
     "preview": "pnpm --filter main preview",
     "preview:earthworm": "pnpm --filter earthworm preview",
@@ -20,7 +20,6 @@
     "start:production": "pm2 start ecosystem.config.js && pm2 save"
   },
   "devDependencies": {
-    "pnpm": "^8.0.0",
-    "terser": "^5.44.0"
+    "pnpm": "^8.0.0"
   }
 }

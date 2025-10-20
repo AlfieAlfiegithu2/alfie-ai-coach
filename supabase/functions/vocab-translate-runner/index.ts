@@ -59,7 +59,6 @@ serve(async (req) => {
       const { data: fallbackCards, error: fallbackErr } = await supabase
         .from('vocab_cards')
         .select('id, term, context_sentence')
-        .eq('is_public', true)
         .eq('language', 'en')
         .order('id', { ascending: true })
         .range(offset, offset + effectiveLimit - 1);

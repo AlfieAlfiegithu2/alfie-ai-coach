@@ -54,11 +54,10 @@ serve(async (req) => {
     const targetLangs = Array.isArray(body.languages) && body.languages.length ? body.languages : SUPPORTED_LANGS;
     const maxWords = typeof body.maxWords === 'number' && body.maxWords > 0 ? Math.min(body.maxWords, 20000) : undefined;
 
-    // Fetch public EN cards
+    // Fetch EN cards (public and private)
     let cardQuery = serviceClient
       .from('vocab_cards')
       .select('id, term')
-      .eq('is_public', true)
       .eq('language', 'en');
     if (maxWords) cardQuery = cardQuery.limit(maxWords);
 

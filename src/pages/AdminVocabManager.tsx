@@ -796,6 +796,9 @@ const AdminVocabManager: React.FC = () => {
               
               alert(`✅ Queued translation jobs!\n\n📊 Total pending: ${actualPendingJobs} jobs\n\n⚠️ IMPORTANT: Keep this tab open!\nTranslations will process automatically.\nDo not close or refresh the page.`);
 
+              // Also kick the direct runner to ensure progress even if queue processing stalls
+              await supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 20, languages: SUPPORTED_LANGS } });
+
               // Step 2: Process translations in batches with progress tracking
               let processed = 0;
               const totalJobs = actualPendingJobs;

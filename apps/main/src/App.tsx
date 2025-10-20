@@ -104,6 +104,7 @@ import MyWordBook from "./pages/MyWordBook";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import OnboardingAssessment from "./pages/OnboardingAssessment";
 import PlanPage from "./pages/Plan";
+import SentenceMastery from "./pages/SentenceMastery";
 
 const queryClient = new QueryClient();
 
@@ -299,6 +300,7 @@ const App = () => {
             <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />
             <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/sentence-mastery" element={<SentenceMastery />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
             <MinimalisticChatbot />

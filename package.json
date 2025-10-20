@@ -20,6 +20,7 @@
     "start:production": "pm2 start ecosystem.config.js && pm2 save"
   },
   "devDependencies": {
-    "pnpm": "^8.0.0"
+    "pnpm": "^8.0.0",
+    "terser": "^5.44.0"
   }
 }

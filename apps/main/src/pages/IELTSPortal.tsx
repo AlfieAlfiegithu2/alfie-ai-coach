@@ -7,6 +7,7 @@ import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
+import { useSentenceMasteryAuth } from '@/hooks/useSentenceMasteryAuth';
 import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 
@@ -37,6 +38,7 @@ const IELTS_SKILLS = [
 const IELTSPortal = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { navigateToSentenceMastery } = useSentenceMasteryAuth();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
@@ -345,9 +347,12 @@ const IELTSPortal = () => {
     }
   };
 
-  const handleSkillPractice = (skillId: string) => {
-    console.log(`🚀 Starting IELTS ${skillId} practice`);
-    navigate(`/ielts/${skillId}`);
+  const handleSkillClick = (skillSlug: string) => {
+    if (skillSlug === 'sentence-mastery') {
+      navigateToSentenceMastery();
+    } else {
+      navigate(`/skills/${skillSlug}`);
+    }
   };
 
   const handleTestClick = (testId: string) => {
@@ -417,7 +422,7 @@ const IELTSPortal = () => {
                   const skillImage = skillImages[index];
                   
                   return (
-                    <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillPractice(skill.id)}>
+                    <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillClick(skill.id)}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-3 mb-2">
                           <img 
@@ -472,7 +477,7 @@ const IELTSPortal = () => {
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
                   return (
-                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => navigate(`/skills/${skill.slug}`)}>
+                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillClick(skill.slug)}>
                       <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
                         <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
                         

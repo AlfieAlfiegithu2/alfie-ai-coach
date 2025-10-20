@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+import http.server
+import socketserver
+import os
+import urllib.parse
+
+class SPAHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory='dist', **kwargs)
+
+    # Add no-store caching for all resources to ensure immediate local updates
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        return super().end_headers()
+
+    def serve_index(self):
+        index_path = os.path.join('dist', 'index.html')
+        if os.path.exists(index_path):
+            try:
+                with open(index_path, 'rb') as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                # Prevent caching of the HTML shell so new builds are always loaded locally
+                self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                self.send_header('Pragma', 'no-cache')
+                self.send_header('Expires', '0')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+            except Exception:
+                pass
+        # Fallback to default behavior if any issue
+        self.path = '/index.html'
+        return super().do_GET()
+
+    def do_GET(self):
+        # Parse the URL
+        parsed_path = urllib.parse.urlparse(self.path)
+        path = parsed_path.path
+
+        # Handle OAuth callback URLs (common patterns)
+        if (path.startswith('/auth/callback') or
+            path.startswith('/api/auth/callback') or
+            'access_token' in parsed_path.query or
+            'error' in parsed_path.query):
+            # Serve index.html for OAuth callbacks with explicit HTML content type
+            return self.serve_index()
+
+        # Check if it's a request for a static file that exists
+        # Handle common static file extensions
+        static_extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp3', '.mp4', '.webm', '.ogg', '.json']
+        if any(path.endswith(ext) for ext in static_extensions):
+            file_path = path.lstrip('/')
+            if os.path.exists(os.path.join('dist', file_path)) and os.path.isfile(os.path.join('dist', file_path)):
+                # Serve the actual file
+                return super().do_GET()
+
+        # For all other routes (including /hero, /hero/, /auth, etc.), serve index.html
+        # This allows React Router to handle client-side routing with explicit HTML content type
+        return self.serve_index()
+
+if __name__ == "__main__":
+    os.chdir('.')
+    base_port = int(os.environ.get('PORT', '8080'))
+    max_tries = 15
+
+    def try_start(port: int):
+        try:
+            with socketserver.TCPServer(("", port), SPAHandler) as httpd:
+                print(f"Serving at http://localhost:{port}")
+                print("SPA mode: All routes will serve index.html for React Router")
+                print("OAuth callbacks will be handled correctly")
+                print("Static assets will be served directly from dist/")
+                httpd.serve_forever()
+        except OSError as e:
+            if "Address already in use" in str(e):
+                # Try IPv4 only
+                try:
+                    with socketserver.TCPServer(("0.0.0.0", port), SPAHandler) as httpd:
+                        print(f"Serving at http://localhost:{port}")
+                        print("SPA mode: All routes will serve index.html for React Router")
+                        print("OAuth callbacks will be handled correctly")
+                        print("Static assets will be served directly from dist/")
+                        httpd.serve_forever()
+                except OSError as e2:
+                    if "Address already in use" in str(e2):
+                        raise e2
+                    else:
+                        raise
+            else:
+                raise
+
+    for i in range(max_tries):
+        port = base_port + i
+        try:
+            try_start(port)
+            break
+        except OSError as e:
+            if "Address already in use" in str(e):
+                print(f"Port {port} is in use. Trying {port+1}...")
+                continue
+            else:
+                raise

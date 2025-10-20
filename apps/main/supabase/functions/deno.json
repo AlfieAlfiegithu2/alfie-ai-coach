@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "https://esm.sh/react@18",
+    "lib": ["deno.window"],
+    "types": [
+      "https://esm.sh/@types/node"
+    ]
+  },
+  "imports": {
+    "xhr": "https://deno.land/x/xhr@0.1.0/mod.ts"
+  }
+}
+

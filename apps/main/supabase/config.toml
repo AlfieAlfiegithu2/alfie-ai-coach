@@ -1,0 +1,143 @@
+project_id = "cuumxmfzhwljylbdlflj"
+
+[functions.analyze-speaking-suggestion]
+verify_jwt = true
+
+[functions.gemini-chat]
+verify_jwt = true
+
+[functions.content-generator-gemini]
+verify_jwt = true
+
+[functions.elevenlabs-voice]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.create-alipay-checkout]
+verify_jwt = true
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.admin-auth]
+verify_jwt = false
+
+[functions.admin-content]
+verify_jwt = false
+
+[functions.speech-analysis]
+verify_jwt = true
+
+[functions.writing-feedback]
+verify_jwt = false
+
+[functions.openai-chat]
+verify_jwt = true
+
+[functions.ielts-writing-examiner]
+verify_jwt = false
+
+[functions.openai-test]
+verify_jwt = false
+
+[functions.daily-challenge-generator]
+verify_jwt = false
+
+[functions.content-generator]
+verify_jwt = true
+
+[functions.translation-service]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = true
+
+[functions.audio-cache]
+verify_jwt = false
+
+[functions.pronunciation-analysis]
+verify_jwt = true
+
+[functions.generate-writing-corrections]
+verify_jwt = true
+
+[functions.smart-vocabulary]
+verify_jwt = true
+
+[functions.enhanced-speech-analysis]
+verify_jwt = true
+
+[functions.audio-cleanup]
+verify_jwt = false
+
+[functions.add-to-word-book]
+verify_jwt = true
+
+[functions.translate-page]
+verify_jwt = false
+
+[functions.send-email-otp]
+verify_jwt = false
+
+[functions.verify-email-otp]
+verify_jwt = false
+
+[functions.send-magic-link]
+verify_jwt = false
+
+[functions.vocab-enrich]
+verify_jwt = false
+
+[functions.vocab-extract]
+verify_jwt = true
+
+[functions.vocab-bulk-seed]
+verify_jwt = true
+
+[functions.vocab-bulk-status]
+verify_jwt = true
+
+[functions.vocab-admin-seed]
+verify_jwt = false
+
+[functions.vocab-csv-generator]
+verify_jwt = false
+
+[functions.process-translations]
+verify_jwt = false
+
+[functions.vocab-import]
+verify_jwt = false
+
+[functions.vocab-frequency-seed]
+verify_jwt = true
+
+[functions.vocab-cleanup-junk]
+verify_jwt = true
+
+[functions.vocab-level-classifier]
+verify_jwt = true
+
+[functions.vocab-cefr-seed]
+verify_jwt = true
+
+# New: background runner to translate ALL cards in chunks without UI
+[functions.vocab-translate-runner]
+verify_jwt = false
+
+# Queue translation jobs with service role
+[functions.vocab-queue-translations]
+verify_jwt = false
+
+# R2 file upload function
+[functions.r2-upload]
+verify_jwt = false
+
+# Public kicker to aggressively resume translations without admin
+[functions.kick-translations]
+verify_jwt = false

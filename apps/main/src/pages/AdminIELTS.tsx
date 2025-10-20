@@ -1,0 +1,593 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { BookOpen, Headphones, PenTool, Mic, Upload, Users, BarChart3, Settings, ArrowLeft, Plus, Edit3, Check, X, Trash2 } from "lucide-react";
+import AdminLayout from "@/components/AdminLayout";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useAdminContent } from "@/hooks/useAdminContent";
+import CSVImport from "@/components/CSVImport";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { SKILLS } from "@/lib/skills";
+
+const AdminIELTS = () => {
+  const navigate = useNavigate();
+  const { admin, loading } = useAdminAuth();
+  const { createContent } = useAdminContent();
+  const [tests, setTests] = useState<any[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newTestName, setNewTestName] = useState("");
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
+  const [editingTestName, setEditingTestName] = useState("");
+  const [stats, setStats] = useState({
+    totalTests: 0,
+    activeStudents: 0,
+    completionRate: 0,
+    avgScore: 0
+  });
+
+  const loadTests = async () => {
+    try {
+      // Only load generic IELTS tests (multi-skill tests without skill_category)
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .is('skill_category', null)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setTests(data || []);
+      setStats(prev => ({ ...prev, totalTests: (data || []).length }));
+    } catch (error) {
+      console.error('Error loading tests:', error);
+      toast.error('Failed to load tests');
+    }
+  };
+
+  const createNewTest = async () => {
+    if (!newTestName.trim()) {
+      toast.error('Please enter a test name');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const { data } = await supabase
+        .from('tests')
+        .insert({
+          test_name: newTestName,
+          test_type: 'IELTS',
+          module: 'academic',
+          skill_category: null // Generic multi-skill IELTS test
+        })
+        .select()
+        .single();
+
+      toast.success('Test created successfully');
+      setNewTestName('');
+      loadTests();
+      
+      // Navigate to generic test management with 4 sections
+      if (data) {
+        navigate(`/admin/ielts/test/${data.id}`);
+      }
+    } catch (error) {
+      console.error('Error creating test:', error);
+      toast.error('Failed to create test');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const startEditingTest = (test: any) => {
+    setEditingTestId(test.id);
+    setEditingTestName(test.test_name);
+  };
+
+  const cancelEditingTest = () => {
+    setEditingTestId(null);
+    setEditingTestName("");
+  };
+
+  const saveEditedTestName = async () => {
+    if (!editingTestName.trim()) {
+      toast.error('Test name cannot be empty');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tests')
+        .update({ test_name: editingTestName })
+        .eq('id', editingTestId);
+
+      if (error) throw error;
+
+      toast.success('Test name updated successfully');
+      setEditingTestId(null);
+      setEditingTestName("");
+      loadTests();
+    } catch (error) {
+      console.error('Error updating test name:', error);
+      toast.error('Failed to update test name');
+    }
+  };
+
+  const deleteTest = async (testId: string, testName: string) => {
+    try {
+      console.log('🗑️ Starting delete process for test:', testId);
+      
+      // First, delete any questions associated with this test
+      const { error: questionsError } = await supabase
+        .from('questions')
+        .delete()
+        .eq('test_id', testId);
+
+      if (questionsError) {
+        console.error('❌ Error deleting questions:', questionsError);
+        toast.error('Failed to delete associated questions');
+        return;
+      }
+      
+      console.log('✅ Questions deleted successfully');
+
+      // Then delete the test itself
+      const { error, data } = await supabase
+        .from('tests')
+        .delete()
+        .eq('id', testId)
+        .select();
+
+      if (error) {
+        console.error('❌ Error deleting test:', error);
+        throw error;
+      }
+
+      console.log('✅ Deleted test data:', data);
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No test was deleted - test may not exist or access denied');
+        toast.error('Test not found or access denied');
+        return;
+      }
+
+      toast.success(`Test "${testName}" deleted successfully`);
+      
+      // Add a small delay to ensure database consistency
+      setTimeout(() => {
+        loadTests(); // Refresh the test list
+      }, 500);
+      
+    } catch (error) {
+      console.error('❌ Error deleting test:', error);
+      toast.error('Failed to delete test');
+    }
+  };
+
+  const navigateToSkillManagement = (skill: string) => {
+    navigate(`/admin/ielts/${skill.toLowerCase()}`);
+  };
+
+  const createSpeakingTest = () => navigateToSkillManagement('Speaking');
+  const createListeningTest = () => navigateToSkillManagement('Listening');
+  const createReadingTest = () => navigateToSkillManagement('Reading');
+  const createWritingTest = () => navigateToSkillManagement('Writing');
+
+  useEffect(() => {
+    console.log('🚀 AdminIELTS auth check:', { loading, admin: !!admin });
+    
+    // Wait for loading to complete before making decisions
+    if (!loading) {
+      if (!admin) {
+        console.log('🔄 Redirecting to login - no admin access');
+        navigate('/admin/login');
+      } else {
+        console.log('✅ Admin access confirmed, loading tests');
+        loadTests();
+      }
+    }
+  }, [admin, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading IELTS Admin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return null;
+  }
+
+  const sections = [
+    {
+      id: "reading",
+      title: "Reading",
+      icon: BookOpen,
+      description: "Manage IELTS Reading passages and questions",
+      path: "/admin/reading"
+    },
+    {
+      id: "listening",
+      title: "Listening", 
+      icon: Headphones,
+      description: "Manage IELTS Listening sections and audio",
+      path: "/admin/listening"
+    },
+    {
+      id: "writing",
+      title: "Writing",
+      icon: PenTool,
+      description: "Manage IELTS Writing prompts and criteria",
+      path: "/admin/writing"
+    },
+    {
+      id: "speaking",
+      title: "Speaking",
+      icon: Mic,
+      description: "Manage IELTS Speaking topics and assessments",
+      path: "/admin/speaking",
+      createTest: () => createSpeakingTest()
+    }
+  ];
+
+  return (
+    <AdminLayout title="IELTS Administration" showBackButton={true} backPath="/admin">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              IELTS Admin Portal
+            </h1>
+            <p className="text-muted-foreground">
+              Manage IELTS content, tests, and student progress
+            </p>
+          </div>
+          <Badge variant="secondary" className="text-sm">
+            IELTS Module
+          </Badge>
+        </div>
+
+        {/* Quick Actions - removed as requested */}
+
+        {/* Quick Stats */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Tests</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalTests}</div>
+              <p className="text-xs text-muted-foreground">
+                IELTS practice tests
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Students</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeStudents}</div>
+              <p className="text-xs text-muted-foreground">
+                Currently enrolled
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.completionRate}%</div>
+              <p className="text-xs text-muted-foreground">
+                Test completion
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Average Score</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.avgScore}</div>
+              <p className="text-xs text-muted-foreground">
+                Band score
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* IELTS Skills Hub */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">IELTS Test Management</h3>
+          <p className="text-muted-foreground">Manage IELTS tests organized by the four core skills. Each skill has a quick create option.</p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              { 
+                skill: 'Listening', 
+                icon: Headphones, 
+                path: '/admin/ielts/listening',
+                createTest: () => createListeningTest()
+              },
+              { 
+                skill: 'Reading', 
+                icon: BookOpen, 
+                path: '/admin/ielts/reading',
+                createTest: () => createReadingTest()
+              },
+              { 
+                skill: 'Writing', 
+                icon: PenTool, 
+                path: '/admin/ielts/writing',
+                createTest: () => createWritingTest()
+              },
+              { 
+                skill: 'Speaking', 
+                icon: Mic, 
+                path: '/admin/ielts/speaking',
+                createTest: () => createSpeakingTest()
+              }
+            ].map((item) => (
+              <Card
+                key={item.skill}
+                className="hover:shadow-lg transition-all duration-300 cursor-pointer border-border/40 bg-card/50 backdrop-blur-sm hover:bg-card/80"
+                onClick={() => navigate(item.path)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg font-semibold">{item.skill} Tests</CardTitle>
+                  <item.icon className="h-5 w-5 text-primary" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">Manage {item.skill.toLowerCase()} test content and settings</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Click to manage tests</span>
+                    <span className="text-primary font-medium">→</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Skill Training Sections */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">Sharpen Your Skills</h3>
+          <p className="text-muted-foreground">Manage 8 targeted skill drills. Changes appear instantly for students.</p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+            {SKILLS.map((s) => (
+              <Card
+                key={s.slug}
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigate(`/admin/skills/${s.slug}`)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{s.label}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">Add and manage questions for this skill</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="content" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="content">Content Management</TabsTrigger>
+            <TabsTrigger value="upload">Upload Content</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="content" className="space-y-4">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold">Multi-skill IELTS Tests</h3>
+                  <p className="text-muted-foreground">
+                    Manage complete IELTS tests with all 4 sections
+                  </p>
+                </div>
+                <div className="flex gap-3 items-end">
+                  <Input
+                    placeholder="Test name (e.g., IELTS Test 1)"
+                    value={newTestName}
+                    onChange={(e) => setNewTestName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && createNewTest()}
+                    className="max-w-sm"
+                  />
+                  <Button onClick={createNewTest} disabled={isCreating}>
+                    {isCreating ? "Creating..." : "Create Test"}
+                  </Button>
+                </div>
+              </div>
+
+              {tests.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {tests.map((test) => (
+                    <Card 
+                      key={test.id} 
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => !editingTestId && navigate(`/admin/ielts/test/${test.id}`)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="w-5 h-5 text-primary" />
+                            {editingTestId === test.id ? (
+                              <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                                <Input
+                                  value={editingTestName}
+                                  onChange={(e) => setEditingTestName(e.target.value)}
+                                  className="text-lg font-semibold h-8"
+                                  onKeyPress={(e) => e.key === 'Enter' && saveEditedTestName()}
+                                />
+                                <Button size="sm" variant="ghost" onClick={saveEditedTestName}>
+                                  <Check className="w-4 h-4 text-green-600" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={cancelEditingTest}>
+                                  <X className="w-4 h-4 text-red-600" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span>{test.test_name}</span>
+                          )}
+                        </div>
+                        {editingTestId !== test.id && (
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingTest(test);
+                              }}
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Test</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{test.test_name}"? This will also delete all questions associated with this test. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => deleteTest(test.id, test.test_name)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
+                        </CardTitle>
+                        <CardDescription>
+                          Created: {new Date(test.created_at).toLocaleDateString()}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>Type: Multi-skill IELTS Test</span>
+                          <span>Sections: 4 (L,R,W,S)</span>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="w-full mt-3"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/ielts/test/${test.id}`);
+                          }}
+                          disabled={editingTestId === test.id}
+                        >
+                          Manage All Sections
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Multi-skill IELTS tests found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create your first multi-skill IELTS test with all 4 sections
+                  </p>
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Test name (e.g., IELTS Test 1)"
+                      value={newTestName}
+                      onChange={(e) => setNewTestName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && createNewTest()}
+                      className="max-w-sm mx-auto"
+                    />
+                    <Button onClick={createNewTest} disabled={isCreating}>
+                      {isCreating ? "Creating..." : "Create First Multi-skill Test"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="upload" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Upload className="h-5 w-5" />
+                  <span>Upload IELTS Content</span>
+                </CardTitle>
+                <CardDescription>
+                  Import IELTS questions, passages, and audio content via CSV
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CSVImport 
+                  onImport={() => {}} 
+                  onQuestionsPreview={() => {}} 
+                  type="reading"
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <BarChart3 className="h-5 w-5" />
+                  <span>IELTS Analytics</span>
+                </CardTitle>
+                <CardDescription>
+                  View performance metrics and student progress
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Analytics dashboard coming soon</p>
+                  <p className="text-sm">Track student performance and test completion rates</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default AdminIELTS;

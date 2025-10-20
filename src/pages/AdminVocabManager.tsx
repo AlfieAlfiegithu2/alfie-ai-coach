@@ -147,6 +147,8 @@ const AdminVocabManager: React.FC = () => {
           await supabase.functions.invoke('process-translations', { body: { reason: 'resume-pending' } });
           // Extra kick to ensure background chaining keeps going even if a previous run stalled
           await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
+          // Also start direct runner (no admin required)
+          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 20 } });
           setIsTranslating(true);
           setShowProgressModal(true);
         } else if (!already) {
@@ -154,6 +156,8 @@ const AdminVocabManager: React.FC = () => {
           const { data: qData } = await supabase.functions.invoke('vocab-queue-translations', { body: { onlyMissing: true } });
           await supabase.functions.invoke('process-translations', { body: { reason: 'auto-start' } });
           await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
+          // Also start direct runner (no admin required)
+          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 20 } });
           localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
           toast({ title: 'Auto-translation started', description: 'Processing queued translations in background.' });
           setIsTranslating(true);
@@ -760,7 +764,9 @@ const AdminVocabManager: React.FC = () => {
 
               if (queueError || !queueData?.success) {
                 console.error('❌ Failed to queue translation jobs', queueError || queueData);
-                alert(queueData?.error || queueError?.message || 'Failed to queue translation jobs');
+                // Fallback: start direct runner without admin
+                await supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 20, languages: SUPPORTED_LANGS } });
+                alert('Started direct translation runner. Progress will continue in the background.');
                 return;
               }
 

@@ -277,6 +277,19 @@ const [overallSummary, setOverallSummary] = useState<string>("");
     return <CollocationMapView />;
   }
 
+  // Redirect to Earthworm/Sentence Mastery
+  if (slug === "sentence-mastery") {
+    // Redirect to the Earthworm app running on localhost:3000
+    window.location.href = 'http://localhost:3000';
+    return (
+      <StudentLayout title="Sentence Mastery" showBackButton backPath="/ielts-portal">
+        <section className="space-y-4 max-w-3xl mx-auto">
+          <p className="text-muted-foreground text-sm">Redirecting to Sentence Mastery...</p>
+        </section>
+      </StudentLayout>
+    );
+  }
+
   return (
     <StudentLayout title={skill.label} showBackButton backPath="/ielts-portal">
       <section className="space-y-4 max-w-3xl mx-auto">

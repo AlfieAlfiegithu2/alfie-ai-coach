@@ -46,7 +46,9 @@
     "contact": {
       "title": "お問い合わせ",
       "subtitle": "サポートチームまでご連絡ください。"
-    }
+    },
+    "startButton": "Start Your Journey",
+    "exploreButton": "Explore Tests"
   },
   "auth": {
     "signIn": "サインイン",
@@ -97,7 +99,8 @@
     "studyPlan": "学習プラン",
     "home": "ホーム",
     "settings": "設定",
-    "resetResults": "結果をリセット"
+    "resetResults": "結果をリセット",
+    "community": "Community"
   },
   "dashboard": {
     "myWordBook": "単語帳",
@@ -154,7 +157,12 @@
     "dayOfWeek": "{{day}}={{number}}",
     "studyDaysDescription": "学習日（日=0 … 土=6）",
     "weakAreasDescription": "苦手分野（任意）",
-    "deadlineOptional": "期限（任意）"
+    "deadlineOptional": "期限（任意）",
+    "planLanguage": "Plan language",
+    "resetPlan": "Reset Plan",
+    "resetPlanConfirm": "This will remove your current study plan. Continue?",
+    "resetAllPlans": "Reset All Plans",
+    "resetAllConfirm": "Reset all local study plan data (completions, custom tasks, notes)?"
   },
   "settings": {
     "profilePhoto": "プロフィール写真",
@@ -223,5 +231,176 @@
     "weeks": "週",
     "months": "月",
     "years": "年"
+  },
+  "highlights": {
+    "aiFeedback": {
+      "title": "AI-Powered Feedback",
+      "description": "Get instant, detailed analysis of your English skills with personalized improvement suggestions."
+    },
+    "adaptive": {
+      "title": "Adaptive Learning",
+      "description": "Smart algorithms that adapt to your pace and focus on your weak areas for optimal progress."
+    },
+    "proven": {
+      "title": "Proven Results",
+      "description": "95% success rate with students achieving their target scores faster than traditional methods."
+    },
+    "community": {
+      "title": "Expert Community",
+      "description": "Connect with certified instructors and fellow learners for support and motivation."
+    }
+  },
+  "programs": {
+    "title": "Learning Programs",
+    "subtitle": "Choose your path to English mastery with our comprehensive programs.",
+    "cards": {
+      "ielts": {
+        "title": "IELTS"
+      },
+      "toefl": {
+        "title": "TOEFL"
+      },
+      "toeic": {
+        "title": "TOEIC"
+      },
+      "pte": {
+        "title": "PTE"
+      },
+      "general": {
+        "title": "General English"
+      }
+    }
+  },
+  "comparison": {
+    "title": "Why our scoring system dominates the competition",
+    "columns": [
+      "Human tutors",
+      "Our IELTS-calibrated AI",
+      "Traditional self-study"
+    ],
+    "rows": [
+      {
+        "label": "Scoring consistency",
+        "traditional": "Varies by tutor mood/fatigue",
+        "ai": "100% consistent (exam-aligned)",
+        "self": "Guesswork"
+      },
+      {
+        "label": "Feedback accuracy",
+        "traditional": "Subjective",
+        "ai": "98% correlation with real exams",
+        "self": "No feedback"
+      },
+      {
+        "label": "Cost per month",
+        "traditional": "$1000–$5000 for intensive tutoring",
+        "ai": "$50 unlimited access",
+        "self": "Free but unreliable"
+      },
+      {
+        "label": "Certified by examiners",
+        "traditional": "Depends",
+        "ai": "Former/current IELTS examiners",
+        "self": "No"
+      },
+      {
+        "label": "Band descriptors used",
+        "traditional": "Tutor's interpretation",
+        "ai": "Exact IELTS Band Descriptors",
+        "self": "None"
+      }
+    ]
+  },
+  "faq": {
+    "title": "How our expert-validated scoring works",
+    "items": [
+      {
+        "q": "Why should I trust an AI built by IELTS examiners?",
+        "a": "Because it's not just AI—it's IELTS examiners' methodology in code. Our team includes former IELTS examiners who literally graded thousands of real exams. They didn't train a generic algorithm; they encoded their 15+ years of expertise: how to identify Task Achievement, spot coherence gaps, catch grammar patterns. Every scoring rule mirrors what examiners look for. You're practicing against the minds who created the test."
+      },
+      {
+        "q": "Is your AI 98% accurate because it cheats or because it's actually good?",
+        "a": "It's good because IELTS examiners built it. The 98% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence."
+      },
+      {
+        "q": "What makes your AI different from Grammarly or ChatGPT feedback?",
+        "a": "Grammarly flags grammar; ChatGPT generates. We *score*—like an examiner. Grammarly says 'comma needed.' We say 'You scored 6.5 on Lexical Range because you used 'good/bad' instead of 'beneficial/detrimental' in an academic essay.' ChatGPT rewords sentences. We explain your band score and exactly how to hit 7.0. Our AI was trained by people who *assign* IELTS bands, not by people who write essays or spot typos."
+      },
+      {
+        "q": "Can an AI truly replace an examiner for practice?",
+        "a": "For practice? Yes—better than most tutors, actually. Why? Consistency. A tutor marks 20 essays and gets tired; scores drift. Our AI marks 1,000 essays with identical standards. A tutor marks an essay 7.0 on one day, 6.5 on another. Our AI always applies the same rubric. For *feedback quality*, you get the rubric instantly + explanations. For *reliability*, an examiner-built system beats subjective humans. But—use it for practice scoring; use a human tutor for brainstorming and creative ideas."
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing Plans",
+    "subtitle": "Choose the perfect plan for your learning journey",
+    "discounts": {
+      "monthly": "Monthly",
+      "threeMonths": "3 Months",
+      "sixMonths": "6 Months",
+      "save10": "Save 10%",
+      "save30": "Save 30%"
+    },
+    "free": {
+      "title": "Free",
+      "subtitle": "Perfect for getting started with limited content.",
+      "price": "$0",
+      "period": "/mo",
+      "features": [
+        "Limited Practice Tests",
+        "Basic AI Feedback",
+        "Community Access",
+        "Basic Progress Tracking"
+      ],
+      "button": "Get Started Free"
+    },
+    "pro": {
+      "title": "Pro",
+      "subtitle": "Unlimited access to all learning features.",
+      "badge": "Most Popular",
+      "priceMonthly": "$50",
+      "price3Months": "$45",
+      "price6Months": "$35",
+      "period": "/mo",
+      "features": [
+        "Unlimited Practice Tests",
+        "Advanced AI Feedback",
+        "All Learning Modules",
+        "Priority Support",
+        "Detailed Analytics",
+        "Personalized Study Plans"
+      ],
+      "button": "Upgrade to Pro"
+    }
+  },
+  "experts": {
+    "line": "Created by TESOL‑certified experts and former/current IELTS examiners."
+  },
+  "footer": {
+    "description": "AI-powered English learning platform for IELTS and General English mastery.",
+    "email": "hello@englishaidol.com",
+    "phone": "Available 24/7 via AI Chat",
+    "learning": {
+      "title": "Learning",
+      "ielts": "IELTS Preparation",
+      "general": "General English",
+      "features": "AI Features",
+      "stories": "Success Stories"
+    },
+    "resources": {
+      "title": "Resources",
+      "practice": "Practice Tests",
+      "writing": "Writing Feedback",
+      "speaking": "Speaking Practice",
+      "vocabulary": "Vocabulary Builder"
+    },
+    "connect": {
+      "title": "Connect"
+    },
+    "copyright": "© 2024 English AIdol. All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "support": "Support"
   }
 }

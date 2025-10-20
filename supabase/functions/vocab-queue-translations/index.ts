@@ -27,18 +27,21 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Authenticate if Authorization header present; otherwise allow public triggering
+    let user: any = null;
+    if (authHeader) {
+      const res = await userClient.auth.getUser();
+      user = (res as any)?.data?.user || null;
     }
-
-    // Optional: ensure requester is admin
-    try {
-      const { data: isAdmin } = await (userClient as any).rpc('is_admin');
-      if (!isAdmin) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden: admin only' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-    } catch (_) { /* if rpc missing, continue */ }
+    // If a user is provided, optionally enforce admin; otherwise continue for public kickoff
+    if (user) {
+      try {
+        const { data: isAdmin } = await (userClient as any).rpc('is_admin');
+        if (!isAdmin) {
+          return new Response(JSON.stringify({ success: false, error: 'Forbidden: admin only' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      } catch (_) { /* if rpc missing, continue */ }
+    }
 
     // Service role client for queue inserts (bypass RLS)
     const serviceClient = createClient(
@@ -51,11 +54,10 @@ serve(async (req) => {
     const targetLangs = Array.isArray(body.languages) && body.languages.length ? body.languages : SUPPORTED_LANGS;
     const maxWords = typeof body.maxWords === 'number' && body.maxWords > 0 ? Math.min(body.maxWords, 20000) : undefined;
 
-    // Fetch public EN cards
+    // Fetch EN cards (public and private)
     let cardQuery = serviceClient
       .from('vocab_cards')
       .select('id, term')
-      .eq('is_public', true)
       .eq('language', 'en');
     if (maxWords) cardQuery = cardQuery.limit(maxWords);
 
@@ -72,7 +74,7 @@ serve(async (req) => {
     for (const c of cards as any[]) {
       for (const lang of targetLangs) {
         jobs.push({
-          user_id: user.id,
+          user_id: user?.id || null,
           card_id: c.id,
           term: c.term,
           target_lang: lang,

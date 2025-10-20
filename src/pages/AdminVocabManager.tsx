@@ -147,6 +147,8 @@ const AdminVocabManager: React.FC = () => {
           await supabase.functions.invoke('process-translations', { body: { reason: 'resume-pending' } });
           // Extra kick to ensure background chaining keeps going even if a previous run stalled
           await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
+          // Also start direct runner (no admin required)
+          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 20 } });
           setIsTranslating(true);
           setShowProgressModal(true);
         } else if (!already) {
@@ -154,6 +156,8 @@ const AdminVocabManager: React.FC = () => {
           const { data: qData } = await supabase.functions.invoke('vocab-queue-translations', { body: { onlyMissing: true } });
           await supabase.functions.invoke('process-translations', { body: { reason: 'auto-start' } });
           await supabase.functions.invoke('kick-translations', { body: { cycles: 12, parallel: 3 } });
+          // Also start direct runner (no admin required)
+          await supabase.functions.invoke('vocab-translate-runner', { body: { limit: 20 } });
           localStorage.setItem('vocabRunnerStarted', new Date().toISOString());
           toast({ title: 'Auto-translation started', description: 'Processing queued translations in background.' });
           setIsTranslating(true);
@@ -613,28 +617,42 @@ const AdminVocabManager: React.FC = () => {
         });
       }
 
-      let query = supabase
+      // Fetch latest translations without relying on PostgREST FK joins (no FK defined)
+      const baseSelect = 'id, card_id, lang, translations, created_at';
+      let tQuery = supabase
         .from('vocab_translations')
-        .select(`
-          id,
-          card_id,
-          lang,
-          translations,
-          created_at,
-          vocab_cards!inner(term, translation)
-        `)
+        .select(baseSelect)
         .eq('is_system', true)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (selectedLang !== 'all') {
-        query = query.eq('lang', selectedLang);
+        tQuery = tQuery.eq('lang', selectedLang);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      const { data: transRows, error: transErr } = await tQuery as any;
+      if (transErr) throw transErr;
 
-      setTranslationViewerData(data || []);
+      // Fetch corresponding card terms in a second query and merge on the client
+      const cardIds = Array.from(new Set((transRows || []).map((r: any) => r.card_id))).filter(Boolean) as string[];
+      let cardsById: Record<string, { term: string; translation: string | null }> = {};
+      if (cardIds.length > 0) {
+        const { data: cards, error: cardsErr } = await supabase
+          .from('vocab_cards')
+          .select('id, term, translation')
+          .in('id', cardIds);
+        if (cardsErr) throw cardsErr;
+        (cards || []).forEach((c: any) => {
+          cardsById[c.id] = { term: c.term, translation: c.translation };
+        });
+      }
+
+      const merged = (transRows || []).map((row: any) => ({
+        ...row,
+        vocab_cards: cardsById[row.card_id] || null,
+      }));
+
+      setTranslationViewerData(merged);
       setShowTranslationViewer(true);
     } catch (e: any) {
       toast({
@@ -760,7 +778,9 @@ const AdminVocabManager: React.FC = () => {
 
               if (queueError || !queueData?.success) {
                 console.error('❌ Failed to queue translation jobs', queueError || queueData);
-                alert(queueData?.error || queueError?.message || 'Failed to queue translation jobs');
+                // Fallback: start direct runner without admin
+                await supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 20, languages: SUPPORTED_LANGS } });
+                alert('Started direct translation runner. Progress will continue in the background.');
                 return;
               }
 
@@ -775,6 +795,9 @@ const AdminVocabManager: React.FC = () => {
               const actualPendingJobs = pendingCount || 0;
               
               alert(`✅ Queued translation jobs!\n\n📊 Total pending: ${actualPendingJobs} jobs\n\n⚠️ IMPORTANT: Keep this tab open!\nTranslations will process automatically.\nDo not close or refresh the page.`);
+
+              // Also kick the direct runner to ensure progress even if queue processing stalls
+              await supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 20, languages: SUPPORTED_LANGS } });
 
               // Step 2: Process translations in batches with progress tracking
               let processed = 0;

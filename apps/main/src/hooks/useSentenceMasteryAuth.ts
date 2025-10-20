@@ -14,19 +14,19 @@ export const useSentenceMasteryAuth = () => {
    */
   const navigateToSentenceMastery = useCallback(async () => {
     if (!user) {
-      // If not logged in, redirect to Sentence Mastery anyway
+      // If not logged in, navigate to Sentence Mastery anyway
       // Earthworm will handle the authentication
-      window.location.href = '/earthworm/';
+      window.location.href = '/sentence-mastery';
       return;
     }
 
     try {
       // Get Supabase client
       const { supabase } = await import('@/integrations/supabase/client');
-      
+
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session && session.access_token) {
         // Store token in sessionStorage for cross-app access
         sessionStorage.setItem('sentence_mastery_auth', JSON.stringify({
@@ -35,17 +35,17 @@ export const useSentenceMasteryAuth = () => {
           token: session.access_token,
           expiresAt: Date.now() + 3600000, // 1 hour from now
         }));
-        
-        // Redirect to the proxied Earthworm app
-        window.location.href = '/earthworm/';
+
+        // Navigate to Sentence Mastery page (which loads Earthworm via iframe)
+        window.location.href = '/sentence-mastery';
       } else {
         console.error('Failed to get authentication session');
-        window.location.href = '/earthworm/';
+        window.location.href = '/sentence-mastery';
       }
     } catch (error) {
       console.error('Error navigating to Sentence Mastery:', error);
-      // Fallback: redirect anyway, let Earthworm handle auth
-      window.location.href = '/earthworm/';
+      // Fallback: navigate anyway, let Earthworm handle auth
+      window.location.href = '/sentence-mastery';
     }
   }, [user]);
 

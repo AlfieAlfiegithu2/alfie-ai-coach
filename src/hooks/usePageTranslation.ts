@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface PageContent {
-  [key: string]: string | string[] | PageContent;
+  [key: string]: string | string[] | PageContent | PageContent[] | any;
 }
 
 // Helper to create content hash

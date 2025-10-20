@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { Menu, X, LogOut, Settings, User, Shield, BookOpen } from "lucide-react";
+import { Menu, X, LogOut, Settings, User, Shield } from "lucide-react";
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useTranslation } from 'react-i18next';
@@ -17,7 +17,6 @@ const Header = () => {
   const {
     admin
   } = useAdminAuth();
-  const navigateToSentenceMastery = () => navigate('/earthworm');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const handleSignOut = async () => {
@@ -45,15 +44,6 @@ const Header = () => {
           </Button>
           <Button variant="ghost" onClick={() => navigate('/community')}>
             {t('navigation.community', { defaultValue: 'Community' })}
-          </Button>
-          {/* Sentence Mastery Link */}
-          <Button 
-            variant="outline" 
-            onClick={navigateToSentenceMastery}
-            className="gap-2"
-          >
-            <BookOpen className="w-4 h-4" />
-            {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
           </Button>
         </nav>
 
@@ -126,15 +116,6 @@ const Header = () => {
             </Button>
             <Button variant="ghost" onClick={() => navigate('/community')} className="w-full justify-start">
               {t('navigation.community', { defaultValue: 'Community' })}
-            </Button>
-            {/* Sentence Mastery Link Mobile */}
-            <Button 
-              variant="outline" 
-              onClick={navigateToSentenceMastery}
-              className="w-full justify-start gap-2"
-            >
-              <BookOpen className="w-4 h-4" />
-              {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
             </Button>
             {!user && <>
                 <Button variant="outline" onClick={() => navigate('/auth')} className="w-full justify-start">

@@ -100,9 +100,9 @@
     "resetResults": "重置结果",
     "community": "Community",
     "practice": "练习",
-    "sentenceBuilder": "句子构建器",
     "adminLogin": "管理员登录",
-    "adminDashboard": "管理员仪表板"
+    "adminDashboard": "管理员仪表板",
+    "sentenceMastery": "句子掌握"
   },
   "dashboard": {
     "myWordBook": "我的单词本",

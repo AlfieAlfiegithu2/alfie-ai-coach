@@ -100,9 +100,9 @@
     "resetResults": "بازنشانی نتایج",
     "community": "انجمن",
     "practice": "تمرین",
-    "sentenceBuilder": "سازنده جملات",
     "adminLogin": "ورود مدیر",
-    "adminDashboard": "داشبورد مدیر"
+    "adminDashboard": "داشبورد مدیر",
+    "sentenceMastery": "تسلط جملات"
   },
   "dashboard": {
     "myWordBook": "کتاب واژگان من",

@@ -100,9 +100,9 @@
     "resetResults": "Restablecer Resultados",
     "community": "Community",
     "practice": "Práctica",
-    "sentenceBuilder": "Constructor de Oraciones",
     "adminLogin": "Inicio de sesión de administrador",
-    "adminDashboard": "Panel de administrador"
+    "adminDashboard": "Panel de administrador",
+    "sentenceMastery": "Dominio de Oraciones"
   },
   "dashboard": {
     "myWordBook": "Mi Libro de Palabras",

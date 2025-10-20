@@ -100,9 +100,9 @@
     "resetResults": "รีเซ็ตผลลัพธ์",
     "community": "ชุมชน",
     "practice": "ฝึกหัด",
-    "sentenceBuilder": "ตัวสร้างประโยค",
     "adminLogin": "เข้าสู่ระบบผู้ดูแล",
-    "adminDashboard": "แดชบอร์ดผู้ดูแล"
+    "adminDashboard": "แดชบอร์ดผู้ดูแล",
+    "sentenceMastery": "การเชี่ยวชาญประโยค"
   },
   "dashboard": {
     "myWordBook": "สมุดคำศัพท์ของฉัน",

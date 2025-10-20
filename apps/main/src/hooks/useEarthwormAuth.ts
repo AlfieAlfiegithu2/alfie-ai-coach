@@ -1,57 +1,57 @@
 /**
- * Hook for managing Earthworm authentication
+ * Hook for managing Sentence Mastery authentication
  * Generates and manages tokens for seamless cross-app access
  */
 
 import { useAuth } from './useAuth';
 import { useCallback } from 'react';
-import { generateEarthwormToken, storeAuthContext, createEarthwormSession } from 'shared-auth';
+import { generateSentenceMasteryToken, storeAuthContext, createSentenceMasterySession } from 'shared-auth';
 
-export const useEarthwormAuth = () => {
+export const useSentenceMasteryAuth = () => {
   const { user } = useAuth();
   
   /**
-   * Navigate to Earthworm with auth token
+   * Navigate to Sentence Mastery with auth token
    */
-  const navigateToEarthworm = useCallback(async () => {
+  const navigateToSentenceMastery = useCallback(async () => {
     if (!user) {
-      // If not logged in, just redirect to Earthworm
-      // Earthworm will show login screen
-      window.location.href = '/earthworm';
+      // If not logged in, just redirect to Sentence Mastery
+      // Sentence Mastery will show login screen
+      window.location.href = '/sentence-mastery';
       return;
     }
 
     try {
       // Generate token from current session
       const { supabase } = await import('@/integrations/supabase/client');
-      const authToken = await generateEarthwormToken(supabase);
+      const authToken = await generateSentenceMasteryToken(supabase);
       
       if (authToken) {
         // Create session context
-        const context = createEarthwormSession(authToken);
+        const context = createSentenceMasterySession(authToken);
         
         // Store in sessionStorage for cross-app access
         storeAuthContext(context);
         
-        // Redirect to Earthworm
-        window.location.href = '/earthworm';
+        // Redirect to Sentence Mastery
+        window.location.href = '/sentence-mastery';
       } else {
-        console.error('Failed to generate Earthworm token');
-        window.location.href = '/earthworm';
+        console.error('Failed to generate Sentence Mastery token');
+        window.location.href = '/sentence-mastery';
       }
     } catch (error) {
-      console.error('Error navigating to Earthworm:', error);
-      // Fallback: redirect anyway, let Earthworm handle auth
-      window.location.href = '/earthworm';
+      console.error('Error navigating to Sentence Mastery:', error);
+      // Fallback: redirect anyway, let Sentence Mastery handle auth
+      window.location.href = '/sentence-mastery';
     }
   }, [user]);
 
   /**
-   * Check if user has valid Earthworm session
+   * Check if user has valid Sentence Mastery session
    */
-  const hasEarthwormSession = useCallback(() => {
+  const hasSentenceMasterySession = useCallback(() => {
     if (typeof window === 'undefined') return false;
-    const stored = sessionStorage.getItem('earthworm_auth');
+    const stored = sessionStorage.getItem('sentence_mastery_auth');
     if (!stored) return false;
     
     try {
@@ -63,18 +63,18 @@ export const useEarthwormAuth = () => {
   }, []);
 
   /**
-   * Clear Earthworm session
+   * Clear Sentence Mastery session
    */
-  const clearEarthwormSession = useCallback(() => {
+  const clearSentenceMasterySession = useCallback(() => {
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('earthworm_auth');
+      sessionStorage.removeItem('sentence_mastery_auth');
     }
   }, []);
 
   return {
-    navigateToEarthworm,
-    hasEarthwormSession: hasEarthwormSession(),
-    clearEarthwormSession,
+    navigateToSentenceMastery,
+    hasSentenceMasterySession: hasSentenceMasterySession(),
+    clearSentenceMasterySession,
     user,
   };
 };

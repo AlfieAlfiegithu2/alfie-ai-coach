@@ -102,9 +102,9 @@
     "resetResults": "結果をリセット",
     "community": "Community",
     "practice": "練習",
-    "sentenceBuilder": "文構築ツール",
     "adminLogin": "管理者ログイン",
-    "adminDashboard": "管理者ダッシュボード"
+    "adminDashboard": "管理者ダッシュボード",
+    "sentenceMastery": "文の習得"
   },
   "dashboard": {
     "myWordBook": "単語帳",

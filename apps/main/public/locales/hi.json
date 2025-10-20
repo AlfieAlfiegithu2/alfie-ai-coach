@@ -102,9 +102,9 @@
     "resetResults": "परिणाम रीसेट",
     "community": "Community",
     "practice": "अभ्यास",
-    "sentenceBuilder": "वाक्य निर्माता",
     "adminLogin": "एडमिन लॉगिन",
-    "adminDashboard": "एडमिन डैशबोर्ड"
+    "adminDashboard": "एडमिन डैशबोर्ड",
+    "sentenceMastery": "वाक्य दक्षता"
   },
   "dashboard": {
     "helloUser": "नमस्ते, {{name}}",

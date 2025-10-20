@@ -100,9 +100,9 @@
     "resetResults": "ফলাফল রিসেট করুন",
     "community": "কমিউনিটি",
     "practice": "অনুশীলন",
-    "sentenceBuilder": "বাক্য নির্মাণ",
     "adminLogin": "প্রশাসক লগইন",
-    "adminDashboard": "প্রশাসক ড্যাশবোর্ড"
+    "adminDashboard": "প্রশাসক ড্যাশবোর্ড",
+    "sentenceMastery": "বাক্য দক্ষতা"
   },
   "dashboard": {
     "myWordBook": "আমার শব্দ বই",

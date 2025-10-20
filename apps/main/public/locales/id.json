@@ -100,9 +100,9 @@
     "resetResults": "Reset Hasil",
     "community": "Komunitas",
     "practice": "Praktik",
-    "sentenceBuilder": "Pembuat Kalimat",
     "adminLogin": "Login Admin",
-    "adminDashboard": "Dasbor Admin"
+    "adminDashboard": "Dasbor Admin",
+    "sentenceMastery": "Penguasaan Kalimat"
   },
   "dashboard": {
     "myWordBook": "Buku Kata Saya",

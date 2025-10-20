@@ -100,9 +100,9 @@
     "resetResults": "Sonuçları Sıfırla",
     "community": "Topluluk",
     "practice": "Pratik",
-    "sentenceBuilder": "Cümle Oluşturucu",
     "adminLogin": "Yönetici Girişi",
-    "adminDashboard": "Yönetici Paneli"
+    "adminDashboard": "Yönetici Paneli",
+    "sentenceMastery": "Cümle Uzmanlaşması"
   },
   "dashboard": {
     "myWordBook": "Kelime Kitabım",

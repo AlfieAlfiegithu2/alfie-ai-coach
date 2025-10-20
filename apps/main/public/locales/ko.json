@@ -100,9 +100,9 @@
     "resetResults": "결과 초기화",
     "community": "커뮤니티",
     "practice": "연습",
-    "sentenceBuilder": "문장 빌더",
     "adminLogin": "관리자 로그인",
-    "adminDashboard": "관리자 대시보드"
+    "adminDashboard": "관리자 대시보드",
+    "sentenceMastery": "문장 습득"
   },
   "dashboard": {
     "myWordBook": "내 단어장",

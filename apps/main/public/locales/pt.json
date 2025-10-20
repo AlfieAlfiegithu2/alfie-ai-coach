@@ -102,9 +102,9 @@
     "resetResults": "Redefinir Resultados",
     "community": "Community",
     "practice": "Prática",
-    "sentenceBuilder": "Construtor de Sentenças",
     "adminLogin": "Login de Administrador",
-    "adminDashboard": "Painel de Controle do Administrador"
+    "adminDashboard": "Painel de Controle do Administrador",
+    "sentenceMastery": "Domínio de Sentenças"
   },
   "dashboard": {
     "myWordBook": "Meu Livro de Palavras",

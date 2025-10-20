@@ -100,9 +100,9 @@
     "resetResults": "Đặt lại kết quả",
     "community": "Community",
     "practice": "Thực hành",
-    "sentenceBuilder": "Trình tạo câu",
     "adminLogin": "Đăng nhập quản trị viên",
-    "adminDashboard": "Bảng điều khiển quản trị viên"
+    "adminDashboard": "Bảng điều khiển quản trị viên",
+    "sentenceMastery": "Thành thạo Câu"
   },
   "dashboard": {
     "myWordBook": "Sổ từ vựng của tôi",

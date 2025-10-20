@@ -100,9 +100,9 @@
     "resetResults": "Set Semula Keputusan",
     "community": "Komuniti",
     "practice": "Latihan",
-    "sentenceBuilder": "Pembina Ayat",
     "adminLogin": "Log Masuk Pentadbir",
-    "adminDashboard": "Papan Pemuka Pentadbir"
+    "adminDashboard": "Papan Pemuka Pentadbir",
+    "sentenceMastery": "Penguasaan Ayat"
   },
   "dashboard": {
     "myWordBook": "Buku Perkataan Saya",

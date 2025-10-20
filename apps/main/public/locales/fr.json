@@ -102,9 +102,9 @@
     "resetResults": "Effacer les résultats",
     "community": "Community",
     "practice": "Pratique",
-    "sentenceBuilder": "Constructeur de phrases",
     "adminLogin": "Connexion administrateur",
-    "adminDashboard": "Tableau de bord administrateur"
+    "adminDashboard": "Tableau de bord administrateur",
+    "sentenceMastery": "Maîtrise des Phrases"
   },
   "dashboard": {
     "myWordBook": "Mon lexique",

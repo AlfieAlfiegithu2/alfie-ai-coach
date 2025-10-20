@@ -100,9 +100,9 @@
     "resetResults": "Нәтижелерді қалпына келтіру",
     "community": "Қауымдастық",
     "practice": "Жаттығу",
-    "sentenceBuilder": "Сөйлем құрастырғышы",
     "adminLogin": "Администратор кірісі",
-    "adminDashboard": "Администратор бақылау тақтасы"
+    "adminDashboard": "Администратор бақылау тақтасы",
+    "sentenceMastery": "Сөйлем сіңдігі"
   },
   "dashboard": {
     "myWordBook": "Менің сөздігім",

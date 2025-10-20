@@ -102,9 +102,9 @@
     "resetResults": "Ergebnisse zurücksetzen",
     "community": "Community",
     "practice": "Üben",
-    "sentenceBuilder": "Satzbildung",
     "adminLogin": "Admin-Anmeldung",
-    "adminDashboard": "Admin-Dashboard"
+    "adminDashboard": "Admin-Dashboard",
+    "sentenceMastery": "Satzmeisterschaft"
   },
   "dashboard": {
     "myWordBook": "Mein Vokabelheft",

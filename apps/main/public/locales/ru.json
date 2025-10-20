@@ -102,9 +102,9 @@
     "resetResults": "Сбросить результаты",
     "community": "Community",
     "practice": "Практика",
-    "sentenceBuilder": "Конструктор предложений",
     "adminLogin": "Вход администратора",
-    "adminDashboard": "Панель администратора"
+    "adminDashboard": "Панель администратора",
+    "sentenceMastery": "Мастерство предложений"
   },
   "dashboard": {
     "myWordBook": "Мой словарь",

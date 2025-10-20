@@ -102,9 +102,9 @@
     "resetResults": "إعادة تعيين النتائج",
     "community": "Community",
     "practice": "ممارسة",
-    "sentenceBuilder": "بناء الجملة",
     "adminLogin": "تسجيل الدخول للمسؤول",
-    "adminDashboard": "لوحة تحكم المسؤول"
+    "adminDashboard": "لوحة تحكم المسؤول",
+    "sentenceMastery": "إتقان الجملة"
   },
   "dashboard": {
     "helloUser": "مرحبًا، {{name}}",

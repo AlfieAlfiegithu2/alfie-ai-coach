@@ -617,28 +617,42 @@ const AdminVocabManager: React.FC = () => {
         });
       }
 
-      let query = supabase
+      // Fetch latest translations without relying on PostgREST FK joins (no FK defined)
+      const baseSelect = 'id, card_id, lang, translations, created_at';
+      let tQuery = supabase
         .from('vocab_translations')
-        .select(`
-          id,
-          card_id,
-          lang,
-          translations,
-          created_at,
-          vocab_cards!inner(term, translation)
-        `)
+        .select(baseSelect)
         .eq('is_system', true)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (selectedLang !== 'all') {
-        query = query.eq('lang', selectedLang);
+        tQuery = tQuery.eq('lang', selectedLang);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      const { data: transRows, error: transErr } = await tQuery as any;
+      if (transErr) throw transErr;
 
-      setTranslationViewerData(data || []);
+      // Fetch corresponding card terms in a second query and merge on the client
+      const cardIds = Array.from(new Set((transRows || []).map((r: any) => r.card_id))).filter(Boolean) as string[];
+      let cardsById: Record<string, { term: string; translation: string | null }> = {};
+      if (cardIds.length > 0) {
+        const { data: cards, error: cardsErr } = await supabase
+          .from('vocab_cards')
+          .select('id, term, translation')
+          .in('id', cardIds);
+        if (cardsErr) throw cardsErr;
+        (cards || []).forEach((c: any) => {
+          cardsById[c.id] = { term: c.term, translation: c.translation };
+        });
+      }
+
+      const merged = (transRows || []).map((row: any) => ({
+        ...row,
+        vocab_cards: cardsById[row.card_id] || null,
+      }));
+
+      setTranslationViewerData(merged);
       setShowTranslationViewer(true);
     } catch (e: any) {
       toast({

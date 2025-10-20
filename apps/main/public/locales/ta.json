@@ -98,7 +98,11 @@
     "home": "வீடு",
     "settings": "அமைப்புகள்",
     "resetResults": "முடிவுகளை மீட்டமை",
-    "community": "சமூகம்"
+    "community": "சமூகம்",
+    "practice": "பயிற்சி",
+    "sentenceBuilder": "வாக்கிய வளர்ப்பாளர்",
+    "adminLogin": "நிர்வாகி உள்நுழைவு",
+    "adminDashboard": "நிர்வாகி டாஷ்போர்டு"
   },
   "dashboard": {
     "myWordBook": "எனது சொற்கள் புத்தகம்",

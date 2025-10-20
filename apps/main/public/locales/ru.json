@@ -100,7 +100,11 @@
     "home": "Главная",
     "settings": "Настройки",
     "resetResults": "Сбросить результаты",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Практика",
+    "sentenceBuilder": "Конструктор предложений",
+    "adminLogin": "Вход администратора",
+    "adminDashboard": "Панель администратора"
   },
   "dashboard": {
     "myWordBook": "Мой словарь",

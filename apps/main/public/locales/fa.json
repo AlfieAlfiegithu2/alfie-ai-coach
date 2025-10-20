@@ -98,7 +98,11 @@
     "home": "خانه",
     "settings": "تنظیمات",
     "resetResults": "بازنشانی نتایج",
-    "community": "انجمن"
+    "community": "انجمن",
+    "practice": "تمرین",
+    "sentenceBuilder": "سازنده جملات",
+    "adminLogin": "ورود مدیر",
+    "adminDashboard": "داشبورد مدیر"
   },
   "dashboard": {
     "myWordBook": "کتاب واژگان من",

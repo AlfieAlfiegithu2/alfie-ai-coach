@@ -245,7 +245,11 @@
     "home": "Home",
     "settings": "Settings",
     "resetResults": "Reset Results",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Practice",
+    "sentenceBuilder": "Sentence Builder",
+    "adminLogin": "Admin Login",
+    "adminDashboard": "Admin Dashboard"
   },
   "dashboard": {
     "myWordBook": "My Word Book",

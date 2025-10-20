@@ -98,7 +98,11 @@
     "home": "홈",
     "settings": "설정",
     "resetResults": "결과 초기화",
-    "community": "커뮤니티"
+    "community": "커뮤니티",
+    "practice": "연습",
+    "sentenceBuilder": "문장 빌더",
+    "adminLogin": "관리자 로그인",
+    "adminDashboard": "관리자 대시보드"
   },
   "dashboard": {
     "myWordBook": "내 단어장",

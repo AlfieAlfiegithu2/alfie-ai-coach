@@ -100,7 +100,11 @@
     "home": "Início",
     "settings": "Configurações",
     "resetResults": "Redefinir Resultados",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Prática",
+    "sentenceBuilder": "Construtor de Sentenças",
+    "adminLogin": "Login de Administrador",
+    "adminDashboard": "Painel de Controle do Administrador"
   },
   "dashboard": {
     "myWordBook": "Meu Livro de Palavras",

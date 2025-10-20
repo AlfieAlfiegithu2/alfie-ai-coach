@@ -98,7 +98,11 @@
     "home": "Laman Utama",
     "settings": "Tetapan",
     "resetResults": "Set Semula Keputusan",
-    "community": "Komuniti"
+    "community": "Komuniti",
+    "practice": "Latihan",
+    "sentenceBuilder": "Pembina Ayat",
+    "adminLogin": "Log Masuk Pentadbir",
+    "adminDashboard": "Papan Pemuka Pentadbir"
   },
   "dashboard": {
     "myWordBook": "Buku Perkataan Saya",

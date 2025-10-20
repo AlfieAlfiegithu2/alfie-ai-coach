@@ -98,7 +98,11 @@
     "home": "首頁",
     "settings": "設定",
     "resetResults": "重設結果",
-    "community": "社群"
+    "community": "社群",
+    "practice": "練習",
+    "sentenceBuilder": "句子建造工具",
+    "adminLogin": "管理員登入",
+    "adminDashboard": "管理員儀表板"
   },
   "dashboard": {
     "myWordBook": "我的詞彙書",

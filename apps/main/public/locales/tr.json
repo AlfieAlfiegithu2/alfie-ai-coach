@@ -98,7 +98,11 @@
     "home": "Ana Sayfa",
     "settings": "Ayarlar",
     "resetResults": "Sonuçları Sıfırla",
-    "community": "Topluluk"
+    "community": "Topluluk",
+    "practice": "Pratik",
+    "sentenceBuilder": "Cümle Oluşturucu",
+    "adminLogin": "Yönetici Girişi",
+    "adminDashboard": "Yönetici Paneli"
   },
   "dashboard": {
     "myWordBook": "Kelime Kitabım",

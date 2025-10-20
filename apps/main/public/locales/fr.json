@@ -100,7 +100,11 @@
     "home": "Accueil",
     "settings": "Paramètres",
     "resetResults": "Effacer les résultats",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Pratique",
+    "sentenceBuilder": "Constructeur de phrases",
+    "adminLogin": "Connexion administrateur",
+    "adminDashboard": "Tableau de bord administrateur"
   },
   "dashboard": {
     "myWordBook": "Mon lexique",

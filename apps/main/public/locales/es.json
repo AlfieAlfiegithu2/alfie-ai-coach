@@ -98,7 +98,11 @@
     "home": "Inicio",
     "settings": "Configuración",
     "resetResults": "Restablecer Resultados",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Práctica",
+    "sentenceBuilder": "Constructor de Oraciones",
+    "adminLogin": "Inicio de sesión de administrador",
+    "adminDashboard": "Panel de administrador"
   },
   "dashboard": {
     "myWordBook": "Mi Libro de Palabras",

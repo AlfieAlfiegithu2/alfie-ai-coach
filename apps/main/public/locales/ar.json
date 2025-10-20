@@ -100,7 +100,11 @@
     "home": "الرئيسية",
     "settings": "الإعدادات",
     "resetResults": "إعادة تعيين النتائج",
-    "community": "Community"
+    "community": "Community",
+    "practice": "ممارسة",
+    "sentenceBuilder": "بناء الجملة",
+    "adminLogin": "تسجيل الدخول للمسؤول",
+    "adminDashboard": "لوحة تحكم المسؤول"
   },
   "dashboard": {
     "helloUser": "مرحبًا، {{name}}",

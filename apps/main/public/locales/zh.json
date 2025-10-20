@@ -98,7 +98,11 @@
     "home": "首页",
     "settings": "设置",
     "resetResults": "重置结果",
-    "community": "Community"
+    "community": "Community",
+    "practice": "练习",
+    "sentenceBuilder": "句子构建器",
+    "adminLogin": "管理员登录",
+    "adminDashboard": "管理员仪表板"
   },
   "dashboard": {
     "myWordBook": "我的单词本",

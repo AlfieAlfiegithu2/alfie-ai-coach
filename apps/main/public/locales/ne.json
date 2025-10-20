@@ -98,7 +98,11 @@
     "home": "घर",
     "settings": "सेटिङहरू",
     "resetResults": "परिणाम रिसेट गर्नुहोस्",
-    "community": "समुदाय"
+    "community": "समुदाय",
+    "practice": "अभ्यास",
+    "sentenceBuilder": "वाक्य निर्माणकर्ता",
+    "adminLogin": "प्रशासक लॉगिन",
+    "adminDashboard": "प्रशासक ड्याशबोर्ड"
   },
   "dashboard": {
     "myWordBook": "मेरो शब्द पुस्तक",

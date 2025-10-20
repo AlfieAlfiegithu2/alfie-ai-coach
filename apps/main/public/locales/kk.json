@@ -98,7 +98,11 @@
     "home": "Басты бет",
     "settings": "Баптаулар",
     "resetResults": "Нәтижелерді қалпына келтіру",
-    "community": "Қауымдастық"
+    "community": "Қауымдастық",
+    "practice": "Жаттығу",
+    "sentenceBuilder": "Сөйлем құрастырғышы",
+    "adminLogin": "Администратор кірісі",
+    "adminDashboard": "Администратор бақылау тақтасы"
   },
   "dashboard": {
     "myWordBook": "Менің сөздігім",

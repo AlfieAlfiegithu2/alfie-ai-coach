@@ -100,7 +100,11 @@
     "home": "Startseite",
     "settings": "Einstellungen",
     "resetResults": "Ergebnisse zurücksetzen",
-    "community": "Community"
+    "community": "Community",
+    "practice": "Üben",
+    "sentenceBuilder": "Satzbildung",
+    "adminLogin": "Admin-Anmeldung",
+    "adminDashboard": "Admin-Dashboard"
   },
   "dashboard": {
     "myWordBook": "Mein Vokabelheft",

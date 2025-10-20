@@ -98,7 +98,11 @@
     "home": "Beranda",
     "settings": "Pengaturan",
     "resetResults": "Reset Hasil",
-    "community": "Komunitas"
+    "community": "Komunitas",
+    "practice": "Praktik",
+    "sentenceBuilder": "Pembuat Kalimat",
+    "adminLogin": "Login Admin",
+    "adminDashboard": "Dasbor Admin"
   },
   "dashboard": {
     "myWordBook": "Buku Kata Saya",

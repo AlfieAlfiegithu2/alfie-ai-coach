@@ -98,7 +98,11 @@
     "home": "ہوم",
     "settings": "سیٹنگز",
     "resetResults": "نتائج ری سیٹ کریں",
-    "community": "کمیونٹی"
+    "community": "کمیونٹی",
+    "practice": "مشق",
+    "sentenceBuilder": "جملہ تعمیر کار",
+    "adminLogin": "ایڈمن لاگ ان",
+    "adminDashboard": "ایڈمن ڈیش بورڈ"
   },
   "dashboard": {
     "myWordBook": "میرا الفاظ کتاب",

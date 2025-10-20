@@ -100,7 +100,11 @@
     "home": "ホーム",
     "settings": "設定",
     "resetResults": "結果をリセット",
-    "community": "Community"
+    "community": "Community",
+    "practice": "練習",
+    "sentenceBuilder": "文構築ツール",
+    "adminLogin": "管理者ログイン",
+    "adminDashboard": "管理者ダッシュボード"
   },
   "dashboard": {
     "myWordBook": "単語帳",

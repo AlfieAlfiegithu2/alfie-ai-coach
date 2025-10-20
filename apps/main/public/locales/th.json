@@ -98,7 +98,11 @@
     "home": "หน้าแรก",
     "settings": "การตั้งค่า",
     "resetResults": "รีเซ็ตผลลัพธ์",
-    "community": "ชุมชน"
+    "community": "ชุมชน",
+    "practice": "ฝึกหัด",
+    "sentenceBuilder": "ตัวสร้างประโยค",
+    "adminLogin": "เข้าสู่ระบบผู้ดูแล",
+    "adminDashboard": "แดชบอร์ดผู้ดูแล"
   },
   "dashboard": {
     "myWordBook": "สมุดคำศัพท์ของฉัน",

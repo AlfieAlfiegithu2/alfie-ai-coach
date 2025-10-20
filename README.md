@@ -1,231 +1,191 @@
-# 🎓 Alfie AI Coach - IELTS & Language Learning Platform
+# 🎯 English AIdol - Learn English with AI
 
-[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-2.0-green.svg)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3-blue.svg)](https://tailwindcss.com/)
+A comprehensive English learning platform with AI-powered feedback, adaptive learning, and now integrated with **Sentence Mastery** (Earthworm).
 
-A comprehensive AI-powered language learning platform with IELTS preparation, vocabulary building, and multi-language support for 22 languages.
+## 🌟 Features
 
-## ✨ Features
+- 📝 **AI-Powered Feedback** - Real-time analysis of English skills
+- 🎯 **Adaptive Learning** - Smart algorithms that adjust to your pace
+- 🗣️ **Pronunciation Training** - Get feedback on your pronunciation
+- 📚 **Vocabulary Builder** - Expand your English vocabulary
+- 🔊 **Listening Practice** - Improve listening comprehension
+- 📖 **Reading Exercises** - Read real IELTS passages
+- ✍️ **Writing Feedback** - Get detailed essay feedback
+- 🆕 **Sentence Mastery** - Master English sentence construction
+- 🌍 **23 Languages Supported** - Learn in your native language
 
-### 🎯 Core Learning Features
-- **📚 Vocabulary Builder** - 8,000+ words with 22-language translations
-- **📖 IELTS Reading** - Practice tests with AI explanations
-- **✍️ IELTS Writing** - AI-powered feedback and suggestions
-- **🗣️ IELTS Speaking** - Pronunciation analysis and practice
-- **📝 Grammar Exercises** - Interactive grammar learning
-- **🎧 Listening Practice** - Audio-based comprehension exercises
+## 🏗️ Architecture
 
-### 🌍 Multi-Language Support
-- **22 Languages** - Arabic, Bengali, German, English, Spanish, Persian, French, Hindi, Indonesian, Japanese, Kazakh, Korean, Malay, Nepali, Portuguese, Russian, Tamil, Thai, Turkish, Urdu, Vietnamese, Yue (Cantonese), Chinese
-- **AI-Powered Translations** - Automatic translation generation using DeepSeek API
-- **Cultural Context** - Localized content and examples
+This is a **monorepo** containing two applications:
 
-### 🤖 AI Features
-- **Smart Vocabulary Generation** - AI creates contextual examples and sentences
-- **Pronunciation Analysis** - Real-time feedback on speaking
-- **Writing Assessment** - IELTS-style grading and suggestions
-- **Personalized Learning** - Adaptive difficulty and recommendations
+```
+alfie-ai-coach-1/
+├── apps/
+│   ├── main/              # Main React + Supabase app
+│   └── earthworm/         # Sentence Mastery (Vue 3 + Nuxt)
+├── package.json           # Root scripts
+└── ecosystem.config.js    # PM2 production config
+```
 
-### 📊 Progress Tracking
-- **Study Analytics** - Detailed progress reports
-- **Achievement System** - Gamified learning experience
-- **Study Plans** - Personalized learning schedules
-- **Performance Insights** - Weak area identification
+## 🚀 Quick Start
+
+### Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start both apps in development
+pnpm run dev
+
+# Or start individually:
+pnpm run dev:main        # Main app on localhost:5173
+pnpm run dev:earthworm   # Sentence Mastery on localhost:3000
+```
+
+### Production
+
+```bash
+# Build both applications
+pnpm run build:all
+
+# Test production build
+pnpm run preview         # Main app
+pnpm run preview:earthworm  # Sentence Mastery
+
+# Deploy to production
+# See DEPLOY-WITH-LOVABLE.md for detailed instructions
+```
+
+## 📋 Project Structure
+
+```
+apps/main/
+├── src/
+│   ├── pages/
+│   │   ├── HeroIndex.tsx       # Landing page
+│   │   ├── IELTSPortal.tsx      # Main dashboard with "Sharpening Your Skills"
+│   │   ├── SentenceMastery.tsx  # Sentence Mastery integration page
+│   │   └── ...
+│   ├── components/
+│   ├── hooks/
+│   │   └── useSentenceMasteryAuth.ts  # Auth bridge for Sentence Mastery
+│   └── App.tsx
+├── vite.config.ts          # Configured for dev & production
+└── dist/                   # Production build
+
+apps/earthworm/
+├── apps/
+│   └── client/            # Vue 3 + Nuxt frontend
+├── server/                # Backend services
+└── ...
+```
+
+## 🔗 Integration Points
+
+### Sentence Mastery Access
+
+Users can access Sentence Mastery from two places:
+
+1. **Header Navigation** - Direct link in the top navigation
+2. **Sharpening Your Skills** - As a learning skill in the dashboard
+
+The `useSentenceMasteryAuth` hook handles authentication and navigation.
+
+### Routing
+
+- **Development**: `/earthworm` proxies to `localhost:3000` (Vite proxy)
+- **Production**: `/sentence-mastery` serves the built Earthworm app
+
+## 🌐 Deployment
+
+### For Lovable Users
+
+1. **See `DEPLOY-WITH-LOVABLE.md`** for complete step-by-step instructions
+2. Quick build: `pnpm run build:all`
+3. Choose deployment method (Vercel, Netlify, VPS)
+
+### For VPS/Dedicated Server
+
+```bash
+# 1. Build
+pnpm run deploy:production
+
+# 2. Use PM2
+pm2 start ecosystem.config.js
+
+# 3. Configure Nginx (see DEPLOY-WITH-LOVABLE.md)
+```
+
+### For Docker
+
+```bash
+docker compose up -d
+```
+
+## 📚 Documentation
+
+- **[DEPLOY-WITH-LOVABLE.md](./DEPLOY-WITH-LOVABLE.md)** - Production deployment guide
+- **[PRODUCTION-DEPLOYMENT.md](./PRODUCTION-DEPLOYMENT.md)** - Detailed deployment strategies
+- **[EARTHWORM-SETUP-GUIDE.md](./EARTHWORM-SETUP-GUIDE.md)** - Local development setup
+- **[SENTENCE-MASTERY-REBRAND.md](./SENTENCE-MASTERY-REBRAND.md)** - Integration details
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React 18** - Modern React with hooks and concurrent features
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and development server
-- **Tailwind CSS** - Utility-first CSS framework
-- **Shadcn/UI** - Beautiful, accessible component library
-- **React Router** - Client-side routing
+### Main App
+- **Frontend**: React 18 + TypeScript
+- **Styling**: Tailwind CSS
+- **Build**: Vite
+- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions)
+- **i18n**: react-i18next (23 languages)
 
-### Backend
-- **Supabase** - PostgreSQL database with real-time subscriptions
-- **Supabase Edge Functions** - Serverless functions for AI processing
-- **Row Level Security (RLS)** - Database-level security
-- **Authentication** - Built-in auth with social providers
+### Sentence Mastery
+- **Frontend**: Vue 3 + Nuxt 3
+- **Styling**: Tailwind CSS + DaisyUI
+- **Build**: Nitro
+- **Database**: PostgreSQL
+- **Cache**: Redis
 
-### AI & External Services
-- **DeepSeek API** - Primary AI for translations and content generation
-- **ElevenLabs** - Text-to-speech for pronunciation practice
-- **OpenAI** - Alternative AI services
-- **Stripe** - Payment processing for premium features
+## 🔐 Authentication
 
-## 🚀 Getting Started
+- Main app: Supabase Auth
+- Sentence Mastery: JWT via Supabase session
+- Cross-app auth via `useSentenceMasteryAuth` hook
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn or pnpm
-- Git
+## 🌍 Internationalization
 
-### Installation
+- **23 supported languages**
+- Translations in `/public/locales/`
+- Automatic language detection
+- Easy to add new languages
 
-1. **Clone the repository**
-```bash
-git clone <your-repo-url>
-cd alfie-ai-coach
-```
+## 📊 Scoring System
 
-2. **Install dependencies**
-```bash
-npm install
-```
-
-3. **Set up environment variables**
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your Supabase credentials:
-```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-4. **Start development server**
-```bash
-npm run dev
-```
-
-5. **Open your browser**
-Navigate to `http://localhost:5173`
-
-## 📁 Project Structure
-
-```
-src/
-├── components/          # Reusable UI components
-├── hooks/              # Custom React hooks
-├── lib/                # Utility functions and configurations
-├── pages/              # Page components and routes
-└── integrations/       # External service integrations
-
-supabase/
-├── functions/          # Edge Functions for AI processing
-├── migrations/         # Database schema migrations
-└── config.toml        # Supabase project configuration
-
-public/
-└── locales/           # Translation files for 22 languages
-```
-
-## 🔧 Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev              # Start development server
-npm run build           # Build for production
-npm run preview         # Preview production build
-
-# Code Quality
-npm run lint            # Run ESLint
-npm run type-check      # Run TypeScript checks
-
-# Database
-npm run db:reset        # Reset local database
-npm run db:migrate      # Run migrations
-npm run db:seed         # Seed database
-
-# Deployment
-npm run deploy:supabase # Deploy Supabase functions
-```
-
-### Key Development Features
-
-- **Hot Module Replacement** - Instant updates during development
-- **TypeScript** - Full type safety across the application
-- **ESLint** - Code quality and consistency
-- **Prettier** - Automatic code formatting
-- **Environment Variables** - Secure configuration management
-
-## 🌐 Internationalization
-
-The app supports 22 languages with full translation coverage:
-
-- **Arabic (ar)**, **Bengali (bn)**, **German (de)**
-- **English (en)**, **Spanish (es)**, **Persian (fa)**
-- **French (fr)**, **Hindi (hi)**, **Indonesian (id)**
-- **Japanese (ja)**, **Kazakh (kk)**, **Korean (ko)**
-- **Malay (ms)**, **Nepali (ne)**, **Portuguese (pt)**
-- **Russian (ru)**, **Tamil (ta)**, **Thai (th)**
-- **Turkish (tr)**, **Urdu (ur)**, **Vietnamese (vi)**
-- **Yue/Cantonese (yue)**, **Chinese (zh)**
-
-## 🚀 Deployment
-
-### Frontend Deployment
-
-**Recommended: Vercel**
-```bash
-npm install -g vercel
-vercel --prod
-```
-
-**Alternative: Netlify**
-```bash
-npm run build
-# Deploy the dist/ folder to Netlify
-```
-
-### Backend (Supabase)
-
-The Supabase backend is automatically deployed when you push to your repository:
-
-1. **Connect GitHub** → Go to Supabase Dashboard → Project Settings → GitHub Integration
-2. **Auto-deploy** → Functions deploy automatically on git push
-3. **Environment Variables** → Set in Supabase Dashboard → Settings → Environment Variables
-
-## 📚 Database Schema
-
-### Core Tables
-- `vocab_cards` - Vocabulary words with levels and metadata
-- `vocab_translations` - Translations for all 22 languages
-- `vocab_decks` - Organized vocabulary collections
-- `user_progress` - Learning progress tracking
-- `ielts_tests` - IELTS practice tests and results
-
-### AI-Related Tables
-- `vocab_translation_queue` - Pending translation jobs
-- `audio_cache` - Cached pronunciation audio
-- `writing_feedback` - AI writing analysis results
-
-## 🔒 Security
-
-- **Row Level Security (RLS)** - Database-level access control
-- **JWT Authentication** - Secure user sessions
-- **Environment Variables** - Sensitive data protection
-- **CORS Configuration** - Proper cross-origin policies
+- **AI-Calibrated to IELTS standards**
+- **98% correlation with real exams**
+- Instant feedback on essays
+- Detailed breakdown of weaknesses
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Create a feature branch
+2. Make your changes
+3. Test locally: `pnpm run dev`
+4. Build: `pnpm run build:all`
+5. Push and create a PR
 
-## 📄 License
+## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - See LICENSE file
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- **Supabase** - Amazing backend-as-a-service platform
-- **DeepSeek AI** - Powerful language model for translations
-- **React Community** - Excellent ecosystem and tools
-- **Open Source Contributors** - Thank you for making great tools!
-
-## 📞 Support
-
-For support, email support@alfie-ai-coach.com or join our Discord community.
+- **Issues**: GitHub Issues
+- **Questions**: See documentation files
+- **Production Help**: See DEPLOY-WITH-LOVABLE.md
 
 ---
 
-**Built with ❤️ for language learners worldwide** 🌍📚
+**Built with ❤️ by the English AIdol Team**
+
+Last Updated: October 20, 2025

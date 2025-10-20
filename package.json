@@ -6,13 +6,18 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "dev:main": "pnpm --filter main dev",
-    "dev:earthworm": "pnpm --filter earthworm dev",
+    "dev:earthworm": "pnpm --filter earthworm dev:client",
     "build": "pnpm -r build",
     "build:main": "pnpm --filter main build",
-    "build:earthworm": "pnpm --filter earthworm build",
+    "build:earthworm": "pnpm --filter earthworm build:client",
+    "build:all": "pnpm run build:main && pnpm run build:earthworm",
+    "preview": "pnpm --filter main preview",
+    "preview:earthworm": "pnpm --filter earthworm preview",
     "docker:start": "docker compose up -d",
     "docker:stop": "docker compose stop",
-    "docker:down": "docker compose down -v"
+    "docker:down": "docker compose down -v",
+    "deploy:production": "pnpm run build:all && echo 'Build complete! Ready for production deployment.'",
+    "start:production": "pm2 start ecosystem.config.js && pm2 save"
   },
   "devDependencies": {
     "pnpm": "^8.0.0"

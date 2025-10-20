@@ -15,8 +15,8 @@ const SentenceMastery = () => {
         const context = JSON.parse(sessionData);
         if (context?.token && context?.userId) {
           // Redirect to the Sentence Mastery application
-          // This will be proxied to the Earthworm app via Vite
-          window.location.href = '/sentence-mastery-app/';
+          // This will be proxied to the Earthworm app via Vite proxy (/earthworm -> localhost:5174)
+          window.location.href = '/earthworm/';
           return;
         }
       } catch (error) {

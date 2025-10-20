@@ -11,7 +11,6 @@ export const SKILLS: Skill[] = [
   { slug: "sentence-structure-scramble", label: "Sentence Structure Scramble" },
   { slug: "listening-for-details", label: "Listening for Details" },
   { slug: "synonym-match", label: "Synonym Match" },
-  { slug: "collocation-connect", label: "Collocation Connect" },
   { slug: "sentence-mastery", label: "Sentence Mastery" },
 ];
 

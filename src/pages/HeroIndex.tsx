@@ -455,7 +455,7 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Highlights */}
+      {/* About Section - Highlights */}
       <section className="sm:py-20 pt-16 pb-16" id="about">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -740,9 +740,83 @@ const HeroIndex = () => {
         </div>
       </section>
 
+      {/* New Highlights Section - Bottom with Image Layout */}
+      <section className="sm:py-20 pt-16 pb-16" id="highlights-bottom">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          
+          {/* Highlight 1: AI-Powered Feedback */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+            <div className="flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center border-2 border-purple-200">
+                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+                {getText(['highlights', 'aiFeedback', 'title'])}
+              </h3>
+              <p className="text-lg text-black/70 font-nunito leading-relaxed">
+                {getText(['highlights', 'aiFeedback', 'description'])}
+              </p>
+            </div>
+          </div>
+
+          {/* Highlight 2: Adaptive Learning */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20 lg:auto-cols-max">
+            <div className="lg:order-2 flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center border-2 border-blue-200">
+                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
+              </div>
+            </div>
+            <div className="lg:order-1">
+              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+                {getText(['highlights', 'adaptive', 'title'])}
+              </h3>
+              <p className="text-lg text-black/70 font-nunito leading-relaxed">
+                {getText(['highlights', 'adaptive', 'description'])}
+              </p>
+            </div>
+          </div>
+
+          {/* Highlight 3: Proven Results */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+            <div className="flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center border-2 border-green-200">
+                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+                {getText(['highlights', 'proven', 'title'])}
+              </h3>
+              <p className="text-lg text-black/70 font-nunito leading-relaxed">
+                {getText(['highlights', 'proven', 'description'])}
+              </p>
+            </div>
+          </div>
+
+          {/* Highlight 4: Expert Community */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center lg:auto-cols-max">
+            <div className="lg:order-2 flex items-center justify-center">
+              <div className="w-80 h-80 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl flex items-center justify-center border-2 border-orange-200">
+                <div className="text-center text-black/40 text-sm">Photo will be added here</div>
+              </div>
+            </div>
+            <div className="lg:order-1">
+              <h3 className="text-3xl sm:text-4xl font-semibold tracking-tight font-nunito text-black mb-4">
+                {getText(['highlights', 'community', 'title'])}
+              </h3>
+              <p className="text-lg text-black/70 font-nunito leading-relaxed">
+                {getText(['highlights', 'community', 'description'])}
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="border-black/10 border-t pt-10 pb-10">
+      <footer className="border-t border-black/10 bg-white py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>

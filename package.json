@@ -3,7 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "dependencies": {},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.76.0",
+    "@vitejs/plugin-react-swc": "^4.1.0",
+    "lovable-tagger": "^1.1.11",
+    "vite": "^7.1.11"
+  },
   "scripts": {
     "postinstall": "npm --prefix apps/main install",
     "dev": "npm --prefix apps/main run dev",

@@ -63,8 +63,6 @@ verify_jwt = false
 [functions.pronunciation-analysis]
 verify_jwt = true
 
-[functions.generate-writing-corrections]
-verify_jwt = true
 
 [functions.smart-vocabulary]
 verify_jwt = true

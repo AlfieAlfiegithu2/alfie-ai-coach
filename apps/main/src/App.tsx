@@ -108,13 +108,8 @@ import PlanPage from "./pages/Plan";
 const queryClient = new QueryClient();
 
 const App = () => {
-<<<<<<< HEAD
   // ⛔ REMOVED: Auto-translation watchdog that was causing massive edge function invocations
   // Translations are now ONLY triggered manually from Admin Vocab Manager
-=======
-  // ⛔ REMOVED: Auto-translation watchdog that was causing massive edge function invocations
-  // Translations are now ONLY triggered manually from Admin Vocab Manager
->>>>>>> 937838edea99b8c8780145cc8b04b187afdb649b
 
   return (
     <I18nextProvider i18n={i18n}>

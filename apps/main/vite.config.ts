@@ -40,6 +40,16 @@ export default defineConfig(({ mode }) => {
       sourcemap: !isProd,
       minify: isProd ? 'terser' : false,
       chunkSizeWarningLimit: 1000, // Increase chunk size limit to avoid warnings
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            // Put Supabase client in its own chunk to avoid conflicts
+            if (id.includes('supabase') || id.includes('@supabase')) {
+              return 'supabase';
+            }
+          },
+        },
+      },
     },
     plugins: [
       react(),

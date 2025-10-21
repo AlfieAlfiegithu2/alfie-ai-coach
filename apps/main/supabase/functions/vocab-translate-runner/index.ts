@@ -221,20 +221,9 @@ serve(async (req) => {
     const nextOffset = offset + cards.length;
     const hasMore = cards.length === effectiveLimit;
 
-    // Only auto-chain if we actually processed translations (not just skipping already-translated cards)
-    if (hasMore && processed > 0) {
-      const chain = (async () => {
-        try {
-          console.log(`⛓️  Chaining to next batch: offset=${nextOffset}`);
-          await supabase.functions.invoke('vocab-translate-runner', {
-            body: { offset: nextOffset, limit: effectiveLimit, languages: targetLangs },
-          });
-        } catch (e) {
-          console.error('Self-chain failed:', e);
-        }
-      })();
-      EdgeRuntime?.waitUntil?.(chain);
-    }
+    // Auto-chaining disabled to prevent runaway invocations
+    // Manually invoke vocab-translate-runner to continue processing if needed
+    console.log('⛔ Auto-chaining disabled; not invoking next batch automatically.');
 
     return new Response(JSON.stringify({
       success: true,

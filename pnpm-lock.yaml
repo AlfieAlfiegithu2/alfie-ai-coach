@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      lint-staged:
+        specifier: ^15.5.2
+        version: 15.5.2
       pnpm:
         specifier: ^8.0.0
         version: 8.15.9

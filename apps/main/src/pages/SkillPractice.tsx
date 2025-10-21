@@ -4,7 +4,7 @@ import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { getSkillBySlug } from "@/lib/skills";
-import { supabase } from "@/integrations/supabase/client";
+// Import supabase client dynamically to avoid bundling conflicts
 import { Button } from "@/components/ui/button";
 import PronunciationPracticeItem from "@/components/PronunciationPracticeItem";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
@@ -15,7 +15,8 @@ import SentenceScrambleMapView from "@/components/SentenceScrambleMapView";
 import ListeningMapView from "@/components/ListeningMapView";
 import SynonymMapView from "@/components/SynonymMapView";
 import CollocationMapView from "@/components/CollocationMapView";
-const db = supabase as any;
+// Import supabase client dynamically
+let db: any = null;
 
 interface Question {
   id: string;
@@ -77,7 +78,8 @@ const [overallSummary, setOverallSummary] = useState<string>("");
 
   const loadQuestions = async () => {
     if (!skill) return;
-    const { data, error } = await db
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase
       .from("skill_practice_questions")
       .select("id, content")
       .eq("skill_type", skill.label)
@@ -87,7 +89,8 @@ const [overallSummary, setOverallSummary] = useState<string>("");
 
   const loadTests = async () => {
     if (!slug) return;
-    const { data, error } = await db
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase
       .from("skill_tests")
       .select("id,title")
       .eq("skill_slug", slug)
@@ -96,7 +99,8 @@ const [overallSummary, setOverallSummary] = useState<string>("");
   };
 
   const loadPronunciation = async () => {
-    const { data: test, error: testErr } = await db
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: test, error: testErr } = await supabase
       .from("pronunciation_tests")
       .select("id,title")
       .eq("is_published", true)

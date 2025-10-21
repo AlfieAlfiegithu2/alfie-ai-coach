@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import StudentLayout from '@/components/StudentLayout';
-import { supabase } from '@/integrations/supabase/client';
+// Import supabase client dynamically to avoid bundling conflicts
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import { useAuth } from '@/hooks/useAuth';
 import { Home } from 'lucide-react';
@@ -78,6 +78,7 @@ const IELTSPortal = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
+      const { supabase } = await import('@/integrations/supabase/client');
       // Fetch all IELTS tests from admin (case insensitive)
       const {
         data: testsData,

@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
 import i18n from './lib/i18n';
 import { useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
+// Import supabase client dynamically to avoid bundling conflicts
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
 import LanguageWelcomeBanner from "./components/LanguageWelcomeBanner";
@@ -114,7 +114,9 @@ const App = () => {
       const key = 'vocabRunnerStartedGlobal';
       if (!localStorage.getItem(key)) {
         localStorage.setItem(key, '1');
-        supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 150 } }).catch(() => {});
+        import('@/integrations/supabase/client').then(({ supabase }) => {
+          supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 150 } }).catch(() => {});
+        });
       }
     } catch {}
 
@@ -127,6 +129,7 @@ const App = () => {
         const now = Date.now();
         if (now - last < intervalMs - 5000) return; // another tab recently pinged
         localStorage.setItem(LAST_KEY, String(now));
+        const { supabase } = await import('@/integrations/supabase/client');
         await supabase.functions.invoke('vocab-translate-runner', { body: { offset: 0, limit: 150 } });
       } catch {}
     };

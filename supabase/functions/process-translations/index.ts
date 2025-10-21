@@ -123,24 +123,16 @@ async function processBackgroundTranslations(supabase: any, authHeader: string) 
 
   console.log(`✅ Translation batch completed: ${processedCount} successful, ${errorCount} failed`);
 
-  // Check remaining jobs and chain next batch(es) so UI doesn't need to stay open
+  // REMOVED AUTO-CHAINING to prevent runaway function invocations
+  // Auto-chaining was causing massive edge function usage
+  // Users should manually trigger via kick-translations or vocab-translate-runner instead
   const { count: remaining } = await (supabase as any)
     .from('vocab_translation_queue')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'pending');
 
   const rem = remaining || 0;
-  if (rem > 0) {
-    // Fire-and-forget up to 3 parallel next batches (continue even if previous batch had only failures)
-    const parallel = Math.min(3, Math.ceil(rem / 100));
-    const kicks = Array.from({ length: parallel }).map(() =>
-      (supabase as any).functions.invoke('process-translations', { body: { reason: 'chain' } }).catch(() => null)
-    );
-    await Promise.allSettled(kicks);
-    console.log(`🔁 Chained ${parallel} next batch(es), remaining: ${rem}`);
-  } else {
-    console.log('🎉 No remaining jobs, stopping chain.');
-  }
+  console.log(`📊 Batch complete. Remaining pending jobs: ${rem}`);
 }
 
 // Enhanced translation function with rich data

@@ -180,34 +180,7 @@ const AdminVocabManager: React.FC = () => {
       setIsAdmin(!!data);
     };
     check();
-    // ⛔ REMOVED: Auto-polling that was causing excessive invocations
-    // Progress updates now only happen on user action
-          if (statsData && statsData.length > 0) {
-            const stats = statsData[0];
-            setTranslationProgress(prev => ({
-              ...prev,
-              current: stats.total_translations || 0,
-              total: 7821 * 23, // Total cards * languages
-            }));
-            
-            // Check if translation is complete
-            const totalTarget = 7821 * 23;
-            if (stats.total_translations >= totalTarget) {
-              setIsTranslating(false);
-              localStorage.removeItem('vocabTranslationActive');
-              toast({
-                title: 'Translation Complete! 🎉',
-                description: `All ${stats.total_translations} translations completed across ${stats.unique_cards} words.`,
-              });
-            }
-          }
-        }
-      } catch (e) {
-        // Silent poll failures to avoid user-facing errors while function deploys
-      }
-    }, 3000);
-    return () => clearInterval(id);
-  }, [isTranslating]);
+  }, []);
 
   const seed = async (total: number = 5000, enOnly: boolean = false) => {
     setSeeding(true);

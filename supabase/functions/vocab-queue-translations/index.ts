@@ -27,20 +27,20 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    // Authenticate if Authorization header present; otherwise allow public triggering
-    let user: any = null;
-    if (authHeader) {
-      const res = await userClient.auth.getUser();
-      user = (res as any)?.data?.user || null;
+    // Require authentication - no public access
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    // If a user is provided, optionally enforce admin; otherwise continue for public kickoff
-    if (user) {
-      try {
-        const { data: isAdmin } = await (userClient as any).rpc('is_admin');
-        if (!isAdmin) {
-          return new Response(JSON.stringify({ success: false, error: 'Forbidden: admin only' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-      } catch (_) { /* if rpc missing, continue */ }
+
+    // Require admin role
+    try {
+      const { data: isAdmin } = await (userClient as any).rpc('is_admin');
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden: admin only' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    } catch (err) {
+      return new Response(JSON.stringify({ success: false, error: 'Admin check failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Service role client for queue inserts (bypass RLS)

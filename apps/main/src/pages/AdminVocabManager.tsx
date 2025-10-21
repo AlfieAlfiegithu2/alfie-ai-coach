@@ -180,14 +180,8 @@ const AdminVocabManager: React.FC = () => {
       setIsAdmin(!!data);
     };
     check();
-    const id = setInterval(async () => {
-      try {
-        const { data } = await supabase.functions.invoke('vocab-bulk-status');
-        if (data?.success) setProgress(data.job || {});
-        
-        // If translating, also check translation progress
-        if (isTranslating) {
-          const { data: statsData } = await supabase.rpc('get_translation_stats') as any;
+    // ⛔ REMOVED: Auto-polling that was causing excessive invocations
+    // Progress updates now only happen on user action
           if (statsData && statsData.length > 0) {
             const stats = statsData[0];
             setTranslationProgress(prev => ({

@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       sourcemap: !isProd,
       minify: isProd ? 'terser' : false,
+      chunkSizeWarningLimit: 1000, // Increase chunk size limit to avoid warnings
     },
     plugins: [
       react(),

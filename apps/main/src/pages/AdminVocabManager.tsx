@@ -180,40 +180,7 @@ const AdminVocabManager: React.FC = () => {
       setIsAdmin(!!data);
     };
     check();
-    const id = setInterval(async () => {
-      try {
-        const { data } = await supabase.functions.invoke('vocab-bulk-status');
-        if (data?.success) setProgress(data.job || {});
-        
-        // If translating, also check translation progress
-        if (isTranslating) {
-          const { data: statsData } = await supabase.rpc('get_translation_stats') as any;
-          if (statsData && statsData.length > 0) {
-            const stats = statsData[0];
-            setTranslationProgress(prev => ({
-              ...prev,
-              current: stats.total_translations || 0,
-              total: 7821 * 23, // Total cards * languages
-            }));
-            
-            // Check if translation is complete
-            const totalTarget = 7821 * 23;
-            if (stats.total_translations >= totalTarget) {
-              setIsTranslating(false);
-              localStorage.removeItem('vocabTranslationActive');
-              toast({
-                title: 'Translation Complete! 🎉',
-                description: `All ${stats.total_translations} translations completed across ${stats.unique_cards} words.`,
-              });
-            }
-          }
-        }
-      } catch (e) {
-        // Silent poll failures to avoid user-facing errors while function deploys
-      }
-    }, 3000);
-    return () => clearInterval(id);
-  }, [isTranslating]);
+  }, []);
 
   const seed = async (total: number = 5000, enOnly: boolean = false) => {
     setSeeding(true);

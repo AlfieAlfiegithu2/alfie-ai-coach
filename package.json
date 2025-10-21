@@ -10,6 +10,7 @@
     "build": "pnpm -r build",
     "build:main": "pnpm --filter main build",
     "build:earthworm": "pnpm --filter earthworm build",
+    "build:dev": "pnpm --filter main build:dev",
     "build:all": "pnpm run build:main && pnpm run build:earthworm",
     "preview": "pnpm --filter main preview",
     "preview:earthworm": "pnpm --filter earthworm preview",

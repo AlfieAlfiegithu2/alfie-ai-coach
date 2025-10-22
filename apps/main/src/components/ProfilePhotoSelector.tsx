@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { User, Upload, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -47,40 +48,33 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
 
     setUploading(true);
     try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      console.log(`📤 Uploading avatar: ${file.name} (${file.size} bytes)`);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
+      // Upload to R2 instead of Supabase
+      const result = await AudioR2.uploadAvatar(file, user.id);
 
-      if (uploadError) throw uploadError;
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
+      console.log(`✅ Avatar uploaded successfully: ${result.url}`);
 
-      // Update profile with avatar URL
+      // Update profile with R2 URL
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: result.url })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
-      console.log('✅ Custom photo uploaded successfully');
-
       // Refresh profile to show new photo
       await refreshProfile();
-      
+
       toast({
         title: "Success!",
         description: "Profile photo updated successfully!"
       });
-      
+
       setOpen(false);
       onPhotoUpdate?.();
     } catch (error) {

@@ -47,16 +47,16 @@ const IELTSSpeakingResults = () => {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
   
-  const { testData, recordings } = location.state || {};
+  const { testData, recordings, audioBlobs } = location.state || {};
 
   useEffect(() => {
-    if (!testData || !recordings) {
+    if (!testData || !recordings || !audioBlobs) {
       navigate('/ielts-portal');
       return;
     }
-    
+
     analyzeTestResults();
-  }, [testData, recordings, navigate]);
+  }, [testData, recordings, audioBlobs, navigate]);
 
   const analyzeTestResults = async () => {
     setIsLoading(true);
@@ -64,20 +64,17 @@ const IELTSSpeakingResults = () => {
       console.log('🤖 Starting comprehensive audio-first analysis...');
       console.log('📊 Input data:', { testData: !!testData, recordingsCount: recordings.length });
 
-      // Prepare all recordings for batch analysis
-      const recordingsWithDetails = await Promise.all(recordings.map(async (recording: any) => {
-        const response = await fetch(recording.audio_url);
-        const blob = await response.blob();
-        
+      // Prepare all recordings for batch analysis using audio blobs directly
+      const recordingsWithDetails = recordings.map((recording: any) => {
         const partMatch = recording.part.match(/part(\d+)_q(\d+)/);
         let questionText = "";
         let partNumber = 1;
         let questionIndex = 0;
-        
+
         if (partMatch) {
           partNumber = parseInt(partMatch[1]);
           questionIndex = parseInt(partMatch[2]);
-          
+
           if (partNumber === 1 && testData.part1_prompts[questionIndex]) {
             questionText = testData.part1_prompts[questionIndex].transcription || testData.part1_prompts[questionIndex].title;
           } else if (partNumber === 2 && testData.part2_prompt) {
@@ -87,8 +84,25 @@ const IELTSSpeakingResults = () => {
           }
         }
 
+        // Get the audio blob from the passed audioBlobs or create from recording key
+        const audioKey = recording.part;
+        const audioBlob = audioBlobs?.[audioKey];
+
+        if (!audioBlob) {
+          console.error(`No audio blob found for ${audioKey}`);
+          return {
+            part: `Part ${partNumber}`,
+            partNum: partNumber,
+            questionIndex,
+            questionTranscription: questionText,
+            audio_base64: null,
+            audio_url: recording.audio_url,
+            error: 'No audio data available'
+          };
+        }
+
+        // Convert blob to base64
         const reader = new FileReader();
-        
         return new Promise((resolve) => {
           reader.onloadend = () => {
             const base64Audio = reader.result?.toString().split(',')[1];
@@ -101,9 +115,9 @@ const IELTSSpeakingResults = () => {
               audio_url: recording.audio_url
             });
           };
-          reader.readAsDataURL(blob);
+          reader.readAsDataURL(audioBlob);
         });
-      }));
+      });
 
       const allRecordings = await Promise.all(recordingsWithDetails);
 

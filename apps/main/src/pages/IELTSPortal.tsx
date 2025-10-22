@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import StudentLayout from '@/components/StudentLayout';
 // Import supabase client dynamically to avoid bundling conflicts
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
@@ -367,7 +368,16 @@ const IELTSPortal = () => {
 
   return (
     <div className="min-h-screen relative">
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" 
+      <SEO
+        title="IELTS Preparation Portal"
+        description="Complete IELTS preparation with AI-powered feedback. Practice reading, listening, writing, and speaking with personalized guidance and real exam simulations."
+        keywords="IELTS preparation, IELTS practice tests, IELTS writing feedback, IELTS speaking practice, IELTS reading, IELTS listening, IELTS band score"
+        type="website"
+        schemaType="course"
+        courseType="IELTS"
+        courseLevel="Intermediate to Advanced"
+      />
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
            style={{
              backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
              backgroundColor: '#f3f4f6'

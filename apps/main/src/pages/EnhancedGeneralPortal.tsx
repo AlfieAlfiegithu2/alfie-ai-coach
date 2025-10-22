@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  BookOpen, 
-  Play, 
-  Clock, 
-  Users, 
-  Star, 
+import {
+  BookOpen,
+  Play,
+  Clock,
+  Users,
+  Star,
   Target,
   Zap,
   Globe,
@@ -19,6 +19,7 @@ import {
   MessageCircle
 } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
+import SEO from "@/components/SEO";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import LightRays from '@/components/animations/LightRays';
@@ -161,14 +162,23 @@ const EnhancedGeneralPortal = () => {
 
   return (
     <div className="min-h-screen bg-gray-950 relative">
-      <LightRays 
-        raysOrigin="top-center" 
-        raysColor="#1E40AF" 
-        raysSpeed={0.6} 
-        lightSpread={2.0} 
-        rayLength={1.2} 
-        pulsating={false} 
-        fadeDistance={0.8} 
+      <SEO
+        title="General English Learning Portal"
+        description="Comprehensive General English courses covering grammar, vocabulary, speaking, listening, reading, and writing skills with AI-powered feedback."
+        keywords="General English, grammar practice, vocabulary building, English speaking, English listening, English reading, English writing, language skills"
+        type="website"
+        schemaType="course"
+        courseType="General English"
+        courseLevel="Beginner to Advanced"
+      />
+      <LightRays
+        raysOrigin="top-center"
+        raysColor="#1E40AF"
+        raysSpeed={0.6}
+        lightSpread={2.0}
+        rayLength={1.2}
+        pulsating={false}
+        fadeDistance={0.8}
         saturation={0.4} 
         followMouse={true} 
         mouseInfluence={0.05} 

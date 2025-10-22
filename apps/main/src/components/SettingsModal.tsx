@@ -8,6 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Settings, Calendar as CalendarIcon, LogOut, Upload, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -187,26 +188,21 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
 
     setAvatarUploading(true);
     try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      console.log(`📤 Uploading avatar: ${file.name} (${file.size} bytes)`);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
+      // Upload to R2 instead of Supabase
+      const result = await AudioR2.uploadAvatar(file, user.id);
 
-      if (uploadError) throw uploadError;
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
+      console.log(`✅ Avatar uploaded successfully: ${result.url}`);
 
-      // Update profile with avatar URL
+      // Update profile with R2 URL
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: result.url })
         .eq('id', user.id);
 
       if (updateError) throw updateError;

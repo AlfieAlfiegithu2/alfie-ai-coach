@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Star, Zap, Crown } from 'lucide-react';
+import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -144,6 +145,15 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
+      <SEO
+        title="English Learning Pricing Plans"
+        description="Choose the perfect plan for your English learning journey. From free basic access to premium unlimited practice with advanced AI feedback."
+        keywords="English learning pricing, AI tutor subscription, IELTS preparation cost, language learning plans, premium English course"
+        type="website"
+        schemaType="service"
+        serviceName="English Language Learning Platform"
+        serviceDescription="AI-powered English learning platform with multiple subscription tiers offering personalized feedback and practice tests"
+      />
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">

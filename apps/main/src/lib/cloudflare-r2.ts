@@ -18,11 +18,11 @@ export interface R2Config {
 
 // R2 Configuration - Update these with your Cloudflare R2 details
 const R2_CONFIG: R2Config = {
-  accountId: process.env.VITE_CLOUDFLARE_ACCOUNT_ID || '',
-  accessKeyId: process.env.VITE_CLOUDFLARE_ACCESS_KEY_ID || '',
-  secretAccessKey: process.env.VITE_CLOUDFLARE_SECRET_ACCESS_KEY || '',
-  bucketName: process.env.VITE_CLOUDFLARE_R2_BUCKET || 'alfie-ai-audio',
-  publicUrl: process.env.VITE_CLOUDFLARE_R2_PUBLIC_URL || 'https://your-bucket.your-domain.com'
+  accountId: import.meta.env.VITE_CLOUDFLARE_ACCOUNT_ID || '',
+  accessKeyId: import.meta.env.VITE_CLOUDFLARE_ACCESS_KEY_ID || '',
+  secretAccessKey: import.meta.env.VITE_CLOUDFLARE_SECRET_ACCESS_KEY || '',
+  bucketName: import.meta.env.VITE_CLOUDFLARE_R2_BUCKET || 'alfie-ai-audio',
+  publicUrl: import.meta.env.VITE_CLOUDFLARE_R2_PUBLIC_URL || 'https://your-bucket.your-domain.com'
 };
 
 // Upload file to R2

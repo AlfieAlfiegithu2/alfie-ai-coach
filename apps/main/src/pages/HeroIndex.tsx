@@ -14,6 +14,7 @@ import LanguageWelcomeBanner from "@/components/LanguageWelcomeBanner";
 import { usePageTranslation, PageContent } from "@/hooks/usePageTranslation";
 import { PricingCard } from "@/components/PricingCard";
 import SkillsProgressChart from "@/components/SkillsProgressChart";
+import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 const HeroIndex = () => {
   const navigate = useNavigate();
@@ -351,6 +352,13 @@ const HeroIndex = () => {
   return <div className="min-h-screen antialiased text-black bg-neutral-50" style={{
     fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'"
   }}>
+      <SEO
+        title="Master English with AI-Powered Learning"
+        description="Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English."
+        keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC"
+        type="website"
+        schemaType="organization"
+      />
       {/* Language Welcome Banner */}
       <LanguageWelcomeBanner onLanguageSelected={(lang) => {
         toast({

@@ -48,7 +48,7 @@ const Header = () => {
           {/* Sentence Mastery Link */}
           <Button 
             variant="outline" 
-            onClick={() => navigate('/skills/sentence-mastery')}
+            onClick={() => navigate('/earthworm')}
             className="gap-2"
           >
             <BookOpen className="w-4 h-4" />
@@ -129,7 +129,7 @@ const Header = () => {
             {/* Sentence Mastery Link Mobile */}
             <Button 
               variant="outline" 
-              onClick={() => navigate('/skills/sentence-mastery')}
+              onClick={() => navigate('/earthworm')}
               className="w-full justify-start gap-2"
             >
               <BookOpen className="w-4 h-4" />

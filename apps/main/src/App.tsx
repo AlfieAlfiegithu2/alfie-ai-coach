@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
+import { HelmetProvider } from 'react-helmet-async';
 import i18n from './lib/i18n';
 import { useEffect } from 'react';
 // Import supabase client dynamically to avoid bundling conflicts
@@ -112,15 +113,16 @@ const App = () => {
   // Translations are now ONLY triggered manually from Admin Vocab Manager
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <TooltipProvider>
-            <GlobalTextSelection>
-              <LanguageWelcomeBanner />
-              <Toaster />
-              <Sonner />
-              <Routes>
+    <HelmetProvider>
+      <I18nextProvider i18n={i18n}>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <TooltipProvider>
+              <GlobalTextSelection>
+                <LanguageWelcomeBanner />
+                <Toaster />
+                <Sonner />
+                <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/hero" element={<HeroIndex />} />
             <Route path="/hero/" element={<HeroIndex />} />
@@ -276,13 +278,14 @@ const App = () => {
             <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
-            </Routes>
-            <MinimalisticChatbot />
-          </GlobalTextSelection>
-        </TooltipProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-    </I18nextProvider>
+                </Routes>
+                <MinimalisticChatbot />
+              </GlobalTextSelection>
+            </TooltipProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </I18nextProvider>
+    </HelmetProvider>
   );
 };
 

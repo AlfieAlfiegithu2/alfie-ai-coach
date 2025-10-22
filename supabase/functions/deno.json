@@ -3,12 +3,13 @@
     "jsx": "react-jsx",
     "jsxImportSource": "https://esm.sh/react@18",
     "lib": ["deno.window"],
-    "types": [
-      "https://esm.sh/@types/node"
-    ]
+    "allowJs": true,
+    "strict": false,
+    "noImplicitAny": false
   },
   "imports": {
-    "xhr": "https://deno.land/x/xhr@0.1.0/mod.ts"
+    "xhr": "https://deno.land/x/xhr@0.1.0/mod.ts",
+    "std/": "https://deno.land/std@0.168.0/"
   }
 }
 

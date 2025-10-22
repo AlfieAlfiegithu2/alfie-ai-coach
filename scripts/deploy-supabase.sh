@@ -40,6 +40,12 @@ functions_to_deploy=(
     "send-magic-link"
     "plan-ai-generator"
     "plan-focus-to-todos"
+    "r2-upload"
+    "r2-delete"
+    "r2-list"
+    "r2-health-check"
+    "migrate-to-r2"
+    "enhanced-speech-analysis"
 )
 
 for func in "${functions_to_deploy[@]}"; do

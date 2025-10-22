@@ -131,6 +131,7 @@
   --gradient-card: linear-gradient(145deg, hsl(0 0% 100% / 0.8), hsl(240 10% 98% / 0.6));
   --gradient-success: linear-gradient(135deg, hsl(25 95% 53% / 0.9), hsl(25 95% 63% / 0.8));
   --gradient-premium: linear-gradient(135deg, hsl(260 60% 65% / 0.9), hsl(280 60% 75% / 0.8));
+  --gradient-primary: linear-gradient(135deg, hsl(173 80% 41% / 0.9), hsl(173 80% 51% / 0.8));
     
     /* Modern shadows */
     --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
@@ -175,14 +176,29 @@
 }
 
 @layer base {
+  html {
+    height: 100%;
+    width: 100%;
+    background: hsl(var(--background)) !important;
+  }
+
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground font-poppins;
-    background: hsl(var(--background));
+    background: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
     font-feature-settings: "rlig" 1, "calt" 1;
+    min-height: 100vh;
   }
   
   /* Global Typography - Poppins */
@@ -427,6 +443,10 @@
   
   .glow-green {
     box-shadow: var(--shadow-glow-green);
+  }
+
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
   }
   
   /* Interactive states */

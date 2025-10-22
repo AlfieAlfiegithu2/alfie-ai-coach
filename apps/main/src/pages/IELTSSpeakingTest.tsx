@@ -10,6 +10,7 @@ import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, L
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
 import { supabase } from "@/integrations/supabase/client";
+import { AudioR2 } from "@/lib/cloudflare-r2";
 import VolumeSlider from "@/components/ui/VolumeSlider";
 
 interface SpeakingPrompt {
@@ -439,23 +440,40 @@ const IELTSSpeakingTest = () => {
       }
       const uploadPromises = recordingEntries.map(async ([key, blob]) => {
         const fileName = `speaking_${testData?.id}_${key}_${Date.now()}.webm`;
-        // TODO: Implement R2 upload instead of Supabase storage
-        console.log('Speaking test upload disabled - implement R2 upload');
-        // const { data, error } = await supabase.storage
-        //   .from('audio-files')
-        //   .upload(fileName, blob);
 
-        // if (error) throw error;
+        // Convert blob to File object
+        const file = new File([blob], fileName, { type: 'audio/webm' });
 
-        // const { data: publicData } = supabase.storage
-        //   .from('audio-files')
-        //   .getPublicUrl(fileName);
-        const publicData = { publicUrl: `https://your-bucket.your-domain.com/${fileName}` };
+        try {
+          console.log(`📤 Uploading speaking recording: ${fileName} (${blob.size} bytes)`);
+          const result = await AudioR2.uploadSpeaking(file, testData?.id || 'unknown', key);
 
-        return {
-          part: key,
-          audio_url: publicData.publicUrl
-        };
+          if (!result.success) {
+            throw new Error(result.error || 'Upload failed');
+          }
+
+          console.log(`✅ Speaking recording uploaded successfully: ${result.url}`);
+          return {
+            part: key,
+            audio_url: result.url
+          };
+        } catch (error) {
+          console.error(`❌ Failed to upload ${fileName}:`, error);
+          // Fallback: create a mock URL but log the error
+          toast({
+            title: "Upload Warning",
+            description: `Audio upload failed for ${key}. Analysis may be limited.`,
+            variant: "destructive"
+          });
+
+          // Still return a mock URL so the test can continue
+          const mockUrl = `https://your-bucket.your-domain.com/${fileName}`;
+          return {
+            part: key,
+            audio_url: mockUrl,
+            upload_error: true
+          };
+        }
       });
 
       const uploadedRecordings = await Promise.all(uploadPromises);
@@ -530,11 +548,12 @@ const IELTSSpeakingTest = () => {
       }
 
       // Navigate to results page with recordings data and test prompts for transcriptions
-      navigate('/ielts-speaking-results', { 
-        state: { 
-          testData, 
-          recordings: uploadedRecordings 
-        } 
+      navigate('/ielts-speaking-results', {
+        state: {
+          testData,
+          recordings: uploadedRecordings,
+          audioBlobs: Object.fromEntries(recordingEntries) // Pass original blobs for analysis
+        }
       });
 
     } catch (error) {

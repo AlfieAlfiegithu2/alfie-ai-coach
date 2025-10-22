@@ -8,8 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
   // Production environment variables
   const isProd = mode === 'production';
-  const earthwormTarget = isProd ? 'https://sentence-mastery.yourdomain.com' : 'http://localhost:3000';
-  const earthwormApiTarget = isProd ? 'https://api.sentence-mastery.yourdomain.com' : 'http://localhost:3000';
+  const earthwormTarget = isProd ? 'https://your-earthworm-app.vercel.app' : 'http://localhost:3000';
+  const earthwormApiTarget = isProd ? 'https://your-earthworm-app.vercel.app/api' : 'http://localhost:3001/api';
 
   return {
     server: {
@@ -24,12 +24,42 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/earthworm/, ''),
           secure: isProd,
           ws: true,
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.log('Earthworm proxy error (service may not be running):', err.message);
+            });
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log('Making request to Earthworm:', req.method, req.url);
+            });
+          },
         },
-        // Proxy Sentence Mastery API requests
+        // Proxy Sentence Mastery API requests (with fallback handling)
         '/earthworm-api': {
           target: earthwormApiTarget,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/earthworm-api/, ''),
+          rewrite: (path) => path.replace(/^\/earthworm-api/, '/api'),
+          secure: isProd,
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.log('Earthworm API proxy error (service may not be running):', err.message);
+            });
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log('Making request to Earthworm API:', req.method, req.url);
+            });
+          },
+        },
+        // Proxy Supabase functions for local development
+        '/functions/v1': {
+          target: 'http://localhost:54321/functions/v1',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/functions\/v1/, ''),
+          secure: false,
+        },
+        // Proxy API requests to Supabase functions
+        '/api': {
+          target: isProd ? 'https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1' : 'http://localhost:54321/functions/v1',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
           secure: isProd,
         },
       },

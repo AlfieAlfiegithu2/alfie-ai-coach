@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "0.0.0.0",
       port: 5173,
-      strictPort: true,
+      strictPort: false,
       proxy: {
         // Proxy Earthworm (Sentence Mastery) requests to dev server
         '/earthworm': {

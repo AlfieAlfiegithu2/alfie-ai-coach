@@ -127,6 +127,13 @@ const Dashboard = () => {
           ascending: false
         }).limit(10);
 
+        // Fetch reading test results separately
+        const {
+          data: readingResults
+        } = await supabase.from('reading_test_results').select('*').eq('user_id', user.id).order('created_at', {
+          ascending: false
+        }).limit(10);
+
         // Fetch writing test results separately
         const {
           data: writingResults
@@ -136,6 +143,33 @@ const Dashboard = () => {
 
         // Combine results for display
         const allResults = [...(results || [])];
+
+        // Add reading results as synthetic test results for dashboard display
+        if (readingResults) {
+          readingResults.forEach(result => {
+            allResults.push({
+              id: result.id,
+              user_id: user.id,
+              test_type: 'reading',
+              score_percentage: Math.round(result.comprehension_score * 100),
+              created_at: result.created_at,
+              test_data: { readingResult: result },
+              // Required fields for test_results table structure
+              section_number: null,
+              total_questions: result.questions_data?.questions?.length || result.questions_data?.length || 0,
+              correct_answers: Math.floor((result.comprehension_score || 0) * (result.questions_data?.questions?.length || result.questions_data?.length || 1)),
+              time_taken: result.reading_time_seconds,
+              completed_at: result.created_at,
+              audio_retention_expires_at: null,
+              detailed_feedback: result.detailed_feedback,
+              question_analysis: null,
+              performance_metrics: null,
+              skill_breakdown: null,
+              cambridge_book: null,
+              audio_urls: null
+            });
+          });
+        }
         
         // Add writing results as synthetic test results for dashboard display
         if (writingResults) {
@@ -224,7 +258,7 @@ const Dashboard = () => {
     };
     fetchUserData();
     loadSavedWords();
-  }, [user, refreshKey]);
+  }, [user]);
   const loadSavedWords = () => {
     const saved = localStorage.getItem('alfie-saved-vocabulary');
     if (saved) {
@@ -474,7 +508,11 @@ const Dashboard = () => {
               </div>
 
               {/* Test Results Chart */}
-              <TestResultsChart key={refreshKey} selectedSkill={selectedSkill} selectedTestType={selectedTestType} />
+              <TestResultsChart
+                key={refreshKey}
+                selectedSkill={selectedSkill}
+                selectedTestType={selectedTestType}
+              />
               
               {/* Countdown Timer */}
               <CountdownTimer targetDate={userPreferences?.target_deadline || null} />

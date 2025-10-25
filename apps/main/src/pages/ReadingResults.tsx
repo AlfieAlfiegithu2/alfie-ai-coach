@@ -38,7 +38,8 @@ interface ProcessedQuestion {
 const ReadingResults = () => {
   const navigate = useNavigate();
   const {
-    user
+    user,
+    loading: authLoading
   } = useAuth();
   const [results, setResults] = useState<ReadingResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,11 +57,17 @@ const ReadingResults = () => {
     toast
   } = useToast();
   useEffect(() => {
-    if (user) {
-      loadReadingResults();
-      loadBookmarks();
+    if (!authLoading) {
+      if (user) {
+        loadReadingResults();
+        loadBookmarks();
+      } else {
+        // If no user, set loading to false
+        setLoading(false);
+        setResults([]);
+      }
     }
-  }, [user]);
+  }, [user, authLoading]);
   useEffect(() => {
     // Process questions when results change
     const processAllResults = async () => {
@@ -77,21 +84,42 @@ const ReadingResults = () => {
     }
   }, [results]);
   const loadReadingResults = async () => {
+    if (!user?.id) {
+      console.warn('No authenticated user found');
+      if (!authLoading) {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       // Fetch reading test results
       const {
         data: readingResults,
         error
-      } = await supabase.from('reading_test_results').select('*').eq('user_id', user?.id).order('created_at', {
+      } = await supabase.from('reading_test_results').select('*').eq('user_id', user.id).order('created_at', {
         ascending: false
       });
+
       if (error) {
         console.error('Error fetching reading results:', error);
-        return;
+        toast({
+          title: "Error loading results",
+          description: "Failed to load reading test results. Please try refreshing the page.",
+          variant: "destructive"
+        });
+        setResults([]);
+      } else {
+        setResults(readingResults || []);
       }
-      setResults(readingResults || []);
     } catch (error) {
       console.error('Error loading reading results:', error);
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to the server. Please check your internet connection and try again.",
+        variant: "destructive"
+      });
+      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -116,6 +144,7 @@ const ReadingResults = () => {
       setBookmarkedQuestions(bookmarkKeys);
     } catch (error) {
       console.error('Error loading bookmarks:', error);
+      // Don't show toast for bookmarks error as it's not critical
     }
   };
   const isQuestionBookmarked = (resultId: string, question: ProcessedQuestion) => {
@@ -378,7 +407,7 @@ const ReadingResults = () => {
     });
     return Array.from(types);
   };
-  if (loading) {
+  if (loading || authLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
         <LoadingAnimation />
       </div>;

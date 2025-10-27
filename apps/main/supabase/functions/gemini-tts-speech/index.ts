@@ -2,6 +2,8 @@
 // Uses Gemini 2.5 Flash Preview TTS for natural sounding speech
 // Based on official Gemini API documentation: https://ai.google.dev/gemini-api/docs/speech-generation
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore - VSCode LSP offline limitation (works fine on Supabase Deno server)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {

@@ -26,6 +26,7 @@ const AISpeakingCall: React.FC = () => {
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [speechMode, setSpeechMode] = useState<'web-speech' | 'google-cloud' | 'none'>('web-speech');
   const [selectedVoice, setSelectedVoice] = useState<string>('Kore');
+  const [customSystemPrompt, setCustomSystemPrompt] = useState<string>('');
 
   const AVAILABLE_VOICES = [
     // Firm & Professional Voices
@@ -297,7 +298,7 @@ const AISpeakingCall: React.FC = () => {
       addDebugLog(`📝 Calling Gemini directly with voice: ${selectedVoice}`);
       // Add 5s timeout for greeting fetch
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       const response = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent',
         {
@@ -407,7 +408,7 @@ const AISpeakingCall: React.FC = () => {
       addDebugLog('🤔 Calling Gemini for IELTS coaching...');
       
       // Build system prompt for English Tutora
-      const systemPrompt = `You are English Tutora, an expert IELTS Speaking coach. Your role is to help students prepare for the IELTS Speaking exam.
+      const systemPrompt = customSystemPrompt || `You are English Tutora, an expert IELTS Speaking coach. Your role is to help students prepare for the IELTS Speaking exam.
 
 Instructions:
 - Analyze the student's response based on IELTS band descriptors: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.
@@ -698,6 +699,49 @@ Instructions:
             )}
           </CardContent>
         </Card>
+
+        {/* Voice Agent Settings */}
+        {callState === 'idle' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Voice Agent Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium block mb-2">Voice</label>
+                <select
+                  value={selectedVoice}
+                  onChange={(e) => setSelectedVoice(e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                >
+                  {AVAILABLE_VOICES.map((voice) => (
+                    <option key={voice.id} value={voice.id}>
+                      {voice.name} - {voice.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium block mb-2">Coach Prompt (Optional)</label>
+                <textarea
+                  value={customSystemPrompt}
+                  onChange={(e) => setCustomSystemPrompt(e.target.value)}
+                  placeholder="Leave blank for default English Tutora IELTS coach. Or describe your custom coaching style..."
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm h-24 resize-none"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Examples: "You are a pronunciation coach focused only on accent", "You are a vocabulary expert for advanced learners"
+                </p>
+              </div>
+
+              <Button onClick={startCall} size="lg" className="w-full gap-2">
+                <Phone className="w-5 h-5" />
+                Start Call
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Transcript Display */}
         <Card className="flex-1">

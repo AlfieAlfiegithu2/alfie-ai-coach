@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
 import { HelmetProvider } from 'react-helmet-async';
 import i18n from './lib/i18n';
@@ -56,6 +56,7 @@ import AdminIELTSReadingDashboard from "./pages/AdminIELTSReadingDashboard";
 import AdminIELTSListening from "./pages/AdminIELTSListening";
 import AdminIELTSWriting from "./pages/AdminIELTSWriting";
 import AdminIELTSWritingTest from "./pages/AdminIELTSWritingTest";
+import AdminIELTSReadingTest from "./pages/AdminIELTSReadingTest";
 import AdminIELTSSpeaking from "./pages/AdminIELTSSpeaking";
 import IELTSWritingTest from "./pages/IELTSWritingTest";
 import IELTSWritingProResults from "./pages/IELTSWritingProResults";
@@ -69,6 +70,8 @@ import Pricing from "./pages/Pricing";
 import AdminSkillsPractice from "./pages/AdminSkillsPractice";
 import AdminSkillManager from "./pages/AdminSkillManager";
 import SkillPractice from "./pages/SkillPractice";
+import AISpeakingCall from "./pages/AISpeakingCall";
+import AISpeakingTutor from "./pages/AISpeakingTutor";
 import AdminVocabularyTests from "./pages/AdminVocabularyTests";
 import AdminVocabBook from "./pages/AdminVocabBook";
 import AdminVocabManager from "./pages/AdminVocabManager";
@@ -105,8 +108,36 @@ import MyWordBook from "./pages/MyWordBook";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import OnboardingAssessment from "./pages/OnboardingAssessment";
 import PlanPage from "./pages/Plan";
+import { useAdminAuth } from './hooks/useAdminAuth';
 
 const queryClient = new QueryClient();
+
+// Protected Admin Route Component
+function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
+  const { admin, authLoading } = useAdminAuth();
+  
+  // Check localStorage directly as primary indicator of admin session
+  const hasAdminSession = typeof window !== 'undefined' && 
+    localStorage.getItem('admin_session') === 'true';
+
+  // If session exists in localStorage, user is admin - render immediately
+  if (hasAdminSession) {
+    return <>{children}</>;
+  }
+
+  // If authLoading is true, show loading screen
+  if (authLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-2 text-sm text-muted-foreground">Loading admin...</p>
+      </div>
+    </div>;
+  }
+
+  // No admin session - redirect to login
+  return <Navigate to="/admin/login" replace />;
+}
 
 const App = () => {
   // ⛔ REMOVED: Auto-translation watchdog that was causing massive edge function invocations
@@ -160,58 +191,58 @@ const App = () => {
             <Route path="/ielts/:skill" element={<IELTSSkillTests />} />
             
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/analytics" element={<AdminAnalytics />} />
-            <Route path="/admin/reading" element={<AdminReading />} />
-            <Route path="/admin/listening" element={<AdminListening />} />
-            <Route path="/admin/writing" element={<AdminWriting />} />
-            <Route path="/admin/speaking" element={<AdminSpeaking />} />
-            <Route path="/admin/ielts" element={<AdminIELTS />} />
-            <Route path="/admin/ielts/:skill" element={<AdminIELTSSkillManagement />} />
-            <Route path="/admin/pte" element={<AdminPTE />} />
-            <Route path="/admin/toefl" element={<AdminTOEFL />} />
-            <Route path="/admin/general" element={<AdminGeneral />} />
-            <Route path="/admin/:testType/tests" element={<AdminTestManagement />} />
-            <Route path="/admin/:testType/test/:testId" element={<AdminTestDetails />} />
-            <Route path="/admin/:testType/test/:testId/:sectionId" element={<AdminSectionManagement />} />
-            <Route path="/admin/ielts/reading" element={<AdminIELTSReadingDashboard />} />
-            <Route path="/admin/:testType/test/:testId/reading" element={<AdminReadingManagement />} />
-            <Route path="/admin/:testType/test/:testId/listening" element={<AdminIELTSListening />} />
-            <Route path="/admin/ielts/test/:testId/writing" element={<AdminIELTSWritingTest />} />
-            <Route path="/admin/ielts/writing" element={<AdminIELTSWriting />} />
-            <Route path="/admin/ielts/writing/test/:testId" element={<AdminIELTSWritingTest />} />
-            <Route path="/admin/ielts/test/:testId/speaking" element={<AdminIELTSSpeaking />} />
+            <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedAdminRoute><AdminAnalytics /></ProtectedAdminRoute>} />
+            <Route path="/admin/reading" element={<ProtectedAdminRoute><AdminReading /></ProtectedAdminRoute>} />
+            <Route path="/admin/listening" element={<ProtectedAdminRoute><AdminListening /></ProtectedAdminRoute>} />
+            <Route path="/admin/writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
+            <Route path="/admin/speaking" element={<ProtectedAdminRoute><AdminSpeaking /></ProtectedAdminRoute>} />
+            <Route path="/admin/ielts" element={<ProtectedAdminRoute><AdminIELTS /></ProtectedAdminRoute>} />
+            <Route path="/admin/ielts/:skill" element={<ProtectedAdminRoute><AdminIELTSSkillManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/pte" element={<ProtectedAdminRoute><AdminPTE /></ProtectedAdminRoute>} />
+            <Route path="/admin/toefl" element={<ProtectedAdminRoute><AdminTOEFL /></ProtectedAdminRoute>} />
+            <Route path="/admin/general" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
+            <Route path="/admin/:testType/tests" element={<ProtectedAdminRoute><AdminTestManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/:testType/test/:testId" element={<ProtectedAdminRoute><AdminTestDetails /></ProtectedAdminRoute>} />
+            <Route path="/admin/:testType/test/:testId/:sectionId" element={<ProtectedAdminRoute><AdminSectionManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/ielts/reading" element={<ProtectedAdminRoute><AdminIELTSReadingDashboard /></ProtectedAdminRoute>} />
+            <Route path="/admin/:testType/test/:testId/reading" element={<ProtectedAdminRoute><AdminReadingManagement /></ProtectedAdminRoute>} />
+            <Route path="/admin/:testType/test/:testId/listening" element={<ProtectedAdminRoute><AdminIELTSListening /></ProtectedAdminRoute>} />
+            <Route path="/admin/ielts/test/:testId/writing" element={<ProtectedAdminRoute><AdminIELTSWritingTest /></ProtectedAdminRoute>} />
+            <Route path="/admin/ielts/test/:testId/speaking" element={<ProtectedAdminRoute><AdminIELTSSpeaking /></ProtectedAdminRoute>} />
+            <Route path="/admin/ielts/test/:testId/reading" element={<ProtectedAdminRoute><AdminIELTSReadingTest /></ProtectedAdminRoute>} />
+            <Route path="/admin/ielts/test/:testId/listening" element={<ProtectedAdminRoute><AdminIELTSListening /></ProtectedAdminRoute>} />
             {/* Skills Practice Admin */}
-            <Route path="/admin/skills" element={<AdminSkillsPractice />} />
-            <Route path="/admin/vocab" element={<AdminVocabManager />} />
-            <Route path="/admin/vocab/" element={<AdminVocabManager />} />
-            <Route path="/admin/skills/vocabulary/tests" element={<AdminVocabularyTests />} />
-            <Route path="/admin/vocab-book" element={<AdminVocabBook />} />
-            <Route path="/admin/skills/vocabulary/tests/:id" element={<AdminVocabularyTestDetail />} />
+            <Route path="/admin/skills" element={<ProtectedAdminRoute><AdminSkillsPractice /></ProtectedAdminRoute>} />
+            <Route path="/admin/vocab" element={<ProtectedAdminRoute><AdminVocabManager /></ProtectedAdminRoute>} />
+            <Route path="/admin/vocab/" element={<ProtectedAdminRoute><AdminVocabManager /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/vocabulary/tests" element={<ProtectedAdminRoute><AdminVocabularyTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/vocab-book" element={<ProtectedAdminRoute><AdminVocabBook /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/vocabulary/tests/:id" element={<ProtectedAdminRoute><AdminVocabularyTestDetail /></ProtectedAdminRoute>} />
             {/* aliases for direct access */}
-            <Route path="/admin/skills/vocabulary-builder" element={<AdminVocabularyTests />} />
-            <Route path="/admin/skills/vocabulary-builder/tests/:id" element={<AdminVocabularyTestDetail />} />
+            <Route path="/admin/skills/vocabulary-builder" element={<ProtectedAdminRoute><AdminVocabularyTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/vocabulary-builder/tests/:id" element={<ProtectedAdminRoute><AdminVocabularyTestDetail /></ProtectedAdminRoute>} />
             {/* Grammar Fix-it admin routes */}
-            <Route path="/admin/skills/grammar/tests" element={<AdminGrammarTests />} />
-            <Route path="/admin/skills/grammar/tests/:id" element={<AdminGrammarTestDetail />} />
-            <Route path="/admin/skills/grammar-fix-it" element={<AdminGrammarTests />} />
-            <Route path="/admin/skills/grammar-fix-it/tests/:id" element={<AdminGrammarTestDetail />} />
+            <Route path="/admin/skills/grammar/tests" element={<ProtectedAdminRoute><AdminGrammarTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/grammar/tests/:id" element={<ProtectedAdminRoute><AdminGrammarTestDetail /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/grammar-fix-it" element={<ProtectedAdminRoute><AdminGrammarTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/grammar-fix-it/tests/:id" element={<ProtectedAdminRoute><AdminGrammarTestDetail /></ProtectedAdminRoute>} />
             {/* Paraphrasing Challenge admin routes */}
-            <Route path="/admin/skills/paraphrasing-challenge" element={<AdminParaphrasingTests />} />
-            <Route path="/admin/skills/paraphrasing-challenge/:id" element={<AdminParaphrasingTestDetail />} />
+            <Route path="/admin/skills/paraphrasing-challenge" element={<ProtectedAdminRoute><AdminParaphrasingTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/paraphrasing-challenge/:id" element={<ProtectedAdminRoute><AdminParaphrasingTestDetail /></ProtectedAdminRoute>} />
             {/* Sentence Scramble admin routes */}
-            <Route path="/admin/skills/sentence-scramble" element={<AdminSentenceScrambleTests />} />
-            <Route path="/admin/skills/sentence-scramble/:id" element={<AdminSentenceScrambleTestDetail />} />
+            <Route path="/admin/skills/sentence-scramble" element={<ProtectedAdminRoute><AdminSentenceScrambleTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/sentence-scramble/:id" element={<ProtectedAdminRoute><AdminSentenceScrambleTestDetail /></ProtectedAdminRoute>} />
             {/* Sentence Scramble admin routes (alias) */}
-            <Route path="/admin/skills/sentence-structure-scramble" element={<AdminSentenceScrambleTests />} />
-            <Route path="/admin/skills/sentence-structure-scramble/:id" element={<AdminSentenceScrambleTestDetail />} />
+            <Route path="/admin/skills/sentence-structure-scramble" element={<ProtectedAdminRoute><AdminSentenceScrambleTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/sentence-structure-scramble/:id" element={<ProtectedAdminRoute><AdminSentenceScrambleTestDetail /></ProtectedAdminRoute>} />
             {/* Listening for Details admin routes */}
-            <Route path="/admin/skills/listening-for-details" element={<AdminListeningForDetailsTests />} />
-            <Route path="/admin/skills/listening-for-details/:id" element={<AdminListeningForDetailsTestDetail />} />
+            <Route path="/admin/skills/listening-for-details" element={<ProtectedAdminRoute><AdminListeningForDetailsTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/listening-for-details/:id" element={<ProtectedAdminRoute><AdminListeningForDetailsTestDetail /></ProtectedAdminRoute>} />
             {/* Pronunciation admin routes */}
-            <Route path="/admin/skills/pronunciation-repeat-after-me" element={<AdminPronunciationTests />} />
-            <Route path="/admin/skills/pronunciation-repeat-after-me/:id" element={<AdminPronunciationTestDetail />} />
-            <Route path="/admin/skills/:slug" element={<AdminSkillManager />} />
+            <Route path="/admin/skills/pronunciation-repeat-after-me" element={<ProtectedAdminRoute><AdminPronunciationTests /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/pronunciation-repeat-after-me/:id" element={<ProtectedAdminRoute><AdminPronunciationTestDetail /></ProtectedAdminRoute>} />
+            <Route path="/admin/skills/:slug" element={<ProtectedAdminRoute><AdminSkillManager /></ProtectedAdminRoute>} />
             <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
             <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
             <Route path="/ielts-writing-results-pro" element={<IELTSWritingProResults />} />
@@ -219,23 +250,23 @@ const App = () => {
             <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
             <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
             {/* PTE Admin Routes */}
-            <Route path="/admin/pte/listening" element={<AdminListening />} />
-            <Route path="/admin/pte/reading" element={<AdminReading />} />
-            <Route path="/admin/pte/writing" element={<AdminWriting />} />
-            <Route path="/admin/pte/speaking" element={<AdminSpeaking />} />
-            <Route path="/admin/pte/reading-writing" element={<AdminWriting />} />
-            <Route path="/admin/pte/speaking-writing" element={<AdminWriting />} />
+            <Route path="/admin/pte/listening" element={<ProtectedAdminRoute><AdminListening /></ProtectedAdminRoute>} />
+            <Route path="/admin/pte/reading" element={<ProtectedAdminRoute><AdminReading /></ProtectedAdminRoute>} />
+            <Route path="/admin/pte/writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
+            <Route path="/admin/pte/speaking" element={<ProtectedAdminRoute><AdminSpeaking /></ProtectedAdminRoute>} />
+            <Route path="/admin/pte/reading-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
+            <Route path="/admin/pte/speaking-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
             {/* TOEFL Admin Routes */}
-            <Route path="/admin/toefl/listening" element={<AdminListening />} />
-            <Route path="/admin/toefl/reading" element={<AdminReading />} />
-            <Route path="/admin/toefl/writing" element={<AdminWriting />} />
-            <Route path="/admin/toefl/speaking" element={<AdminSpeaking />} />
-            <Route path="/admin/toefl/integrated-writing" element={<AdminWriting />} />
-            <Route path="/admin/toefl/independent-writing" element={<AdminWriting />} />
+            <Route path="/admin/toefl/listening" element={<ProtectedAdminRoute><AdminListening /></ProtectedAdminRoute>} />
+            <Route path="/admin/toefl/reading" element={<ProtectedAdminRoute><AdminReading /></ProtectedAdminRoute>} />
+            <Route path="/admin/toefl/writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
+            <Route path="/admin/toefl/speaking" element={<ProtectedAdminRoute><AdminSpeaking /></ProtectedAdminRoute>} />
+            <Route path="/admin/toefl/integrated-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
+            <Route path="/admin/toefl/independent-writing" element={<ProtectedAdminRoute><AdminWriting /></ProtectedAdminRoute>} />
             {/* General English Admin Routes */}
-            <Route path="/admin/general/grammar" element={<AdminGeneral />} />
-            <Route path="/admin/general/vocabulary" element={<AdminGeneral />} />
-            <Route path="/admin/general/pronunciation" element={<AdminGeneral />} />
+            <Route path="/admin/general/grammar" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
+            <Route path="/admin/general/vocabulary" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
+            <Route path="/admin/general/pronunciation" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
             {/* Missing portal routes that were causing 404s */}
             <Route path="/reading-results" element={<ReadingResults />} />
             <Route path="/listening-results" element={<ListeningResults />} />
@@ -261,6 +292,8 @@ const App = () => {
             <Route path="/tests" element={<TestSelection />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            {/* AI Speaking Tutor (voice calling) */}
+            <Route path="/ai-speaking" element={<AISpeakingCall />} />
             {/* Skills Practice (Student) */}
             <Route path="/skills/:slug" element={<SkillPractice />} />
             <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />

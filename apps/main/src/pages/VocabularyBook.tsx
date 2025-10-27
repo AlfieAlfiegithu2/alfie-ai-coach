@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Navigate } from "react-router-dom";
 import StudentLayout from "@/components/StudentLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface CardRow { id: string; term: string; translation: string; pos?: string | null; ipa?: string | null; context_sentence?: string | null; user_id?: string }
 
+interface TranslationData {
+  [lang: string]: string;
+}
+
 export default function VocabularyBook() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<CardRow[]>([]);
-  const [translations, setTranslations] = useState<Record<string, any>>({});
+  const [translations, setTranslations] = useState<Record<string, TranslationData>>({});
   const [preferredLanguage, setPreferredLanguage] = useState<string>('ko'); // Default to Korean
   const [filter, setFilter] = useState("");
 
@@ -48,7 +53,7 @@ export default function VocabularyBook() {
       if (!user) { setCards([]); setLoading(false); return; }
 
       // Load cards with basic info (including system imports)
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("vocab_cards")
         .select("id, term, translation, pos, ipa, context_sentence, user_id")
         .eq("is_public", true)
@@ -56,44 +61,44 @@ export default function VocabularyBook() {
         .limit(5000);
 
       // Load translations for all cards (including system imports)
-      const { data: transData } = await (supabase as any)
+      const { data: transData } = await supabase
         .from("vocab_translations")
         .select("card_id, lang, translations");
 
-      const transMap: Record<string, any> = {};
+      const transMap: Record<string, TranslationData> = {};
       transData?.forEach(t => {
         if (!transMap[t.card_id]) transMap[t.card_id] = {};
         transMap[t.card_id][t.lang] = t.translations?.[0] || '';
       });
       setTranslations(transMap);
 
-      const rows = (data as any) || [];
+      const rows: CardRow[] = (data as CardRow[]) || [];
       if (!rows.length) {
         // Seed a demo deck with 20 words so the UI is not empty
         try {
-          const demo = [
-            { term: 'local', translation: '지역의', pos: 'adj', level: 1 },
-            { term: 'update', translation: '업데이트하다', pos: 'verb', level: 1 },
-            { term: 'issue', translation: '문제', pos: 'noun', level: 1 },
-            { term: 'cause', translation: '원인', pos: 'noun', level: 1 },
-            { term: 'supply', translation: '공급', pos: 'noun', level: 2 },
-            { term: 'demand', translation: '수요', pos: 'noun', level: 2 },
-            { term: 'policy', translation: '정책', pos: 'noun', level: 2 },
-            { term: 'climate', translation: '기후', pos: 'noun', level: 2 },
-            { term: 'shortage', translation: '부족', pos: 'noun', level: 3 },
-            { term: 'expand', translation: '확장하다', pos: 'verb', level: 3 },
-            { term: 'negotiate', translation: '협상하다', pos: 'verb', level: 3 },
-            { term: 'impact', translation: '영향', pos: 'noun', level: 3 },
-            { term: 'infrastructure', translation: '사회 기반 시설', pos: 'noun', level: 4 },
-            { term: 'regulation', translation: '규제', pos: 'noun', level: 4 },
-            { term: 'forecast', translation: '전망, 예보', pos: 'noun', level: 4 },
-            { term: 'initiative', translation: '주도권/계획', pos: 'noun', level: 4 },
-            { term: 'sustainable', translation: '지속 가능한', pos: 'adj', level: 5 },
-            { term: 'emissions', translation: '배출', pos: 'noun', level: 5 },
-            { term: 'innovation', translation: '혁신', pos: 'noun', level: 5 },
-            { term: 'resilience', translation: '회복 탄력성', pos: 'noun', level: 5 },
+          const demo: CardRow[] = [
+            { id: 'demo-1', term: 'local', translation: '지역의', pos: 'adj', ipa: null, context_sentence: null },
+            { id: 'demo-2', term: 'update', translation: '업데이트하다', pos: 'verb', ipa: null, context_sentence: null },
+            { id: 'demo-3', term: 'issue', translation: '문제', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-4', term: 'cause', translation: '원인', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-5', term: 'supply', translation: '공급', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-6', term: 'demand', translation: '수요', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-7', term: 'policy', translation: '정책', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-8', term: 'climate', translation: '기후', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-9', term: 'shortage', translation: '부족', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-10', term: 'expand', translation: '확장하다', pos: 'verb', ipa: null, context_sentence: null },
+            { id: 'demo-11', term: 'negotiate', translation: '협상하다', pos: 'verb', ipa: null, context_sentence: null },
+            { id: 'demo-12', term: 'impact', translation: '영향', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-13', term: 'infrastructure', translation: '사회 기반 시설', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-14', term: 'regulation', translation: '규제', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-15', term: 'forecast', translation: '전망, 예보', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-16', term: 'initiative', translation: '주도권/계획', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-17', term: 'sustainable', translation: '지속 가능한', pos: 'adj', ipa: null, context_sentence: null },
+            { id: 'demo-18', term: 'emissions', translation: '배출', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-19', term: 'innovation', translation: '혁신', pos: 'noun', ipa: null, context_sentence: null },
+            { id: 'demo-20', term: 'resilience', translation: '회복 탄력성', pos: 'noun', ipa: null, context_sentence: null },
           ];
-          const { data: deck } = await (supabase as any)
+          const { data: deck } = await supabase
             .from('vocab_decks')
             .insert({ user_id: user.id, name: 'Demo: General News (20 words)' })
             .select('id')
@@ -106,17 +111,17 @@ export default function VocabularyBook() {
             term: d.term,
             translation: d.translation,
             pos: d.pos,
-            level: (d as any).level,
+            level: 1, // Default level for demo cards
             is_public: true,
           }));
-          await (supabase as any).from('vocab_cards').insert(payload);
-          const { data: seeded } = await (supabase as any)
+          await supabase.from('vocab_cards').insert(payload);
+          const { data: seeded } = await supabase
             .from('vocab_cards')
             .select('id, term, translation, pos, ipa, context_sentence, user_id')
             .eq('is_public', true)
             .order('created_at', { ascending: false })
             .limit(5000);
-          setCards((seeded as any) || []);
+          setCards((seeded as CardRow[]) || []);
         } catch {
           setCards([]);
         }
@@ -152,11 +157,17 @@ export default function VocabularyBook() {
   const removeCard = async (row: CardRow) => {
     if (!user || !row.user_id || row.user_id !== user.id) return;
     // Only allow removal of user's own cards, not public system cards
-    await (supabase as any).from("vocab_cards").delete().eq("id", row.id).eq("user_id", user.id);
+    await supabase.from("vocab_cards").delete().eq("id", row.id).eq("user_id", user.id);
     setCards((prev) => prev.filter((x) => x.id !== row.id));
   };
 
   const progress = 0; // future: compute from user_vocabulary count
+
+  // Redirect to auth if not logged in
+  if (!user) {
+    console.log('❌ User not authenticated in VocabularyBook, redirecting to auth');
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <StudentLayout title="Vocabulary Book" showBackButton>

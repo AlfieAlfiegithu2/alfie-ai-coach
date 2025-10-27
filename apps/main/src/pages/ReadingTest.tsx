@@ -51,9 +51,16 @@ const ReadingTest = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [allQuestions, setAllQuestions] = useState<ReadingQuestion[]>([]);
+  const [availableTests, setAvailableTests] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchReadingTest();
+    if (!testId) {
+      fetchAvailableTests();
+    } else {
+      // Extract actual test ID in case it contains part number (format: testId-partNumber)
+      const actualTestId = testId.includes('-') ? testId.split('-')[0] : testId;
+      fetchReadingTest(actualTestId);
+    }
   }, [testId]);
 
   useEffect(() => {
@@ -65,7 +72,7 @@ const ReadingTest = () => {
     }
   }, [timeLeft, isSubmitted]);
 
-  const fetchReadingTest = async () => {
+  const fetchReadingTest = async (testId: string) => {
     try {
       setLoading(true);
 
@@ -91,8 +98,8 @@ const ReadingTest = () => {
         .from('tests')
         .select('*')
         .eq('id', testId)
-        .eq('test_type', 'ielts')
-        .eq('module', 'reading')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Reading')
         .single();
 
       if (testError) throw testError;
@@ -111,7 +118,6 @@ const ReadingTest = () => {
       const { data: questions, error: questionsError } = await supabase
         .from('questions')
         .select('*')
-        .eq('test_id', testId)
         .order('part_number', { ascending: true })
         .order('question_number_in_part', { ascending: true });
 
@@ -193,6 +199,27 @@ const ReadingTest = () => {
       navigate(-1);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableTests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Reading')
+        .order('test_number', { ascending: true });
+
+      if (error) throw error;
+      setAvailableTests(data || []);
+    } catch (error) {
+      console.error('Error fetching available tests:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load available reading tests.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -312,6 +339,34 @@ const ReadingTest = () => {
           onContinue={() => navigate('/ielts-portal')}
           testTitle={`Reading Test ${testId}`}
         />
+      </StudentLayout>
+    );
+  }
+
+  if (!testId) {
+    return (
+      <StudentLayout title="Available Reading Tests">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+          <h1 className="text-2xl font-bold mb-4">Available Reading Tests</h1>
+          <div className="grid gap-4 w-full max-w-md">
+            {availableTests.length === 0 ? (
+              <p>No available reading tests found. Please check back later.</p>
+            ) : (
+              availableTests.map(test => (
+                <Button
+                  key={test.id}
+                  onClick={() => navigate(`/reading-test/${test.id}`)}
+                  className="w-full"
+                >
+                  Reading Test {test.test_number}
+                </Button>
+              ))
+            )}
+            <Button onClick={() => navigate('/ielts-portal')} className="w-full mt-4">
+              Back to Portal
+            </Button>
+          </div>
+        </div>
       </StudentLayout>
     );
   }

@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
 
 interface SectionScores {
   reading: number;
@@ -42,7 +43,7 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({
     target_test_type: 'IELTS',
     target_score: 7.0,
@@ -127,13 +128,19 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
 
 
   useEffect(() => {
+    console.log('🔧 SettingsModal effect:', { user: user?.id, open });
     if (user && open) {
       loadUserPreferences();
     }
   }, [user, open]);
 
   const loadUserPreferences = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('❌ Cannot load preferences: No user');
+      return;
+    }
+
+    console.log('📥 Loading preferences for user:', user.id);
 
     try {
       // Load preferences
@@ -144,21 +151,19 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error loading preferences:', error);
+        console.error('❌ Error loading preferences:', error);
         return;
       }
 
-      // Load profile for native language
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('native_language')
-        .eq('id', user.id)
-        .single();
+      console.log('📋 Loaded preferences:', data);
 
-      if (profile?.native_language) {
-        setNativeLanguage(profile.native_language);
+      // Load native language from user_preferences (where it actually exists)
+      if (data?.native_language) {
+        console.log('🌐 Loaded native language from preferences:', data.native_language);
+        setNativeLanguage(data.native_language);
+      } else {
+        console.log('📝 No native language found, using default');
       }
-
 
       if (data) {
         const defaultScores = {
@@ -168,63 +173,44 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           speaking: 7.0,
           overall: 7.0
         };
-        
-        setPreferences({
+
+        const newPreferences = {
           target_test_type: data.target_test_type || 'IELTS',
           target_score: data.target_score || 7.0,
           target_deadline: data.target_deadline ? new Date(data.target_deadline) : null,
           preferred_name: data.preferred_name || '',
           target_scores: (data.target_scores as unknown as SectionScores) || defaultScores
-        });
+        };
+
+        console.log('🔄 Setting preferences:', newPreferences);
+        setPreferences(newPreferences);
+      } else {
+        console.log('📝 No existing preferences found, using defaults');
       }
     } catch (error) {
-      console.error('Error loading preferences:', error);
+      console.error('❌ Error loading preferences:', error);
     }
   };
 
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    setAvatarUploading(true);
-    try {
-      console.log(`📤 Uploading avatar: ${file.name} (${file.size} bytes)`);
-
-      // Upload to R2 instead of Supabase
-      const result = await AudioR2.uploadAvatar(file, user.id);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Upload failed');
-      }
-
-      console.log(`✅ Avatar uploaded successfully: ${result.url}`);
-
-      // Update profile with R2 URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: result.url })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      toast.success('Profile photo updated successfully!');
-      onSettingsChange?.();
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Failed to upload profile photo');
-    } finally {
-      setAvatarUploading(false);
-    }
+  const handlePhotoUpdate = () => {
+    console.log('📸 Profile photo updated');
+    onSettingsChange?.();
   };
 
   const handleLogout = async () => {
+    console.log('🚪 Initiating logout for user:', user?.id);
     try {
-      await signOut();
-      navigate('/');
-      setOpen(false);
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Failed to logout');
+      const result = await signOut();
+      if (result?.success) {
+        console.log('✅ Logout successful');
+        navigate('/');
+        setOpen(false);
+      } else {
+        throw new Error('Logout failed');
+      }
+    } catch (error: any) {
+      console.error('❌ Logout error:', error);
+      toast.error(`Failed to logout: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -232,6 +218,8 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     if (!user) return;
 
     setLoading(true);
+    console.log('💾 Saving preferences for user:', user.id, preferences);
+
     try {
       // Save preferences with proper upsert
       const { error: preferencesError } = await supabase
@@ -242,44 +230,48 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           target_score: preferences.target_score,
           target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
           preferred_name: preferences.preferred_name,
+          native_language: nativeLanguage,
           target_scores: preferences.target_scores as any
         }, {
           onConflict: 'user_id'
         });
 
-      if (preferencesError) throw preferencesError;
+      if (preferencesError) {
+        console.error('❌ Preferences save error:', preferencesError);
+        throw preferencesError;
+      }
 
-      // Update native language in profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ native_language: nativeLanguage })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
+      console.log('✅ Preferences and language saved successfully');
 
       toast.success('Settings saved successfully!');
-      
+
       // Trigger language update in GlobalTextSelection
       localStorage.setItem('language-updated', Date.now().toString());
       window.dispatchEvent(new StorageEvent('storage', { key: 'language-updated' }));
-      
+
+      // Close modal after successful save
       setOpen(false);
       onSettingsChange?.();
-    } catch (error) {
-      console.error('Error saving preferences:', error);
-      toast.error('Failed to save settings');
+    } catch (error: any) {
+      console.error('❌ Error saving preferences:', error);
+      toast.error(`Failed to save settings: ${error.message || 'Unknown error'}`);
+      // Keep modal open on error so user can fix the issue
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      console.log('🔧 Settings modal open state changed:', newOpen);
+      setOpen(newOpen);
+    }}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           className="bg-white/10 border-white/20 text-slate-800 hover:bg-white/20"
+          onClick={() => console.log('⚙️ Settings button clicked')}
         >
           <Settings className="w-4 h-4 mr-2" />
           Settings
@@ -294,9 +286,9 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           <div className="flex items-center gap-4 p-4 bg-white/30 rounded-lg border border-white/20">
             <div className="w-16 h-16 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden">
               {profile?.avatar_url ? (
-                <img 
-                  src={profile.avatar_url} 
-                  alt="Profile" 
+                <img
+                  src={profile.avatar_url}
+                  alt="Profile"
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -307,23 +299,16 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               <Label className="text-slate-700 font-medium">{t('settings.profilePhoto')}</Label>
               <p className="text-sm text-slate-600 mb-2">{t('settings.profilePhotoHelp')}</p>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={avatarUploading}
-                  className="bg-white/50 border-white/30 text-slate-700 hover:bg-white/70"
-                  onClick={() => document.getElementById('avatar-upload')?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {avatarUploading ? t('common.loading') : t('settings.changePhoto')}
-                </Button>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={uploadAvatar}
-                  className="hidden"
-                />
+                <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-white/50 border-white/30 text-slate-700 hover:bg-white/70"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {t('settings.changePhoto')}
+                  </Button>
+                </ProfilePhotoSelector>
               </div>
             </div>
           </div>
@@ -449,16 +434,22 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
 
           <div className="flex gap-2 pt-4">
-                <Button 
-              onClick={savePreferences} 
+            <Button
+              onClick={() => {
+                console.log('💾 Save button clicked');
+                savePreferences();
+              }}
               disabled={loading}
               className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
             >
               {loading ? t('common.loading') : t('settings.save')}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setOpen(false)}
+            <Button
+              variant="outline"
+              onClick={() => {
+                console.log('❌ Cancel button clicked');
+                setOpen(false);
+              }}
               className="bg-white/50 border-white/30"
             >
               {t('settings.cancel')}
@@ -480,8 +471,11 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
           </div>
           
           <div className="border-t border-white/20 pt-4">
-            <Button 
-              onClick={handleLogout}
+            <Button
+              onClick={() => {
+                console.log('🚪 Sign out button clicked');
+                handleLogout();
+              }}
               variant="outline"
               className="w-full bg-red-50/50 border-red-200/50 text-red-600 hover:bg-red-100/50 hover:text-red-700"
             >

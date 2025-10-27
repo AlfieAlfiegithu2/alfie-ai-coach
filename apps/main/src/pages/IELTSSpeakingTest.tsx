@@ -43,6 +43,7 @@ const IELTSSpeakingTest = () => {
   }
   
   const [testData, setTestData] = useState<TestData | null>(null);
+  const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [currentPart, setCurrentPart] = useState(1);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +88,11 @@ const IELTSSpeakingTest = () => {
   const globalVolumeRef = useRef<number>(initialVol);
 
   useEffect(() => {
-    loadTestData();
+    if (testId) {
+      loadTestData();
+    } else {
+      loadAvailableTests();
+    }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -139,7 +144,7 @@ const IELTSSpeakingTest = () => {
     try {
       console.log(`🔍 Loading speaking test data for test ID: ${testId}`);
 
-      // First get the test details to understand which prompts to load
+      // Get the test details
       const { data: testData, error: testError } = await supabase
         .from('tests')
         .select('*')
@@ -147,27 +152,27 @@ const IELTSSpeakingTest = () => {
         .single();
 
       if (testError) throw testError;
+      console.log('✅ Test loaded:', testData.test_name);
 
-      // Try multiple query patterns to find speaking content
-      const queries = [
-        supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%${testData.test_name}%`)
-      ];
+      // Load ALL speaking prompts (don't filter by test_id)
+      // Just show whatever prompts exist in the system
+      const { data: prompts, error: promptsError } = await supabase
+        .from('speaking_prompts')
+        .select('*')
+        .order('part_number', { ascending: true });
 
-      let prompts = null;
-      for (const query of queries) {
-        const { data, error } = await query.order('part_number', { ascending: true });
-        if (error) throw error;
-        if (data && data.length > 0) {
-          prompts = data;
-          console.log(`✅ Found ${data.length} speaking prompts using query pattern`);
-          break;
-        }
+      if (promptsError) {
+        console.error('❌ Error loading prompts:', promptsError);
+        // Continue anyway - show empty test
       }
 
-      if (prompts && prompts.length > 0) {
-        const part1 = prompts.filter(p => p.part_number === 1);
-        const part2 = prompts.find(p => p.part_number === 2);
-        const part3 = prompts.filter(p => p.part_number === 3);
+      const promptsList = prompts || [];
+      console.log(`📝 Loaded ${promptsList.length} total speaking prompts`);
+
+      if (promptsList.length > 0) {
+        const part1 = promptsList.filter(p => p.part_number === 1);
+        const part2 = promptsList.find(p => p.part_number === 2);
+        const part3 = promptsList.filter(p => p.part_number === 3);
 
         setTestData({
           id: testData.id,
@@ -177,10 +182,9 @@ const IELTSSpeakingTest = () => {
           part3_prompts: part3
         });
         
-        console.log(`📝 Test data loaded: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
+        console.log(`✅ Test ready: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
       } else {
-        console.log(`⚠️ No speaking content found for test ${testId} - showing placeholder interface`);
-        // Show interface even without content, with helpful message
+        console.log(`ℹ️ No speaking prompts available - showing blank test`);
         setTestData({
           id: testData.id,
           test_name: testData.test_name,
@@ -190,13 +194,46 @@ const IELTSSpeakingTest = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading test data:', error);
+      console.error('❌ Error:', error);
+      // Still show the test so student can record
+      if (testId) {
+        setTestData({
+          id: testId,
+          test_name: "Speaking Test",
+          part1_prompts: [],
+          part2_prompt: null,
+          part3_prompts: []
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load list of available speaking tests
+  const loadAvailableTests = async () => {
+    setIsLoading(true);
+    try {
+      console.log('📋 Loading available speaking tests...');
+      const { data: tests, error: testsError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .or('module.ilike.Speaking,skill_category.ilike.Speaking')
+        .order('created_at', { ascending: false });
+
+      if (testsError) throw testsError;
+
+      console.log(`✅ Found ${tests?.length || 0} available speaking tests`);
+      setAvailableTests(tests || []);
+    } catch (error) {
+      console.error('❌ Error loading tests:', error);
       toast({
         title: "Error",
-        description: "Failed to load test data",
+        description: "Failed to load available speaking tests",
         variant: "destructive"
       });
-      // Don't navigate away, show error state instead
+      setAvailableTests([]);
     } finally {
       setIsLoading(false);
     }
@@ -577,9 +614,52 @@ const IELTSSpeakingTest = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading speaking test...</p>
+          <p className="mt-2 text-sm text-muted-foreground">Loading speaking tests...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show test selection if no testId provided
+  if (!testId && availableTests.length > 0) {
+    return (
+      <StudentLayout>
+        <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Speaking Tests</h1>
+                <p className="text-lg text-muted-foreground">Choose a test to begin your speaking practice</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {availableTests.map((test) => (
+                  <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/speaking/${test.id}`)}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{test.test_name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
+                      <Button className="w-full" variant="default">
+                        Start Test
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {availableTests.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-lg text-muted-foreground mb-4">No speaking tests available yet</p>
+                  <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                    Back to Portal
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </StudentLayout>
     );
   }
 

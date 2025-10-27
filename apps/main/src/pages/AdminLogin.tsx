@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Settings, ArrowLeft } from "lucide-react";
@@ -10,27 +11,48 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login } = useAdminAuth();
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      onLogin();
+    }
+  };
+
   const onLogin = async () => {
+    if (!password) {
+      toast({
+        title: "Password required",
+        description: "Please enter the admin password",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const result = await login();
+      const result = await login(password);
 
       if (result.success) {
+        console.log('✅ Login successful, localStorage admin_session set');
         toast({
           title: "Access granted",
           description: "Welcome to the admin panel",
         });
+        // Navigate immediately - localStorage is already set
         navigate("/admin");
       } else {
+        console.log('❌ Login failed:', result.error);
         toast({
           title: "Access denied",
           description: result.error || "Failed to login",
           variant: "destructive",
         });
+        setPassword("");
       }
     } catch (error) {
+      console.error('❌ Login error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -65,15 +87,31 @@ const AdminLogin = () => {
               </div>
             </div>
             <h1 className="text-2xl font-light text-zinc-950">Admin Panel</h1>
-            <p className="text-zinc-700">Click to access admin panel</p>
+            <p className="text-zinc-700">Enter password to access</p>
           </div>
 
           <Card className="bg-white/10 border border-white/20 backdrop-blur-xl">
             <CardHeader>
               <CardTitle className="text-zinc-950 font-normal">Admin Access</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Button onClick={onLogin} className="w-full" disabled={isLoading}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-950">Password</label>
+                <Input
+                  type="password"
+                  placeholder="Enter admin password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={isLoading}
+                  className="bg-white/20 border-white/30 text-zinc-950 placeholder:text-zinc-600"
+                />
+              </div>
+              <Button 
+                onClick={onLogin} 
+                className="w-full" 
+                disabled={isLoading || !password}
+              >
                 {isLoading ? "Accessing..." : "Access Admin Panel"}
               </Button>
             </CardContent>

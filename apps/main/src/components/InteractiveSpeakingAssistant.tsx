@@ -51,7 +51,7 @@ const InteractiveSpeakingAssistant = ({
     if (isOpen) {
       const welcomeMessage: Message = {
         id: 'welcome',
-        text: `Hello! I'm Foxbot, your expert IELTS Speaking coach. I'm here to provide strategic guidance for this question using proven techniques. What specific aspect would you like to work on?`,
+        text: `Hello! I'm English Tutora, your IELTS Speaking tutor. I'll guide you with exam‑authentic strategies and short, actionable advice. What would you like to focus on?`,
         isUser: false,
         timestamp: new Date()
       };
@@ -218,7 +218,7 @@ const InteractiveSpeakingAssistant = ({
             {!message.isUser && (
               <div className="flex-shrink-0 mt-1">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                  <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-8 h-8 rounded-full object-cover" />
+                  <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="English Tutora" className="w-8 h-8 rounded-full object-cover" />
                 </div>
               </div>
             )}
@@ -244,7 +244,7 @@ const InteractiveSpeakingAssistant = ({
           <div className="flex gap-3 justify-start">
             <div className="flex-shrink-0 mt-1">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-8 h-8 rounded-full object-cover" />
+                <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="English Tutora" className="w-8 h-8 rounded-full object-cover" />
               </div>
             </div>
             <div className="bg-card border border-border p-4 rounded-2xl shadow-sm">
@@ -311,7 +311,7 @@ const InteractiveSpeakingAssistant = ({
               <Sparkles className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">AI Speaking Assistant - {questionType}</h3>
             </div>
-            <p className="text-sm text-muted-foreground">Get strategic guidance from Foxbot for your IELTS Speaking question</p>
+            <p className="text-sm text-muted-foreground">Get strategic guidance from English Tutora for your IELTS Speaking question</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
             <X className="w-4 h-4" />
@@ -331,7 +331,7 @@ const InteractiveSpeakingAssistant = ({
             AI Speaking Assistant - {questionType}
           </DialogTitle>
           <DialogDescription>
-            Get strategic guidance from Foxbot for your IELTS Speaking question
+            Get strategic guidance from English Tutora for your IELTS Speaking question
           </DialogDescription>
         </DialogHeader>
 

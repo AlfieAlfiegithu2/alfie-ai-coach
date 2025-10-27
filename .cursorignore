@@ -1,0 +1,59 @@
+# Documentation files - exclude from Cursor indexing
+*.md
+!README.md
+
+# Generated files
+dist/
+dist-ssr/
+*.local
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Logs
+logs/
+*.log
+
+# Editor files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Build outputs
+build/
+out/
+.next/
+.nuxt/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Cache files
+.cache/
+.parcel-cache/
+.vite/
+
+# OS files
+Thumbs.db
+*.tmp
+
+# Large documentation files that don't need indexing
+*-GUIDE.md
+*-SETUP.md
+*-ANALYSIS.md
+*-SUMMARY.md
+*-VERIFICATION.md
+*-COMPLETE.md
+*-FIX.md
+*-STATUS.md
+*-PLAN.md
+*-REPORT.md
+*-INSTRUCTIONS.md
+*-DIAGNOSTIC.md
+PHASE-*.md

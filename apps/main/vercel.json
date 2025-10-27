@@ -7,10 +7,6 @@
     "NODE_ENV": "production"
   },
   "rewrites": [
-    {
-      "source": "/earthworm/(.*)",
-      "destination": "https://your-earthworm-app.vercel.app/$1"
-    }
   ]
 }
 

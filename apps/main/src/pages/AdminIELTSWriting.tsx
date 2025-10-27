@@ -20,67 +20,145 @@ const AdminIELTSWriting = () => {
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [editingTestName, setEditingTestName] = useState("");
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (!admin) {
-        navigate('/admin/login');
-      } else {
-        loadTests();
-      }
-    }
-  }, [admin, authLoading, navigate]);
-
   const loadTests = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('test_type', 'IELTS')
-        .eq('module', 'Writing')
-        .order('created_at', { ascending: false });
+      console.log('📝 Loading writing tests...');
+      console.log('🔗 Using Supabase URL:', supabase.supabaseUrl);
+      
+      // Try fetching via REST API directly to bypass client library issues
+      const url = `${supabase.supabaseUrl}/rest/v1/tests?test_type=eq.IELTS`;
+      const headers = {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI`,
+        'Content-Type': 'application/json'
+      };
+      
+      console.log('🔄 Fetching from REST API:', url);
+      const response = await fetch(url, { headers });
+      
+      console.log('📊 REST API Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`REST API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const allData = await response.json();
+      console.log('✅ REST API returned', allData?.length || 0, 'tests');
+      
+      // Filter for writing tests on client side
+      const writingTests = allData?.filter((test: any) => 
+        test.module === 'Writing' || test.skill_category === 'Writing' || 
+        test.test_name?.includes('Writing')
+      ) || [];
 
-      if (error) throw error;
-      setTests(data || []);
-    } catch (error) {
-      console.error('Error loading tests:', error);
-      toast.error('Failed to load writing tests');
+      console.log(`✅ Found ${writingTests.length} writing tests:`, writingTests);
+      setTests(writingTests);
+    } catch (error: any) {
+      console.error('❌ Error loading tests:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack
+      });
+      toast.error(`Failed to load writing tests: ${error?.message || 'Unknown error'}`);
+      setTests([]);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const checkAuthAndLoad = async () => {
+      if (!authLoading) {
+        if (!admin) {
+          console.log('❌ No admin - redirecting to login');
+          navigate('/admin/login');
+        } else {
+          console.log('✅ Admin authenticated - loading tests');
+          await loadTests();
+        }
+      }
+    };
+    
+    checkAuthAndLoad();
+  }, [admin, authLoading, navigate]);
+
   const handleCreateTest = async () => {
     try {
       setLoading(true);
-      const { data: existingTests } = await supabase
-        .from('tests')
-        .select('test_name')
-        .eq('test_type', 'IELTS')
-        .eq('module', 'Writing')
-        .order('created_at', { ascending: false });
-
-      const newTestNumber = (existingTests?.length || 0) + 1;
+      console.log('📝 Creating new writing test...');
       
-      const { data, error } = await supabase
-        .from('tests')
-        .insert({
-          test_name: `IELTS Writing Test ${newTestNumber}`,
-          test_type: 'IELTS',
-          module: 'Writing'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      // First, fetch existing tests to calculate next test number
+      const url = `${supabase.supabaseUrl}/rest/v1/tests?test_type=eq.IELTS`;
+      const headers = {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI`,
+        'Content-Type': 'application/json'
+      };
+      
+      console.log('🔄 Fetching existing tests for numbering...');
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tests: ${response.status}`);
+      }
+      
+      const allTests = await response.json();
+      const writingTests = allTests?.filter((t: any) => 
+        t.module === 'Writing' || t.skill_category === 'Writing' || t.test_name?.includes('Writing')
+      ) || [];
+      
+      const maxTestNumber = writingTests.length > 0 
+        ? Math.max(...writingTests.map((t: any) => t.test_number || 1))
+        : 0;
+      
+      const nextTestNumber = maxTestNumber + 1;
+      
+      console.log(`📊 Current writing tests: ${writingTests.length}, Next test_number: ${nextTestNumber}`);
+      
+      const insertData = {
+        test_name: `IELTS Writing Test ${nextTestNumber}`,
+        test_type: 'IELTS',
+        module: 'Writing'
+      };
+      
+      console.log('Creating test via edge function:', insertData);
+      
+      // Call the create-test edge function which uses service role to bypass RLS
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const edgeFunctionUrl = `${supabase.supabaseUrl}/functions/v1/create-test`;
+      const insertResponse = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify(insertData)
+      });
+      
+      console.log('Edge function response status:', insertResponse.status);
+      
+      if (!insertResponse.ok) {
+        const errorData = await insertResponse.text();
+        console.error('Create function error response:', errorData);
+        throw new Error(`Failed to create test: ${insertResponse.status} - ${errorData}`);
+      }
+      
+      const responseJson = await insertResponse.json();
+      const createdTest = responseJson.data;
+      console.log('Test created successfully:', createdTest);
+      
       toast.success('Test created successfully');
       
+      // Reload tests list to reflect new test
+      await loadTests();
+      
       // Navigate to test management page
-      navigate(`/admin/ielts/test/${data.id}/writing`);
+      navigate(`/admin/ielts/test/${createdTest.id}/writing`);
     } catch (error: any) {
-      console.error('Error creating test:', error);
-      toast.error('Failed to create test');
+      console.error('❌ Create test error:', error);
+      toast.error(`Failed to create test: ${error?.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -122,30 +200,46 @@ const AdminIELTSWriting = () => {
 
   const deleteTest = async (testId: string, testName: string) => {
     try {
-      // First, delete any questions associated with this test
-      const { error: questionsError } = await supabase
-        .from('questions')
-        .delete()
-        .eq('test_id', testId);
-
-      if (questionsError) {
-        console.error('Error deleting questions:', questionsError);
-        // Continue with test deletion even if questions deletion fails
+      console.log('🗑️ Deleting test via edge function:', testId);
+      
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const edgeFunctionUrl = `${supabase.supabaseUrl}/functions/v1/delete-test`;
+      console.log('🔗 Edge Function URL:', edgeFunctionUrl);
+      console.log('📤 Sending testId:', testId);
+      
+      const deleteResponse = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({ testId })
+      });
+      
+      console.log('📊 Delete response status:', deleteResponse.status);
+      console.log('📊 Delete response ok:', deleteResponse.ok);
+      
+      const responseText = await deleteResponse.text();
+      console.log('📄 Delete response body:', responseText);
+      
+      if (!deleteResponse.ok) {
+        console.error('❌ Delete function returned error status:', deleteResponse.status);
+        throw new Error(`Failed to delete test: ${deleteResponse.status} - ${responseText}`);
       }
-
-      // Then delete the test itself
-      const { error } = await supabase
-        .from('tests')
-        .delete()
-        .eq('id', testId);
-
-      if (error) throw error;
-
+      
+      const responseJson = JSON.parse(responseText);
+      console.log('✅ Test deleted successfully:', responseJson);
+      
       toast.success(`Test "${testName}" deleted successfully`);
-      loadTests();
-    } catch (error) {
-      console.error('Error deleting test:', error);
-      toast.error('Failed to delete test');
+      await loadTests();
+    } catch (error: any) {
+      console.error('❌ Delete test error:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack
+      });
+      toast.error(`Failed to delete test: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -283,7 +377,7 @@ const AdminIELTSWriting = () => {
                               <Trash2 className="w-4 h-4 text-red-600" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="z-50">
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Test</AlertDialogTitle>
                               <AlertDialogDescription>
@@ -293,7 +387,10 @@ const AdminIELTSWriting = () => {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
-                                onClick={() => deleteTest(test.id, test.test_name)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteTest(test.id, test.test_name);
+                                }}
                                 className="bg-red-600 hover:bg-red-700"
                               >
                                 Delete

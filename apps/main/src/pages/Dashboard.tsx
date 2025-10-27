@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,37 @@ import ProfilePhotoSelector from "@/components/ProfilePhotoSelector";
 import LanguageSelector from "@/components/LanguageSelector";
 import LanguagePicker from "@/components/LanguagePicker";
 import { normalizeLanguageCode } from "@/lib/languageUtils";
+
+interface UserStats {
+  totalTests: number;
+  completedTests: number;
+  averageScore: number;
+  studyStreak: number;
+}
+
+interface TestResult {
+  id: string;
+  test_type: string;
+  skill: string;
+  score: number;
+  band_score?: number;
+  created_at: string;
+  user_id: string;
+}
+
+interface SavedWord {
+  id: string;
+  term: string;
+  translation: string;
+  created_at: string;
+}
+
+interface UserPreferences {
+  target_test_type: string;
+  native_language: string;
+  study_goals: string[];
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -33,12 +64,12 @@ const Dashboard = () => {
   } = useToast();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
   const [selectedSkill, setSelectedSkill] = useState("reading");
-  const [userStats, setUserStats] = useState<any>(null);
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [savedWords, setSavedWords] = useState<any[]>([]);
+  const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
-  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const testTypes = [{
@@ -174,7 +205,7 @@ const Dashboard = () => {
         // Add writing results as synthetic test results for dashboard display
         if (writingResults) {
           // Group writing results by test_result_id or date
-          const writingByTest: { [key: string]: any[] } = {};
+          const writingByTest: { [key: string]: TestResult[] } = {};
           writingResults.forEach(result => {
             const key = result.test_result_id || result.created_at?.split('T')[0] || 'standalone';
             if (!writingByTest[key]) {
@@ -196,7 +227,7 @@ const Dashboard = () => {
             let overallScore = 70; // Default 7.0 band
 
             if (task1Result && task2Result) {
-              const extractBandFromResult = (result: any): number => {
+              const extractBandFromResult = (result: { band_scores?: Record<string, number> }): number => {
                 if (result.band_scores && typeof result.band_scores === 'object') {
                   const bands = Object.values(result.band_scores).filter(v => typeof v === 'number') as number[];
                   if (bands.length > 0) {
@@ -232,7 +263,7 @@ const Dashboard = () => {
               skill_breakdown: null,
               cambridge_book: null,
               audio_urls: null
-            } as any);
+            });
           });
         }
 
@@ -315,6 +346,10 @@ const Dashboard = () => {
         <LoadingAnimation />
       </div>;
   }
+
+  // Guest mode: allow viewing dashboard without login
+  // If not logged in, we render a limited dashboard without user-specific data
+
   return <div className="min-h-screen relative">
       {/* Background Image */}
       <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{

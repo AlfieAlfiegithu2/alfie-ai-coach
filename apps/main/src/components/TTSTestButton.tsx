@@ -66,9 +66,9 @@ export const TTSTestButton: React.FC<TTSTestButtonProps> = ({
         setLastError('No audio URL returned');
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('TTS Test Error:', err);
-      setLastError(err.message || 'Unknown error occurred');
+      setLastError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setIsLoading(false);
     }

@@ -28,7 +28,7 @@ export class TranslationService {
       const { data, error } = await supabase.functions.invoke('translation-service', {
         body: {
           text: request.text,
-          targetLang: request.targetLanguage,
+          targetLanguage: request.targetLanguage,
           sourceLang: request.sourceLanguage || 'auto',
           includeContext: false
         }
@@ -42,10 +42,19 @@ export class TranslationService {
         };
       }
 
-      if (data.success && data.result) {
-        return {
-          translatedText: data.result.translation || request.text
-        };
+      if (data.success) {
+        // Handle both response formats (DeepSeek format and Google format)
+        if (data.result && data.result.translation) {
+          // DeepSeek format
+          return {
+            translatedText: data.result.translation
+          };
+        } else if (data.translated && data.original) {
+          // Google Translate format
+          return {
+            translatedText: data.translated
+          };
+        }
       }
 
       return {

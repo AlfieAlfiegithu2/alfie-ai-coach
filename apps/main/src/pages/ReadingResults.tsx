@@ -66,8 +66,24 @@ const ReadingResults = () => {
         setLoading(false);
         setResults([]);
       }
+    } else {
+      // If auth is still loading, don't do anything
+      console.log('⏳ Auth still loading, waiting...');
     }
   }, [user, authLoading]);
+
+  // Add timeout fallback for auth loading
+  useEffect(() => {
+    if (authLoading) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ Auth loading timeout reached, forcing loading to false');
+        setLoading(false);
+        setResults([]);
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [authLoading]);
   useEffect(() => {
     // Process questions when results change
     const processAllResults = async () => {
@@ -614,11 +630,14 @@ const ReadingResults = () => {
               </Button>
             </div> : <div className="text-center py-12">
               <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No reading test results yet</h3>
-              <p className="text-muted-foreground mb-4">Start practicing to see your progress here</p>
-              <Button onClick={() => navigate('/ielts-portal')}>
-                Start Reading Practice
-              </Button>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No reading test results found</h3>
+              <p className="text-muted-foreground mb-4">Your reading practice results will appear here once you complete some tests</p>
+              <div className="space-y-2">
+                <Button onClick={() => navigate('/ielts-portal')} className="mb-2">
+                  Start Reading Practice
+                </Button>
+                <p className="text-xs text-muted-foreground">Complete reading tests to see your progress and feedback</p>
+              </div>
             </div>}
         </div>
 

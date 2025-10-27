@@ -36,6 +36,7 @@ const AdminIELTSWritingTest = () => {
   });
   const [isLocked, setIsLocked] = useState(false);
   const [isModifying, setIsModifying] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     if (testId) {
@@ -45,59 +46,109 @@ const AdminIELTSWritingTest = () => {
 
   const loadTestData = async () => {
     try {
-      // Load test details
-      const { data: testData, error: testError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('id', testId)
-        .single();
-
-      if (testError) throw testError;
-      setTest(testData);
-
-      // Load existing questions for this test (only IELTS Writing tasks)
-      const { data: questions, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('test_id', testId)
-        .in('question_type', ['Task 1', 'Task 2'])
-        .order('part_number');
-
-      if (questionsError) throw questionsError;
-
-      // Separate Task 1 and Task 2 questions
-      const task1Question = questions.find(q => q.part_number === 1);
-      const task2Question = questions.find(q => q.part_number === 2);
-
-      if (task1Question) {
-        setTask1({
-          id: task1Question.id,
-          instructions: task1Question.passage_text || "",
-          imageUrl: task1Question.image_url || "",
-          imageContext: task1Question.explanation || "",
-          modelAnswer: task1Question.transcription || ""
-        });
+      console.log('📝 Loading test data for testId:', testId);
+      if (!testId) {
+        console.error('❌ No testId provided!');
+        setPageLoading(false);
+        return;
       }
+      
+      setPageLoading(true);
+      
+      // Use REST API directly with timeout instead of Supabase client
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const baseUrl = supabase.supabaseUrl;
+      
+      // Set a 5 second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      if (task2Question) {
-        setTask2({
-          id: task2Question.id,
-          instructions: task2Question.passage_text || "",
-          modelAnswer: task2Question.transcription || ""
-        });
+      try {
+        // Fetch test details
+        console.log('📝 Fetching test details via REST API...');
+        const testResponse = await fetch(
+          `${baseUrl}/rest/v1/tests?id=eq.${testId}&select=*`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          }
+        );
+
+        if (!testResponse.ok) {
+          throw new Error(`Test fetch failed: ${testResponse.status}`);
+        }
+
+        const testResults = await testResponse.json();
+        const testData = testResults?.[0];
+
+        if (!testData) {
+          console.error('❌ Test not found:', testId);
+          setPageLoading(false);
+          setTest({});
+          return;
+        }
+
+        console.log('✅ Test loaded:', testData);
+        setTest(testData);
+
+        // Fetch questions
+        console.log('📝 Fetching questions via REST API...');
+        const questionsResponse = await fetch(
+          `${baseUrl}/rest/v1/questions?test_id=eq.${testId}&question_type=in.("Task 1","Task 2")&order=part_number.asc`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          }
+        );
+
+        if (questionsResponse.ok) {
+          const questions = await questionsResponse.json();
+          console.log('✅ Questions loaded:', questions?.length || 0);
+
+          if (questions && questions.length > 0) {
+            const task1Question = questions.find((q: any) => q.part_number === 1);
+            const task2Question = questions.find((q: any) => q.part_number === 2);
+
+            if (task1Question) {
+              setTask1({
+                id: task1Question.id,
+                instructions: task1Question.passage_text || "",
+                imageUrl: task1Question.image_url || "",
+                imageContext: task1Question.explanation || "",
+                modelAnswer: task1Question.transcription || ""
+              });
+            }
+
+            if (task2Question) {
+              setTask2({
+                id: task2Question.id,
+                instructions: task2Question.passage_text || "",
+                modelAnswer: task2Question.transcription || ""
+              });
+            }
+
+            const hasCompleteContent = task1Question && task2Question && 
+                                       task1Question.question_text && task2Question.question_text;
+            setIsLocked(Boolean(hasCompleteContent));
+          }
+        }
+
+        console.log('✅ Test data loading complete');
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      // Check if test is locked (both tasks have content)
-      const hasCompleteContent = task1Question && task2Question && 
-                                 task1Question.question_text && task2Question.question_text;
-      setIsLocked(Boolean(hasCompleteContent));
     } catch (error) {
-      console.error('Error loading test data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load test data",
-        variant: "destructive"
-      });
+      console.error('❌ Error loading test data:', error);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -241,7 +292,7 @@ const AdminIELTSWritingTest = () => {
     }
   };
 
-  if (!test) {
+  if (pageLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -249,6 +300,22 @@ const AdminIELTSWritingTest = () => {
           <p className="mt-2 text-sm text-muted-foreground">Loading test data...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!test || Object.keys(test).length === 0) {
+    return (
+      <AdminLayout title="Writing Test" showBackButton={true} backPath="/admin/ielts/writing">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Error Loading Test</h2>
+            <p className="text-muted-foreground mb-4">Could not load the test data. Please try again.</p>
+            <Button onClick={() => navigate('/admin/ielts/writing')}>
+              Back to Tests
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
     );
   }
 

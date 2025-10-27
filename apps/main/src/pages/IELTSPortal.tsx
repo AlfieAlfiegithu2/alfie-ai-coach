@@ -10,6 +10,7 @@ import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
 import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
+import SpotlightCard from '@/components/SpotlightCard';
 
 // IELTS Core Skills
 const IELTS_SKILLS = [
@@ -58,6 +59,14 @@ const IELTSPortal = () => {
     const img = new Image();
     img.onload = () => setImageLoaded(true);
     img.src = '/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png';
+
+    // Auto-refresh available tests every 30 seconds to show new admin-created tests
+    const testRefreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing available tests...');
+      loadAvailableTests();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(testRefreshInterval);
   }, [user]);
 
   // Recompute IELTS skill progress whenever tests load or user changes
@@ -106,7 +115,7 @@ const IELTSPortal = () => {
       const {
         data: speakingData,
         error: speakingError
-      } = await supabase.from('speaking_prompts').select('test_number, cambridge_book, id');
+      } = await supabase.from('speaking_prompts').select('test_id, id');
       if (speakingError) {
         console.error('Error fetching speaking prompts:', speakingError);
         throw speakingError;
@@ -144,26 +153,21 @@ const IELTSPortal = () => {
         }
       });
 
-      // Add speaking tests
+      // Add speaking tests - now use test_id directly
       speakingData?.forEach(sp => {
-        // Find corresponding test by name
-        const matchingTest = testsData?.find(t =>
-          t.test_name === (sp.test_number?.toString() || '') ||
-          t.test_name.includes(sp.test_number?.toString() || '') ||
-          (!!sp.cambridge_book && (t.test_name === sp.cambridge_book || t.test_name.includes(sp.cambridge_book)))
-        );
-        if (matchingTest) {
-          if (!testModules.has(matchingTest.id)) {
-            testModules.set(matchingTest.id, new Set());
+        if (sp.test_id) {
+          // Direct mapping via test_id
+          if (!testModules.has(sp.test_id)) {
+            testModules.set(sp.test_id, new Set());
           }
-          testModules.get(matchingTest.id).add('speaking');
+          testModules.get(sp.test_id).add('speaking');
         }
       });
 
       const transformedTests = testsData?.map((test, index) => {
         const availableModules = testModules.get(test.id) || new Set();
         const questionCount = questionsData?.filter(q => q.test_id === test.id).length || 0;
-        const speakingCount = speakingData?.filter(sp => sp.test_number?.toString() === test.test_name || sp.cambridge_book?.includes(test.test_name)).length || 0;
+        const speakingCount = speakingData?.filter(sp => sp.test_id === test.id).length || 0;
         const totalContent = questionCount + speakingCount;
         return {
           id: test.id,
@@ -348,8 +352,20 @@ const IELTSPortal = () => {
   };
 
   const handleSkillClick = (skillSlug: string) => {
+    if (skillSlug === 'collocation-connect') {
+      navigate('/ai-speaking');
+      return;
+    }
     if (skillSlug === 'sentence-mastery') {
-      navigate('/sentence-mastery');
+      navigate('/skills/sentence-mastery');
+    } else if (skillSlug === 'writing') {
+      navigate('/ielts-writing-test');
+    } else if (skillSlug === 'speaking') {
+      navigate('/speaking');
+    } else if (skillSlug === 'reading') {
+      navigate('/reading');
+    } else if (skillSlug === 'listening') {
+      navigate('/listening');
     } else {
       navigate(`/skills/${skillSlug}`);
     }
@@ -399,8 +415,8 @@ const IELTSPortal = () => {
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
               {/* Vocabulary Book quick card (separate from Skills' builder) */}
               <div className="mb-4">
-                <Card className="bg-card/80 backdrop-blur-sm">
-                  <CardContent className="p-4">
+                <SpotlightCard onClick={() => navigate('/vocabulary')}>
+                  <CardContent className="p-0">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-base md:text-lg font-semibold text-foreground">Vocabulary Book</div>
@@ -413,7 +429,7 @@ const IELTSPortal = () => {
                       </Button>
                     </div>
                   </CardContent>
-                </Card>
+                </SpotlightCard>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {IELTS_SKILLS.map((skill, index) => {
@@ -431,11 +447,11 @@ const IELTSPortal = () => {
                   const skillImage = skillImages[index];
                   
                   return (
-                    <Card key={skill.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillClick(skill.id)}>
+                    <SpotlightCard key={skill.id} className="cursor-pointer" onClick={() => handleSkillClick(skill.id)}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-3 mb-2">
-                          <img 
-                            src={skillImage} 
+                          <img
+                            src={skillImage}
                             alt={`${skill.title} icon`}
                             className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
                           />
@@ -448,7 +464,7 @@ const IELTSPortal = () => {
                         <div className="text-xs md:text-sm text-muted-foreground mb-3">
                           <p>{skill.description}</p>
                         </div>
-                        
+
                         {progress && (
                           <div className="mb-3 space-y-2">
                             <div className="text-xs text-muted-foreground">
@@ -457,21 +473,21 @@ const IELTSPortal = () => {
                             <Progress value={progressPercentage} className="h-2" />
                           </div>
                         )}
-                        
+
                         {skillBands[skill.id] && skill.id !== 'speaking' && (
                           <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mb-3">
                             Last: {skillBands[skill.id]}
                           </div>
                         )}
-                        
-                        <Button 
-                          className="w-full" 
+
+                        <Button
+                          className="w-full"
                           size="sm"
                         >
                           Start Practice
                         </Button>
                       </CardContent>
-                    </Card>
+                    </SpotlightCard>
                   );
                 })}
               </div>
@@ -486,10 +502,10 @@ const IELTSPortal = () => {
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
                   return (
-                    <Card key={skill.slug} className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm" onClick={() => handleSkillClick(skill.slug)}>
+                    <SpotlightCard key={skill.slug} className="cursor-pointer" onClick={() => handleSkillClick(skill.slug)}>
                       <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
                         <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
-                        
+
                         {progress && (
                           <div className="mt-3 space-y-2">
                             <div className="text-xs text-muted-foreground">
@@ -499,7 +515,7 @@ const IELTSPortal = () => {
                           </div>
                         )}
                       </CardContent>
-                    </Card>
+                    </SpotlightCard>
                   );
                 })}
               </div>
@@ -541,15 +557,15 @@ const IELTSPortal = () => {
                     const animalImage = animalPhotos[index % animalPhotos.length];
                     
                     return (
-                      <Card 
-                        key={test.id} 
-                        className="hover:shadow-lg transition-all duration-200 cursor-pointer bg-card/80 backdrop-blur-sm flex-shrink-0 w-64 md:w-72" 
+                      <SpotlightCard
+                        key={test.id}
+                        className="cursor-pointer flex-shrink-0 w-64 md:w-72 p-0"
                         onClick={() => handleTestClick(test.id)}
                       >
                         <CardHeader className="pb-2">
                           <div className="flex items-center gap-3 mb-2">
-                            <img 
-                              src={animalImage} 
+                            <img
+                              src={animalImage}
                               alt={`Test ${test.test_number} mascot`}
                               className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
                             />
@@ -567,24 +583,24 @@ const IELTSPortal = () => {
                           <div className="text-xs md:text-sm text-muted-foreground mb-3">
                             <p>{test.test_name}</p>
                           </div>
-                          <Button 
-                            className="w-full mt-3" 
-                            size="sm" 
+                          <Button
+                            className="w-full mt-3"
+                            size="sm"
                             disabled={test.comingSoon}
                           >
                             {test.comingSoon ? 'Coming Soon' : 'Start Test'}
                           </Button>
                         </CardContent>
-                      </Card>
+                      </SpotlightCard>
                     );
                   })}
                 </div>
               ) : (
-                <Card className="bg-card/80 backdrop-blur-sm">
+                <SpotlightCard>
                   <CardContent className="p-6 text-center">
                     <p className="text-muted-foreground">No IELTS tests available yet. Check back soon!</p>
                   </CardContent>
-                </Card>
+                </SpotlightCard>
               )}
             </div>
           </div>

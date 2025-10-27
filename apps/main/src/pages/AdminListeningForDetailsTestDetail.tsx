@@ -96,23 +96,105 @@ const AdminListeningForDetailsTestDetail = () => {
     setUploading(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'mp3';
-      const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
-      const path = `${id}/${safeName}`;
-      // TODO: Implement R2 upload instead of Supabase storage
-      console.log('Audio upload disabled - implement R2 upload');
-      // const { error: upErr } = await supabase.storage.from('listening-audio').upload(path, file, { upsert: true, contentType: `audio/${ext}` });
-      // if (upErr) throw upErr;
+      const base = file.name.replace(/\.[^/.]+$/, '');
+      const safeBase = base
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '') // strip diacritics
+        .replace(/[^a-zA-Z0-9_-]+/g, '-') // replace spaces & specials with '-'
+        .replace(/-+/g, '-') // collapse dashes
+        .replace(/^-|-$/g, '') // trim dashes
+        .toLowerCase();
+      const fileName = `${Date.now()}-${safeBase}.${ext}`;
+      const path = `admin/listening/${id}/${fileName}`;
+      
+      console.log('📤 Uploading listening audio to R2:', { originalName: file.name, fileName, size: file.size, type: file.type });
+      
+      // Create FormData for R2 upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('path', path);
+      formData.append('contentType', file.type || 'audio/mpeg');
+      formData.append('cacheControl', 'public, max-age=31536000');
+
+      // Get the Supabase function URL
+      const { data: { session } } = await supabase.auth.getSession();
+      const functionUrl = `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/r2-upload`;
+
+      // Upload to R2 via edge function
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ R2 upload error:', response.status, errorText);
+        throw new Error(`Upload failed ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Upload failed');
+      }
+
+      console.log('✅ Listening audio uploaded successfully:', data.url);
+      
+      // Update the audioFiles state with the new URL
+      setAudioFiles([...audioFiles, { name: fileName, url: data.url }]);
+      
       await load();
-    } catch (e: any) { console.error(e); }
-    finally { setUploading(false); setFile(null); }
+    } catch (e: any) { 
+      console.error('❌ Upload error:', e); 
+      alert(`Upload failed: ${e.message}`);
+    }
+    finally { 
+      setUploading(false); 
+      setFile(null); 
+    }
   };
 
   const deleteAudio = async (name: string) => { 
-    if (!id) return; 
-    // TODO: Implement R2 delete instead of Supabase storage
-    console.log('Audio delete disabled - implement R2 delete');
-    // await supabase.storage.from('listening-audio').remove([`${id}/${name}`]); 
-    await load(); 
+    if (!id) return;
+    
+    try {
+      console.log('🗑️ Deleting listening audio from R2:', { fileName: name });
+      
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+      const functionUrl = `${supabaseUrl}/functions/v1/r2-delete`;
+      
+      const path = `admin/listening/${id}/${name}`;
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({ path })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ R2 delete error:', response.status, errorText);
+        throw new Error(`Delete failed ${response.status}: ${errorText}`);
+      }
+
+      console.log('✅ Listening audio deleted successfully');
+      
+      // Update audioFiles state to remove deleted file
+      setAudioFiles(audioFiles.filter(f => f.name !== name));
+      
+      await load();
+    } catch (e: any) {
+      console.error('❌ Delete error:', e);
+      alert(`Delete failed: ${e.message}`);
+    }
   };
 
   return (

@@ -261,15 +261,16 @@ export function useAdminContent() {
       formData.append('contentType', file.type || 'audio/mpeg');
       formData.append('cacheControl', 'public, max-age=31536000');
 
-      // Get the Supabase function URL
-      const { data: { session } } = await supabase.auth.getSession();
+      // Use API key for authentication (admin is not Supabase-authenticated)
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
       const functionUrl = `https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1/r2-upload`;
 
       // Upload to R2 via edge function using fetch (supabase.functions.invoke doesn't support FormData)
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
-          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
         body: formData,
       });

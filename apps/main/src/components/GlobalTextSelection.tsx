@@ -10,9 +10,12 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const [selectedText, setSelectedText] = useState('');
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [showHelper, setShowHelper] = useState(false);
-  const [targetLanguage, setTargetLanguage] = useState('en'); // Default to English
+  const [targetLanguage, setTargetLanguage] = useState('en');
   const [isSaving, setIsSaving] = useState(false);
   const selectionTimeoutRef = useRef<NodeJS.Timeout>();
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef<NodeJS.Timeout>();
+  const lastClickTimeRef = useRef(0);
   const { user } = useAuth();
 
   // Load and refresh user's preferred language
@@ -52,52 +55,143 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   useEffect(() => {
     // Only enable translation selection for authenticated users
     if (!user) {
+      if (import.meta.env.DEV) {
+        console.log('ℹ️ Translation disabled: No authenticated user');
+      }
       setShowHelper(false);
       return;
     }
+    if (import.meta.env.DEV) {
+      console.log('✅ Translation enabled for user:', user.email);
+    }
+
     const handleMouseUp = (e: MouseEvent) => {
+      console.log('🐭 Mouse up detected');
+
       // Clear any existing timeout
       if (selectionTimeoutRef.current) {
         clearTimeout(selectionTimeoutRef.current);
       }
 
-      // Wait a bit to ensure selection is complete
-      selectionTimeoutRef.current = setTimeout(() => {
-        // Don't show new translations if we're currently saving
-        if (isSaving) return;
+      // Track double-clicks with proper timing
+      const currentTime = Date.now();
+      const timeSinceLastClick = currentTime - lastClickTimeRef.current;
+      lastClickTimeRef.current = currentTime;
+
+      // If more than 400ms since last click, reset counter
+      if (timeSinceLastClick > 400) {
+        clickCountRef.current = 0;
+      }
+
+      clickCountRef.current++;
+      console.log('👆 Click count:', clickCountRef.current, 'Time since last click:', timeSinceLastClick);
+
+      // Clear existing timer
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+
+      // Set timer to reset click count after 400ms
+      clickTimerRef.current = setTimeout(() => {
+        console.log('⏱️ Click counter reset after 400ms');
+        clickCountRef.current = 0;
+      }, 400);
+
+      // Handle double-click (2 clicks within 400ms)
+      if (clickCountRef.current === 2) {
+        console.log('🔥 DOUBLE-CLICK DETECTED!');
+        clickCountRef.current = 0; // Reset immediately
         
+        // Don't show new translations if we're currently saving
+        if (isSaving) {
+          console.log('⚠️ Saving in progress, ignoring double-click');
+          return;
+        }
+
         const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
+        if (!selection || selection.rangeCount === 0) {
+          console.log('❌ No selection found');
+          return;
+        }
 
         const text = selection.toString().trim();
-        
-        // Show for meaningful text selections - allow longer text for sentences
+        console.log('📝 Double-click text selected:', text, 'length:', text.length);
+
+        // Show for meaningful text selections
         if (text.length >= 2 && text.length <= 500 && !text.includes('\n')) {
-          // Check if the selected text is clickable or part of UI elements
+          console.log('✅ Double-click text meets criteria, checking if selectable...');
           const range = selection.getRangeAt(0);
           const container = range.commonAncestorContainer;
-          const element = container.nodeType === Node.TEXT_NODE 
-            ? container.parentElement 
+          const element = container.nodeType === Node.TEXT_NODE
+            ? container.parentElement
             : container as Element;
 
           // Skip if it's part of navigation, buttons, or form elements
           if (element && !isSelectableContent(element)) {
+            console.log('❌ Element is not selectable content');
             return;
           }
 
           // Get more precise positioning based on selection bounds
           const rect = range.getBoundingClientRect();
-          const selectionX = rect.left + (rect.width / 2); // Center of selection horizontally
-          const selectionY = rect.bottom; // Bottom of selection
-          
+          const selectionX = rect.left + (rect.width / 2);
+          const selectionY = rect.bottom;
+
           setSelectedText(text);
           setPosition({
             x: selectionX,
-            y: selectionY + window.scrollY + 5 // Closer to the selected text
+            y: selectionY + window.scrollY + 5
           });
+          console.log('🎯 Showing translation helper at position:', { x: selectionX, y: selectionY + window.scrollY + 5 });
           setShowHelper(true);
         }
-      }, 100);
+        return;
+      }
+
+      // Single-click: wait 350ms to see if there's a second click
+      // Only process if this is the first click (after reset)
+      if (clickCountRef.current === 1) {
+        selectionTimeoutRef.current = setTimeout(() => {
+          // Check if still at click count 1 (no double-click happened)
+          if (clickCountRef.current === 1) {
+            console.log('👉 SINGLE-CLICK DETECTED (no second click within 350ms)');
+            
+            if (isSaving) return;
+
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+
+            const text = selection.toString().trim();
+            console.log('📝 Single-click text selected:', text, 'length:', text.length);
+
+            if (text.length >= 2 && text.length <= 500 && !text.includes('\n')) {
+              console.log('✅ Single-click text meets criteria, checking if selectable...');
+              const range = selection.getRangeAt(0);
+              const container = range.commonAncestorContainer;
+              const element = container.nodeType === Node.TEXT_NODE
+                ? container.parentElement
+                : container as Element;
+
+              if (element && !isSelectableContent(element)) {
+                console.log('❌ Element is not selectable content');
+                return;
+              }
+
+              const rect = range.getBoundingClientRect();
+              const selectionX = rect.left + (rect.width / 2);
+              const selectionY = rect.bottom;
+
+              setSelectedText(text);
+              setPosition({
+                x: selectionX,
+                y: selectionY + window.scrollY + 5
+              });
+              console.log('🎯 Showing translation helper at position:', { x: selectionX, y: selectionY + window.scrollY + 5 });
+              setShowHelper(true);
+            }
+          }
+        }, 350);
+      }
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -109,8 +203,6 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
       setShowHelper(false);
     };
 
-    // No longer using localStorage for language preferences
-
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousedown', handleMouseDown);
 
@@ -120,8 +212,11 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
       if (selectionTimeoutRef.current) {
         clearTimeout(selectionTimeoutRef.current);
       }
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
     };
-  }, [isSaving, user]); // Add user dependency
+  }, [isSaving, user]);
 
   // Function to determine if content is selectable for translation
   const isSelectableContent = (element: Element): boolean => {
@@ -141,7 +236,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
       const className = parent.className || '';
       const role = parent.getAttribute('role') || '';
 
-      // Skip UI elements
+      // Skip UI elements - be more restrictive to avoid interfering with normal UI
       if (
         ['button', 'input', 'select', 'textarea', 'nav', 'header', 'aside'].includes(tagName) ||
         className.includes('btn') ||
@@ -153,9 +248,12 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
         className.includes('toast') ||
         className.includes('dialog') ||
         className.includes('modal') ||
+        className.includes('lucide') ||
+        className.includes('icon') ||
         role === 'button' ||
         role === 'navigation' ||
-        role === 'menubar'
+        role === 'menubar' ||
+        parent.getAttribute('data-translation-helper')
       ) {
         return false;
       }
@@ -166,7 +264,6 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
 
   const handleSaveStart = () => {
     setIsSaving(true);
-    // Hide the helper immediately when save starts
     setShowHelper(false);
   };
 

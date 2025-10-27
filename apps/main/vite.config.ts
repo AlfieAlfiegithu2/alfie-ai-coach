@@ -17,37 +17,36 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: false,
       proxy: {
-        // Proxy Earthworm (Sentence Mastery) requests to dev server
-        '/earthworm': {
-          target: earthwormTarget,
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/earthworm/, ''),
-          secure: isProd,
-          ws: true,
-          configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, _res) => {
-              console.log('Earthworm proxy error (service may not be running):', err.message);
-            });
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              console.log('Making request to Earthworm:', req.method, req.url);
-            });
-          },
-        },
-        // Proxy Sentence Mastery API requests (with fallback handling)
-        '/earthworm-api': {
-          target: earthwormApiTarget,
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/earthworm-api/, '/api'),
-          secure: isProd,
-          configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, _res) => {
-              console.log('Earthworm API proxy error (service may not be running):', err.message);
-            });
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              console.log('Making request to Earthworm API:', req.method, req.url);
-            });
-          },
-        },
+        // Earthworm proxy temporarily disabled - using dedicated component instead
+        // '/earthworm': {
+        //   target: earthwormTarget,
+        //   changeOrigin: true,
+        //   rewrite: (path) => path.replace(/^\/earthworm/, ''),
+        //   secure: isProd,
+        //   ws: true,
+        //   configure: (proxy, _options) => {
+        //     proxy.on('error', (err, _req, _res) => {
+        //       console.log('Earthworm proxy error (service may not be running):', err.message);
+        //     });
+        //     proxy.on('proxyReq', (proxyReq, req, _res) => {
+        //       console.log('Making request to Earthworm:', req.method, req.url);
+        //     });
+        //   },
+        // },
+        // '/earthworm-api': {
+        //   target: earthwormApiTarget,
+        //   changeOrigin: true,
+        //   rewrite: (path) => path.replace(/^\/earthworm-api/, '/api'),
+        //   secure: isProd,
+        //   configure: (proxy, _options) => {
+        //     proxy.on('error', (err, _req, _res) => {
+        //       console.log('Earthworm API proxy error (service may not be running):', err.message);
+        //     });
+        //     proxy.on('proxyReq', (proxyReq, req, _res) => {
+        //       console.log('Making request to Earthworm API:', req.method, req.url);
+        //     });
+        //   },
+        // },
         // Proxy Supabase functions for local development
         '/functions/v1': {
           target: 'http://localhost:54321/functions/v1',

@@ -38,6 +38,211 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
   const translationCache = useRef<Map<string, TranslationResult>>(new Map());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
+  // Simple fallback translations for common words
+  const getFallbackTranslation = (text: string, targetLang: string): TranslationResult | null => {
+    const lowerText = text.toLowerCase().trim();
+
+    // Basic English to Spanish translations
+    if (targetLang === 'es') {
+      const translations: Record<string, string> = {
+        'hello': 'hola',
+        'hi': 'hola',
+        'goodbye': 'adiós',
+        'bye': 'adiós',
+        'thank you': 'gracias',
+        'thanks': 'gracias',
+        'please': 'por favor',
+        'yes': 'sí',
+        'no': 'no',
+        'good': 'bueno',
+        'bad': 'malo',
+        'great': 'excelente',
+        'big': 'grande',
+        'small': 'pequeño',
+        'hot': 'caliente',
+        'cold': 'frío',
+        'water': 'agua',
+        'food': 'comida',
+        'eat': 'comer',
+        'drink': 'beber',
+        'time': 'tiempo',
+        'day': 'día',
+        'night': 'noche',
+        'morning': 'mañana',
+        'evening': 'tarde',
+        'home': 'casa',
+        'house': 'casa',
+        'school': 'escuela',
+        'work': 'trabajo',
+        'job': 'trabajo',
+        'friend': 'amigo',
+        'family': 'familia',
+        'love': 'amor',
+        'happy': 'feliz',
+        'sad': 'triste',
+        'beautiful': 'hermoso',
+        'ugly': 'feo',
+        'fast': 'rápido',
+        'slow': 'lento',
+        'new': 'nuevo',
+        'old': 'viejo',
+        'easy': 'fácil',
+        'difficult': 'difícil',
+        'help': 'ayuda',
+        'help me': 'ayúdame',
+        'how are you': '¿cómo estás?',
+        'i am fine': 'estoy bien',
+        'what is your name': '¿cómo te llamas?',
+        'my name is': 'me llamo',
+        'nice to meet you': 'mucho gusto',
+        'see you later': 'hasta luego',
+        'good morning': 'buenos días',
+        'good afternoon': 'buenas tardes',
+        'good evening': 'buenas noches'
+      };
+
+      if (translations[lowerText]) {
+        return {
+          translation: translations[lowerText],
+          alternatives: [],
+          simple: true
+        };
+      }
+    }
+
+    // Basic English to French translations
+    if (targetLang === 'fr') {
+      const translations: Record<string, string> = {
+        'hello': 'bonjour',
+        'hi': 'bonjour',
+        'goodbye': 'au revoir',
+        'bye': 'au revoir',
+        'thank you': 'merci',
+        'thanks': 'merci',
+        'please': 's\'il vous plaît',
+        'yes': 'oui',
+        'no': 'non',
+        'good': 'bon',
+        'bad': 'mauvais',
+        'great': 'excellent',
+        'big': 'grand',
+        'small': 'petit',
+        'hot': 'chaud',
+        'cold': 'froid',
+        'water': 'eau',
+        'food': 'nourriture',
+        'eat': 'manger',
+        'drink': 'boire',
+        'time': 'temps',
+        'day': 'jour',
+        'night': 'nuit',
+        'morning': 'matin',
+        'evening': 'soir',
+        'home': 'maison',
+        'house': 'maison',
+        'school': 'école',
+        'work': 'travail',
+        'job': 'travail',
+        'friend': 'ami',
+        'family': 'famille',
+        'love': 'amour',
+        'happy': 'heureux',
+        'sad': 'triste',
+        'beautiful': 'beau',
+        'ugly': 'laid',
+        'fast': 'rapide',
+        'slow': 'lent',
+        'new': 'nouveau',
+        'old': 'vieux',
+        'easy': 'facile',
+        'difficult': 'difficile',
+        'help': 'aide',
+        'help me': 'aidez-moi',
+        'how are you': 'comment allez-vous?',
+        'i am fine': 'je vais bien',
+        'what is your name': 'comment vous appelez-vous?',
+        'my name is': 'je m\'appelle',
+        'nice to meet you': 'enchanté',
+        'see you later': 'à plus tard',
+        'good morning': 'bonjour',
+        'good afternoon': 'bonjour',
+        'good evening': 'bonsoir'
+      };
+
+      if (translations[lowerText]) {
+        return {
+          translation: translations[lowerText],
+          alternatives: [],
+          simple: true
+        };
+      }
+    }
+
+    // Basic English to German translations
+    if (targetLang === 'de') {
+      const translations: Record<string, string> = {
+        'hello': 'hallo',
+        'hi': 'hallo',
+        'goodbye': 'tschüss',
+        'bye': 'tschüss',
+        'thank you': 'danke',
+        'thanks': 'danke',
+        'please': 'bitte',
+        'yes': 'ja',
+        'no': 'nein',
+        'good': 'gut',
+        'bad': 'schlecht',
+        'great': 'toll',
+        'big': 'groß',
+        'small': 'klein',
+        'hot': 'heiß',
+        'cold': 'kalt',
+        'water': 'wasser',
+        'food': 'essen',
+        'eat': 'essen',
+        'drink': 'trinken',
+        'time': 'zeit',
+        'day': 'tag',
+        'night': 'nacht',
+        'morning': 'morgen',
+        'evening': 'abend',
+        'home': 'zuhause',
+        'house': 'haus',
+        'school': 'schule',
+        'work': 'arbeit',
+        'job': 'arbeit',
+        'friend': 'freund',
+        'family': 'familie',
+        'love': 'liebe',
+        'happy': 'glücklich',
+        'sad': 'traurig',
+        'beautiful': 'schön',
+        'fast': 'schnell',
+        'slow': 'langsam',
+        'new': 'neu',
+        'old': 'alt',
+        'easy': 'einfach',
+        'difficult': 'schwierig',
+        'help': 'hilfe',
+        'help me': 'hilf mir',
+        'how are you': 'wie geht es dir?',
+        'i am fine': 'mir geht es gut',
+        'good morning': 'guten morgen',
+        'good evening': 'guten abend'
+      };
+
+      if (translations[lowerText]) {
+        return {
+          translation: translations[lowerText],
+          alternatives: [],
+          simple: true
+        };
+      }
+    }
+
+    return null;
+  };
+
   // Session storage for persistent cache across component remounts
   const getFromSessionCache = (key: string): TranslationResult | null => {
     try {
@@ -98,33 +303,109 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       const wordCount = text.trim().split(/\s+/).length;
       const isShortText = wordCount <= 3;
       
-      // Use simple translation service with optimized settings
+        // Use simple translation service with optimized settings
       const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase.functions.invoke('translation-service', {
-        body: {
-          text: text,
-          targetLang: language,
-          sourceLang: 'auto',
-          // For short texts, request full context but API will use simplified prompt
-          includeContext: true
-        }
-      });
+      console.log('🔄 Requesting translation for:', text, 'to language:', language);
+
+      let data, error;
+      try {
+        const response = await supabase.functions.invoke('translation-service', {
+          body: {
+            text: text,
+            targetLanguage: language,
+            sourceLang: 'auto',
+            // For short texts, request full context but API will use simplified prompt
+            includeContext: true
+          }
+        });
+        data = response.data;
+        error = response.error;
+      } catch (err) {
+        console.error('Network error calling translation service:', err);
+        error = err;
+      }
+
+      console.log('📥 Translation response:', { data, error });
 
       if (error || !data.success) {
-        console.warn('Translation service error:', error);
-        toast({
-          title: "Translation failed",
-          description: "Unable to translate at the moment. Please try again.",
-          variant: "destructive",
-        });
-        setTranslationResult(null);
+        console.error('Translation service error:', { error, data });
+
+        // Check if it's an API key issue
+        const isApiKeyError = error?.message?.includes('API key') ||
+                             error?.message?.includes('unauthorized') ||
+                             error?.message?.includes('authentication') ||
+                             error?.message?.includes('temporarily unavailable') ||
+                             !data ||
+                             (data && data.error === 'Translation service temporarily unavailable. Please try again in a moment.');
+
+        if (isApiKeyError) {
+          console.warn('🔑 Translation service unavailable: API key not configured');
+          toast({
+            title: "Translation Service Setup Required",
+            description: "Full translation requires API configuration. Using basic translations for common words. Set up DEEPSEEK_API_KEY for advanced translations.",
+            variant: "destructive",
+            duration: 7000,
+            action: {
+              label: "Setup Guide",
+              onClick: () => {
+                // Could open a setup guide or redirect to settings
+                console.log('User wants to set up translation API');
+              }
+            }
+          });
+        }
+
+        // Fallback: Try to provide a basic translation for common words
+        const fallbackTranslation = getFallbackTranslation(text, language);
+        if (fallbackTranslation) {
+          console.log('🔄 Using fallback translation:', fallbackTranslation);
+          setTranslationResult(fallbackTranslation);
+          // Cache the fallback result
+          translationCache.current.set(cacheKey, fallbackTranslation);
+          saveToSessionCache(cacheKey, fallbackTranslation);
+        } else {
+          const errorMessage = isApiKeyError
+            ? "Translation service needs API key setup. Try basic words like 'hello', 'goodbye', 'thank you' for instant translations."
+            : "Unable to translate at the moment. Please try again.";
+
+          toast({
+            title: "Translation Limited",
+            description: errorMessage,
+            variant: "destructive",
+            duration: 5000,
+          });
+          setTranslationResult(null);
+        }
       } else {
-        const result = data.result;
-        setTranslationResult(result);
-        
+        // Handle both response formats (DeepSeek format and Google format)
+        let translationResult;
+        if (data.result) {
+          // DeepSeek format
+          translationResult = data.result;
+          console.log('✅ DeepSeek translation successful:', translationResult);
+        } else if (data.translated && data.original) {
+          // Google Translate format
+          translationResult = {
+            translation: data.translated,
+            alternatives: [],
+            simple: false
+          };
+          console.log('✅ Google translation successful:', translationResult);
+        } else {
+          // Fallback
+          translationResult = {
+            translation: text,
+            alternatives: [],
+            simple: true
+          };
+          console.log('⚠️ Using fallback translation result format');
+        }
+
+        setTranslationResult(translationResult);
+
         // Cache the result in both memory and session storage
-        translationCache.current.set(cacheKey, result);
-        saveToSessionCache(cacheKey, result);
+        translationCache.current.set(cacheKey, translationResult);
+        saveToSessionCache(cacheKey, translationResult);
       }
     } catch (error) {
       console.error('Translation error:', error);
@@ -170,17 +451,28 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
       }
 
       // Generate audio using ElevenLabs TTS
-        const { data, error } = await supabase.functions.invoke('audio-cache', {
+      console.log('🔊 Requesting pronunciation for:', selectedText);
+
+      let data, error;
+      try {
+        const response = await supabase.functions.invoke('audio-cache', {
           body: {
             text: selectedText,
             voice_id: 'JBFqnCBsd6RMkjVDRZzb', // ElevenLabs Sarah (Rachel) voice ID
             question_id: `translation-${selectedText}-${Date.now()}`
           }
         });
+        data = response.data;
+        error = response.error;
+      } catch (err) {
+        console.error('Audio service error:', err);
+        error = err;
+      }
 
       if (error) throw error;
 
       if (data.success && data.audio_url) {
+        console.log('🔊 Audio generated successfully:', data.audio_url);
         setAudioUrl(data.audio_url);
         const audio = new Audio(data.audio_url);
         audioRef.current = audio;
@@ -194,6 +486,9 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
           });
         };
         await audio.play();
+      } else {
+        console.warn('Audio service response:', { data, error });
+        throw new Error('No audio URL received');
       }
     } catch (error: any) {
       console.error('Pronunciation error:', error);
@@ -365,8 +660,10 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
 
   const dynamicPosition = getPopupPosition();
 
+  console.log('🎨 Rendering translation helper at position:', dynamicPosition, 'with text:', selectedText);
+
   return (
-    <div 
+    <div
       className="fixed z-50 max-w-sm max-h-80 overflow-hidden"
       data-translation-helper
       style={{
@@ -374,6 +671,11 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
         top: `${dynamicPosition.top}px`,
         maxWidth: '400px',
         maxHeight: '320px',
+        pointerEvents: 'auto',
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '0.5rem',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
       }}
     >
       <Card className="glass-effect shadow-lg border-border/20">
@@ -410,17 +712,24 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
               </div>
               {isLoading ? (
                 <div className="flex items-center gap-2">
-                                 <div className="w-3 h-3 mr-2">
-                                   <LottieLoadingAnimation size="sm" message="" />
-                                 </div>
+                  <div className="w-3 h-3 mr-2">
+                    <LottieLoadingAnimation size="sm" message="" />
+                  </div>
                   <span className="text-xs text-text-secondary">Translating...</span>
                 </div>
               ) : translationResult ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-brand-blue font-medium">
-                    {translationResult.translation}
-                  </p>
-                  
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-brand-blue font-medium">
+                      {translationResult.translation}
+                    </p>
+                    {translationResult.simple && (
+                      <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-yellow-50 text-yellow-700 border-yellow-200">
+                        Basic
+                      </Badge>
+                    )}
+                  </div>
+
                   {translationResult.alternatives && translationResult.alternatives.length > 0 && (
                     <div className="text-xs space-y-2">
                       <p className="text-text-secondary font-medium">Alternative meanings:</p>
@@ -429,7 +738,7 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
                           const isObjectAlt = typeof alt === 'object' && alt !== null && 'meaning' in alt;
                           const meaning = isObjectAlt ? alt.meaning : String(alt);
                           const pos = isObjectAlt ? alt.pos : null;
-                          
+
                           return (
                             <div key={index} className="flex items-center gap-2 flex-wrap">
                               <Badge variant="outline" className="text-xs px-2 py-0.5 bg-surface-1">
@@ -447,7 +756,11 @@ const TranslationHelper = ({ selectedText, position, onClose, language, onSaveSt
                     </div>
                   )}
                 </div>
-              ) : null}
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-500">Translation failed</span>
+                </div>
+              )}
             </div>
             
             {/* Add to Word Book Button */}

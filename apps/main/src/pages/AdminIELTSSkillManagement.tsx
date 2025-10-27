@@ -64,38 +64,49 @@ const AdminIELTSSkillManagement = () => {
 
     try {
       console.log(`🔍 Loading ${skillName} tests...`);
-      console.log(`Module: ${skill.charAt(0).toUpperCase() + skill.slice(1)}`);
+      const skillCapitalized = skill.charAt(0).toUpperCase() + skill.slice(1);
 
-      // First, let's check if there are any speaking prompts to understand the test structure
-      if (skill === 'speaking') {
-        const { data: prompts, error: promptsError } = await adminSupabase
-          .from('speaking_prompts')
-          .select('*')
-          .limit(5);
+      // Use REST API with timeout instead of adminSupabase client (which hangs)
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const baseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        console.log('Speaking prompts in database:', prompts?.length || 0, promptsError ? 'Error:' + promptsError.message : '');
+      try {
+        const response = await fetch(
+          `${baseUrl}/rest/v1/tests?test_type=eq.IELTS&order=created_at.asc`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tests: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Filter on client side to find tests matching this skill
+        const filteredTests = data?.filter((test: any) => 
+          test.module === skillCapitalized || 
+          test.skill_category === skillCapitalized
+        ) || [];
+
+        console.log(`✅ Found ${filteredTests.length} ${skillName} tests:`, filteredTests);
+        setTests(filteredTests);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error('❌ Fetch error:', fetchError);
+        throw fetchError;
       }
-
-      const { data, error } = await adminSupabase
-        .from('tests')
-        .select('*')
-        .eq('test_type', 'IELTS')
-        .eq('module', skill.charAt(0).toUpperCase() + skill.slice(1))
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('❌ Database error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        throw error;
-      }
-
-      console.log(`✅ Found ${data?.length || 0} ${skillName} tests:`, data);
-      setTests(data || []);
     } catch (error) {
       console.error('❌ Error loading skill tests:', error);
       toast.error(`Failed to load ${skillName} tests`);
@@ -110,31 +121,60 @@ const AdminIELTSSkillManagement = () => {
 
     setIsCreating(true);
     try {
-      // Get the next test number for this skill
-      const { data: existingTests } = await adminSupabase
-        .from('tests')
-        .select('test_name')
-        .eq('test_type', 'IELTS')
-        .eq('module', skillName)
-        .order('created_at', { ascending: false });
+      console.log(`📝 Creating new ${skillName} test: "${newTestName}"`);
+      const skillCapitalized = skill ? skill.charAt(0).toUpperCase() + skill.slice(1) : '';
 
-      const newTestNumber = (existingTests?.length || 0) + 1;
+      // Prepare data - NO need to fetch existing tests, edge function handles everything
+      let insertData: any = {
+        test_name: newTestName,
+        test_type: 'IELTS',
+        module: skillCapitalized,
+        skill_category: skillCapitalized // Set skill_category for ALL skills
+      };
 
-      const { data, error } = await adminSupabase
-        .from('tests')
-        .insert({
-          test_name: newTestName,
-          test_type: 'IELTS',
-          module: skillName
-        })
-        .select()
-        .single();
+      if (skill === 'writing') {
+        insertData.module = 'Writing';
+        insertData.skill_category = 'Writing';
+      } else if (skill === 'speaking') {
+        insertData.module = 'Speaking';
+        insertData.skill_category = 'Speaking';
+      } else if (skill === 'reading') {
+        insertData.module = 'Reading';
+        insertData.skill_category = 'Reading';
+      } else if (skill === 'listening') {
+        insertData.module = 'Listening';
+        insertData.skill_category = 'Listening';
+      }
 
-      if (error) throw error;
+      console.log(`💾 Creating test via edge function:`, insertData);
 
+      // Call the create-test edge function - SIMPLE AND FAST!
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/create-test`;
+
+      const createResponse = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify(insertData)
+      });
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.text();
+        console.error('Create function error response:', errorData);
+        throw new Error(`Failed to create test: ${createResponse.status} - ${errorData}`);
+      }
+
+      const responseJson = await createResponse.json();
+      const data = responseJson.data;
+      console.log(`✅ Test created successfully:`, data);
       toast.success(`${skillName} test created successfully`);
       setNewTestName('');
-      loadSkillTests();
+      await loadSkillTests();
       
       // Navigate to skill-specific test management pages for individual tests
       switch(skill) {
@@ -153,9 +193,9 @@ const AdminIELTSSkillManagement = () => {
         default:
           navigate(`/admin/ielts/test/${data.id}`);
       }
-    } catch (error) {
-      console.error('Error creating test:', error);
-      toast.error(`Failed to create ${skillName} test`);
+    } catch (error: any) {
+      console.error('❌ Full error:', error);
+      toast.error(`Failed to create ${skillName} test: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsCreating(false);
     }
@@ -219,30 +259,35 @@ const AdminIELTSSkillManagement = () => {
 
   const deleteTest = async (testId: string, testName: string) => {
     try {
-      // First, delete any questions associated with this test
-      const { error: questionsError } = await adminSupabase
-        .from('questions')
-        .delete()
-        .eq('test_id', testId);
+      console.log(`🗑️ Deleting test: ${testName} (${testId})`);
 
-      if (questionsError) {
-        console.error('Error deleting questions:', questionsError);
-        // Continue with test deletion even if questions deletion fails
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const supabaseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/delete-test`;
+
+      const deleteResponse = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({ testId })
+      });
+
+      if (!deleteResponse.ok) {
+        const errorData = await deleteResponse.text();
+        console.error('Delete function error response:', errorData);
+        throw new Error(`Failed to delete test: ${deleteResponse.status} - ${errorData}`);
       }
 
-      // Then delete the test itself
-      const { error } = await adminSupabase
-        .from('tests')
-        .delete()
-        .eq('id', testId);
-
-      if (error) throw error;
-
+      const responseJson = await deleteResponse.json();
+      console.log(`✅ Test deleted successfully:`, responseJson);
       toast.success(`Test "${testName}" deleted successfully`);
       loadSkillTests(); // Refresh the test list
-    } catch (error) {
-      console.error('Error deleting test:', error);
-      toast.error('Failed to delete test');
+    } catch (error: any) {
+      console.error('❌ Full error:', error);
+      toast.error(`Failed to delete test: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -371,7 +416,7 @@ const AdminIELTSSkillManagement = () => {
                                 <Trash2 className="w-4 h-4 text-red-600" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="z-50">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Test</AlertDialogTitle>
                                 <AlertDialogDescription>

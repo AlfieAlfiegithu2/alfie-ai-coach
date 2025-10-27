@@ -62,31 +62,16 @@ const ContentSelection = () => {
       
       tests?.forEach(test => {
         const testQuestions = questions?.filter(q => q.test_id === test.id) || [];
+        const partCount = Math.max(...testQuestions.map(q => q.part_number || 1), 0);
         
-        // Group by part number
-        const partCounts = testQuestions.reduce((acc: Record<number, number>, q) => {
-          acc[q.part_number] = (acc[q.part_number] || 0) + 1;
-          return acc;
-        }, {});
-
-        // Create items for each part that has questions
-        Object.entries(partCounts).forEach(([partNum, count]) => {
-          const partNumber = parseInt(partNum);
-          
-          // Apply part filter if selected
-          if (selectedPart !== null && partNumber !== selectedPart) {
-            return;
-          }
-
-          testItems.push({
-            id: `${test.id}-${partNumber}`,
-            title: `${test.test_name} - Part ${partNumber}`,
-            cambridge_book: test.test_name.includes('Cambridge') ? test.test_name : `Cambridge ${parseInt(test.test_name.match(/\d+/)?.[0] || '1')}`,
-            test_number: parseInt(test.test_name.match(/\d+/)?.[0] || '1'),
-            section_number: 1, // Default section
-            part_number: partNumber,
-            question_count: count
-          });
+        testItems.push({
+          id: test.id,
+          title: test.test_name || `Test ${test.test_number}`,
+          cambridge_book: test.test_name || `Test ${test.test_number}`,
+          test_number: test.test_number,
+          section_number: 1,
+          part_number: partCount,
+          question_count: testQuestions.length
         });
       });
 
@@ -108,14 +93,10 @@ const ContentSelection = () => {
   };
 
   const groupContentByBook = (items: ContentItem[]) => {
+    // For now, group all tests together since they're individual full tests
     const grouped: Record<string, ContentItem[]> = {};
-    items.forEach(item => {
-      const bookKey = item.cambridge_book || 'Unknown';
-      if (!grouped[bookKey]) {
-        grouped[bookKey] = [];
-      }
-      grouped[bookKey].push(item);
-    });
+    const allTestsKey = 'Available Tests';
+    grouped[allTestsKey] = items;
     setGroupedContent(grouped);
   };
 
@@ -241,11 +222,11 @@ const ContentSelection = () => {
                           <div className="text-center">
                             <div className="flex items-center justify-center mb-1">
                               <span className="font-medium text-sm">
-                                S{item.section_number} P{item.part_number}
+                                Test {item.test_number}
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {item.question_count} Qs
+                              {item.question_count} Questions
                             </div>
                           </div>
                         </Button>

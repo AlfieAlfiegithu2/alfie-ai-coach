@@ -69,23 +69,41 @@ const Pay = () => {
   const planId = query.get('plan') || 'premium';
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [stripeError, setStripeError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       setError(null);
-      const { data, error } = await supabase.functions.invoke('create-payment-intent', { body: { planId } });
-      if (error || !data?.clientSecret) setError(error?.message || 'Failed to initialize payment');
-      else setClientSecret(data.clientSecret);
+      try {
+        const { data, error } = await supabase.functions.invoke('create-payment-intent', { body: { planId } });
+        if (error || !data?.clientSecret) setError(error?.message || 'Failed to initialize payment');
+        else setClientSecret(data.clientSecret);
+      } catch (err: any) {
+        console.error('Error creating payment intent:', err);
+        setError(err.message || 'Failed to initialize payment');
+      }
     })();
   }, [planId]);
 
   const stripePromise = useMemo(() => {
-    const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string;
-    if (!pk) {
-      console.error('VITE_STRIPE_PUBLISHABLE_KEY is not set');
+    try {
+      const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string;
+      if (!pk) {
+        const msg = 'Stripe key not configured. Please check your environment variables.';
+        console.error(msg);
+        setStripeError(msg);
+        return null;
+      }
+      return loadStripe(pk).catch((err) => {
+        console.error('Error loading Stripe:', err);
+        setStripeError('Failed to load Stripe. Please try again later.');
+        return null;
+      });
+    } catch (err: any) {
+      console.error('Error initializing Stripe:', err);
+      setStripeError('Failed to initialize payment processing.');
       return null;
     }
-    return loadStripe(pk);
   }, []);
 
   const options = useMemo(() => ({

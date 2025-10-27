@@ -12,6 +12,7 @@ const Header = () => {
   const { t } = useTranslation();
   const {
     user,
+    profile,
     signOut
   } = useAuth();
   const {
@@ -61,13 +62,21 @@ const Header = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
                   <User className="w-4 h-4" />
+                  <span className="hidden sm:inline text-sm font-medium">
+                    {profile?.full_name ? profile.full_name.split(' ')[0] : 'Profile'}
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled>
-                  {user.email}
+                <DropdownMenuItem disabled className="flex flex-col gap-1">
+                  <div className="font-semibold text-foreground">
+                    {profile?.full_name || 'User'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {user.email}
+                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {admin && <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>

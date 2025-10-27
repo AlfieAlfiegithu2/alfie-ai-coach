@@ -9,18 +9,44 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (isMounted) {
+          setUser(user);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting user:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
+    
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
+      if (isMounted) {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    // Aggressive timeout - just show the page
+    const timeout = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 2000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {

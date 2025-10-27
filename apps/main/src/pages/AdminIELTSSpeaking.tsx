@@ -68,70 +68,104 @@ const AdminIELTSSpeaking = () => {
     if (!testId) return;
 
     try {
-      // Load test details
-      const { data: test, error: testError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('id', testId)
-        .single();
+      console.log('📝 Loading speaking test data for testId:', testId);
 
-      if (testError) throw testError;
-      setTestName(test.test_name);
+      // Use REST API directly with timeout
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
+      const baseUrl = supabase.supabaseUrl;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      // Load existing speaking prompts
-      const { data: prompts, error: promptsError } = await supabase
-        .from('speaking_prompts')
-        .select('*')
-        .eq('cambridge_book', `Test ${test.test_name}`);
+      try {
+        // Fetch test details
+        console.log('📝 Fetching speaking test details via REST API...');
+        const testResponse = await fetch(
+          `${baseUrl}/rest/v1/tests?id=eq.${testId}&select=*`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          }
+        );
 
-      if (promptsError) throw promptsError;
+        if (testResponse.ok) {
+          const testResults = await testResponse.json();
+          const test = testResults?.[0];
+          if (test) {
+            console.log('✅ Test loaded:', test.test_name);
+            setTestName(test.test_name);
+          }
+        }
 
-      if (prompts && prompts.length > 0) {
-        // Check if test is locked
-        const isTestLocked = prompts.some(p => p.is_locked);
-        setIsLocked(isTestLocked);
-        
-        // Organize prompts by part
-        const part1 = prompts.filter(p => p.part_number === 1);
-        const part2 = prompts.filter(p => p.part_number === 2);
-        const part3 = prompts.filter(p => p.part_number === 3);
+        // Fetch speaking prompts
+        console.log('📝 Fetching speaking prompts via REST API...');
+        const promptsResponse = await fetch(
+          `${baseUrl}/rest/v1/speaking_prompts?select=*&order=part_number.asc,created_at.asc`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          }
+        );
 
-        if (part1.length > 0) {
-          const updatedPart1 = [...part1Prompts];
-          part1.forEach((prompt, index) => {
-            if (index < 4) {
-              updatedPart1[index] = prompt;
+        if (promptsResponse.ok) {
+          const prompts = await promptsResponse.json();
+          console.log('✅ Speaking prompts loaded:', prompts?.length || 0);
+
+          if (prompts && prompts.length > 0) {
+            const isTestLocked = prompts.some((p: any) => p.is_locked);
+            setIsLocked(isTestLocked);
+
+            const part1 = prompts.filter((p: any) => p.part_number === 1);
+            const part2 = prompts.filter((p: any) => p.part_number === 2);
+            const part3 = prompts.filter((p: any) => p.part_number === 3);
+
+            if (part1.length > 0) {
+              const updatedPart1 = [...part1Prompts];
+              part1.forEach((prompt: any, index: number) => {
+                if (index < 4) {
+                  updatedPart1[index] = prompt;
+                }
+              });
+              setPart1Prompts(updatedPart1);
             }
-          });
-          setPart1Prompts(updatedPart1);
-        }
 
-        if (part2.length > 0) {
-          setPart2Prompt(part2[0]);
-        }
-
-        if (part3.length > 0) {
-          // Fix: Properly handle Part 3 data loading to prevent disappearing content
-          const updatedPart3 = [...part3Prompts];
-          part3.forEach((prompt, index) => {
-            if (index < updatedPart3.length) {
-              updatedPart3[index] = {
-                ...updatedPart3[index],
-                ...prompt, // Override with saved data
-                id: prompt.id
-              };
-            } else {
-              // Add additional prompts if saved data has more than default
-              updatedPart3.push(prompt);
+            if (part2.length > 0) {
+              setPart2Prompt(part2[0]);
             }
-          });
-          setPart3Prompts(updatedPart3);
-          setPart3Questions(Math.max(part3.length, 4)); // Ensure at least 4 questions
-          console.log(`📝 Part 3 loaded: ${part3.length} prompts`);
+
+            if (part3.length > 0) {
+              const updatedPart3 = [...part3Prompts];
+              part3.forEach((prompt: any, index: number) => {
+                if (index < updatedPart3.length) {
+                  updatedPart3[index] = {
+                    ...updatedPart3[index],
+                    ...prompt,
+                    id: prompt.id
+                  };
+                } else {
+                  updatedPart3.push(prompt);
+                }
+              });
+              setPart3Prompts(updatedPart3);
+              setPart3Questions(Math.max(part3.length, 4));
+            }
+          }
         }
+
+        console.log('✅ Speaking test data loading complete');
+      } finally {
+        clearTimeout(timeoutId);
       }
     } catch (error) {
-      console.error('Error loading test data:', error);
+      console.error('❌ Error loading speaking test data:', error);
       toast({
         title: "Error",
         description: "Failed to load test data",
@@ -277,37 +311,32 @@ const AdminIELTSSpeaking = () => {
         console.log(`📝 Part 3 prompts to save:`, prompts);
       }
 
-      // Delete existing prompts for this part
-      const { error: deleteError } = await supabase
-        .from('speaking_prompts')
-        .delete()
-        .eq('cambridge_book', `Test ${testName}`)
-        .eq('part_number', partNumber);
-
-      if (deleteError) throw deleteError;
-
-      // Insert new prompts
+      // For standalone prompts, we update existing prompts or create new ones
       if (prompts.length > 0) {
-        const promptsToInsert = prompts.map(prompt => ({
+        // Update existing prompts if they have IDs, otherwise create new ones
+        const promptsToUpsert = prompts.map(prompt => ({
           title: prompt.title,
           prompt_text: prompt.prompt_text,
           part_number: prompt.part_number,
           time_limit: prompt.time_limit,
           sample_answer: null,
-          test_number: parseInt(testName) || 1,
-          cambridge_book: `Test ${testName}`,
+          test_id: testId, // Link to this specific test
           transcription: prompt.transcription || null,
           audio_url: prompt.audio_url || null,
           is_locked: true // Lock after saving
         }));
 
-        console.log(`💾 Inserting prompts:`, promptsToInsert);
+        console.log(`💾 Upserting prompts:`, promptsToUpsert);
 
-        const { error: insertError } = await supabase
+        // Use upsert to either update existing or insert new
+        const { error: upsertError } = await supabase
           .from('speaking_prompts')
-          .insert(promptsToInsert);
+          .upsert(promptsToUpsert, {
+            onConflict: 'test_id,part_number',
+            ignoreDuplicates: false
+          });
 
-        if (insertError) throw insertError;
+        if (upsertError) throw upsertError;
       }
 
       toast({
@@ -332,33 +361,33 @@ const AdminIELTSSpeaking = () => {
 
   const handleModifyTest = async () => {
     try {
-      // Unlock all speaking prompts for this test
+      // Unlock all speaking prompts
       const { error } = await supabase
         .from('speaking_prompts')
         .update({ is_locked: false })
-        .eq('cambridge_book', `Test ${testName}`);
+        .eq('is_locked', true);
 
       if (error) throw error;
 
       setIsLocked(false);
       setIsModifying(true);
-      
+
       toast({
         title: "Success",
-        description: "Test unlocked for modification"
+        description: "Speaking prompts unlocked for modification"
       });
     } catch (error) {
-      console.error('Error unlocking test:', error);
+      console.error('Error unlocking prompts:', error);
       toast({
         title: "Error",
-        description: "Failed to unlock test",
+        description: "Failed to unlock prompts",
         variant: "destructive"
       });
     }
   };
 
   return (
-    <AdminLayout title={`IELTS Speaking - ${testName}`}>
+    <AdminLayout title={`IELTS Speaking Management`}>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -373,10 +402,10 @@ const AdminIELTSSpeaking = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                IELTS Speaking Test Management
+                IELTS Speaking Prompts Management
               </h1>
               <p className="text-muted-foreground">
-                Test: {testName} {isLocked && <Badge variant="secondary">Locked</Badge>}
+                Manage speaking prompts for all IELTS tests {isLocked && <Badge variant="secondary">Locked</Badge>}
               </p>
             </div>
           </div>
@@ -386,7 +415,7 @@ const AdminIELTSSpeaking = () => {
               variant="outline"
               className="rounded-xl"
             >
-              Modify Test
+              Modify Prompts
             </Button>
           )}
         </div>

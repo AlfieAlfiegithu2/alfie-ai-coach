@@ -9,12 +9,13 @@ interface Admin {
 interface UseAdminAuthReturn {
   admin: Admin | null;
   loading: boolean;
-  login: () => Promise<{ success?: boolean; error?: string }>;
+  login: (password: string) => Promise<{ success?: boolean; error?: string }>;
   logout: () => void;
   validateSession: () => boolean;
 }
 
 const ADMIN_SESSION_KEY = 'admin_session';
+const ADMIN_PASSWORD = 'myye65402086'; // Your password
 
 export function useAdminAuth(): UseAdminAuthReturn {
   const [admin, setAdmin] = useState<Admin | null>(null);
@@ -37,17 +38,26 @@ export function useAdminAuth(): UseAdminAuthReturn {
         name: 'Admin'
       });
     } else {
-      console.log('❌ No valid admin session');
+      console.log('❌ No valid admin session - redirecting to login');
       setAdmin(null);
     }
 
     setLoading(false);
   }, []);
 
-  const login = async (): Promise<{ success?: boolean; error?: string }> => {
-    console.log('🔐 Granting admin access...');
+  const login = async (password: string): Promise<{ success?: boolean; error?: string }> => {
+    console.log('🔐 Attempting admin login...');
 
     try {
+      // Validate password
+      if (password !== ADMIN_PASSWORD) {
+        console.log('❌ Invalid password');
+        return { error: 'Invalid password' };
+      }
+
+      console.log('✅ Password validated');
+
+      // Only set admin session after password is validated
       localStorage.setItem(ADMIN_SESSION_KEY, 'true');
       setAdmin({
         id: 'admin',

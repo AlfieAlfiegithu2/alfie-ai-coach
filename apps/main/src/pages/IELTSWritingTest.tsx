@@ -42,6 +42,8 @@ const IELTSWritingTestInterface = () => {
   const [currentTask, setCurrentTask] = useState<1 | 2>(1);
   const [task1Answer, setTask1Answer] = useState("");
   const [task2Answer, setTask2Answer] = useState("");
+  const [availableTests, setAvailableTests] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Separate chat messages for each task to prevent context bleeding
   const [task1ChatMessages, setTask1ChatMessages] = useState<ChatMessage[]>([{
@@ -115,6 +117,8 @@ const IELTSWritingTestInterface = () => {
   useEffect(() => {
     if (testId) {
       loadTestData();
+    } else {
+      loadAvailableTests();
     }
   }, [testId]);
 
@@ -130,11 +134,10 @@ const IELTSWritingTestInterface = () => {
       if (testError) throw testError;
       setTest(testData);
 
-      // Load questions for this test (IELTS Writing tasks)
+      // Load ALL writing questions (don't filter by test_id)
       const { data: questions, error: questionsError } = await supabase
         .from('questions')
         .select('*')
-        .eq('test_id', testId)
         .order('part_number');
 
       if (questionsError) throw questionsError;
@@ -169,6 +172,34 @@ const IELTSWritingTestInterface = () => {
         description: "Failed to load test data",
         variant: "destructive"
       });
+    }
+  };
+
+  const loadAvailableTests = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🔍 Loading available writing tests...');
+      const { data: tests, error: testsError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Writing')
+        .order('created_at', { ascending: false });
+
+      if (testsError) throw testsError;
+
+      console.log(`✅ Found ${tests?.length || 0} available writing tests`);
+      setAvailableTests(tests || []);
+    } catch (error) {
+      console.error('❌ Error loading tests:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load available writing tests",
+        variant: "destructive"
+      });
+      setAvailableTests([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -459,6 +490,56 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       setTimerStarted(true);
     }
   }, [timerStarted]);
+
+  // Show test selection if no testId provided
+  if (!testId && availableTests.length > 0) {
+    return (
+      <StudentLayout>
+        <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Writing Tests</h1>
+                <p className="text-lg text-muted-foreground">Choose a test to begin your writing practice</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {availableTests.map((test) => (
+                  <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/writing/${test.id}`)}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{test.test_name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
+                      <Button className="w-full" variant="default">
+                        Start Test
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </StudentLayout>
+    );
+  }
+
+  if (!testId && availableTests.length === 0) {
+    return (
+      <StudentLayout>
+        <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="text-4xl font-bold text-foreground mb-4">IELTS Writing Tests</h1>
+            <p className="text-lg text-muted-foreground mb-8">No writing tests available yet</p>
+            <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+              Back to Portal
+            </Button>
+          </div>
+        </div>
+      </StudentLayout>
+    );
+  }
 
   if (!test || !task1 || !task2) {
     return (

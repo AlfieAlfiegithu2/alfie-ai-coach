@@ -23,22 +23,62 @@ const Auth = () => {
   const [resetMode, setResetMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  if (user && !loading) return <Navigate to="/dashboard" replace />;
+  console.log('🔍 Auth component render:', { user: user?.email, loading, submitting, error });
+
+  if (user && !loading) {
+    console.log('🔄 Auth component redirecting to dashboard');
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (loading) {
+    console.log('⏳ Auth component showing loading screen');
+    return (
+      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center">
+        {/* Background with green image */}
+        <div
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
+          style={{ backgroundImage: "url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')" }}
+        />
+        <div className="fixed inset-0 bg-background/20 backdrop-blur-sm -z-10" />
+        
+        {/* Loading content */}
+        <div className="flex flex-col items-center justify-center gap-4">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-full border-4 border-gray-300/30 border-t-white/80 animate-spin"></div>
+          </div>
+          <div className="text-xl font-semibold text-white/80">Loading…</div>
+          <div className="text-sm text-white/60">Setting up your account</div>
+        </div>
+      </div>
+    );
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📝 Sign in form submitted:', email);
     setSubmitting(true);
     setError(null);
     const { error } = await signIn(email, password);
-    if (error) setError(error);
+    if (error) {
+      console.error('❌ Sign in failed:', error);
+      setError(error);
+    } else {
+      console.log('✅ Sign in successful, waiting for auth state change');
+    }
     setSubmitting(false);
   };
 
   const onGoogle = async () => {
+    console.log('📱 Google sign in initiated');
     setSubmitting(true);
     setError(null);
-      const { error } = await signInWithGoogle();
-    if (error) setError(error);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      console.error('❌ Google sign in failed:', error);
+      setError(error);
+    } else {
+      console.log('✅ Google sign in successful, waiting for auth state change');
+    }
     setSubmitting(false);
   };
 
@@ -50,14 +90,6 @@ const Auth = () => {
     if (error) setError(error); else setResetMode(false);
     setSubmitting(false);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-black font-mono">Loading…</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen w-full font-sans">

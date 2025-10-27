@@ -56,23 +56,33 @@ const [overallSummary, setOverallSummary] = useState<string>("");
 
   // Realtime updates so students see admin changes instantly
   useEffect(() => {
-    if (!skill) return;
-    const channel = supabase
-      .channel('realtime-skill-questions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_practice_questions' }, (payload) => {
-        const st = (payload as any)?.new?.skill_type ?? (payload as any)?.old?.skill_type;
-        if (st === skill.label) {
-          if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble") {
-            loadTests();
-          } else {
-            loadQuestions();
+    const setupRealtime = async () => {
+      if (!skill) return;
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const channel = supabase
+        .channel('realtime-skill-questions')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_practice_questions' }, (payload) => {
+          const st = (payload as any)?.new?.skill_type ?? (payload as any)?.old?.skill_type;
+          if (st === skill.label) {
+            if (slug === "vocabulary-builder" || slug === "grammar-fix-it" || slug === "paraphrasing-challenge" || slug === "sentence-structure-scramble") {
+              loadTests();
+            } else {
+              loadQuestions();
+            }
           }
-        }
-      })
-      .subscribe();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+
+    const cleanup = setupRealtime();
 
     return () => {
-      supabase.removeChannel(channel);
+      cleanup.then(cleanupFn => cleanupFn?.());
     };
   }, [skill?.label]);
 
@@ -135,10 +145,11 @@ const [overallSummary, setOverallSummary] = useState<string>("");
   useEffect(() => {
     const loadOverall = async () => {
       if (!pronFinished || !pronTestId) return;
+      const { supabase } = await import('@/integrations/supabase/client');
       const { data: userResp } = await supabase.auth.getUser();
       const uid = userResp?.user?.id;
       if (!uid) return;
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('pronunciation_results')
         .select('overall_score, analysis_json, created_at')
         .eq('user_id', uid)
@@ -281,14 +292,14 @@ const [overallSummary, setOverallSummary] = useState<string>("");
     return <CollocationMapView />;
   }
 
-  // Redirect to Earthworm/Sentence Mastery
+  // Redirect to AI Speaking Tutor
   if (slug === "sentence-mastery") {
-    // Redirect to the Earthworm app running on localhost:3000
-    window.location.href = 'http://localhost:3000';
+    // Redirect to the conversational AI Speaking Tutor
+    window.location.href = '/ai-speaking';
     return (
-      <StudentLayout title="Sentence Mastery" showBackButton backPath="/ielts-portal">
+      <StudentLayout title="AI Speaking Tutor" showBackButton backPath="/ielts-portal">
         <section className="space-y-4 max-w-3xl mx-auto">
-          <p className="text-muted-foreground text-sm">Redirecting to Sentence Mastery...</p>
+          <p className="text-muted-foreground text-sm">Redirecting to AI Speaking Tutor...</p>
         </section>
       </StudentLayout>
     );

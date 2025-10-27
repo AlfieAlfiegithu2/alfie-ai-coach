@@ -53,9 +53,16 @@ const ListeningTest = () => {
   const [currentPart, setCurrentPart] = useState(1);
   const [completedParts, setCompletedParts] = useState<number[]>([]);
   const [allPartsData, setAllPartsData] = useState<{[key: number]: {section: ListeningSection, questions: ListeningQuestion[]}}>({});
+  const [availableTests, setAvailableTests] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchListeningTest();
+    if (!testId) {
+      fetchAvailableTests();
+    } else {
+      // Extract actual test ID in case it contains part number (format: testId-partNumber)
+      const actualTestId = testId.includes('-') ? testId.split('-')[0] : testId;
+      fetchListeningTest(actualTestId);
+    }
   }, [testId]);
 
   useEffect(() => {
@@ -80,7 +87,7 @@ const ListeningTest = () => {
     localStorage.removeItem(`listening_test_${testId}_answers`);
   }, [testId]);
 
-  const fetchListeningTest = async () => {
+  const fetchListeningTest = async (testId: string) => {
     try {
       // Start fresh - no saved answers loaded
       console.log('🔄 Fresh Start: Starting test with no saved answers for clean experience');
@@ -111,6 +118,37 @@ const ListeningTest = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableTests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('test_type', 'IELTS')
+        .eq('module', 'Listening')
+        .order('test_number', { ascending: true });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch available listening tests: " + error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      setAvailableTests(data || []);
+      // If no testId, show the test selection instead of auto-navigating
+      if (!testId && data && data.length > 0) {
+        setLoading(false);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch available listening tests: " + error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -299,6 +337,45 @@ const ListeningTest = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-warm-gray">Loading listening test...</p>
           </div>
+        </div>
+      </StudentLayout>
+    );
+  }
+
+  // Show test selection if no testId provided
+  if (!testId && availableTests.length > 0) {
+    return (
+      <StudentLayout title="Available Listening Tests">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+          <h1 className="text-2xl font-bold mb-4">Available Listening Tests</h1>
+          <div className="grid gap-4 w-full max-w-md">
+            {availableTests.map(test => (
+              <Button
+                key={test.id}
+                onClick={() => navigate(`/listening-test/${test.id}`)}
+                className="w-full"
+              >
+                Listening Test {test.test_number}
+              </Button>
+            ))}
+            <Button onClick={() => navigate('/ielts-portal')} className="w-full mt-4">
+              Back to Portal
+            </Button>
+          </div>
+        </div>
+      </StudentLayout>
+    );
+  }
+
+  if (!testId && availableTests.length === 0) {
+    return (
+      <StudentLayout title="No Listening Tests Available">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+          <h1 className="text-2xl font-bold mb-4">No Listening Tests Available</h1>
+          <p className="text-muted-foreground mb-6">Please check back later for available tests.</p>
+          <Button onClick={() => navigate('/ielts-portal')} className="w-full max-w-md">
+            Back to Portal
+          </Button>
         </div>
       </StudentLayout>
     );

@@ -38,12 +38,11 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     let isMounted = true;
 
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
 
-        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -52,7 +51,7 @@ export function useAuth(): UseAuthReturn {
           try {
             await fetchProfile(session.user.id);
           } catch (error) {
-            console.error('Error fetching profile in auth change:', error);
+            console.error('Error fetching profile:', error);
           }
         } else {
           setProfile(null);
@@ -62,7 +61,7 @@ export function useAuth(): UseAuthReturn {
       }
     );
 
-    // THEN check for existing session
+    // Check session quickly
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
 
@@ -70,14 +69,29 @@ export function useAuth(): UseAuthReturn {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id).catch(error => {
+          console.error('Error fetching profile:', error);
+        });
       }
 
       setLoading(false);
+    }).catch(error => {
+      console.error('Error getting session:', error);
+      if (isMounted) {
+        setLoading(false);
+      }
     });
+
+    // Very aggressive timeout - just move on
+    const timeout = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 2000); // Just 2 seconds, then show app
 
     return () => {
       isMounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -88,11 +102,11 @@ export function useAuth(): UseAuthReturn {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no profile exists
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
-        return;
+        // Don't return early on profile fetch errors - still allow auth to complete
       }
 
       if (data) {
@@ -106,7 +120,7 @@ export function useAuth(): UseAuthReturn {
           created_at: data.created_at,
         };
         setProfile(profileData);
-        
+
         try {
           const alreadyChosen = localStorage.getItem('ui_language');
           if (!alreadyChosen && data?.native_language) {
@@ -119,11 +133,16 @@ export function useAuth(): UseAuthReturn {
         } catch (e) {
           console.warn('Language sync skipped:', e);
         }
+      } else {
+        console.log('No profile found for user:', userId);
+        setProfile(null);
       }
-      
+
       return data;
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // Ensure profile is cleared on error
+      setProfile(null);
     }
   };
 
@@ -134,16 +153,23 @@ export function useAuth(): UseAuthReturn {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (import.meta.env.DEV) {
+      console.log('🔐 Attempting sign in for:', email);
+    }
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
+        console.error('❌ Sign in error:', error);
         return { error: error.message };
       }
 
+      if (import.meta.env.DEV) {
+        console.log('✅ Sign in successful, waiting for auth state change');
+      }
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in."
@@ -151,6 +177,7 @@ export function useAuth(): UseAuthReturn {
 
       return {};
     } catch (error: any) {
+      console.error('❌ Sign in exception:', error);
       return { error: error.message || 'An error occurred during sign in' };
     }
   };
@@ -213,10 +240,10 @@ export function useAuth(): UseAuthReturn {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         console.error('Error signing out:', error);
-        return;
+        throw error;
       }
 
       toast({
@@ -224,10 +251,15 @@ export function useAuth(): UseAuthReturn {
         description: "You have been signed out successfully."
       });
 
-      // Redirect to home page after successful sign out
-      window.location.href = '/';
+      // Clear local storage and session data
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Return success to let calling component handle navigation
+      return { success: true };
     } catch (error) {
       console.error('Error signing out:', error);
+      throw error;
     }
   };
 

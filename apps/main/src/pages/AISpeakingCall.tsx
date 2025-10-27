@@ -404,40 +404,88 @@ const AISpeakingCall: React.FC = () => {
     setCallState('thinking');
 
     try {
-      addDebugLog('🤔 Calling gemini-ielts-coach function...');
+      addDebugLog('🤔 Calling Gemini for IELTS coaching...');
       
-      // Call Gemini coach edge function with pronunciation analysis
-      // Use Supabase client for authenticated calls
-      // For now, use a simple fallback since we're testing TTS first
-      const coachRes = {
-        error: null,
-        data: {
-          response: "Great! I can hear you clearly. Let's work on your pronunciation. Try saying 'I want to improve my English speaking skills' and focus on clear pronunciation.",
-          pronunciation: {
-            score: 7,
-            feedback: "Clear pronunciation overall, work on word stress patterns",
-            positive: "Good volume and clarity"
-          }
-        }
-      };
+      // Build system prompt for English Tutora
+      const systemPrompt = `You are English Tutora, an expert IELTS Speaking coach. Your role is to help students prepare for the IELTS Speaking exam.
 
-      // Handle Supabase client response format
-      if (coachRes.error) {
-        addDebugLog('❌ Coach function error: ' + coachRes.error.message);
-        throw new Error(`Coach response failed: ${coachRes.error.code} - ${coachRes.error.message}`);
+Instructions:
+- Analyze the student's response based on IELTS band descriptors: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.
+- Provide concise, actionable feedback (1-2 sentences max, 120 characters).
+- Always end with a follow-up question to keep the conversation flowing.
+- Be encouraging but honest about areas for improvement.
+- Format your response as JSON: { "response": "...", "feedback_category": "fluency|vocabulary|grammar|pronunciation", "score": 0-9 }`;
+
+      // Build conversation context
+      const conversationContext = conversationHistoryRef.current || 'Starting IELTS Speaking practice';
+      
+      // Call Gemini 2.5 Flash directly with full context
+      const coachResponse = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us',
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{
+                text: systemPrompt
+              }]
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [{
+                  text: `Context: ${conversationContext}\n\nStudent's latest response: "${studentText}"\n\nProvide coaching feedback as JSON.`
+                }]
+              }
+            ],
+            generationConfig: {
+              maxOutputTokens: 150,
+              temperature: 0.7,
+            }
+          })
+        }
+      );
+
+      if (!coachResponse.ok) {
+        addDebugLog(`❌ Gemini coaching error: ${coachResponse.status}`);
+        throw new Error(`Coach API failed: ${coachResponse.statusText}`);
       }
 
-      // Extract coaching response from the response
-      const coachData = coachRes.data;
-      const tutorResponse = coachData?.response || "Great! I can hear you clearly. Let's work on your pronunciation.";
-      const pronunciationFeedback = coachData?.pronunciation || {
-        score: 7,
-        feedback: "Clear pronunciation, good job!",
-        positive: "Great clarity overall"
+      const coachData = await coachResponse.json();
+      const responseText = coachData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      // Parse JSON from response
+      let tutorResponse = 'Great! Keep practicing your speaking skills.';
+      let feedbackCategory = 'fluency';
+      let score = 6;
+      
+      try {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          tutorResponse = parsed.response || tutorResponse;
+          feedbackCategory = parsed.feedback_category || feedbackCategory;
+          score = parsed.score || score;
+        } else {
+          tutorResponse = responseText.substring(0, 120) || tutorResponse;
+        }
+      } catch (parseErr) {
+        addDebugLog('⚠️ Could not parse Gemini JSON response, using text');
+        tutorResponse = responseText.substring(0, 120) || tutorResponse;
+      }
+
+      const pronunciationFeedback = {
+        score: score,
+        feedback: `${feedbackCategory}: ${tutorResponse}`,
+        positive: 'Keep speaking naturally'
       };
 
       addDebugLog(`✅ Coach response: "${tutorResponse}"`);
-      addDebugLog(`🎯 Pronunciation feedback: ${pronunciationFeedback.feedback} (score: ${pronunciationFeedback.score}/10)`);
+      addDebugLog(`🎯 Score: ${score}/9, Category: ${feedbackCategory}`);
 
       // Update conversation history
       conversationHistoryRef.current += `\nStudent: ${studentText}\nTutor: ${tutorResponse}`;

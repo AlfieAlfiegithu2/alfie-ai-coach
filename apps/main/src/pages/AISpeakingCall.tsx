@@ -379,6 +379,7 @@ Your role: NOT to give feedback on every sentence, but to:
 3. Gently guide toward better English if needed
 4. Keep responses SHORT (1-2 sentences max, under 120 chars)
 5. Sound natural, not robotic
+6. ALWAYS respond with at least one sentence - never stay silent
 
 For example:
 - Student: "I like to travel to beaches"
@@ -387,11 +388,36 @@ For example:
 
 Always respond conversationally, not with feedback. Your goal is to keep the student talking naturally.`;
 
-      // Build conversation history formatted naturally
-      const conversationContext = conversationHistoryRef.current || '';
+      // IMPORTANT: Limit conversation history to last 6 turns to avoid token limit issues
+      let conversationContext = conversationHistoryRef.current || '';
+      const turns = conversationContext.split('\n').filter(line => line.trim());
+      const limitedTurns = turns.slice(-6); // Keep only last 6 turns (3 exchanges)
+      const limitedContext = limitedTurns.join('\n');
       
-      // Construct the full conversation with all turns
-      const fullConversationHistory = conversationContext ? conversationContext : '';
+      addDebugLog(`📝 Context length: ${limitedContext.length} chars, ${turns.length} total turns, using last ${limitedTurns.length}`);
+      
+      // Build request body
+      const requestBody = {
+        systemInstruction: {
+          parts: [{
+            text: systemPrompt
+          }]
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: [{
+              text: `${limitedContext}\n\nStudent: ${studentText}\n\nRespond naturally as a conversation partner. Be encouraging and ask a follow-up question. ALWAYS respond with at least one sentence.`
+            }]
+          }
+        ],
+        generationConfig: {
+          maxOutputTokens: 150,
+          temperature: 0.8,
+        }
+      };
+
+      addDebugLog(`📤 Sending request to Gemini API...`);
       
       // Call Gemini 2.5 Flash with CONVERSATION setup, not feedback setup
       const coachResponse = await fetch(
@@ -402,40 +428,43 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
             'Content-Type': 'application/json',
             'x-goog-api-key': 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us',
           },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{
-                text: systemPrompt
-              }]
-            },
-            contents: [
-              {
-                role: 'user',
-                parts: [{
-                  text: `${fullConversationHistory}\n\nStudent: ${studentText}\n\nRespond naturally as a conversation partner. Be encouraging and ask a follow-up question.`
-                }]
-              }
-            ],
-            generationConfig: {
-              maxOutputTokens: 150,
-              temperature: 0.9, // Slightly higher for more natural variation
-            }
-          })
+          body: JSON.stringify(requestBody)
         }
       );
 
       if (!coachResponse.ok) {
+        const errorText = await coachResponse.text();
         addDebugLog(`❌ Gemini response error: ${coachResponse.status}`);
+        addDebugLog(`❌ Error details: ${errorText.substring(0, 200)}`);
         throw new Error(`Coach API failed: ${coachResponse.statusText}`);
       }
 
       const coachData = await coachResponse.json();
-      const responseText = coachData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      // Log full response structure for debugging
+      addDebugLog(`📡 Gemini response: ${JSON.stringify(coachData).substring(0, 300)}`);
+      
+      // Check for various response formats
+      let responseText = '';
+      if (coachData.candidates && coachData.candidates.length > 0) {
+        responseText = coachData.candidates[0]?.content?.parts?.[0]?.text || '';
+      }
+      
+      // Check if response is blocked by safety filters
+      if (coachData.candidates && coachData.candidates.length > 0 && !responseText) {
+        const candidate = coachData.candidates[0];
+        if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+          addDebugLog(`⚠️ Gemini finish reason: ${candidate.finishReason} (may be safety filter)`);
+        }
+      }
       
       if (!responseText) {
-        addDebugLog('❌ No response from Gemini');
-        throw new Error('Empty Gemini response');
+        addDebugLog('❌ No text from Gemini - using fallback');
+        // Fallback response when Gemini fails
+        responseText = `That's interesting! Can you tell me more about that?`;
       }
+
+      addDebugLog(`✅ Gemini response text: "${responseText.substring(0, 100)}"`);
 
       // Use the response directly (it's already natural conversation)
       let tutorResponse = responseText.trim().substring(0, 200);
@@ -447,16 +476,16 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
         if (!tutorResponse.endsWith('.')) tutorResponse += '.';
       }
 
-      addDebugLog(`✅ Tutor response: "${tutorResponse}"`);
+      // Ensure we always have a response
+      if (!tutorResponse || tutorResponse.trim().length === 0) {
+        addDebugLog('⚠️ Response was empty after processing, using fallback');
+        tutorResponse = `That's interesting! Can you tell me more about that?`;
+      }
+
+      addDebugLog(`✅ Final tutor response: "${tutorResponse}"`);
 
       // Update conversation history with actual exchange
-      conversationHistoryRef.current += `\nTutor: ${tutorResponse}`;
-
-      // Add student message
-      const studentEntry = `Student: ${studentText}`;
-      conversationHistoryRef.current = conversationHistoryRef.current.includes(studentEntry) 
-        ? conversationHistoryRef.current 
-        : conversationHistoryRef.current + `\n${studentEntry}`;
+      conversationHistoryRef.current += `\nStudent: ${studentText}\nTutor: ${tutorResponse}`;
 
       addDebugLog('🔊 Calling Google Cloud TTS for response...');
 
@@ -542,7 +571,53 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
       const errMsg = e instanceof Error ? e.message : String(e);
       addDebugLog('❌ Error: ' + errMsg);
       console.error('Error in conversation flow:', e);
-      toast({ title: 'Error', description: errMsg, variant: 'destructive' });
+      
+      // Try to recover with a fallback response
+      try {
+        addDebugLog('🆘 Attempting recovery with fallback...');
+        const fallbackText = "I'm having a technical issue, but I'm still here to help! Please try again.";
+        
+        const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
+        const ttsResponse = await fetch(
+          `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              input: { text: fallbackText },
+              voice: { languageCode: 'en-US', name: selectedVoice },
+              audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
+            }),
+          }
+        );
+
+        if (ttsResponse.ok) {
+          const ttsData = await ttsResponse.json();
+          if (ttsData.audioContent) {
+            const binaryString = atob(ttsData.audioContent);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            const blob = new Blob([bytes], { type: 'audio/mp3' });
+            if (audioRef.current) {
+              const url = URL.createObjectURL(blob);
+              audioRef.current.src = url;
+              audioRef.current.play();
+              audioRef.current.onended = () => {
+                URL.revokeObjectURL(url);
+                setCallState('listening');
+                recognitionRef.current?.start();
+              };
+            }
+          }
+        }
+      } catch (recoveryErr) {
+        addDebugLog('❌ Recovery failed: ' + String(recoveryErr));
+      }
+      
       setCallState('listening');
     }
   };

@@ -368,22 +368,32 @@ const AISpeakingCall: React.FC = () => {
     setCallState('thinking');
 
     try {
-      addDebugLog('🤔 Calling Gemini for IELTS coaching...');
+      addDebugLog('🤔 Calling Gemini for real conversation...');
       
-      // Build system prompt for English Tutora
-      const systemPrompt = customSystemPrompt || `You are English Tutora, an expert IELTS Speaking coach. Your role is to help students prepare for the IELTS Speaking exam.
+      // Build CONVERSATIONAL system prompt (not just feedback)
+      const systemPrompt = customSystemPrompt || `You are English Tutora, a friendly and encouraging IELTS Speaking coach who has REAL conversations with students.
 
-Instructions:
-- Analyze the student's response based on IELTS band descriptors: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, Pronunciation.
-- Provide concise, actionable feedback (1-2 sentences max, 120 characters).
-- Always end with a follow-up question to keep the conversation flowing.
-- Be encouraging but honest about areas for improvement.
-- Format your response as JSON: { "response": "...", "feedback_category": "fluency|vocabulary|grammar|pronunciation", "score": 0-9 }`;
+Your role: NOT to give feedback on every sentence, but to:
+1. ENGAGE with what the student said - respond naturally to their ideas
+2. ASK follow-up questions to encourage them to speak more
+3. Gently guide toward better English if needed
+4. Keep responses SHORT (1-2 sentences max, under 120 chars)
+5. Sound natural, not robotic
 
-      // Build conversation context
-      const conversationContext = conversationHistoryRef.current || 'Starting IELTS Speaking practice';
+For example:
+- Student: "I like to travel to beaches"
+- Bad response: "Good grammar, try to add more details"
+- Good response: "That's great! What's your favorite beach destination?"
+
+Always respond conversationally, not with feedback. Your goal is to keep the student talking naturally.`;
+
+      // Build conversation history formatted naturally
+      const conversationContext = conversationHistoryRef.current || '';
       
-      // Call Gemini 2.5 Flash directly with full context
+      // Construct the full conversation with all turns
+      const fullConversationHistory = conversationContext ? conversationContext : '';
+      
+      // Call Gemini 2.5 Flash with CONVERSATION setup, not feedback setup
       const coachResponse = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
         {
@@ -402,61 +412,55 @@ Instructions:
               {
                 role: 'user',
                 parts: [{
-                  text: `Context: ${conversationContext}\n\nStudent's latest response: "${studentText}"\n\nProvide coaching feedback as JSON.`
+                  text: `${fullConversationHistory}\n\nStudent: ${studentText}\n\nRespond naturally as a conversation partner. Be encouraging and ask a follow-up question.`
                 }]
               }
             ],
             generationConfig: {
               maxOutputTokens: 150,
-              temperature: 0.7,
+              temperature: 0.9, // Slightly higher for more natural variation
             }
           })
         }
       );
 
       if (!coachResponse.ok) {
-        addDebugLog(`❌ Gemini coaching error: ${coachResponse.status}`);
+        addDebugLog(`❌ Gemini response error: ${coachResponse.status}`);
         throw new Error(`Coach API failed: ${coachResponse.statusText}`);
       }
 
       const coachData = await coachResponse.json();
       const responseText = coachData.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
-      // Parse JSON from response
-      let tutorResponse = 'Great! Keep practicing your speaking skills.';
-      let feedbackCategory = 'fluency';
-      let score = 6;
-      
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          tutorResponse = parsed.response || tutorResponse;
-          feedbackCategory = parsed.feedback_category || feedbackCategory;
-          score = parsed.score || score;
-        } else {
-          tutorResponse = responseText.substring(0, 120) || tutorResponse;
-        }
-      } catch (parseErr) {
-        addDebugLog('⚠️ Could not parse Gemini JSON response, using text');
-        tutorResponse = responseText.substring(0, 120) || tutorResponse;
+      if (!responseText) {
+        addDebugLog('❌ No response from Gemini');
+        throw new Error('Empty Gemini response');
       }
 
-      const pronunciationFeedback = {
-        score: score,
-        feedback: `${feedbackCategory}: ${tutorResponse}`,
-        positive: 'Keep speaking naturally'
-      };
+      // Use the response directly (it's already natural conversation)
+      let tutorResponse = responseText.trim().substring(0, 200);
+      
+      // If response is too long, truncate at sentence boundary
+      if (responseText.length > 200) {
+        const sentences = tutorResponse.split(/[.!?]+/);
+        tutorResponse = sentences.slice(0, -1).join('. ');
+        if (!tutorResponse.endsWith('.')) tutorResponse += '.';
+      }
 
-      addDebugLog(`✅ Coach response: "${tutorResponse}"`);
-      addDebugLog(`🎯 Score: ${score}/9, Category: ${feedbackCategory}`);
+      addDebugLog(`✅ Tutor response: "${tutorResponse}"`);
 
-      // Update conversation history
-      conversationHistoryRef.current += `\nStudent: ${studentText}\nTutor: ${tutorResponse}`;
+      // Update conversation history with actual exchange
+      conversationHistoryRef.current += `\nTutor: ${tutorResponse}`;
+
+      // Add student message
+      const studentEntry = `Student: ${studentText}`;
+      conversationHistoryRef.current = conversationHistoryRef.current.includes(studentEntry) 
+        ? conversationHistoryRef.current 
+        : conversationHistoryRef.current + `\n${studentEntry}`;
 
       addDebugLog('🔊 Calling Google Cloud TTS for response...');
 
-      // Use Google Cloud TTS for faster response (0.5-1s, professional quality)
+      // Use Google Cloud TTS for faster response
       const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
       
       const ttsResponse = await fetch(
@@ -467,9 +471,9 @@ Instructions:
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            input: { text: tutorResponse.substring(0, 5000) },
-            voice: { languageCode: 'en-US', name: 'en-US-Neural2-C' }, // Premium neural voice
-            audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 }, // Clear, slightly slower
+            input: { text: tutorResponse },
+            voice: { languageCode: 'en-US', name: selectedVoice },
+            audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
           }),
         }
       );
@@ -497,11 +501,10 @@ Instructions:
       }
       const blob = new Blob([bytes], { type: 'audio/mp3' });
       
-      // Add tutor response to transcript with pronunciation score
+      // Add tutor response to transcript
       setTranscript(prev => [...prev, {
         speaker: 'tutora',
-        text: tutorResponse,
-        pronunciation: pronunciationFeedback
+        text: tutorResponse
       }]);
 
       // Play audio with mic coordination

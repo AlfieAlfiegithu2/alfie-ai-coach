@@ -491,55 +491,17 @@ Instructions:
       // Update conversation history
       conversationHistoryRef.current += `\nStudent: ${studentText}\nTutor: ${tutorResponse}`;
 
-      addDebugLog('🔊 Calling Gemini TTS for response...');
+      addDebugLog('🔊 Calling Browser TTS for response...');
 
-      // Direct Gemini API call for TTS (no edge function dependency)
-      const ttsResponse = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: tutorResponse,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              response_modalities: ['audio'],
-              speech_config: {
-                voice_config: {
-                  prebuilt_voice_config: {
-                    voice_name: selectedVoice,
-                  },
-                },
-              },
-            },
-          }),
-        }
-      );
-
-      if (!ttsResponse.ok) {
-        addDebugLog(`❌ TTS API error: ${ttsResponse.status}`);
-        throw new Error(`TTS failed: ${ttsResponse.statusText}`);
-      }
-
-      const ttsData = await ttsResponse.json();
-      const inline = ttsData.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!inline?.data) {
-        addDebugLog('❌ No audio content in TTS response');
-        throw new Error('No audio returned from TTS');
-      }
-      const blob = buildPlayableBlobFromInlineData(inline);
-      addDebugLog(`✅ TTS_FETCH bytes=${inline.data.length}`);
-
+      // Use Browser Web Speech API for coaching responses (free, instant)
+      // This is instant and free - perfect for conversation flow
+      const utterance = new SpeechSynthesisUtterance(tutorResponse);
+      utterance.rate = 0.95; // Slightly slower for clarity
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      addDebugLog('✅ TTS_FETCH Browser Speech API (instant)');
+      
       // Add tutor response to transcript with pronunciation score
       setTranscript(prev => [...prev, {
         speaker: 'tutora',
@@ -548,34 +510,39 @@ Instructions:
       }]);
 
       // Play audio with mic coordination
-      if (audioRef.current) {
-        try { recognitionRef.current?.stop(); } catch {}
-        isPlayingTtsRef.current = true;
-        const url = URL.createObjectURL(blob);
-        audioRef.current.src = url;
+      try { recognitionRef.current?.stop(); } catch {}
+      isPlayingTtsRef.current = true;
+      setCallState('speaking');
+      
+      utterance.onstart = () => {
         addDebugLog('PLAY_START response');
-        audioRef.current.play();
-        setCallState('speaking');
-
-        // When audio finishes, go back to listening
-        audioRef.current.onended = () => {
-          URL.revokeObjectURL(url);
-          addDebugLog('PLAY_END response');
-          isPlayingTtsRef.current = false;
-          addDebugLog('⏹️ Audio finished, resuming listening');
-          setCallState('listening');
-          setTimeout(() => {
-            try {
-              recognitionRef.current?.start();
-            } catch (e) {
-              addDebugLog('⚠️ Could not restart recognition: ' + String(e));
-            }
-          }, 500);
-        };
-      } else {
-        addDebugLog('❌ No audio content to play');
+      };
+      
+      utterance.onend = () => {
+        addDebugLog('PLAY_END response');
+        isPlayingTtsRef.current = false;
+        addDebugLog('⏹️ Audio finished, resuming listening');
         setCallState('listening');
-      }
+        setTimeout(() => {
+          try {
+            recognitionRef.current?.start();
+            addDebugLog('🎤 Recognition restarted');
+          } catch (e) {
+            addDebugLog('⚠️ Could not restart recognition: ' + String(e));
+          }
+        }, 500);
+      };
+      
+      utterance.onerror = (event) => {
+        addDebugLog('❌ Speech synthesis error: ' + event.error);
+        isPlayingTtsRef.current = false;
+        setCallState('listening');
+        recognitionRef.current?.start();
+      };
+      
+      // Use the browser's speech synthesis
+      window.speechSynthesis.speak(utterance);
+      addDebugLog('🔊 Browser Speech Synthesis playing...');
       return; // Success! Exit here
 
     } catch (e) {

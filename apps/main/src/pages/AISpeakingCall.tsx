@@ -25,57 +25,31 @@ const AISpeakingCall: React.FC = () => {
   const [duration, setDuration] = useState(0);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [speechMode, setSpeechMode] = useState<'web-speech' | 'google-cloud' | 'none'>('web-speech');
-  const [selectedVoice, setSelectedVoice] = useState<string>('Kore');
+  const [selectedVoice, setSelectedVoice] = useState<string>('en-US-Chirp3-HD-Kore');
   const [customSystemPrompt, setCustomSystemPrompt] = useState<string>('');
 
   const AVAILABLE_VOICES = [
-    // Firm & Professional Voices
-    { id: 'Kore' as const, name: 'Kore - Firm, Professional', description: 'Professional and authoritative' },
-    { id: 'Orus' as const, name: 'Orus - Firm, Grounded', description: 'Solid and dependable' },
-    { id: 'Alnilam' as const, name: 'Alnilam - Firm, Strong', description: 'Strong and confident' },
+    // Chirp3 Premium Voices (Latest, Most Natural)
+    { id: 'en-US-Chirp3-HD-Kore', name: 'Kore - Professional', gender: 'Female' },
+    { id: 'en-US-Chirp3-HD-Puck', name: 'Puck - Upbeat', gender: 'Male' },
+    { id: 'en-US-Chirp3-HD-Zephyr', name: 'Zephyr - Bright', gender: 'Male' },
+    { id: 'en-US-Chirp3-HD-Charon', name: 'Charon - Informative', gender: 'Male' },
+    { id: 'en-US-Chirp3-HD-Fenrir', name: 'Fenrir - Energetic', gender: 'Male' },
+    { id: 'en-US-Chirp3-HD-Leda', name: 'Leda - Youthful', gender: 'Female' },
+    { id: 'en-US-Chirp3-HD-Orus', name: 'Orus - Grounded', gender: 'Male' },
+    { id: 'en-US-Chirp3-HD-Alnilam', name: 'Alnilam - Strong', gender: 'Male' },
+    { id: 'en-US-Chirp3-HD-Rasalgethi', name: 'Rasalgethi - Informative', gender: 'Male' },
+    { id: 'en-US-Chirp3-HD-Achernar', name: 'Achernar - Soft', gender: 'Female' },
     
-    // Bright & Clear Voices
-    { id: 'Zephyr' as const, name: 'Zephyr - Bright, Clear', description: 'Clear and articulate' },
-    { id: 'Autonoe' as const, name: 'Autonoe - Bright, Light', description: 'Bright and uplifting' },
+    // Neural2 High Quality Voices
+    { id: 'en-US-Neural2-C', name: 'Neural2-C - Natural Female', gender: 'Female' },
+    { id: 'en-US-Neural2-A', name: 'Neural2-A - Natural Male', gender: 'Male' },
+    { id: 'en-US-Neural2-F', name: 'Neural2-F - Warm Female', gender: 'Female' },
+    { id: 'en-US-Neural2-E', name: 'Neural2-E - Warm Male', gender: 'Male' },
     
-    // Upbeat & Energetic Voices
-    { id: 'Puck' as const, name: 'Puck - Upbeat, Energetic', description: 'Friendly and enthusiastic' },
-    { id: 'Fenrir' as const, name: 'Fenrir - Excitable', description: 'Enthusiastic and eager' },
-    { id: 'Laomedeia' as const, name: 'Laomedeia - Upbeat', description: 'Positive and energetic' },
-    { id: 'Sadachbia' as const, name: 'Sadachbia - Lively', description: 'Spirited and animated' },
-    
-    // Informative & Knowledgeable Voices
-    { id: 'Charon' as const, name: 'Charon - Informative', description: 'Knowledgeable and informative' },
-    { id: 'Rasalgethi' as const, name: 'Rasalgethi - Informative', description: 'Detailed and informative' },
-    { id: 'Sadaltager' as const, name: 'Sadaltager - Knowledgeable', description: 'Expert and informed' },
-    
-    // Breathy & Soft Voices
-    { id: 'Enceladus' as const, name: 'Enceladus - Breathy', description: 'Soft and soothing' },
-    { id: 'Achernar' as const, name: 'Achernar - Soft', description: 'Gentle and delicate' },
-    
-    // Smooth & Pleasant Voices
-    { id: 'Algieba' as const, name: 'Algieba - Smooth', description: 'Smooth and pleasant' },
-    { id: 'Despina' as const, name: 'Despina - Smooth', description: 'Warm and mellow' },
-    
-    // Gravelly & Deep Voices
-    { id: 'Algenib' as const, name: 'Algenib - Gravelly', description: 'Deep and resonant' },
-    { id: 'Gacrux' as const, name: 'Gacrux - Mature', description: 'Mature and experienced' },
-    
-    // Casual & Conversational Voices
-    { id: 'Zubenelgenubi' as const, name: 'Zubenelgenubi - Casual', description: 'Relaxed and conversational' },
-    { id: 'Callirrhoe' as const, name: 'Callirrhoe - Easy-going', description: 'Laid-back and friendly' },
-    { id: 'Umbriel' as const, name: 'Umbriel - Easy-going', description: 'Relaxed and approachable' },
-    
-    // Additional Premium Voices
-    { id: 'Leda' as const, name: 'Leda - Youthful', description: 'Young and vibrant' },
-    { id: 'Erinome' as const, name: 'Erinome - Clear', description: 'Crisp and clear' },
-    { id: 'Iapetus' as const, name: 'Iapetus - Clear', description: 'Articulate and precise' },
-    { id: 'Aoede' as const, name: 'Aoede - Breezy', description: 'Light and airy' },
-    { id: 'Schedar' as const, name: 'Schedar - Even', description: 'Balanced and even' },
-    { id: 'Achird' as const, name: 'Achird - Friendly', description: 'Warm and personable' },
-    { id: 'Pulcherrima' as const, name: 'Pulcherrima - Forward', description: 'Engaging and dynamic' },
-    { id: 'Vindemiatrix' as const, name: 'Vindemiatrix - Gentle', description: 'Soft and gentle' },
-    { id: 'Sulafat' as const, name: 'Sulafat - Warm', description: 'Warm and inviting' },
+    // Additional Premium Options
+    { id: 'en-US-Casual-K', name: 'Casual - Conversational', gender: 'Male' },
+    { id: 'en-US-Chirp-HD-F', name: 'Chirp HD - Modern Female', gender: 'Female' },
   ];
   
   const addDebugLog = (msg: string) => {
@@ -294,60 +268,49 @@ const AISpeakingCall: React.FC = () => {
       addDebugLog('🎤 Playing AI greeting...');
       const greetingText = "Hello! I'm English Tutora, your IELTS Speaking coach. Let's practice together. What would you like to talk about today?";
       
-      // Direct Gemini API call (no edge function dependency)
-      addDebugLog(`📝 Calling Gemini directly with voice: ${selectedVoice}`);
-      // Add 5s timeout for greeting fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      // Use Google Cloud TTS for greeting (same as responses)
+      const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
+      addDebugLog(`📝 Calling Google Cloud TTS with voice: ${selectedVoice}`);
+      
       const response = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent',
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us',
           },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: greetingText,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              response_modalities: ['audio'],
-              speech_config: {
-                voice_config: {
-                  prebuilt_voice_config: {
-                    voice_name: selectedVoice,
-                  },
-                },
-              },
-            },
+            input: { text: greetingText },
+            voice: { languageCode: 'en-US', name: selectedVoice },
+            audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
           }),
-          signal: controller.signal,
         }
       );
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        addDebugLog(`❌ Gemini API error: ${response.status} ${response.statusText}`);
-        throw new Error(`Gemini API failed: ${response.statusText}`);
+        addDebugLog(`❌ Google Cloud TTS error: ${response.status} ${response.statusText}`);
+        throw new Error(`Greeting TTS failed: ${response.statusText}`);
       }
 
       const data = await response.json();
-      const inline = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!inline?.data) {
-        addDebugLog('❌ No audio content in response');
+      const audioContent = data.audioContent;
+
+      if (!audioContent) {
+        addDebugLog('❌ No audio content in greeting response');
         throw new Error('No audio content returned');
       }
-      const blob = buildPlayableBlobFromInlineData(inline);
-      addDebugLog(`✅ TTS_FETCH bytes=${inline.data.length}`);
+
+      addDebugLog(`✅ TTS_FETCH greeting (${audioContent.length} bytes)`);
       
-      // Play the audio with mic coordination
+      // Convert base64 to Blob for MP3
+      const binaryString = atob(audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'audio/mp3' });
+      
+      // Play the audio
       if (audioRef.current) {
         try { recognitionRef.current?.stop(); } catch {}
         isPlayingTtsRef.current = true;
@@ -652,7 +615,7 @@ Instructions:
                   >
                     {AVAILABLE_VOICES.map((voice) => (
                       <option key={voice.id} value={voice.id}>
-                        {voice.name} - {voice.description}
+                        {voice.name} ({voice.gender})
                       </option>
                     ))}
                   </select>
@@ -710,7 +673,7 @@ Instructions:
                 >
                   {AVAILABLE_VOICES.map((voice) => (
                     <option key={voice.id} value={voice.id}>
-                      {voice.name} - {voice.description}
+                      {voice.name} ({voice.gender})
                     </option>
                   ))}
                 </select>

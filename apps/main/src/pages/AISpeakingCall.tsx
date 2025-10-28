@@ -491,16 +491,48 @@ Instructions:
       // Update conversation history
       conversationHistoryRef.current += `\nStudent: ${studentText}\nTutor: ${tutorResponse}`;
 
-      addDebugLog('🔊 Calling Browser TTS for response...');
+      addDebugLog('🔊 Calling Google Cloud TTS for response...');
 
-      // Use Browser Web Speech API for coaching responses (free, instant)
-      // This is instant and free - perfect for conversation flow
-      const utterance = new SpeechSynthesisUtterance(tutorResponse);
-      utterance.rate = 0.95; // Slightly slower for clarity
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+      // Use Google Cloud TTS for faster response (0.5-1s, professional quality)
+      const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
       
-      addDebugLog('✅ TTS_FETCH Browser Speech API (instant)');
+      const ttsResponse = await fetch(
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            input: { text: tutorResponse.substring(0, 5000) },
+            voice: { languageCode: 'en-US', name: 'en-US-Neural2-C' }, // Premium neural voice
+            audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 }, // Clear, slightly slower
+          }),
+        }
+      );
+
+      if (!ttsResponse.ok) {
+        addDebugLog(`❌ Google Cloud TTS error: ${ttsResponse.status}`);
+        throw new Error(`TTS failed: ${ttsResponse.statusText}`);
+      }
+
+      const ttsData = await ttsResponse.json();
+      const audioContent = ttsData.audioContent;
+      
+      if (!audioContent) {
+        addDebugLog('❌ No audio content from Google Cloud TTS');
+        throw new Error('No audio returned from TTS');
+      }
+      
+      addDebugLog(`✅ TTS_FETCH Google Cloud (${audioContent.length} bytes)`);
+      
+      // Convert base64 to Blob for MP3
+      const binaryString = atob(audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'audio/mp3' });
       
       // Add tutor response to transcript with pronunciation score
       setTranscript(prev => [...prev, {
@@ -510,40 +542,35 @@ Instructions:
       }]);
 
       // Play audio with mic coordination
-      try { recognitionRef.current?.stop(); } catch {}
-      isPlayingTtsRef.current = true;
-      setCallState('speaking');
-      
-      utterance.onstart = () => {
+      if (audioRef.current) {
+        try { recognitionRef.current?.stop(); } catch {}
+        isPlayingTtsRef.current = true;
+        const url = URL.createObjectURL(blob);
+        audioRef.current.src = url;
         addDebugLog('PLAY_START response');
-      };
-      
-      utterance.onend = () => {
-        addDebugLog('PLAY_END response');
-        isPlayingTtsRef.current = false;
-        addDebugLog('⏹️ Audio finished, resuming listening');
+        audioRef.current.play();
+        setCallState('speaking');
+
+        // When audio finishes, go back to listening
+        audioRef.current.onended = () => {
+          URL.revokeObjectURL(url);
+          addDebugLog('PLAY_END response');
+          isPlayingTtsRef.current = false;
+          addDebugLog('⏹️ Audio finished, resuming listening');
+          setCallState('listening');
+          setTimeout(() => {
+            try {
+              recognitionRef.current?.start();
+              addDebugLog('🎤 Recognition restarted');
+            } catch (e) {
+              addDebugLog('⚠️ Could not restart recognition: ' + String(e));
+            }
+          }, 500);
+        };
+      } else {
+        addDebugLog('❌ No audio element available');
         setCallState('listening');
-        setTimeout(() => {
-          try {
-            recognitionRef.current?.start();
-            addDebugLog('🎤 Recognition restarted');
-          } catch (e) {
-            addDebugLog('⚠️ Could not restart recognition: ' + String(e));
-          }
-        }, 500);
-      };
-      
-      utterance.onerror = (event) => {
-        addDebugLog('❌ Speech synthesis error: ' + event.error);
-        isPlayingTtsRef.current = false;
-        setCallState('listening');
-        recognitionRef.current?.start();
-      };
-      
-      // Use the browser's speech synthesis
-      window.speechSynthesis.speak(utterance);
-      addDebugLog('🔊 Browser Speech Synthesis playing...');
-      return; // Success! Exit here
+      }
 
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);

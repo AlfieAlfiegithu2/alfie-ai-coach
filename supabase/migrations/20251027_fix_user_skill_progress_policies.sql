@@ -43,3 +43,4 @@ FOR UPDATE
 USING (auth.uid() = user_id);
 
 
+

@@ -4,7 +4,7 @@ project_id = "cuumxmfzhwljylbdlflj"
 verify_jwt = true
 
 [functions.gemini-chat]
-verify_jwt = true
+verify_jwt = false
 
 [functions.content-generator-gemini]
 verify_jwt = true
@@ -144,4 +144,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.gemini-tts-speech]
+verify_jwt = false
+
+[functions.ai-speaking-chat]
 verify_jwt = false

@@ -24,8 +24,25 @@ export default function AdminVocabBook() {
   };
 
   const loadStats = async () => {
-    const { count } = await (supabase as any).from("vocabulary_words").select("id", { count: "exact", head: true });
-    setStats({ total: count || 0 });
+    try {
+      console.log("📊 Loading vocabulary stats from vocab_cards...");
+      // Count public vocabulary cards - this table has proper RLS policies
+      const { count, error: statsError } = await (supabase as any)
+        .from("vocab_cards")
+        .select("id", { count: "exact", head: true })
+        .eq("is_public", true);
+      
+      if (statsError) {
+        console.error("❌ Error loading stats:", statsError);
+        setStats({ total: 0 });
+      } else {
+        console.log(`✅ Loaded stats: ${count} public vocabulary cards`);
+        setStats({ total: count || 0 });
+      }
+    } catch (err) {
+      console.error("❌ Exception loading stats:", err);
+      setStats({ total: 0 });
+    }
   };
 
   useEffect(() => { loadStats(); }, []);
@@ -45,8 +62,6 @@ export default function AdminVocabBook() {
     setImporting(true);
     try {
       const csvText = preview.map((r) => `${r.word},${r.language_code},${r.translation}`).join("\n");
-      // Re-use original preview data is not the exact CSV; ask user to re-upload
-      // Better: store lastText; for simplicity, read from hidden input again
       const file = fileRef.current?.files?.[0];
       if (!file) { setError("Please re-select the CSV file before importing."); setImporting(false); return; }
       const text = await file.text();
@@ -102,12 +117,13 @@ export default function AdminVocabBook() {
             <CardTitle className="text-base">Current Stats</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">Total words: {stats?.total ?? 0}</div>
+            <div className="text-sm text-muted-foreground">
+              {stats === null ? "Loading..." : `Total public vocabulary words: ${stats.total}`}
+            </div>
           </CardContent>
         </Card>
       </section>
     </AdminLayout>
   );
 }
-
 

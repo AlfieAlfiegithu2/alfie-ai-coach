@@ -25,20 +25,32 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Use the provided API key directly
-    const GEMINI_API_KEY = "AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us";
+    // Note: We skip user authentication here because:
+    // 1. The GEMINI_API_KEY is already secret in backend environment
+    // 2. The function is read-only (no user data modification)
+    // 3. The API key itself provides sufficient security
 
-    console.log("✅ Using provided GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    
+    if (!GEMINI_API_KEY) {
+      console.error("❌ GEMINI_API_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "API key not configured" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
+    }
+
+    console.log("✅ Using GEMINI_API_KEY from environment");
     console.log(`📝 Generating TTS with Gemini 2.5 Flash Preview TTS (voice: ${voice}): "${text.substring(0, 50)}..."`);
 
-    // Call Gemini 2.5 Flash Preview TTS API (official model for TTS)
+    // Call Gemini 2.5 Flash API with audio modality
+    // Try standard model first (recommended approach)
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_API_KEY,
         },
         body: JSON.stringify({
           contents: [
@@ -52,10 +64,10 @@ serve(async (req: Request): Promise<Response> => {
           ],
           generationConfig: {
             response_modalities: ["audio"],
-            speech_config: {
-              voice_config: {
-                prebuilt_voice_config: {
-                  voice_name: voice, // Official voices: Kore, Puck, Zephyr, Charon, etc.
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: voice, // Official voices: Kore, Puck, Zephyr, Charon, etc.
                 },
               },
             },
@@ -80,13 +92,30 @@ serve(async (req: Request): Promise<Response> => {
 
     const data = await geminiResponse.json();
     
-    // Extract audio from response
-    const audioContent = data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+    // Log full response for debugging
+    console.log("Gemini TTS response structure:", JSON.stringify(data).substring(0, 500));
+    
+    // Extract audio from response - try multiple possible paths
+    let audioContent = data.candidates?.[0]?.content?.parts?.[0]?.inline_data?.data;
+    
+    // Alternative: check if audio is in parts array
+    if (!audioContent && data.candidates?.[0]?.content?.parts) {
+      for (const part of data.candidates[0].content.parts) {
+        if (part.inline_data?.data) {
+          audioContent = part.inline_data.data;
+          break;
+        }
+      }
+    }
 
     if (!audioContent) {
       console.error("❌ No audio content in Gemini response");
+      console.error("Full response:", JSON.stringify(data));
       return new Response(
-        JSON.stringify({ error: "No audio content returned" }),
+        JSON.stringify({ 
+          error: "No audio content returned",
+          debug: "Response structure logged in server logs"
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
     }

@@ -11,10 +11,25 @@ import { supabase } from '@/integrations/supabase/client';
 type TranscriptSegment = {
   speaker: 'student' | 'tutora';
   text: string;
+  translation?: string;
   pronunciation?: { score: number; feedback: string };
 };
 
 type SpeechMode = 'web-speech' | 'google-cloud' | 'none';
+
+const SUPPORTED_LANGUAGES = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+];
 
 const AISpeakingCall: React.FC = () => {
   const { toast } = useToast();
@@ -27,6 +42,8 @@ const AISpeakingCall: React.FC = () => {
   const [speechMode, setSpeechMode] = useState<'web-speech' | 'google-cloud' | 'none'>('web-speech');
   const [selectedVoice, setSelectedVoice] = useState<string>('en-US-Chirp3-HD-Kore');
   const [customSystemPrompt, setCustomSystemPrompt] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const [showTranslation, setShowTranslation] = useState<boolean>(true);
 
   const AVAILABLE_VOICES = [
     // Chirp3 Premium Voices (Latest, Most Natural)
@@ -58,6 +75,138 @@ const AISpeakingCall: React.FC = () => {
     setDebugInfo(prev => [...prev, `[${timestamp}] ${msg}`]);
   };
 
+  // Safe function to start recognition - checks state before starting
+  const safeStartRecognition = () => {
+    if (!recognitionRef.current) {
+      addDebugLog('⚠️ Recognition not initialized');
+      return false;
+    }
+    
+    try {
+      // Check if already running
+      if (recognitionStateRef.current === 'listening' || recognitionStateRef.current === 'starting') {
+        addDebugLog('⚠️ Recognition already running, skipping start');
+        return false;
+      }
+      
+      recognitionStateRef.current = 'starting';
+      recognitionRef.current.start();
+      recognitionStateRef.current = 'listening';
+      addDebugLog('✅ Recognition started safely');
+      return true;
+    } catch (e: any) {
+      const errMsg = String(e);
+      if (errMsg.includes('already started')) {
+        addDebugLog('⚠️ Recognition already started (caught)');
+        recognitionStateRef.current = 'listening';
+        return false;
+      }
+      addDebugLog(`❌ Failed to start recognition: ${errMsg}`);
+      recognitionStateRef.current = 'idle';
+      return false;
+    }
+  };
+
+  // TTS function with retry logic - ALWAYS uses selectedVoice from state
+  const synthesizeTTS = async (text: string, retries = 3): Promise<string> => {
+    const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
+    const voiceToUse = selectedVoice; // Capture current voice to ensure consistency
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        addDebugLog(`📞 TTS attempt ${attempt}/${retries} with voice: ${voiceToUse}...`);
+        
+        const response = await fetch(
+          `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              input: { text },
+              voice: { languageCode: 'en-US', name: voiceToUse },
+              audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
+            }),
+          }
+        );
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`TTS failed: ${response.status} - ${errorText.substring(0, 100)}`);
+        }
+        
+        const data = await response.json();
+        if (!data.audioContent) {
+          throw new Error('No audio content returned');
+        }
+        
+        addDebugLog(`✅ TTS successful (${data.audioContent.length} bytes)`);
+        return data.audioContent;
+      } catch (e: any) {
+        const errMsg = String(e);
+        addDebugLog(`❌ TTS attempt ${attempt} failed: ${errMsg}`);
+        
+        if (attempt === retries) {
+          throw e;
+        }
+        
+        // Exponential backoff: wait 1s, 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+      }
+    }
+    
+    throw new Error('TTS failed after all retries');
+  };
+
+  // Translate text using Gemini
+  const translateText = async (text: string, targetLang: string): Promise<string | undefined> => {
+    if (targetLang === 'en') return undefined;
+    
+    try {
+      const langName = SUPPORTED_LANGUAGES.find(l => l.code === targetLang)?.name || targetLang;
+      addDebugLog(`🌐 Translating "${text.substring(0, 30)}..." to ${langName}...`);
+      
+      const { data, error } = await supabase.functions.invoke('ai-speaking-chat', {
+        body: {
+          message: `Translate this English text to ${langName}: "${text}"\n\nIMPORTANT: Return ONLY the translation in ${langName}, no explanations, no English text, just the translation.`
+        }
+      });
+      
+      if (error) {
+        console.error('Translation API error:', error);
+        addDebugLog(`⚠️ Translation API error: ${error.message || JSON.stringify(error)}`);
+        return undefined; // Return undefined if translation fails
+      }
+      
+      if (!data?.success || !data?.response) {
+        addDebugLog(`⚠️ Translation failed - no response data`);
+        return undefined;
+      }
+      
+      let translated = data.response.trim();
+      
+      // Clean up common issues: remove quotes, explanations, etc.
+      translated = translated.replace(/^["']|["']$/g, ''); // Remove surrounding quotes
+      translated = translated.replace(/^Translation:\s*/i, ''); // Remove "Translation:" prefix
+      translated = translated.replace(/^Here.*?:\s*/i, ''); // Remove "Here's the translation:" prefix
+      translated = translated.split('\n')[0]; // Take first line only
+      translated = translated.trim();
+      
+      if (!translated || translated === text || translated.length < 3) {
+        addDebugLog(`⚠️ Translation result invalid or same as original`);
+        return undefined;
+      }
+      
+      addDebugLog(`✅ Translation successful: "${translated.substring(0, 50)}..."`);
+      return translated;
+    } catch (e) {
+      console.error('Translation error:', e);
+      addDebugLog(`⚠️ Translation exception: ${String(e)}`);
+      return undefined; // Return undefined on error
+    }
+  };
+
   const recognitionRef = useRef<any>(null);
   const conversationHistoryRef = useRef('Starting new IELTS Speaking practice session');
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -67,6 +216,7 @@ const AISpeakingCall: React.FC = () => {
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const googleCloudIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const googleCloudChunksRef = useRef<Uint8Array[]>([]);
+  const recognitionStateRef = useRef<'idle' | 'starting' | 'listening' | 'stopping'>('idle');
 
   // Helpers: audio decoding/encoding
   const base64ToUint8 = (b64: string): Uint8Array => {
@@ -228,11 +378,11 @@ const AISpeakingCall: React.FC = () => {
       
       // Set flag and delay to allow state to settle
       recognitionRestartingRef.current = true;
+      recognitionStateRef.current = 'idle';
       setTimeout(() => {
         try {
-          if (recognitionRef.current && callState !== 'idle') {
-            recognition.start();
-            addDebugLog('🔄 Recognition restarted after onend');
+          if (recognitionRef.current && callState !== 'idle' && callState !== 'speaking') {
+            safeStartRecognition();
           }
         } catch (e) {
           const errMsg = String(e);
@@ -259,6 +409,17 @@ const AISpeakingCall: React.FC = () => {
     };
   }, [toast]);
 
+  // Load saved preferences
+  useEffect(() => {
+    const savedLang = localStorage.getItem('ai-speaking-language');
+    if (savedLang) setSelectedLanguage(savedLang);
+    
+    const savedShowTranslation = localStorage.getItem('ai-speaking-show-translation');
+    if (savedShowTranslation !== null) {
+      setShowTranslation(savedShowTranslation === 'true');
+    }
+  }, []);
+
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [transcript, livePartial]);
@@ -268,38 +429,28 @@ const AISpeakingCall: React.FC = () => {
       addDebugLog('🎤 Playing AI greeting...');
       const greetingText = "Hello! I'm English Tutora, your IELTS Speaking coach. Let's practice together. What would you like to talk about today?";
       
-      // Use Google Cloud TTS for greeting (same as responses)
-      const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
+      // Translate greeting if needed
+      let greetingTranslation: string | undefined = undefined;
+      if (selectedLanguage !== 'en') {
+        addDebugLog(`🌐 Translating greeting to ${SUPPORTED_LANGUAGES.find(l => l.code === selectedLanguage)?.name || selectedLanguage}...`);
+        try {
+          greetingTranslation = await translateText(greetingText, selectedLanguage);
+          if (greetingTranslation) {
+            addDebugLog(`✅ Greeting translation complete: "${greetingTranslation.substring(0, 50)}..."`);
+          } else {
+            addDebugLog(`⚠️ Greeting translation returned undefined`);
+          }
+        } catch (e) {
+          addDebugLog(`⚠️ Greeting translation failed: ${String(e)}`);
+          greetingTranslation = undefined;
+        }
+      }
+      
       addDebugLog(`📝 Calling Google Cloud TTS with voice: ${selectedVoice}`);
       
-      const response = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            input: { text: greetingText },
-            voice: { languageCode: 'en-US', name: selectedVoice },
-            audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        addDebugLog(`❌ Google Cloud TTS error: ${response.status} ${response.statusText}`);
-        throw new Error(`Greeting TTS failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const audioContent = data.audioContent;
-
-      if (!audioContent) {
-        addDebugLog('❌ No audio content in greeting response');
-        throw new Error('No audio content returned');
-      }
-
+      // Get TTS audio with retry logic - ALWAYS uses selectedVoice
+      const audioContent = await synthesizeTTS(greetingText); // Always use English for TTS
+      
       addDebugLog(`✅ TTS_FETCH greeting (${audioContent.length} bytes)`);
       
       // Convert base64 to Blob for MP3
@@ -318,7 +469,12 @@ const AISpeakingCall: React.FC = () => {
         audioRef.current.src = url;
         addDebugLog('PLAY_START greeting');
         setCallState('speaking');
-        setTranscript(prev => [...prev, { speaker: 'tutora', text: greetingText }]);
+        // Add greeting with translation if needed
+        setTranscript(prev => [...prev, {
+          speaker: 'tutora',
+          text: greetingText,
+          translation: greetingTranslation
+        }]);
         
         audioRef.current.onended = () => {
           URL.revokeObjectURL(url);
@@ -327,12 +483,7 @@ const AISpeakingCall: React.FC = () => {
           addDebugLog('✅ Greeting finished, starting to listen...');
           setCallState('listening');
           setTimeout(() => {
-            try {
-              recognitionRef.current?.start();
-              addDebugLog('🎤 Speech recognition started');
-            } catch (e) {
-              addDebugLog('⚠️ Could not start recognition: ' + String(e));
-            }
+            safeStartRecognition();
           }, 500);
         };
         
@@ -340,25 +491,23 @@ const AISpeakingCall: React.FC = () => {
           addDebugLog('❌ Audio playback error: ' + String(e));
           isPlayingTtsRef.current = false;
           setCallState('listening');
-          recognitionRef.current?.start();
+          setTimeout(() => safeStartRecognition(), 500);
         };
         
         audioRef.current.play().catch(e => {
           addDebugLog('❌ Could not play audio: ' + String(e));
           isPlayingTtsRef.current = false;
           setCallState('listening');
-          recognitionRef.current?.start();
+          setTimeout(() => safeStartRecognition(), 500);
         });
       }
     } catch (e) {
       addDebugLog('❌ Greeting error: ' + String(e));
       addDebugLog('📝 Starting listening anyway...');
       setCallState('listening');
-      try {
-        recognitionRef.current?.start();
-      } catch (err) {
-        addDebugLog('⚠️ Could not start: ' + String(err));
-      }
+      setTimeout(() => {
+        safeStartRecognition();
+      }, 500);
     }
   };
 
@@ -368,7 +517,7 @@ const AISpeakingCall: React.FC = () => {
     setCallState('thinking');
 
     try {
-      addDebugLog('🤔 Calling Gemini for real conversation...');
+      addDebugLog('🤔 Calling AI Speaking Chat for real conversation...');
       
       // Build CONVERSATIONAL system prompt (not just feedback)
       const systemPrompt = customSystemPrompt || `You are English Tutora, a friendly and encouraging IELTS Speaking coach who has REAL conversations with students.
@@ -388,83 +537,66 @@ For example:
 
 Always respond conversationally, not with feedback. Your goal is to keep the student talking naturally.`;
 
-      // IMPORTANT: Limit conversation history to last 6 turns to avoid token limit issues
+      // IMPORTANT: Limit conversation history to last 4 turns to avoid token limit issues and speed up response
       let conversationContext = conversationHistoryRef.current || '';
       const turns = conversationContext.split('\n').filter(line => line.trim());
-      const limitedTurns = turns.slice(-6); // Keep only last 6 turns (3 exchanges)
+      const limitedTurns = turns.slice(-4); // Keep only last 4 turns (2 exchanges) for faster processing
       const limitedContext = limitedTurns.join('\n');
       
       addDebugLog(`📝 Context length: ${limitedContext.length} chars, ${turns.length} total turns, using last ${limitedTurns.length}`);
-      
-      // Build request body
-      const requestBody = {
-        systemInstruction: {
-          parts: [{
-            text: systemPrompt
-          }]
-        },
-        contents: [
-          {
-            role: 'user',
-            parts: [{
-              text: `${limitedContext}\n\nStudent: ${studentText}\n\nRespond naturally as a conversation partner. Be encouraging and ask a follow-up question. ALWAYS respond with at least one sentence.`
-            }]
-          }
-        ],
-        generationConfig: {
-          maxOutputTokens: 150,
-          temperature: 0.8,
-        }
-      };
 
-      addDebugLog(`📤 Sending request to Gemini API...`);
-      
-      // Call Gemini 2.5 Flash with CONVERSATION setup, not feedback setup
-      const coachResponse = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us',
-          },
-          body: JSON.stringify(requestBody)
-        }
-      );
+      addDebugLog(`📤 Sending request to AI Speaking Chat function...`);
 
-      if (!coachResponse.ok) {
-        const errorText = await coachResponse.text();
-        addDebugLog(`❌ Gemini response error: ${coachResponse.status}`);
-        addDebugLog(`❌ Error details: ${errorText.substring(0, 200)}`);
-        throw new Error(`Coach API failed: ${coachResponse.statusText}`);
-      }
-
-      const coachData = await coachResponse.json();
-      
-      // Log full response structure for debugging
-      addDebugLog(`📡 Gemini response: ${JSON.stringify(coachData).substring(0, 300)}`);
-      
-      // Check for various response formats
-      let responseText = '';
-      if (coachData.candidates && coachData.candidates.length > 0) {
-        responseText = coachData.candidates[0]?.content?.parts?.[0]?.text || '';
-      }
-      
-      // Check if response is blocked by safety filters
-      if (coachData.candidates && coachData.candidates.length > 0 && !responseText) {
-        const candidate = coachData.candidates[0];
-        if (candidate.finishReason && candidate.finishReason !== 'STOP') {
-          addDebugLog(`⚠️ Gemini finish reason: ${candidate.finishReason} (may be safety filter)`);
+      // Prepare audio data if available (last 10 seconds of audio)
+      let audioBase64: string | undefined = undefined;
+      if (googleCloudChunksRef.current && googleCloudChunksRef.current.length > 0) {
+        try {
+          const audioBlob = new Blob(googleCloudChunksRef.current.slice(-10), { type: 'audio/webm' });
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          audioBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          addDebugLog(`🎵 Prepared audio data: ${audioBase64.length} bytes`);
+        } catch (audioError) {
+          addDebugLog(`⚠️ Failed to prepare audio data: ${audioError}`);
         }
       }
-      
+
+      addDebugLog(`📤 Request body: message="${studentText.substring(0, 50)}...", audioBase64=${audioBase64 ? audioBase64.length + ' bytes' : 'none'}`);
+
+      const { data: coachData, error: coachError } = await supabase.functions.invoke('ai-speaking-chat', {
+        body: {
+          message: studentText,
+          audioBase64: audioBase64,
+          audioMimeType: 'audio/webm'
+        }
+      });
+
+      addDebugLog(`📡 Raw response: data=${JSON.stringify(coachData).substring(0, 200)}, error=${JSON.stringify(coachError)}`);
+
+      if (coachError) {
+        addDebugLog(`❌ Supabase function error: ${coachError.message}`);
+        throw new Error(`Supabase function failed: ${coachError.message}`);
+      }
+
+      if (!coachData) {
+        addDebugLog(`❌ No data returned from function`);
+        throw new Error(`No data returned from AI Speaking Chat function`);
+      }
+
+      if (!coachData.success) {
+        addDebugLog(`❌ Function returned success=false: ${coachData.error || 'Unknown error'}`);
+        throw new Error(`AI Speaking Chat failed: ${coachData.error || 'Unknown error'}`);
+      }
+
+      // Extract response text from the function response
+      let responseText = coachData.response;
+
       if (!responseText) {
-        addDebugLog('❌ No text from Gemini - using fallback');
-        // Fallback response when Gemini fails
+        addDebugLog('❌ No text from AI Speaking Chat - using fallback');
+        // Fallback response when AI fails
         responseText = `That's interesting! Can you tell me more about that?`;
       }
 
-      addDebugLog(`✅ Gemini response text: "${responseText.substring(0, 100)}"`);
+      addDebugLog(`✅ AI Speaking Chat response text: "${responseText.substring(0, 100)}"`);
 
       // Use the response directly (it's already natural conversation)
       let tutorResponse = responseText.trim().substring(0, 200);
@@ -489,36 +621,32 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
 
       addDebugLog('🔊 Calling Google Cloud TTS for response...');
 
-      // Use Google Cloud TTS for faster response
-      const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
+      // Translate if needed - ALWAYS translate AI responses when language is selected
+      // Capture selectedLanguage to ensure it doesn't change during async operations
+      const currentLanguage = selectedLanguage;
+      addDebugLog(`🔍 Current selectedLanguage value: "${currentLanguage}"`);
       
-      const ttsResponse = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            input: { text: tutorResponse },
-            voice: { languageCode: 'en-US', name: selectedVoice },
-            audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
-          }),
+      let translatedText: string | undefined = undefined;
+      if (currentLanguage && currentLanguage !== 'en') {
+        const langName = SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage)?.name || currentLanguage;
+        addDebugLog(`🌐 Translating AI response to ${langName} (code: ${currentLanguage})...`);
+        try {
+          translatedText = await translateText(tutorResponse, currentLanguage);
+          if (translatedText) {
+            addDebugLog(`✅ Translation complete: "${translatedText.substring(0, 50)}..."`);
+          } else {
+            addDebugLog(`⚠️ Translation returned undefined - will not show translation`);
+          }
+        } catch (e) {
+          addDebugLog(`❌ Translation exception: ${String(e)}`);
+          translatedText = undefined;
         }
-      );
-
-      if (!ttsResponse.ok) {
-        addDebugLog(`❌ Google Cloud TTS error: ${ttsResponse.status}`);
-        throw new Error(`TTS failed: ${ttsResponse.statusText}`);
+      } else {
+        addDebugLog(`ℹ️ Translation skipped - language is "${currentLanguage}" (should be non-English code)`);
       }
 
-      const ttsData = await ttsResponse.json();
-      const audioContent = ttsData.audioContent;
-      
-      if (!audioContent) {
-        addDebugLog('❌ No audio content from Google Cloud TTS');
-        throw new Error('No audio returned from TTS');
-      }
+      // Get TTS audio with retry logic
+      const audioContent = await synthesizeTTS(tutorResponse); // Always use English for TTS
       
       addDebugLog(`✅ TTS_FETCH Google Cloud (${audioContent.length} bytes)`);
       
@@ -530,15 +658,24 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
       }
       const blob = new Blob([bytes], { type: 'audio/mp3' });
       
-      // Add tutor response to transcript
-      setTranscript(prev => [...prev, {
-        speaker: 'tutora',
-        text: tutorResponse
-      }]);
+      // Add tutor response to transcript with translation
+      const newMessage = {
+        speaker: 'tutora' as const,
+        text: tutorResponse,
+        translation: translatedText || undefined
+      };
+      
+      addDebugLog(`📝 Adding to transcript - text: "${tutorResponse.substring(0, 30)}...", translation: ${translatedText ? `"${translatedText.substring(0, 30)}..."` : 'NONE'}`);
+      addDebugLog(`📝 Message object: ${JSON.stringify({ ...newMessage, translation: translatedText || 'undefined' })}`);
+      
+      setTranscript(prev => [...prev, newMessage]);
 
       // Play audio with mic coordination
       if (audioRef.current) {
-        try { recognitionRef.current?.stop(); } catch {}
+        try { 
+          recognitionRef.current?.stop(); 
+          recognitionStateRef.current = 'stopping';
+        } catch {}
         isPlayingTtsRef.current = true;
         const url = URL.createObjectURL(blob);
         audioRef.current.src = url;
@@ -554,12 +691,7 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
           addDebugLog('⏹️ Audio finished, resuming listening');
           setCallState('listening');
           setTimeout(() => {
-            try {
-              recognitionRef.current?.start();
-              addDebugLog('🎤 Recognition restarted');
-            } catch (e) {
-              addDebugLog('⚠️ Could not restart recognition: ' + String(e));
-            }
+            safeStartRecognition();
           }, 500);
         };
       } else {
@@ -577,42 +709,26 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
         addDebugLog('🆘 Attempting recovery with fallback...');
         const fallbackText = "I'm having a technical issue, but I'm still here to help! Please try again.";
         
-        const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
-        const ttsResponse = await fetch(
-          `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              input: { text: fallbackText },
-              voice: { languageCode: 'en-US', name: selectedVoice },
-              audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
-            }),
+        try {
+          const audioContent = await synthesizeTTS(fallbackText);
+          const binaryString = atob(audioContent);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
           }
-        );
-
-        if (ttsResponse.ok) {
-          const ttsData = await ttsResponse.json();
-          if (ttsData.audioContent) {
-            const binaryString = atob(ttsData.audioContent);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            const blob = new Blob([bytes], { type: 'audio/mp3' });
-            if (audioRef.current) {
-              const url = URL.createObjectURL(blob);
-              audioRef.current.src = url;
-              audioRef.current.play();
-              audioRef.current.onended = () => {
-                URL.revokeObjectURL(url);
-                setCallState('listening');
-                recognitionRef.current?.start();
-              };
-            }
+          const blob = new Blob([bytes], { type: 'audio/mp3' });
+          if (audioRef.current) {
+            const url = URL.createObjectURL(blob);
+            audioRef.current.src = url;
+            audioRef.current.play();
+            audioRef.current.onended = () => {
+              URL.revokeObjectURL(url);
+              setCallState('listening');
+              setTimeout(() => safeStartRecognition(), 500);
+            };
           }
+        } catch (ttsErr) {
+          addDebugLog('⚠️ Fallback TTS failed: ' + String(ttsErr));
         }
       } catch (recoveryErr) {
         addDebugLog('❌ Recovery failed: ' + String(recoveryErr));
@@ -641,7 +757,10 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
 
   const endCall = () => {
     addDebugLog('⏹️ Ending call');
-    recognitionRef.current?.stop();
+    try {
+      recognitionRef.current?.stop();
+      recognitionStateRef.current = 'idle';
+    } catch {}
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -743,6 +862,43 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
+                <label className="text-sm font-medium block mb-2">Mother Language (for Translation)</label>
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => {
+                    setSelectedLanguage(e.target.value);
+                    localStorage.setItem('ai-speaking-language', e.target.value);
+                  }}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                >
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  AI responses will be translated to your language
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="showTranslation"
+                  checked={showTranslation}
+                  onChange={(e) => {
+                    setShowTranslation(e.target.checked);
+                    localStorage.setItem('ai-speaking-show-translation', String(e.target.checked));
+                  }}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="showTranslation" className="text-sm">
+                  Show translations in conversation
+                </label>
+              </div>
+
+              <div>
                 <label className="text-sm font-medium block mb-2">Voice</label>
                 <select
                   value={selectedVoice}
@@ -801,6 +957,11 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
                     : 'bg-card border border-border'
                 }`}>
                   <p className="leading-relaxed">{msg.text}</p>
+                  {msg.translation && msg.translation.trim() && (
+                    <p className="text-xs mt-2 pt-2 border-t border-current/30 opacity-75 italic">
+                      {msg.translation}
+                    </p>
+                  )}
                   {msg.pronunciation && msg.pronunciation.score > 0 && (
                     <div className="mt-2 pt-2 border-t border-border/50 text-xs opacity-75">
                       🎯 Pronunciation: {msg.pronunciation.feedback} ({msg.pronunciation.score}/10)

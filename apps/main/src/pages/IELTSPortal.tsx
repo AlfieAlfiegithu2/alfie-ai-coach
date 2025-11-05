@@ -437,21 +437,18 @@ const IELTSPortal = () => {
                   
                   return (
                     <SpotlightCard key={skill.id} className="cursor-pointer min-h-[140px]" onClick={() => handleSkillClick(skill.id)}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center gap-3 mb-2">
+                      <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
                           <img
                             src={skillImage}
                             alt={`${skill.title} icon`}
-                            className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
+                            className="w-8 h-8 object-cover"
                           />
-                          <CardTitle className="text-base md:text-lg flex-1">
-                            {skill.title}
-                          </CardTitle>
                         </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
+                        <h3 className="text-lg font-medium text-slate-800 mb-2">{skill.title}</h3>
+
                         {progress && (
-                          <div className="mb-3 space-y-2">
+                          <div className="space-y-2 mb-2">
                             <div className="text-xs text-muted-foreground text-center">
                               {progress.completed}/{progress.total}
                             </div>
@@ -460,8 +457,8 @@ const IELTSPortal = () => {
                         )}
 
                         {skillBands[skill.id] && skill.id !== 'speaking' && (
-                          <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mb-3">
-                            Last: {skillBands[skill.id]}
+                          <div className="text-xs text-slate-600 font-medium">
+                            {skillBands[skill.id]}
                           </div>
                         )}
                       </CardContent>

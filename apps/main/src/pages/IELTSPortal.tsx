@@ -455,7 +455,7 @@ const IELTSPortal = () => {
                             <div className="text-xs text-muted-foreground text-center">
                               {progress.completed}/{progress.total}
                             </div>
-                            <Progress value={progressPercentage} className="h-2" />
+                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-yellow-500" />
                           </div>
                         )}
 
@@ -499,7 +499,7 @@ const IELTSPortal = () => {
                             <div className="text-xs text-muted-foreground text-center">
                               {progress.completed}/{progress.total}
                             </div>
-                            <Progress value={progressPercentage} className="h-2" />
+                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-yellow-500" />
                           </div>
                         )}
                       </CardContent>

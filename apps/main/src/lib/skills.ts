@@ -5,9 +5,9 @@ export type Skill = {
 
 export const SKILLS: Skill[] = [
   { slug: "vocabulary-builder", label: "Vocabulary Builder" },
-  { slug: "paraphrasing-challenge", label: "Paraphrasing Challenge" },
-  { slug: "pronunciation-repeat-after-me", label: "Pronunciation \"Repeat After Me\"" },
-  { slug: "sentence-structure-scramble", label: "Sentence Structure Scramble" },
+  { slug: "paraphrasing-challenge", label: "Paraphrasing" },
+  { slug: "pronunciation-repeat-after-me", label: "Pronunciation" },
+  { slug: "sentence-structure-scramble", label: "Sentence Structure" },
   { slug: "listening-for-details", label: "Listening for Details" },
   { slug: "synonym-match", label: "Synonym Match" },
 ];

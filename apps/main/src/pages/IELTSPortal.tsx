@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, BookOpen, Target } from 'lucide-react';
+import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 import SpotlightCard from '@/components/SpotlightCard';
 
@@ -400,136 +400,122 @@ const IELTSPortal = () => {
         courseType="IELTS"
         courseLevel="Intermediate to Advanced"
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white" />
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+           style={{
+             backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+             backgroundColor: '#f3f4f6'
+           }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
-          <div className="space-y-8 md:space-y-12 max-w-5xl mx-auto px-4 md:px-6">
+          <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="ghost" onClick={() => navigate('/hero')} className="text-text-secondary px-2 py-1 h-8">
+                <Home className="mr-2 h-4 w-4" /> Home
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-text-secondary px-2 py-1 h-8">
+                My Dashboard
+              </Button>
+            </div>
             
             {/* Skill Practice Quick Links */}
-            <div className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-light mb-8 text-slate-800 tracking-tight">Study each part</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
-
+                  
                   // Skill-specific images
                   const skillImages = [
                     '/reading.png',    // Reading
-                    '/listening.png',  // Listening
+                    '/listening.png',  // Listening  
                     '/writing.png',    // Writing
                     '/speaking.png'    // Speaking
                   ];
-
+                  
                   const skillImage = skillImages[index];
-
+                  
                   return (
-                    <div key={skill.id} className="cursor-pointer group" onClick={() => handleSkillClick(skill.id)}>
-                      <div className="bg-white border border-slate-200 rounded-lg p-6 h-full hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                        <div className="text-center">
-                          <h3 className="text-lg font-medium text-slate-800 mb-4">{skill.title}</h3>
-
-                          {progress && (
-                            <div className="space-y-2 mb-4">
-                              <div className="text-xs text-slate-500">
-                                {progress.completed}/{progress.total}
-                              </div>
-                              <div className="w-full bg-slate-100 rounded-full h-1.5">
-                                <div
-                                  className="bg-slate-600 h-1.5 rounded-full transition-all duration-300"
-                                  style={{ width: `${progressPercentage}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {skillBands[skill.id] && skill.id !== 'speaking' && (
-                            <div className="mb-4 text-xs text-slate-600 font-medium">
-                              {skillBands[skill.id]}
-                            </div>
-                          )}
-
-                          <div className="w-20 h-20 mx-auto bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors overflow-hidden">
-                            <img
-                              src="/capybara.png"
-                              alt="Capybara mascot"
-                              className="w-16 h-16 object-cover"
-                            />
-                          </div>
+                    <SpotlightCard key={skill.id} className="cursor-pointer" onClick={() => handleSkillClick(skill.id)}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-3 mb-2">
+                          <img
+                            src={skillImage}
+                            alt={`${skill.title} icon`}
+                            className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
+                          />
+                          <CardTitle className="text-base md:text-lg flex-1">
+                            {skill.title}
+                          </CardTitle>
                         </div>
-                      </div>
-                    </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="text-xs md:text-sm text-muted-foreground mb-3">
+                          <p>{skill.description}</p>
+                        </div>
+
+                        {progress && (
+                          <div className="mb-3 space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              ({progress.completed}/{progress.total} Completed)
+                            </div>
+                            <Progress value={progressPercentage} className="h-2" />
+                          </div>
+                        )}
+
+                        {skillBands[skill.id] && skill.id !== 'speaking' && (
+                          <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded mb-3">
+                            Last: {skillBands[skill.id]}
+                          </div>
+                        )}
+                      </CardContent>
+                    </SpotlightCard>
                   );
                 })}
               </div>
             </div>
 
             {/* Sharpening Your Skills */}
-            <div className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-light mb-8 text-slate-800 tracking-tight">Sharpening Your Skills</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Sharpening Your Skills</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {/* Vocabulary Book card */}
-                <div className="cursor-pointer group" onClick={() => navigate('/vocabulary')}>
-                  <div className="bg-white border border-slate-200 rounded-lg p-6 h-full hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
-                        <BookOpen className="w-8 h-8 text-slate-600" />
-                      </div>
-                      <h3 className="text-lg font-medium text-slate-800 mb-2">Vocabulary Book</h3>
-                      {vocabProgress && (
-                        <div className="space-y-2">
-                          <div className="text-xs text-slate-500">
-                            {vocabProgress.completed}/{vocabProgress.total}
-                          </div>
-                          <div className="w-full bg-slate-100 rounded-full h-1.5">
-                            <div
-                              className="bg-slate-600 h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${(vocabProgress.completed / vocabProgress.total) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
+                <SpotlightCard className="cursor-pointer" onClick={() => navigate('/vocabulary')}>
+                  <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
+                    <h3 className="font-semibold text-xs md:text-sm">Vocabulary Book</h3>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      ({vocabProgress.completed}/{vocabProgress.total} Completed)
                     </div>
-                  </div>
-                </div>
-
+                  </CardContent>
+                </SpotlightCard>
+                
                 {SKILLS.map((skill) => {
                   const progress = skillProgress[skill.slug];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
-
+                  
                   return (
-                    <div key={skill.slug} className="cursor-pointer group" onClick={() => handleSkillClick(skill.slug)}>
-                      <div className="bg-white border border-slate-200 rounded-lg p-6 h-full hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                        <div className="text-center">
-                          <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
-                            <Target className="w-8 h-8 text-slate-600" />
-                          </div>
-                          <h3 className="text-lg font-medium text-slate-800 mb-2">{skill.label}</h3>
+                    <SpotlightCard key={skill.slug} className="cursor-pointer" onClick={() => handleSkillClick(skill.slug)}>
+                      <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
+                        <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
 
-                          {progress && (
-                            <div className="space-y-2">
-                              <div className="text-xs text-slate-500">
-                                {progress.completed}/{progress.total}
-                              </div>
-                              <div className="w-full bg-slate-100 rounded-full h-1.5">
-                                <div
-                                  className="bg-slate-600 h-1.5 rounded-full transition-all duration-300"
-                                  style={{ width: `${progressPercentage}%` }}
-                                />
-                              </div>
+                        {progress && (
+                          <div className="mt-3 space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              ({progress.completed}/{progress.total} Completed)
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                            <Progress value={progressPercentage} className="h-2" />
+                          </div>
+                        )}
+                      </CardContent>
+                    </SpotlightCard>
                   );
                 })}
               </div>
             </div>
 
             {/* Available IELTS Tests */}
-            <div className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-light mb-8 text-slate-800 tracking-tight">Complete IELTS Tests</h2>
+            <div className="mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Complete IELTS Tests</h2>
               {isLoading ? (
                 <div className="flex justify-center py-8">
                   <LoadingAnimation />
@@ -563,32 +549,34 @@ const IELTSPortal = () => {
                     const animalImage = animalPhotos[index % animalPhotos.length];
                     
                     return (
-                      <div
+                      <SpotlightCard
                         key={test.id}
-                        className="cursor-pointer flex-shrink-0 w-64 md:w-72 group"
+                        className="cursor-pointer flex-shrink-0 w-64 md:w-72 p-0"
                         onClick={() => !test.comingSoon && handleTestClick(test.id)}
                       >
-                        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                          <div className="p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                              <img
-                                src={animalImage}
-                                alt={`Test ${test.test_number} mascot`}
-                                className="w-12 h-12 rounded-full object-cover"
-                              />
-                              <div className="flex-1">
-                                <h3 className="text-lg font-medium text-slate-800">Test {test.test_number}</h3>
-                                {test.comingSoon && (
-                                  <span className="text-xs text-slate-500 mt-1 inline-block">
-                                    Coming Soon
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-sm text-slate-600">{test.test_name}</p>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center gap-3 mb-2">
+                            <img
+                              src={animalImage}
+                              alt={`Test ${test.test_number} mascot`}
+                              className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
+                            />
+                            <CardTitle className="text-base md:text-lg flex-1 flex justify-between items-center">
+                              <span>Test {test.test_number}</span>
+                              {test.comingSoon && (
+                                <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
+                                  Coming Soon
+                                </span>
+                              )}
+                            </CardTitle>
                           </div>
-                        </div>
-                      </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="text-xs md:text-sm text-muted-foreground mb-3">
+                            <p>{test.test_name}</p>
+                          </div>
+                        </CardContent>
+                      </SpotlightCard>
                     );
                   })}
                 </div>

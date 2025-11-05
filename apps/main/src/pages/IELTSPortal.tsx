@@ -420,7 +420,7 @@ const IELTSPortal = () => {
             {/* Skill Practice Quick Links */}
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
@@ -436,7 +436,7 @@ const IELTSPortal = () => {
                   const skillImage = skillImages[index];
                   
                   return (
-                    <SpotlightCard key={skill.id} className="cursor-pointer" onClick={() => handleSkillClick(skill.id)}>
+                    <SpotlightCard key={skill.id} className="cursor-pointer min-h-[140px]" onClick={() => handleSkillClick(skill.id)}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-3 mb-2">
                           <img
@@ -452,7 +452,7 @@ const IELTSPortal = () => {
                       <CardContent className="pt-0">
                         {progress && (
                           <div className="mb-3 space-y-2">
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground text-center">
                               {progress.completed}/{progress.total}
                             </div>
                             <Progress value={progressPercentage} className="h-2" />
@@ -476,8 +476,8 @@ const IELTSPortal = () => {
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {/* Vocabulary Book card */}
-                <SpotlightCard className="cursor-pointer" onClick={() => navigate('/vocabulary')}>
-                  <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
+                <SpotlightCard className="cursor-pointer min-h-[140px]" onClick={() => navigate('/vocabulary')}>
+                  <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                     <h3 className="font-semibold text-xs md:text-sm">Vocabulary Book</h3>
                     <div className="text-xs text-muted-foreground mt-2 text-center">
                       {vocabProgress.completed}/{vocabProgress.total}
@@ -490,8 +490,8 @@ const IELTSPortal = () => {
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
                   return (
-                    <SpotlightCard key={skill.slug} className="cursor-pointer" onClick={() => handleSkillClick(skill.slug)}>
-                      <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
+                    <SpotlightCard key={skill.slug} className="cursor-pointer min-h-[140px]" onClick={() => handleSkillClick(skill.slug)}>
+                      <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                         <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
 
                         {progress && (

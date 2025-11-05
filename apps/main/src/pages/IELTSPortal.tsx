@@ -438,11 +438,11 @@ const IELTSPortal = () => {
                   return (
                     <SpotlightCard key={skill.id} className="cursor-pointer min-h-[140px]" onClick={() => handleSkillClick(skill.id)}>
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+                        <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                           <img
                             src={skillImage}
                             alt={`${skill.title} icon`}
-                            className="w-8 h-8 object-cover"
+                            className="w-12 h-12 object-cover"
                           />
                         </div>
                         <h3 className="text-lg font-medium text-slate-800 mb-2">{skill.title}</h3>

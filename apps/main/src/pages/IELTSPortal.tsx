@@ -450,14 +450,10 @@ const IELTSPortal = () => {
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
-                        <div className="text-xs md:text-sm text-muted-foreground mb-3">
-                          <p>{skill.description}</p>
-                        </div>
-
                         {progress && (
                           <div className="mb-3 space-y-2">
                             <div className="text-xs text-muted-foreground">
-                              ({progress.completed}/{progress.total} Completed)
+                              {progress.completed}/{progress.total}
                             </div>
                             <Progress value={progressPercentage} className="h-2" />
                           </div>

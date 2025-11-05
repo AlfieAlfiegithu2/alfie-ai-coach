@@ -107,56 +107,100 @@ const AISpeakingCall: React.FC = () => {
     }
   };
 
-  // TTS function with retry logic - ALWAYS uses selectedVoice from state
+  // TTS function with Qwen 3 TTS Flash via OpenRouter
   const synthesizeTTS = async (text: string, retries = 3): Promise<string> => {
-    const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
     const voiceToUse = selectedVoice; // Capture current voice to ensure consistency
-    
+
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        addDebugLog(`📞 TTS attempt ${attempt}/${retries} with voice: ${voiceToUse}...`);
-        
-        const response = await fetch(
-          `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              input: { text },
-              voice: { languageCode: 'en-US', name: voiceToUse },
-              audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
-            }),
+        addDebugLog(`🎵 Qwen TTS attempt ${attempt}/${retries} with voice: ${voiceToUse}...`);
+
+        // Use OpenRouter Qwen TTS function
+        const { data, error } = await supabase.functions.invoke('openrouter-qwen-tts', {
+          body: {
+            text: text,
+            voice: voiceToUse
           }
-        );
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`TTS failed: ${response.status} - ${errorText.substring(0, 100)}`);
+        });
+
+        if (error) {
+          throw new Error(`Qwen TTS function error: ${error.message}`);
         }
-        
-        const data = await response.json();
-        if (!data.audioContent) {
-          throw new Error('No audio content returned');
+
+        if (!data) {
+          throw new Error('No TTS data returned from Qwen function');
         }
-        
-        addDebugLog(`✅ TTS successful (${data.audioContent.length} bytes)`);
-        return data.audioContent;
-      } catch (e: any) {
-        const errMsg = String(e);
-        addDebugLog(`❌ TTS attempt ${attempt} failed: ${errMsg}`);
-        
+
+        // Check if we got actual audio content or pronunciation guidance
+        if (data.audioContent) {
+          // We got actual audio - return base64
+          addDebugLog(`✅ Qwen TTS successful (${data.audioContent.length} bytes)`);
+          return data.audioContent;
+        } else if (data.pronunciationGuide) {
+          // We got pronunciation guidance - this means TTS failed but Qwen provided text guidance
+          addDebugLog(`📝 Qwen provided pronunciation guidance instead of audio`);
+          // For now, we'll need to fall back to a different TTS method or show the guidance
+          // Let's try a fallback to Google TTS for now
+          console.warn('Qwen TTS returned guidance instead of audio, falling back to Google TTS');
+          return await fallbackGoogleTTS(text, voiceToUse);
+        } else {
+          throw new Error('Unexpected TTS response format');
+        }
+
+      } catch (err) {
+        const errMsg = String(err);
+        addDebugLog(`❌ Qwen TTS attempt ${attempt} failed: ${errMsg}`);
+
         if (attempt === retries) {
-          throw e;
+          // Final attempt failed, try Google TTS as ultimate fallback
+          addDebugLog('🔄 All Qwen TTS attempts failed, trying Google TTS fallback...');
+          try {
+            return await fallbackGoogleTTS(text, voiceToUse);
+          } catch (fallbackErr) {
+            addDebugLog(`❌ Fallback TTS also failed: ${String(fallbackErr)}`);
+            throw fallbackErr;
+          }
         }
-        
+
         // Exponential backoff: wait 1s, 2s, 4s
         await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
       }
     }
-    
-    throw new Error('TTS failed after all retries');
+
+    throw new Error('Qwen TTS failed after all retries');
+  };
+
+  // Fallback Google TTS function
+  const fallbackGoogleTTS = async (text: string, voiceToUse: string): Promise<string> => {
+    const googleCloudApiKey = 'AIzaSyB4b-vDRpqbEZVMye8LBS6FugK1Wtgm1Us';
+
+    const response = await fetch(
+      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleCloudApiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input: { text },
+          voice: { languageCode: 'en-US', name: voiceToUse },
+          audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 0.95 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Google TTS fallback failed: ${response.status} - ${errorText.substring(0, 100)}`);
+    }
+
+    const data = await response.json();
+    if (!data.audioContent) {
+      throw new Error('No audio content from Google TTS fallback');
+    }
+
+    addDebugLog(`✅ Google TTS fallback successful (${data.audioContent.length} bytes)`);
+    return data.audioContent;
   };
 
   // Translate text using Gemini

@@ -13,6 +13,7 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  ttsData?: any;
 }
 
 const AISpeakingTutor: React.FC = () => {
@@ -23,15 +24,42 @@ const AISpeakingTutor: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize welcome message
+  // Initialize welcome message with Qwen TTS
   useEffect(() => {
-    const welcomeMessage: Message = {
-      id: 'welcome',
-      text: "Hello! I'm Foxbot, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
-      isUser: false,
-      timestamp: new Date()
+    const initializeWelcome = async () => {
+      const welcomeText = "Hello! I'm Foxbot, your expert IELTS Speaking tutor powered by Qwen 3 TTS Flash. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?";
+
+      try {
+        // Get TTS data for welcome message
+        const { data: ttsData } = await supabase.functions.invoke('openrouter-qwen-tts', {
+          body: {
+            text: welcomeText,
+            voice: 'alloy'
+          }
+        });
+
+        const welcomeMessage: Message = {
+          id: 'welcome',
+          text: welcomeText,
+          isUser: false,
+          timestamp: new Date(),
+          ttsData: ttsData
+        };
+        setMessages([welcomeMessage]);
+      } catch (error) {
+        console.warn('Welcome TTS failed, using text only:', error);
+        // Fallback to text-only welcome
+        const welcomeMessage: Message = {
+          id: 'welcome',
+          text: welcomeText,
+          isUser: false,
+          timestamp: new Date()
+        };
+        setMessages([welcomeMessage]);
+      }
     };
-    setMessages([welcomeMessage]);
+
+    initializeWelcome();
   }, []);
 
   // Auto-scroll to bottom
@@ -54,20 +82,36 @@ const AISpeakingTutor: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+      // First, get AI response using the chat function
+      const { data: chatData, error: chatError } = await supabase.functions.invoke('openai-chat', {
         body: {
           message: `The student is asking about IELTS Speaking practice. They asked: "${message}". Provide helpful, conversational guidance for IELTS Speaking improvement. Be encouraging and specific.`,
           context: 'english_tutor'
         }
       });
 
-      if (error) throw error;
+      if (chatError) throw chatError;
+
+      const aiText = chatData.response || "I'm unable to provide assistance right now. Please try again.";
+
+      // Now use Qwen 3 TTS Flash for pronunciation guidance
+      const { data: ttsData, error: ttsError } = await supabase.functions.invoke('openrouter-qwen-tts', {
+        body: {
+          text: aiText,
+          voice: 'alloy' // Default voice, can be made configurable later
+        }
+      });
+
+      if (ttsError) {
+        console.warn('TTS failed, using text only:', ttsError);
+      }
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: data.response || "I'm unable to provide assistance right now. Please try again.",
+        text: aiText,
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        ttsData: ttsData // Include TTS data if available
       };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {

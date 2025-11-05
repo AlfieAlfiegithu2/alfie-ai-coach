@@ -7,7 +7,15 @@ export interface PageContent {
 
 // Helper to create content hash
 const createContentHash = (content: PageContent): string => {
-  return btoa(JSON.stringify(content)).substring(0, 32);
+  // Use a simple hash function that works with Unicode characters
+  const str = JSON.stringify(content);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(36).substring(0, 8);
 };
 
 export const usePageTranslation = (pageKey: string, defaultContent: PageContent, language: string) => {

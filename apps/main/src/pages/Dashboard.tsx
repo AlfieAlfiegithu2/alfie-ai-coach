@@ -57,7 +57,8 @@ const Dashboard = () => {
   const {
     user,
     profile,
-    refreshProfile
+    refreshProfile,
+    loading: authLoading
   } = useAuth();
   const {
     toast
@@ -129,6 +130,7 @@ const Dashboard = () => {
     color: "text-gray-500"
   }];
 
+
   // Fetch user data from Supabase
   useEffect(() => {
     // Preload the background image
@@ -143,9 +145,12 @@ const Dashboard = () => {
       try {
         // Fetch user preferences
         const {
-          data: preferences
-        } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).single();
-        if (preferences) {
+          data: preferences,
+          error: prefError
+        } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
+        if (prefError) {
+          console.warn('Error fetching preferences:', prefError);
+        } else if (preferences) {
           setUserPreferences(preferences);
           setSelectedTestType(preferences.target_test_type || 'IELTS');
           setRefreshKey(prev => prev + 1);
@@ -153,17 +158,25 @@ const Dashboard = () => {
 
         // Fetch test results
         const {
-          data: results
+          data: results,
+          error: resultsError
         } = await supabase.from('test_results').select('*').eq('user_id', user.id).order('created_at', {
           ascending: false
         }).limit(10);
+        if (resultsError) {
+          console.warn('Error fetching test results:', resultsError);
+        }
 
         // Fetch reading test results separately
         const {
-          data: readingResults
+          data: readingResults,
+          error: readingError
         } = await supabase.from('reading_test_results').select('*').eq('user_id', user.id).order('created_at', {
           ascending: false
         }).limit(10);
+        if (readingError) {
+          console.warn('Error fetching reading results:', readingError);
+        }
 
         // Fetch writing test results separately
         const {
@@ -341,13 +354,26 @@ const Dashboard = () => {
     if (percentage >= 20) return "1.5";
     return "1.0";
   };
+  // Wait for auth to finish loading
+  if (authLoading) {
+    return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <LoadingAnimation />
+      </div>;
+  }
+
+  // Redirect to auth if not authenticated
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Show loading while dashboard data loads
   if (loading) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
       </div>;
   }
 
-  // Guest mode: allow viewing dashboard without login
+  // Guest mode: allow viewing dashboard without login (removed - now requires auth)
   // If not logged in, we render a limited dashboard without user-specific data
 
   return <div className="min-h-screen relative">

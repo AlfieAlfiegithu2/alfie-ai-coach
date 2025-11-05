@@ -17,7 +17,7 @@ interface TranslationData {
 }
 
 export default function VocabularyBook() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<CardRow[]>([]);
   const [translations, setTranslations] = useState<Record<string, TranslationData>>({});
@@ -163,8 +163,20 @@ export default function VocabularyBook() {
 
   const progress = 0; // future: compute from user_vocabulary count
 
-  // Redirect to auth if not logged in
-  if (!user) {
+  // Wait for auth to finish loading before checking user
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to auth if user is not logged in after auth loading completes
+  if (!authLoading && !user) {
     console.log('❌ User not authenticated in VocabularyBook, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }

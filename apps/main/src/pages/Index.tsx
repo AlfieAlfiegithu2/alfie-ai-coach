@@ -61,7 +61,7 @@ const Index = () => {
   if (user) {
     return <Dashboard />;
   }
-  
+
   return <HeroIndex />;
 };
 

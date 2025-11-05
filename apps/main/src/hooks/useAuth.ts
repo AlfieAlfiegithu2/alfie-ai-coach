@@ -38,43 +38,34 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     let isMounted = true;
 
-    // Set up auth state listener
+    // Single auth state listener - this is the single source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
 
+        console.log('🔄 Auth state change:', event, session?.user?.email || 'no user');
+
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Fetch profile when user signs in
+        // Set loading to false immediately - don't wait for profile fetch
+        setLoading(false);
+
+        // Fetch profile asynchronously (don't block auth completion)
         if (session?.user) {
-          try {
-            await fetchProfile(session.user.id);
-          } catch (error) {
+          fetchProfile(session.user.id).catch(error => {
             console.error('Error fetching profile:', error);
-          }
+          });
         } else {
           setProfile(null);
         }
-
-        setLoading(false);
       }
     );
 
-    // Check session quickly
+    // Initial session check - let the auth state listener handle the state updates
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
-
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        fetchProfile(session.user.id).catch(error => {
-          console.error('Error fetching profile:', error);
-        });
-      }
-
-      setLoading(false);
+      // The auth state change listener will handle setting all state
     }).catch(error => {
       console.error('Error getting session:', error);
       if (isMounted) {
@@ -82,16 +73,8 @@ export function useAuth(): UseAuthReturn {
       }
     });
 
-    // Very aggressive timeout - just move on
-    const timeout = setTimeout(() => {
-      if (isMounted) {
-        setLoading(false);
-      }
-    }, 2000); // Just 2 seconds, then show app
-
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -167,8 +150,24 @@ export function useAuth(): UseAuthReturn {
         return { error: error.message };
       }
 
+      // Immediately update state with the session from sign-in response
+      if (data.session) {
+        console.log('✅ Sign in successful, session received:', data.session.user.email);
+        setSession(data.session);
+        setUser(data.session.user);
+        
+        // Fetch profile
+        try {
+          await fetchProfile(data.session.user.id);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+        
+        setLoading(false);
+      }
+
       if (import.meta.env.DEV) {
-        console.log('✅ Sign in successful, waiting for auth state change');
+        console.log('✅ Sign in successful, session persisted');
       }
       toast({
         title: "Welcome back!",

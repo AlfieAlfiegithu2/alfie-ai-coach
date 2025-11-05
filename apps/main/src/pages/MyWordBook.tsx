@@ -22,7 +22,7 @@ interface SavedWord {
 
 const MyWordBook = () => {
   const navigate = useNavigate();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   
   // State management for word book functionality
@@ -177,9 +177,17 @@ const MyWordBook = () => {
     }
   };
 
+  // Wait for auth to finish loading before checking user
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <LoadingAnimation />
+      </div>
+    );
+  }
 
-
-  if (!user) {
+  // Show sign-in prompt if user is not logged in after auth loading completes
+  if (!authLoading && !user) {
     return (
       <div className="min-h-screen relative">
         {/* Background Image */}

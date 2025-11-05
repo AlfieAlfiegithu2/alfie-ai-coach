@@ -15,8 +15,6 @@ const Signup = () => {
   const [error, setError] = useState<string | null>(null);
   // OTP email verification removed for simpler UX; Supabase email confirmation is sent after sign up
 
-  if (user && !loading) return <Navigate to="/dashboard" replace />;
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -30,16 +28,20 @@ const Signup = () => {
     setSubmitting(false);
   };
 
-  const isEmailValid = (value: string) => /\S+@\S+\.\S+/.test(value);
+  // OTP email verification removed for simpler UX; Supabase email confirmation is sent after sign up
 
-  // OTP helpers removed
-
+  // Wait for auth to finish loading before checking user
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-black font-mono">Loading…</div>
       </div>
     );
+  }
+
+  // Only redirect if auth has finished loading AND user exists
+  if (!loading && user) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

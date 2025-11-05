@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 // Inline Google brand icon (multi-color)
@@ -23,13 +23,24 @@ const Auth = () => {
   const [resetMode, setResetMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Reset submitting state if user successfully signs in
+  useEffect(() => {
+    if (user && submitting) {
+      setSubmitting(false);
+    }
+  }, [user, submitting]);
+
   console.log('🔍 Auth component render:', { user: user?.email, loading, submitting, error });
 
-  if (user && !loading) {
-    console.log('🔄 Auth component redirecting to dashboard');
-    return <Navigate to="/dashboard" replace />;
-  }
+  // Only redirect if auth has finished loading AND user exists
+  useEffect(() => {
+    if (!loading && user) {
+      console.log('🔄 Auth component redirecting to dashboard');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [loading, user, navigate]);
 
+  // Show loading screen while auth is loading
   if (loading) {
     console.log('⏳ Auth component showing loading screen');
     return (
@@ -53,6 +64,15 @@ const Auth = () => {
     );
   }
 
+  // Show loading while redirecting if user is logged in
+  if (user) {
+    return (
+      <div className="min-h-screen w-full font-sans flex flex-col items-center justify-center">
+        <div className="text-xl font-semibold text-white/80">Redirecting...</div>
+      </div>
+    );
+  }
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('📝 Sign in form submitted:', email);
@@ -62,10 +82,14 @@ const Auth = () => {
     if (error) {
       console.error('❌ Sign in failed:', error);
       setError(error);
+      setSubmitting(false);
     } else {
       console.log('✅ Sign in successful, waiting for auth state change');
+      // Give a moment for session to persist and auth state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      // Don't set submitting to false yet - let the auth state change handle the redirect
+      // The component will re-render when auth state updates
     }
-    setSubmitting(false);
   };
 
   const onGoogle = async () => {
@@ -76,10 +100,12 @@ const Auth = () => {
     if (error) {
       console.error('❌ Google sign in failed:', error);
       setError(error);
+      setSubmitting(false);
     } else {
       console.log('✅ Google sign in successful, waiting for auth state change');
+      // Don't set submitting to false yet - let the auth state change handle the redirect
+      // The component will re-render when auth state updates
     }
-    setSubmitting(false);
   };
 
   const onReset = async (e: React.FormEvent) => {

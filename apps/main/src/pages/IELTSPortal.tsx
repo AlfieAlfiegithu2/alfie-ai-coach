@@ -419,7 +419,7 @@ const IELTSPortal = () => {
             
             {/* Skill Practice Quick Links */}
             <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center">Study each part</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
@@ -445,7 +445,7 @@ const IELTSPortal = () => {
                             className="w-12 h-12 object-cover"
                           />
                         </div>
-                        <h3 className="text-lg font-medium text-slate-800 mb-2">{skill.title}</h3>
+                        <h3 className="font-semibold text-xs md:text-sm text-slate-800 mb-2">{skill.title}</h3>
 
                         {progress && (
                           <div className="space-y-2 mb-2">
@@ -470,7 +470,7 @@ const IELTSPortal = () => {
 
             {/* Sharpening Your Skills */}
             <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Sharpening Your Skills</h2>
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center">Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {/* Vocabulary Book card */}
                 <SpotlightCard className="cursor-pointer min-h-[140px]" onClick={() => navigate('/vocabulary')}>
@@ -508,7 +508,7 @@ const IELTSPortal = () => {
 
             {/* Available IELTS Tests */}
             <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Complete IELTS Tests</h2>
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center">Complete IELTS Tests</h2>
               {isLoading ? (
                 <div className="flex justify-center py-8">
                   <LoadingAnimation />

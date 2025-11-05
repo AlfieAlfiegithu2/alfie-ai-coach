@@ -479,8 +479,8 @@ const IELTSPortal = () => {
                 <SpotlightCard className="cursor-pointer" onClick={() => navigate('/vocabulary')}>
                   <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
                     <h3 className="font-semibold text-xs md:text-sm">Vocabulary Book</h3>
-                    <div className="text-xs text-muted-foreground mt-2">
-                      ({vocabProgress.completed}/{vocabProgress.total} Completed)
+                    <div className="text-xs text-muted-foreground mt-2 text-center">
+                      {vocabProgress.completed}/{vocabProgress.total}
                     </div>
                   </CardContent>
                 </SpotlightCard>
@@ -496,8 +496,8 @@ const IELTSPortal = () => {
 
                         {progress && (
                           <div className="mt-3 space-y-2">
-                            <div className="text-xs text-muted-foreground">
-                              ({progress.completed}/{progress.total} Completed)
+                            <div className="text-xs text-muted-foreground text-center">
+                              {progress.completed}/{progress.total}
                             </div>
                             <Progress value={progressPercentage} className="h-2" />
                           </div>

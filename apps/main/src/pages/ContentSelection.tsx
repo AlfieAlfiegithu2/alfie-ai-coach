@@ -45,7 +45,7 @@ const ContentSelection = () => {
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
-        .eq('test_type', 'IELTS')
+        .ilike('test_type', 'IELTS')  // Changed to case-insensitive to match IELTS portal
         .or(`module.eq.${moduleCapitalized},skill_category.eq.${moduleCapitalized}`)
         .order('test_number', { ascending: true });
 

@@ -134,10 +134,11 @@ const IELTSWritingTestInterface = () => {
       if (testError) throw testError;
       setTest(testData);
 
-      // Load ALL writing questions (don't filter by test_id)
+      // Load writing questions for this specific test
       const { data: questions, error: questionsError } = await supabase
         .from('questions')
         .select('*')
+        .eq('test_id', testId)
         .order('part_number');
 
       if (questionsError) throw questionsError;
@@ -179,17 +180,39 @@ const IELTSWritingTestInterface = () => {
     setIsLoading(true);
     try {
       console.log('🔍 Loading available writing tests...');
+      
+      // Match admin query exactly: filter for tests where module='Writing' OR skill_category='Writing'
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('module', 'Writing')
+        .or('module.eq.Writing,skill_category.eq.Writing')
         .order('created_at', { ascending: false });
 
-      if (testsError) throw testsError;
+      if (testsError) {
+        console.error('❌ Error loading tests:', testsError);
+        throw testsError;
+      }
 
-      console.log(`✅ Found ${tests?.length || 0} available writing tests`);
-      setAvailableTests(tests || []);
+      // Fallback: if no tests found with exact match, try case-insensitive filter
+      let finalTests = tests || [];
+      if (finalTests.length === 0) {
+        console.log('🔄 No exact matches, trying case-insensitive search...');
+        const { data: allIeltsTests } = await supabase
+          .from('tests')
+          .select('*')
+          .eq('test_type', 'IELTS')
+          .order('created_at', { ascending: false });
+        
+        // Filter client-side exactly like admin does
+        finalTests = (allIeltsTests || []).filter((test: any) => 
+          test.module === 'Writing' || test.skill_category === 'Writing' || 
+          test.test_name?.includes('Writing')
+        );
+      }
+
+      console.log(`✅ Found ${finalTests.length} available writing tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
+      setAvailableTests(finalTests);
     } catch (error) {
       console.error('❌ Error loading tests:', error);
       toast({

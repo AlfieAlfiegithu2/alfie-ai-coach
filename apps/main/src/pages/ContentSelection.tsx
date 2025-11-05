@@ -40,12 +40,13 @@ const ContentSelection = () => {
       // Fetch from universal tables only
       console.log('🔍 DEBUG: Fetching content from universal tables...');
       
-      // Get all tests that have questions
+      // Get all tests that have questions - ensure module is capitalized correctly
+      const moduleCapitalized = module === 'reading' ? 'Reading' : 'Listening';
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('module', module === 'reading' ? 'Reading' : 'Listening')
+        .or(`module.eq.${moduleCapitalized},skill_category.eq.${moduleCapitalized}`)
         .order('test_number', { ascending: true });
 
       if (testsError) throw testsError;
@@ -174,8 +175,7 @@ const ContentSelection = () => {
           <Button
             onClick={handleRandomTest}
             size="lg"
-            className="rounded-xl mb-8"
-            style={{ background: 'var(--gradient-button)', border: 'none' }}
+            className="rounded-xl mb-8 bg-white text-black border-2 border-black hover:bg-black hover:text-white"
           >
             <Play className="w-5 h-5 mr-2" />
             Start Random Test

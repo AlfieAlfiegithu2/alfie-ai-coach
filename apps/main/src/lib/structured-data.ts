@@ -200,3 +200,38 @@ const getCourseSkills = (courseType: string): string[] => {
 
   return skillMap[courseType] || ['English Language Skills'];
 };
+
+export const createArticleSchema = (
+  title: string,
+  description: string,
+  url: string,
+  publishedDate?: string,
+  modifiedDate?: string,
+  author?: string,
+  image?: string
+) => ({
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": title,
+  "description": description,
+  "url": url,
+  "datePublished": publishedDate || new Date().toISOString(),
+  "dateModified": modifiedDate || publishedDate || new Date().toISOString(),
+  "author": {
+    "@type": "Organization",
+    "name": author || "English AIdol"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "English AIdol",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png"
+    }
+  },
+  "image": image || "https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/social-images/social-1758811085448-Upscale_this_adorable_bunny_character_wearing_glas-1758810348175.png",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": url
+  }
+});

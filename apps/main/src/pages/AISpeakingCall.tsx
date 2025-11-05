@@ -40,33 +40,35 @@ const AISpeakingCall: React.FC = () => {
   const [duration, setDuration] = useState(0);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [speechMode, setSpeechMode] = useState<'web-speech' | 'google-cloud' | 'none'>('web-speech');
-  const [selectedVoice, setSelectedVoice] = useState<string>('en-US-Chirp3-HD-Kore');
+  const [selectedVoice, setSelectedVoice] = useState<string>('Cherry'); // Default to Cherry voice for Qwen TTS
   const [customSystemPrompt, setCustomSystemPrompt] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
   const [showTranslation, setShowTranslation] = useState<boolean>(true);
 
+  // Qwen 3 TTS Flash Voices (Alibaba Cloud Model Studio)
+  // Documentation: https://www.alibabacloud.com/help/en/model-studio/qwen-tts
+  // Qwen3-TTS offers 17 voices supporting multiple languages
   const AVAILABLE_VOICES = [
-    // Chirp3 Premium Voices (Latest, Most Natural)
-    { id: 'en-US-Chirp3-HD-Kore', name: 'Kore - Professional', gender: 'Female' },
-    { id: 'en-US-Chirp3-HD-Puck', name: 'Puck - Upbeat', gender: 'Male' },
-    { id: 'en-US-Chirp3-HD-Zephyr', name: 'Zephyr - Bright', gender: 'Male' },
-    { id: 'en-US-Chirp3-HD-Charon', name: 'Charon - Informative', gender: 'Male' },
-    { id: 'en-US-Chirp3-HD-Fenrir', name: 'Fenrir - Energetic', gender: 'Male' },
-    { id: 'en-US-Chirp3-HD-Leda', name: 'Leda - Youthful', gender: 'Female' },
-    { id: 'en-US-Chirp3-HD-Orus', name: 'Orus - Grounded', gender: 'Male' },
-    { id: 'en-US-Chirp3-HD-Alnilam', name: 'Alnilam - Strong', gender: 'Male' },
-    { id: 'en-US-Chirp3-HD-Rasalgethi', name: 'Rasalgethi - Informative', gender: 'Male' },
-    { id: 'en-US-Chirp3-HD-Achernar', name: 'Achernar - Soft', gender: 'Female' },
+    // Standard multilingual voices
+    { id: 'Cherry', name: 'Cherry - Cheerful & Friendly', gender: 'Female' },
+    { id: 'Ethan', name: 'Ethan - Bright & Energetic', gender: 'Male' },
+    { id: 'Nofish', name: 'Nofish - Designer Voice', gender: 'Neutral' },
+    { id: 'Jennifer', name: 'Jennifer - Premium Cinematic', gender: 'Female' },
+    { id: 'Ryan', name: 'Ryan - Rhythmic & Dramatic', gender: 'Male' },
+    { id: 'Katerina', name: 'Katerina - Mature & Rhythmic', gender: 'Female' },
+    { id: 'Elias', name: 'Elias - Academic & Clear', gender: 'Male' },
     
-    // Neural2 High Quality Voices
-    { id: 'en-US-Neural2-C', name: 'Neural2-C - Natural Female', gender: 'Female' },
-    { id: 'en-US-Neural2-A', name: 'Neural2-A - Natural Male', gender: 'Male' },
-    { id: 'en-US-Neural2-F', name: 'Neural2-F - Warm Female', gender: 'Female' },
-    { id: 'en-US-Neural2-E', name: 'Neural2-E - Warm Male', gender: 'Male' },
-    
-    // Additional Premium Options
-    { id: 'en-US-Casual-K', name: 'Casual - Conversational', gender: 'Male' },
-    { id: 'en-US-Chirp-HD-F', name: 'Chirp HD - Modern Female', gender: 'Female' },
+    // Regional Chinese voices (also support English)
+    { id: 'Jada', name: 'Shanghai-Jada - Lively', gender: 'Female' },
+    { id: 'Dylan', name: 'Beijing-Dylan - Teenager', gender: 'Male' },
+    { id: 'Sunny', name: 'Sichuan-Sunny - Sweet', gender: 'Female' },
+    { id: 'Li', name: 'Nanjing-Li - Patient Teacher', gender: 'Female' },
+    { id: 'Marcus', name: 'Shaanxi-Marcus - Sincere', gender: 'Male' },
+    { id: 'Roy', name: 'Minnan-Roy - Humorous', gender: 'Male' },
+    { id: 'Peter', name: 'Tianjin-Peter - Crosstalk', gender: 'Male' },
+    { id: 'Rocky', name: 'Cantonese-Rocky - Witty', gender: 'Male' },
+    { id: 'Kiki', name: 'Cantonese-Kiki - Sweet Friend', gender: 'Female' },
+    { id: 'Eric', name: 'Sichuan-Eric - Refined', gender: 'Male' },
   ];
   
   const addDebugLog = (msg: string) => {
@@ -115,38 +117,70 @@ const AISpeakingCall: React.FC = () => {
       try {
         addDebugLog(`🎵 Qwen TTS attempt ${attempt}/${retries} with voice: ${voiceToUse}...`);
 
-        // Use OpenRouter Qwen TTS function
-        const { data, error } = await supabase.functions.invoke('openrouter-qwen-tts', {
-          body: {
-            text: text,
-            voice: voiceToUse
+        // Use DashScope Qwen 3 TTS Flash function
+        let data, error;
+        try {
+          const result = await supabase.functions.invoke('openrouter-qwen-tts', {
+            body: {
+              text: text,
+              voice: voiceToUse,
+              language_type: 'English' // Always use English for IELTS tutoring
+            }
+          });
+          
+          data = result.data;
+          error = result.error;
+          
+          // Log the full result for debugging
+          console.log('🔍 Full invoke result:', {
+            hasData: !!data,
+            hasError: !!error,
+            dataSuccess: data?.success,
+            dataError: data?.error,
+            dataKeys: data ? Object.keys(data) : [],
+            errorKeys: error ? Object.keys(error) : []
+          });
+          
+          // Supabase client error (non-2xx response)
+          if (error) {
+            console.error('🔍 Supabase client error:', error);
+            const errorMsg = error.message || JSON.stringify(error);
+            addDebugLog(`❌ Qwen TTS function error: ${errorMsg}`);
+            throw new Error(`Qwen TTS function error: ${errorMsg}`);
           }
-        });
 
-        if (error) {
-          throw new Error(`Qwen TTS function error: ${error.message}`);
+          // Check for error in response body (function returns 200 with error details)
+          if (!data) {
+            throw new Error('No TTS data returned from Qwen function');
+          }
+
+          if (data.success === false || data.error) {
+            const errorMsg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error || 'Unknown error');
+            const errorDetails = data.details ? ` Details: ${JSON.stringify(data.details)}` : '';
+            const statusCode = data.statusCode ? ` (Status: ${data.statusCode})` : '';
+            addDebugLog(`❌ Qwen TTS API error: ${errorMsg}${errorDetails}${statusCode}`);
+            console.error('Full error response:', data);
+            throw new Error(`Qwen TTS API error: ${errorMsg}${errorDetails}${statusCode}`);
+          }
+
+          // Check if we got actual audio content
+          if (data.audioContent) {
+            // We got actual audio - return base64
+            addDebugLog(`✅ Qwen TTS successful (${data.audioContent.length} bytes)`);
+            return data.audioContent;
+          } else {
+            // Log the full response for debugging
+            addDebugLog(`⚠️ Unexpected response format: ${JSON.stringify(data).substring(0, 200)}`);
+            console.warn('Unexpected Qwen TTS response:', data);
+            // Fallback to Google TTS
+            addDebugLog('🔄 Falling back to Google TTS...');
+            return await fallbackGoogleTTS(text, voiceToUse);
+          }
+        } catch (invokeError: any) {
+          // Catch any errors from the invoke call itself
+          console.error('❌ Supabase invoke exception:', invokeError);
+          throw invokeError;
         }
-
-        if (!data) {
-          throw new Error('No TTS data returned from Qwen function');
-        }
-
-        // Check if we got actual audio content or pronunciation guidance
-        if (data.audioContent) {
-          // We got actual audio - return base64
-          addDebugLog(`✅ Qwen TTS successful (${data.audioContent.length} bytes)`);
-          return data.audioContent;
-        } else if (data.pronunciationGuide) {
-          // We got pronunciation guidance - this means TTS failed but Qwen provided text guidance
-          addDebugLog(`📝 Qwen provided pronunciation guidance instead of audio`);
-          // For now, we'll need to fall back to a different TTS method or show the guidance
-          // Let's try a fallback to Google TTS for now
-          console.warn('Qwen TTS returned guidance instead of audio, falling back to Google TTS');
-          return await fallbackGoogleTTS(text, voiceToUse);
-        } else {
-          throw new Error('Unexpected TTS response format');
-        }
-
       } catch (err) {
         const errMsg = String(err);
         addDebugLog(`❌ Qwen TTS attempt ${attempt} failed: ${errMsg}`);
@@ -265,12 +299,21 @@ const AISpeakingCall: React.FC = () => {
   // Helpers: audio decoding/encoding
   const base64ToUint8 = (b64: string): Uint8Array => {
     try {
-      const bin = atob(b64);
+      // Clean base64 string: remove whitespace, handle URL-safe characters
+      let cleaned = b64.trim().replace(/\s/g, '');
+      // Handle URL-safe base64: replace - with + and _ with /
+      cleaned = cleaned.replace(/-/g, '+').replace(/_/g, '/');
+      // Add padding if needed
+      while (cleaned.length % 4) {
+        cleaned += '=';
+      }
+      const bin = atob(cleaned);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       return bytes;
     } catch (e) {
-      addDebugLog('❌ TTS_DECODE base64 failed');
+      addDebugLog(`❌ TTS_DECODE base64 failed: ${e}`);
+      console.error('Base64 decode error:', e, 'Input length:', b64.length, 'First 100 chars:', b64.substring(0, 100));
       throw e;
     }
   };
@@ -490,15 +533,47 @@ const AISpeakingCall: React.FC = () => {
         }
       }
       
-      addDebugLog(`📝 Calling Google Cloud TTS with voice: ${selectedVoice}`);
+      addDebugLog(`🎵 Calling Qwen 3 TTS Flash with voice: ${selectedVoice}`);
       
       // Get TTS audio with retry logic - ALWAYS uses selectedVoice
       const audioContent = await synthesizeTTS(greetingText); // Always use English for TTS
       
       addDebugLog(`✅ TTS_FETCH greeting (${audioContent.length} bytes)`);
       
-      // Convert base64 to Blob for MP3
-      const binaryString = atob(audioContent);
+      // Debug: Check base64 format
+      const firstChars = audioContent.substring(0, 100);
+      const lastChars = audioContent.substring(Math.max(0, audioContent.length - 50));
+      addDebugLog(`🔍 Base64 preview: first="${firstChars}...", last="...${lastChars}"`);
+      
+      // Check if audioContent is actually base64 or if it's already a data URL
+      let base64Data = audioContent;
+      if (audioContent.startsWith('data:')) {
+        // Extract base64 from data URL
+        const base64Match = audioContent.match(/base64,(.+)$/);
+        if (base64Match) {
+          base64Data = base64Match[1];
+          addDebugLog(`🔍 Extracted base64 from data URL (${base64Data.length} chars)`);
+        }
+      }
+      
+      // Convert base64 to Blob for MP3 - clean base64 first
+      let cleanedBase64 = base64Data.trim().replace(/\s/g, '');
+      cleanedBase64 = cleanedBase64.replace(/-/g, '+').replace(/_/g, '/');
+      while (cleanedBase64.length % 4) {
+        cleanedBase64 += '=';
+      }
+      
+      // Validate base64 characters before decoding
+      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+      if (!base64Regex.test(cleanedBase64)) {
+        const invalidChars = cleanedBase64.match(/[^A-Za-z0-9+/=]/g);
+        addDebugLog(`❌ Invalid base64 characters found: ${invalidChars?.join(', ') || 'unknown'}`);
+        throw new Error(`Invalid base64 format: contains invalid characters`);
+      }
+      
+      addDebugLog(`🔍 Cleaning base64: length=${cleanedBase64.length}, valid=${base64Regex.test(cleanedBase64)}`);
+      
+      const binaryString = atob(cleanedBase64);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
@@ -663,7 +738,7 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
       // Update conversation history with actual exchange
       conversationHistoryRef.current += `\nStudent: ${studentText}\nTutor: ${tutorResponse}`;
 
-      addDebugLog('🔊 Calling Google Cloud TTS for response...');
+      addDebugLog('🎵 Calling Qwen 3 TTS Flash for response...');
 
       // Translate if needed - ALWAYS translate AI responses when language is selected
       // Capture selectedLanguage to ensure it doesn't change during async operations
@@ -692,10 +767,15 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
       // Get TTS audio with retry logic
       const audioContent = await synthesizeTTS(tutorResponse); // Always use English for TTS
       
-      addDebugLog(`✅ TTS_FETCH Google Cloud (${audioContent.length} bytes)`);
+      addDebugLog(`✅ TTS_FETCH Qwen 3 TTS Flash (${audioContent.length} bytes)`);
       
-      // Convert base64 to Blob for MP3
-      const binaryString = atob(audioContent);
+      // Convert base64 to Blob for MP3 - clean base64 first
+      let cleanedBase64 = audioContent.trim().replace(/\s/g, '');
+      cleanedBase64 = cleanedBase64.replace(/-/g, '+').replace(/_/g, '/');
+      while (cleanedBase64.length % 4) {
+        cleanedBase64 += '=';
+      }
+      const binaryString = atob(cleanedBase64);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
@@ -755,7 +835,13 @@ Always respond conversationally, not with feedback. Your goal is to keep the stu
         
         try {
           const audioContent = await synthesizeTTS(fallbackText);
-          const binaryString = atob(audioContent);
+          // Clean base64 first
+          let cleanedBase64 = audioContent.trim().replace(/\s/g, '');
+          cleanedBase64 = cleanedBase64.replace(/-/g, '+').replace(/_/g, '/');
+          while (cleanedBase64.length % 4) {
+            cleanedBase64 += '=';
+          }
+          const binaryString = atob(cleanedBase64);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);

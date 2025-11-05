@@ -33,7 +33,8 @@ interface TestData {
 
 const IELTSSpeakingTest = () => {
   const params = useParams();
-  const testId = params.testName;
+  // Support both testId (UUID) and testName (legacy) for backward compatibility
+  const testId = params.testId || params.testName;
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -144,21 +145,52 @@ const IELTSSpeakingTest = () => {
     try {
       console.log(`🔍 Loading speaking test data for test ID: ${testId}`);
 
-      // Get the test details
-      const { data: testData, error: testError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('id', testId)
-        .single();
+      // Get the test details - try ID first (UUID), then test_name if ID fails (legacy support)
+      let testData, testError;
+      
+      // Check if testId looks like a UUID (has dashes and is 36 chars)
+      if (testId.includes('-') && testId.length === 36) {
+        // It's a UUID, query by id
+        const result = await supabase
+          .from('tests')
+          .select('*')
+          .eq('id', testId)
+          .single();
+        testData = result.data;
+        testError = result.error;
+      } else {
+        // It's a test name (legacy), query by test_name
+        const result = await supabase
+          .from('tests')
+          .select('*')
+          .eq('test_name', testId)
+          .eq('test_type', 'IELTS')
+          .eq('module', 'Speaking')
+          .maybeSingle();
+        testData = result.data;
+        testError = result.error;
+      }
 
       if (testError) throw testError;
+      
+      if (!testData) {
+        toast({
+          title: "Test Not Found",
+          description: "This speaking test doesn't exist. Please check the test ID.",
+          variant: "destructive"
+        });
+        navigate(-1);
+        return;
+      }
+      
       console.log('✅ Test loaded:', testData.test_name);
 
-      // Load ALL speaking prompts (don't filter by test_id)
-      // Just show whatever prompts exist in the system
+      // Load speaking prompts for this specific test - use actual test ID from database
+      const actualTestId = testData.id;
       const { data: prompts, error: promptsError } = await supabase
         .from('speaking_prompts')
         .select('*')
+        .eq('test_id', actualTestId)
         .order('part_number', { ascending: true });
 
       if (promptsError) {
@@ -215,17 +247,38 @@ const IELTSSpeakingTest = () => {
     setIsLoading(true);
     try {
       console.log('📋 Loading available speaking tests...');
+      
+      // Match admin query exactly: filter for tests where module='Speaking' OR skill_category='Speaking'
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .or('module.ilike.Speaking,skill_category.ilike.Speaking')
+        .or('module.eq.Speaking,skill_category.eq.Speaking')
         .order('created_at', { ascending: false });
 
-      if (testsError) throw testsError;
+      if (testsError) {
+        console.error('❌ Error loading tests:', testsError);
+        throw testsError;
+      }
 
-      console.log(`✅ Found ${tests?.length || 0} available speaking tests`);
-      setAvailableTests(tests || []);
+      // Fallback: if no tests found with exact match, try case-insensitive
+      let finalTests = tests || [];
+      if (finalTests.length === 0) {
+        console.log('🔄 No exact matches, trying case-insensitive search...');
+        const { data: allIeltsTests } = await supabase
+          .from('tests')
+          .select('*')
+          .eq('test_type', 'IELTS')
+          .order('created_at', { ascending: false });
+        
+        // Filter client-side exactly like admin does
+        finalTests = (allIeltsTests || []).filter((test: any) => 
+          test.module === 'Speaking' || test.skill_category === 'Speaking'
+        );
+      }
+
+      console.log(`✅ Found ${finalTests.length} available speaking tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
+      setAvailableTests(finalTests);
     } catch (error) {
       console.error('❌ Error loading tests:', error);
       toast({
@@ -620,8 +673,8 @@ const IELTSSpeakingTest = () => {
     );
   }
 
-  // Show test selection if no testId provided
-  if (!testId && availableTests.length > 0) {
+  // Show test selection if no testId provided (regardless of whether tests are found)
+  if (!testId) {
     return (
       <StudentLayout>
         <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
@@ -632,23 +685,23 @@ const IELTSSpeakingTest = () => {
                 <p className="text-lg text-muted-foreground">Choose a test to begin your speaking practice</p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {availableTests.map((test) => (
-                  <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/speaking/${test.id}`)}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{test.test_name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
-                      <Button className="w-full" variant="default">
-                        Start Test
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {availableTests.length === 0 && (
+              {availableTests.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {availableTests.map((test) => (
+                    <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{test.test_name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
+                        <Button className="w-full" variant="default">
+                          Start Test
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-lg text-muted-foreground mb-4">No speaking tests available yet</p>
                   <Button onClick={() => navigate('/ielts-portal')} variant="outline">
@@ -663,6 +716,7 @@ const IELTSSpeakingTest = () => {
     );
   }
 
+  // If testId is provided but testData is null, show error
   if (!testData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

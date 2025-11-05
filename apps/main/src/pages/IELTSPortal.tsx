@@ -124,14 +124,22 @@ const IELTSPortal = () => {
       const testModules = new Map();
       testsData?.forEach(t => {
         if (!testModules.has(t.id)) testModules.set(t.id, new Set());
+        // Prioritize module field from tests table
         const mod = (t.module || '').toLowerCase();
-        if (['reading','listening','writing'].includes(mod)) {
+        if (mod && ['reading','listening','writing','speaking'].includes(mod)) {
           testModules.get(t.id).add(mod);
         }
+        // Also check skill_category as fallback
+        const skillCat = (t.skill_category || '').toLowerCase();
+        if (skillCat && ['reading','listening','writing','speaking'].includes(skillCat)) {
+          testModules.get(t.id).add(skillCat);
+        }
+        // Fallback: check test name for keywords
         const name = (t.test_name || '').toLowerCase();
         if (name.includes('reading')) testModules.get(t.id).add('reading');
         if (name.includes('listening')) testModules.get(t.id).add('listening');
         if (name.includes('writing')) testModules.get(t.id).add('writing');
+        if (name.includes('speaking')) testModules.get(t.id).add('speaking');
       });
 
       // Augment with question-based detection (only listening/reading to avoid false writing positives)
@@ -360,7 +368,7 @@ const IELTSPortal = () => {
     } else if (skillSlug === 'writing') {
       navigate('/ielts-writing-test');
     } else if (skillSlug === 'speaking') {
-      navigate('/speaking');
+      navigate('/ielts-speaking-test');
     } else if (skillSlug === 'reading') {
       navigate('/reading');
     } else if (skillSlug === 'listening') {
@@ -412,24 +420,6 @@ const IELTSPortal = () => {
             {/* Skill Practice Quick Links */}
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Study each part</h2>
-              {/* Vocabulary Book quick card (separate from Skills' builder) */}
-              <div className="mb-4">
-                <SpotlightCard onClick={() => navigate('/vocabulary')}>
-                  <CardContent className="p-0">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-base md:text-lg font-semibold text-foreground">Vocabulary Book</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          ({vocabProgress.completed}/{vocabProgress.total} Completed)
-                        </div>
-                      </div>
-                      <Button size="sm" onClick={() => navigate('/vocabulary')}>
-                        Start Memorizing
-                      </Button>
-                    </div>
-                  </CardContent>
-                </SpotlightCard>
-              </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
@@ -478,13 +468,6 @@ const IELTSPortal = () => {
                             Last: {skillBands[skill.id]}
                           </div>
                         )}
-
-                        <Button
-                          className="w-full"
-                          size="sm"
-                        >
-                          Start Practice
-                        </Button>
                       </CardContent>
                     </SpotlightCard>
                   );
@@ -496,6 +479,16 @@ const IELTSPortal = () => {
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                {/* Vocabulary Book card */}
+                <SpotlightCard className="cursor-pointer" onClick={() => navigate('/vocabulary')}>
+                  <CardContent className="p-3 md:p-4 text-center min-h-[120px] flex flex-col justify-center">
+                    <h3 className="font-semibold text-xs md:text-sm">Vocabulary Book</h3>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      ({vocabProgress.completed}/{vocabProgress.total} Completed)
+                    </div>
+                  </CardContent>
+                </SpotlightCard>
+                
                 {SKILLS.map((skill) => {
                   const progress = skillProgress[skill.slug];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
@@ -559,7 +552,7 @@ const IELTSPortal = () => {
                       <SpotlightCard
                         key={test.id}
                         className="cursor-pointer flex-shrink-0 w-64 md:w-72 p-0"
-                        onClick={() => handleTestClick(test.id)}
+                        onClick={() => !test.comingSoon && handleTestClick(test.id)}
                       >
                         <CardHeader className="pb-2">
                           <div className="flex items-center gap-3 mb-2">
@@ -582,13 +575,6 @@ const IELTSPortal = () => {
                           <div className="text-xs md:text-sm text-muted-foreground mb-3">
                             <p>{test.test_name}</p>
                           </div>
-                          <Button
-                            className="w-full mt-3"
-                            size="sm"
-                            disabled={test.comingSoon}
-                          >
-                            {test.comingSoon ? 'Coming Soon' : 'Start Test'}
-                          </Button>
                         </CardContent>
                       </SpotlightCard>
                     );

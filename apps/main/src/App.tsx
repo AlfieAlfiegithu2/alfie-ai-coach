@@ -48,6 +48,7 @@ import IELTSSkillHub from "./pages/IELTSSkillHub";
 import IELTSSkillTests from "./pages/IELTSSkillTests";
 import AdminIELTSSkillManagement from "./pages/AdminIELTSSkillManagement";
 import IELTSTestModules from "./pages/IELTSTestModules";
+import QwenTTSTest from "./pages/QwenTTSTest";
 import AdminTestManagement from "./pages/AdminTestManagement";
 import AdminTestDetails from "./pages/AdminTestDetails";
 import AdminSectionManagement from "./pages/AdminSectionManagement";
@@ -108,6 +109,9 @@ import MyWordBook from "./pages/MyWordBook";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import OnboardingAssessment from "./pages/OnboardingAssessment";
 import PlanPage from "./pages/Plan";
+import BlogListing from "./pages/BlogListing";
+import BlogDetail from "./pages/BlogDetail";
+import AdminBlogManagement from "./pages/AdminBlogManagement";
 import { useAdminAuth } from './hooks/useAdminAuth';
 
 const queryClient = new QueryClient();
@@ -169,6 +173,7 @@ const App = () => {
             <Route path="/speaking" element={<Speaking />} />
             <Route path="/speaking/random" element={<Speaking />} />
             <Route path="/speaking/:book/:test" element={<Speaking />} />
+            <Route path="/qwen-tts-test" element={<QwenTTSTest />} />
             {/* PTE specific routes */}
             <Route path="/pte/writing" element={<Writing />} />
             <Route path="/pte/speaking" element={<Speaking />} />
@@ -202,6 +207,7 @@ const App = () => {
             <Route path="/admin/pte" element={<ProtectedAdminRoute><AdminPTE /></ProtectedAdminRoute>} />
             <Route path="/admin/toefl" element={<ProtectedAdminRoute><AdminTOEFL /></ProtectedAdminRoute>} />
             <Route path="/admin/general" element={<ProtectedAdminRoute><AdminGeneral /></ProtectedAdminRoute>} />
+            <Route path="/admin/blog" element={<ProtectedAdminRoute><AdminBlogManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/:testType/tests" element={<ProtectedAdminRoute><AdminTestManagement /></ProtectedAdminRoute>} />
             <Route path="/admin/:testType/test/:testId" element={<ProtectedAdminRoute><AdminTestDetails /></ProtectedAdminRoute>} />
             <Route path="/admin/:testType/test/:testId/:sectionId" element={<ProtectedAdminRoute><AdminSectionManagement /></ProtectedAdminRoute>} />
@@ -244,9 +250,12 @@ const App = () => {
             <Route path="/admin/skills/pronunciation-repeat-after-me/:id" element={<ProtectedAdminRoute><AdminPronunciationTestDetail /></ProtectedAdminRoute>} />
             <Route path="/admin/skills/:slug" element={<ProtectedAdminRoute><AdminSkillManager /></ProtectedAdminRoute>} />
             <Route path="/ielts-writing-test/:testId" element={<IELTSWritingTest />} />
+            <Route path="/ielts-writing-test" element={<IELTSWritingTest />} />
             <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
             <Route path="/ielts-writing-results-pro" element={<IELTSWritingProResults />} />
+            <Route path="/ielts-speaking-test/:testId" element={<IELTSSpeakingTest />} />
             <Route path="/ielts-speaking-test/:testName" element={<IELTSSpeakingTest />} />
+            <Route path="/ielts-speaking-test" element={<IELTSSpeakingTest />} />
             <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
             <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
             {/* PTE Admin Routes */}
@@ -310,6 +319,10 @@ const App = () => {
             <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />
             <Route path="/skills/listening-for-details/test/:testId" element={<ListeningQuiz />} />
             <Route path="/pricing" element={<Pricing />} />
+            {/* Blog Routes - Language-aware */}
+            <Route path="/blog" element={<Navigate to="/en/blog" replace />} />
+            <Route path="/:lang/blog" element={<BlogListing />} />
+            <Route path="/:lang/blog/:slug" element={<BlogDetail />} />
             <Route path="*" element={<NotFound />} />
                 </Routes>
                 <MinimalisticChatbot />

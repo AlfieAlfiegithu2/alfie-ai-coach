@@ -54,6 +54,7 @@ const ListeningTest = () => {
   const [completedParts, setCompletedParts] = useState<number[]>([]);
   const [allPartsData, setAllPartsData] = useState<{[key: number]: {section: ListeningSection, questions: ListeningQuestion[]}}>({});
   const [availableTests, setAvailableTests] = useState<any[]>([]);
+  const [testData, setTestData] = useState<any>(null);
 
   useEffect(() => {
     if (!testId) {
@@ -89,28 +90,151 @@ const ListeningTest = () => {
 
   const fetchListeningTest = async (testId: string) => {
     try {
-      // Start fresh - no saved answers loaded
-      console.log('🔄 Fresh Start: Starting test with no saved answers for clean experience');
+      setLoading(true);
+      console.log(`🔍 Loading listening test for test ID: ${testId}`);
 
-      // For now, show a message that listening tests need to be updated
-      setLoading(false);
+      // Load test details - check both module and skill_category
+      const { data: testData, error: testError } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('id', testId)
+        .eq('test_type', 'IELTS')
+        .or('module.eq.Listening,skill_category.eq.Listening')
+        .maybeSingle();
+
+      if (testError) throw testError;
+
+      if (!testData) {
+        toast({
+          title: "Test Not Found",
+          description: "This listening test doesn't exist. Please check the test ID.",
+          variant: "destructive"
+        });
+        navigate(-1);
+        return;
+      }
+
+      // Load questions for this test, grouped by part
+      const { data: questions, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('test_id', testId)
+        .order('part_number', { ascending: true })
+        .order('question_number_in_part', { ascending: true });
+
+      if (questionsError) throw questionsError;
+
+      if (!questions || questions.length === 0) {
+        toast({
+          title: "No Questions Available",
+          description: "This test doesn't have questions yet. Please contact your instructor.",
+          variant: "destructive"
+        });
+        navigate(-1);
+        return;
+      }
+
+      // Group questions by part number
+      const partsByNumber: {[key: number]: any[]} = {};
+      questions.forEach(q => {
+        const partNum = q.part_number || 1;
+        if (!partsByNumber[partNum]) {
+          partsByNumber[partNum] = [];
+        }
+        partsByNumber[partNum].push(q);
+      });
+
+      // Load first part (Part 1)
+      const firstPart = 1;
+      const firstPartQuestions = partsByNumber[firstPart] || [];
       
-      // Create a placeholder section with sample content
-      const placeholderSection = {
-        id: 'placeholder',
-        title: 'Listening Test Coming Soon',
-        section_number: 1,
-        instructions: 'Listening tests are being updated to the new system. Please check back soon!',
-        audio_url: null,
-        transcript: '',
-        cambridge_book: 'Coming Soon',
-        part_number: 1,
-        test_number: 1
+      if (firstPartQuestions.length === 0) {
+        toast({
+          title: "No Questions Available",
+          description: "This test doesn't have questions for Part 1.",
+          variant: "destructive"
+        });
+        navigate(-1);
+        return;
+      }
+
+      // Get audio URL from first question of the part (typically questions in a part share the same audio)
+      const firstQuestion = firstPartQuestions[0];
+      const audioUrl = firstQuestion.audio_url || null;
+      const instructions = firstQuestion.passage_text || `Part ${firstPart} - Listen to the audio and answer the questions.`;
+
+      // Create section object
+      const section: ListeningSection = {
+        id: `part-${firstPart}`,
+        title: `Part ${firstPart}`,
+        section_number: firstPart,
+        instructions: instructions,
+        audio_url: audioUrl,
+        transcript: firstQuestion.transcription || '',
+        part_number: firstPart,
+        test_number: testData.test_number || 1
       };
+
+      setCurrentSection(section);
       
-      setCurrentSection(placeholderSection);
-      setQuestions([]);
+      // Format questions for display - map question_number_in_part to question_number
+      const formattedQuestions: ListeningQuestion[] = firstPartQuestions.map((q, idx) => ({
+        id: q.id,
+        question_text: q.question_text,
+        question_number: q.question_number_in_part || idx + 1,
+        question_type: q.question_type || 'multiple_choice',
+        options: q.choices ? (typeof q.choices === 'string' ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : Array.isArray(q.choices) ? q.choices.map(o => String(o)) : []) : [],
+        correct_answer: q.correct_answer,
+        explanation: q.explanation || '',
+        section_id: section.id
+      }));
+
+      setQuestions(formattedQuestions);
+
+      // Store all parts data for navigation
+      const allParts: {[key: number]: { section: ListeningSection; questions: ListeningQuestion[] }} = {};
+      
+      // Pre-load all parts
+      Object.keys(partsByNumber).forEach(partNumStr => {
+        const partNum = parseInt(partNumStr);
+        const partQuestions = partsByNumber[partNum];
+        const partFirstQuestion = partQuestions[0];
+        
+        const partSection: ListeningSection = {
+          id: `part-${partNum}`,
+          title: `Part ${partNum}`,
+          section_number: partNum,
+          instructions: partFirstQuestion.passage_text || `Part ${partNum} - Listen to the audio and answer the questions.`,
+          audio_url: partFirstQuestion.audio_url || null,
+          transcript: partFirstQuestion.transcription || '',
+          part_number: partNum,
+          test_number: testData.test_number || 1
+        };
+
+        const partFormattedQuestions: ListeningQuestion[] = partQuestions.map((q, idx) => ({
+          id: q.id,
+          question_text: q.question_text,
+          question_number: q.question_number_in_part || idx + 1,
+          question_type: q.question_type || 'multiple_choice',
+          options: q.choices ? (typeof q.choices === 'string' ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : Array.isArray(q.choices) ? q.choices.map(o => String(o)) : []) : [],
+          correct_answer: q.correct_answer,
+          explanation: q.explanation || '',
+          section_id: partSection.id
+        }));
+
+        allParts[partNum] = {
+          section: partSection,
+          questions: partFormattedQuestions
+        };
+      });
+
+      setAllPartsData(allParts);
+      setCurrentPart(firstPart);
+      setTestData(testData);
+
+      console.log(`✅ Listening test loaded: ${testData.test_name}, ${Object.keys(partsByNumber).length} parts`);
     } catch (error: any) {
+      console.error('Error loading listening test:', error);
       toast({
         title: "Error",
         description: "Failed to load listening test: " + error.message,
@@ -122,33 +246,51 @@ const ListeningTest = () => {
   };
 
   const fetchAvailableTests = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Loading available listening tests...');
+      
+      // Match admin query exactly: filter for tests where module='Listening' OR skill_category='Listening'
+      const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('module', 'Listening')
-        .order('test_number', { ascending: true });
+        .or('module.eq.Listening,skill_category.eq.Listening')
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch available listening tests: " + error.message,
-          variant: "destructive",
-        });
-        return;
+      if (testsError) {
+        console.error('❌ Error loading tests:', testsError);
+        throw testsError;
       }
-      setAvailableTests(data || []);
-      // If no testId, show the test selection instead of auto-navigating
-      if (!testId && data && data.length > 0) {
-        setLoading(false);
+
+      // Fallback: if no tests found with exact match, try case-insensitive filter
+      let finalTests = tests || [];
+      if (finalTests.length === 0) {
+        console.log('🔄 No exact matches, trying case-insensitive search...');
+        const { data: allIeltsTests } = await supabase
+          .from('tests')
+          .select('*')
+          .eq('test_type', 'IELTS')
+          .order('created_at', { ascending: false });
+        
+        // Filter client-side exactly like admin does
+        finalTests = (allIeltsTests || []).filter((test: any) => 
+          test.module === 'Listening' || test.skill_category === 'Listening'
+        );
       }
+
+      console.log(`✅ Found ${finalTests.length} available listening tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
+      setAvailableTests(finalTests);
+      setLoading(false);
     } catch (error: any) {
+      console.error('Error fetching available tests:', error);
       toast({
         title: "Error",
         description: "Failed to fetch available listening tests: " + error.message,
         variant: "destructive",
       });
+      setAvailableTests([]);
+      setLoading(false);
     }
   };
 
@@ -309,8 +451,23 @@ const ListeningTest = () => {
   };
 
   const fetchPartData = async (partNumber: number) => {
-    // Implementation for fetching specific part data
-    console.log(`🔍 Sequential Flow: Fetching data for Part ${partNumber}`);
+    console.log(`🔍 Sequential Flow: Loading data for Part ${partNumber}`);
+    
+    // Check if we already have this part loaded
+    if (allPartsData[partNumber]) {
+      setCurrentSection(allPartsData[partNumber].section);
+      setQuestions(allPartsData[partNumber].questions);
+      setCurrentPart(partNumber);
+      console.log(`✅ Part ${partNumber} loaded from cache`);
+      return;
+    }
+
+    // If part not found, show error
+    toast({
+      title: "Part Not Found",
+      description: `Part ${partNumber} is not available for this test.`,
+      variant: "destructive"
+    });
   };
 
   const getListeningBandScore = (score: number) => {
@@ -342,40 +499,44 @@ const ListeningTest = () => {
     );
   }
 
-  // Show test selection if no testId provided
-  if (!testId && availableTests.length > 0) {
+  // Show test selection if no testId provided (regardless of whether tests are found)
+  if (!testId) {
     return (
       <StudentLayout title="Available Listening Tests">
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-          <h1 className="text-2xl font-bold mb-4">Available Listening Tests</h1>
-          <div className="grid gap-4 w-full max-w-md">
-            {availableTests.map(test => (
-              <Button
-                key={test.id}
-                onClick={() => navigate(`/listening-test/${test.id}`)}
-                className="w-full"
-              >
-                Listening Test {test.test_number}
-              </Button>
-            ))}
-            <Button onClick={() => navigate('/ielts-portal')} className="w-full mt-4">
-              Back to Portal
-            </Button>
-          </div>
-        </div>
-      </StudentLayout>
-    );
-  }
+        <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Listening Tests</h1>
+                <p className="text-lg text-muted-foreground">Choose a test to begin your listening practice</p>
+              </div>
 
-  if (!testId && availableTests.length === 0) {
-    return (
-      <StudentLayout title="No Listening Tests Available">
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-          <h1 className="text-2xl font-bold mb-4">No Listening Tests Available</h1>
-          <p className="text-muted-foreground mb-6">Please check back later for available tests.</p>
-          <Button onClick={() => navigate('/ielts-portal')} className="w-full max-w-md">
-            Back to Portal
-          </Button>
+              {availableTests.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {availableTests.map((test) => (
+                    <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/listening/${test.id}`)}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{test.test_name || `Listening Test ${test.test_number || ''}`}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
+                        <Button className="w-full" variant="default">
+                          Start Test
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-lg text-muted-foreground mb-4">No listening tests available yet</p>
+                  <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                    Back to Portal
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </StudentLayout>
     );
@@ -521,7 +682,7 @@ const ListeningTest = () => {
                       )}
                     </div>
                     
-                    {question.question_type === 'multiple_choice' && question.options ? (
+                    {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 ? (
                       <div className="space-y-2">
                         {question.options.map((option: string, index: number) => (
                           <label key={index} className="flex items-center gap-3 cursor-pointer">
@@ -657,8 +818,7 @@ const ListeningTest = () => {
                     {currentPart < 4 ? (
                       <Button 
                         onClick={handleGoToNextPart}
-                        className="w-full rounded-xl"
-                        style={{ background: 'var(--gradient-button)', border: 'none' }}
+                        className="w-full rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
                         disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
                       >
                         Go to Part {currentPart + 1}
@@ -666,8 +826,7 @@ const ListeningTest = () => {
                     ) : (
                       <Button 
                         onClick={() => setShowConfirmDialog(true)}
-                        className="w-full rounded-xl"
-                        style={{ background: 'var(--gradient-button)', border: 'none' }}
+                        className="w-full rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
                         disabled={Object.keys(answers).filter(key => questions.some(q => q.id === key)).length === 0}
                       >
                         Submit Test
@@ -687,8 +846,7 @@ const ListeningTest = () => {
                     
                     <Button 
                       onClick={() => navigate('/tests')}
-                      className="w-full rounded-xl"
-                      style={{ background: 'var(--gradient-button)', border: 'none' }}
+                      className="w-full rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
                     >
                       Take Another Test
                     </Button>
@@ -721,8 +879,7 @@ const ListeningTest = () => {
             </Button>
             <Button 
               onClick={handleSubmit}
-              className="rounded-xl"
-              style={{ background: 'var(--gradient-button)', border: 'none' }}
+              className="rounded-xl bg-white text-black border-2 border-black hover:bg-black hover:text-white"
             >
               Submit Test
             </Button>

@@ -58,6 +58,13 @@ const AdminDashboard = () => {
       icon: BarChart3,
       route: "/admin/analytics",
       count: "View Stats"
+    },
+    {
+      title: "Blog Management",
+      description: "Create and manage blog posts in 23 languages",
+      icon: FileText,
+      route: "/admin/blog",
+      count: "Blog Posts"
     }
   ];
 

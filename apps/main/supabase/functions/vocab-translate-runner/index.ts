@@ -188,7 +188,7 @@ serve(async (req) => {
                 card_id: card.id,
                 lang,
                 translations: translations.filter(Boolean),
-                provider: 'deepseek',
+                provider: 'gemini',
                 quality: 1,
                 is_system: true
               }, { onConflict: 'card_id,lang' });

@@ -50,11 +50,15 @@ const IELTSSkillTests = () => {
 
       // Fetch from tests table - using new database structure
       console.log(`Loading IELTS ${skillName} tests...`);
+      
+      // Match admin query exactly: check both module and skill_category
+      const skillCapitalized = skill.charAt(0).toUpperCase() + skill.slice(1);
+      
       const { data, error } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('module', skillName)
+        .or(`module.eq.${skillCapitalized},skill_category.eq.${skillCapitalized}`)
         .order('test_name', { ascending: true });
 
       if (error) {
@@ -132,9 +136,9 @@ const IELTSSkillTests = () => {
   const handleTestStart = (test: any) => {
     // Navigate to the appropriate test interface based on skill
     if (skill === 'reading') {
-      navigate(`/reading-test/${test.id}`);
+      navigate(`/reading/${test.id}`);
     } else if (skill === 'listening') {
-      navigate(`/listening-test/${test.id}`);
+      navigate(`/listening/${test.id}`);
     } else if (skill === 'writing') {
       // For writing, navigate to IELTS Writing Test interface
       navigate(`/ielts-writing-test/${test.id}`);

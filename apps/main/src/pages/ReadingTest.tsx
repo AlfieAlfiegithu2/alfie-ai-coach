@@ -52,6 +52,7 @@ const ReadingTest = () => {
   const [showResults, setShowResults] = useState(false);
   const [allQuestions, setAllQuestions] = useState<ReadingQuestion[]>([]);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
+  const [testData, setTestData] = useState<any>(null);
 
   useEffect(() => {
     if (!testId) {
@@ -93,14 +94,14 @@ const ReadingTest = () => {
         return;
       }
 
-      // Use new universal schema
+      // Use new universal schema - check both module and skill_category
       const { data: test, error: testError } = await supabase
         .from('tests')
         .select('*')
         .eq('id', testId)
         .eq('test_type', 'IELTS')
-        .eq('module', 'Reading')
-        .single();
+        .or('module.eq.Reading,skill_category.eq.Reading')
+        .maybeSingle();
 
       if (testError) throw testError;
 
@@ -114,10 +115,13 @@ const ReadingTest = () => {
         return;
       }
 
+      setTestData(test);
+
       // Fetch questions for this test
       const { data: questions, error: questionsError } = await supabase
         .from('questions')
         .select('*')
+        .eq('test_id', testId)
         .order('part_number', { ascending: true })
         .order('question_number_in_part', { ascending: true });
 
@@ -166,14 +170,14 @@ const ReadingTest = () => {
             title: partTitle,
             content: firstQuestion?.passage_text || 'Passage content not available',
             part_number: partNumber,
-            test_number: parseInt(testId)
+            test_number: test.test_number || 1
           },
-          questions: partQuestions.map(q => ({
+          questions: partQuestions.map((q, idx) => ({
             id: q.id,
-            question_number: q.question_number_in_part,
+            question_number: q.question_number_in_part || idx + 1,
             question_text: q.question_text,
             question_type: q.question_type,
-            options: q.choices ? (Array.isArray(q.choices) ? q.choices.map(o => String(o)) : q.choices.split(';')) : [],
+            options: q.choices ? (typeof q.choices === 'string' ? (q.choices.includes(';') ? q.choices.split(';') : [q.choices]) : Array.isArray(q.choices) ? q.choices.map(o => String(o)) : []) : [],
             correct_answer: q.correct_answer,
             explanation: q.explanation || '',
             passage_id: `passage-${partNumber}`,
@@ -203,16 +207,41 @@ const ReadingTest = () => {
   };
 
   const fetchAvailableTests = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Loading available reading tests...');
+      
+      // Match admin query exactly: filter for tests where module='Reading' OR skill_category='Reading'
+      const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('*')
         .eq('test_type', 'IELTS')
-        .eq('module', 'Reading')
-        .order('test_number', { ascending: true });
+        .or('module.eq.Reading,skill_category.eq.Reading')
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setAvailableTests(data || []);
+      if (testsError) {
+        console.error('❌ Error loading tests:', testsError);
+        throw testsError;
+      }
+
+      // Fallback: if no tests found with exact match, try case-insensitive filter
+      let finalTests = tests || [];
+      if (finalTests.length === 0) {
+        console.log('🔄 No exact matches, trying case-insensitive search...');
+        const { data: allIeltsTests } = await supabase
+          .from('tests')
+          .select('*')
+          .eq('test_type', 'IELTS')
+          .order('created_at', { ascending: false });
+        
+        // Filter client-side exactly like admin does
+        finalTests = (allIeltsTests || []).filter((test: any) => 
+          test.module === 'Reading' || test.skill_category === 'Reading'
+        );
+      }
+
+      console.log(`✅ Found ${finalTests.length} available reading tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
+      setAvailableTests(finalTests);
     } catch (error) {
       console.error('Error fetching available tests:', error);
       toast({
@@ -220,6 +249,9 @@ const ReadingTest = () => {
         description: "Failed to load available reading tests.",
         variant: "destructive"
       });
+      setAvailableTests([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -337,7 +369,7 @@ const ReadingTest = () => {
           questions={allQuestions}
           onRetake={() => window.location.reload()}
           onContinue={() => navigate('/ielts-portal')}
-          testTitle={`Reading Test ${testId}`}
+          testTitle={`Reading Test ${testData?.test_name || testId}`}
         />
       </StudentLayout>
     );
@@ -346,25 +378,39 @@ const ReadingTest = () => {
   if (!testId) {
     return (
       <StudentLayout title="Available Reading Tests">
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-          <h1 className="text-2xl font-bold mb-4">Available Reading Tests</h1>
-          <div className="grid gap-4 w-full max-w-md">
-            {availableTests.length === 0 ? (
-              <p>No available reading tests found. Please check back later.</p>
-            ) : (
-              availableTests.map(test => (
-                <Button
-                  key={test.id}
-                  onClick={() => navigate(`/reading-test/${test.id}`)}
-                  className="w-full"
-                >
-                  Reading Test {test.test_number}
-                </Button>
-              ))
-            )}
-            <Button onClick={() => navigate('/ielts-portal')} className="w-full mt-4">
-              Back to Portal
-            </Button>
+        <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Reading Tests</h1>
+                <p className="text-lg text-muted-foreground">Choose a test to begin your reading practice</p>
+              </div>
+
+              {availableTests.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {availableTests.map((test) => (
+                    <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/reading/${test.id}`)}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{test.test_name || `Reading Test ${test.test_number || ''}`}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
+                        <Button className="w-full" variant="default">
+                          Start Test
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-lg text-muted-foreground mb-4">No reading tests available yet</p>
+                  <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                    Back to Portal
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </StudentLayout>
@@ -581,7 +627,7 @@ const ReadingTest = () => {
                   </Button>
                   
                   {currentPart === Object.keys(testParts).length ? (
-                    <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90">
+                    <Button onClick={handleSubmit} className="bg-white text-black border-2 border-black hover:bg-black hover:text-white">
                       Submit Test
                     </Button>
                   ) : (

@@ -192,7 +192,7 @@ serve(async (req) => {
           card_id: cardId,
           lang: targetLang,
           translations: arr,
-          provider: 'deepseek',
+          provider: 'gemini',
           quality: 1
         } as any, { onConflict: 'card_id,lang' } as any);
 

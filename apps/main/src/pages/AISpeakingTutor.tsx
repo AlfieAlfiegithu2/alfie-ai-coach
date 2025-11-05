@@ -34,7 +34,8 @@ const AISpeakingTutor: React.FC = () => {
         const { data: ttsData } = await supabase.functions.invoke('openrouter-qwen-tts', {
           body: {
             text: welcomeText,
-            voice: 'alloy'
+            voice: 'Cherry',
+            language_type: 'English'
           }
         });
 
@@ -98,7 +99,8 @@ const AISpeakingTutor: React.FC = () => {
       const { data: ttsData, error: ttsError } = await supabase.functions.invoke('openrouter-qwen-tts', {
         body: {
           text: aiText,
-          voice: 'alloy' // Default voice, can be made configurable later
+          voice: 'Cherry', // Default voice, can be made configurable later
+          language_type: 'English'
         }
       });
 

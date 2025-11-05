@@ -156,18 +156,17 @@ const TestSelection = () => {
                 <Card 
                   className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${
                     testMode === 'practice' 
-                      ? 'border-gentle-blue shadow-lg scale-105' 
-                      : 'border-light-border hover:border-gentle-blue/50 hover:scale-102'
+                      ? 'border-black shadow-lg scale-105 bg-white' 
+                      : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
                   }`}
                   onClick={() => setTestMode('practice')}
-                  style={{ background: testMode === 'practice' ? 'var(--gradient-button)' : 'var(--gradient-card)' }}
                 >
                   <CardContent className="p-8 text-center">
-                    <Target className={`w-12 h-12 mx-auto mb-4 ${testMode === 'practice' ? 'text-white' : 'text-gentle-blue'}`} />
-                    <h3 className={`text-xl font-semibold mb-3 ${testMode === 'practice' ? 'text-white' : 'text-foreground'}`}>
+                    <Target className={`w-12 h-12 mx-auto mb-4 ${testMode === 'practice' ? 'text-black' : 'text-gentle-blue'}`} />
+                    <h3 className={`text-xl font-semibold mb-3 ${testMode === 'practice' ? 'text-black' : 'text-foreground'}`}>
                       Practice Mode
                     </h3>
-                    <p className={`text-sm leading-relaxed ${testMode === 'practice' ? 'text-white/90' : 'text-warm-gray'}`}>
+                    <p className={`text-sm leading-relaxed ${testMode === 'practice' ? 'text-black/90' : 'text-warm-gray'}`}>
                       Take your time, get instant feedback, and learn at your own pace. Perfect for building confidence.
                     </p>
                   </CardContent>
@@ -176,18 +175,17 @@ const TestSelection = () => {
                 <Card 
                   className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${
                     testMode === 'simulation' 
-                      ? 'border-gentle-blue shadow-lg scale-105' 
-                      : 'border-light-border hover:border-gentle-blue/50 hover:scale-102'
+                      ? 'border-black shadow-lg scale-105 bg-white' 
+                      : 'border-light-border hover:border-black/50 hover:scale-102 bg-white'
                   }`}
                   onClick={() => setTestMode('simulation')}
-                  style={{ background: testMode === 'simulation' ? 'var(--gradient-button)' : 'var(--gradient-card)' }}
                 >
                   <CardContent className="p-8 text-center">
-                    <Zap className={`w-12 h-12 mx-auto mb-4 ${testMode === 'simulation' ? 'text-white' : 'text-gentle-blue'}`} />
-                    <h3 className={`text-xl font-semibold mb-3 ${testMode === 'simulation' ? 'text-white' : 'text-foreground'}`}>
+                    <Zap className={`w-12 h-12 mx-auto mb-4 ${testMode === 'simulation' ? 'text-black' : 'text-gentle-blue'}`} />
+                    <h3 className={`text-xl font-semibold mb-3 ${testMode === 'simulation' ? 'text-black' : 'text-foreground'}`}>
                       Simulation Mode
                     </h3>
-                    <p className={`text-sm leading-relaxed ${testMode === 'simulation' ? 'text-white/90' : 'text-warm-gray'}`}>
+                    <p className={`text-sm leading-relaxed ${testMode === 'simulation' ? 'text-black/90' : 'text-warm-gray'}`}>
                       Real test conditions with strict timing and authentic experience. Test your readiness.
                     </p>
                   </CardContent>
@@ -215,35 +213,34 @@ const TestSelection = () => {
                   return (
                     <Card
                       key={section.id}
-                      className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 ${
+                      className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 bg-white ${
                         isSelected 
-                          ? 'border-gentle-blue shadow-lg scale-105' 
-                          : 'border-light-border hover:border-gentle-blue/50 hover:scale-102'
+                          ? 'border-black shadow-lg scale-105' 
+                          : 'border-light-border hover:border-black/50 hover:scale-102'
                       }`}
                       onClick={() => toggleSection(section.id)}
-                      style={{ background: isSelected ? 'var(--gradient-button)' : 'var(--gradient-card)' }}
                     >
                       <CardContent className="p-6">
                         <div className="flex items-center space-x-4">
                           <div 
                             className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                              isSelected ? 'bg-white/20' : 'bg-gentle-blue/10'
+                              isSelected ? 'bg-black/10' : 'bg-gentle-blue/10'
                             }`}
                           >
-                            <Icon className={`w-7 h-7 ${isSelected ? 'text-white' : 'text-gentle-blue'}`} />
+                            <Icon className={`w-7 h-7 ${isSelected ? 'text-black' : 'text-gentle-blue'}`} />
                           </div>
                           <div className="flex-1">
-                            <h4 className={`text-lg font-semibold mb-1 ${isSelected ? 'text-white' : 'text-foreground'}`}>
+                            <h4 className={`text-lg font-semibold mb-1 ${isSelected ? 'text-black' : 'text-foreground'}`}>
                               {section.name}
                             </h4>
-                            <p className={`text-sm flex items-center ${isSelected ? 'text-white/90' : 'text-warm-gray'}`}>
+                            <p className={`text-sm flex items-center ${isSelected ? 'text-black/90' : 'text-warm-gray'}`}>
                               <Clock className="w-4 h-4 mr-1" />
                               {section.description}
                             </p>
                           </div>
                           {isSelected && (
-                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                              <div className="w-3 h-3 rounded-full bg-gentle-blue"></div>
+                            <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
+                              <div className="w-3 h-3 rounded-full bg-white"></div>
                             </div>
                           )}
                         </div>
@@ -260,10 +257,11 @@ const TestSelection = () => {
             <Button 
               onClick={handleStartTest}
               disabled={selectedSections.size === 0}
-              className="w-full max-w-md h-16 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105"
+              className="w-full max-w-md h-16 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 bg-white text-black border-2 border-black hover:bg-black hover:text-white"
               style={{ 
-                background: selectedSections.size > 0 ? 'var(--gradient-button)' : 'var(--warm-gray)', 
-                border: 'none' 
+                border: selectedSections.size > 0 ? '2px solid black' : '2px solid #d1d5db',
+                background: selectedSections.size > 0 ? 'white' : '#f3f4f6',
+                color: selectedSections.size > 0 ? 'black' : '#9ca3af'
               }}
             >
               <Star className="w-5 h-5 mr-2" />
@@ -389,8 +387,7 @@ const TestSelection = () => {
                   >
                     <CardContent className="p-8 text-center">
                       <div 
-                        className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-6"
-                        style={{ background: 'var(--gradient-button)' }}
+                        className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-6 bg-black border-2 border-black"
                       >
                         <Icon className="w-8 h-8 text-white" />
                       </div>

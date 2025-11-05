@@ -10,7 +10,6 @@ export const SKILLS: Skill[] = [
   { slug: "sentence-structure-scramble", label: "Sentence Structure Scramble" },
   { slug: "listening-for-details", label: "Listening for Details" },
   { slug: "synonym-match", label: "Synonym Match" },
-  { slug: "sentence-mastery", label: "AI Speaking Tutor" },
 ];
 
 export const getSkillBySlug = (slug: string): Skill | undefined =>

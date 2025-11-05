@@ -27,136 +27,340 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
-      throw new Error('Invalid authentication');
+      console.error('❌ Authentication failed:', authError);
+      // Return 200 with error details so Supabase client can read it
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid authentication',
+          success: false,
+          details: authError?.message || 'User not authenticated',
+          statusCode: 401
+        }),
+        {
+          status: 200, // Use 200 so response body is accessible
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
     }
+    
+    console.log(`✅ Authenticated user: ${user.email || user.id}`);
 
-    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
-    if (!OPENROUTER_API_KEY) {
-      throw new Error('OPENROUTER_API_KEY is not configured');
+    // Use environment variable if available, otherwise fallback to hardcoded key
+    const DASHSCOPE_API_KEY = Deno.env.get('DASHSCOPE_API_KEY') || 'sk-2d117389410c416f89b0188460721de6';
+    
+    if (!DASHSCOPE_API_KEY || DASHSCOPE_API_KEY.length < 20) {
+      console.error('❌ Invalid DASHSCOPE_API_KEY (too short or empty)');
+      return new Response(
+        JSON.stringify({
+          error: 'DashScope API key not configured properly',
+          success: false,
+          statusCode: 500
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
     }
+    
+    const apiKeySource = Deno.env.get('DASHSCOPE_API_KEY') ? 'environment variable' : 'hardcoded fallback';
+    console.log(`🔑 Using DASHSCOPE_API_KEY from ${apiKeySource}: ${DASHSCOPE_API_KEY.substring(0, 10)}...${DASHSCOPE_API_KEY.substring(DASHSCOPE_API_KEY.length - 5)}`);
+    console.log(`🔑 API key length: ${DASHSCOPE_API_KEY.length}, starts with: ${DASHSCOPE_API_KEY.substring(0, 3)}`);
 
-    const body = await req.json();
-    const { text, voice = 'alloy' } = body;
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid JSON in request body',
+          success: false,
+          details: parseError instanceof Error ? parseError.message : String(parseError)
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+    
+    const { text, voice = 'Cherry', language_type = 'English' } = body;
 
     if (!text || typeof text !== 'string') {
-      throw new Error('Text is required and must be a string');
-    }
-
-    if (text.length > 2000) {
-      throw new Error('Text too long (max 2000 characters)');
-    }
-
-    console.log(`🎵 Generating Qwen 3 TTS for text: ${text.substring(0, 100)}...`);
-
-    // Try OpenRouter TTS first (if available)
-    try {
-      const response = await fetch('https://openrouter.ai/api/v1/audio/speech', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': Deno.env.get('SUPABASE_URL') ?? '',
-          'X-Title': 'English AIdol',
-        },
-        body: JSON.stringify({
-          model: 'openai/tts-1', // Use OpenAI TTS through OpenRouter
-          input: text,
-          voice: voice,
-          response_format: 'mp3',
-          speed: 1.0,
+      // Return 200 with error details so Supabase client can read it
+      return new Response(
+        JSON.stringify({
+          error: 'Text is required and must be a string',
+          success: false,
+          statusCode: 400
         }),
-      });
+        {
+          status: 200, // Use 200 so response body is accessible
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
 
-      if (response.ok) {
-        // Get the audio data
-        const arrayBuffer = await response.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
+    // Qwen3-TTS max input: 600 characters
+    if (text.length > 600) {
+      // Return 200 with error details so Supabase client can read it
+      return new Response(
+        JSON.stringify({
+          error: 'Text too long (max 600 characters for Qwen3-TTS)',
+          success: false,
+          details: { textLength: text.length, maxLength: 600 },
+          statusCode: 400
+        }),
+        {
+          status: 200, // Use 200 so response body is accessible
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
 
-        // Convert to base64 in chunks to avoid stack overflow
-        let base64Audio = '';
-        const chunkSize = 1024;
-        for (let i = 0; i < uint8Array.length; i += chunkSize) {
-          const chunk = uint8Array.slice(i, i + chunkSize);
-          base64Audio += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+    console.log(`🎵 Generating Qwen 3 TTS Flash for text: ${text.substring(0, 100)}... with voice: ${voice}`);
+
+    // Use DashScope (Alibaba Cloud) API for Qwen 3 TTS Flash
+    // Documentation: https://www.alibabacloud.com/help/en/model-studio/qwen-tts
+    // Endpoint: /api/v1/services/aigc/multimodal-generation/generation
+    // Use Beijing endpoint only (China region - console.aliyun.com)
+    const endpoints = [
+      'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', // Beijing (China - primary)
+    ];
+
+    let lastError: any = null;
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'qwen3-tts-flash',
+            input: {
+              text: text,
+              voice: voice, // Voice name (Cherry, Ethan, Jennifer, etc.)
+              language_type: language_type, // English, Chinese, Auto, etc.
+            },
+          }),
+        });
+
+        console.log(`📡 API Response status: ${response.status} for endpoint: ${endpoint}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          console.error(`❌ Endpoint ${endpoint} failed:`, response.status, JSON.stringify(errorData));
+          
+          // If it's an authentication error, don't try other endpoints
+          if (response.status === 401 || response.status === 403 || errorData.code === 'InvalidApiKey') {
+            throw new Error(`Authentication failed: ${JSON.stringify(errorData)}`);
+          }
+          
+          // Store detailed error information
+          lastError = { 
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData,
+            errorMessage: errorData.message || errorData.error?.message || errorText,
+            endpoint: endpoint,
+            timestamp: new Date().toISOString()
+          };
+          console.error(`❌ Stored error for endpoint ${endpoint}:`, JSON.stringify(lastError));
+          continue; // Try next endpoint
         }
 
-        console.log('✅ OpenRouter TTS generation successful');
-        return new Response(
-          JSON.stringify({
-            audioContent: base64Audio,
-            success: true,
-            model: 'openai/tts-1',
-            provider: 'openrouter'
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          },
-        );
-      }
-    } catch (ttsError) {
-      console.log('OpenRouter TTS not available, falling back to Qwen chat approach:', ttsError.message);
-    }
+        const data = await response.json();
+        console.log('Response data structure:', JSON.stringify(data).substring(0, 500));
+        
+        // Response format: { output: { audio: { url: "..." } } } or { output: { audio: { data: "base64..." } } }
+        // Check multiple possible locations for audio URL
+        const audioUrl = data.output?.audio?.url || data.output?.audio_url || data.output?.url;
+        const audioBase64 = data.output?.audio?.data || data.output?.audio_base64;
 
-    // Fallback: Use Qwen through OpenRouter for enhanced pronunciation guidance
-    const chatResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': Deno.env.get('SUPABASE_URL') ?? '',
-        'X-Title': 'English AIdol',
-      },
-      body: JSON.stringify({
-        model: 'qwen/qwen-2.5-72b-instruct', // Qwen 3 model
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert English pronunciation coach using Qwen 3 TTS Flash technology. Provide detailed pronunciation guidance with IPA phonemes and natural speech patterns. Focus on IELTS-level English pronunciation.`
-          },
-          {
-            role: 'user',
-            content: `Analyze the pronunciation for this text and provide IPA phonemes and speaking guidance: "${text}". Use voice style: ${voice}.`
+        if (audioUrl) {
+          // Fetch the audio file from URL (valid for 24 hours)
+          console.log(`Fetching audio from URL: ${audioUrl}`);
+          const audioResponse = await fetch(audioUrl);
+          if (!audioResponse.ok) {
+            throw new Error(`Failed to fetch audio from URL: ${audioResponse.status}`);
           }
-        ],
-        temperature: 0.3,
-        max_tokens: 1000,
-      }),
-    });
+          const arrayBuffer = await audioResponse.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
 
-    if (!chatResponse.ok) {
-      throw new Error(`Qwen API error: ${chatResponse.status}`);
+          // Convert to base64 using proper encoding
+          // For large files, we need to encode in chunks to avoid memory issues
+          // But we must ensure proper base64 padding between chunks
+          let base64Audio = '';
+          
+          // Use chunked encoding for files larger than 50MB to avoid memory issues
+          if (uint8Array.length > 50 * 1024 * 1024) {
+            // For very large files, use chunked encoding with proper base64 padding
+            const chunkSize = 3 * 1024 * 1024; // 3MB chunks (divisible by 3 for proper base64)
+            for (let i = 0; i < uint8Array.length; i += chunkSize) {
+              const chunk = uint8Array.slice(i, Math.min(i + chunkSize, uint8Array.length));
+              let binaryString = '';
+              for (let j = 0; j < chunk.length; j++) {
+                binaryString += String.fromCharCode(chunk[j]);
+              }
+              base64Audio += btoa(binaryString);
+            }
+          } else {
+            // For smaller files, encode entire buffer at once (more efficient)
+            let binaryString = '';
+            for (let i = 0; i < uint8Array.length; i++) {
+              binaryString += String.fromCharCode(uint8Array[i]);
+            }
+            base64Audio = btoa(binaryString);
+          }
+          
+          // Clean any whitespace (shouldn't be any, but just in case)
+          base64Audio = base64Audio.replace(/\s/g, '');
+
+          // Validate base64 format
+          const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+          const isValidBase64 = base64Regex.test(base64Audio);
+          console.log(`✅ Qwen 3 TTS Flash generation successful via ${endpoint} (URL format, ${base64Audio.length} chars, valid base64: ${isValidBase64})`);
+          
+          if (!isValidBase64) {
+            const invalidChars = base64Audio.match(/[^A-Za-z0-9+/=]/g);
+            console.error(`❌ Generated base64 contains invalid characters: ${invalidChars?.slice(0, 10).join(', ') || 'unknown'}`);
+            console.error(`❌ First 100 chars: ${base64Audio.substring(0, 100)}`);
+            throw new Error('Generated base64 contains invalid characters');
+          }
+          
+          return new Response(
+            JSON.stringify({
+              audioContent: base64Audio,
+              success: true,
+              model: 'qwen3-tts-flash',
+              voice: voice,
+              language_type: language_type,
+              provider: 'dashscope',
+              endpoint: endpoint
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            },
+          );
+        } else if (audioBase64) {
+          // Direct base64 response (for streaming output)
+          // Clean and validate base64
+          let cleanedBase64 = String(audioBase64).trim().replace(/\s/g, '');
+          cleanedBase64 = cleanedBase64.replace(/-/g, '+').replace(/_/g, '/');
+          while (cleanedBase64.length % 4) {
+            cleanedBase64 += '=';
+          }
+          
+          const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+          const isValidBase64 = base64Regex.test(cleanedBase64);
+          console.log(`✅ Qwen 3 TTS Flash generation successful via ${endpoint} (base64 format, ${cleanedBase64.length} bytes, valid: ${isValidBase64})`);
+          
+          if (!isValidBase64) {
+            const invalidChars = cleanedBase64.match(/[^A-Za-z0-9+/=]/g);
+            console.error(`❌ Base64 response contains invalid characters: ${invalidChars?.slice(0, 10).join(', ') || 'unknown'}`);
+            throw new Error('Base64 response contains invalid characters');
+          }
+          
+          return new Response(
+            JSON.stringify({
+              audioContent: cleanedBase64,
+              success: true,
+              model: 'qwen3-tts-flash',
+              voice: voice,
+              language_type: language_type,
+              provider: 'dashscope',
+              endpoint: endpoint
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            },
+          );
+        } else {
+          // Log the full response for debugging
+          console.error('Unexpected response format:', JSON.stringify(data));
+          lastError = { message: `Unexpected response format: ${JSON.stringify(data).substring(0, 500)}` };
+          continue;
+        }
+      } catch (err: any) {
+        console.error(`Error with endpoint ${endpoint}:`, err);
+        // Store error details properly
+        lastError = {
+          endpoint: endpoint,
+          error: err.message || String(err),
+          errorType: err.name || err.constructor?.name || typeof err,
+          stack: err.stack?.substring(0, 200),
+          timestamp: new Date().toISOString()
+        };
+        console.error(`❌ Stored exception for endpoint ${endpoint}:`, JSON.stringify(lastError));
+        continue;
+      }
     }
 
-    const chatData = await chatResponse.json();
-    const qwenResponse = chatData.choices[0].message.content;
-
-    console.log('✅ Qwen 3 pronunciation guidance generated');
-
+    // All endpoints failed - return detailed error
+    const errorMessage = lastError 
+      ? `Qwen 3 TTS Flash failed: ${lastError.errorMessage || lastError.error || JSON.stringify(lastError)}`
+      : 'All Qwen 3 TTS Flash endpoints failed';
+    
+    console.error('❌ All endpoints failed:', errorMessage);
+    console.error('❌ Last error details:', JSON.stringify(lastError, null, 2));
+    
+    // Return 200 with error details so Supabase client can read it
     return new Response(
       JSON.stringify({
-        pronunciationGuide: qwenResponse,
-        text: text,
-        voice: voice,
-        success: true,
-        model: 'qwen/qwen-2.5-72b-instruct',
-        provider: 'openrouter-qwen',
-        note: 'Advanced pronunciation guidance - use with frontend TTS'
-      }),
+        error: errorMessage,
+        success: false,
+        details: lastError || {},
+        statusCode: 500
+      }, null, 2),
       {
+        status: 200, // Use 200 so response body is accessible
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Qwen TTS error:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    
+    const statusCode = error.status || (error.message?.includes('Authentication') ? 401 : 500);
+    const errorMessage = error.message || String(error);
+    
+    // Return 200 with error details so Supabase client can read it
     return new Response(
       JSON.stringify({
-        error: error.message,
-        success: false
+        error: errorMessage,
+        success: false,
+        message: errorMessage, // Also include as 'message' for compatibility
+        statusCode: statusCode,
+        details: {
+          name: error.name,
+          message: error.message,
+          type: error.constructor?.name || typeof error,
+          stack: error.stack?.substring(0, 500) // Limit stack trace length
+        }
       }),
       {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200, // Use 200 so response body is accessible
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-Error-Type': error.name || 'UnknownError'
+        },
       },
     );
   }

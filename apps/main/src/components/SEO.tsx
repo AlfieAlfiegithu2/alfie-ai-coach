@@ -7,7 +7,8 @@ import {
   createWebSiteSchema,
   createLocalBusinessSchema,
   createFAQSchema,
-  createBreadcrumbSchema
+  createBreadcrumbSchema,
+  createArticleSchema
 } from '@/lib/structured-data';
 
 interface SEOProps {
@@ -23,13 +24,15 @@ interface SEOProps {
   section?: string;
   tags?: string[];
   structuredData?: object;
-  schemaType?: 'organization' | 'course' | 'service' | 'website' | 'localBusiness' | 'faq' | 'breadcrumb';
+  schemaType?: 'organization' | 'course' | 'service' | 'website' | 'localBusiness' | 'faq' | 'breadcrumb' | 'article';
   courseType?: string;
   courseLevel?: string;
   serviceName?: string;
   serviceDescription?: string;
   faqs?: Array<{ question: string; answer: string }>;
   breadcrumbs?: Array<{ name: string; url: string }>;
+  hreflang?: Array<{ lang: string; url: string }>;
+  lang?: string;
 }
 
 const SEO: React.FC<SEOProps> = ({
@@ -52,6 +55,8 @@ const SEO: React.FC<SEOProps> = ({
   serviceDescription,
   faqs,
   breadcrumbs,
+  hreflang,
+  lang = 'en',
 }) => {
   const siteName = 'English AIdol';
   const defaultTitle = 'Study English with AI tutor';
@@ -99,11 +104,27 @@ const SEO: React.FC<SEOProps> = ({
           finalStructuredData = createBreadcrumbSchema(breadcrumbs);
         }
         break;
+      case 'article':
+        if (title && description) {
+          finalStructuredData = createArticleSchema(
+            title,
+            description,
+            metaUrl,
+            published,
+            modified,
+            author,
+            metaImage
+          );
+        }
+        break;
     }
   }
 
   return (
     <Helmet>
+      {/* Language */}
+      <html lang={lang} />
+      
       {/* Basic meta tags */}
       <title>{metaTitle}</title>
       <meta name="description" content={metaDescription} />
@@ -123,6 +144,10 @@ const SEO: React.FC<SEOProps> = ({
       <meta property="og:url" content={metaUrl} />
       <meta property="og:type" content={type} />
       <meta property="og:site_name" content={siteName} />
+      <meta property="og:locale" content={lang} />
+      {hreflang && hreflang.map((alt) => (
+        <meta key={alt.lang} property="og:locale:alternate" content={alt.lang} />
+      ))}
 
       {/* Twitter Card tags */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -133,6 +158,14 @@ const SEO: React.FC<SEOProps> = ({
 
       {/* Canonical URL */}
       <link rel="canonical" href={metaUrl} />
+
+      {/* Hreflang tags for multilingual SEO */}
+      {hreflang && hreflang.map((alt) => (
+        <link key={alt.lang} rel="alternate" hreflang={alt.lang} href={alt.url} />
+      ))}
+      {hreflang && (
+        <link rel="alternate" hreflang="x-default" href={metaUrl} />
+      )}
 
       {/* Structured Data */}
       {finalStructuredData && (

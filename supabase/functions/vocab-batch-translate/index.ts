@@ -204,7 +204,7 @@ serve(async (req) => {
               card_id: card.id,
               lang: targetLang,
               translations: translations,
-              provider: 'deepseek',
+              provider: 'gemini',
               quality: 1,
               is_system: true, // Mark as system-wide translation
               created_at: new Date().toISOString(),

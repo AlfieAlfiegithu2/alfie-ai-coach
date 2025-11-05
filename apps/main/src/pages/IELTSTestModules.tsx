@@ -78,64 +78,16 @@ const IELTSTestModules = () => {
       // For writing, navigate to the current test ID
       navigate(`/ielts-writing-test/${testId}`);
     } else if (moduleId === 'reading') {
-      // For reading, use the current test ID directly
-      // Check if this test has reading questions first
-      try {
-        const {
-          data: questions
-        } = await supabase.from('questions').select('test_id, question_type').eq('test_id', testId).in('question_type', ['true_false_not_given', 'multiple_choice', 'short_answer', 'matching', 'title']).limit(1);
-        if (questions && questions.length > 0) {
-          console.log(`📚 Found reading questions for test ${testId}`);
-          navigate(`/enhanced-reading-test/${testId}`);
-        } else {
-          console.log(`❌ No reading questions found for test ${testId}`);
-          // Fallback: find any test with reading questions
-          const {
-            data: fallbackQuestions
-          } = await supabase.from('questions').select('test_id, question_type').in('question_type', ['true_false_not_given', 'multiple_choice', 'short_answer', 'matching', 'title']).limit(1);
-          if (fallbackQuestions && fallbackQuestions.length > 0) {
-            const readingTestId = fallbackQuestions[0].test_id;
-            console.log(`📚 Using fallback reading test ${readingTestId}`);
-            navigate(`/enhanced-reading-test/${readingTestId}`);
-          }
-        }
-      } catch (error) {
-        console.error('Error finding reading test:', error);
-      }
+      // For reading, navigate to reading test with current test ID
+      navigate(`/reading/${testId}`);
+    } else if (moduleId === 'listening') {
+      // For listening, navigate to listening test with current test ID
+      navigate(`/listening/${testId}`);
     } else if (moduleId === 'speaking') {
-      // For speaking, check if this test has speaking prompts
-      try {
-        console.log(`🔍 Looking for speaking prompts for test: ${test.test_name}`);
-
-        // Try multiple query patterns to find speaking content
-        const queries = [supabase.from('speaking_prompts').select('*').eq('cambridge_book', `Test ${test.test_name}`), supabase.from('speaking_prompts').select('*').eq('test_number', parseInt(test.test_name.match(/\d+/)?.[0] || '1')), supabase.from('speaking_prompts').select('*').ilike('cambridge_book', `%${test.test_name}%`)];
-        let prompts = null;
-        for (const query of queries) {
-          const {
-            data
-          } = await query.limit(1);
-          if (data && data.length > 0) {
-            prompts = data;
-            break;
-          }
-        }
-        if (prompts && prompts.length > 0) {
-          console.log(`🎤 Found speaking prompts for test ${test.test_name}`);
-          navigate(`/ielts-speaking-test/${test.test_name}`);
-        } else {
-          console.log(`❌ No speaking prompts found for test ${test.test_name}`);
-          console.log(`🔄 Redirecting to new IELTS speaking interface with test name: ${test.test_name}`);
-          // Always use the new interface, even if no content found yet
-          navigate(`/ielts-speaking-test/${test.test_name}`);
-        }
-      } catch (error) {
-        console.error('Error finding speaking test:', error);
-        // Still redirect to new interface on error
-        navigate(`/ielts-speaking-test/${test.test_name}`);
-      }
+      // For speaking, navigate to speaking test with current test ID
+      navigate(`/ielts-speaking-test/${testId}`);
     } else {
-      // For listening, show coming soon or implement later
-      console.log(`${moduleId} module coming soon`);
+      console.log(`${moduleId} module not implemented yet`);
     }
   };
   if (isLoading || !imageLoaded) {
@@ -152,10 +104,7 @@ const IELTSTestModules = () => {
         <div className="relative z-10 min-h-screen flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg text-white">Test not found</p>
-            <Button onClick={() => navigate('/ielts-portal')} className="mt-4 rounded-2xl" style={{
-            background: 'var(--gradient-button)',
-            border: 'none'
-          }}>
+            <Button onClick={() => navigate('/ielts-portal')} className="mt-4 rounded-2xl bg-white text-black border-2 border-black hover:bg-black hover:text-white">
               Back to IELTS Portal
             </Button>
           </div>
@@ -211,9 +160,10 @@ const IELTSTestModules = () => {
                       </div>
                     </div>
 
-                    <Button onClick={() => handleModuleSelect(module.id)} className="w-full rounded-2xl font-semibold text-black" size="sm" disabled={!isAvailable} style={{
-                      background: isAvailable ? 'var(--gradient-button)' : 'var(--warm-gray)',
-                      border: 'none'
+                    <Button onClick={() => handleModuleSelect(module.id)} className="w-full rounded-2xl font-semibold bg-white text-black border-2 border-black hover:bg-black hover:text-white" size="sm" disabled={!isAvailable} style={{
+                      border: isAvailable ? '2px solid black' : '2px solid #d1d5db',
+                      background: isAvailable ? 'white' : '#f3f4f6',
+                      color: isAvailable ? 'black' : '#9ca3af'
                     }}>
                       {isAvailable ? `Start ${module.name}` : 'Coming Soon'}
                     </Button>

@@ -441,7 +441,7 @@ const HeroIndex = () => {
           <div className="h-full w-full overflow-hidden">
             <img 
               className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100 object-center md:object-[35%_center] md:scale-100 scale-[1.15] md:translate-x-0 -translate-x-[10%]" 
-              src="/hero-nov06.png?v=1" 
+              src="/1000031207.png?v=1" 
               alt="Updated hero background image" 
             />
           </div>

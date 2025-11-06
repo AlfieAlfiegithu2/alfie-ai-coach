@@ -405,18 +405,18 @@ const IELTSPortal = () => {
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
            style={{
              backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-             backgroundColor: '#FFFFF0' // Ivory color
+             backgroundColor: '#ffffff' // White color
            }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
           <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
             <div className="flex items-center gap-2 mb-2">
-              <Button variant="ghost" onClick={() => navigate('/hero')} className="text-foreground px-2 py-1 h-8">
-                <Home className="mr-2 h-4 w-4" /> Home
-              </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-foreground px-2 py-1 h-8">
+              <button onClick={() => navigate('/hero')} className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors rounded-md hover:bg-white/10">
+                <Home className="h-4 w-4" /> Home
+              </button>
+              <button onClick={() => navigate('/dashboard')} className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors rounded-md hover:bg-white/10">
                 My Dashboard
-              </Button>
+              </button>
             </div>
 
             {/* IELTS Portal Title */}

@@ -26,46 +26,30 @@ export const usePageTranslation = (pageKey: string, defaultContent: PageContent,
     // If English, use default content
     if (language === 'en') {
       setContent(defaultContent);
-      // Update content hash for tracking
-      updateContentVersion(pageKey, defaultContent);
+      // Silently try to update content hash (don't fail if no permissions)
+      updateContentVersion(pageKey, defaultContent).catch(() => {});
       return;
     }
 
     const fetchTranslation = async () => {
       setIsLoading(true);
-      
+
       try {
-        // Check if content has changed
-        const contentHash = createContentHash(defaultContent);
-        const { data: versionData } = await supabase
-          .from('page_content_versions')
-          .select('content_hash')
-          .eq('page_key', pageKey)
-          .single();
-
-        // If content changed, invalidate old translations
-        if (versionData && versionData.content_hash !== contentHash) {
-          await supabase
-            .from('page_translations')
-            .delete()
-            .eq('page_key', pageKey);
-        }
-
-        // Try to get from cache first
-        const { data: cached } = await supabase
+        // Try to get from cache first (this should work with public read access)
+        const { data: cached, error: cacheError } = await supabase
           .from('page_translations')
           .select('content')
           .eq('page_key', pageKey)
           .eq('language_code', language)
           .single();
 
-        if (cached) {
+        if (cached && !cacheError) {
           setContent(cached.content as PageContent);
           setIsLoading(false);
           return;
         }
 
-        // If not cached, request translation
+        // If not cached or cache read failed, request translation
         const { data, error } = await supabase.functions.invoke('translate-page', {
           body: {
             pageKey,

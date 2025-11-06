@@ -16,11 +16,11 @@ CREATE POLICY "Content versions are viewable by everyone"
   FOR SELECT
   USING (true);
 
--- Only service role can manage
-CREATE POLICY "Only service role can manage content versions"
+-- Allow authenticated users to manage content versions
+CREATE POLICY "Authenticated users can manage content versions"
   ON public.page_content_versions
   FOR ALL
-  USING (auth.role() = 'service_role');
+  USING (auth.role() = 'authenticated');
 
 -- Function to invalidate translations when content changes
 CREATE OR REPLACE FUNCTION public.invalidate_translations_on_content_change()

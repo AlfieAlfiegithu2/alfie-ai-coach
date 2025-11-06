@@ -156,3 +156,5 @@ CREATE TRIGGER update_blog_post_translations_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+
+

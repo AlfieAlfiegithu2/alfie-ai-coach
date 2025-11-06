@@ -53,7 +53,7 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   }, [user]);
 
   useEffect(() => {
-    // Only enable translation selection for authenticated users
+    // Enable translation selection for authenticated users, disable gracefully for others
     if (!user) {
       if (import.meta.env.DEV) {
         console.log('ℹ️ Translation disabled: No authenticated user');

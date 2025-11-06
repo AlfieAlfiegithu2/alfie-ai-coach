@@ -18,11 +18,11 @@ CREATE POLICY "Page translations are viewable by everyone"
   FOR SELECT
   USING (true);
 
--- Only service role can manage translations
-CREATE POLICY "Only service role can manage page translations"
+-- Allow authenticated users to manage translations
+CREATE POLICY "Authenticated users can manage page translations"
   ON public.page_translations
   FOR ALL
-  USING (auth.role() = 'service_role');
+  USING (auth.role() = 'authenticated');
 
 -- Create index for faster lookups
 CREATE INDEX idx_page_translations_lookup ON public.page_translations(page_key, language_code);

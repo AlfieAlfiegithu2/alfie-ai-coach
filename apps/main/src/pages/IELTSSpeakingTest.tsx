@@ -12,6 +12,7 @@ import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssist
 import { supabase } from "@/integrations/supabase/client";
 import { AudioR2 } from "@/lib/cloudflare-r2";
 import VolumeSlider from "@/components/ui/VolumeSlider";
+import SpotlightCard from "@/components/SpotlightCard";
 
 interface SpeakingPrompt {
   id: string;
@@ -686,21 +687,15 @@ const IELTSSpeakingTest = () => {
               </div>
 
               {availableTests.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {availableTests.map((test) => (
-                    <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}>
-                      <CardHeader>
-                        <CardTitle className="text-lg">{test.test_name}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
-                        <Button className="w-full" variant="default">
-                          Start Test
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {availableTests.map((test) => (
+                  <SpotlightCard key={test.id} className="cursor-pointer min-h-[140px]" onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}>
+                    <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                      <h3 className="font-semibold text-sm">{test.test_name}</h3>
+                    </CardContent>
+                  </SpotlightCard>
+                ))}
+              </div>
               ) : (
                 <div className="text-center py-12">
                   <p className="text-lg text-muted-foreground mb-4">No speaking tests available yet</p>

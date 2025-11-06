@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import StudentLayout from '@/components/StudentLayout';
+import SpotlightCard from '@/components/SpotlightCard';
 
 interface ListeningSection {
   id: string;
@@ -514,17 +515,11 @@ const ListeningTest = () => {
               {availableTests.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {availableTests.map((test) => (
-                    <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/listening/${test.id}`)}>
-                      <CardHeader>
-                        <CardTitle className="text-lg">{test.test_name || `Listening Test ${test.test_number || ''}`}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
-                        <Button className="w-full" variant="default">
-                          Start Test
-                        </Button>
+                    <SpotlightCard key={test.id} className="cursor-pointer min-h-[140px]" onClick={() => navigate(`/listening/${test.id}`)}>
+                      <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                        <h3 className="font-semibold text-sm">{test.test_name || `Listening Test ${test.test_number || ''}`}</h3>
                       </CardContent>
-                    </Card>
+                    </SpotlightCard>
                   ))}
                 </div>
               ) : (

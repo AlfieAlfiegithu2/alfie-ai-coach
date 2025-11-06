@@ -528,17 +528,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {availableTests.map((test) => (
-                  <Card key={test.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/writing/${test.id}`)}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{test.test_name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4">Created on {new Date(test.created_at).toLocaleDateString()}</p>
-                      <Button className="w-full" variant="default">
-                        Start Test
-                      </Button>
+                  <SpotlightCard key={test.id} className="cursor-pointer min-h-[140px]" onClick={() => navigate(`/writing/${test.id}`)}>
+                    <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                      <h3 className="font-semibold text-sm">{test.test_name}</h3>
                     </CardContent>
-                  </Card>
+                  </SpotlightCard>
                 ))}
               </div>
             </div>

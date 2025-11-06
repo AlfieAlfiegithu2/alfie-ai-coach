@@ -402,8 +402,9 @@ const IELTSPortal = () => {
         courseType="IELTS"
         courseLevel="Intermediate to Advanced"
       />
-      <div className="absolute inset-0"
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
            style={{
+             backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
              backgroundColor: '#FFFFF0' // Ivory color
            }} />
       <div className="relative z-10">

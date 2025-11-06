@@ -515,7 +515,7 @@ const ListeningTest = () => {
               {availableTests.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {availableTests.map((test) => (
-                    <SpotlightCard key={test.id} className="cursor-pointer min-h-[140px]" onClick={() => navigate(`/listening/${test.id}`)}>
+                    <SpotlightCard key={test.id} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => navigate(`/listening/${test.id}`)}>
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                         <h3 className="font-semibold text-sm">{test.test_name || `Listening Test ${test.test_number || ''}`}</h3>
                       </CardContent>

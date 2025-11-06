@@ -213,10 +213,10 @@ const TestSelection = () => {
                   return (
                     <Card
                       key={section.id}
-                      className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 bg-white ${
-                        isSelected 
-                          ? 'border-black shadow-lg scale-105' 
-                          : 'border-light-border hover:border-black/50 hover:scale-102'
+                      className={`cursor-pointer transition-all duration-300 rounded-2xl border-2 bg-white/80 hover:shadow-lg hover:scale-105 ${
+                        isSelected
+                          ? 'border-black shadow-lg scale-105'
+                          : 'border-white/20'
                       }`}
                       onClick={() => toggleSection(section.id)}
                     >
@@ -381,9 +381,8 @@ const TestSelection = () => {
                 return (
                   <Card
                     key={section.id}
-                    className="cursor-pointer transition-all duration-300 rounded-2xl border-light-border hover:border-gentle-blue/30 hover:scale-105"
+                    className="cursor-pointer transition-all duration-300 rounded-2xl border-white/20 hover:shadow-lg hover:scale-105 bg-white/80"
                     onClick={() => handleIndividualTest(section.id)}
-                    style={{ background: 'white' }}
                   >
                     <CardContent className="p-8 text-center">
                       <div 

@@ -443,7 +443,7 @@ const IELTSPortal = () => {
                   const skillImage = skillImages[index];
 
                   return (
-                    <SpotlightCard key={skill.id} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/60" onClick={() => handleSkillClick(skill.id)}>
+                    <SpotlightCard key={skill.id} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => handleSkillClick(skill.id)}>
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                         <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                           <img
@@ -480,7 +480,7 @@ const IELTSPortal = () => {
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center font-nunito tracking-tight">Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {/* Vocabulary Book card */}
-                <SpotlightCard className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/60" onClick={() => navigate('/vocabulary')}>
+                <SpotlightCard className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => navigate('/vocabulary')}>
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                     <h3 className="font-semibold text-xs md:text-sm">Vocabulary Book</h3>
                     <div className="text-xs text-muted-foreground mt-2 text-center">
@@ -494,7 +494,7 @@ const IELTSPortal = () => {
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
                   return (
-                    <SpotlightCard key={skill.slug} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/60" onClick={() => handleSkillClick(skill.slug)}>
+                    <SpotlightCard key={skill.slug} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => handleSkillClick(skill.slug)}>
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                         <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
 

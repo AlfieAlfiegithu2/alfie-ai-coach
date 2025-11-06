@@ -438,7 +438,7 @@ const HeroIndex = () => {
       {/* Hero */}
       <section className="pt-32 pb-20 relative group">
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <img className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100" src="/Generated Image November 06, 2025 - 5_35PM.png" alt="English AIdol - November 2025 Hero Image" />
+          <img className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100" src="/Generated Image November 06, 2025 - 5_35PM.png" alt="English AIdol - Hero Page Image" />
         </div>
 
         <div className="relative z-10 max-w-7xl mt-40 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-40">

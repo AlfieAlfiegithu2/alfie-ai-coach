@@ -378,9 +378,16 @@ const ReadingTest = () => {
 
   if (!testId) {
     return (
-      <StudentLayout title="Available Reading Tests">
-        <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
-          <div className="container mx-auto px-4">
+      <div className="min-h-screen relative">
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+             style={{
+               backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+               backgroundColor: '#ffffff'
+             }} />
+        <div className="relative z-10">
+          <StudentLayout title="Available Reading Tests">
+            <div className="min-h-screen py-12">
+              <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="mb-8">
                 <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Reading Tests</h1>
@@ -390,8 +397,8 @@ const ReadingTest = () => {
               {availableTests.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {availableTests.map((test) => (
-                    <SpotlightCard key={test.id} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => navigate(`/reading/${test.id}`)}>
-                      <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                    <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/reading/${test.id}`)}>
+                      <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
                         <h3 className="font-semibold text-sm">{test.test_name || `Reading Test ${test.test_number || ''}`}</h3>
                       </CardContent>
                     </SpotlightCard>

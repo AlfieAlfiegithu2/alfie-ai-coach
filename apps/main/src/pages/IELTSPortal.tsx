@@ -402,23 +402,27 @@ const IELTSPortal = () => {
         courseType="IELTS"
         courseLevel="Intermediate to Advanced"
       />
-      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+      <div className="absolute inset-0"
            style={{
-             backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-             backgroundColor: '#f3f4f6'
+             backgroundColor: '#FFFFF0' // Ivory color
            }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
           <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
             <div className="flex items-center gap-2 mb-2">
-              <Button variant="ghost" onClick={() => navigate('/hero')} className="text-text-secondary px-2 py-1 h-8">
+              <Button variant="ghost" onClick={() => navigate('/hero')} className="text-foreground px-2 py-1 h-8">
                 <Home className="mr-2 h-4 w-4" /> Home
               </Button>
-              <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-text-secondary px-2 py-1 h-8">
+              <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-foreground px-2 py-1 h-8">
                 My Dashboard
               </Button>
             </div>
-            
+
+            {/* IELTS Portal Title */}
+            <div className="mb-6">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground text-center">IELTS Portal</h1>
+            </div>
+
             {/* Skill Practice Quick Links */}
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center">Study each part</h2>

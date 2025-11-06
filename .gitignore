@@ -10,9 +10,7 @@ lerna-debug.log*
 node_modules
 dist-ssr
 *.local
-# Allow dist directories for CI/CD builds
-!apps/main/dist/
-!dist/
+# Allow dist directories for CI/CD builds (dist is allowed for deployment)
 
 # Editor directories and files
 .vscode/*

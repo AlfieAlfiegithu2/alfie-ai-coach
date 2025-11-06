@@ -1,0 +1,407 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "ड्यासबोर्ड",
+    "signIn": "साइन इन",
+    "startFreeTrial": "निःशुल्क परीक्षण सुरु गर्नुहोस्",
+    "continueLearning": "सिकाई जारी राख्नुहोस्",
+    "language": "भाषा"
+  },
+  "hero": {
+    "title": "AI सँग अंग्रेजी सिक्नुहोस्",
+    "subtitle": "प्रत्येक तहका लागि व्यक्तिगत शिक्षा",
+    "cta": "सिकाई सुरु गर्नुहोस्",
+    "features": {
+      "title": "विशेषताहरू",
+      "aiPowered": "AI-संचालित सिकाई",
+      "personalized": "व्यक्तिगत पाठ्यक्रम",
+      "instantFeedback": "तत्काल प्रतिक्रिया",
+      "progressTracking": "प्रगति ट्र्याकिंग"
+    },
+    "about": {
+      "title": "बारेमा",
+      "content": "हाम्रो AI-संचालित प्लेटफर्मसँग आफ्नो अंग्रेजी कौशल रूपान्तरण गर्नुहोस्। व्यक्तिगत पाठहरू पाउनुहोस्, तत्काल प्रतिक्रिया पाउनुहोस् र हरेक चरणमा आफ्नो प्रगति ट्र्याक गर्नुहोस्।"
+    },
+    "programs": {
+      "title": "सिकाई कार्यक्रमहरू",
+      "subtitle": "हाम्रा व्यापक कार्यक्रमहरूसँग अंग्रेजी महारतका लागि आफ्नो बाटो छान्नुहोस्।",
+      "ielts": "IELTS तयारी",
+      "general": "सामान्य अंग्रेजी",
+      "business": "व्यापार अंग्रेजी",
+      "academic": "शैक्षिक अंग्रेजी"
+    },
+    "pricing": {
+      "title": "मूल्य निर्धारण",
+      "subtitle": "आफ्नो सिकाई लक्ष्यहरूसँग मेल खाने योजना छान्नुहोस्।",
+      "free": "निःशुल्क",
+      "premium": "प्रिमियम",
+      "enterprise": "उद्यम"
+    },
+    "stories": {
+      "title": "सफलता कथाहरू",
+      "subtitle": "हाम्रा विद्यार्थीहरूले कसरी आफ्ना अंग्रेजी लक्ष्यहरू हासिल गरे भनेर हेर्नुहोस्।"
+    },
+    "contact": {
+      "title": "सम्पर्क",
+      "subtitle": "हाम्रो सहयोग टोलीसँग सम्पर्क गर्नुहोस्।"
+    },
+    "startButton": "Start Your Journey",
+    "exploreButton": "Explore Tests"
+  },
+  "auth": {
+    "signIn": "साइन इन",
+    "signUp": "साइन अप",
+    "email": "इमेल",
+    "password": "पासवर्ड",
+    "forgotPassword": "पासवर्ड बिर्सनुभयो?",
+    "rememberMe": "मलाई सम्झनुहोस्",
+    "continueWithGoogle": "Google सँग जारी राख्नुहोस्",
+    "createAccount": "खाता सिर्जना गर्नुहोस्",
+    "alreadyHaveAccount": "पहिले नै खाता छ?"
+  },
+  "common": {
+    "loading": "लोड हुँदैछ...",
+    "error": "त्रुटि",
+    "success": "सफलता",
+    "cancel": "रद्द गर्नुहोस्",
+    "save": "बचत गर्नुहोस्",
+    "delete": "मेटाउनुहोस्",
+    "edit": "सम्पादन गर्नुहोस्",
+    "back": "फिर्ता",
+    "next": "अर्को",
+    "previous": "अघिल्लो",
+    "close": "बन्द गर्नुहोस्",
+    "submit": "पेश गर्नुहोस्",
+    "search": "खोज्नुहोस्",
+    "filter": "फिल्टर",
+    "sort": "क्रमबद्ध गर्नुहोस्",
+    "reset": "रीसेट",
+    "days": "दिनहरू",
+    "hours": "घण्टाहरू",
+    "minutes": "मिनेटहरू",
+    "seconds": "सेकेन्डहरू",
+    "week": "हप्ता",
+    "month": "महिना",
+    "year": "वर्ष"
+  },
+  "skills": {
+    "reading": "पढाई",
+    "listening": "सुनाई",
+    "writing": "लेखाई",
+    "speaking": "बोलाई",
+    "overall": "समग्र"
+  },
+  "navigation": {
+    "myWordBook": "मेरो शब्द पुस्तक",
+    "tests": "परीक्षणहरू",
+    "studyPlan": "अध्ययन योजना",
+    "home": "घर",
+    "settings": "सेटिङहरू",
+    "resetResults": "परिणाम रिसेट गर्नुहोस्",
+    "community": "समुदाय",
+    "practice": "अभ्यास",
+    "adminLogin": "प्रशासक लॉगिन",
+    "adminDashboard": "प्रशासक ड्याशबोर्ड",
+    "sentenceMastery": "वाक्य निपुणता"
+  },
+  "dashboard": {
+    "myWordBook": "मेरो शब्द पुस्तक",
+    "tests": "परीक्षणहरू",
+    "studyPlan": "अध्ययन योजना",
+    "home": "घर",
+    "resetResults": "परिणाम रिसेट गर्नुहोस्",
+    "greeting": "शुभ बिहान, {{name}}!",
+    "helloUser": "नमस्कार, {{name}}",
+    "overall": "समग्र",
+    "studyProgress": "अध्ययन प्रगति",
+    "testsTaken": "लिइएका परीक्षणहरू",
+    "wordsSaved": "बचत गरिएका शब्दहरू",
+    "dayStreak": "दिन स्ट्रीक",
+    "practiceAreas": "अभ्यास क्षेत्रहरू",
+    "resultsFeedback": "{{skill}} परिणाम र प्रतिक्रिया",
+    "viewHistory": "इतिहास हेर्नुहोस्",
+    "viewDetailedResults": "विस्तृत परिणाम हेर्नुहोस्",
+    "averageScore": "औसत स्कोर",
+    "latestScore": "नवीनतम स्कोर",
+    "noTestsYet": "अहिलेसम्म {{skill}} परीक्षण लिइएको छैन",
+    "startFirstTest": "पहिलो परीक्षण सुरु गर्नुहोस्",
+    "deadline": "म्याद"
+  },
+  "studyPlan": {
+    "title": "तपाईंको अध्ययन योजना",
+    "today": "आज",
+    "thisMonth": "यो महिना",
+    "generateButton": "योजना सिर्जना गर्नुहोस्",
+    "generating": "सिर्जना हुँदैछ...",
+    "targetIELTS": "लक्ष्य IELTS",
+    "deadline": "म्याद",
+    "minutesPerDay": "दिनको मिनेट",
+    "planLanguage": "योजना भाषा",
+    "studyDays": "अध्ययन दिनहरू",
+    "weakAreas": "कमजोर क्षेत्रहरू",
+    "quickAIPlan": "छिटो AI योजना",
+    "retakeAssessment": "स्तर मूल्याङ्कन पुनः लिनुहोस्",
+    "removeAllTasks": "सबै AI कार्यहरू हटाउनुहोस्",
+    "restoreTasks": "AI कार्यहरू पुनर्स्थापना गर्नुहोस्",
+    "resetDay": "दिन रिसेट गर्नुहोस्",
+    "resetPlan": "योजना रिसेट गर्नुहोस्",
+    "resetPlanConfirm": "यसले तपाईंको हालको अध्ययन योजना हटाउनेछ। जारी राख्नुहुन्छ?",
+    "resetAllPlans": "सबै योजनाहरू रिसेट गर्नुहोस्",
+    "resetAllConfirm": "सबै स्थानीय अध्ययन योजना डेटा रिसेट गर्नुहोस् (पूर्णता, कस्टम कार्यहरू, नोटहरू)?",
+    "takeAssessment": "योजना सिर्जना गर्न ५-मिनेट मूल्याङ्कन लिनुहोस्",
+    "quickAIPlanNoAssessment": "अध्ययन योजना सिर्जना गर्नुहोस्",
+    "syncFromDashboard": "ड्यासबोर्डबाट सिङ्क गर्नुहोस्",
+    "syncDescription": "यसले योजना अवधिलाई तपाईंको ड्यासबोर्ड म्यादसँग मिलाउनेछ।",
+    "optional": "अरू केही विचार गर्नुपर्ने छ? (तालिका सीमाहरू, मोड्युलहरू, फोकस)",
+    "placeholder": "उदाहरणका लागि, शैक्षिक मोड्युल, कार्य १ चार्टमा कमजोर, सोम/बुध/शुक्र मात्र अध्ययन",
+    "showInFirstLanguage": "",
+    "totalPlannedMinutes": "कुल योजनाबद्ध मिनेट: {{minutes}} मिनेट",
+    "addTask": "कार्य थप्नुहोस्",
+    "add": "थप्नुहोस्",
+    "loadingPlan": "तपाईंको योजना लोड हुँदैछ...",
+    "noPlanYet": "तपाईंसँग अहिलेसम्म योजना छैन।",
+    "dayOfWeek": "{{day}}={{number}}",
+    "studyDaysDescription": "अध्ययन दिनहरू (आइत=० ... शनि=६)",
+    "weakAreasDescription": "कमजोर क्षेत्रहरू (वैकल्पिक)",
+    "deadlineOptional": "म्याद (वैकल्पिक)"
+  },
+  "settings": {
+    "title": "सेटिङहरू",
+    "preferredName": "प्राथमिकता नाम",
+    "uiLanguage": "UI भाषा",
+    "nativeLanguage": "मातृभाषा",
+    "profilePhoto": "प्रोफाइल फोटो",
+    "profilePhotoHelp": "तपाईंको खाता व्यक्तिगत बनाउन प्रोफाइल तस्बिर अपलोड गर्नुहोस्",
+    "targetTestType": "लक्ष्य परीक्षण प्रकार",
+    "targetScore": "लक्ष्य स्कोर",
+    "targetDeadline": "लक्ष्य म्याद",
+    "save": "बचत गर्नुहोस्",
+    "cancel": "रद्द गर्नुहोस्",
+    "signOut": "साइन आउट",
+    "profileSettings": "प्रोफाइल सेटिङहरू",
+    "learningPreferences": "सिकाई प्राथमिकताहरू",
+    "account": "खाता",
+    "uploadPhoto": "फोटो अपलोड गर्नुहोस्",
+    "changePhoto": "फोटो परिवर्तन गर्नुहोस्",
+    "currentPhoto": "हालको फोटो"
+  },
+  "countdown": {
+    "deadline": "म्याद",
+    "timeRemaining": "बाँकी समय"
+  },
+  "welcome": {
+    "continueInLanguage": "{{language}} मा जारी राख्नुहोस्?",
+    "yes": "हो",
+    "keepEnglish": "अंग्रेजी राख्नुहोस्",
+    "detectedLanguage": "हामीले फेला पार्यौं कि तपाईं {{language}} बोल्नुहुन्छ",
+    "switchLanguage": "{{language}} मा स्विच गर्नुहोस्",
+    "dismiss": "खारेज गर्नुहोस्"
+  },
+  "testPortal": {
+    "ieltsPortal": "IELTS पोर्टल",
+    "generalPortal": "सामान्य अंग्रेजी पोर्टल",
+    "startTest": "परीक्षण सुरु गर्नुहोस्",
+    "chooseSection": "परीक्षण खण्ड छान्नुहोस्",
+    "reading": "पढाई",
+    "listening": "सुनाई",
+    "writing": "लेखाई",
+    "speaking": "बोलाई",
+    "instructions": "निर्देशनहरू",
+    "timeLimit": "समय सीमा",
+    "questions": "प्रश्नहरू"
+  },
+  "testResults": {
+    "overallResults": "समग्र परीक्षण परिणाम",
+    "viewResults": "परिणाम हेर्नुहोस्",
+    "retakeTest": "परीक्षण पुनः लिनुहोस्",
+    "nextTest": "अर्को परीक्षण",
+    "score": "स्कोर",
+    "band": "ब्यान्ड",
+    "percentage": "प्रतिशत",
+    "correctAnswers": "सही उत्तरहरू",
+    "totalQuestions": "कुल प्रश्नहरू",
+    "timeTaken": "लिइएको समय",
+    "detailedFeedback": "विस्तृत प्रतिक्रिया",
+    "improvementTips": "सुधार सुझावहरू"
+  },
+  "timeUnits": {
+    "days": "दिनहरू",
+    "hours": "घण्टाहरू",
+    "minutes": "मिनेटहरू",
+    "seconds": "सेकेन्डहरू",
+    "weeks": "हप्ताहरू",
+    "months": "महिनाहरू",
+    "years": "वर्षहरू"
+  },
+  "highlights": {
+    "aiFeedback": {
+      "title": "AI-Powered Feedback",
+      "description": "Get instant, detailed analysis of your English skills with personalized improvement suggestions."
+    },
+    "adaptive": {
+      "title": "Adaptive Learning",
+      "description": "Smart algorithms that adapt to your pace and focus on your weak areas for optimal progress."
+    },
+    "proven": {
+      "title": "Proven Results",
+      "description": "95% success rate with students achieving their target scores faster than traditional methods."
+    },
+    "community": {
+      "title": "Expert Community",
+      "description": "Connect with certified instructors and fellow learners for support and motivation."
+    }
+  },
+  "programs": {
+    "title": "Learning Programs",
+    "subtitle": "Choose your path to English mastery with our comprehensive programs.",
+    "cards": {
+      "ielts": {
+        "title": "IELTS"
+      },
+      "toefl": {
+        "title": "TOEFL"
+      },
+      "toeic": {
+        "title": "TOEIC"
+      },
+      "pte": {
+        "title": "PTE"
+      },
+      "general": {
+        "title": "General English"
+      }
+    }
+  },
+  "comparison": {
+    "title": "Why our scoring system dominates the competition",
+    "columns": [
+      "Human tutors",
+      "Our IELTS-calibrated AI",
+      "Traditional self-study"
+    ],
+    "rows": [
+      {
+        "label": "Scoring consistency",
+        "traditional": "Varies by tutor mood/fatigue",
+        "ai": "100% consistent (exam-aligned)",
+        "self": "Guesswork"
+      },
+      {
+        "label": "Feedback accuracy",
+        "traditional": "Subjective",
+        "ai": "98% correlation with real exams",
+        "self": "No feedback"
+      },
+      {
+        "label": "Cost per month",
+        "traditional": "$1000–$5000 for intensive tutoring",
+        "ai": "$50 unlimited access",
+        "self": "Free but unreliable"
+      },
+      {
+        "label": "Certified by examiners",
+        "traditional": "Depends",
+        "ai": "Former/current IELTS examiners",
+        "self": "No"
+      },
+      {
+        "label": "Band descriptors used",
+        "traditional": "Tutor's interpretation",
+        "ai": "Exact IELTS Band Descriptors",
+        "self": "None"
+      }
+    ]
+  },
+  "faq": {
+    "title": "How our expert-validated scoring works",
+    "items": [
+      {
+        "q": "Why should I trust an AI built by IELTS examiners?",
+        "a": "Because it's not just AI—it's IELTS examiners' methodology in code. Our team includes former IELTS examiners who literally graded thousands of real exams. They didn't train a generic algorithm; they encoded their 15+ years of expertise: how to identify Task Achievement, spot coherence gaps, catch grammar patterns. Every scoring rule mirrors what examiners look for. You're practicing against the minds who created the test."
+      },
+      {
+        "q": "Is your AI 98% accurate because it cheats or because it's actually good?",
+        "a": "It's good because IELTS examiners built it. The 98% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence."
+      },
+      {
+        "q": "What makes your AI different from Grammarly or ChatGPT feedback?",
+        "a": "Grammarly flags grammar; ChatGPT generates. We *score*—like an examiner. Grammarly says 'comma needed.' We say 'You scored 6.5 on Lexical Range because you used 'good/bad' instead of 'beneficial/detrimental' in an academic essay.' ChatGPT rewords sentences. We explain your band score and exactly how to hit 7.0. Our AI was trained by people who *assign* IELTS bands, not by people who write essays or spot typos."
+      },
+      {
+        "q": "Can an AI truly replace an examiner for practice?",
+        "a": "For practice? Yes—better than most tutors, actually. Why? Consistency. A tutor marks 20 essays and gets tired; scores drift. Our AI marks 1,000 essays with identical standards. A tutor marks an essay 7.0 on one day, 6.5 on another. Our AI always applies the same rubric. For *feedback quality*, you get the rubric instantly + explanations. For *reliability*, an examiner-built system beats subjective humans. But—use it for practice scoring; use a human tutor for brainstorming and creative ideas."
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing Plans",
+    "subtitle": "Choose the perfect plan for your learning journey",
+    "discounts": {
+      "monthly": "Monthly",
+      "threeMonths": "3 Months",
+      "sixMonths": "6 Months",
+      "save10": "Save 10%",
+      "save30": "Save 30%"
+    },
+    "free": {
+      "title": "Free",
+      "subtitle": "Perfect for getting started with limited content.",
+      "price": "$0",
+      "period": "/mo",
+      "features": [
+        "Limited Practice Tests",
+        "Basic AI Feedback",
+        "Community Access",
+        "Basic Progress Tracking"
+      ],
+      "button": "Get Started Free"
+    },
+    "pro": {
+      "title": "Pro",
+      "subtitle": "Unlimited access to all learning features.",
+      "badge": "Most Popular",
+      "priceMonthly": "$50",
+      "price3Months": "$45",
+      "price6Months": "$35",
+      "period": "/mo",
+      "features": [
+        "Unlimited Practice Tests",
+        "Advanced AI Feedback",
+        "All Learning Modules",
+        "Priority Support",
+        "Detailed Analytics",
+        "Personalized Study Plans"
+      ],
+      "button": "Upgrade to Pro"
+    }
+  },
+  "experts": {
+    "line": "Created by TESOL‑certified experts and former/current IELTS examiners."
+  },
+  "footer": {
+    "description": "AI-powered English learning platform for IELTS and General English mastery.",
+    "email": "hello@englishaidol.com",
+    "phone": "Available 24/7 via AI Chat",
+    "learning": {
+      "title": "Learning",
+      "ielts": "IELTS Preparation",
+      "general": "General English",
+      "features": "AI Features",
+      "stories": "Success Stories"
+    },
+    "resources": {
+      "title": "Resources",
+      "practice": "Practice Tests",
+      "writing": "Writing Feedback",
+      "speaking": "Speaking Practice",
+      "vocabulary": "Vocabulary Builder"
+    },
+    "connect": {
+      "title": "Connect"
+    },
+    "copyright": "© 2024 English AIdol. All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "support": "Support"
+  }
+}

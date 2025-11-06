@@ -13,6 +13,7 @@ import StudentLayout from "@/components/StudentLayout";
 import { Bot, BookOpen, ListTree, Clock, FileText, PenTool, Languages } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
+import SpotlightCard from "@/components/SpotlightCard";
 
 interface Task {
   id: string;

@@ -11,28 +11,53 @@ import { useAuth } from '@/hooks/useAuth';
 import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 import SpotlightCard from '@/components/SpotlightCard';
+import { HoverEffect } from '@/components/ui/card-hover-effect';
 
 // IELTS Core Skills
 const IELTS_SKILLS = [
-  { 
-    id: 'reading', 
-    title: 'Reading', 
+  {
+    id: 'reading',
+    title: 'Reading',
     description: 'Academic & General texts'
   },
-  { 
-    id: 'listening', 
-    title: 'Listening', 
+  {
+    id: 'listening',
+    title: 'Listening',
     description: 'Audio comprehension'
   },
-  { 
-    id: 'writing', 
-    title: 'Writing', 
+  {
+    id: 'writing',
+    title: 'Writing',
     description: 'Task 1 & Task 2'
   },
-  { 
-    id: 'speaking', 
-    title: 'Speaking', 
+  {
+    id: 'speaking',
+    title: 'Speaking',
     description: 'Interview & presentation'
+  }
+];
+
+// IELTS Skills for HoverEffect
+const IELTS_SKILL_ITEMS = [
+  {
+    title: "Reading",
+    description: "Master academic and general reading texts with comprehension questions and detailed analysis.",
+    link: "/reading"
+  },
+  {
+    title: "Listening",
+    description: "Improve your listening skills with audio comprehension tests and pronunciation guidance.",
+    link: "/listening"
+  },
+  {
+    title: "Writing",
+    description: "Perfect your writing with AI-powered feedback on Task 1 and Task 2 essays.",
+    link: "/ielts-writing-test"
+  },
+  {
+    title: "Speaking",
+    description: "Practice speaking with AI conversation partners and get instant feedback on fluency and pronunciation.",
+    link: "/ielts-speaking-test"
   }
 ];
 
@@ -383,6 +408,20 @@ const IELTSPortal = () => {
     navigate(`/ielts-test-modules/${testId}`);
   };
 
+  const handleHoverEffectClick = (link: string) => {
+    if (link === '/reading') {
+      navigate('/reading');
+    } else if (link === '/listening') {
+      navigate('/listening');
+    } else if (link === '/ielts-writing-test') {
+      navigate('/ielts-writing-test');
+    } else if (link === '/ielts-speaking-test') {
+      navigate('/ielts-speaking-test');
+    } else {
+      navigate(link);
+    }
+  };
+
   if (!imageLoaded) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
@@ -420,52 +459,7 @@ const IELTSPortal = () => {
             {/* Skill Practice Quick Links */}
             <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center">Study each part</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                {IELTS_SKILLS.map((skill, index) => {
-                  const progress = ieltsSkillProgress[skill.id];
-                  const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
-                  
-                  // Skill-specific images
-                  const skillImages = [
-                    '/reading.png',    // Reading
-                    '/listening.png',  // Listening  
-                    '/writing.png',    // Writing
-                    '/speaking.png'    // Speaking
-                  ];
-                  
-                  const skillImage = skillImages[index];
-                  
-                  return (
-                    <SpotlightCard key={skill.id} className="cursor-pointer min-h-[140px]" onClick={() => handleSkillClick(skill.id)}>
-                      <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
-                        <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                          <img
-                            src={skillImage}
-                            alt={`${skill.title} icon`}
-                            className="w-12 h-12 object-cover"
-                          />
-                        </div>
-                        <h3 className="font-semibold text-xs md:text-sm text-slate-800 mb-2">{skill.title}</h3>
-
-                        {progress && (
-                          <div className="space-y-2 mb-2">
-                            <div className="text-xs text-muted-foreground text-center">
-                              {progress.completed}/{progress.total}
-                            </div>
-                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-yellow-500" />
-                          </div>
-                        )}
-
-                        {skillBands[skill.id] && skill.id !== 'speaking' && (
-                          <div className="text-xs text-slate-600 font-medium">
-                            {skillBands[skill.id]}
-                          </div>
-                        )}
-                      </CardContent>
-                    </SpotlightCard>
-                  );
-                })}
-              </div>
+              <HoverEffect items={IELTS_SKILL_ITEMS} onItemClick={handleHoverEffectClick} />
             </div>
 
             {/* Sharpening Your Skills */}

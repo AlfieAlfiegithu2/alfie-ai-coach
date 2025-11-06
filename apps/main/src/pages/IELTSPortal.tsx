@@ -421,12 +421,11 @@ const IELTSPortal = () => {
 
             {/* IELTS Portal Title - Header Style */}
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-foreground text-center tracking-tight font-nunito bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">IELTS Portal</h1>
-              <p className="text-sm md:text-base text-foreground/70 text-center mt-2 font-medium">Master English with AI-Powered IELTS Preparation</p>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-black text-center tracking-tight font-nunito">IELTS Portal</h1>
             </div>
 
             {/* Skill Practice Quick Links */}
-            <div className="mb-6 bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center font-nunito tracking-tight">Study each part</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {IELTS_SKILLS.map((skill, index) => {
@@ -477,7 +476,7 @@ const IELTSPortal = () => {
             </div>
 
             {/* Sharpening Your Skills */}
-            <div className="mb-6 bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center font-nunito tracking-tight">Sharpening Your Skills</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {/* Vocabulary Book card */}
@@ -515,7 +514,7 @@ const IELTSPortal = () => {
             </div>
 
             {/* Available IELTS Tests */}
-            <div className="mb-6 bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div className="mb-6">
               <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center font-nunito tracking-tight">Complete IELTS Tests</h2>
               {isLoading ? (
                 <div className="flex justify-center py-8">

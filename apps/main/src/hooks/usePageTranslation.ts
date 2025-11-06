@@ -27,7 +27,10 @@ export const usePageTranslation = (pageKey: string, defaultContent: PageContent,
     if (language === 'en') {
       setContent(defaultContent);
       // Silently try to update content hash (don't fail if no permissions)
-      updateContentVersion(pageKey, defaultContent).catch(() => {});
+      // Use setTimeout to make it truly async and prevent blocking
+      setTimeout(() => {
+        updateContentVersion(pageKey, defaultContent).catch(() => {});
+      }, 0);
       return;
     }
 
@@ -82,18 +85,27 @@ export const usePageTranslation = (pageKey: string, defaultContent: PageContent,
   return { content, isLoading };
 };
 
-// Helper function to update content version
+// Helper function to update content version - completely silent
 async function updateContentVersion(pageKey: string, content: PageContent) {
   try {
     const contentHash = createContentHash(content);
-    await supabase
-      .from('page_content_versions')
-      .upsert({
-        page_key: pageKey,
-        content_hash: contentHash,
-        last_updated: new Date().toISOString()
-      });
+    // Use a timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout')), 2000)
+    );
+
+    await Promise.race([
+      supabase
+        .from('page_content_versions')
+        .upsert({
+          page_key: pageKey,
+          content_hash: contentHash,
+          last_updated: new Date().toISOString()
+        }),
+      timeoutPromise
+    ]);
   } catch (error) {
-    console.error('Failed to update content version:', error);
+    // Completely silent - no console logging
+    return;
   }
 }

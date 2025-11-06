@@ -436,20 +436,26 @@ const HeroIndex = () => {
       </header>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 relative group">
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <img className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100" src="/heropage.png" alt="English AIdol - Hero Page" />
+      <section className="pt-32 pb-20 relative group min-h-screen">
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="h-full w-full overflow-hidden">
+            <img 
+              className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100 object-center md:object-[35%_center] md:scale-100 scale-[1.15] md:translate-x-0 -translate-x-[10%]" 
+              src="/hero-nov06.png?v=1" 
+              alt="Updated hero background image" 
+            />
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mt-40 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-40">
-          <div className="max-w-3xl">
-            <h1 className="sm:text-5xl md:text-7xl md:font-bold text-4xl font-semibold tracking-tight font-nunito mt-6">
+        <div className="relative z-10 max-w-7xl mt-20 md:mt-40 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-40">
+          <div className="max-w-3xl mx-auto md:mx-0">
+            <h1 className="sm:text-5xl md:text-7xl md:font-bold text-4xl font-semibold tracking-tight font-nunito mt-6 text-center md:text-left">
               {getText(['hero', 'title'])}
             </h1>
-            <p className="sm:text-lg text-base text-black/80 font-nunito mt-4">
+            <p className="sm:text-lg text-base text-black/80 font-nunito mt-4 text-center md:text-left">
               {getText(['hero', 'subtitle'])}
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-3 justify-center md:justify-start">
               <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                 <Hand className="h-4 w-4" />
                 {getText(['hero', 'startButton'])}
@@ -533,7 +539,7 @@ const HeroIndex = () => {
             {/* IELTS Card */}
             <div className="text-center">
               <div className="w-32 h-32 mx-auto mb-4 overflow-hidden rounded-lg">
-                <img src="/IELTS.png" alt="IELTS" className="w-full h-full object-contain" />
+                <img src="/hero-nov06.png" alt="IELTS" className="w-full h-full object-contain" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 font-nunito">{getText(['programs', 'cards', 'ielts', 'title'])}</h3>
             </div>

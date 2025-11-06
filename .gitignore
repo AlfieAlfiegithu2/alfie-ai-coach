@@ -8,9 +8,11 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
 dist-ssr
 *.local
+# Allow dist directories for CI/CD builds
+!apps/main/dist/
+!dist/
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +24,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Allow hero images and essential assets in public folder
+# Keep small icons and essential images
+public/*-icon.*
+public/*-logo.*
+public/*-badge.*
+public/*avatar*
+public/favicon.ico
+public/placeholder.svg
+# Allow hero images (optimize to <2MB for CI/CD performance)
+!public/hero-*
+!public/*hero*
+!public/*background*

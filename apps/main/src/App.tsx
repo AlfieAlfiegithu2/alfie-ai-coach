@@ -253,9 +253,9 @@ const App = () => {
             <Route path="/ielts-writing-test" element={<IELTSWritingTest />} />
             <Route path="/ielts-writing-results" element={<IELTSWritingResults />} />
             <Route path="/ielts-writing-results-pro" element={<IELTSWritingProResults />} />
+            <Route path="/ielts-speaking-test" element={<IELTSSpeakingTest />} />
             <Route path="/ielts-speaking-test/:testId" element={<IELTSSpeakingTest />} />
             <Route path="/ielts-speaking-test/:testName" element={<IELTSSpeakingTest />} />
-            <Route path="/ielts-speaking-test" element={<IELTSSpeakingTest />} />
             <Route path="/ielts-speaking-results" element={<IELTSSpeakingResults />} />
             <Route path="/enhanced-reading-test/:testId" element={<EnhancedReadingTest />} />
             {/* PTE Admin Routes */}

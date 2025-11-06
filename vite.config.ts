@@ -18,6 +18,53 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       port: 8080,
       strictPort: false,
+      proxy: {
+        '/rest/v1': {
+          target: 'https://cuumxmfzhwljylbdlflj.supabase.co',
+          changeOrigin: true,
+          configure: (proxy, options) => {
+            proxy.on('error', (err, req, res) => {
+              console.log('proxy error', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('Sending Request to Supabase:', req.method, req.url);
+            });
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              console.log('Received Response from Supabase:', proxyRes.statusCode, req.url);
+            });
+          },
+        },
+        '/auth/v1': {
+          target: 'https://cuumxmfzhwljylbdlflj.supabase.co',
+          changeOrigin: true,
+          configure: (proxy, options) => {
+            proxy.on('error', (err, req, res) => {
+              console.log('proxy error', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('Sending Auth Request to Supabase:', req.method, req.url);
+            });
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              console.log('Received Auth Response from Supabase:', proxyRes.statusCode, req.url);
+            });
+          },
+        },
+        '/storage/v1': {
+          target: 'https://cuumxmfzhwljylbdlflj.supabase.co',
+          changeOrigin: true,
+          configure: (proxy, options) => {
+            proxy.on('error', (err, req, res) => {
+              console.log('proxy error', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('Sending Storage Request to Supabase:', req.method, req.url);
+            });
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              console.log('Received Storage Response from Supabase:', proxyRes.statusCode, req.url);
+            });
+          },
+        },
+      },
     },
     build: {
       outDir: path.resolve(appRoot, "dist"),

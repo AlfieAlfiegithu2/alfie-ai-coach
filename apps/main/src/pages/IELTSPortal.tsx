@@ -379,12 +379,6 @@ const IELTSPortal = () => {
     }
   };
 
-  const handleTestClick = (testId: string) => {
-    console.log(`🧪 Opening IELTS test ${testId}`);
-    navigate(`/ielts-test-modules/${testId}`);
-  };
-
-
   if (!imageLoaded) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <LoadingAnimation />
@@ -425,9 +419,9 @@ const IELTSPortal = () => {
             </div>
 
             {/* Skill Practice Quick Links */}
-            <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center font-nunito tracking-tight">Study each part</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="mb-8">
+              <h2 className="text-xl md:text-2xl font-bold mb-6 text-foreground text-center font-nunito tracking-tight">Study each part</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
@@ -476,9 +470,9 @@ const IELTSPortal = () => {
             </div>
 
             {/* Sharpening Your Skills */}
-            <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center font-nunito tracking-tight">Sharpening Your Skills</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="mb-8">
+              <h2 className="text-xl md:text-2xl font-bold mb-6 text-foreground text-center font-nunito tracking-tight">Sharpening Your Skills</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {/* Vocabulary Book card */}
                 <SpotlightCard className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => navigate('/vocabulary')}>
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
@@ -513,81 +507,6 @@ const IELTSPortal = () => {
               </div>
             </div>
 
-            {/* Available IELTS Tests */}
-            <div className="mb-6">
-              <h2 className="text-xl md:text-2xl font-bold mb-4 text-foreground text-center font-nunito tracking-tight">Complete IELTS Tests</h2>
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <LoadingAnimation />
-                </div>
-              ) : availableTests.length > 0 ? (
-                <div className="flex overflow-x-auto pb-5 gap-3 md:gap-4" style={{ scrollbarWidth: 'thin' }}>
-                  {availableTests.map((test, index) => {
-                    // Animal photos array - cycling through available animals
-                    const animalPhotos = [
-                      '/panda.png',
-                      '/koala.png', 
-                      '/cat.png',
-                      '/puppy.png',
-                      '/rabbit.png',
-                      '/bear.png',
-                      '/fox.png',
-                      '/hedgehog.png',
-                      '/otter.png',
-                      '/seal.png',
-                      '/chick.png',
-                      '/duck.png',
-                      '/Hamster.png',
-                      '/Monkey.png',
-                      '/Penguine.png',
-                      '/dear.png',
-                      '/piglet.png',
-                      '/polar bear.png',
-                      '/squerrel.png'
-                    ];
-                    
-                    const animalImage = animalPhotos[index % animalPhotos.length];
-                    
-                    return (
-                      <SpotlightCard
-                        key={test.id}
-                        className="cursor-pointer flex-shrink-0 w-64 md:w-72 p-0"
-                        onClick={() => !test.comingSoon && handleTestClick(test.id)}
-                      >
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center gap-3 mb-2">
-                            <img
-                              src={animalImage}
-                              alt={`Test ${test.test_number} mascot`}
-                              className="w-12 h-12 rounded-full object-cover bg-white/10 p-1"
-                            />
-                            <CardTitle className="text-base md:text-lg flex-1 flex justify-between items-center">
-                              <span>Test {test.test_number}</span>
-                              {test.comingSoon && (
-                                <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
-                                  Coming Soon
-                                </span>
-                              )}
-                            </CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <div className="text-xs md:text-sm text-muted-foreground mb-3">
-                            <p>{test.test_name}</p>
-                          </div>
-                        </CardContent>
-                      </SpotlightCard>
-                    );
-                  })}
-                </div>
-              ) : (
-                <SpotlightCard>
-                  <CardContent className="p-6 text-center">
-                    <p className="text-muted-foreground">No IELTS tests available yet. Check back soon!</p>
-                  </CardContent>
-                </SpotlightCard>
-              )}
-            </div>
           </div>
         </StudentLayout>
       </div>

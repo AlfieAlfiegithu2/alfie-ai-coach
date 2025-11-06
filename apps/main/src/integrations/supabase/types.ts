@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -20,7 +20,7 @@ export type Database = {
           admin_id: string | null
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           record_id: string | null
@@ -32,7 +32,7 @@ export type Database = {
           admin_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -44,7 +44,7 @@ export type Database = {
           admin_id?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -59,7 +59,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           last_accessed: string | null
           session_token: string
           user_agent: string | null
@@ -69,7 +69,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_accessed?: string | null
           session_token: string
           user_agent?: string | null
@@ -79,7 +79,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_accessed?: string | null
           session_token?: string
           user_agent?: string | null
@@ -381,6 +381,84 @@ export type Database = {
           is_active?: boolean
           tips?: string[] | null
           title?: string
+        }
+        Relationships: []
+      }
+      earthworm_user_progress: {
+        Row: {
+          accuracy_percentage: number | null
+          completed_at: string | null
+          course_id: string | null
+          created_at: string | null
+          id: string
+          lesson_id: string
+          score: number | null
+          time_spent_seconds: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accuracy_percentage?: number | null
+          completed_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          score?: number | null
+          time_spent_seconds?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accuracy_percentage?: number | null
+          completed_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          score?: number | null
+          time_spent_seconds?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      earthworm_user_stats: {
+        Row: {
+          average_score: number | null
+          created_at: string | null
+          current_streak_days: number | null
+          id: string
+          last_activity_date: string | null
+          longest_streak_days: number | null
+          total_lessons_completed: number | null
+          total_time_spent_seconds: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          average_score?: number | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak_days?: number | null
+          total_lessons_completed?: number | null
+          total_time_spent_seconds?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          average_score?: number | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak_days?: number | null
+          total_lessons_completed?: number | null
+          total_time_spent_seconds?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1116,6 +1194,7 @@ export type Database = {
           part_number: number | null
           prompt_text: string
           sample_answer: string | null
+          test_id: string | null
           test_number: number | null
           time_limit: number | null
           title: string
@@ -1133,6 +1212,7 @@ export type Database = {
           part_number?: number | null
           prompt_text: string
           sample_answer?: string | null
+          test_id?: string | null
           test_number?: number | null
           time_limit?: number | null
           title: string
@@ -1150,13 +1230,22 @@ export type Database = {
           part_number?: number | null
           prompt_text?: string
           sample_answer?: string | null
+          test_id?: string | null
           test_number?: number | null
           time_limit?: number | null
           title?: string
           transcription?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "speaking_prompts_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       speaking_test_results: {
         Row: {
@@ -2420,26 +2509,12 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_expired_admin_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_audio: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_rate_limits: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_writing_analysis_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
+      cleanup_expired_audio: { Args: never; Returns: undefined }
+      cleanup_expired_cache: { Args: never; Returns: undefined }
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      cleanup_translation_queue: { Args: never; Returns: undefined }
+      cleanup_writing_analysis_cache: { Args: never; Returns: undefined }
       get_audio_analytics_summary: {
         Args: { days_back?: number }
         Returns: {
@@ -2461,7 +2536,7 @@ export type Database = {
         }[]
       }
       get_storage_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avg_bytes: number
           bucket_id: string
@@ -2470,17 +2545,14 @@ export type Database = {
         }[]
       }
       get_translation_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           last_translation: string
           total_translations: number
           unique_cards: number
         }[]
       }
-      grant_admin_role: {
-        Args: { user_email: string }
-        Returns: undefined
-      }
+      grant_admin_role: { Args: { user_email: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2489,21 +2561,12 @@ export type Database = {
         Returns: boolean
       }
       invalidate_translations_on_content_change: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: undefined
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      set_user_as_admin: {
-        Args: { user_email: string }
-        Returns: undefined
-      }
-      update_question_numbering: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      is_admin: { Args: never; Returns: boolean }
+      set_user_as_admin: { Args: { user_email: string }; Returns: undefined }
+      update_question_numbering: { Args: never; Returns: undefined }
       validate_admin_session: {
         Args: { session_token: string }
         Returns: {

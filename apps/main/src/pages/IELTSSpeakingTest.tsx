@@ -684,37 +684,39 @@ const IELTSSpeakingTest = () => {
                backgroundColor: '#ffffff'
              }} />
         <div className="relative z-10">
-          <StudentLayout>
+          <StudentLayout title="Available Speaking Tests">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Speaking Tests</h1>
-                <p className="text-lg text-muted-foreground">Choose a test to begin your speaking practice</p>
-              </div>
+                <div className="max-w-4xl mx-auto">
+                  <div className="mb-8">
+                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Speaking Tests</h1>
+                    <p className="text-lg text-muted-foreground">Choose a test to begin your speaking practice</p>
+                  </div>
 
-              {availableTests.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {availableTests.map((test) => (
-                  <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}>
-                    <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                      <h3 className="font-semibold text-sm">{test.test_name}</h3>
-                    </CardContent>
-                  </SpotlightCard>
-                ))}
-              </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-lg text-muted-foreground mb-4">No speaking tests available yet</p>
-                  <Button onClick={() => navigate('/ielts-portal')} variant="outline">
-                    Back to Portal
-                  </Button>
+                  {availableTests.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {availableTests.map((test) => (
+                        <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}>
+                          <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                            <h3 className="font-semibold text-sm">{test.test_name}</h3>
+                          </CardContent>
+                        </SpotlightCard>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-lg text-muted-foreground mb-4">No speaking tests available yet</p>
+                      <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                        Back to Portal
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          </StudentLayout>
         </div>
-      </StudentLayout>
+      </div>
     );
   }
 

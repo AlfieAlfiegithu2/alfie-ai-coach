@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Journey Button - Default CTA style across the website */
+.journey-btn {
+  @apply inline-flex items-center gap-2 font-semibold font-nunito;
+  @apply bg-white/60 backdrop-blur-md border border-white/20 text-black;
+  @apply hover:bg-white/80 shadow-lg hover:shadow-xl;
+  @apply transform hover:scale-105 transition;
+  @apply focus:outline-none focus:ring-2 focus:ring-black/20;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
+}
+
+/* Journey Button Sizes */
+.journey-btn-sm {
+  @apply px-4 py-2 text-sm rounded-lg;
+}
+
+.journey-btn-md {
+  @apply px-6 py-3 text-sm rounded-xl;
+}
+
+.journey-btn-lg {
+  @apply px-8 py-4 text-base rounded-xl;
+}
+
+/* Journey Button Variants */
+.journey-btn-primary {
+  @apply font-semibold;
+}
+
+.journey-btn-secondary {
+  @apply font-medium;
+}
+
 /* Word Card Corner-Wipe Animation */
 .word-card {
   position: relative;

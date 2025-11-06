@@ -525,33 +525,36 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                backgroundColor: '#ffffff'
              }} />
         <div className="relative z-10">
-          <StudentLayout>
+          <StudentLayout title="Available Writing Tests">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Writing Tests</h1>
-                <p className="text-lg text-muted-foreground">Choose a test to begin your writing practice</p>
-              </div>
+                <div className="max-w-4xl mx-auto">
+                  <div className="mb-8">
+                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Writing Tests</h1>
+                    <p className="text-lg text-muted-foreground">Choose a test to begin your writing practice</p>
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {availableTests.map((test) => (
-                  <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/writing/${test.id}`)}>
-                    <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                      <h3 className="font-semibold text-sm">{test.test_name}</h3>
-                    </CardContent>
-                  </SpotlightCard>
-                ))}
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {availableTests.map((test) => (
+                      <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/writing/${test.id}`)}>
+                        <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                          <h3 className="font-semibold text-sm">{test.test_name}</h3>
+                        </CardContent>
+                      </SpotlightCard>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-      </StudentLayout>
+          </StudentLayout>
+        </div>
+      </div>
     );
   }
 
   if (!testId && availableTests.length === 0) {
     return (
-      <StudentLayout>
+      <StudentLayout title="Writing Tests">
         <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl font-bold text-foreground mb-4">IELTS Writing Tests</h1>

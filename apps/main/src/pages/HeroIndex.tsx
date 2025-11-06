@@ -15,6 +15,7 @@ import { usePageTranslation, PageContent } from "@/hooks/usePageTranslation";
 import { PricingCard } from "@/components/PricingCard";
 import SkillsProgressChart from "@/components/SkillsProgressChart";
 import SEO from "@/components/SEO";
+import JourneyButton from "@/components/JourneyButton";
 import { motion } from "framer-motion";
 const HeroIndex = () => {
   const navigate = useNavigate();
@@ -390,14 +391,13 @@ const HeroIndex = () => {
                   <LanguageSelector />
                 </div>
                 {user ? (
-                  <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
-                    <Calendar className="h-4 w-4" />
+                  <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />}>
                     {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
-                  </button>
+                  </JourneyButton>
                 ) : (
-                  <button onClick={() => navigate('/auth')} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
+                  <JourneyButton onClick={() => navigate('/auth')} size="sm">
                     {t('header.signIn', { defaultValue: 'Sign In' })}
-                  </button>
+                  </JourneyButton>
                 )}
               </div>
 
@@ -414,14 +414,13 @@ const HeroIndex = () => {
                   {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
                   <div className="mt-2 flex gap-2">
                     {user ? (
-                      <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
-                        <Calendar className="h-4 w-4" />
+                      <JourneyButton onClick={handleAuthAction} size="sm" leftIcon={<Calendar className="h-4 w-4" />} className="flex-1">
                         {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
-                      </button>
+                      </JourneyButton>
                     ) : (
-                      <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
+                      <JourneyButton onClick={() => navigate('/auth')} size="sm" className="flex-1">
                         {t('header.signIn', { defaultValue: 'Sign In' })}
-                      </button>
+                      </JourneyButton>
                     )}
                   </div>
                 </nav>
@@ -451,14 +450,12 @@ const HeroIndex = () => {
               {getText(['hero', 'subtitle'])}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-3 justify-start">
-              <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito transform hover:scale-105">
-                <Hand className="h-4 w-4" />
+              <JourneyButton onClick={handleAuthAction} leftIcon={<Hand className="h-4 w-4" />}>
                 {getText(['hero', 'startButton'])}
-              </button>
-              <button onClick={() => navigate('/ielts-portal')} className="inline-flex items-center gap-2 transition hover:bg-white/80 text-sm font-medium text-black font-nunito bg-white/60 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3 shadow-lg hover:shadow-xl transform hover:scale-105">
-                <Compass className="h-4 w-4" />
+              </JourneyButton>
+              <JourneyButton onClick={() => navigate('/ielts-portal')} variant="secondary" leftIcon={<Compass className="h-4 w-4" />}>
                 {getText(['hero', 'exploreButton'])}
-              </button>
+              </JourneyButton>
             </div>
           </div>
         </div>

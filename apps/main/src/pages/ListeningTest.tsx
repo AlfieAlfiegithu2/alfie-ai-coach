@@ -513,40 +513,43 @@ const ListeningTest = () => {
           <StudentLayout title="Available Listening Tests">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Listening Tests</h1>
-                <p className="text-lg text-muted-foreground">Choose a test to begin your listening practice</p>
-              </div>
+                <div className="max-w-4xl mx-auto">
+                  <div className="mb-8">
+                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Listening Tests</h1>
+                    <p className="text-lg text-muted-foreground">Choose a test to begin your listening practice</p>
+                  </div>
 
-              {availableTests.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {availableTests.map((test) => (
-                    <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/listening/${test.id}`)}>
-                      <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                        <h3 className="font-semibold text-sm">{test.test_name || `Listening Test ${test.test_number || ''}`}</h3>
-                      </CardContent>
-                    </SpotlightCard>
-                  ))}
+                  {availableTests.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {availableTests.map((test) => (
+                        <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/listening/${test.id}`)}>
+                          <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                            <h3 className="font-semibold text-sm">{test.test_name || `Listening Test ${test.test_number || ''}`}</h3>
+                          </CardContent>
+                        </SpotlightCard>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-lg text-muted-foreground mb-4">No listening tests available yet</p>
+                      <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                        Back to Portal
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-lg text-muted-foreground mb-4">No listening tests available yet</p>
-                  <Button onClick={() => navigate('/ielts-portal')} variant="outline">
-                    Back to Portal
-                  </Button>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
+          </StudentLayout>
         </div>
-      </StudentLayout>
+      </div>
     );
   }
 
   return (
-    <StudentLayout title="Listening Test" showBackButton backPath="/tests">
-      <div className="max-w-7xl mx-auto p-6">
+    <>
+      <StudentLayout title="Listening Test" showBackButton backPath="/tests">
+        <div className="max-w-7xl mx-auto p-6">
         {/* Test Header */}
         <div className="mb-6 p-4 rounded-xl border-light-border" style={{ background: 'var(--gradient-card)' }}>
           <div className="flex items-center justify-between">
@@ -859,8 +862,9 @@ const ListeningTest = () => {
           </div>
         </div>
       </div>
+    </StudentLayout>
 
-      {/* Confirmation Dialog */}
+    {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="rounded-2xl border-light-border">
           <DialogHeader>
@@ -888,7 +892,7 @@ const ListeningTest = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </StudentLayout>
+    </>
   );
 };
 

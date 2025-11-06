@@ -390,12 +390,12 @@ const HeroIndex = () => {
                   <LanguageSelector />
                 </div>
                 {user ? (
-                  <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                  <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
                     <Calendar className="h-4 w-4" />
                     {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
                   </button>
                 ) : (
-                  <button onClick={() => navigate('/auth')} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                  <button onClick={() => navigate('/auth')} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
                     {t('header.signIn', { defaultValue: 'Sign In' })}
                   </button>
                 )}
@@ -414,12 +414,12 @@ const HeroIndex = () => {
                   {/* Mobile navigation items removed - keeping only Dashboard and English Aidol */}
                   <div className="mt-2 flex gap-2">
                     {user ? (
-                      <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                      <button onClick={handleAuthAction} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
                         <Calendar className="h-4 w-4" />
                         {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFree', { defaultValue: 'Start Free' })}
                       </button>
                     ) : (
-                      <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                      <button onClick={() => navigate('/auth')} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito">
                         {t('header.signIn', { defaultValue: 'Sign In' })}
                       </button>
                     )}
@@ -444,18 +444,18 @@ const HeroIndex = () => {
 
         <div className="relative z-10 max-w-7xl mt-32 md:mt-48 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-48">
           <div className="max-w-4xl">
-            <h1 className="sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight font-nunito mt-12 text-left leading-tight">
+            <h1 className="sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight font-nunito mt-20 text-left leading-tight">
               {getText(['hero', 'title'])}
             </h1>
             <p className="sm:text-lg md:text-xl text-base text-black/80 font-nunito mt-6 text-left max-w-2xl leading-relaxed">
               {getText(['hero', 'subtitle'])}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-3 justify-start">
-              <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+              <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition bg-white/60 backdrop-blur-md border border-white/20 text-black hover:bg-white/80 shadow-lg hover:shadow-xl font-nunito transform hover:scale-105">
                 <Hand className="h-4 w-4" />
                 {getText(['hero', 'startButton'])}
               </button>
-              <button onClick={() => navigate('/ielts-portal')} className="inline-flex items-center gap-2 transition hover:bg-black/5 text-sm font-medium text-black font-nunito bg-black/0 border-black/10 border rounded-xl pt-3 pr-5 pb-3 pl-5 backdrop-blur-xl">
+              <button onClick={() => navigate('/ielts-portal')} className="inline-flex items-center gap-2 transition hover:bg-white/80 text-sm font-medium text-black font-nunito bg-white/60 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3 shadow-lg hover:shadow-xl transform hover:scale-105">
                 <Compass className="h-4 w-4" />
                 {getText(['hero', 'exploreButton'])}
               </button>

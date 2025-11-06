@@ -545,7 +545,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </div>
             </div>
           </div>
-        </div>
       </StudentLayout>
     );
   }

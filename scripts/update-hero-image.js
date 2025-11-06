@@ -19,8 +19,8 @@ function updateHeroImage(imagePath, altText = '') {
 
     let heroContent = readFileSync(heroFilePath, 'utf8');
 
-    // Find and replace the hero image src
-    const imageRegex = /src="\/hero-[^"]*\.(png|jpg|jpeg)"/i;
+    // Find and replace the hero image src - look for the img tag in the hero section
+    const imageRegex = /src="[^"]*\.(png|jpg|jpeg)"/i;
     const altRegex = /alt="[^"]*"/;
 
     const newImageTag = `src="${imagePath}"`;

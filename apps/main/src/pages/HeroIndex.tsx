@@ -390,15 +390,10 @@ const HeroIndex = () => {
                   <LanguageSelector />
                 </div>
                 {user ? (
-                  <>
-                    <button onClick={() => navigate('/dashboard')} className="hidden md:inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition border-black/10 bg-black/0 text-black/90 hover:bg-black/5 font-nunito">
-                      {t('header.dashboard', { defaultValue: 'Dashboard' })}
-                    </button>
-                    <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
-                      <Calendar className="h-4 w-4" />
-                      {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
-                    </button>
-                  </>
+                  <button onClick={handleAuthAction} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
+                    <Calendar className="h-4 w-4" />
+                    {user ? t('header.dashboard', { defaultValue: 'Dashboard' }) : t('header.startFreeTrial', { defaultValue: 'Start Free Trial' })}
+                  </button>
                 ) : (
                   <button onClick={() => navigate('/auth')} className="hidden md:inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                     {t('header.signIn', { defaultValue: 'Sign In' })}
@@ -441,21 +436,21 @@ const HeroIndex = () => {
           <div className="h-full w-full overflow-hidden">
             <img 
               className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100 object-center md:object-[35%_center] md:scale-100 scale-[1.15] md:translate-x-0 -translate-x-[10%]" 
-              src="/1000031207.png?v=1" 
+              src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png" 
               alt="Updated hero background image" 
             />
           </div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mt-20 md:mt-40 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-40">
-          <div className="max-w-3xl mx-auto md:mx-0">
-            <h1 className="sm:text-5xl md:text-7xl md:font-bold text-4xl font-semibold tracking-tight font-nunito mt-6 text-center md:text-left">
+        <div className="relative z-10 max-w-7xl mt-32 md:mt-48 mr-auto ml-auto pr-4 pl-4 sm:px-6 lg:px-8 lg:pt-48">
+          <div className="max-w-4xl">
+            <h1 className="sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight font-nunito mt-12 text-left leading-tight">
               {getText(['hero', 'title'])}
             </h1>
-            <p className="sm:text-lg text-base text-black/80 font-nunito mt-4 text-center md:text-left">
+            <p className="sm:text-lg md:text-xl text-base text-black/80 font-nunito mt-6 text-left max-w-2xl leading-relaxed">
               {getText(['hero', 'subtitle'])}
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3 justify-center md:justify-start">
+            <div className="mt-10 flex flex-wrap items-center gap-3 justify-start">
               <button onClick={handleAuthAction} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition bg-black text-neutral-100 hover:bg-black/90 font-nunito">
                 <Hand className="h-4 w-4" />
                 {getText(['hero', 'startButton'])}

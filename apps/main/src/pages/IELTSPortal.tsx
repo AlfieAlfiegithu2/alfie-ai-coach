@@ -58,7 +58,7 @@ const IELTSPortal = () => {
     // Preload the background image
     const img = new Image();
     img.onload = () => setImageLoaded(true);
-    img.src = '/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png';
+    img.src = 'https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png';
 
     // Auto-refresh available tests every 30 seconds to show new admin-created tests
     const testRefreshInterval = setInterval(() => {
@@ -287,7 +287,7 @@ const IELTSPortal = () => {
           .select('max_unlocked_level')
           .eq('user_id', user.id)
           .eq('skill_slug', skill.slug)
-          .single();
+          .maybeSingle();
 
         // Get total available tests for this skill
         const { data: totalTests } = await supabase
@@ -402,7 +402,7 @@ const IELTSPortal = () => {
       />
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
            style={{
-             backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+             backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
              backgroundColor: '#f3f4f6'
            }} />
       <div className="relative z-10">

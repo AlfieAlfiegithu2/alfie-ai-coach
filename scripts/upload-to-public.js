@@ -39,14 +39,15 @@ async function uploadToPublic(sourcePath, targetName) {
     // Copy the file
     copyFileSync(sourcePath, targetPath);
 
+    // Check file size and warn if too large
+    const fs = await import('fs');
+    const stats = fs.statSync(sourcePath);
+    const sizeMB = stats.size / (1024 * 1024);
+
     console.log(`✅ Image uploaded to public folder:`);
     console.log(`   📁 Location: public/${finalName}`);
     console.log(`   🌐 URL: /${finalName}`);
-    console.log(`   📏 Size: ${require('fs').statSync(sourcePath).size} bytes`);
-
-    // Check file size and warn if too large
-    const stats = require('fs').statSync(sourcePath);
-    const sizeMB = stats.size / (1024 * 1024);
+    console.log(`   📏 Size: ${stats.size} bytes (${sizeMB.toFixed(1)}MB)`);
 
     if (sizeMB > 2) {
       console.log(`⚠️  Warning: File is ${sizeMB.toFixed(1)}MB. Large files may slow down CI/CD builds.`);

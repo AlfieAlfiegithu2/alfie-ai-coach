@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -424,7 +423,6 @@ const IELTSPortal = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
-                  const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
 
                   // Skill-specific images
                   const skillImages = [
@@ -446,22 +444,7 @@ const IELTSPortal = () => {
                             className="w-12 h-12 object-cover"
                           />
                         </div>
-                        <h3 className="font-semibold text-xs md:text-sm text-slate-800 mb-2">{skill.title}</h3>
-
-                        {progress && (
-                          <div className="space-y-2 mb-2">
-                            <div className="text-xs text-muted-foreground text-center">
-                              {progress.completed}/{progress.total}
-                            </div>
-                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-yellow-500" />
-                          </div>
-                        )}
-
-                        {skillBands[skill.id] && skill.id !== 'speaking' && (
-                          <div className="text-xs text-slate-600 font-medium">
-                            {skillBands[skill.id]}
-                          </div>
-                        )}
+                        <h3 className="font-semibold text-xs md:text-sm text-slate-800">{skill.title}</h3>
                       </CardContent>
                     </SpotlightCard>
                   );
@@ -477,29 +460,16 @@ const IELTSPortal = () => {
                 <SpotlightCard className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => navigate('/vocabulary')}>
                   <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                     <h3 className="font-semibold text-xs md:text-sm">Vocabulary Book</h3>
-                    <div className="text-xs text-muted-foreground mt-2 text-center">
-                      {vocabProgress.completed}/{vocabProgress.total}
-                    </div>
                   </CardContent>
                 </SpotlightCard>
                 
                 {SKILLS.map((skill) => {
                   const progress = skillProgress[skill.slug];
-                  const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
                   
                   return (
                     <SpotlightCard key={skill.slug} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => handleSkillClick(skill.slug)}>
                       <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
                         <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
-
-                        {progress && (
-                          <div className="mt-3 space-y-2">
-                            <div className="text-xs text-muted-foreground text-center">
-                              {progress.completed}/{progress.total}
-                            </div>
-                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-yellow-500" />
-                          </div>
-                        )}
                       </CardContent>
                     </SpotlightCard>
                   );

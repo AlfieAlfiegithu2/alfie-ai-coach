@@ -39,10 +39,6 @@ const IELTSSpeakingTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Safety check for testId
-  if (!testId) {
-    console.error('No testId provided in route params');
-  }
   
   const [testData, setTestData] = useState<TestData | null>(null);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
@@ -689,9 +685,8 @@ const IELTSSpeakingTest = () => {
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
-                  <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Speaking Tests</h1>
-                    <p className="text-lg text-muted-foreground">Choose a test to begin your speaking practice</p>
+                  <div className="mb-8 text-center">
+                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS speaking tests</h1>
                   </div>
 
                   {availableTests.length > 0 ? (

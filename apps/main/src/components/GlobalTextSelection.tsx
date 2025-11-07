@@ -20,21 +20,55 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
 
   // Load and refresh user's preferred language
   useEffect(() => {
-    const loadUserLanguage = async () => {
-      if (user) {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('native_language')
-          .eq('id', user.id)
-          .single();
+    const loadUserLanguage = async (retryCount = 0) => {
+      const maxRetries = 3;
+      const retryDelay = Math.pow(2, retryCount) * 1000;
 
-        if (profile?.native_language) {
-          setTargetLanguage(profile.native_language);
+      if (user) {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('native_language')
+            .eq('id', user.id)
+            .maybeSingle(); // Use maybeSingle to avoid errors when profile doesn't exist
+
+          if (error) {
+            // Check if it's a network error that we should retry
+            const isNetworkError = error.message?.includes('Failed to fetch') ||
+                                  error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                                  error.message?.includes('NetworkError');
+
+            if (isNetworkError && retryCount < maxRetries) {
+              console.warn(`Network error loading user language (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+              setTimeout(() => loadUserLanguage(retryCount + 1), retryDelay);
+              return;
+            }
+
+            console.warn('Error loading user language:', error.message);
+            return;
+          }
+
+          if (profile?.native_language) {
+            setTargetLanguage(profile.native_language);
+          }
+        } catch (error: any) {
+          // Check if it's a network error that we should retry
+          const isNetworkError = error.message?.includes('Failed to fetch') ||
+                                error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                                error.message?.includes('NetworkError');
+
+          if (isNetworkError && retryCount < maxRetries) {
+            console.warn(`Network error loading user language (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+            setTimeout(() => loadUserLanguage(retryCount + 1), retryDelay);
+            return;
+          }
+
+          console.warn('Failed to load user language after retries:', error.message || error);
         }
       }
     };
-    
+
     loadUserLanguage();
     
     // Listen for storage events to detect language changes

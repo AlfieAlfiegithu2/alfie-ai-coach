@@ -79,7 +79,10 @@ export function useAuth(): UseAuthReturn {
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -88,7 +91,18 @@ export function useAuth(): UseAuthReturn {
         .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no profile exists
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        // Check if it's a network error that we should retry
+        const isNetworkError = error.message?.includes('Failed to fetch') ||
+                              error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                              error.message?.includes('NetworkError');
+
+        if (isNetworkError && retryCount < maxRetries) {
+          console.warn(`Network error fetching profile (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return fetchProfile(userId, retryCount + 1);
+        }
+
+        console.warn('Profile fetch error (non-retryable):', error.message);
         // Don't return early on profile fetch errors - still allow auth to complete
       }
 
@@ -122,8 +136,19 @@ export function useAuth(): UseAuthReturn {
       }
 
       return data;
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } catch (error: any) {
+      // Check if it's a network error that we should retry
+      const isNetworkError = error.message?.includes('Failed to fetch') ||
+                            error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                            error.message?.includes('NetworkError');
+
+      if (isNetworkError && retryCount < maxRetries) {
+        console.warn(`Network error fetching profile (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return fetchProfile(userId, retryCount + 1);
+      }
+
+      console.warn('Profile fetch failed after retries:', error.message || error);
       // Ensure profile is cleared on error
       setProfile(null);
     }

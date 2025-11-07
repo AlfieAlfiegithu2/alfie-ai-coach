@@ -37,7 +37,8 @@ const AdminIELTSSpeaking = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Loading test data...");
   
-  // Part 1: Interview (4 audio slots only)
+  // Part 1: Interview (dynamic number of questions)
+  const [part1Questions, setPart1Questions] = useState(4);
   const [part1Prompts, setPart1Prompts] = useState<SpeakingPrompt[]>([
     { title: "Interview Question 1", prompt_text: "Audio prompt", part_number: 1, time_limit: 2, transcription: "" },
     { title: "Interview Question 2", prompt_text: "Audio prompt", part_number: 1, time_limit: 2, transcription: "" },
@@ -108,7 +109,7 @@ const AdminIELTSSpeaking = () => {
         // Fetch speaking prompts for this specific test
         console.log('📝 Fetching speaking prompts via REST API...');
         const promptsResponse = await fetch(
-          `${baseUrl}/rest/v1/speaking_prompts?test_id=eq.${testId}&select=*&order=part_number.asc,created_at.asc`,
+          `${baseUrl}/rest/v1/speaking_prompts?test_id=eq.${testId}&select=*&order=part_number.asc,title.asc`,
           {
             headers: {
               'apikey': SUPABASE_KEY,
@@ -140,12 +141,28 @@ const AdminIELTSSpeaking = () => {
             const part3 = prompts.filter((p: any) => p.part_number === 3);
 
             if (part1.length > 0) {
-              const updatedPart1 = [...part1Prompts];
-              part1.forEach((prompt: any, index: number) => {
-                if (index < 4) {
-                  updatedPart1[index] = prompt;
-                }
+              // Sort Part 1 prompts by question number extracted from title
+              const sortedPart1 = part1.sort((a, b) => {
+                const numA = parseInt(a.title.match(/(\d+)/)?.[1] || '0');
+                const numB = parseInt(b.title.match(/(\d+)/)?.[1] || '0');
+                return numA - numB;
               });
+
+              console.log('📝 Loading part 1 prompts:', sortedPart1.length, 'questions');
+              sortedPart1.forEach((p, i) => console.log(`  Part 1 Q${i+1}:`, p.title, p.id));
+
+              // Update question count based on loaded data
+              setPart1Questions(Math.max(sortedPart1.length, 4));
+
+              const updatedPart1 = Array.from({ length: Math.max(sortedPart1.length, 4) }, (_, index) =>
+                sortedPart1[index] || part1Prompts[index] || {
+                  title: `Interview Question ${index + 1}`,
+                  prompt_text: "Audio prompt",
+                  part_number: 1,
+                  time_limit: 2,
+                  transcription: ""
+                }
+              );
               setPart1Prompts(updatedPart1);
             }
 
@@ -154,11 +171,18 @@ const AdminIELTSSpeaking = () => {
             }
 
             if (part3.length > 0) {
-              console.log('📝 Loading part 3 prompts:', part3.length, 'questions');
-              part3.forEach((p, i) => console.log(`  Part 3 Q${i+1}:`, p.title, p.id));
+              // Sort Part 3 prompts by question number extracted from title
+              const sortedPart3 = part3.sort((a, b) => {
+                const numA = parseInt(a.title.match(/(\d+)/)?.[1] || '0');
+                const numB = parseInt(b.title.match(/(\d+)/)?.[1] || '0');
+                return numA - numB;
+              });
+
+              console.log('📝 Loading part 3 prompts:', sortedPart3.length, 'questions');
+              sortedPart3.forEach((p, i) => console.log(`  Part 3 Q${i+1}:`, p.title, p.id));
 
               const updatedPart3 = [...part3Prompts];
-              part3.forEach((prompt: any, index: number) => {
+              sortedPart3.forEach((prompt: any, index: number) => {
                 if (index < updatedPart3.length) {
                   updatedPart3[index] = {
                     ...updatedPart3[index],
@@ -170,7 +194,7 @@ const AdminIELTSSpeaking = () => {
                 }
               });
               setPart3Prompts(updatedPart3);
-              setPart3Questions(Math.max(part3.length, 4));
+              setPart3Questions(Math.max(sortedPart3.length, 4));
               console.log('📝 Final part 3 setup:', updatedPart3.length, 'questions displayed');
             }
           }
@@ -286,13 +310,27 @@ const AdminIELTSSpeaking = () => {
     }
   };
 
+  const updatePart1Questions = (count: number) => {
+    setPart1Questions(count);
+    const newPrompts = Array.from({ length: count }, (_, index) =>
+      part1Prompts[index] || {
+        title: `Interview Question ${index + 1}`,
+        prompt_text: "Audio prompt",
+        part_number: 1,
+        time_limit: 2,
+        transcription: ""
+      }
+    );
+    setPart1Prompts(newPrompts);
+  };
+
   const updatePart3Questions = (count: number) => {
     setPart3Questions(count);
-    const newPrompts = Array.from({ length: count }, (_, index) => 
-      part3Prompts[index] || { 
-        title: `Discussion Question ${index + 1}`, 
-        prompt_text: "Audio prompt", 
-        part_number: 3, 
+    const newPrompts = Array.from({ length: count }, (_, index) =>
+      part3Prompts[index] || {
+        title: `Discussion Question ${index + 1}`,
+        prompt_text: "Audio prompt",
+        part_number: 3,
         time_limit: 2,
         transcription: ""
       }
@@ -335,30 +373,106 @@ const AdminIELTSSpeaking = () => {
 
       // For standalone prompts, we update existing prompts or create new ones
       if (prompts.length > 0) {
-        // Update existing prompts if they have IDs, otherwise create new ones
-        const promptsToUpsert = prompts.map(prompt => ({
-          title: prompt.title,
-          prompt_text: prompt.prompt_text,
-          part_number: prompt.part_number,
-          time_limit: prompt.time_limit,
-          sample_answer: null,
-          test_id: testId, // Link to this specific test
-          transcription: prompt.transcription || null,
-          audio_url: prompt.audio_url || null,
-          is_locked: true // Lock after saving
-        }));
+        console.log(`💾 Processing ${prompts.length} prompts...`);
 
-        console.log(`💾 Upserting prompts:`, promptsToUpsert);
+        // For Part 1 and Part 3 (multiple questions per part), we need to handle each question individually
+        if (partNumber === 1 || partNumber === 3) {
+          const promptsArray = partNumber === 1 ? part1Prompts : part3Prompts;
 
-        // Use upsert to either update existing or insert new
-        const { error: upsertError } = await supabase
-          .from('speaking_prompts')
-          .upsert(promptsToUpsert, {
-            onConflict: 'test_id,part_number',
-            ignoreDuplicates: false
-          });
+          for (let index = 0; index < prompts.length; index++) {
+            const prompt = prompts[index];
 
-        if (upsertError) throw upsertError;
+            // Check if prompt already exists for this test, part, and position
+            const { data: existingPrompt } = await supabase
+              .from('speaking_prompts')
+              .select('id, audio_url')
+              .eq('test_id', testId)
+              .eq('part_number', prompt.part_number)
+              .eq('title', prompt.title) // Match by title to identify specific question
+              .maybeSingle();
+
+            const promptData = {
+              title: prompt.title,
+              prompt_text: prompt.prompt_text,
+              part_number: prompt.part_number,
+              time_limit: prompt.time_limit,
+              sample_answer: null,
+              test_id: testId,
+              transcription: prompt.transcription || null,
+              audio_url: prompt.audio_url || null,
+              is_locked: true
+            };
+
+            if (existingPrompt) {
+              // Update existing prompt - preserve audio_url if not explicitly set
+              const updateData = {
+                ...promptData,
+                audio_url: prompt.audio_url || existingPrompt.audio_url || null
+              };
+              console.log(`📝 Updating existing prompt: ${prompt.title}`);
+              const { error: updateError } = await supabase
+                .from('speaking_prompts')
+                .update(updateData)
+                .eq('id', existingPrompt.id);
+
+              if (updateError) throw updateError;
+            } else {
+              // Insert new prompt
+              console.log(`📝 Inserting new prompt: ${prompt.title}`);
+              const { error: insertError } = await supabase
+                .from('speaking_prompts')
+                .insert(promptData);
+
+              if (insertError) throw insertError;
+            }
+          }
+        } else {
+          // For Part 2 (single prompt per part)
+          const prompt = prompts[0];
+
+          // Check if prompt already exists for this test and part
+          const { data: existingPrompt } = await supabase
+            .from('speaking_prompts')
+            .select('id, audio_url')
+            .eq('test_id', testId)
+            .eq('part_number', prompt.part_number)
+            .maybeSingle();
+
+          const promptData = {
+            title: prompt.title,
+            prompt_text: prompt.prompt_text,
+            part_number: prompt.part_number,
+            time_limit: prompt.time_limit,
+            sample_answer: null,
+            test_id: testId,
+            transcription: prompt.transcription || null,
+            audio_url: prompt.audio_url || null,
+            is_locked: true
+          };
+
+          if (existingPrompt) {
+            // Update existing prompt - preserve audio_url if not explicitly set
+            const updateData = {
+              ...promptData,
+              audio_url: prompt.audio_url || existingPrompt.audio_url || null
+            };
+            console.log(`📝 Updating existing Part 2 prompt`);
+            const { error: updateError } = await supabase
+              .from('speaking_prompts')
+              .update(updateData)
+              .eq('id', existingPrompt.id);
+
+            if (updateError) throw updateError;
+          } else {
+            // Insert new prompt
+            console.log(`📝 Inserting new Part 2 prompt`);
+            const { error: insertError } = await supabase
+              .from('speaking_prompts')
+              .insert(promptData);
+
+            if (insertError) throw insertError;
+          }
+        }
       }
 
       toast({
@@ -464,17 +578,30 @@ const AdminIELTSSpeaking = () => {
                 </div>
                 <div>
                   <CardTitle className="text-xl">Part 1: Interview</CardTitle>
-                  <p className="text-sm text-muted-foreground">4 personal questions (4-5 minutes total)</p>
+                  <p className="text-sm text-muted-foreground">Personal questions (4-5 minutes total)</p>
                 </div>
               </div>
-              <Button 
-                onClick={() => savePart(1)}
-                disabled={saving || (isLocked && !isModifying)}
-                className="rounded-xl"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save Part 1
-              </Button>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium">Questions:</label>
+                  <Input
+                    type="number"
+                    min="3"
+                    max="6"
+                    value={part1Questions}
+                    onChange={(e) => updatePart1Questions(parseInt(e.target.value) || 4)}
+                    className="w-16 h-8 text-center rounded-xl"
+                  />
+                </div>
+                <Button
+                  onClick={() => savePart(1)}
+                  disabled={saving || (isLocked && !isModifying)}
+                  className="rounded-xl"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Part 1
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -531,7 +658,7 @@ const AdminIELTSSpeaking = () => {
                         <audio 
                           controls 
                           className="w-full" 
-                          preload="metadata"
+                          preload="none"
                           onError={(e) => {
                             console.error('❌ Audio playback error:', {
                               url: prompt.audio_url,
@@ -737,7 +864,7 @@ const AdminIELTSSpeaking = () => {
                         <audio 
                           controls 
                           className="w-full" 
-                          preload="metadata"
+                          preload="none"
                           onError={(e) => {
                             console.error('❌ Audio playback error:', {
                               url: prompt.audio_url,

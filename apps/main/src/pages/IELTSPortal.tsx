@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import SEO from '@/components/SEO';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, BookOpen, Target } from 'lucide-react';
+import { Home } from 'lucide-react';
 import { SKILLS } from '@/lib/skills';
 import SpotlightCard from '@/components/SpotlightCard';
 
@@ -403,8 +403,8 @@ const IELTSPortal = () => {
            }} />
       <div className="relative z-10">
         <StudentLayout title="My IELTS Dashboard" showBackButton>
-          <div className="space-y-6 md:space-y-8 max-w-6xl mx-auto px-3 md:px-4 min-h-[80vh] flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
+            <div className="flex items-center gap-2 mb-2">
               <button onClick={() => navigate('/hero')} className="inline-flex items-center gap-2 px-2 py-1 h-8 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors rounded-md hover:bg-white/10">
                 <Home className="h-4 w-4" /> Home
               </button>
@@ -414,14 +414,14 @@ const IELTSPortal = () => {
             </div>
 
             {/* IELTS Portal Title - Header Style */}
-            <div className="mb-12">
+            <div className="mb-8">
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-black text-center tracking-tight font-nunito">IELTS Portal</h1>
             </div>
 
             {/* Skill Practice Quick Links */}
-            <div className="mb-12 flex-1">
-              <h2 className="text-xl md:text-2xl font-bold mb-8 text-foreground text-center font-nunito tracking-tight">Study each part</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="mb-8">
+              <h2 className="text-xl md:text-2xl font-bold mb-6 text-foreground text-center font-nunito tracking-tight">Study each part</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {IELTS_SKILLS.map((skill, index) => {
                   const progress = ieltsSkillProgress[skill.id];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
@@ -437,28 +437,28 @@ const IELTSPortal = () => {
                   const skillImage = skillImages[index];
 
                   return (
-                    <SpotlightCard key={skill.id} className="cursor-pointer min-h-[180px] md:min-h-[200px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => handleSkillClick(skill.id)}>
-                      <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                        <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                    <SpotlightCard key={skill.id} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => handleSkillClick(skill.id)}>
+                      <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                        <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                           <img
                             src={skillImage}
                             alt={`${skill.title} icon`}
-                            className="w-14 h-14 object-cover"
+                            className="w-12 h-12 object-cover"
                           />
                         </div>
-                        <h3 className="font-semibold text-sm md:text-base text-slate-800 mb-3">{skill.title}</h3>
+                        <h3 className="font-semibold text-xs md:text-sm text-slate-800 mb-2">{skill.title}</h3>
 
                         {progress && (
-                          <div className="space-y-3 mb-3">
-                            <div className="text-xs md:text-sm text-muted-foreground text-center">
-                              {progress.completed}/{progress.total} completed
+                          <div className="space-y-2 mb-2">
+                            <div className="text-xs text-muted-foreground text-center">
+                              {progress.completed}/{progress.total}
                             </div>
-                            <Progress value={progressPercentage} className="h-3 [&>div]:bg-yellow-500" />
+                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-yellow-500" />
                           </div>
                         )}
 
                         {skillBands[skill.id] && skill.id !== 'speaking' && (
-                          <div className="text-xs md:text-sm text-slate-600 font-medium">
+                          <div className="text-xs text-slate-600 font-medium">
                             {skillBands[skill.id]}
                           </div>
                         )}
@@ -470,40 +470,34 @@ const IELTSPortal = () => {
             </div>
 
             {/* Sharpening Your Skills */}
-            <div className="flex-1">
-              <h2 className="text-xl md:text-2xl font-bold mb-8 text-foreground text-center font-nunito tracking-tight">Sharpening Your Skills</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="mb-8">
+              <h2 className="text-xl md:text-2xl font-bold mb-6 text-foreground text-center font-nunito tracking-tight">Sharpening Your Skills</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {/* Vocabulary Book card */}
-                <SpotlightCard className="cursor-pointer min-h-[180px] md:min-h-[200px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => navigate('/vocabulary')}>
-                  <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                    <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center">
-                      <BookOpen className="w-10 h-10 text-purple-600" />
-                    </div>
-                    <h3 className="font-semibold text-sm md:text-base text-slate-800 mb-3">Vocabulary Book</h3>
-                    <div className="text-xs md:text-sm text-muted-foreground text-center">
-                      {vocabProgress.completed}/{vocabProgress.total} words
+                <SpotlightCard className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => navigate('/vocabulary')}>
+                  <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                    <h3 className="font-semibold text-xs md:text-sm">Vocabulary Book</h3>
+                    <div className="text-xs text-muted-foreground mt-2 text-center">
+                      {vocabProgress.completed}/{vocabProgress.total}
                     </div>
                   </CardContent>
                 </SpotlightCard>
-
+                
                 {SKILLS.map((skill) => {
                   const progress = skillProgress[skill.slug];
                   const progressPercentage = progress ? (progress.completed / progress.total) * 100 : 0;
-
+                  
                   return (
-                    <SpotlightCard key={skill.slug} className="cursor-pointer min-h-[180px] md:min-h-[200px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => handleSkillClick(skill.slug)}>
-                      <CardContent className="p-4 md:p-6 text-center flex-1 flex flex-col justify-center">
-                        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                          <Target className="w-10 h-10 text-blue-600" />
-                        </div>
-                        <h3 className="font-semibold text-sm md:text-base text-slate-800 mb-3">{skill.label}</h3>
+                    <SpotlightCard key={skill.slug} className="cursor-pointer min-h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80" onClick={() => handleSkillClick(skill.slug)}>
+                      <CardContent className="p-3 md:p-4 text-center flex-1 flex flex-col justify-center">
+                        <h3 className="font-semibold text-xs md:text-sm">{skill.label}</h3>
 
                         {progress && (
-                          <div className="space-y-3">
-                            <div className="text-xs md:text-sm text-muted-foreground text-center">
-                              {progress.completed}/{progress.total} completed
+                          <div className="mt-3 space-y-2">
+                            <div className="text-xs text-muted-foreground text-center">
+                              {progress.completed}/{progress.total}
                             </div>
-                            <Progress value={progressPercentage} className="h-3 [&>div]:bg-yellow-500" />
+                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-yellow-500" />
                           </div>
                         )}
                       </CardContent>

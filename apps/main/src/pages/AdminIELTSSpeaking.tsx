@@ -34,6 +34,8 @@ const AdminIELTSSpeaking = () => {
   const [saving, setSaving] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [isModifying, setIsModifying] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Loading test data...");
   
   // Part 1: Interview (4 audio slots only)
   const [part1Prompts, setPart1Prompts] = useState<SpeakingPrompt[]>([
@@ -69,6 +71,8 @@ const AdminIELTSSpeaking = () => {
 
     try {
       console.log('📝 Loading speaking test data for testId:', testId);
+      setIsLoadingData(true);
+      setLoadingMessage("Loading test data...");
 
       // Use REST API directly with timeout
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
@@ -161,11 +165,17 @@ const AdminIELTSSpeaking = () => {
         }
 
         console.log('✅ Speaking test data loading complete');
+        setIsLoadingData(false);
+        setLoadingMessage("Test data loading complete");
+        // Clear the message after 3 seconds
+        setTimeout(() => setLoadingMessage(""), 3000);
       } finally {
         clearTimeout(timeoutId);
       }
     } catch (error) {
       console.error('❌ Error loading speaking test data:', error);
+      setIsLoadingData(false);
+      setLoadingMessage("Failed to load test data");
       toast({
         title: "Error",
         description: "Failed to load test data",
@@ -387,7 +397,7 @@ const AdminIELTSSpeaking = () => {
   };
 
   return (
-    <AdminLayout title={`IELTS Speaking Management`}>
+    <AdminLayout title={`${testName ? testName : 'IELTS Speaking Management'}`}>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -402,11 +412,23 @@ const AdminIELTSSpeaking = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                IELTS Speaking Prompts Management
+                {testName ? `${testName} - Speaking Prompts` : 'IELTS Speaking Prompts Management'}
               </h1>
-              <p className="text-muted-foreground">
-                Manage speaking prompts for all IELTS tests {isLocked && <Badge variant="secondary">Locked</Badge>}
-              </p>
+              <div className="text-muted-foreground">
+                Manage speaking prompts for {testName ? `test: ${testName}` : 'all IELTS tests'} {isLocked && <Badge variant="secondary" className="ml-2">Locked</Badge>}
+              </div>
+              {loadingMessage && (
+                <div className="text-sm text-blue-600 font-medium mt-1">
+                  {isLoadingData ? (
+                    <span className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                      {loadingMessage}
+                    </span>
+                  ) : (
+                    <span className="text-green-600">✓ {loadingMessage}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           {isLocked && !isModifying && (

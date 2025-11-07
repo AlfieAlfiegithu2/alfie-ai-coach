@@ -101,10 +101,10 @@ const AdminIELTSSpeaking = () => {
           }
         }
 
-        // Fetch speaking prompts
+        // Fetch speaking prompts for this specific test
         console.log('📝 Fetching speaking prompts via REST API...');
         const promptsResponse = await fetch(
-          `${baseUrl}/rest/v1/speaking_prompts?select=*&order=part_number.asc,created_at.asc`,
+          `${baseUrl}/rest/v1/speaking_prompts?test_id=eq.${testId}&select=*&order=part_number.asc,created_at.asc`,
           {
             headers: {
               'apikey': SUPABASE_KEY,
@@ -501,8 +501,17 @@ const AdminIELTSSpeaking = () => {
                           onError={(e) => {
                             console.error('❌ Audio playback error:', {
                               url: prompt.audio_url,
-                              error: (e.target as HTMLAudioElement).error
+                              error: (e.target as HTMLAudioElement).error?.message || 'Unknown error'
                             });
+                            // Hide the audio player on SSL/cipher errors
+                            const audioElement = e.target as HTMLAudioElement;
+                            if (audioElement.error?.code === 4 || audioElement.error?.message?.includes('SSL') || audioElement.error?.message?.includes('cipher')) {
+                              audioElement.style.display = 'none';
+                              const errorMsg = audioElement.parentElement?.querySelector('.audio-error');
+                              if (errorMsg) {
+                                errorMsg.textContent = 'Audio file unavailable (SSL compatibility issue)';
+                              }
+                            }
                           }}
                           onLoadedMetadata={() => console.log('✅ Audio metadata loaded:', prompt.audio_url)}
                         >
@@ -511,7 +520,7 @@ const AdminIELTSSpeaking = () => {
                           <source src={prompt.audio_url} type="audio/mp3" />
                           Your browser does not support the audio element.
                         </audio>
-                        <p className="text-xs text-gray-500 break-all">
+                        <p className="text-xs text-gray-500 break-all audio-error">
                           URL: {prompt.audio_url}
                         </p>
                       </div>
@@ -698,8 +707,17 @@ const AdminIELTSSpeaking = () => {
                           onError={(e) => {
                             console.error('❌ Audio playback error:', {
                               url: prompt.audio_url,
-                              error: (e.target as HTMLAudioElement).error
+                              error: (e.target as HTMLAudioElement).error?.message || 'Unknown error'
                             });
+                            // Hide the audio player on SSL/cipher errors
+                            const audioElement = e.target as HTMLAudioElement;
+                            if (audioElement.error?.code === 4 || audioElement.error?.message?.includes('SSL') || audioElement.error?.message?.includes('cipher')) {
+                              audioElement.style.display = 'none';
+                              const errorMsg = audioElement.parentElement?.querySelector('.audio-error');
+                              if (errorMsg) {
+                                errorMsg.textContent = 'Audio file unavailable (SSL compatibility issue)';
+                              }
+                            }
                           }}
                           onLoadedMetadata={() => console.log('✅ Audio metadata loaded:', prompt.audio_url)}
                         >
@@ -708,7 +726,7 @@ const AdminIELTSSpeaking = () => {
                           <source src={prompt.audio_url} type="audio/mp3" />
                           Your browser does not support the audio element.
                         </audio>
-                        <p className="text-xs text-gray-500 break-all">
+                        <p className="text-xs text-gray-500 break-all audio-error">
                           URL: {prompt.audio_url}
                         </p>
                       </div>

@@ -41,7 +41,7 @@ serve(async (req) => {
     console.log('✅ DeepSeek API key found, length:', deepSeekApiKey.length);
 
     const body = await req.json();
-    const { messages, message, context = "catbot", imageContext, taskType, taskInstructions } = body;
+    const { messages, message, context = "catbot", imageContext, taskType, taskInstructions, skipCache = false } = body;
 
     // Support both old format (message) and new format (messages)
     const finalMessage = messages ? messages[messages.length - 1].content : message;
@@ -59,14 +59,21 @@ serve(async (req) => {
     // Create cache key for this request
     const cacheKey = `${context}-${finalMessage.toLowerCase().trim()}-${taskType || ''}-${taskInstructions?.slice(0, 50) || ''}`;
     
-    // Check cache first
-    console.log('🔍 Checking cache for key:', cacheKey.slice(0, 50) + '...');
-    const { data: cachedResponse } = await supabase
-      .from('chat_cache')
-      .select('response, hit_count')
-      .eq('cache_key', cacheKey)
-      .gt('expires_at', new Date().toISOString())
-      .single();
+    let cachedResponse = null;
+
+    // Only check cache if caching is not disabled
+    if (!skipCache) {
+      console.log('🔍 Checking cache for key:', cacheKey.slice(0, 50) + '...');
+      const { data: cacheData } = await supabase
+        .from('chat_cache')
+        .select('response, hit_count')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+      cachedResponse = cacheData;
+    } else {
+      console.log('⏭️ Skipping cache check (skipCache=true)');
+    }
 
     if (cachedResponse) {
       console.log('🚀 Cache hit! Using cached response, hit count:', cachedResponse.hit_count);
@@ -286,13 +293,14 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
 
     console.log('✅ AI Chat Response generated successfully');
 
-    // Cache the response for future use with completion metadata
-    try {
-      const taskContext = [taskType, taskInstructions, imageContext].filter(Boolean).join(' | ');
-      
-      await supabase
-        .from('chat_cache')
-        .insert({
+    // Cache the response for future use with completion metadata (only if caching is enabled)
+    if (!skipCache) {
+      try {
+        const taskContext = [taskType, taskInstructions, imageContext].filter(Boolean).join(' | ');
+
+        await supabase
+          .from('chat_cache')
+          .insert({
           cache_key: cacheKey,
           response: aiResponse,
           task_context: taskContext || null,
@@ -318,6 +326,9 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
     } catch (cacheError) {
       console.warn('⚠️ Failed to cache response:', cacheError);
       // Don't fail the request if caching fails
+    }
+    } else {
+      console.log('⏭️ Skipping response caching (skipCache=true)');
     }
 
     return new Response(JSON.stringify({ 

@@ -449,6 +449,7 @@ const IELTSSpeakingTest = () => {
     try {
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
+          skipCache: true,
           messages: [
             {
               role: "system",
@@ -822,6 +823,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
+          skipCache: true,
           message: contextPrompt,
           context: 'catbot',
         },

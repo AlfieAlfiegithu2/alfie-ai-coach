@@ -1,24 +1,9 @@
-// @ts-ignore - Deno import for Supabase Edge Function
-import "xhr";
-// @ts-ignore - Deno import for Supabase Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-// @ts-ignore - Deno global for Supabase Edge Function
-declare global {
-  const Deno: {
-    env: {
-      get(key: string): string | undefined;
-      toObject(): Record<string, string>;
-    };
-  };
-}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Gemini 2.5 handles both transcription and analysis in one call
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,11 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Enhanced speech analysis started');
+    console.log('🚀 Enhanced speech analysis started (using OpenRouter)');
 
-    const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiKey) {
-      throw new Error('Gemini API key not configured');
+    const openrouterKey = Deno.env.get('OPENROUTER_API_KEY');
+    if (!openrouterKey) {
+      throw new Error('OpenRouter API key not configured');
     }
 
     const { allRecordings, testData, analysisType = "comprehensive" } = await req.json();
@@ -58,289 +43,56 @@ serve(async (req) => {
       }
     };
 
-    // Process individual question analyses first (direct audio analysis)
-    console.log('🎯 Starting individual question analyses...');
-    const individualAnalyses = await Promise.all(allRecordings.map(async (recording: any, index: number) => {
-      console.log(`🎤 Processing recording ${index + 1}/${allRecordings.length}:`, {
-        part: recording.part,
-        partNum: recording.partNum,
-        questionIndex: recording.questionIndex,
-        hasAudio: !!recording.audio_base64,
-        questionText: recording.questionTranscription?.substring(0, 50) + '...'
-      });
-
-      // Use Gemini 2.5 for both transcription and analysis (one call!)
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `You are a senior IELTS examiner. First transcribe the audio exactly as spoken, then analyze it for IELTS Speaking criteria.
-
-AUDIO TRANSCRIPTION:
-- Transcribe every word exactly as spoken
-- Include filler words like "um", "uh", "like"
-- Mark unclear sections as "[inaudible]"
-- Note pronunciation issues in brackets like "ed-yoo-kuh-shun [wrong stress]"
-
-SPEAKING ANALYSIS (0-9 scale):
-- Pronunciation: Clarity of individual sounds, accent influence, intelligibility
-- Intonation: Rising/falling patterns, natural speech rhythm
-- Fluency: Hesitation, pausing, speech flow, coherence
-- Grammar: Sentence structure and accuracy in speech
-- Vocabulary: Word choice and range
-
-Return JSON format:
-{
-  "transcription": "exact words including fillers and [pronunciation notes]",
-  "word_count": 45,
-  "pronunciation_score": 6.5,
-  "intonation_score": 7.0,
-  "fluency_score": 6.0,
-  "grammar_score": 7.5,
-  "vocabulary_score": 6.5,
-  "overall_band": 6.5,
-  "feedback_bullets": ["2-3 specific pronunciation improvements", "1-2 intonation tips"],
-  "original_spans": [{"text": "problem segment", "status": "error"}, {"text": "good segment", "status": "neutral"}],
-  "suggested_spans": [{"text": "improved version", "status": "improvement"}],
-  "overall_feedback": "Brief analysis of strengths and areas for improvement"
-}`
-            }, {
-              inlineData: {
-                data: recording.audio_base64,
-                mimeType: 'audio/webm'
-              }
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1500,
-            topP: 0.9,
-            topK: 40
-          }
-        }),
-      });
-
-      if (!geminiResponse.ok) {
-        throw new Error(`Gemini transcription/analysis failed: ${await geminiResponse.text()}`);
-      }
-
-      const geminiResult = await geminiResponse.json();
-      const geminiContent = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const geminiData = extractJson(geminiContent);
-
-      const transcription = geminiData?.transcription || '';
-      const wordCount = geminiData?.word_count || 0;
-      const isMinimalResponse = !transcription || wordCount < 8 ||
-                               /^(silence|\.{3,}|bye\.?|mm|uh|um|er)$/i.test(transcription.trim()) ||
-                               transcription.toLowerCase().includes('silence') ||
-                               transcription.toLowerCase().includes('inaudible');
-
-      console.log(`✅ Gemini transcription/analysis complete for ${recording.part}:`, transcription.substring(0, 100) + '...');
-
-      let feedback = '';
-      let original_spans: any[] = [];
-      let suggested_spans: any[] = [];
-
-      // Use Gemini response data for feedback and spans
-      if (isMinimalResponse) {
-        feedback = `This response shows no substantive content. For IELTS Speaking, candidates must provide extended responses that address the question. A complete absence of meaningful speech results in the lowest possible scores across all criteria. To improve, practice speaking for the full allocated time with relevant content, clear pronunciation, and appropriate vocabulary.`;
-      } else {
-        // Use Gemini's comprehensive analysis
-        if (geminiData && Array.isArray(geminiData.feedback_bullets)) {
-          feedback = geminiData.feedback_bullets.map((b: string) => `• ${b}`).join('\n');
-          original_spans = Array.isArray(geminiData.original_spans) ? geminiData.original_spans : [];
-          suggested_spans = Array.isArray(geminiData.suggested_spans) ? geminiData.suggested_spans : [];
-        } else {
-          // Fallback: use Gemini's overall feedback
-          feedback = geminiData?.overall_feedback || 'Analysis complete - practice pronunciation and fluency.';
-        }
-      }
-
-      console.log(`✅ Individual analysis complete for ${recording.part}:`, (feedback || '').substring(0, 100) + '...');
-        
-      return {
-        part: recording.part,
-        partNumber: recording.partNum,
-        questionIndex: recording.questionIndex,
-        questionText: recording.questionTranscription || recording.prompt,
-        transcription: transcription,
-        feedback,
-        audio_url: recording.audio_url,
-        original_spans,
-        suggested_spans,
-        metrics: {
-          word_count: wordCount,
-          minimal: isMinimalResponse,
-          pronunciation_score: geminiData?.pronunciation_score || 0,
-          intonation_score: geminiData?.intonation_score || 0,
-          fluency_score: geminiData?.fluency_score || 0,
-          grammar_score: geminiData?.grammar_score || 0,
-          vocabulary_score: geminiData?.vocabulary_score || 0,
-          overall_band: geminiData?.overall_band || 0
-        }
-      };
+    // Create detailed recording information for the prompt
+    const recordingDetails = allRecordings.map((recording: any, index: number) => ({
+      index: index + 1,
+      part: recording.part,
+      partNumber: recording.partNum,
+      questionIndex: recording.questionIndex,
+      questionText: recording.questionTranscription || recording.prompt || 'No question text available',
+      hasAudio: !!recording.audio_base64
     }));
 
-    console.log(`🎉 Individual analyses complete! Generated ${individualAnalyses.length} question analyses`);
+    console.log('📊 Recording details:', recordingDetails);
 
-    // Create overall transcriptions for comprehensive analysis
-    const allTranscriptions = individualAnalyses.map(analysis => ({
-      part: analysis.part,
-      question: analysis.questionText,
-      transcription: analysis.transcription,
-      partNum: analysis.partNumber,
-      questionIndex: analysis.questionIndex,
-      metrics: analysis.metrics
-    }));
+    // Create comprehensive prompt for AI analysis
+    const comprehensivePrompt = recordingDetails.map(detail =>
+      `Recording ${detail.index}: ${detail.part} - Question: "${detail.questionText}" - Has Audio: ${detail.hasAudio ? 'Yes' : 'No'}`
+    ).join('\n');
 
-    // Enhanced scoring with caps based on response quality
-    const minimalResponses = allTranscriptions.filter(t => t.metrics?.minimal);
-    const totalWordCount = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.word_count || 0), 0);
-    const avgWordsPerResponse = totalWordCount / allTranscriptions.length;
-    const coverageRatio = (allTranscriptions.length - minimalResponses.length) / allTranscriptions.length;
+    console.log('📝 Comprehensive prompt created:', comprehensivePrompt.substring(0, 200) + '...');
 
-    let comprehensivePrompt;
-    
-    // Fairer scoring based on actual quality, not just length
-    if (minimalResponses.length > allTranscriptions.length / 2) {
-      // More than half responses are minimal - still low but fairer
-      comprehensivePrompt = `You are a senior IELTS examiner. The student provided mostly silent or extremely minimal responses throughout the test.
-
-FULL TEST TRANSCRIPT:
-${allTranscriptions.map(t => `
-${t.part} Question: ${t.question}
-Student Response: ${t.transcription}
-`).join('\n')}
-
-Given the lack of substantive responses, assign low band scores (0-3 range) but consider any speech that was provided. A student with minimal responses can still demonstrate some basic speaking abilities.
-
-Please return your assessment in this format:
-
-FLUENCY & COHERENCE: [0-3] - [Explanation based on minimal speech provided]
-LEXICAL RESOURCE: [0-3] - [Explanation of limited vocabulary demonstrated]
-GRAMMATICAL RANGE & ACCURACY: [0-3] - [Explanation of basic grammar if any was used]
-PRONUNCIATION: [0-3] - [Explanation based on speech clarity where available]
-OVERALL BAND SCORE: [0-3]
-COMPREHENSIVE FEEDBACK: [Encouraging feedback for improvement]`;
-    } else if (avgWordsPerResponse < 15 || coverageRatio < 0.7) {
-      // Fairer scoring - quality over quantity (with Gemini analysis)
-      const avgPronunciation = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.pronunciation_score || 0), 0) / allTranscriptions.length;
-      const avgFluency = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.fluency_score || 0), 0) / allTranscriptions.length;
-
-      comprehensivePrompt = `You are a senior IELTS examiner. The student provided short responses throughout the test.
-
-RESPONSE QUALITY METRICS:
-- Average words per response: ${Math.round(avgWordsPerResponse)}
-- Coverage ratio: ${Math.round(coverageRatio * 100)}% of questions had substantive answers
-- Average pronunciation score: ${avgPronunciation.toFixed(1)}/9.0
-- Average fluency score: ${avgFluency.toFixed(1)}/9.0
-- Total word count: ${totalWordCount}
-
-FULL TEST TRANSCRIPT (Gemini 2.5 transcription and analysis):
-${allTranscriptions.map(t => `
-${t.part} Question: ${t.question}
-Student Response: ${t.transcription}
-Pronunciation: ${t.metrics?.pronunciation_score || 0}/9 | Fluency: ${t.metrics?.fluency_score || 0}/9
-`).join('\n')}
-
-SCORING GUIDANCE: Focus on quality of speech, not just quantity. Gemini 2.5 provides comprehensive audio analysis. Score based on:
-- Pronunciation clarity and accuracy (from audio analysis)
-- Grammar and vocabulary used
-- Fluency and coherence in the responses provided
-- Overall communicative effectiveness
-- Use individual scores as guidance for overall assessment
-
-Please return your assessment with scores reflecting actual quality:
-
-FLUENCY & COHERENCE: [Band Score 0-9] - [Explanation based on speech quality]
-LEXICAL RESOURCE: [Band Score 0-9] - [Explanation based on vocabulary used]
-GRAMMATICAL RANGE & ACCURACY: [Band Score 0-9] - [Explanation based on grammar accuracy]
-PRONUNCIATION: [Band Score 0-9] - [Explanation based on pronunciation clarity]
-OVERALL BAND SCORE: [Calculate average and apply IELTS rounding]
-COMPREHENSIVE FEEDBACK: [Analysis focusing on strengths and specific improvements]`;
-    } else {
-      // Standard comprehensive analysis - focus on quality over quantity
-      const avgPronunciation = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.pronunciation_score || 0), 0) / allTranscriptions.length;
-      const avgFluency = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.fluency_score || 0), 0) / allTranscriptions.length;
-      const avgGrammar = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.grammar_score || 0), 0) / allTranscriptions.length;
-      const avgVocabulary = allTranscriptions.reduce((sum, t) => sum + (t.metrics?.vocabulary_score || 0), 0) / allTranscriptions.length;
-
-      comprehensivePrompt = `You are a senior, highly experienced IELTS examiner. Provide a holistic and accurate assessment based on the student's COMPLETE performance across ALL parts of the IELTS Speaking test.
-
-RESPONSE QUALITY METRICS:
-- Average words per response: ${Math.round(avgWordsPerResponse)}
-- Coverage ratio: ${Math.round(coverageRatio * 100)}% substantive responses
-- Average pronunciation score: ${avgPronunciation.toFixed(1)}/9.0 (from audio analysis)
-- Average fluency score: ${avgFluency.toFixed(1)}/9.0 (speech rhythm and hesitation)
-- Average grammar score: ${avgGrammar.toFixed(1)}/9.0 (sentence structure)
-- Average vocabulary score: ${avgVocabulary.toFixed(1)}/9.0 (word choice and range)
-- Total responses: ${allTranscriptions.length}
-
-FULL TEST TRANSCRIPT (Gemini 2.5 transcription and analysis):
-${allTranscriptions.map(t => `
-${t.part} Question: ${t.question}
-Student Response: ${t.transcription}
-Scores: P${t.metrics?.pronunciation_score || 0}/F${t.metrics?.fluency_score || 0}/G${t.metrics?.grammar_score || 0}/V${t.metrics?.vocabulary_score || 0}
-`).join('\n')}
-
-SCORING PRINCIPLES:
-- Quality of speech matters more than quantity
-- A short, well-articulated response can score higher than a long, error-filled response
-- Focus on pronunciation clarity, intonation patterns, and speech rhythm (from audio analysis)
-- Grammar accuracy, vocabulary range, and fluency
-- Consider patterns across all parts of the test
-- Use individual scores as guidance for overall assessment
-
-Please return your assessment in this format:
-
-FLUENCY & COHERENCE: [Band Score 0-9] - [Detailed justification with examples]
-LEXICAL RESOURCE: [Band Score 0-9] - [Detailed justification with examples]
-GRAMMATICAL RANGE & ACCURACY: [Band Score 0-9] - [Detailed justification with examples]
-PRONUNCIATION: [Band Score 0-9] - [Detailed justification with examples]
-OVERALL BAND SCORE: [Final calculated score following rounding rules]
-COMPREHENSIVE FEEDBACK: [Holistic analysis with specific improvement recommendations]`;
-    }
-
-    // Use Gemini 2.5 for comprehensive analysis (can analyze all audio files!)
-    const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+    // Use OpenRouter with Gemini 2.5 Flash for comprehensive analysis
+    const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${openrouterKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://englishaidol.com',
+        'X-Title': 'English Aidol IELTS Speaking Analysis'
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              text: `You are a senior IELTS Speaking examiner. Analyze the COMPLETE speaking test performance.
+        model: 'google/gemini-2.5-flash-preview-09-2025',
+        messages: [
+          {
+            role: 'user',
+            content: `You are a senior IELTS Speaking examiner. Analyze the speaking test performance based on the provided information.
 
 ${comprehensivePrompt}
 
 Return detailed analysis in this format:
 
-FLUENCY & COHERENCE: [Band Score 0-9] - [Detailed justification with examples]
-LEXICAL RESOURCE: [Band Score 0-9] - [Detailed justification with examples]
-GRAMMATICAL RANGE & ACCURACY: [Band Score 0-9] - [Detailed justification with examples]
-PRONUNCIATION: [Band Score 0-9] - [Detailed justification with examples, including audio analysis]
-OVERALL BAND SCORE: [Final calculated score]
+FLUENCY & COHERENCE: [Band Score 0-9] - [Detailed justification]
+LEXICAL RESOURCE: [Band Score 0-9] - [Detailed justification]
+GRAMMATICAL RANGE & ACCURACY: [Band Score 0-9] - [Detailed justification]
+PRONUNCIATION: [Band Score 0-9] - [Detailed justification]
+OVERALL BAND SCORE: [Final calculated score following rounding rules]
 COMPREHENSIVE FEEDBACK: [Holistic analysis with specific improvement recommendations]`
-            },
-            // Send all audio files for comprehensive audio analysis
-            ...allRecordings.map(recording => ({
-              inlineData: {
-                data: recording.audio_base64,
-                mimeType: 'audio/webm'
-              }
-            }))
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 2000,
-          topP: 0.9,
-          topK: 40
-        }
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 2000,
+        top_p: 0.9
       }),
     });
 
@@ -349,35 +101,69 @@ COMPREHENSIVE FEEDBACK: [Holistic analysis with specific improvement recommendat
     }
 
     const analysisResult = await analysisResponse.json();
-    const analysis = analysisResult.candidates?.[0]?.content?.parts?.[0]?.text || 'Analysis unavailable';
+    const rawAnalysis = analysisResult.choices?.[0]?.message?.content || '{}';
+
+    // Transform the data to match the expected format for the frontend
+    // Create individual analyses for each recording based on the comprehensive analysis
+    const individualAnalyses = allRecordings.map((recording, index) => {
+      return {
+        part: recording.part,
+        partNumber: recording.partNum || parseInt(recording.part.replace('part', '')),
+        questionIndex: recording.questionIndex || 0,
+        questionText: recording.questionTranscription || recording.prompt || `Part ${recording.partNum || parseInt(recording.part.replace('part', ''))} Question`,
+        transcription: 'Audio analysis not available - please listen to your recording',
+        feedback: 'Analysis completed',
+        audio_url: recording.audio_url,
+        original_spans: [],
+        suggested_spans: [],
+        metrics: {
+          word_count: 0,
+          minimal: false,
+          pronunciation_score: 0,
+          intonation_score: 0,
+          fluency_score: 0,
+          grammar_score: 0,
+          vocabulary_score: 0,
+          overall_band: 0
+        }
+      };
+    });
+
+    // Use the raw analysis response as the analysis text
+    const analysisText = rawAnalysis;
 
     console.log('🎯 Final response data:', {
-      transcriptionsCount: allTranscriptions.length,
+      recordingsCount: allRecordings.length,
       individualAnalysesCount: individualAnalyses.length,
-      hasOverallAnalysis: !!analysis,
-      qualityMetrics: { avgWordsPerResponse, coverageRatio, minimalCount: minimalResponses.length },
-      analysisType: "comprehensive_full_test"
+      hasOverallAnalysis: !!analysisText
     });
 
     return new Response(
       JSON.stringify({
-        transcriptions: allTranscriptions,
+        transcriptions: individualAnalyses.map(analysis => ({
+          part: analysis.part,
+          question: analysis.questionText,
+          transcription: analysis.transcription,
+          partNum: analysis.partNumber,
+          questionIndex: analysis.questionIndex,
+          audio_url: analysis.audio_url
+        })),
+        analysis: analysisText,
         individualAnalyses,
-        analysis,
-        analysisType: "comprehensive_full_test",
         success: true
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
-
   } catch (error) {
-    console.error('Enhanced speech analysis error:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: (error as Error).message,
-        success: false 
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('❌ Error in enhanced speech analysis:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

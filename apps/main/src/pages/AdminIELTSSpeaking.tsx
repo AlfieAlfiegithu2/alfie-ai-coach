@@ -122,6 +122,14 @@ const AdminIELTSSpeaking = () => {
         if (promptsResponse.ok) {
           const prompts = await promptsResponse.json();
           console.log('✅ Speaking prompts loaded:', prompts?.length || 0);
+          console.log('📝 Prompts by part:', {
+            part1: prompts.filter((p: any) => p.part_number === 1).length,
+            part2: prompts.filter((p: any) => p.part_number === 2).length,
+            part3: prompts.filter((p: any) => p.part_number === 3).length
+          });
+          prompts.forEach((p: any, i: number) => {
+            console.log(`  Prompt ${i+1}: Part ${p.part_number} - ${p.title} (ID: ${p.id})`);
+          });
 
           if (prompts && prompts.length > 0) {
             const isTestLocked = prompts.some((p: any) => p.is_locked);
@@ -146,6 +154,9 @@ const AdminIELTSSpeaking = () => {
             }
 
             if (part3.length > 0) {
+              console.log('📝 Loading part 3 prompts:', part3.length, 'questions');
+              part3.forEach((p, i) => console.log(`  Part 3 Q${i+1}:`, p.title, p.id));
+
               const updatedPart3 = [...part3Prompts];
               part3.forEach((prompt: any, index: number) => {
                 if (index < updatedPart3.length) {
@@ -160,6 +171,7 @@ const AdminIELTSSpeaking = () => {
               });
               setPart3Prompts(updatedPart3);
               setPart3Questions(Math.max(part3.length, 4));
+              console.log('📝 Final part 3 setup:', updatedPart3.length, 'questions displayed');
             }
           }
         }

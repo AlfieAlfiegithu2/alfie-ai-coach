@@ -5,14 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import { AudioR2 } from "@/lib/cloudflare-r2";
 import VolumeSlider from "@/components/ui/VolumeSlider";
 import SpotlightCard from "@/components/SpotlightCard";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AudioPlayerProvider, useAudioPlayer, AudioPlayerButton, AudioPlayerTime, AudioPlayerProgress, AudioPlayerDuration, AudioPlayerSpeed } from "@/components/ui/audio-player";
 
 interface SpeakingPrompt {
   id: string;
@@ -30,6 +35,128 @@ interface TestData {
   part1_prompts: SpeakingPrompt[];
   part2_prompt: SpeakingPrompt | null;
   part3_prompts: SpeakingPrompt[];
+}
+
+interface Track {
+  id: string;
+  name: string;
+  url: string;
+}
+
+// Custom Audio Player component that accepts tracks as props
+const AudioPlayerWithTracks = ({ tracks, currentQuestionIndex }: { tracks: Track[], currentQuestionIndex: number }) => {
+  return (
+    <AudioPlayerProvider>
+      <AudioPlayerDemoWithTracks tracks={tracks} currentQuestionIndex={currentQuestionIndex} />
+    </AudioPlayerProvider>
+  )
+}
+
+const AudioPlayerDemoWithTracks = ({ tracks, currentQuestionIndex }: { tracks: Track[], currentQuestionIndex: number }) => {
+  const player = useAudioPlayer()
+  
+  // Note: Auto-play removed - browsers require user interaction before playing audio
+  // Audio will only play when user clicks on a track in the list
+
+  return (
+    <Card className="w-full overflow-hidden p-0">
+      <div className="flex flex-col lg:h-[180px] lg:flex-row">
+        <div className="bg-muted/50 flex flex-col overflow-hidden lg:h-full lg:w-64">
+          <ScrollArea className="h-48 w-full lg:h-full">
+            <div className="space-y-1 p-3">
+              {tracks.map((song) => (
+                <SongListItem
+                  key={song.id}
+                  song={song}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+        <Player currentQuestionIndex={currentQuestionIndex} tracks={tracks} />
+      </div>
+    </Card>
+  )
+}
+
+const Player = ({ currentQuestionIndex, tracks }: { currentQuestionIndex: number, tracks: Track[] }) => {
+  const player = useAudioPlayer()
+  
+  // Get current question track
+  const currentTrack = tracks[currentQuestionIndex]
+  const canPlay = currentTrack !== undefined
+
+  return (
+    <div className="flex flex-1 items-center p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="mb-4">
+          <h3 className="text-base font-semibold sm:text-lg">
+            {player.activeItem?.data?.name ?? `Question ${currentQuestionIndex + 1}`}
+          </h3>
+        </div>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <AudioPlayerButton
+            variant="outline"
+            size="default"
+            className="h-12 w-12 shrink-0 sm:h-10 sm:w-10"
+            disabled={!canPlay}
+          />
+
+          <div className="flex flex-1 items-center gap-2 sm:gap-3">
+            <AudioPlayerTime className="text-xs tabular-nums" />
+            <AudioPlayerProgress className="flex-1" />
+            <AudioPlayerDuration className="text-xs tabular-nums" />
+            <AudioPlayerSpeed variant="ghost" size="icon" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const SongListItem = ({
+  song,
+}: {
+  song: Track
+}) => {
+  const player = useAudioPlayer()
+  const isActive = player.isItemActive(song.id)
+  const isCurrentlyPlaying = isActive && player.isPlaying
+
+  return (
+    <div className="group/song relative">
+      <Button
+        variant={isActive ? "secondary" : "ghost"}
+        size="sm"
+        className={cn(
+          "h-10 w-full justify-start px-3 font-normal sm:h-9 sm:px-2",
+          isActive && "bg-secondary"
+        )}
+        onClick={() => {
+          if (isCurrentlyPlaying) {
+            player.pause()
+          } else {
+            player.play({
+              id: song.id,
+              src: song.url,
+              data: song,
+            })
+          }
+        }}
+      >
+        <div className="flex w-full items-center gap-3">
+          <div className="flex w-5 shrink-0 items-center justify-center">
+            {isCurrentlyPlaying ? (
+              <PauseIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            ) : (
+              <PlayIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            )}
+          </div>
+          <span className="truncate text-left text-sm">{song.name}</span>
+        </div>
+      </Button>
+    </div>
+  )
 }
 
 const IELTSSpeakingTest = () => {
@@ -54,6 +181,9 @@ const IELTSSpeakingTest = () => {
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showQuestion, setShowQuestion] = useState(false);
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
+  const [needsInteractionPrompt, setNeedsInteractionPrompt] = useState(false);
   // Foxbot chat state for speaking assistant
   interface ChatMessage { id: string; type: 'user' | 'bot'; content: string; timestamp: Date; }
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -120,20 +250,74 @@ const IELTSSpeakingTest = () => {
     return () => window.removeEventListener('app:volume-change', handler as EventListener);
   }, []);
 
-
-  // Auto-play audio when test data loads or question changes
+  // Reset showQuestion when question changes
   useEffect(() => {
-    if (testData && currentPart !== 2) {
+    setShowQuestion(false);
+  }, [currentQuestion, currentPart]);
+
+  // Track user interaction to enable autoplay
+  useEffect(() => {
+    const handleUserInteraction = async () => {
+      if (!userHasInteracted) {
+        // Set state first
+        setUserHasInteracted(true);
+        setNeedsInteractionPrompt(false);
+        
+        // Wait for state to update and ensure the interaction event is fully processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Try to play audio immediately after first interaction
+        if (testData && currentPart !== 2) {
+          const currentPrompt = getCurrentPrompt();
+          if (currentPrompt?.audio_url && !isPlaying && !isRecording) {
+            console.log(`🎵 User interacted - playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
+            try {
+              await playAudio(currentPrompt.audio_url!);
+            } catch (error) {
+              console.log('Audio play failed after interaction:', error);
+            }
+          }
+        }
+      }
+      // Remove listeners after first interaction
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
+
+    if (!userHasInteracted) {
+      document.addEventListener('click', handleUserInteraction, { once: true });
+      document.addEventListener('touchstart', handleUserInteraction, { once: true });
+      document.addEventListener('keydown', handleUserInteraction, { once: true });
+    }
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userHasInteracted, testData, currentPart, currentQuestion]);
+
+  // Auto-play audio when test data loads or question changes (only after user interaction)
+  useEffect(() => {
+    // Only attempt to play audio if user has already interacted
+    if (testData && currentPart !== 2 && userHasInteracted) {
       const currentPrompt = getCurrentPrompt();
-      if (currentPrompt?.audio_url && !isRecording) {
+      if (currentPrompt?.audio_url && !isRecording && !isPlaying) {
         // Small delay to ensure UI is ready
         setTimeout(() => {
           console.log(`🎵 Auto-playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
-          playAudio(currentPrompt.audio_url!);
-        }, 1000);
+          playAudio(currentPrompt.audio_url!).catch((error) => {
+            // Silently handle autoplay failure
+            console.log('Autoplay failed:', error);
+          });
+        }, 300);
       }
     }
-  }, [testData, currentPart, currentQuestion]);
+    // Don't attempt to play if user hasn't interacted - wait for user interaction handler
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testData, currentPart, currentQuestion, userHasInteracted, isRecording]);
 
   const loadTestData = async () => {
     if (!testId) return;
@@ -292,24 +476,38 @@ const IELTSSpeakingTest = () => {
   const playAudio = async (audioUrl: string) => {
     if (!audioUrl) return;
     
+    // Mark user as interacted when they manually trigger audio
+    if (!userHasInteracted) {
+      setUserHasInteracted(true);
+      setNeedsInteractionPrompt(false);
+    }
+    
     try {
       setIsPlaying(true);
       
       // Stop any currently playing audio
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.currentTime = 0;
         audioRef.current = null;
       }
       
-      audioRef.current = new Audio(audioUrl);
-      audioRef.current.volume = globalVolumeRef.current;
-      audioRef.current.onended = () => {
+      // Create new audio element
+      const audio = new Audio(audioUrl);
+      audio.preload = 'auto';
+      audio.volume = globalVolumeRef.current;
+      
+      // Set up event handlers before playing
+      audio.onended = () => {
         setIsPlaying(false);
         console.log(`✅ Audio playback completed`);
+        audioRef.current = null;
       };
-      audioRef.current.onerror = () => {
+      
+      audio.onerror = (e) => {
         setIsPlaying(false);
-        console.error('Audio playback error');
+        console.error('Audio playback error:', e);
+        audioRef.current = null;
         toast({
           title: "Audio Error",
           description: "Failed to play audio prompt",
@@ -317,16 +515,60 @@ const IELTSSpeakingTest = () => {
         });
       };
       
+      audio.onloadstart = () => {
+        console.log('Audio loading started');
+      };
+      
+      audio.oncanplay = () => {
+        console.log('Audio can play');
+      };
+      
+      audio.oncanplaythrough = () => {
+        console.log('Audio can play through');
+      };
+      
+      // Store reference
+      audioRef.current = audio;
+      
       console.log(`▶️ Playing audio: ${audioUrl}`);
-      await audioRef.current.play();
-    } catch (error) {
+      
+      // Load the audio first
+      audio.load();
+      
+      // Wait a bit for audio to load, then play
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Try to play - this will fail if user hasn't interacted
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        await playPromise;
+        console.log('Audio started playing successfully');
+      }
+    } catch (error: any) {
       console.error('Error playing audio:', error);
       setIsPlaying(false);
-      toast({
-        title: "Audio Error", 
-        description: "Failed to play audio prompt. Please try the repeat button.",
-        variant: "destructive"
-      });
+      
+      // Handle specific browser autoplay restrictions
+      if (error.name === 'NotAllowedError' || error.message?.includes('user didn\'t interact')) {
+        // Only show prompt if user hasn't interacted yet
+        if (!userHasInteracted) {
+          setNeedsInteractionPrompt(true);
+        }
+        // Don't show toast for autoplay failures - user can click replay button
+        console.log('Autoplay blocked - user needs to interact first');
+      } else {
+        toast({
+          title: "Audio Error", 
+          description: "Failed to play audio prompt. Please try again.",
+          variant: "destructive"
+        });
+      }
+      
+      // Clean up
+      if (audioRef.current) {
+        audioRef.current = null;
+      }
     }
   };
 
@@ -856,48 +1098,81 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
   );
 
   return (
-    <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
+    <div className="min-h-screen relative">
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+           style={{
+             backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+             backgroundColor: '#ffffff'
+           }} />
+      <div className="relative z-10 min-h-screen flex flex-col">
+        <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
+          <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-120px)] py-8">
+            <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col">
+            {/* Header */}
 
-        {/* Progress */}
-        <Card className="card-modern">
-          <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium">Test Progress</span>
-              </div>
-            <div className="relative">
-              <div
-                className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
-                style={{ left: `${progressValue}%` }}
-                aria-label="Progress mascot"
-                title="Keep going!"
-              >
-                <img
-                  src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
-                  alt="Speaking progress turtle mascot"
-                  className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
-                  loading="lazy"
-                />
-              </div>
-              <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
-              <Progress value={progressValue} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
+            {/* Progress */}
+            <Card className="card-modern bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20">
+              <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium">Test Progress</span>
+                  </div>
+                <div className="relative">
+                  <div
+                    className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
+                    style={{ left: `${progressValue}%` }}
+                    aria-label="Progress mascot"
+                    title="Keep going!"
+                  >
+                    <img
+                      src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
+                      alt="Speaking progress turtle mascot"
+                      className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
+                      loading="lazy"
+                    />
+                  </div>
+                  <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
+                  <Progress value={progressValue} className="h-2" />
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Main Content */}
-        <Card className="card-modern">
+            {/* Main Content */}
+            <Card className="card-modern bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 flex flex-col" style={{ 
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+            }}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>
-                Part {currentPart}
+                {currentPart === 2 && "Part 2 - Individual Long Turn"}
+                {currentPart === 3 && "Part 3 - Two-way Discussion"}
               </span>
               <div className="flex items-center gap-3">
                 <VolumeSlider defaultValue={50} className="w-64 md:w-72" showValueIndicator={false} />
-                
+
+                {/* Unveil Toggle Button - Black Button in Top Right */}
+                {(currentPart === 1 || currentPart === 3) && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => setShowQuestion(!showQuestion)}
+                          variant="default"
+                          size="sm"
+                          className="bg-black hover:bg-black/90 text-white"
+                        >
+                          {showQuestion ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                          Question
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Click to view question</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
                 {/* AI Assistant moved to floating bottom-right */}
-                
+
                 {timeLeft > 0 && (
                   <Badge variant="outline" className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
@@ -907,7 +1182,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 flex flex-col relative">
             {/* Part 2 Preparation Timer with Note-taking */}
             {currentPart === 2 && preparationTime > 0 && (
               <div className="space-y-4">
@@ -972,28 +1247,31 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </Card>
             )}
 
-            {/* Audio Prompt with Auto-play and Repeat */}
-            {currentPrompt?.audio_url && currentPart !== 2 && (
-              <div className="flex justify-center">
-                <Button
-                  onClick={repeatAudio}
-                  disabled={isPlaying}
-                  variant="outline"
-                  className="rounded-xl border-primary/30 text-primary hover:bg-primary/10"
-                  size="lg"
-                >
-                  {isPlaying ? (
-                    <>
-                      <Pause className="w-5 h-5 mr-2" />
-                      Playing...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-5 h-5 mr-2" />
-                      Repeat Audio
-                    </>
+            {/* Part 1 - Structured Questions Display */}
+            {currentPart === 1 && testData.part1_prompts.length > 0 && (
+              <div className="space-y-6 relative flex flex-col min-h-[200px]">
+                {/* Question Text - Fixed Height Container */}
+                <div className="min-h-[200px] flex items-center justify-center flex-1">
+                  {showQuestion && (
+                    <div className="text-lg font-medium text-center">
+                      {getCurrentQuestionText()}
+                    </div>
                   )}
-                </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Part 3 - Structured Questions Display */}
+            {currentPart === 3 && testData.part3_prompts.length > 0 && (
+              <div className="space-y-6 relative flex flex-col min-h-[200px]">
+                {/* Question Text - Fixed Height Container */}
+                <div className="min-h-[200px] flex items-center justify-center flex-1">
+                  {showQuestion && (
+                    <div className="text-lg font-medium text-center">
+                      {getCurrentQuestionText()}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1004,6 +1282,20 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {currentPrompt.prompt_text}
                 </div>
+              </div>
+            )}
+
+            {/* Recording Playback for Parts 1 & 3 - Moved Above Recording Buttons */}
+            {recordings[`part${currentPart}_q${currentQuestion}`] && (currentPart === 1 || currentPart === 3) && (
+              <div className="flex justify-center mb-4">
+                <Button
+                  onClick={() => playRecording(`part${currentPart}_q${currentQuestion}`)}
+                  variant="outline"
+                  className="rounded-xl"
+                >
+                  <Volume2 className="w-4 h-4 mr-2" />
+                  Listen to Your Recording
+                </Button>
               </div>
             )}
 
@@ -1026,76 +1318,86 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="flex items-center justify-center gap-3">
+                    {/* Record Button - Center */}
                     <Button
                       onClick={startRecording}
-                      className="rounded-xl"
-                      size="lg"
+                      className="rounded-xl bg-white/80 hover:bg-white/90 text-foreground border border-border shadow-sm h-12 w-12"
+                      size="icon"
                     >
-                      <Mic className="w-4 h-4 mr-2" />
-                      Start Recording
+                      <Mic className="w-5 h-5" />
                     </Button>
+                    
+                    {/* Replay Audio Button - Center */}
+                    {currentPrompt?.audio_url && (
+                      <Button
+                        onClick={repeatAudio}
+                        disabled={isPlaying}
+                        variant="outline"
+                        size="icon"
+                        className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                      >
+                        {isPlaying ? (
+                          <Pause className="w-5 h-5" />
+                        ) : (
+                          <Play className="w-5 h-5" />
+                        )}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            <Separator />
+            {/* Question Navigation Buttons - Bottom Corners */}
+            {(currentPart === 1 || currentPart === 3) && (
+              <>
+                {/* Previous Question Button - Bottom Left */}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (currentQuestion > 0) {
+                      setCurrentQuestion(currentQuestion - 1);
+                      setShowQuestion(false);
+                    }
+                  }}
+                  disabled={currentQuestion === 0}
+                  size="icon"
+                  className="absolute bottom-0 left-0 h-12 w-12"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
 
-            {/* Navigation */}
-            <div className="flex justify-between items-center">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/ielts-portal')}
-                className="rounded-xl"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Exit Test
-              </Button>
-
-              {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                <div className="flex space-x-3">
-                  {/* Listen to Recording button for Parts 1 & 3 */}
-                  {(currentPart === 1 || currentPart === 3) && (
-                    <Button
-                      onClick={() => playRecording(`part${currentPart}_q${currentQuestion}`)}
-                      variant="outline"
-                      className="rounded-xl border-green-300 text-green-700 hover:bg-green-50"
-                    >
-                      <Volume2 className="w-4 h-4 mr-2" />
-                      Listen to Your Recording
-                    </Button>
-                  )}
-                  
-                  {/* Continue/Next button */}
-                  <Button
-                    onClick={nextQuestion}
-                    className="rounded-xl"
-                  >
-                    {currentPart === 1 && currentQuestion < testData.part1_prompts.length - 1 && (
-                      <>Continue to Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
-                    )}
-                    {currentPart === 1 && currentQuestion === testData.part1_prompts.length - 1 && (
-                      <>Continue to Part 2 <ArrowRight className="w-4 h-4 ml-2" /></>
-                    )}
-                    {currentPart === 2 && (
-                      <>Continue to Part 3 <ArrowRight className="w-4 h-4 ml-2" /></>
-                    )}
-                    {currentPart === 3 && currentQuestion < testData.part3_prompts.length - 1 && (
-                      <>Continue to Next Question <ArrowRight className="w-4 h-4 ml-2" /></>
-                    )}
-                    {currentPart === 3 && currentQuestion === testData.part3_prompts.length - 1 && (
-                      <>Submit Test <Upload className="w-4 h-4 ml-2" /></>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
+                {/* Next Question Button - Bottom Right */}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowQuestion(false);
+                    nextQuestion();
+                  }}
+                  disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
+                  size="icon"
+                  className="absolute bottom-0 right-0 h-12 w-12"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
+        {/* Exit Test Button - Text Only */}
+        <div className="fixed bottom-6 left-6 z-40">
+          <button
+            onClick={() => navigate('/ielts-portal')}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            Exit Test
+          </button>
+        </div>
+
         {/* AI Assistant - Floating Bottom Right (Writing-style) */}
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-24 right-6 z-50">
           {showAIAssistant ? (
             <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
               <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
@@ -1215,8 +1517,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             </Button>
           )}
         </div>
+            </div>
+          </div>
+        </StudentLayout>
       </div>
-    </StudentLayout>
+    </div>
   );
 };
 

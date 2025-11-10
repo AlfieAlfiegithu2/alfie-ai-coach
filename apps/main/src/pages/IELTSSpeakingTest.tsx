@@ -18,6 +18,16 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AudioPlayerProvider, useAudioPlayer, AudioPlayerButton, AudioPlayerTime, AudioPlayerProgress, AudioPlayerDuration, AudioPlayerSpeed } from "@/components/ui/audio-player";
 import { LiveWaveform } from "@/components/ui/live-waveform";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ui/conversation";
+import { Message, MessageContent } from "@/components/ui/message";
+import { Response } from "@/components/ui/response";
+import { Orb } from "@/components/ui/orb";
+import { ShimmeringText } from "@/components/ui/shimmering-text";
 
 interface SpeakingPrompt {
   id: string;
@@ -1619,9 +1629,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 </div>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
-                <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-3 rounded-lg p-4 border border-border bg-card/50 backdrop-blur-sm">
-                  {/* Current question displayed at the top of chat */}
-                  <div className="rounded-lg p-3 bg-muted/60 border border-border">
+                <Conversation className="flex-1">
+                  <ConversationContent>
+                    {chatMessages.length === 0 && !isChatLoading ? (
+                      <ConversationEmptyState
+                        icon={<Orb className="size-12" />}
+                        title="Start a conversation"
+                        description="Ask for help with your IELTS speaking practice"
+                      />
+                    ) : (
+                      <>
+                        {/* Current question displayed at the top of chat */}
+                        <div className="rounded-lg p-3 bg-muted/60 border border-border mb-4">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
                     <div className="text-sm font-medium text-foreground">{questionType}</div>
                     <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{currentQuestionText || 'No question available.'}</div>
@@ -1646,21 +1665,27 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       </div>
                     </div>
                   ))}
-                  {isChatLoading && (
-                    <div className="flex gap-3 justify-start">
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mt-1 overflow-hidden">
-                        <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-6 h-6 rounded-full object-cover" />
-                      </div>
-                      <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                        {isChatLoading && (
+                          <Message from="assistant">
+                            <MessageContent>
+                              <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
+                                <ShimmeringText text="Thinking..." />
+                              </div>
+                            </MessageContent>
+                            <div className="ring-border size-8 overflow-hidden rounded-full ring-1">
+                              <img
+                                src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png"
+                                alt="Foxbot"
+                                className="h-full w-full rounded-full object-cover"
+                              />
+                            </div>
+                          </Message>
+                        )}
+                      </>
+                    )}
+                  </ConversationContent>
+                  <ConversationScrollButton />
+                </Conversation>
 
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   <Button

@@ -1380,7 +1380,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Recording Interface */}
             {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
-              <div className="text-center space-y-4">
+              <div className="text-center space-y-4 min-h-[140px] flex flex-col justify-center">
                 {isRecording ? (
                   <div className="space-y-4">
                     {/* Live Audio Waveform */}

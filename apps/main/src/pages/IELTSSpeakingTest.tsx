@@ -1196,7 +1196,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>
-                {currentPart === 2 && "Part 2 - Individual Long Turn"}
                 {currentPart === 3 && "Part 3 - Two-way Discussion"}
               </span>
               <div className="flex items-center gap-3">
@@ -1246,11 +1245,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <div className="space-y-4">
                 <div className="text-center p-6 bg-primary/5 rounded-lg border border-primary/10">
                   <Clock className="w-8 h-8 mx-auto mb-3 text-primary" />
-                  <h3 className="text-lg font-semibold mb-2">Preparation Time</h3>
                   <p className="text-2xl font-bold text-primary">{formatTime(preparationTime)}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Use this time to prepare your response and take notes
-                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPreparationTime(prev => prev + 60)}
+                    className="mt-3 text-primary border-primary/30"
+                  >
+                    +1 Minute
+                  </Button>
                 </div>
                 
                 {/* Note-taking area */}
@@ -1258,7 +1261,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between text-lg">
                       <span className="flex items-center gap-2">
-                        📝 Your Notes
                       </span>
                       <Button
                         variant="outline"
@@ -1294,7 +1296,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <Card className="bg-yellow-50 border-yellow-200">
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    📝 Your Notes (for reference while recording)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1418,7 +1419,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       )}
 
                       {/* Listen to Your Recording Button */}
-                      {recordings[`part${currentPart}_q${currentQuestion}`] && (currentPart === 1 || currentPart === 3) && (
+                      {recordings[`part${currentPart}_q${currentQuestion}`] && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button

@@ -687,6 +687,8 @@ const IELTSSpeakingTest = () => {
   const startRecording = async () => {
     try {
       beep();
+      // Delay recording start to avoid capturing the beep sound
+      await new Promise(resolve => setTimeout(resolve, 300));
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
@@ -1782,7 +1784,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           ) : (
             <Button
               onClick={() => setShowAIAssistant(true)}
-              className="bg-primary text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center p-0 overflow-hidden"
+              className="bg-primary text-primary-foreground shadow-xl w-14 h-14 rounded-full flex items-center justify-center p-0 overflow-hidden"
             >
               <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-12 h-12 rounded-full object-cover" />
             </Button>

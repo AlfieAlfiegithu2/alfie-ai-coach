@@ -265,6 +265,19 @@ const IELTSSpeakingTest = () => {
     return () => window.removeEventListener('app:volume-change', handler as EventListener);
   }, []);
 
+  // Auto-scroll to bottom when new chat messages are added
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        const scrollContainer = document.querySelector('[data-conversation-content]');
+        if (scrollContainer) {
+          scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [chatMessages]);
+
   // Reset showQuestion when question changes
   useEffect(() => {
     setShowQuestion(false);
@@ -736,7 +749,7 @@ const IELTSSpeakingTest = () => {
       }
     }
     
-    playRecordingSound('start'); // Use same sound for stop as start
+    playRecordingSound('stop');
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -1612,8 +1625,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         {/* AI Assistant - Floating Bottom Right (Writing-style) */}
         <div className="fixed bottom-24 right-6 z-50">
           {showAIAssistant ? (
-            <Card className="bg-white rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
-              <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl relative">
+            <Card className="bg-white/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
+              <CardHeader className="pb-2 bg-white rounded-t-3xl relative">
                 <div className="absolute top-2 right-2">
                   <Button
                     variant="ghost"
@@ -1649,7 +1662,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               <div className={`px-3 py-2 rounded-xl text-sm ${
                                 message.type === 'user'
                                   ? 'bg-primary text-white'
-                                  : 'bg-muted text-foreground border border-border'
+                                  : 'bg-gray-50 text-foreground border border-gray-200'
                               }`}>
                                 <Response
                                   dangerouslySetInnerHTML={{

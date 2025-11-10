@@ -617,17 +617,17 @@ const IELTSSpeakingTest = () => {
       const ctx = new AudioCtx();
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = 'sine';
-      o.frequency.value = 880;
+      o.type = 'triangle';
+      o.frequency.value = 440;
       o.connect(g);
       g.connect(ctx.destination);
       g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
       o.start();
       setTimeout(() => {
-        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.12);
-        setTimeout(() => { o.stop(); ctx.close(); }, 150);
-      }, 100);
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+        setTimeout(() => { o.stop(); ctx.close(); }, 200);
+      }, 120);
     } catch {}
   };
 

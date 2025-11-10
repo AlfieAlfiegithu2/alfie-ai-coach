@@ -736,7 +736,7 @@ const IELTSSpeakingTest = () => {
       }
     }
     
-    playRecordingSound('stop');
+    playRecordingSound('start'); // Use same sound for stop as start
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -1242,16 +1242,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             </div>
 
             {/* Main Content */}
-            <Card ref={mainCardRef} className="bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 flex flex-col [&:hover]:!scale-100 [&:hover]:!transform-none [&:hover]:!shadow-lg [&:hover]:!ring-0 !transition-none" style={{ 
+            <Card ref={mainCardRef} className="bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 flex flex-col" style={{ 
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-            }} onMouseEnter={(e) => {
-              e.currentTarget.style.setProperty('transform', 'scale(1)', 'important');
-              e.currentTarget.style.setProperty('box-shadow', '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)', 'important');
-              e.currentTarget.style.setProperty('transition', 'none', 'important');
-            }} onMouseLeave={(e) => {
-              e.currentTarget.style.setProperty('transform', 'scale(1)', 'important');
-              e.currentTarget.style.setProperty('box-shadow', '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)', 'important');
-              e.currentTarget.style.setProperty('transition', 'none', 'important');
             }}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -1620,19 +1612,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         {/* AI Assistant - Floating Bottom Right (Writing-style) */}
         <div className="fixed bottom-24 right-6 z-50">
           {showAIAssistant ? (
-            <Card className="glass-card rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
-              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-3 text-foreground">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center">
-                      <Bot className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-foreground">Catie</div>
-                      <div className="text-sm text-muted-foreground font-normal">Your IELTS Speaking Assistant</div>
-                    </div>
-                  </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setShowAIAssistant(false)} className="h-8 w-8 p-0 text-foreground">
+            <Card className="bg-white rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
+              <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-3xl relative">
+                <div className="absolute top-2 right-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAIAssistant(false)}
+                    className="h-8 w-8 p-0 text-foreground"
+                  >
                     ✕
                   </Button>
                 </div>
@@ -1738,7 +1726,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()}
                     placeholder="Ask for speaking help..."
-                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none shadow-sm"
                     disabled={isChatLoading}
                   />
                   <Button

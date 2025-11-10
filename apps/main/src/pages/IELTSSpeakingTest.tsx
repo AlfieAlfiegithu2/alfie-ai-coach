@@ -1133,13 +1133,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
   const currentPrompt = getCurrentPrompt();
   const currentQuestionText = getCurrentQuestionText();
   const questionType = getQuestionType();
-  const progressValue = (
-    currentPart === 1
-      ? ((currentQuestion + 1) / Math.max(1, testData.part1_prompts.length)) * 33.33
-      : currentPart === 2
-      ? 66.66
-      : 66.66 + ((currentQuestion + 1) / Math.max(1, testData.part3_prompts.length)) * 33.33
-  );
 
   return (
     <div className="min-h-screen relative">
@@ -1153,32 +1146,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-120px)] py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col">
             {/* Header */}
-
-            {/* Progress */}
-            <Card className="card-modern bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20">
-              <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium">Test Progress</span>
-                  </div>
-                <div className="relative">
-                  <div
-                    className="absolute -top-10 h-10 flex items-center justify-center -translate-x-1/2 transition-[left] duration-300 ease-out"
-                    style={{ left: `${progressValue}%` }}
-                    aria-label="Progress mascot"
-                    title="Keep going!"
-                  >
-                    <img
-                      src="/lovable-uploads/27e74cd0-58d8-4b55-b31a-fdb162f21e8b.png"
-                      alt="Speaking progress turtle mascot"
-                      className="w-12 h-12 object-contain drop-shadow animate-[turtle-legs_900ms_ease-in-out_infinite]"
-                      loading="lazy"
-                    />
-                  </div>
-                  <style>{`@keyframes turtle-legs { 0% { transform: translateY(0) rotate(0deg) } 25% { transform: translateY(-1px) rotate(-2deg) } 50% { transform: translateY(0) rotate(0deg) } 75% { transform: translateY(-1px) rotate(2deg) } 100% { transform: translateY(0) rotate(0deg) } }`}</style>
-                  <Progress value={progressValue} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Current Part Indicator */}
             <div className="text-center py-2">
@@ -1198,28 +1165,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {currentPart === 3 && "Part 3 - Two-way Discussion"}
               </span>
               <div className="flex items-center gap-3">
-                {/* Unveil Toggle Button */}
-                {(currentPart === 1 || currentPart === 3) && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={() => setShowQuestion(!showQuestion)}
-                          variant="default"
-                          size="sm"
-                          className="bg-black hover:bg-black/90 text-white"
-                        >
-                          {showQuestion ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                          Question
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Click to view question</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-
                 {/* AI Assistant moved to floating bottom-right */}
 
                 {timeLeft > 0 && (

@@ -302,25 +302,25 @@ const IELTSSpeakingTest = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userHasInteracted, testData, currentPart, currentQuestion]);
 
-  // Auto-play audio when test data loads or question changes (only after user interaction)
-  useEffect(() => {
-    // Only attempt to play audio if user has already interacted
-    if (testData && currentPart !== 2 && userHasInteracted) {
-      const currentPrompt = getCurrentPrompt();
-      if (currentPrompt?.audio_url && !isRecording && !isPlaying) {
-        // Small delay to ensure UI is ready
-        setTimeout(() => {
-          console.log(`🎵 Auto-playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
-          playAudio(currentPrompt.audio_url!).catch((error) => {
-            // Silently handle autoplay failure
-            console.log('Autoplay failed:', error);
-          });
-        }, 300);
-      }
-    }
-    // Don't attempt to play if user hasn't interacted - wait for user interaction handler
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testData, currentPart, currentQuestion, userHasInteracted, isRecording]);
+  // DISABLED: Auto-play audio when test data loads or question changes (only after user interaction)
+  // useEffect(() => {
+  //   // Only attempt to play audio if user has already interacted
+  //   if (testData && currentPart !== 2 && userHasInteracted) {
+  //     const currentPrompt = getCurrentPrompt();
+  //     if (currentPrompt?.audio_url && !isRecording && !isPlaying) {
+  //       // Small delay to ensure UI is ready
+  //       setTimeout(() => {
+  //         console.log(`🎵 Auto-playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
+  //         playAudio(currentPrompt.audio_url!).catch((error) => {
+  //           // Silently handle autoplay failure
+  //           console.log('Autoplay failed:', error);
+  //         });
+  //       }, 300);
+  //     }
+  //   }
+  //   // Don't attempt to play if user hasn't interacted - wait for user interaction handler
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [testData, currentPart, currentQuestion, userHasInteracted, isRecording]);
 
   const loadTestData = async () => {
     if (!testId) return;
@@ -1165,6 +1165,26 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {currentPart === 3 && "Part 3 - Two-way Discussion"}
               </span>
               <div className="flex items-center gap-3">
+                {/* Unveil Toggle Button */}
+                {(currentPart === 1 || currentPart === 3) && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => setShowQuestion(!showQuestion)}
+                          variant="ghost"
+                          size="icon"
+                        >
+                          {showQuestion ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Click to view question</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
                 {/* AI Assistant moved to floating bottom-right */}
 
                 {timeLeft > 0 && (

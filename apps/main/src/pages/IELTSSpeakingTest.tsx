@@ -1641,32 +1641,44 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <>
                         {/* Current question displayed at the top of chat */}
                         <div className="rounded-lg p-3 bg-muted/60 border border-border mb-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
-                    <div className="text-sm font-medium text-foreground">{questionType}</div>
-                    <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{currentQuestionText || 'No question available.'}</div>
-                  </div>
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
+                          <div className="text-sm font-medium text-foreground">{questionType}</div>
+                          <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{currentQuestionText || 'No question available.'}</div>
+                        </div>
 
                         {chatMessages.map((message) => (
-                          <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
+                          <Message key={message.id} from={message.type === 'user' ? 'user' : 'bot' as 'assistant'}>
                             <MessageContent>
-                        <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground border border-border'}`}>
-                          <div
-                            dangerouslySetInnerHTML={{
+                              <div className={`px-3 py-2 rounded-xl text-sm ${
+                                message.type === 'user'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted text-foreground border border-border'
+                              }`}>
+                                <Response
+                                  dangerouslySetInnerHTML={{
                               __html: message.content
                                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                                 .replace(/^• (.*)$/gm, '<li>$1</li>')
                                 .replace(/(<li>.*<\/li>)/s, '<ul>$1<\/ul>')
                                 .replace(/\n/g, '<br>'),
-                            }}
-                            className="prose prose-sm max-w-none dark:prose-invert"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                                  }}
+                                />
+                              </div>
+                            </MessageContent>
+                            {message.type === 'bot' && (
+                              <div className="ring-border size-8 overflow-hidden rounded-full ring-1">
+                                <img
+                                  src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png"
+                                  alt="Foxbot"
+                                  className="h-full w-full rounded-full object-cover"
+                                />
+                              </div>
+                            )}
+                          </Message>
                   ))}
                         {isChatLoading && (
-                          <Message from="assistant">
+                          <Message from={'assistant' as const}>
                             <MessageContent>
                               <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
                                 <ShimmeringText text="Thinking..." />

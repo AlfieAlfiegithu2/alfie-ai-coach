@@ -1624,18 +1624,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
         {/* Structure and Vocabulary Buttons - Next to Chatbot */}
         {showAIAssistant && (
-          <div className="fixed bottom-24 right-[420px] z-50 flex flex-col gap-2">
+          <div className="fixed bottom-36 right-[420px] z-50 flex flex-col gap-3">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => handleSuggestionClick('Help with Speaking Structure')}
                     disabled={isChatLoading}
-                    className="h-10 w-10 p-0 text-foreground"
+                    className="h-12 w-12 p-0 border-primary/30 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-primary/10"
                   >
-                    <ListTree className="w-5 h-5" />
+                    <ListTree className="w-6 h-6" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -1648,13 +1648,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
                     disabled={isChatLoading}
-                    className="h-10 w-10 p-0 text-foreground"
+                    className="h-12 w-12 p-0 border-primary/30 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-primary/10"
                   >
-                    <BookOpen className="w-5 h-5" />
+                    <BookOpen className="w-6 h-6" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">

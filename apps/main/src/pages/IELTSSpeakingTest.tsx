@@ -258,49 +258,49 @@ const IELTSSpeakingTest = () => {
     setShowQuestion(false);
   }, [currentQuestion, currentPart]);
 
-  // Track user interaction to enable autoplay
-  useEffect(() => {
-    const handleUserInteraction = async () => {
-      if (!userHasInteracted) {
-        // Set state first
-        setUserHasInteracted(true);
-        setNeedsInteractionPrompt(false);
-        
-        // Wait for state to update and ensure the interaction event is fully processed
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Try to play audio immediately after first interaction
-        if (testData && currentPart !== 2) {
-          const currentPrompt = getCurrentPrompt();
-          if (currentPrompt?.audio_url && !isPlaying && !isRecording) {
-            console.log(`🎵 User interacted - playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
-            try {
-              await playAudio(currentPrompt.audio_url!);
-            } catch (error) {
-              console.log('Audio play failed after interaction:', error);
-            }
-          }
-        }
-      }
-      // Remove listeners after first interaction
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('touchstart', handleUserInteraction);
-      document.removeEventListener('keydown', handleUserInteraction);
-    };
+  // DISABLED: Track user interaction to enable autoplay
+  // useEffect(() => {
+  //   const handleUserInteraction = async () => {
+  //     if (!userHasInteracted) {
+  //       // Set state first
+  //       setUserHasInteracted(true);
+  //       setNeedsInteractionPrompt(false);
 
-    if (!userHasInteracted) {
-      document.addEventListener('click', handleUserInteraction, { once: true });
-      document.addEventListener('touchstart', handleUserInteraction, { once: true });
-      document.addEventListener('keydown', handleUserInteraction, { once: true });
-    }
+  //       // Wait for state to update and ensure the interaction event is fully processed
+  //       await new Promise(resolve => setTimeout(resolve, 100));
 
-    return () => {
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('touchstart', handleUserInteraction);
-      document.removeEventListener('keydown', handleUserInteraction);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userHasInteracted, testData, currentPart, currentQuestion]);
+  //       // Try to play audio immediately after first interaction
+  //       if (testData && currentPart !== 2) {
+  //         const currentPrompt = getCurrentPrompt();
+  //         if (currentPrompt?.audio_url && !isPlaying && !isRecording) {
+  //           console.log(`🎵 User interacted - playing audio for Part ${currentPart}, Question ${currentQuestion + 1}`);
+  //           try {
+  //             await playAudio(currentPrompt.audio_url!);
+  //           } catch (error) {
+  //             console.log('Audio play failed after interaction:', error);
+  //           }
+  //         }
+  //       }
+  //     }
+  //     // Remove listeners after first interaction
+  //     document.removeEventListener('click', handleUserInteraction);
+  //     document.removeEventListener('touchstart', handleUserInteraction);
+  //     document.removeEventListener('keydown', handleUserInteraction);
+  //   };
+
+  //   if (!userHasInteracted) {
+  //     document.addEventListener('click', handleUserInteraction, { once: true });
+  //     document.addEventListener('touchstart', handleUserInteraction, { once: true });
+  //     document.addEventListener('keydown', handleUserInteraction, { once: true });
+  //   }
+
+  //   return () => {
+  //     document.removeEventListener('click', handleUserInteraction);
+  //     document.removeEventListener('touchstart', handleUserInteraction);
+  //     document.removeEventListener('keydown', handleUserInteraction);
+  //   };
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [userHasInteracted, testData, currentPart, currentQuestion]);
 
   // DISABLED: Auto-play audio when test data loads or question changes (only after user interaction)
   // useEffect(() => {
@@ -1172,8 +1172,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <TooltipTrigger asChild>
                         <Button
                           onClick={() => setShowQuestion(!showQuestion)}
-                          variant="ghost"
+                          variant="outline"
                           size="icon"
+                          className="border-primary/30 text-primary hover:bg-primary/10"
                         >
                           {showQuestion ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </Button>
@@ -1296,20 +1297,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {currentPrompt.prompt_text}
                 </div>
-              </div>
-            )}
-
-            {/* Recording Playback for Parts 1 & 3 - Moved Above Recording Buttons */}
-            {recordings[`part${currentPart}_q${currentQuestion}`] && (currentPart === 1 || currentPart === 3) && (
-              <div className="flex justify-center mb-4">
-                <Button
-                  onClick={() => playRecording(`part${currentPart}_q${currentQuestion}`)}
-                  variant="outline"
-                  className="rounded-xl"
-                >
-                  <Volume2 className="w-4 h-4 mr-2" />
-                  Listen to Your Recording
-                </Button>
               </div>
             )}
 

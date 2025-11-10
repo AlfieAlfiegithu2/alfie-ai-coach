@@ -1380,11 +1380,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Recording Interface */}
             {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
-              <div className="text-center h-[80px] flex flex-col justify-center items-center">
+              <div className="text-center h-[80px] flex flex-col justify-center items-center relative">
                 {isRecording ? (
-                  <div className="flex flex-col items-center justify-center w-full">
-                    {/* Live Audio Waveform - Centered */}
-                    <div className="flex items-center justify-center w-full">
+                  <>
+                    {/* Live Audio Waveform - Vertically Centered */}
+                    <div className="flex items-center justify-center w-full h-full">
                       <LiveWaveform
                         active={true}
                         height={44}
@@ -1401,15 +1401,16 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       />
                     </div>
 
+                    {/* Stop Recording Button - Positioned at bottom */}
                     <Button
                       onClick={stopRecording}
                       variant="outline"
-                      className="rounded-xl h-8 px-3 text-xs mt-1"
+                      className="rounded-xl h-8 px-3 text-xs absolute bottom-0 left-1/2 transform -translate-x-1/2"
                     >
                       <Mic className="w-3 h-3 mr-1" />
                       Stop Recording
                     </Button>
-                  </div>
+                  </>
                 ) : (
                   <TooltipProvider>
                     <div className="flex items-center justify-center gap-3">

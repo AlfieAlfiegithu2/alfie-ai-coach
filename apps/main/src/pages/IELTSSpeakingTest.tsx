@@ -1165,22 +1165,30 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {currentPart === 3 && "Part 3 - Two-way Discussion"}
               </span>
               <div className="flex items-center gap-3">
-                {/* Unveil Toggle Button */}
+                {/* Unveil Toggle Switch */}
                 {(currentPart === 1 || currentPart === 3) && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
+                        <div
                           onClick={() => setShowQuestion(!showQuestion)}
-                          variant="outline"
-                          size="icon"
-                          className="border-primary/30 text-primary hover:bg-primary/10"
+                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
+                          data-state={showQuestion ? "checked" : "unchecked"}
                         >
-                          {showQuestion ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </Button>
+                          <div
+                            className="pointer-events-none flex h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 items-center justify-center"
+                            data-state={showQuestion ? "checked" : "unchecked"}
+                          >
+                            {showQuestion ? (
+                              <Eye className="w-3 h-3 text-primary" />
+                            ) : (
+                              <EyeOff className="w-3 h-3 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Click to view question</p>
+                        <p>{showQuestion ? "Hide question" : "Show question"}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

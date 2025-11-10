@@ -672,34 +672,8 @@ const IELTSSpeakingTest = () => {
   };
 
   const playRecordingStopSound = () => {
-    try {
-      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-      const ctx = new AudioCtx();
-
-      // Create a descending tone with vibrato
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-
-      o.type = 'sawtooth';
-      o.frequency.setValueAtTime(600, ctx.currentTime);
-      o.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.25);
-
-      o.connect(g);
-      g.connect(ctx.destination);
-
-      g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.03, ctx.currentTime + 0.01);
-
-      o.start();
-
-      setTimeout(() => {
-        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
-        setTimeout(() => {
-          o.stop();
-          ctx.close();
-        }, 150);
-      }, 200);
-    } catch {}
+    // Use the same pleasant chime sound for stop as start
+    playRecordingStartSound();
   };
 
   const beep = () => playRecordingStartSound(); // For backward compatibility

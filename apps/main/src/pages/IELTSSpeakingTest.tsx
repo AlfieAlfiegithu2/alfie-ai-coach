@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
@@ -1250,22 +1250,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </div>
             )}
 
-            {/* Part 2 Add 1 Minute Button - Shows AFTER preparation time finishes */}
-            {currentPart === 2 && preparationTime === 0 && !isRecording && (
-              <div className="text-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setPreparationTime(60);
-                    startPreparationTimer();
-                  }}
-                  className="text-primary border-primary/30"
-                >
-                  +1 Minute for Notes
-                </Button>
-              </div>
-            )}
 
             {/* Part 1 - Structured Questions Display */}
             {currentPart === 1 && testData.part1_prompts.length > 0 && (
@@ -1303,6 +1287,75 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                   {currentPrompt.prompt_text}
                 </div>
               </div>
+            )}
+
+            {/* Part 2 Notes Container */}
+            {currentPart === 2 && (
+              <>
+                {/* Note-taking area during preparation */}
+                {preparationTime > 0 && (
+                  <div className="relative bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    {/* +1 Minute Icon Button - Top Right */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setPreparationTime(prev => prev + 60);
+                            }}
+                            className="absolute top-2 right-2 h-8 w-8 text-primary hover:bg-primary/10"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Add 1 minute for notes</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <textarea
+                      placeholder="Write your preparation notes here..."
+                      value={part2Notes}
+                      onChange={(e) => setPart2Notes(e.target.value)}
+                      className="w-full h-32 p-3 bg-transparent resize-none focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* Notes Display During/After Recording */}
+                {preparationTime === 0 && part2Notes && (
+                  <div className="relative bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    {/* +1 Minute Icon Button - Top Right */}
+                    {!isRecording && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setPreparationTime(60);
+                                startPreparationTimer();
+                              }}
+                              className="absolute top-2 right-2 h-8 w-8 text-primary hover:bg-primary/10"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Add 1 minute for notes</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    <div className="p-3 text-sm whitespace-pre-wrap">
+                      {part2Notes}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Recording Interface */}
@@ -1412,32 +1465,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                   </TooltipProvider>
                 )}
               </div>
-            )}
-
-            {/* Part 2 Notes Container - Last Container */}
-            {currentPart === 2 && (
-              <>
-                {/* Note-taking area during preparation */}
-                {preparationTime > 0 && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <textarea
-                      placeholder="Write your preparation notes here..."
-                      value={part2Notes}
-                      onChange={(e) => setPart2Notes(e.target.value)}
-                      className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                )}
-
-                {/* Notes Display During/After Recording */}
-                {preparationTime === 0 && part2Notes && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="p-3 bg-white border border-yellow-300 rounded-lg text-sm whitespace-pre-wrap">
-                      {part2Notes}
-                    </div>
-                  </div>
-                )}
-              </>
             )}
 
             {/* Question Navigation Buttons - Bottom Corners */}

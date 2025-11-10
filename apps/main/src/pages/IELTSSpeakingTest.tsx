@@ -613,22 +613,43 @@ const IELTSSpeakingTest = () => {
 
   const beep = () => {
     try {
-      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-      const ctx = new AudioCtx();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'triangle';
-      o.frequency.value = 440;
-      o.connect(g);
-      g.connect(ctx.destination);
-      g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
-      o.start();
-      setTimeout(() => {
-        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
-        setTimeout(() => { o.stop(); ctx.close(); }, 200);
-      }, 120);
-    } catch {}
+      // Create audio element for custom sound file
+      const audio = new Audio('/sounds/recording-beep.mp3'); // Place your sound file in public/sounds/ folder
+      audio.volume = 0.3; // Adjust volume (0.0 to 1.0)
+
+      // Optional: Preload the audio for better performance
+      audio.preload = 'auto';
+
+      // Play the sound
+      const playPromise = audio.play();
+
+      // Handle promise for better error handling
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log('Audio playback failed:', error);
+        });
+      }
+    } catch (error) {
+      console.log('Error playing custom beep:', error);
+      // Fallback to original generated beep if custom audio fails
+      try {
+        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioCtx();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = 440;
+        o.connect(g);
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+        o.start();
+        setTimeout(() => {
+          g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+          setTimeout(() => { o.stop(); ctx.close(); }, 200);
+        }, 120);
+      } catch {}
+    }
   };
 
   const startRecording = async () => {

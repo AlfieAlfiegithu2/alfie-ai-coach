@@ -1252,9 +1252,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             data-state={showQuestion ? "checked" : "unchecked"}
                           >
                             {showQuestion ? (
-                              <Eye className="w-3 h-3 text-primary" />
+                              <Eye className="w-3 h-3 text-primary dark:text-primary" />
                             ) : (
-                              <EyeOff className="w-3 h-3 text-muted-foreground" />
+                              <EyeOff className="w-3 h-3 text-muted-foreground dark:text-slate-400" />
                             )}
                           </div>
                         </div>
@@ -1424,7 +1424,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       onClick={stopRecording}
                       variant="outline"
                       size="icon"
-                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2 dark:bg-slate-800/50 dark:border-primary/40 dark:text-primary dark:hover:bg-slate-700/50"
                     >
                       <Square className="w-4 h-4" />
                     </Button>
@@ -1438,7 +1438,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           <Button
                             onClick={startRecording}
                             variant="outline"
-                            className="rounded-xl bg-white/80 text-foreground border border-border shadow-sm h-12 w-12 hover:!bg-white/80 hover:!text-foreground"
+                            className="rounded-xl bg-white/80 dark:bg-red-900/30 text-foreground border border-border dark:border-red-700/50 shadow-sm h-12 w-12 hover:!bg-white/80 dark:hover:!bg-red-800/40 hover:!text-foreground"
                             size="icon"
                           >
                             <Mic className="w-5 h-5" />
@@ -1458,7 +1458,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               disabled={isPlaying}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary dark:bg-slate-800/50 dark:border-primary/40 dark:text-primary dark:hover:bg-slate-700/50"
                             >
                               {isPlaying ? (
                                 <Pause className="w-5 h-5" />
@@ -1488,7 +1488,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               }}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary dark:bg-slate-800/50 dark:border-primary/40 dark:text-primary dark:hover:bg-slate-700/50"
                             >
                               {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
                                 <Pause className="w-5 h-5" />

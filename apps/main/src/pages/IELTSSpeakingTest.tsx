@@ -1276,7 +1276,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {/* Question Text - Fixed Height Container */}
                 <div className="min-h-[200px] flex items-center justify-center flex-1">
                   {showQuestion && (
-                    <div className="text-lg font-medium text-center">
+                    <div className="text-lg font-medium text-center select-none">
                       {getCurrentQuestionText()}
                     </div>
                   )}
@@ -1290,7 +1290,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {/* Question Text - Fixed Height Container */}
                 <div className="min-h-[200px] flex items-center justify-center flex-1">
                   {showQuestion && (
-                    <div className="text-lg font-medium text-center">
+                    <div className="text-lg font-medium text-center select-none">
                       {getCurrentQuestionText()}
                     </div>
                   )}
@@ -1346,7 +1346,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         <TooltipTrigger asChild>
                           <Button
                             onClick={startRecording}
-                            className="rounded-xl bg-white/80 text-foreground border border-border shadow-sm h-12 w-12"
+                            variant="outline"
+                            className="rounded-xl bg-white/80 text-foreground border border-border shadow-sm h-12 w-12 hover:!bg-white/80 hover:!text-foreground"
                             size="icon"
                           >
                             <Mic className="w-5 h-5" />
@@ -1433,7 +1434,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         }}
                         disabled={currentQuestion === 0}
                         size="icon"
-                        className="absolute bottom-0 left-0 h-12 w-12"
+                        className="absolute bottom-0 left-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </Button>
@@ -1454,7 +1455,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         }}
                         disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
                         size="icon"
-                        className="absolute bottom-0 right-0 h-12 w-12"
+                        className="absolute bottom-0 right-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
                       >
                         <ArrowRight className="w-5 h-5" />
                       </Button>

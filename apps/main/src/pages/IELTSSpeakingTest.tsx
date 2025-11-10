@@ -1172,7 +1172,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <TooltipTrigger asChild>
                         <div
                           onClick={() => setShowQuestion(!showQuestion)}
-                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
+                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-gray-300 data-[state=unchecked]:bg-gray-200"
                           data-state={showQuestion ? "checked" : "unchecked"}
                         >
                           <div
@@ -1229,7 +1229,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         variant="outline"
                         size="sm"
                         onClick={getNoteTakingTips}
-                        className="text-primary border-primary/30 hover:bg-primary/10"
+                        className="text-primary border-primary/30"
                       >
                         💡 Need help with note-taking?
                       </Button>
@@ -1346,7 +1346,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         <TooltipTrigger asChild>
                           <Button
                             onClick={startRecording}
-                            className="rounded-xl bg-white/80 hover:bg-white/90 text-foreground border border-border shadow-sm h-12 w-12"
+                            className="rounded-xl bg-white/80 text-foreground border border-border shadow-sm h-12 w-12"
                             size="icon"
                           >
                             <Mic className="w-5 h-5" />
@@ -1366,7 +1366,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               disabled={isPlaying}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary"
                             >
                               {isPlaying ? (
                                 <Pause className="w-5 h-5" />
@@ -1396,7 +1396,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               }}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary"
                             >
                               {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
                                 <Pause className="w-5 h-5" />
@@ -1460,7 +1460,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Next question</p>
+                      <p>{recordings[`part${currentPart}_q${currentQuestion}`] === undefined ? "Please record your answer first" : "Next question"}</p>
                     </TooltipContent>
                   </Tooltip>
                 </>
@@ -1473,7 +1473,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         <div className="fixed bottom-6 left-6 z-40">
           <button
             onClick={() => navigate('/ielts-portal')}
-            className="text-sm text-black hover:text-gray-700 transition-colors cursor-pointer"
+            className="text-lg text-black cursor-pointer"
           >
             Exit Test
           </button>
@@ -1494,7 +1494,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <div className="text-sm text-muted-foreground font-normal">Your IELTS Speaking Tutor</div>
                     </div>
                   </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setShowAIAssistant(false)} className="h-8 w-8 p-0 hover:bg-destructive/20 text-foreground">
+                  <Button variant="ghost" size="sm" onClick={() => setShowAIAssistant(false)} className="h-8 w-8 p-0 text-foreground">
                     ✕
                   </Button>
                 </div>
@@ -1549,7 +1549,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     size="sm"
                     onClick={() => handleSuggestionClick('Help with Speaking Structure')}
                     disabled={isChatLoading}
-                    className="text-xs h-8 border-primary/30 hover:bg-primary/10"
+                    className="text-xs h-8 border-primary/30"
                   >
                     <ListTree className="w-3 h-3 mr-2" />
                     Structure
@@ -1559,7 +1559,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     size="sm"
                     onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
                     disabled={isChatLoading}
-                    className="text-xs h-8 border-primary/30 hover:bg-primary/10"
+                    className="text-xs h-8 border-primary/30"
                   >
                     <BookOpen className="w-3 h-3 mr-2" />
                     Vocabulary
@@ -1580,7 +1580,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     onClick={() => sendChatMessage()}
                     disabled={isChatLoading || !newMessage.trim()}
                     size="sm"
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    className="bg-primary text-primary-foreground"
                   >
                     {isChatLoading ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
@@ -1594,7 +1594,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           ) : (
             <Button
               onClick={() => setShowAIAssistant(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center p-0 overflow-hidden"
+              className="bg-primary text-primary-foreground shadow-xl border border-primary/30 w-14 h-14 rounded-full flex items-center justify-center p-0 overflow-hidden"
             >
               <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-12 h-12 rounded-full object-cover" />
             </Button>

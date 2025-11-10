@@ -205,6 +205,7 @@ const IELTSSpeakingTest = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const mainCardRef = useRef<HTMLDivElement>(null);
+  const recordingStartTimeRef = useRef<number | null>(null);
 
   // Global audio volume shared across the app (0.0 - 1.0)
   const initialVol = (() => {
@@ -658,6 +659,7 @@ const IELTSSpeakingTest = () => {
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
+      recordingStartTimeRef.current = Date.now(); // Track when recording started
       
       // Set timer based on current part
       if (currentPart === 1 || currentPart === 3) {
@@ -677,11 +679,29 @@ const IELTSSpeakingTest = () => {
   };
 
   const stopRecording = () => {
+    // For Part 2, enforce minimum 1 minute recording time
+    if (currentPart === 2 && recordingStartTimeRef.current) {
+      const elapsedSeconds = Math.floor((Date.now() - recordingStartTimeRef.current) / 1000);
+      const minimumSeconds = 60; // 1 minute minimum
+      
+      if (elapsedSeconds < minimumSeconds) {
+        const remainingSeconds = minimumSeconds - elapsedSeconds;
+        toast({
+          title: "Minimum Recording Time Required",
+          description: `For IELTS Part 2, you should speak for at least 1 minute to receive a good score. Please continue recording for ${remainingSeconds} more second${remainingSeconds !== 1 ? 's' : ''}.`,
+          variant: "destructive",
+          duration: 5000
+        });
+        return; // Prevent stopping
+      }
+    }
+    
     beep();
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setTimeLeft(0);
+      recordingStartTimeRef.current = null; // Reset start time
     }
   };
 

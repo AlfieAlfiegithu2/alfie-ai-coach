@@ -53,8 +53,8 @@ const StudentLayout = ({
     path: "/explanations",
     icon: HelpCircle
   }];
-  return <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900" style={{
-    backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.8) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)'
+  return <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:opacity-95" style={{
+    backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.03) 0%, transparent 50%)'
   }}>
       {/* Header with optional Back button */}
       

@@ -1228,8 +1228,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             </div>
 
             {/* Main Content */}
-            <Card ref={mainCardRef} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 dark:border-slate-700/50 flex flex-col" style={{ 
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+            <Card ref={mainCardRef} className="bg-white/80 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 dark:border-slate-600/50 flex flex-col" style={{
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.08)',
             }}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -1642,8 +1642,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         {/* AI Assistant - Floating Bottom Right (Writing-style) */}
         <div className="fixed bottom-24 right-6 z-50">
           {showAIAssistant ? (
-            <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl flex flex-col hover:shadow-2xl hover:ring-0 hover:scale-100">
-              <CardHeader className="pb-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-t-3xl relative">
+            <Card className="bg-white/80 dark:bg-slate-800/90 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl flex flex-col hover:shadow-2xl hover:ring-0 hover:scale-100">
+              <CardHeader className="pb-2 bg-white/80 dark:bg-slate-800/90 backdrop-blur-sm rounded-t-3xl relative">
                 <div className="absolute top-2 right-2">
                   <Button
                     variant="ghost"

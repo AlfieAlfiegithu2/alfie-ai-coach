@@ -634,46 +634,18 @@ const IELTSSpeakingTest = () => {
     }
   };
 
-  const playRecordingSound = (type: 'start' | 'stop') => {
-    try {
-      // Create audio element for custom sound files
-      const soundFile = type === 'start' ? '/sounds/recording-start.mp3' : '/sounds/recording-stop.mp3';
-      const audio = new Audio(soundFile); // Place your sound files in public/sounds/ folder
-      audio.volume = 0.4; // Adjust volume (0.0 to 1.0)
-
-      // Optional: Preload the audio for better performance
-      audio.preload = 'auto';
-
-      // Play the sound
-      const playPromise = audio.play();
-
-      // Handle promise for better error handling
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.log(`${type} audio playback failed:`, error);
-          // Fallback to generated sounds if custom audio fails
-          fallbackBeep(type);
-        });
-      }
-    } catch (error) {
-      console.log(`Error playing ${type} sound:`, error);
-      // Fallback to generated sounds
-      fallbackBeep(type);
-    }
-  };
-
-  const fallbackBeep = (type: 'start' | 'stop') => {
+  const beep = () => {
     try {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = type === 'start' ? 'sine' : 'triangle';
-      o.frequency.value = type === 'start' ? 660 : 440; // Higher pitch for start, lower for stop
+      o.type = 'triangle';
+      o.frequency.value = 440;
       o.connect(g);
       g.connect(ctx.destination);
       g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(type === 'start' ? 0.1 : 0.08, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
       o.start();
       setTimeout(() => {
         g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
@@ -682,13 +654,11 @@ const IELTSSpeakingTest = () => {
     } catch {}
   };
 
-  const beep = () => playRecordingSound('start'); // For backward compatibility
-
   const startRecording = async () => {
     try {
       beep();
       // Delay recording start to avoid capturing the beep sound
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 100));
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
@@ -751,7 +721,7 @@ const IELTSSpeakingTest = () => {
       }
     }
     
-    playRecordingSound('stop');
+    beep();
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -1784,7 +1754,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           ) : (
             <Button
               onClick={() => setShowAIAssistant(true)}
-              className="bg-primary text-primary-foreground shadow-xl w-14 h-14 rounded-full flex items-center justify-center p-0 overflow-hidden"
+              className="bg-primary text-primary-foreground shadow-xl w-14 h-14 rounded-full flex items-center justify-center p-0 overflow-hidden border-0 ring-0 outline-none"
             >
               <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-12 h-12 rounded-full object-cover" />
             </Button>

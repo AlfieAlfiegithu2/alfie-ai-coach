@@ -1103,7 +1103,7 @@ const IELTSSpeakingTest = () => {
           
           <Card className="card-modern">
             <CardContent className="p-8 text-center">
-              <Mic className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <Mic className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
               <h2 className="text-xl font-semibold mb-2">No Speaking Content Available</h2>
               <p className="text-muted-foreground mb-6">
                 This test doesn't have speaking content created yet. Please contact your administrator or try another test.
@@ -1222,7 +1222,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Current Part Indicator */}
             <div className="text-center py-2">
-              <span className="text-lg font-semibold text-black">
+              <span className="text-lg font-semibold text-foreground">
                 Part {currentPart}
               </span>
             </div>
@@ -1244,7 +1244,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <TooltipTrigger asChild>
                         <div
                           onClick={() => setShowQuestion(!showQuestion)}
-                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-gray-300 data-[state=unchecked]:bg-gray-200"
+                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-primary data-[state=unchecked]:bg-gray-300 dark:data-[state=unchecked]:bg-gray-600"
                           data-state={showQuestion ? "checked" : "unchecked"}
                         >
                           <div
@@ -1364,7 +1364,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
                 {/* Notes Display During/After Recording */}
                 {preparationTime === 0 && part2Notes && (
-                  <div className="relative bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="relative bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                     {/* +1 Minute Icon Button - Top Right */}
                     {!isRecording && (
                       <TooltipProvider>
@@ -1678,8 +1678,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             <MessageContent>
                               <div className={`px-3 py-2 rounded-xl text-sm ${
                                 message.type === 'user'
-                                  ? 'bg-gray-50 text-foreground border border-gray-200'
-                                  : 'bg-gray-50 text-foreground border border-gray-200'
+                                  ? 'bg-muted/50 text-foreground border border-border/50'
+                                  : 'bg-muted/50 text-foreground border border-border/50'
                               }`}>
                                 <Response
                                   dangerouslySetInnerHTML={{
@@ -1733,7 +1733,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()}
                       placeholder="Ask for speaking help..."
-                      className="flex-1 px-3 py-2 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-0 resize-none"
+                      className="flex-1 px-3 py-2 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none"
                       disabled={isChatLoading}
                     />
                     <Button

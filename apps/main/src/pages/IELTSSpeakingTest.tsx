@@ -1380,29 +1380,31 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Recording Interface */}
             {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
-              <div className="text-center h-[80px] flex flex-col justify-center">
+              <div className="text-center h-[80px] flex flex-col justify-center items-center">
                 {isRecording ? (
-                  <div className="flex flex-col items-center gap-1">
-                    {/* Live Audio Waveform */}
-                    <LiveWaveform
-                      active={true}
-                      height={44}
-                      barWidth={3}
-                      barGap={1}
-                      barRadius={1.5}
-                      mode="static"
-                      fadeEdges={true}
-                      barColor="#000000"
-                      sensitivity={1}
-                      fftSize={256}
-                      historySize={60}
-                      updateRate={30}
-                    />
+                  <div className="flex flex-col items-center justify-center w-full">
+                    {/* Live Audio Waveform - Centered */}
+                    <div className="flex items-center justify-center w-full">
+                      <LiveWaveform
+                        active={true}
+                        height={44}
+                        barWidth={3}
+                        barGap={1}
+                        barRadius={1.5}
+                        mode="static"
+                        fadeEdges={true}
+                        barColor="#000000"
+                        sensitivity={1}
+                        fftSize={256}
+                        historySize={60}
+                        updateRate={30}
+                      />
+                    </div>
 
                     <Button
                       onClick={stopRecording}
                       variant="outline"
-                      className="rounded-xl h-8 px-3 text-xs"
+                      className="rounded-xl h-8 px-3 text-xs mt-1"
                     >
                       <Mic className="w-3 h-3 mr-1" />
                       Stop Recording

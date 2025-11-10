@@ -1240,70 +1240,31 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 flex flex-col relative">
-            {/* Part 2 Preparation Timer with Note-taking */}
+            {/* Part 2 Simple Timer */}
             {currentPart === 2 && preparationTime > 0 && (
-              <div className="space-y-4">
-                <div className="text-center p-6 bg-primary/5 rounded-lg border border-primary/10">
-                  <Clock className="w-8 h-8 mx-auto mb-3 text-primary" />
-                  <p className="text-2xl font-bold text-primary">{formatTime(preparationTime)}</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPreparationTime(prev => prev + 60)}
-                    className="mt-3 text-primary border-primary/30"
-                  >
-                    +1 Minute
-                  </Button>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <Clock className="w-5 h-5 text-primary" />
+                  <p className="text-xl font-bold text-primary">{formatTime(preparationTime)}</p>
                 </div>
-                
-                {/* Note-taking area */}
-                <Card className="bg-yellow-50 border-yellow-200">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-lg">
-                      <span className="flex items-center gap-2">
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={getNoteTakingTips}
-                        className="text-primary border-primary/30"
-                      >
-                        💡 Need help with note-taking?
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <textarea
-                      placeholder="Write your preparation notes here..."
-                      value={part2Notes}
-                      onChange={(e) => setPart2Notes(e.target.value)}
-                      className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    
-                    {showNoteTips && noteTips && (
-                      <div className="mt-3 p-3 bg-muted/50 border border-border rounded-lg">
-                        <h4 className="font-semibold text-foreground mb-2">💡 Note-taking Tips:</h4>
-                        <p className="text-sm text-muted-foreground">{noteTips}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
               </div>
             )}
 
-            {/* Part 2 Notes Display During Recording - FIXED: Notes remain visible during recording */}
-            {currentPart === 2 && preparationTime === 0 && part2Notes && (
-              <Card className="bg-yellow-50 border-yellow-200">
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-3 bg-white border border-yellow-300 rounded-lg text-sm whitespace-pre-wrap">
-                    {part2Notes}
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Part 2 Add 1 Minute Button - Shows AFTER preparation time finishes */}
+            {currentPart === 2 && preparationTime === 0 && !isRecording && (
+              <div className="text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPreparationTime(60);
+                    startPreparationTimer();
+                  }}
+                  className="text-primary border-primary/30"
+                >
+                  +1 Minute for Notes
+                </Button>
+              </div>
             )}
 
             {/* Part 1 - Structured Questions Display */}
@@ -1453,6 +1414,61 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </div>
             )}
 
+            {/* Part 2 Notes Container - Last Container */}
+            {currentPart === 2 && (
+              <>
+                {/* Note-taking area during preparation */}
+                {preparationTime > 0 && (
+                  <Card className="bg-yellow-50 border-yellow-200 [&:hover]:!scale-100 [&:hover]:!transform-none [&:hover]:!shadow-lg [&:hover]:!ring-0 !transition-none">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between text-lg">
+                        <span className="flex items-center gap-2">
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={getNoteTakingTips}
+                          className="text-primary border-primary/30"
+                        >
+                          💡 Need help with note-taking?
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <textarea
+                        placeholder="Write your preparation notes here..."
+                        value={part2Notes}
+                        onChange={(e) => setPart2Notes(e.target.value)}
+                        className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      
+                      {showNoteTips && noteTips && (
+                        <div className="mt-3 p-3 bg-muted/50 border border-border rounded-lg">
+                          <h4 className="font-semibold text-foreground mb-2">💡 Note-taking Tips:</h4>
+                          <p className="text-sm text-muted-foreground">{noteTips}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Notes Display During/After Recording */}
+                {preparationTime === 0 && part2Notes && (
+                  <Card className="bg-yellow-50 border-yellow-200 [&:hover]:!scale-100 [&:hover]:!transform-none [&:hover]:!shadow-lg [&:hover]:!ring-0 !transition-none">
+                    <CardHeader>
+                      <CardTitle className="text-lg">
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="p-3 bg-white border border-yellow-300 rounded-lg text-sm whitespace-pre-wrap">
+                        {part2Notes}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+
             {/* Question Navigation Buttons - Bottom Corners */}
             {(currentPart === 1 || currentPart === 3) && (
               <TooltipProvider>
@@ -1501,6 +1517,30 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     </TooltipContent>
                   </Tooltip>
                 </>
+              </TooltipProvider>
+            )}
+
+            {/* Part 2 Navigation Button - Go to Part 3 */}
+            {currentPart === 2 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        nextQuestion();
+                      }}
+                      disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
+                      size="icon"
+                      className="absolute bottom-0 right-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
+                    >
+                      <ArrowRight className="w-5 h-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{recordings[`part${currentPart}_q${currentQuestion}`] === undefined ? "Please record your answer first" : "Go to Part 3"}</p>
+                  </TooltipContent>
+                </Tooltip>
               </TooltipProvider>
             )}
           </CardContent>

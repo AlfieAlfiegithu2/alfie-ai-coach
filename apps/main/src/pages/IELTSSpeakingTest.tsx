@@ -621,11 +621,12 @@ const IELTSSpeakingTest = () => {
     }
   };
 
-  const beep = () => {
+  const playRecordingSound = (type: 'start' | 'stop') => {
     try {
-      // Create audio element for custom sound file
-      const audio = new Audio('/sounds/recording-beep.mp3'); // Place your sound file in public/sounds/ folder
-      audio.volume = 0.3; // Adjust volume (0.0 to 1.0)
+      // Create audio element for custom sound files
+      const soundFile = type === 'start' ? '/sounds/recording-start.mp3' : '/sounds/recording-stop.mp3';
+      const audio = new Audio(soundFile); // Place your sound files in public/sounds/ folder
+      audio.volume = 0.4; // Adjust volume (0.0 to 1.0)
 
       // Optional: Preload the audio for better performance
       audio.preload = 'auto';
@@ -636,31 +637,39 @@ const IELTSSpeakingTest = () => {
       // Handle promise for better error handling
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          console.log('Audio playback failed:', error);
+          console.log(`${type} audio playback failed:`, error);
+          // Fallback to generated sounds if custom audio fails
+          fallbackBeep(type);
         });
       }
     } catch (error) {
-      console.log('Error playing custom beep:', error);
-      // Fallback to original generated beep if custom audio fails
-      try {
-        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-        const ctx = new AudioCtx();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'triangle';
-        o.frequency.value = 440;
-        o.connect(g);
-        g.connect(ctx.destination);
-        g.gain.setValueAtTime(0.0001, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
-        o.start();
-        setTimeout(() => {
-          g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
-          setTimeout(() => { o.stop(); ctx.close(); }, 200);
-        }, 120);
-      } catch {}
+      console.log(`Error playing ${type} sound:`, error);
+      // Fallback to generated sounds
+      fallbackBeep(type);
     }
   };
+
+  const fallbackBeep = (type: 'start' | 'stop') => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type === 'start' ? 'sine' : 'triangle';
+      o.frequency.value = type === 'start' ? 660 : 440; // Higher pitch for start, lower for stop
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(type === 'start' ? 0.1 : 0.08, ctx.currentTime + 0.02);
+      o.start();
+      setTimeout(() => {
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+        setTimeout(() => { o.stop(); ctx.close(); }, 200);
+      }, 120);
+    } catch {}
+  };
+
+  const beep = () => playRecordingSound('start'); // For backward compatibility
 
   const startRecording = async () => {
     try {
@@ -727,7 +736,7 @@ const IELTSSpeakingTest = () => {
       }
     }
     
-    beep();
+    playRecordingSound('stop');
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -1619,8 +1628,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <Bot className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <div className="text-lg font-semibold text-foreground">AI Speaking Assistant</div>
-                      <div className="text-sm text-muted-foreground font-normal">Your IELTS Speaking Tutor</div>
+                      <div className="text-lg font-semibold text-foreground">Catie</div>
+                      <div className="text-sm text-muted-foreground font-normal">Your IELTS Speaking Assistant</div>
                     </div>
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => setShowAIAssistant(false)} className="h-8 w-8 p-0 text-foreground">
@@ -1651,7 +1660,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             <MessageContent>
                               <div className={`px-3 py-2 rounded-xl text-sm ${
                                 message.type === 'user'
-                                  ? 'bg-primary text-primary-foreground'
+                                  ? 'bg-primary text-white'
                                   : 'bg-muted text-foreground border border-border'
                               }`}>
                                 <Response

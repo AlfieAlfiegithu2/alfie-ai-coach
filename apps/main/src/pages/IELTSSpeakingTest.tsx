@@ -1646,9 +1646,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{currentQuestionText || 'No question available.'}</div>
                   </div>
 
-                  {chatMessages.map((message) => (
-                    <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex gap-3 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {chatMessages.map((message) => (
+                          <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
+                            <MessageContent>
                         <div className={`px-3 py-2 rounded-xl text-sm ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground border border-border'}`}>
                           <div
                             dangerouslySetInnerHTML={{

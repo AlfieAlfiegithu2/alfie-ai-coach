@@ -1419,52 +1419,23 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <>
                 {/* Note-taking area during preparation */}
                 {preparationTime > 0 && (
-                  <Card className="bg-yellow-50 border-yellow-200 [&:hover]:!scale-100 [&:hover]:!transform-none [&:hover]:!shadow-lg [&:hover]:!ring-0 !transition-none">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between text-lg">
-                        <span className="flex items-center gap-2">
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={getNoteTakingTips}
-                          className="text-primary border-primary/30"
-                        >
-                          💡 Need help with note-taking?
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <textarea
-                        placeholder="Write your preparation notes here..."
-                        value={part2Notes}
-                        onChange={(e) => setPart2Notes(e.target.value)}
-                        className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      
-                      {showNoteTips && noteTips && (
-                        <div className="mt-3 p-3 bg-muted/50 border border-border rounded-lg">
-                          <h4 className="font-semibold text-foreground mb-2">💡 Note-taking Tips:</h4>
-                          <p className="text-sm text-muted-foreground">{noteTips}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <textarea
+                      placeholder="Write your preparation notes here..."
+                      value={part2Notes}
+                      onChange={(e) => setPart2Notes(e.target.value)}
+                      className="w-full h-32 p-3 border border-yellow-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
                 )}
 
                 {/* Notes Display During/After Recording */}
                 {preparationTime === 0 && part2Notes && (
-                  <Card className="bg-yellow-50 border-yellow-200 [&:hover]:!scale-100 [&:hover]:!transform-none [&:hover]:!shadow-lg [&:hover]:!ring-0 !transition-none">
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="p-3 bg-white border border-yellow-300 rounded-lg text-sm whitespace-pre-wrap">
-                        {part2Notes}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="p-3 bg-white border border-yellow-300 rounded-lg text-sm whitespace-pre-wrap">
+                      {part2Notes}
+                    </div>
+                  </div>
                 )}
               </>
             )}

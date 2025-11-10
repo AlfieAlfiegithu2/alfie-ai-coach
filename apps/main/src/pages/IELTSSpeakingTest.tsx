@@ -639,19 +639,35 @@ const IELTSSpeakingTest = () => {
     try {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
-      const o = ctx.createOscillator();
+
+      // Create two oscillators for a pleasant ascending chime
+      const o1 = ctx.createOscillator();
+      const o2 = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = 'sine';
-      o.frequency.value = 800; // Higher pitch for start
-      o.connect(g);
+
+      o1.type = 'sine';
+      o1.frequency.value = 523; // C5 note
+      o2.type = 'sine';
+      o2.frequency.value = 659; // E5 note
+
+      o1.connect(g);
+      o2.connect(g);
       g.connect(ctx.destination);
+
       g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.06, ctx.currentTime + 0.01);
-      o.start();
+      g.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.01);
+
+      o1.start();
+      o2.start();
+
       setTimeout(() => {
-        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
-        setTimeout(() => { o.stop(); ctx.close(); }, 150);
-      }, 80);
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+        setTimeout(() => {
+          o1.stop();
+          o2.stop();
+          ctx.close();
+        }, 200);
+      }, 120);
     } catch {}
   };
 
@@ -659,19 +675,30 @@ const IELTSSpeakingTest = () => {
     try {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
+
+      // Create a descending tone with vibrato
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = 'square';
-      o.frequency.value = 400; // Lower pitch for stop
+
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(600, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.25);
+
       o.connect(g);
       g.connect(ctx.destination);
+
       g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.04, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.03, ctx.currentTime + 0.01);
+
       o.start();
+
       setTimeout(() => {
-        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.08);
-        setTimeout(() => { o.stop(); ctx.close(); }, 120);
-      }, 60);
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
+        setTimeout(() => {
+          o.stop();
+          ctx.close();
+        }, 150);
+      }, 200);
     } catch {}
   };
 

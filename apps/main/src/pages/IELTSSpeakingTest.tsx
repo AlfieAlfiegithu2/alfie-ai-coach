@@ -1626,8 +1626,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 </div>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
-                <Conversation className="flex-1">
-                  <ConversationContent>
+                <Conversation className="flex-1 min-h-0">
+                  <ConversationContent className="flex-1 min-h-0">
                     {chatMessages.length === 0 && !isChatLoading ? (
                       <ConversationEmptyState
                         icon={<Orb className="size-12" />}
@@ -1696,30 +1696,31 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                   <ConversationScrollButton />
                 </Conversation>
 
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSuggestionClick('Help with Speaking Structure')}
-                    disabled={isChatLoading}
-                    className="text-xs h-8 border-primary/30"
-                  >
-                    <ListTree className="w-3 h-3 mr-2" />
-                    Structure
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
-                    disabled={isChatLoading}
-                    className="text-xs h-8 border-primary/30"
-                  >
-                    <BookOpen className="w-3 h-3 mr-2" />
-                    Vocabulary
-                  </Button>
-                </div>
+                <div className="flex-shrink-0 mt-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSuggestionClick('Help with Speaking Structure')}
+                      disabled={isChatLoading}
+                      className="text-xs h-8 border-primary/30"
+                    >
+                      <ListTree className="w-3 h-3 mr-2" />
+                      Structure
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
+                      disabled={isChatLoading}
+                      className="text-xs h-8 border-primary/30"
+                    >
+                      <BookOpen className="w-3 h-3 mr-2" />
+                      Vocabulary
+                    </Button>
+                  </div>
 
-                <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2">
                   <input
                     type="text"
                     value={newMessage}
@@ -1741,6 +1742,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       'Send'
                     )}
                   </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

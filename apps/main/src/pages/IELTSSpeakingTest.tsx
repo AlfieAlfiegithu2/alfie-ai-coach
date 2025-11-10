@@ -1172,7 +1172,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <TooltipTrigger asChild>
                         <div
                           onClick={() => setShowQuestion(!showQuestion)}
-                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
+                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-300"
                           data-state={showQuestion ? "checked" : "unchecked"}
                         >
                           <div
@@ -1418,37 +1418,53 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Question Navigation Buttons - Bottom Corners */}
             {(currentPart === 1 || currentPart === 3) && (
-              <>
-                {/* Previous Question Button - Bottom Left */}
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    if (currentQuestion > 0) {
-                      setCurrentQuestion(currentQuestion - 1);
-                      setShowQuestion(false);
-                    }
-                  }}
-                  disabled={currentQuestion === 0}
-                  size="icon"
-                  className="absolute bottom-0 left-0 h-12 w-12"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
+              <TooltipProvider>
+                <>
+                  {/* Previous Question Button - Bottom Left */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          if (currentQuestion > 0) {
+                            setCurrentQuestion(currentQuestion - 1);
+                            setShowQuestion(false);
+                          }
+                        }}
+                        disabled={currentQuestion === 0}
+                        size="icon"
+                        className="absolute bottom-0 left-0 h-12 w-12"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Previous question</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                {/* Next Question Button - Bottom Right */}
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowQuestion(false);
-                    nextQuestion();
-                  }}
-                  disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
-                  size="icon"
-                  className="absolute bottom-0 right-0 h-12 w-12"
-                >
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </>
+                  {/* Next Question Button - Bottom Right */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setShowQuestion(false);
+                          nextQuestion();
+                        }}
+                        disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
+                        size="icon"
+                        className="absolute bottom-0 right-0 h-12 w-12"
+                      >
+                        <ArrowRight className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Next question</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              </TooltipProvider>
             )}
           </CardContent>
         </Card>

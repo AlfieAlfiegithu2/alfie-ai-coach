@@ -13,11 +13,11 @@ import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import { AudioR2 } from "@/lib/cloudflare-r2";
-import VolumeSlider from "@/components/ui/VolumeSlider";
 import SpotlightCard from "@/components/SpotlightCard";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AudioPlayerProvider, useAudioPlayer, AudioPlayerButton, AudioPlayerTime, AudioPlayerProgress, AudioPlayerDuration, AudioPlayerSpeed } from "@/components/ui/audio-player";
+import { LiveWaveform } from "@/components/ui/live-waveform";
 
 interface SpeakingPrompt {
   id: string;
@@ -174,6 +174,9 @@ const IELTSSpeakingTest = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const [currentPlayingRecording, setCurrentPlayingRecording] = useState<string | null>(null);
+  const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [preparationTime, setPreparationTime] = useState(60);
   const [recordings, setRecordings] = useState<{[key: string]: Blob}>({});
@@ -206,7 +209,7 @@ const IELTSSpeakingTest = () => {
   const initialVol = (() => {
     try {
       const stored = typeof window !== 'undefined' ? window.localStorage.getItem('appAudioVolume') : null;
-      const n = stored ? parseInt(stored, 10) : 50;
+      const n = stored ? parseInt(stored, 10) : 100;
       const v = n / 100;
       return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.5;
     } catch {
@@ -658,26 +661,67 @@ const IELTSSpeakingTest = () => {
   const playRecording = async (recordingKey: string) => {
     const recording = recordings[recordingKey];
     if (!recording) return;
-    
+
     try {
+      // Stop any currently playing recording first
+      if (currentAudioElement) {
+        stopRecordingPlayback();
+      }
+
       const audioUrl = URL.createObjectURL(recording);
       const audio = new Audio(audioUrl);
       audio.volume = globalVolumeRef.current;
-      
+
+      // Store reference to the audio element
+      setCurrentAudioElement(audio);
+
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
+        setIsPlayingRecording(false);
+        setCurrentPlayingRecording(null);
+        setCurrentAudioElement(null);
+        console.log(`✅ Recording playback ended: ${recordingKey}`);
       };
-      
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
+        setIsPlayingRecording(false);
+        setCurrentPlayingRecording(null);
+        setCurrentAudioElement(null);
+        console.error(`❌ Recording playback error: ${recordingKey}`);
+      };
+
       await audio.play();
-      console.log(`🎵 Playing back recording: ${recordingKey}`);
+      setIsPlayingRecording(true);
+      setCurrentPlayingRecording(recordingKey);
+      console.log(`🎵 Started recording playback: ${recordingKey}`);
     } catch (error) {
       console.error('Error playing recording:', error);
+      setIsPlayingRecording(false);
+      setCurrentPlayingRecording(null);
+      setCurrentAudioElement(null);
       toast({
         title: "Playback Error",
         description: "Failed to play your recording",
         variant: "destructive"
       });
     }
+  };
+
+  const stopRecordingPlayback = () => {
+    if (currentAudioElement) {
+      try {
+        currentAudioElement.pause();
+        currentAudioElement.currentTime = 0;
+        console.log('🛑 Stopped recording playback');
+      } catch (error) {
+        console.error('Error stopping recording playback:', error);
+      }
+    }
+
+    setIsPlayingRecording(false);
+    setCurrentPlayingRecording(null);
+    setCurrentAudioElement(null);
   };
 
   const getNoteTakingTips = async () => {
@@ -1136,6 +1180,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </CardContent>
             </Card>
 
+            {/* Current Part Indicator */}
+            <div className="text-center py-2">
+              <span className="text-lg font-semibold text-black">
+                Part {currentPart}
+              </span>
+            </div>
+
             {/* Main Content */}
             <Card className="card-modern bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 flex flex-col" style={{ 
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)'
@@ -1147,9 +1198,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {currentPart === 3 && "Part 3 - Two-way Discussion"}
               </span>
               <div className="flex items-center gap-3">
-                <VolumeSlider defaultValue={50} className="w-64 md:w-72" showValueIndicator={false} />
-
-                {/* Unveil Toggle Button - Black Button in Top Right */}
+                {/* Unveil Toggle Button */}
                 {(currentPart === 1 || currentPart === 3) && (
                   <TooltipProvider>
                     <Tooltip>
@@ -1304,47 +1353,105 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <div className="text-center space-y-4">
                 {isRecording ? (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-center space-x-2 text-red-600">
-                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                      <span className="font-medium">Recording...</span>
-                    </div>
+                    {/* Live Audio Waveform */}
+                    <LiveWaveform
+                      active={true}
+                      height={80}
+                      barWidth={3}
+                      barGap={1}
+                      barRadius={1.5}
+                      mode="static"
+                      fadeEdges={true}
+                      barColor="#000000"
+                      sensitivity={1}
+                      fftSize={256}
+                      historySize={60}
+                      updateRate={30}
+                    />
+
                     <Button
                       onClick={stopRecording}
                       variant="outline"
-                      className="rounded-xl"
+                      className="rounded-xl h-12 px-6"
                     >
                       <Mic className="w-4 h-4 mr-2" />
                       Stop Recording
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center gap-3">
-                    {/* Record Button - Center */}
-                    <Button
-                      onClick={startRecording}
-                      className="rounded-xl bg-white/80 hover:bg-white/90 text-foreground border border-border shadow-sm h-12 w-12"
-                      size="icon"
-                    >
-                      <Mic className="w-5 h-5" />
-                    </Button>
-                    
-                    {/* Replay Audio Button - Center */}
-                    {currentPrompt?.audio_url && (
-                      <Button
-                        onClick={repeatAudio}
-                        disabled={isPlaying}
-                        variant="outline"
-                        size="icon"
-                        className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10"
-                      >
-                        {isPlaying ? (
-                          <Pause className="w-5 h-5" />
-                        ) : (
-                          <Play className="w-5 h-5" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
+                  <TooltipProvider>
+                    <div className="flex items-center justify-center gap-3">
+                      {/* Record Button */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={startRecording}
+                            className="rounded-xl bg-white/80 hover:bg-white/90 text-foreground border border-border shadow-sm h-12 w-12"
+                            size="icon"
+                          >
+                            <Mic className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Start recording your answer</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* Replay Audio Button */}
+                      {currentPrompt?.audio_url && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={repeatAudio}
+                              disabled={isPlaying}
+                              variant="outline"
+                              size="icon"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                            >
+                              {isPlaying ? (
+                                <Pause className="w-5 h-5" />
+                              ) : (
+                                <Play className="w-5 h-5" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{isPlaying ? "Pause question audio" : "Play question audio"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {/* Listen to Your Recording Button */}
+                      {recordings[`part${currentPart}_q${currentQuestion}`] && (currentPart === 1 || currentPart === 3) && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={() => {
+                                // If currently playing this recording, stop it. Otherwise, start playing.
+                                if (isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}`) {
+                                  stopRecordingPlayback();
+                                } else {
+                                  playRecording(`part${currentPart}_q${currentQuestion}`);
+                                }
+                              }}
+                              variant="outline"
+                              size="icon"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                            >
+                              {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
+                                <Pause className="w-5 h-5" />
+                              ) : (
+                                <Volume2 className="w-5 h-5" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? "Stop listening to your recording" : "Listen to your recorded answer"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </TooltipProvider>
                 )}
               </div>
             )}
@@ -1390,7 +1497,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         <div className="fixed bottom-6 left-6 z-40">
           <button
             onClick={() => navigate('/ielts-portal')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="text-sm text-black hover:text-gray-700 transition-colors cursor-pointer"
           >
             Exit Test
           </button>

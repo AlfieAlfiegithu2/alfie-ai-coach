@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AudioPlayerProvider, useAudioPlayer, AudioPlayerButton, AudioPlayerTime, AudioPlayerProgress, AudioPlayerDuration, AudioPlayerSpeed } from "@/components/ui/audio-player";
 import { LiveWaveform } from "@/components/ui/live-waveform";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Conversation,
   ConversationContent,
@@ -1227,7 +1228,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             </div>
 
             {/* Main Content */}
-            <Card ref={mainCardRef} className="bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 flex flex-col" style={{ 
+            <Card ref={mainCardRef} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 dark:border-slate-700/50 flex flex-col" style={{ 
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)',
             }}>
           <CardHeader>
@@ -1318,7 +1319,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Cue Card Display */}
             {currentPart === 2 && currentPrompt && (
-              <div className="p-6 bg-gray-50 rounded-lg">
+              <div className="p-6 bg-gray-50 dark:bg-slate-800 rounded-lg">
                 <h3 className="font-semibold mb-3">Cue Card</h3>
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {currentPrompt.prompt_text}
@@ -1584,14 +1585,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           </CardContent>
         </Card>
 
-        {/* Exit Test Button - Text Only */}
-        <div className="fixed bottom-6 left-6 z-40">
+        {/* Exit Test and Theme Toggle */}
+        <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">
           <button
             onClick={() => navigate('/ielts-portal')}
-            className="text-lg text-black cursor-pointer"
+            className="text-lg text-foreground cursor-pointer hover:text-primary transition-colors"
           >
             Exit Test
           </button>
+          <ThemeToggle />
         </div>
 
         {/* Structure and Vocabulary Buttons - Next to Chatbot */}
@@ -1605,7 +1607,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     size="sm"
                     onClick={() => handleSuggestionClick('Help with Speaking Structure')}
                     disabled={isChatLoading}
-                    className="h-12 w-12 p-0 border-primary/30 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-primary/10"
+                    className="h-12 w-12 p-0 border-primary/30 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
                   >
                     <ListTree className="w-6 h-6" />
                   </Button>
@@ -1624,7 +1626,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     size="sm"
                     onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
                     disabled={isChatLoading}
-                    className="h-12 w-12 p-0 border-primary/30 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-primary/10"
+                    className="h-12 w-12 p-0 border-primary/30 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
                   >
                     <BookOpen className="w-6 h-6" />
                   </Button>
@@ -1640,8 +1642,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         {/* AI Assistant - Floating Bottom Right (Writing-style) */}
         <div className="fixed bottom-24 right-6 z-50">
           {showAIAssistant ? (
-            <Card className="bg-white/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl flex flex-col hover:shadow-2xl hover:ring-0 hover:scale-100">
-              <CardHeader className="pb-2 bg-white/80 backdrop-blur-sm rounded-t-3xl relative">
+            <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl flex flex-col hover:shadow-2xl hover:ring-0 hover:scale-100">
+              <CardHeader className="pb-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-t-3xl relative">
                 <div className="absolute top-2 right-2">
                   <Button
                     variant="ghost"

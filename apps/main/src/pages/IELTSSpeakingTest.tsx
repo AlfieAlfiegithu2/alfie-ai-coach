@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
@@ -1383,18 +1383,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <div className="text-center h-[80px] flex items-center justify-center relative">
                 {isRecording ? (
                   <>
-                    {/* Live Audio Waveform - Vertically Centered in Middle */}
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    {/* Live Audio Waveform - Centered Between Question Text and Stop Button */}
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                       <LiveWaveform
                         active={true}
-                        height={44}
-                        barWidth={3}
-                        barGap={1}
-                        barRadius={1.5}
+                        height={65}
+                        barWidth={10}
+                        barGap={3}
+                        barRadius={3}
                         mode="static"
-                        fadeEdges={true}
-                        barColor="#000000"
-                        sensitivity={1}
+                        fadeEdges={false}
+                        barColor="#3b82f6"
+                        sensitivity={1.2}
                         fftSize={256}
                         historySize={60}
                         updateRate={30}
@@ -1405,10 +1405,10 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     <Button
                       onClick={stopRecording}
                       variant="outline"
-                      className="rounded-xl h-8 px-3 text-xs absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                      size="icon"
+                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
                     >
-                      <Mic className="w-3 h-3 mr-1" />
-                      Stop Recording
+                      <Square className="w-4 h-4" />
                     </Button>
                   </>
                 ) : (

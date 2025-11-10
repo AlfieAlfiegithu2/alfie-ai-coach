@@ -1380,11 +1380,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Recording Interface */}
             {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
-              <div className="text-center h-[80px] flex flex-col justify-center items-center relative">
+              <div className="text-center h-[80px] flex items-center justify-center relative">
                 {isRecording ? (
                   <>
-                    {/* Live Audio Waveform - Vertically Centered */}
-                    <div className="flex items-center justify-center w-full h-full">
+                    {/* Live Audio Waveform - Vertically Centered in Middle */}
+                    <div className="absolute inset-0 flex items-center justify-center">
                       <LiveWaveform
                         active={true}
                         height={44}

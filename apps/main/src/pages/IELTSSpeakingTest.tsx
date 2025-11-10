@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
@@ -1370,7 +1370,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             onClick={() => {
                               setPreparationTime(prev => prev + 60);
                             }}
-                            className="absolute top-2 right-2 h-8 w-8 text-primary hover:bg-primary/10"
+                            className="absolute top-2 right-2 h-8 w-8 text-primary"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -1404,7 +1404,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                 setPreparationTime(60);
                                 startPreparationTimer();
                               }}
-                              className="absolute top-2 right-2 h-8 w-8 text-primary hover:bg-primary/10"
+                              className="absolute top-2 right-2 h-8 w-8 text-primary"
                             >
                               <Plus className="w-4 h-4" />
                             </Button>
@@ -1625,7 +1625,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         {/* AI Assistant - Floating Bottom Right (Writing-style) */}
         <div className="fixed bottom-24 right-6 z-50">
           {showAIAssistant ? (
-            <Card className="bg-white/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl border border-primary/20 flex flex-col">
+            <Card className="bg-white/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl flex flex-col">
               <CardHeader className="pb-2 bg-white/80 backdrop-blur-sm rounded-t-3xl relative">
                 <div className="absolute top-2 right-2">
                   <Button
@@ -1719,7 +1719,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               size="sm"
                               onClick={() => handleSuggestionClick('Help with Speaking Structure')}
                               disabled={isChatLoading}
-                              className="h-8 w-8 p-0 border-primary/30 hover:bg-primary/10"
+                              className="h-8 w-8 p-0"
                             >
                               <ListTree className="w-4 h-4" />
                             </Button>
@@ -1738,7 +1738,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               size="sm"
                               onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
                               disabled={isChatLoading}
-                              className="h-8 w-8 p-0 border-primary/30 hover:bg-primary/10"
+                              className="h-8 w-8 p-0"
                             >
                               <BookOpen className="w-4 h-4" />
                             </Button>
@@ -1757,19 +1757,19 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()}
                     placeholder="Ask for speaking help..."
-                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none shadow-sm"
+                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-0 resize-none"
                     disabled={isChatLoading}
                   />
                   <Button
                     onClick={() => sendChatMessage()}
                     disabled={isChatLoading || !newMessage.trim()}
                     size="sm"
-                    className="bg-primary text-primary-foreground"
+                    className="bg-primary text-primary-foreground h-8 w-8 p-0"
                   >
                     {isChatLoading ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
                     ) : (
-                      'Send'
+                      <Send className="w-4 h-4" />
                     )}
                   </Button>
                     </div>

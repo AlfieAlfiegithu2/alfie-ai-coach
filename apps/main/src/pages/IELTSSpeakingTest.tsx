@@ -1622,23 +1622,23 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           </button>
         </div>
 
-        {/* Structure and Vocabulary Buttons - Left Side */}
+        {/* Structure and Vocabulary Buttons - Next to Chatbot */}
         {showAIAssistant && (
-          <div className="fixed bottom-24 left-6 z-50 flex flex-col gap-2">
+          <div className="fixed bottom-24 right-[420px] z-50 flex flex-col gap-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleSuggestionClick('Help with Speaking Structure')}
                     disabled={isChatLoading}
-                    className="h-10 w-10 p-0"
+                    className="h-10 w-10 p-0 text-foreground"
                   >
                     <ListTree className="w-5 h-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">
+                <TooltipContent side="left">
                   <p>Get help with speaking structure</p>
                 </TooltipContent>
               </Tooltip>
@@ -1648,16 +1648,16 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
                     disabled={isChatLoading}
-                    className="h-10 w-10 p-0"
+                    className="h-10 w-10 p-0 text-foreground"
                   >
                     <BookOpen className="w-5 h-5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">
+                <TooltipContent side="left">
                   <p>Get vocabulary suggestions</p>
                 </TooltipContent>
               </Tooltip>
@@ -1765,8 +1765,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     <Button
                       onClick={() => sendChatMessage()}
                       disabled={isChatLoading || !newMessage.trim()}
+                      variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 text-foreground"
                     >
                       {isChatLoading ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground" />

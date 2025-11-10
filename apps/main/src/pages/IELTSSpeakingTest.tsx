@@ -1234,7 +1234,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>
-                {currentPart === 3 && "Part 3 - Two-way Discussion"}
               </span>
               <div className="flex items-center gap-3">
                 {/* Unveil Toggle Switch */}

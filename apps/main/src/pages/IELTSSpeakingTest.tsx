@@ -635,25 +635,47 @@ const IELTSSpeakingTest = () => {
     }
   };
 
-  const beep = () => {
+  const playRecordingStartSound = () => {
     try {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = 'triangle';
-      o.frequency.value = 440;
+      o.type = 'sine';
+      o.frequency.value = 800; // Higher pitch for start
       o.connect(g);
       g.connect(ctx.destination);
       g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.06, ctx.currentTime + 0.01);
       o.start();
       setTimeout(() => {
-        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
-        setTimeout(() => { o.stop(); ctx.close(); }, 200);
-      }, 120);
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
+        setTimeout(() => { o.stop(); ctx.close(); }, 150);
+      }, 80);
     } catch {}
   };
+
+  const playRecordingStopSound = () => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = 400; // Lower pitch for stop
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.04, ctx.currentTime + 0.01);
+      o.start();
+      setTimeout(() => {
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.08);
+        setTimeout(() => { o.stop(); ctx.close(); }, 120);
+      }, 60);
+    } catch {}
+  };
+
+  const beep = () => playRecordingStartSound(); // For backward compatibility
 
   const startRecording = async () => {
     try {
@@ -721,8 +743,8 @@ const IELTSSpeakingTest = () => {
         return; // Prevent stopping
       }
     }
-    
-    beep();
+
+    playRecordingStopSound();
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);

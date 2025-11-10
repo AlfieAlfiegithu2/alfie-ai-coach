@@ -204,6 +204,7 @@ const IELTSSpeakingTest = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const mainCardRef = useRef<HTMLDivElement>(null);
 
   // Global audio volume shared across the app (0.0 - 1.0)
   const initialVol = (() => {
@@ -211,9 +212,9 @@ const IELTSSpeakingTest = () => {
       const stored = typeof window !== 'undefined' ? window.localStorage.getItem('appAudioVolume') : null;
       const n = stored ? parseInt(stored, 10) : 100;
       const v = n / 100;
-      return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.5;
+      return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1.0; // Default to max volume
     } catch {
-      return 0.5;
+      return 1.0; // Default to max volume on error
     }
   })();
   const globalVolumeRef = useRef<number>(initialVol);
@@ -257,6 +258,32 @@ const IELTSSpeakingTest = () => {
   useEffect(() => {
     setShowQuestion(false);
   }, [currentQuestion, currentPart]);
+
+  // Disable all hover effects on main card container
+  useEffect(() => {
+    if (mainCardRef.current) {
+      const card = mainCardRef.current;
+      
+      // Set initial styles
+      card.style.setProperty('transform', 'scale(1)', 'important');
+      card.style.setProperty('transition', 'none', 'important');
+      
+      // Prevent hover effects
+      const preventHover = (e: MouseEvent) => {
+        card.style.setProperty('transform', 'scale(1)', 'important');
+        card.style.setProperty('box-shadow', '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)', 'important');
+        card.style.setProperty('transition', 'none', 'important');
+      };
+      
+      card.addEventListener('mouseenter', preventHover);
+      card.addEventListener('mouseleave', preventHover);
+      
+      return () => {
+        card.removeEventListener('mouseenter', preventHover);
+        card.removeEventListener('mouseleave', preventHover);
+      };
+    }
+  }, [testData, currentPart, currentQuestion]);
 
   // DISABLED: Track user interaction to enable autoplay
   // useEffect(() => {
@@ -1155,8 +1182,16 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             </div>
 
             {/* Main Content */}
-            <Card className="card-modern bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 flex flex-col" style={{ 
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+            <Card ref={mainCardRef} className="bg-white/80 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 flex flex-col [&:hover]:!scale-100 [&:hover]:!transform-none [&:hover]:!shadow-lg [&:hover]:!ring-0 !transition-none" style={{ 
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+            }} onMouseEnter={(e) => {
+              e.currentTarget.style.setProperty('transform', 'scale(1)', 'important');
+              e.currentTarget.style.setProperty('box-shadow', '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)', 'important');
+              e.currentTarget.style.setProperty('transition', 'none', 'important');
+            }} onMouseLeave={(e) => {
+              e.currentTarget.style.setProperty('transform', 'scale(1)', 'important');
+              e.currentTarget.style.setProperty('box-shadow', '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)', 'important');
+              e.currentTarget.style.setProperty('transition', 'none', 'important');
             }}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">

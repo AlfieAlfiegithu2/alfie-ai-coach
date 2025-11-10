@@ -1622,17 +1622,60 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           </button>
         </div>
 
+        {/* Structure and Vocabulary Buttons - Left Side */}
+        {showAIAssistant && (
+          <div className="fixed bottom-24 left-6 z-50 flex flex-col gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuggestionClick('Help with Speaking Structure')}
+                    disabled={isChatLoading}
+                    className="h-10 w-10 p-0"
+                  >
+                    <ListTree className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Get help with speaking structure</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
+                    disabled={isChatLoading}
+                    className="h-10 w-10 p-0"
+                  >
+                    <BookOpen className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Get vocabulary suggestions</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
+
         {/* AI Assistant - Floating Bottom Right (Writing-style) */}
         <div className="fixed bottom-24 right-6 z-50">
           {showAIAssistant ? (
-            <Card className="bg-white/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl flex flex-col">
+            <Card className="bg-white/80 backdrop-blur-sm rounded-3xl w-96 h-[500px] animate-scale-in shadow-2xl flex flex-col hover:shadow-2xl hover:ring-0 hover:scale-100">
               <CardHeader className="pb-2 bg-white/80 backdrop-blur-sm rounded-t-3xl relative">
                 <div className="absolute top-2 right-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowAIAssistant(false)}
-                    className="h-8 w-8 p-0 text-foreground hover:bg-transparent"
+                    className="h-8 w-8 p-0 text-foreground"
                   >
                     ✕
                   </Button>
@@ -1709,70 +1752,28 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 </Conversation>
 
                 <div className="flex-shrink-0 mt-4">
-                  <div className="flex gap-2 items-end">
-                    <div className="flex gap-1">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSuggestionClick('Help with Speaking Structure')}
-                              disabled={isChatLoading}
-                              className="h-8 w-8 p-0"
-                            >
-                              <ListTree className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Get help with speaking structure</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
-                              disabled={isChatLoading}
-                              className="h-8 w-8 p-0"
-                            >
-                              <BookOpen className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Get vocabulary suggestions</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-
-                    <div className="flex-1 flex gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()}
-                    placeholder="Ask for speaking help..."
-                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-0 resize-none"
-                    disabled={isChatLoading}
-                  />
-                  <Button
-                    onClick={() => sendChatMessage()}
-                    disabled={isChatLoading || !newMessage.trim()}
-                    size="sm"
-                    className="bg-primary text-primary-foreground h-8 w-8 p-0"
-                  >
-                    {isChatLoading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
-                    </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()}
+                      placeholder="Ask for speaking help..."
+                      className="flex-1 px-3 py-2 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-0 resize-none"
+                      disabled={isChatLoading}
+                    />
+                    <Button
+                      onClick={() => sendChatMessage()}
+                      disabled={isChatLoading || !newMessage.trim()}
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                    >
+                      {isChatLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
               </CardContent>

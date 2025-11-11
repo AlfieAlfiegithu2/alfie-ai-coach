@@ -159,34 +159,29 @@ const HeroIndex = () => {
     },
     comparison: {
       title: "Why our scoring system dominates the competition",
-      columns: ["Human tutors", "Our IELTS-calibrated AI", "Traditional self-study"],
+      columns: [
+        "Human tutors",
+        "Our IELTS-calibrated AI",
+        "Traditional self-study"
+      ],
+      // Store rows as array of JSON strings to satisfy PageContent typing,
+      // then parse when rendering.
       rows: [
-        { label: "Scoring consistency", traditional: "Varies by tutor mood/fatigue", ai: "100% consistent (exam-aligned)", self: "Guesswork" },
-        { label: "Feedback accuracy", traditional: "Subjective", ai: "98% correlation with real exams", self: "No feedback" },
-        { label: "Cost per month", traditional: "$1000–$5000 for intensive tutoring", ai: "$50 unlimited access", self: "Free but unreliable" },
-        { label: "Certified by examiners", traditional: "Depends", ai: "Former/current IELTS examiners", self: "No" },
-        { label: "Band descriptors used", traditional: "Tutor's interpretation", ai: "Exact IELTS Band Descriptors", self: "None" }
+        "{\"label\":\"Scoring consistency\",\"traditional\":\"Varies by tutor mood/fatigue\",\"ai\":\"100% consistent (exam-aligned)\",\"self\":\"Guesswork\"}",
+        "{\"label\":\"Feedback accuracy\",\"traditional\":\"Subjective\",\"ai\":\"98% correlation with real exams\",\"self\":\"No feedback\"}",
+        "{\"label\":\"Cost per month\",\"traditional\":\"$1000–$5000 for intensive tutoring\",\"ai\":\"$50 unlimited access\",\"self\":\"Free but unreliable\"}",
+        "{\"label\":\"Certified by examiners\",\"traditional\":\"Depends\",\"ai\":\"Former/current IELTS examiners\",\"self\":\"No\"}",
+        "{\"label\":\"Band descriptors used\",\"traditional\":\"Tutor's interpretation\",\"ai\":\"Exact IELTS Band Descriptors\",\"self\":\"None\"}"
       ]
     },
     faq: {
       title: "How our expert-validated scoring works",
+      // Store items as JSON strings to be parsed at render time.
       items: [
-        { 
-          q: "Why should I trust an AI built by IELTS examiners?", 
-          a: "Because it's not just AI—it's IELTS examiners' methodology in code. Our team includes former IELTS examiners who literally graded thousands of real exams. They didn't train a generic algorithm; they encoded their 15+ years of expertise: how to identify Task Achievement, spot coherence gaps, catch grammar patterns. Every scoring rule mirrors what examiners look for. You're practicing against the minds who created the test." 
-        },
-        {
-          q: "Is your AI 98% accurate because it cheats or because it's actually good?",
-          a: "It's good because IELTS examiners built it. The 98% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence."
-        },
-        { 
-          q: "What makes your AI different from Grammarly or ChatGPT feedback?", 
-          a: "Grammarly flags grammar; ChatGPT generates. We *score*—like an examiner. Grammarly says 'comma needed.' We say 'You scored 6.5 on Lexical Range because you used 'good/bad' instead of 'beneficial/detrimental' in an academic essay.' ChatGPT rewords sentences. We explain your band score and exactly how to hit 7.0. Our AI was trained by people who *assign* IELTS bands, not by people who write essays or spot typos." 
-        },
-        { 
-          q: "Can an AI truly replace an examiner for practice?", 
-          a: "For practice? Yes—better than most tutors, actually. Why? Consistency. A tutor marks 20 essays and gets tired; scores drift. Our AI marks 1,000 essays with identical standards. A tutor marks an essay 7.0 on one day, 6.5 on another. Our AI always applies the same rubric. For *feedback quality*, you get the rubric instantly + explanations. For *reliability*, an examiner-built system beats subjective humans. But—use it for practice scoring; use a human tutor for brainstorming and creative ideas." 
-        },
+        "{\"q\":\"Why should I trust an AI built by IELTS examiners?\",\"a\":\"Because it's not just AI—it's IELTS examiners' methodology in code. Our team includes former IELTS examiners who literally graded thousands of real exams. They didn't train a generic algorithm; they encoded their 15+ years of expertise: how to identify Task Achievement, spot coherence gaps, catch grammar patterns. Every scoring rule mirrors what examiners look for. You're practicing against the minds who created the test.\"}",
+        "{\"q\":\"Is your AI 98% accurate because it cheats or because it's actually good?\",\"a\":\"It's good because IELTS examiners built it. The 98% correlation isn't luck—it's that blind studies comparing our scores to official IELTS results show near-perfect alignment. Why? Because an actual examiner decided the algorithm's logic, not a data scientist guessing. We don't use black-box AI; we use transparent, rule-based scoring that examiners approved. You can request an explanation for any score—see exactly why you lost 0.5 bands on Coherence.\"}",
+        "{\"q\":\"What makes your AI different from Grammarly or ChatGPT feedback?\",\"a\":\"Grammarly flags grammar; ChatGPT generates. We score—like an examiner. Grammarly says 'comma needed.' We say 'You scored 6.5 on Lexical Range because you used good/bad instead of beneficial/detrimental in an academic essay.' ChatGPT rewords sentences. We explain your band score and exactly how to hit 7.0. Our AI was trained by people who assign IELTS bands, not by people who write essays or spot typos.\"}",
+        "{\"q\":\"Can an AI truly replace an examiner for practice?\",\"a\":\"For practice? Yes—better than most tutors, actually. Why? Consistency. A tutor marks 20 essays and gets tired; scores drift. Our AI marks 1,000 essays with identical standards. A tutor marks an essay 7.0 on one day, 6.5 on another. Our AI always applies the same rubric. For feedback quality, you get the rubric instantly plus explanations. For reliability, an examiner-built system beats subjective humans. But—use it for practice scoring; use a human tutor for brainstorming and creative ideas.\"}"
       ]
     },
     cta: {
@@ -648,30 +643,40 @@ const HeroIndex = () => {
             {getText(['faq', 'title'])}
           </h2>
           <div className="mt-8 space-y-3">
-            {getArray(['faq', 'items']).map((item: any, idx: number) => (
-              <motion.details
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="group rounded-xl border border-black/10 bg-white hover:border-black/20 transition-all shadow-sm hover:shadow-md"
-              >
-                <summary className="cursor-pointer font-semibold font-nunito text-black px-5 py-4 flex items-center justify-between hover:text-black/80 transition-colors select-none">
-                  <span>{item.q}</span>
-                  <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
-                </summary>
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
+            {getArray(['faq', 'items']).map((itemStr: string, idx: number) => {
+              let item: any;
+              try {
+                item = JSON.parse(itemStr);
+              } catch {
+                return null;
+              }
+              return (
+                <motion.details
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className="group rounded-xl border border-black/10 bg-white hover:border-black/20 transition-all shadow-sm hover:shadow-md"
                 >
-                  <p className="px-5 pb-4 text-sm text-black/70 font-nunito leading-relaxed border-t border-black/5 pt-4">{item.a}</p>
-                </motion.div>
-              </motion.details>
-            ))}
+                  <summary className="cursor-pointer font-semibold font-nunito text-black px-5 py-4 flex items-center justify-between hover:text-black/80 transition-colors select-none">
+                    <span>{item.q}</span>
+                    <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="px-5 pb-4 text-sm text-black/70 font-nunito leading-relaxed border-t border-black/5 pt-4">
+                      {item.a}
+                    </p>
+                  </motion.div>
+                </motion.details>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -821,10 +826,11 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer with Blog Section */}
       <footer className="border-t border-black/10 bg-white py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
@@ -832,7 +838,9 @@ const HeroIndex = () => {
                 </div>
                 <span className="text-lg font-semibold font-nunito">English AIdol</span>
               </div>
-              <p className="mt-3 text-sm text-black/70 font-nunito">{getText(['footer', 'description'])}</p>
+              <p className="mt-3 text-sm text-black/70 font-nunito">
+                {getText(['footer', 'description'])}
+              </p>
               <div className="mt-4 flex items-center gap-3 text-sm text-black/70 font-nunito">
                 <Mail className="h-4 w-4" />
                 {getText(['footer', 'email'])}
@@ -842,45 +850,102 @@ const HeroIndex = () => {
                 {getText(['footer', 'phone'])}
               </div>
             </div>
+
+            {/* Learning */}
             <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">{getText(['footer', 'learning', 'title'])}</h4>
+              <h4 className="text-sm font-semibold tracking-tight font-nunito">
+                {getText(['footer', 'learning', 'title'])}
+              </h4>
               <ul className="mt-3 space-y-2 text-sm text-black/70">
-                <li><a className="hover:text-black font-nunito" href="#programs">{getText(['footer', 'learning', 'ielts'])}</a></li>
-                <li><a className="hover:text-black font-nunito" href="#programs">{getText(['footer', 'learning', 'general'])}</a></li>
-                <li><a className="hover:text-black font-nunito" href="#features">{getText(['footer', 'learning', 'features'])}</a></li>
-                <li><a className="hover:text-black font-nunito" href="#stories">{getText(['footer', 'learning', 'stories'])}</a></li>
+                <li>
+                  <a className="hover:text-black font-nunito" href="#programs">
+                    {getText(['footer', 'learning', 'ielts'])}
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-black font-nunito" href="#programs">
+                    {getText(['footer', 'learning', 'general'])}
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-black font-nunito" href="#features">
+                    {getText(['footer', 'learning', 'features'])}
+                  </a>
+                </li>
+                <li>
+                  <a className="hover:text-black font-nunito" href="#stories">
+                    {getText(['footer', 'learning', 'stories'])}
+                  </a>
+                </li>
               </ul>
             </div>
+
+            {/* Blog entry point for SEO + UX */}
             <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">{getText(['footer', 'resources', 'title'])}</h4>
-              <ul className="mt-3 space-y-2 text-sm text-black/70">
-                <li><Link className="hover:text-black font-nunito" to="/practice">{getText(['footer', 'resources', 'practice'])}</Link></li>
-                <li><Link className="hover:text-black font-nunito" to="/writing">{getText(['footer', 'resources', 'writing'])}</Link></li>
-                <li><Link className="hover:text-black font-nunito" to="/speaking">{getText(['footer', 'resources', 'speaking'])}</Link></li>
-                <li><Link className="hover:text-black font-nunito" to="/vocabulary">{getText(['footer', 'resources', 'vocabulary'])}</Link></li>
-              </ul>
+              <h4 className="text-sm font-semibold tracking-tight font-nunito">
+                Blog & Resources
+              </h4>
+              <p className="mt-3 text-xs text-black/70 font-nunito leading-relaxed">
+                Discover expert tips, real IELTS examiner insights, and AI-powered study strategies
+                to improve your Speaking, Writing, Reading, and Listening scores.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 text-sm">
+                <Link
+                  to="/blog"
+                  className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-nunito font-medium"
+                >
+                  <span>Visit the English AIdol Blog</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
             </div>
+
+            {/* Social / Connect */}
             <div>
-              <h4 className="text-sm font-semibold tracking-tight font-nunito">{getText(['footer', 'connect', 'title'])}</h4>
+              <h4 className="text-sm font-semibold tracking-tight font-nunito">
+                {getText(['footer', 'connect', 'title'])}
+              </h4>
               <div className="mt-3 flex gap-2">
-                <a className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5" href="#" aria-label="Instagram">
+                <a
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
+                  href="#"
+                  aria-label="Instagram"
+                >
                   <Instagram className="h-4 w-4" />
                 </a>
-                <a className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5" href="#" aria-label="Facebook">
+                <a
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
+                  href="#"
+                  aria-label="Facebook"
+                >
                   <Facebook className="h-4 w-4" />
                 </a>
-                <a className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5" href="#" aria-label="Twitter">
+                <a
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition border-black/10 hover:bg-black/5"
+                  href="#"
+                  aria-label="Twitter"
+                >
                   <Twitter className="h-4 w-4" />
                 </a>
               </div>
             </div>
           </div>
+
+          {/* Bottom bar */}
           <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t pt-6 text-xs sm:flex-row border-black/10 text-black/60">
-            <p className="font-nunito">{getText(['footer', 'copyright'])}</p>
+            <p className="font-nunito">
+              {getText(['footer', 'copyright'])}
+            </p>
             <div className="flex items-center gap-4">
-              <Link className="hover:text-black font-nunito" to="/privacy">{getText(['footer', 'privacy'])}</Link>
-              <Link className="hover:text-black font-nunito" to="/terms">{getText(['footer', 'terms'])}</Link>
-              <Link className="hover:text-black font-nunito" to="/support">{getText(['footer', 'support'])}</Link>
+              <Link className="hover:text-black font-nunito" to="/privacy">
+                {getText(['footer', 'privacy'])}
+              </Link>
+              <Link className="hover:text-black font-nunito" to="/terms">
+                {getText(['footer', 'terms'])}
+              </Link>
+              <Link className="hover:text-black font-nunito" to="/support">
+                {getText(['footer', 'support'])}
+              </Link>
             </div>
           </div>
         </div>

@@ -80,6 +80,12 @@ SPEAKING ANALYSIS (0-9 scale):
 - Grammar: Sentence structure and accuracy in speech
 - Vocabulary: Word choice and range
 
+ENHANCED ANALYSIS DETAILS:
+- Stress Patterns: Identify words with incorrect stress patterns
+- Intonation Recommendations: Specific rising/falling tone suggestions
+- Phonetic Issues: Target specific sound problems (/θ/, /ð/, /r/, etc.)
+- Word Stress: Show correct syllable stress for mispronounced words
+
 Return JSON format:
 {
   "transcription": "exact words including fillers and [pronunciation notes]",
@@ -91,6 +97,10 @@ Return JSON format:
   "vocabulary_score": 6.5,
   "overall_band": 6.5,
   "feedback_bullets": ["2-3 specific pronunciation improvements", "1-2 intonation tips"],
+  "stress_patterns": ["ed-u-CA-tion (stress on 3rd syllable)", "im-POR-tant (stress on 2nd syllable)"],
+  "intonation_recommendations": ["Use falling intonation for statements", "Rising tone for questions"],
+  "phonetic_focus": ["/θ/ vs /ð/ distinction", "/r/ pronunciation in 'red'"],
+  "word_stress_issues": [{"word": "education", "incorrect": "ED-u-ca-tion", "correct": "ed-u-CA-tion"}],
   "original_spans": [{"text": "problem segment", "status": "error"}, {"text": "good segment", "status": "neutral"}],
   "suggested_spans": [{"text": "improved version", "status": "improvement"}],
   "overall_feedback": "Brief analysis of strengths and areas for improvement"
@@ -131,6 +141,10 @@ Return JSON format:
       let feedback = '';
       let original_spans: any[] = [];
       let suggested_spans: any[] = [];
+      let stress_patterns: string[] = [];
+      let intonation_recommendations: string[] = [];
+      let phonetic_focus: string[] = [];
+      let word_stress_issues: any[] = [];
 
       // Use Gemini response data for feedback and spans
       if (isMinimalResponse) {
@@ -141,6 +155,10 @@ Return JSON format:
           feedback = geminiData.feedback_bullets.map((b: string) => `• ${b}`).join('\n');
           original_spans = Array.isArray(geminiData.original_spans) ? geminiData.original_spans : [];
           suggested_spans = Array.isArray(geminiData.suggested_spans) ? geminiData.suggested_spans : [];
+          stress_patterns = Array.isArray(geminiData.stress_patterns) ? geminiData.stress_patterns : [];
+          intonation_recommendations = Array.isArray(geminiData.intonation_recommendations) ? geminiData.intonation_recommendations : [];
+          phonetic_focus = Array.isArray(geminiData.phonetic_focus) ? geminiData.phonetic_focus : [];
+          word_stress_issues = Array.isArray(geminiData.word_stress_issues) ? geminiData.word_stress_issues : [];
         } else {
           // Fallback: use Gemini's overall feedback
           feedback = geminiData?.overall_feedback || 'Analysis complete - practice pronunciation and fluency.';
@@ -159,6 +177,10 @@ Return JSON format:
         audio_url: recording.audio_url,
         original_spans,
         suggested_spans,
+        stress_patterns,
+        intonation_recommendations,
+        phonetic_focus,
+        word_stress_issues,
         metrics: {
           word_count: wordCount,
           minimal: isMinimalResponse,
@@ -181,7 +203,11 @@ Return JSON format:
       transcription: analysis.transcription,
       partNum: analysis.partNumber,
       questionIndex: analysis.questionIndex,
-      metrics: analysis.metrics
+      metrics: analysis.metrics,
+      stress_patterns: analysis.stress_patterns,
+      intonation_recommendations: analysis.intonation_recommendations,
+      phonetic_focus: analysis.phonetic_focus,
+      word_stress_issues: analysis.word_stress_issues
     }));
 
     // Enhanced scoring with caps based on response quality
@@ -272,6 +298,10 @@ ${allTranscriptions.map(t => `
 ${t.part} Question: ${t.question}
 Student Response: ${t.transcription}
 Scores: P${t.metrics?.pronunciation_score || 0}/F${t.metrics?.fluency_score || 0}/G${t.metrics?.grammar_score || 0}/V${t.metrics?.vocabulary_score || 0}
+Stress Issues: ${t.stress_patterns?.join(', ') || 'None noted'}
+Intonation: ${t.intonation_recommendations?.join(', ') || 'Generally appropriate'}
+Phonetics: ${t.phonetic_focus?.join(', ') || 'Clear pronunciation'}
+Word Stress: ${t.word_stress_issues?.map(issue => `${issue.word}: ${issue.correct}`).join(', ') || 'Appropriate'}
 `).join('\n')}
 
 SCORING PRINCIPLES:
@@ -311,9 +341,15 @@ Return detailed analysis in this format:
 FLUENCY & COHERENCE: [Band Score 0-9] - [Detailed justification with examples]
 LEXICAL RESOURCE: [Band Score 0-9] - [Detailed justification with examples]
 GRAMMATICAL RANGE & ACCURACY: [Band Score 0-9] - [Detailed justification with examples]
-PRONUNCIATION: [Band Score 0-9] - [Detailed justification with examples, including audio analysis]
+PRONUNCIATION: [Band Score 0-9] - [Detailed justification with examples, including stress patterns and phonetic issues]
 OVERALL BAND SCORE: [Final calculated score]
-COMPREHENSIVE FEEDBACK: [Holistic analysis with specific improvement recommendations]`
+COMPREHENSIVE FEEDBACK: [Holistic analysis with specific improvement recommendations]
+
+ENHANCED ANALYSIS SUMMARY:
+STRESS PATTERNS TO IMPROVE: [3-5 key words with correct stress patterns]
+INTONATION RECOMMENDATIONS: [2-3 specific intonation improvements]
+PHONETIC FOCUS AREAS: [3-5 specific sounds to practice]
+WORD STRESS ISSUES: [List of commonly misstressed words with corrections]`
             },
             // Send all audio files for comprehensive audio analysis
             ...allRecordings.map(recording => ({

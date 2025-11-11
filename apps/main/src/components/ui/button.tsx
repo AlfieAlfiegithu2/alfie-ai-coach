@@ -10,16 +10,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft hover:shadow-medium gentle-hover",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-soft hover:shadow-medium",
-        outline: "border border-border bg-background text-foreground hover:bg-accent/10 hover:text-foreground soft-border gentle-hover",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 gentle-hover shadow-soft",
-        ghost: "hover:bg-accent hover:text-accent-foreground gentle-hover",
-        link: "text-primary underline-offset-4 hover:underline",
-        hero: "bg-gentle-blue text-white hover:bg-gentle-blue/90 shadow-medium hover:shadow-strong gentle-hover font-medium",
-        success: "bg-soft-green text-foreground hover:bg-soft-green/90 shadow-soft hover:shadow-medium gentle-hover",
-        neon: "bg-gentle-blue text-white hover:bg-gentle-blue/90 shadow-medium hover:shadow-strong gentle-hover font-medium",
-        tech: "bg-secondary text-secondary-foreground hover:bg-secondary/80 gentle-hover shadow-soft border border-gentle-blue/20",
+        default: "bg-primary text-primary-foreground shadow-soft",
+        destructive: "bg-destructive text-destructive-foreground shadow-soft",
+        outline: "border border-border bg-background text-foreground soft-border",
+        secondary: "bg-secondary text-secondary-foreground shadow-soft",
+        ghost: "",
+        link: "text-primary underline-offset-4",
+        hero: "bg-gentle-blue text-white shadow-medium font-medium",
+        success: "bg-soft-green text-foreground shadow-soft",
+        neon: "bg-gentle-blue text-white shadow-medium font-medium",
+        tech: "bg-secondary text-secondary-foreground shadow-soft border border-gentle-blue/20",
       },
       size: {
         default: "h-10 px-4 py-2",

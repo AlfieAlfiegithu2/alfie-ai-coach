@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
 import { HelmetProvider } from 'react-helmet-async';
+import { Analytics } from "@vercel/analytics/react";
 import i18n from './lib/i18n';
 import { useEffect } from 'react';
 // Import supabase client dynamically to avoid bundling conflicts
@@ -339,6 +340,7 @@ const App = () => {
         </QueryClientProvider>
       </I18nextProvider>
     </HelmetProvider>
+    <Analytics />
     </ThemeProvider>
   );
 };

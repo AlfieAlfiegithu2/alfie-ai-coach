@@ -8,7 +8,7 @@ import { I18nextProvider } from 'react-i18next';
 import { HelmetProvider } from 'react-helmet-async';
 import { Analytics } from "@vercel/analytics/react";
 import i18n from './lib/i18n';
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 // Import supabase client dynamically to avoid bundling conflicts
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
@@ -25,15 +25,17 @@ import Writing from "./pages/Writing";
 import WritingTest from "./pages/WritingTest";
 import Speaking from "./pages/Speaking";
 import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminReading from "./pages/AdminReading";
-import AdminListening from "./pages/AdminListening";
-import AdminWriting from "./pages/AdminWriting";
-import AdminSpeaking from "./pages/AdminSpeaking";
-import AdminIELTS from "./pages/AdminIELTS";
-import AdminPTE from "./pages/AdminPTE";
-import AdminTOEFL from "./pages/AdminTOEFL";
-import AdminGeneral from "./pages/AdminGeneral";
+
+// Lazily loaded heavy/admin/test pages to reduce initial bundle size & TBT
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminReading = lazy(() => import("./pages/AdminReading"));
+const AdminListening = lazy(() => import("./pages/AdminListening"));
+const AdminWriting = lazy(() => import("./pages/AdminWriting"));
+const AdminSpeaking = lazy(() => import("./pages/AdminSpeaking"));
+const AdminIELTS = lazy(() => import("./pages/AdminIELTS"));
+const AdminPTE = lazy(() => import("./pages/AdminPTE"));
+const AdminTOEFL = lazy(() => import("./pages/AdminTOEFL"));
+const AdminGeneral = lazy(() => import("./pages/AdminGeneral"));
 import PersonalPage from "./pages/PersonalPage";
 import Dashboard from "./pages/Dashboard";
 import TestSelection from "./pages/TestSelection";
@@ -75,24 +77,28 @@ import AdminSkillManager from "./pages/AdminSkillManager";
 import SkillPractice from "./pages/SkillPractice";
 import AISpeakingCall from "./pages/AISpeakingCall";
 import AISpeakingTutor from "./pages/AISpeakingTutor";
-import AdminVocabularyTests from "./pages/AdminVocabularyTests";
-import AdminVocabBook from "./pages/AdminVocabBook";
-import AdminVocabManager from "./pages/AdminVocabManager";
-import AdminVocabularyTestDetail from "./pages/AdminVocabularyTestDetail";
+
+// Admin / heavy tools (lazy)
+const AdminVocabularyTests = lazy(() => import("./pages/AdminVocabularyTests"));
+const AdminVocabBook = lazy(() => import("./pages/AdminVocabBook"));
+const AdminVocabManager = lazy(() => import("./pages/AdminVocabManager"));
+const AdminVocabularyTestDetail = lazy(() => import("./pages/AdminVocabularyTestDetail"));
+const AdminGrammarTests = lazy(() => import("./pages/AdminGrammarTests"));
+const AdminGrammarTestDetail = lazy(() => import("./pages/AdminGrammarTestDetail"));
+const AdminParaphrasingTests = lazy(() => import("./pages/AdminParaphrasingTests"));
+const AdminParaphrasingTestDetail = lazy(() => import("./pages/AdminParaphrasingTestDetail"));
+const AdminPronunciationTests = lazy(() => import("./pages/AdminPronunciationTests"));
+const AdminPronunciationTestDetail = lazy(() => import("./pages/AdminPronunciationTestDetail"));
+const AdminSentenceScrambleTests = lazy(() => import("./pages/AdminSentenceScrambleTests"));
+const AdminSentenceScrambleTestDetail = lazy(() => import("./pages/AdminSentenceScrambleTestDetail"));
+const AdminListeningForDetailsTests = lazy(() => import("./pages/AdminListeningForDetailsTests"));
+const AdminListeningForDetailsTestDetail = lazy(() => import("./pages/AdminListeningForDetailsTestDetail"));
+
+// Student quizzes (kept as direct imports since they are route-split already)
 import VocabularyQuiz from "./pages/VocabularyQuiz";
-import AdminGrammarTests from "./pages/AdminGrammarTests";
-import AdminGrammarTestDetail from "./pages/AdminGrammarTestDetail";
 import GrammarQuiz from "./pages/GrammarQuiz";
-import AdminParaphrasingTests from "./pages/AdminParaphrasingTests";
-import AdminParaphrasingTestDetail from "./pages/AdminParaphrasingTestDetail";
 import ParaphraseQuiz from "./pages/ParaphraseQuiz";
-import AdminPronunciationTests from "./pages/AdminPronunciationTests";
-import AdminPronunciationTestDetail from "./pages/AdminPronunciationTestDetail";
-import AdminSentenceScrambleTests from "./pages/AdminSentenceScrambleTests";
-import AdminSentenceScrambleTestDetail from "./pages/AdminSentenceScrambleTestDetail";
 import SentenceScrambleQuiz from "./pages/SentenceScrambleQuiz";
-import AdminListeningForDetailsTests from "./pages/AdminListeningForDetailsTests";
-import AdminListeningForDetailsTestDetail from "./pages/AdminListeningForDetailsTestDetail";
 import ListeningQuiz from "./pages/ListeningQuiz";
 import VocabularyMap from "./pages/VocabularyMap";
 import VocabularyBook from "./pages/VocabularyBook";
@@ -120,10 +126,10 @@ const queryClient = new QueryClient();
 
 // Protected Admin Route Component
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
-  const { admin, authLoading } = useAdminAuth();
+  const { admin } = useAdminAuth();
   
   // Check localStorage directly as primary indicator of admin session
-  const hasAdminSession = typeof window !== 'undefined' && 
+  const hasAdminSession = typeof window !== 'undefined' &&
     localStorage.getItem('admin_session') === 'true';
 
   // If session exists in localStorage, user is admin - render immediately
@@ -131,18 +137,13 @@ function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // If authLoading is true, show loading screen
-  if (authLoading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-2 text-sm text-muted-foreground">Loading admin...</p>
-      </div>
-    </div>;
+  // If we already know there's no admin and no stored session, redirect
+  if (!admin && !hasAdminSession) {
+    return <Navigate to="/admin/login" replace />;
   }
 
-  // No admin session - redirect to login
-  return <Navigate to="/admin/login" replace />;
+  // Fallback: allow access (avoids blocking on a non-existent authLoading flag)
+  return <>{children}</>;
 }
 
 const App = () => {
@@ -165,6 +166,13 @@ const App = () => {
                 <LanguageWelcomeBanner />
                 <Toaster />
                 <Sonner />
+                <Suspense
+                  fallback={
+                    <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+                      Loading...
+                    </div>
+                  }
+                >
                 <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/hero" element={<HeroIndex />} />
@@ -333,6 +341,7 @@ const App = () => {
             <Route path="/:lang/blog/:slug" element={<BlogDetail />} />
             <Route path="*" element={<NotFound />} />
                 </Routes>
+                </Suspense>
                 <MinimalisticChatbot />
               </GlobalTextSelection>
             </TooltipProvider>

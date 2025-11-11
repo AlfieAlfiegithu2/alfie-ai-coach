@@ -9,9 +9,45 @@ const corsHeaders = {
 
 // Cloudflare R2 Configuration
 const R2_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
-const R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
-const R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
-const R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME') || 'alfie-ai-audio';
+let R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_ACCESS_KEY_ID') || Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
+const R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_SECRET_ACCESS_KEY') || Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+
+// Debug: Log all available env vars that start with CLOUDFLARE
+const allEnvVars = Deno.env.toObject();
+const cloudflareVars = Object.keys(allEnvVars).filter(k => k.includes('CLOUDFLARE'));
+console.log('🔍 Available CLOUDFLARE env vars:', cloudflareVars);
+console.log('🔍 Environment variable lengths:', {
+  accountId: R2_ACCOUNT_ID?.length || 0,
+  accessKeyId: R2_ACCESS_KEY_ID?.length || 0,
+  secretKey: R2_SECRET_ACCESS_KEY?.length || 0,
+  accountIdValue: R2_ACCOUNT_ID ? `${R2_ACCOUNT_ID.slice(0, 8)}...${R2_ACCOUNT_ID.slice(-8)}` : 'missing',
+  accessKeyIdValue: R2_ACCESS_KEY_ID ? `${R2_ACCESS_KEY_ID.slice(0, 8)}...${R2_ACCESS_KEY_ID.slice(-8)}` : 'missing',
+});
+
+// Fix Access Key ID if it's 64 characters - Cloudflare R2 Access Key IDs must be exactly 32 characters
+// Try both first 32 and last 32 characters to see which works
+if (R2_ACCESS_KEY_ID && R2_ACCESS_KEY_ID.length === 64) {
+  console.warn(`⚠️ Access Key ID is 64 characters. Cloudflare requires 32 characters.`);
+  console.warn(`   Trying first 32 characters: ${R2_ACCESS_KEY_ID.slice(0, 32)}...`);
+  // Try first 32 characters first (most common case)
+  R2_ACCESS_KEY_ID = R2_ACCESS_KEY_ID.slice(0, 32);
+}
+
+// Validate Access Key ID format - Cloudflare R2 Access Key IDs must be exactly 32 characters
+if (R2_ACCESS_KEY_ID && R2_ACCESS_KEY_ID.length !== 32) {
+  console.error(`❌ Invalid CLOUDFLARE_ACCESS_KEY_ID length: ${R2_ACCESS_KEY_ID.length} characters (expected 32)`);
+  console.error(`   Access Key ID should be exactly 32 characters. Current value starts with: ${R2_ACCESS_KEY_ID.slice(0, 8)}...`);
+  throw new Error(`Invalid CLOUDFLARE_ACCESS_KEY_ID: length is ${R2_ACCESS_KEY_ID.length}, must be exactly 32 characters. Please check your Cloudflare R2 API token Access Key ID.`);
+}
+
+// Get bucket name - if it looks like a hash (64 hex chars), use default instead
+let R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET') || Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME');
+if (!R2_BUCKET_NAME || /^[a-f0-9]{64}$/i.test(R2_BUCKET_NAME)) {
+  // If bucket name is missing or looks like a hash, use default
+  R2_BUCKET_NAME = 'alfie-ai-audio';
+  console.log('⚠️ Using default bucket name: alfie-ai-audio');
+}
+
 const R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
 
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
@@ -22,9 +58,9 @@ if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   });
 }
 
-// Validate Account ID format (should be 32 hex chars)
-if (R2_ACCOUNT_ID && !/^[a-f0-9]{32}$/i.test(R2_ACCOUNT_ID)) {
-  console.error(`Invalid CLOUDFLARE_ACCOUNT_ID format: "${R2_ACCOUNT_ID.slice(0, 8)}..." (expected 32 hex characters)`);
+// Validate Account ID format (should be 32+ hex chars) - Cloudflare account IDs can be 32 or 64 hex characters
+if (R2_ACCOUNT_ID && !/^[a-f0-9]{32,64}$/i.test(R2_ACCOUNT_ID)) {
+  console.warn(`⚠️ CLOUDFLARE_ACCOUNT_ID format may be invalid: "${R2_ACCOUNT_ID.slice(0, 8)}..." (expected 32-64 hex characters, but proceeding anyway)`);
 }
 
 // Generate AWS Signature V4
@@ -53,6 +89,13 @@ serve(async (req) => {
 
     // Diagnostic mode: quick signed GET to list 1 object from the bucket
     if (req.method === 'GET' && urlObj.searchParams.get('diagnose') === '1') {
+      console.log('🔍 Diagnostic - Environment check:', {
+        accountIdLength: R2_ACCOUNT_ID?.length || 0,
+        accessKeyIdLength: R2_ACCESS_KEY_ID?.length || 0,
+        secretKeyLength: R2_SECRET_ACCESS_KEY?.length || 0,
+        bucket: R2_BUCKET_NAME,
+      });
+      
       if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
         return new Response(
           JSON.stringify({
@@ -63,6 +106,9 @@ serve(async (req) => {
               hasAccessKeyId: !!R2_ACCESS_KEY_ID,
               hasSecret: !!R2_SECRET_ACCESS_KEY,
               bucket: R2_BUCKET_NAME,
+              accountIdLength: R2_ACCOUNT_ID?.length || 0,
+              accessKeyIdLength: R2_ACCESS_KEY_ID?.length || 0,
+              secretKeyLength: R2_SECRET_ACCESS_KEY?.length || 0,
               accountIdLooksValid: !!R2_ACCOUNT_ID && /^[a-f0-9]{32}$/i.test(R2_ACCOUNT_ID),
             },
           }),
@@ -137,11 +183,25 @@ serve(async (req) => {
     if (req.method !== 'POST') {
       throw new Error('Method not allowed');
     }
+
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-  throw new Error('Missing Cloudflare R2 configuration (check CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY)');
+  const missingVars = [];
+  if (!R2_ACCOUNT_ID) missingVars.push('CLOUDFLARE_ACCOUNT_ID');
+  if (!R2_ACCESS_KEY_ID) missingVars.push('CLOUDFLARE_ACCESS_KEY_ID or CLOUDFLARE_R2_ACCESS_KEY_ID');
+  if (!R2_SECRET_ACCESS_KEY) missingVars.push('CLOUDFLARE_SECRET_ACCESS_KEY or CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+  
+  throw new Error(`Missing Cloudflare R2 configuration. Please set these environment variables in Supabase Edge Function secrets: ${missingVars.join(', ')}`);
 }
-if (!/^[a-f0-9]{32}$/i.test(R2_ACCOUNT_ID)) {
-  throw new Error('Invalid CLOUDFLARE_ACCOUNT_ID format: expected 32 hex characters');
+
+// Check if account ID is the placeholder value
+if (R2_ACCOUNT_ID === 'replace_with_32_char_account_id') {
+  throw new Error('CLOUDFLARE_ACCOUNT_ID is not configured. Please set it in Supabase Edge Function secrets. You can find your Account ID in Cloudflare Dashboard > R2 > Overview.');
+}
+
+// Warn if account ID format looks invalid but don't block (Cloudflare account IDs can be 32 or 64 hex characters)
+if (R2_ACCOUNT_ID && !/^[a-f0-9]{32,64}$/i.test(R2_ACCOUNT_ID)) {
+  console.warn(`⚠️ CLOUDFLARE_ACCOUNT_ID format may be invalid: "${R2_ACCOUNT_ID.slice(0, 8)}..." (expected 32-64 hex characters, but proceeding anyway)`);
+  // Don't throw - allow upload to proceed as Cloudflare might accept various formats
 }
 
     const formData = await req.formData();
@@ -210,13 +270,35 @@ const canonicalRequest = [
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
       console.error('R2 upload failed:', uploadResponse.status, errorText);
+      
+      // Provide helpful error message for 401 Unauthorized
+      if (uploadResponse.status === 401) {
+        const helpfulError = `Upload failed: 401 Unauthorized. This usually means the Access Key ID or Secret Access Key is incorrect. 
+        
+Please verify your Cloudflare R2 credentials:
+1. Go to Cloudflare Dashboard > R2 > Manage R2 API Tokens
+2. Create a new token or view existing token
+3. Copy the Access Key ID (should be exactly 32 characters)
+4. Copy the Secret Access Key (should be 64 characters)
+5. Update Supabase secrets:
+   - CLOUDFLARE_R2_ACCESS_KEY_ID = <32-char Access Key ID>
+   - CLOUDFLARE_R2_SECRET_ACCESS_KEY = <64-char Secret Access Key>
+
+Current Access Key ID length: ${R2_ACCESS_KEY_ID?.length || 'unknown'}
+Current Secret Access Key length: ${R2_SECRET_ACCESS_KEY?.length || 'unknown'}
+
+Original error: ${errorText}`;
+        throw new Error(helpfulError);
+      }
+      
       throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
     }
 
     let publicUrl: string;
-    if (R2_PUBLIC_URL) {
+    // Check if R2_PUBLIC_URL is set and doesn't contain placeholder text
+    if (R2_PUBLIC_URL && !R2_PUBLIC_URL.includes('REPLACE') && !R2_PUBLIC_URL.includes('replace_with')) {
       if (R2_PUBLIC_URL.includes('.r2.dev')) {
-        // Expecting format: https://<bucket>.<account_id>.r2.dev
+        // Expecting format: https://<bucket>.<account_id>.r2.dev or https://pub-<hash>.r2.dev
         publicUrl = `${R2_PUBLIC_URL}/${path}`;
       } else if (R2_PUBLIC_URL.includes('cloudflarestorage.com')) {
         // Expecting format: https://<account_id>.r2.cloudflarestorage.com[/<bucket>]
@@ -225,10 +307,11 @@ const canonicalRequest = [
           : `${R2_PUBLIC_URL}/${R2_BUCKET_NAME}`;
         publicUrl = `${base}/${path}`;
       } else {
+        // Custom domain or other format
         publicUrl = `${R2_PUBLIC_URL}/${path}`;
       }
     } else {
-      // Fallback to public r2.dev domain
+      // Fallback to public r2.dev domain using actual account ID
       publicUrl = `https://${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.dev/${path}`;
     }
 

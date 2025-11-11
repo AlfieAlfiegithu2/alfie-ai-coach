@@ -26,66 +26,36 @@ const R2_CONFIG: R2Config = {
   publicUrl: import.meta.env.VITE_CLOUDFLARE_R2_PUBLIC_URL || 'https://your-bucket.your-domain.com'
 };
 
-// Upload file to R2 directly (client-side)
+// Upload file to R2 via Supabase Edge Function (secure server-side upload)
 export async function uploadToR2(
   file: File,
   path: string,
   options?: { contentType?: string; cacheControl?: string }
 ): Promise<R2UploadResult> {
   try {
-    // Direct R2 upload using AWS SDK approach
     const contentType = options?.contentType || file.type;
     const cacheControl = options?.cacheControl || 'public, max-age=31536000';
 
-    // Prepare the upload
-    const endpoint = `https://${R2_CONFIG.accountId}.r2.cloudflarestorage.com`;
-    const canonicalPath = `/${R2_CONFIG.bucketName}/${path.split('/').map(encodeURIComponent).join('/')}`;
-    const url = `${endpoint}${canonicalPath}`;
+    // Use Supabase Edge Function for secure R2 uploads (credentials stored server-side)
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('path', path);
+    formData.append('contentType', contentType);
+    formData.append('cacheControl', cacheControl);
 
-    // Create AWS Signature V4
-    const now = new Date();
-    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-    const dateStamp = amzDate.slice(0, 8);
+    // Get Supabase URL and session for authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    // Get Supabase URL from environment or use default
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cuumxmfzhwljylbdlflj.supabase.co';
+    const functionUrl = `${supabaseUrl}/functions/v1/r2-upload`;
 
-    const payloadHash = await sha256(await file.arrayBuffer());
-
-    const canonicalRequest = [
-      'PUT',
-      canonicalPath,
-      '',
-      `host:${R2_CONFIG.accountId}.r2.cloudflarestorage.com`,
-      `x-amz-content-sha256:${payloadHash}`,
-      `x-amz-date:${amzDate}`,
-      '',
-      'host;x-amz-content-sha256;x-amz-date',
-      payloadHash
-    ].join('\n');
-
-    const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
-    const stringToSign = [
-      'AWS4-HMAC-SHA256',
-      amzDate,
-      credentialScope,
-      await sha256(canonicalRequest)
-    ].join('\n');
-
-    const signingKey = await getSignatureKey(R2_CONFIG.secretAccessKey, dateStamp, 'auto', 's3');
-    const signatureBytes = await hmac(signingKey, stringToSign);
-    const signature = Array.from(signatureBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-
-    const authorizationHeader = `AWS4-HMAC-SHA256 Credential=${R2_CONFIG.accessKeyId}/${credentialScope}, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=${signature}`;
-
-    // Upload to R2
-    const response = await fetch(url, {
-      method: 'PUT',
+    // Upload to R2 via edge function using fetch (supabase.functions.invoke doesn't support FormData)
+    const response = await fetch(functionUrl, {
+      method: 'POST',
       headers: {
-        'Content-Type': contentType,
-        'Cache-Control': cacheControl,
-        'x-amz-content-sha256': payloadHash,
-        'x-amz-date': amzDate,
-        'Authorization': authorizationHeader,
+        'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
       },
-      body: file,
+      body: formData,
     });
 
     if (!response.ok) {
@@ -93,26 +63,16 @@ export async function uploadToR2(
       throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    let publicUrl: string;
-    if (R2_CONFIG.publicUrl) {
-      if (R2_CONFIG.publicUrl.includes('.r2.dev')) {
-        publicUrl = `${R2_CONFIG.publicUrl}/${path}`;
-      } else if (R2_CONFIG.publicUrl.includes('cloudflarestorage.com')) {
-        const base = R2_CONFIG.publicUrl.endsWith(`/${R2_CONFIG.bucketName}`)
-          ? R2_CONFIG.publicUrl
-          : `${R2_CONFIG.publicUrl}/${R2_CONFIG.bucketName}`;
-        publicUrl = `${base}/${path}`;
-      } else {
-        publicUrl = `${R2_CONFIG.publicUrl}/${path}`;
-      }
-    } else {
-      publicUrl = `https://${R2_CONFIG.bucketName}.${R2_CONFIG.accountId}.r2.dev/${path}`;
+    const data = await response.json();
+
+    if (!data || !data.success) {
+      throw new Error(data?.error || 'Upload failed');
     }
 
     return {
       success: true,
-      url: publicUrl,
-      key: path,
+      url: data.url || '',
+      key: data.key || path,
     };
   } catch (error) {
     console.error('R2 upload error:', error);
@@ -143,9 +103,14 @@ async function getSignatureKey(key: string, dateStamp: string, regionName: strin
 }
 
 async function hmac(key: ArrayBuffer | Uint8Array, data: string) {
+  // Convert to ArrayBuffer if needed
+  const keyBuffer = key instanceof Uint8Array 
+    ? (key.buffer instanceof ArrayBuffer ? key.buffer : new Uint8Array(key).buffer)
+    : key;
+  
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    key instanceof Uint8Array ? key : new Uint8Array(key),
+    keyBuffer,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']

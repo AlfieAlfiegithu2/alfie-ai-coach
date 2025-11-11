@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Save, Mic, Plus, Clock, FileText, ArrowLeft } from "lucide-react";
+import { Upload, Save, Mic, Plus, Clock, FileText, ArrowLeft, X } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,6 +37,10 @@ const AdminIELTSSpeaking = () => {
   const [isModifying, setIsModifying] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Loading test data...");
+  
+  // Part visibility toggles
+  const [includePart2, setIncludePart2] = useState(true);
+  const [includePart3, setIncludePart3] = useState(true);
   
   // Part 1: Interview (dynamic number of questions)
   const [part1Questions, setPart1Questions] = useState(4);
@@ -77,7 +82,7 @@ const AdminIELTSSpeaking = () => {
 
       // Use REST API directly with timeout
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const baseUrl = supabase.supabaseUrl;
+      const baseUrl = 'https://cuumxmfzhwljylbdlflj.supabase.co';
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -152,9 +157,9 @@ const AdminIELTSSpeaking = () => {
               sortedPart1.forEach((p, i) => console.log(`  Part 1 Q${i+1}:`, p.title, p.id));
 
               // Update question count based on loaded data
-              setPart1Questions(Math.max(sortedPart1.length, 4));
+              setPart1Questions(Math.max(sortedPart1.length, 1));
 
-              const updatedPart1 = Array.from({ length: Math.max(sortedPart1.length, 4) }, (_, index) =>
+              const updatedPart1 = Array.from({ length: Math.max(sortedPart1.length, 1) }, (_, index) =>
                 sortedPart1[index] || part1Prompts[index] || {
                   title: `Interview Question ${index + 1}`,
                   prompt_text: "Audio prompt",
@@ -168,6 +173,9 @@ const AdminIELTSSpeaking = () => {
 
             if (part2.length > 0) {
               setPart2Prompt(part2[0]);
+              setIncludePart2(true);
+            } else {
+              setIncludePart2(false);
             }
 
             if (part3.length > 0) {
@@ -194,8 +202,11 @@ const AdminIELTSSpeaking = () => {
                 }
               });
               setPart3Prompts(updatedPart3);
-              setPart3Questions(Math.max(sortedPart3.length, 4));
+              setPart3Questions(Math.max(sortedPart3.length, 1));
+              setIncludePart3(true);
               console.log('📝 Final part 3 setup:', updatedPart3.length, 'questions displayed');
+            } else {
+              setIncludePart3(false);
             }
           }
         }
@@ -356,10 +367,40 @@ const AdminIELTSSpeaking = () => {
         }));
         console.log(`📝 Part 1 prompts to save:`, prompts);
       } else if (partNumber === 2) {
+        if (!includePart2) {
+          // Delete Part 2 prompts if Part 2 is disabled
+          const { error: deleteError } = await supabase
+            .from('speaking_prompts')
+            .delete()
+            .eq('test_id', testId)
+            .eq('part_number', 2);
+          
+          if (deleteError) throw deleteError;
+          toast({
+            title: "Success",
+            description: "Part 2 removed successfully"
+          });
+          return;
+        }
         if (part2Prompt.prompt_text.trim()) {
           prompts = [part2Prompt];
         }
       } else if (partNumber === 3) {
+        if (!includePart3) {
+          // Delete Part 3 prompts if Part 3 is disabled
+          const { error: deleteError } = await supabase
+            .from('speaking_prompts')
+            .delete()
+            .eq('test_id', testId)
+            .eq('part_number', 3);
+          
+          if (deleteError) throw deleteError;
+          toast({
+            title: "Success",
+            description: "Part 3 removed successfully"
+          });
+          return;
+        }
         // Save all Part 3 prompts regardless of audio (audio and transcription can be added separately)
         prompts = part3Prompts.map((prompt, index) => ({
           ...prompt,
@@ -568,6 +609,54 @@ const AdminIELTSSpeaking = () => {
           )}
         </div>
 
+        {/* Part Configuration Toggles */}
+        <Card className="rounded-2xl border-light-border shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-lg">Test Configuration</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium">Include Part 2 (Cue Card)</label>
+                <p className="text-xs text-muted-foreground">Long turn presentation section</p>
+              </div>
+              {includePart2 ? (
+                <Badge variant="secondary">Enabled</Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIncludePart2(true)}
+                  disabled={isLocked && !isModifying}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Part 2
+                </Button>
+              )}
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium">Include Part 3 (Discussion)</label>
+                <p className="text-xs text-muted-foreground">Abstract discussion questions</p>
+              </div>
+              {includePart3 ? (
+                <Badge variant="secondary">Enabled</Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIncludePart3(true)}
+                  disabled={isLocked && !isModifying}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Part 3
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Part 1: Interview */}
         <Card className="rounded-2xl border-light-border shadow-soft">
           <CardHeader>
@@ -586,10 +675,10 @@ const AdminIELTSSpeaking = () => {
                   <label className="text-sm font-medium">Questions:</label>
                   <Input
                     type="number"
-                    min="3"
+                    min="1"
                     max="6"
                     value={part1Questions}
-                    onChange={(e) => updatePart1Questions(parseInt(e.target.value) || 4)}
+                    onChange={(e) => updatePart1Questions(parseInt(e.target.value) || 1)}
                     className="w-16 h-8 text-center rounded-xl"
                   />
                 </div>
@@ -718,6 +807,7 @@ const AdminIELTSSpeaking = () => {
         </Card>
 
         {/* Part 2: Long Turn / Cue Card */}
+        {includePart2 && (
         <Card className="rounded-2xl border-light-border shadow-soft">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -730,14 +820,26 @@ const AdminIELTSSpeaking = () => {
                   <p className="text-sm text-muted-foreground">Individual presentation (3-4 minutes)</p>
                 </div>
               </div>
-              <Button 
-                onClick={() => savePart(2)}
-                disabled={saving || (isLocked && !isModifying)}
-                className="rounded-xl"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save Part 2
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIncludePart2(false)}
+                  disabled={isLocked && !isModifying}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Remove
+                </Button>
+                <Button 
+                  onClick={() => savePart(2)}
+                  disabled={saving || (isLocked && !isModifying)}
+                  className="rounded-xl"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Part 2
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -773,8 +875,10 @@ const AdminIELTSSpeaking = () => {
             </Card>
           </CardContent>
         </Card>
+        )}
 
         {/* Part 3: Discussion */}
+        {includePart3 && (
         <Card className="rounded-2xl border-light-border shadow-soft">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -792,21 +896,33 @@ const AdminIELTSSpeaking = () => {
                   <label className="text-sm font-medium">Questions:</label>
                   <Input
                     type="number"
-                    min="4"
+                    min="1"
                     max="6"
                     value={part3Questions}
-                    onChange={(e) => updatePart3Questions(parseInt(e.target.value) || 4)}
+                    onChange={(e) => updatePart3Questions(parseInt(e.target.value) || 1)}
                     className="w-16 h-8 text-center rounded-xl"
                   />
                 </div>
-                <Button 
-                  onClick={() => savePart(3)}
-                  disabled={saving || (isLocked && !isModifying)}
-                  className="rounded-xl"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Part 3
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIncludePart3(false)}
+                    disabled={isLocked && !isModifying}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Remove
+                  </Button>
+                  <Button 
+                    onClick={() => savePart(3)}
+                    disabled={saving || (isLocked && !isModifying)}
+                    className="rounded-xl"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Part 3
+                  </Button>
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -922,6 +1038,7 @@ const AdminIELTSSpeaking = () => {
             ))}
           </CardContent>
         </Card>
+        )}
       </div>
     </AdminLayout>
   );

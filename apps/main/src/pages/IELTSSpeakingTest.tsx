@@ -1090,17 +1090,31 @@ const IELTSSpeakingTest = () => {
         // 2) Insert per-recording rows into speaking_test_results
         const speakingRowsToInsert: any[] = [];
         for (const recording of uploadedRecordings) {
-          const partNumber = parseInt(recording.part.replace('part', '').split('_')[0], 10);
+          // Safely parse part number with validation
+          const partMatch = recording.part.match(/^part(\d+)/);
+          const partNumber = partMatch ? parseInt(partMatch[1], 10) : NaN;
+          
+          if (isNaN(partNumber) || partNumber < 1 || partNumber > 3) {
+            console.error(`Invalid part number for recording: ${recording.part}`);
+            continue; // Skip invalid recordings
+          }
+
           let questionText = '';
 
           if (partNumber === 1 && testData?.part1_prompts?.length) {
-            const questionIndex = parseInt(recording.part.split('_q')[1] || '0', 10);
-            questionText = testData.part1_prompts[questionIndex]?.prompt_text || '';
+            const questionMatch = recording.part.match(/_q(\d+)/);
+            const questionIndex = questionMatch ? parseInt(questionMatch[1], 10) : 0;
+            if (questionIndex >= 0 && questionIndex < testData.part1_prompts.length) {
+              questionText = testData.part1_prompts[questionIndex]?.prompt_text || testData.part1_prompts[questionIndex]?.transcription || '';
+            }
           } else if (partNumber === 2 && testData?.part2_prompt) {
-            questionText = testData.part2_prompt.prompt_text;
+            questionText = testData.part2_prompt.prompt_text || '';
           } else if (partNumber === 3 && testData?.part3_prompts?.length) {
-            const questionIndex = parseInt(recording.part.split('_q')[1] || '0', 10);
-            questionText = testData.part3_prompts[questionIndex]?.prompt_text || '';
+            const questionMatch = recording.part.match(/_q(\d+)/);
+            const questionIndex = questionMatch ? parseInt(questionMatch[1], 10) : 0;
+            if (questionIndex >= 0 && questionIndex < testData.part3_prompts.length) {
+              questionText = testData.part3_prompts[questionIndex]?.prompt_text || testData.part3_prompts[questionIndex]?.transcription || '';
+            }
           }
 
           speakingRowsToInsert.push({
@@ -1378,21 +1392,25 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
            }} />
       <div className="relative z-10 min-h-screen flex flex-col">
         <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
-          <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-120px)] py-8">
+          {/* Desktop: keep original centered layout; Mobile: move content higher */}
+          <div className="flex-1 flex justify-center min-h-[calc(100vh-120px)] py-8 sm:items-center sm:py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col">
-            {/* Header */}
-
             {/* Current Part Indicator */}
-            <div className="text-center py-2">
+            <div className="text-center py-2 sm:py-2 sm:mb-0 mb-0">
               <span className="text-lg font-semibold text-foreground">
                 Part {currentPart}
               </span>
             </div>
 
-            {/* Main Content */}
-            <Card ref={mainCardRef} className="bg-white/80 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg rounded-2xl border border-white/20 dark:border-slate-600/50 flex flex-col" style={{
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.08)',
-            }}>
+            {/* Main Content Card - stays upper; Catie dock is anchored separately at bottom */}
+            <Card
+              ref={mainCardRef}
+              className="bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl border border-white/60 flex flex-col"
+              style={{
+                boxShadow:
+                  '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+              }}
+            >
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>
@@ -1480,7 +1498,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Cue Card Display */}
             {currentPart === 2 && currentPrompt && (
-              <div className="p-6 bg-gray-50 dark:bg-slate-800 rounded-lg">
+               <div className="p-6 bg-gray-50 rounded-lg">
                 <h3 className="font-semibold mb-3">Cue Card</h3>
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {currentPrompt.prompt_text}
@@ -1525,7 +1543,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
                 {/* Notes Display During/After Recording */}
                 {preparationTime === 0 && part2Notes && (
-                  <div className="relative bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="relative bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     {/* +1 Minute Icon Button - Top Right */}
                     {!isRecording && (
                       <TooltipProvider>
@@ -1563,7 +1581,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {isRecording ? (
                   <>
                     {/* Live Audio Waveform - Centered Between Question Text and Stop Button */}
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="absolute inset-x-0 -top-4 flex justify-center">
                       <LiveWaveform
                         active={true}
                         height={65}
@@ -1572,7 +1590,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         barRadius={3}
                         mode="static"
                         fadeEdges={false}
-                        barColor="#3b82f6"
+                        barColor="#2563eb"
                         sensitivity={1.2}
                         fftSize={256}
                         historySize={60}
@@ -1585,7 +1603,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       onClick={stopRecording}
                       variant="outline"
                       size="icon"
-                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2 dark:bg-slate-800/50 dark:border-primary/40 dark:text-primary dark:hover:bg-slate-700/50"
+                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2 border-primary/40 text-primary"
                     >
                       <Square className="w-4 h-4" />
                     </Button>
@@ -1599,7 +1617,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           <Button
                             onClick={startRecording}
                             variant="outline"
-                              className="rounded-xl bg-white/30 dark:bg-red-900/30 text-foreground border border-border dark:border-red-700/50 shadow-sm h-12 w-12 hover:!bg-white/30 dark:hover:!bg-red-800/40 hover:!text-foreground"
+                              className="rounded-xl bg-white/80 text-foreground border border-red-400/70 shadow-sm h-12 w-12 hover:bg-red-50 hover:text-red-600"
                             size="icon"
                           >
                             <Mic className="w-5 h-5" />
@@ -1619,7 +1637,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               disabled={isPlaying}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary dark:bg-slate-800/50 dark:border-primary/40 dark:text-primary dark:hover:bg-slate-700/50"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/5"
                             >
                               {isPlaying ? (
                                 <Pause className="w-5 h-5" />
@@ -1649,7 +1667,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               }}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary dark:bg-slate-800/50 dark:border-primary/40 dark:text-primary dark:hover:bg-slate-700/50"
+                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/5"
                             >
                               {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
                                 <Pause className="w-5 h-5" />
@@ -1746,7 +1764,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           </CardContent>
         </Card>
 
-        {/* Exit Test and Theme Toggle */}
+        {/* Exit Test - fixed but kept subtle in corner */}
         <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">
           <button
             onClick={() => navigate('/ielts-portal')}
@@ -1754,7 +1772,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           >
             Exit Test
           </button>
-          <ThemeToggle />
         </div>
 
         {/* Quick suggestion buttons next to Catie bot:
@@ -1763,19 +1780,19 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             - Example answers (new)
         */}
         {showAIAssistant && (
-          <div className="fixed bottom-36 right-[420px] z-50 flex flex-col gap-3">
+          <div className="fixed bottom-24 right-4 sm:bottom-36 sm:right-[420px] z-50 flex flex-col gap-2 sm:gap-3">
             {/* Structure helper */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="icon"
                     onClick={() => handleSuggestionClick('Help with Speaking Structure')}
                     disabled={isChatLoading}
-                    className="h-12 w-12 p-0 border-primary/30 bg-white/30 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
+                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 border-primary/30 bg-white/80 dark:bg-slate-800/95 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
                   >
-                    <ListTree className="w-6 h-6" />
+                    <ListTree className="w-4 h-4 sm:w-6 sm:h-6" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -1790,12 +1807,12 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="icon"
                     onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
                     disabled={isChatLoading}
-                    className="h-12 w-12 p-0 border-primary/30 bg-white/30 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
+                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 border-primary/30 bg-white/80 dark:bg-slate-800/95 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
                   >
-                    <BookOpen className="w-6 h-6" />
+                    <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -1810,16 +1827,16 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="icon"
                     onClick={() =>
                       handleSuggestionClick(
                         'Give me 2-3 straightforward band 7+ example answers for this exact IELTS Speaking question. Just show the actual answers, no explanations.'
                       )
                     }
                     disabled={isChatLoading}
-                    className="h-12 w-12 p-0 border-primary/30 bg-white/30 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
+                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 border-primary/30 bg-white/80 dark:bg-slate-800/95 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
                   >
-                    <Sparkles className="w-6 h-6" />
+                    <Sparkles className="w-4 h-4 sm:w-6 sm:h-6" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -1830,35 +1847,36 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           </div>
         )}
 
-        {/* AI Assistant - Floating Bottom Right (Mac-style "suck into dock" animation) */}
-        <div className="fixed bottom-24 right-6 z-50">
+        {/* AI Assistant - Floating Bottom Right (Mac-style "suck into dock" animation)
+            Desktop unchanged; Mobile sits slightly lower to stay below main container */}
+        <div className="fixed bottom-6 right-3 sm:bottom-6 sm:right-6 z-50">
           {/* Chat card */}
           {showAIAssistant && (
             <Card
-              className={`bg-white/20 dark:bg-slate-800/90 backdrop-blur-sm rounded-3xl w-96 h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${
+              className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${
                 showAIAssistantVisible
                   ? 'opacity-100 scale-100 translate-y-0'
                   : 'opacity-0 scale-75 translate-y-8'
               }`}
             >
-              <CardHeader className="pb-2 rounded-t-3xl relative">
-                <div className="absolute top-2 right-2">
+              <CardHeader className="pb-1 sm:pb-2 rounded-t-3xl relative">
+                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={closeAIAssistant}
-                    className="h-8 w-8 p-0 text-foreground"
+                    className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-foreground"
                   >
                     ✕
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
+              <CardContent className="flex-1 flex flex-col px-2.5 py-2 sm:p-4 overflow-hidden">
                 <Conversation className="flex-1 min-h-0">
                   <ConversationContent className="flex-1 min-h-0">
                     {chatMessages.length === 0 && !isChatLoading ? (
                       <ConversationEmptyState
-                        icon={<Orb className="size-12" />}
+                        icon={<Orb className="size-9 sm:size-12" />}
                         title="Start a conversation"
                         description="Ask for help with your IELTS speaking practice"
                       />
@@ -1867,8 +1885,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         {/* Current question displayed at the top of chat */}
                         <div className="rounded-lg p-3 bg-muted/60 border border-border mb-4">
                           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
-                          <div className="text-sm font-medium text-foreground">{questionType}</div>
-                          <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">
+                          <div className="text-xs sm:text-sm font-medium text-foreground">{questionType}</div>
+                          <div className="text-[10px] sm:text-sm text-muted-foreground whitespace-pre-wrap mt-1">
                             {currentQuestionText || 'No question available.'}
                           </div>
                         </div>
@@ -1900,8 +1918,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                 style={{
                                   borderRadius: '50%',
                                   overflow: 'hidden',
-                                  width: '72px',
-                                  height: '72px',
+                                  width: '52px',
+                                  height: '52px',
                                 }}
                               >
                                 <img
@@ -1924,8 +1942,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               style={{
                                 borderRadius: '50%',
                                 overflow: 'hidden',
-                                width: '72px',
-                                height: '72px',
+                                width: '52px',
+                                height: '52px',
                               }}
                             >
                               <img
@@ -1941,8 +1959,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                   </ConversationContent>
                 </Conversation>
 
-                <div className="flex-shrink-0 mt-4">
-                  <div className="flex gap-2">
+                <div className="flex-shrink-0 mt-2.5 sm:mt-4">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <input
                       type="text"
                       value={newMessage}
@@ -1951,15 +1969,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()
                       }
                       placeholder="Ask for speaking help..."
-                      className="flex-1 px-3 py-2 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none"
+                      className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none"
                       disabled={isChatLoading}
                     />
                     <Button
                       onClick={() => sendChatMessage()}
                       disabled={isChatLoading || !newMessage.trim()}
                       variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-foreground"
+                      size="icon"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-foreground"
                     >
                       {isChatLoading ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground" />
@@ -1978,10 +1996,10 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               style={{
                 borderRadius: '50%',
                 overflow: 'hidden',
-                width: '80px',
-                height: '80px',
+                width: '64px',
+                height: '64px',
                 cursor: 'pointer',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
                 transition: 'transform 0.22s ease-out, box-shadow 0.22s ease-out',
               }}
               onClick={() => {
@@ -1992,7 +2010,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               onMouseEnter={(e) => {
                 const el = e.currentTarget as HTMLDivElement;
                 el.style.transform = 'scale(1.06) translateY(-2px)';
-                el.style.boxShadow = '0 16px 36px rgba(0,0,0,0.22)';
+                el.style.boxShadow = '0 14px 30px rgba(0,0,0,0.24)';
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget as HTMLDivElement;

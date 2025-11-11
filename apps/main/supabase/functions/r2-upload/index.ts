@@ -8,10 +8,18 @@ const corsHeaders = {
 };
 
 // Cloudflare R2 Configuration
-const R2_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID') || 'replace_with_32_char_account_id';
-const R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_ACCESS_KEY_ID'); // Try without R2_ prefix
-const R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_SECRET_ACCESS_KEY'); // Try without R2_ prefix
-const R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET') || 'alfie-ai-audio'; // Try R2_BUCKET instead of R2_BUCKET_NAME
+const R2_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
+const R2_ACCESS_KEY_ID = Deno.env.get('CLOUDFLARE_ACCESS_KEY_ID') || Deno.env.get('CLOUDFLARE_R2_ACCESS_KEY_ID');
+const R2_SECRET_ACCESS_KEY = Deno.env.get('CLOUDFLARE_SECRET_ACCESS_KEY') || Deno.env.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+
+// Get bucket name - if it looks like a hash (64 hex chars), use default instead
+let R2_BUCKET_NAME = Deno.env.get('CLOUDFLARE_R2_BUCKET') || Deno.env.get('CLOUDFLARE_R2_BUCKET_NAME');
+if (!R2_BUCKET_NAME || /^[a-f0-9]{64}$/i.test(R2_BUCKET_NAME)) {
+  // If bucket name is missing or looks like a hash, use default
+  R2_BUCKET_NAME = 'alfie-ai-audio';
+  console.log('⚠️ Using default bucket name: alfie-ai-audio');
+}
+
 const R2_PUBLIC_URL = Deno.env.get('CLOUDFLARE_R2_PUBLIC_URL');
 
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
@@ -170,9 +178,24 @@ console.log('🔍 Account ID length:', R2_ACCOUNT_ID?.length);
 console.log('🔍 Account ID regex test:', R2_ACCOUNT_ID ? /^[a-f0-9]{32,64}$/i.test(R2_ACCOUNT_ID) : 'N/A');
 
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-  throw new Error('Missing Cloudflare R2 configuration (check CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY)');
+  const missingVars = [];
+  if (!R2_ACCOUNT_ID) missingVars.push('CLOUDFLARE_ACCOUNT_ID');
+  if (!R2_ACCESS_KEY_ID) missingVars.push('CLOUDFLARE_ACCESS_KEY_ID or CLOUDFLARE_R2_ACCESS_KEY_ID');
+  if (!R2_SECRET_ACCESS_KEY) missingVars.push('CLOUDFLARE_SECRET_ACCESS_KEY or CLOUDFLARE_R2_SECRET_ACCESS_KEY');
+  
+  throw new Error(`Missing Cloudflare R2 configuration. Please set these environment variables in Supabase Edge Function secrets: ${missingVars.join(', ')}`);
 }
-// Validation completely disabled for testing
+
+// Check if account ID is the placeholder value
+if (R2_ACCOUNT_ID === 'replace_with_32_char_account_id') {
+  throw new Error('CLOUDFLARE_ACCOUNT_ID is not configured. Please set it in Supabase Edge Function secrets. You can find your Account ID in Cloudflare Dashboard > R2 > Overview.');
+}
+
+// Warn if account ID format looks invalid but don't block (some account IDs might be longer)
+if (R2_ACCOUNT_ID && !/^[a-f0-9]{32,}$/i.test(R2_ACCOUNT_ID)) {
+  console.warn(`⚠️ CLOUDFLARE_ACCOUNT_ID format may be invalid: "${R2_ACCOUNT_ID.slice(0, 8)}..." (expected 32+ hex characters)`);
+  // Don't throw - allow upload to proceed as Cloudflare might accept various formats
+}
 
     const formData = await req.formData();
     const file = formData.get('file') as File;

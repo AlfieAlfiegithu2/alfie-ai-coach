@@ -96,38 +96,52 @@ serve(async (req) => {
       comprehensivePrompt.substring(0, 400) + '...'
     );
 
-    // First, transcribe each recording individually using Gemini with actual audio
+    // First, transcribe each recording individually using Gemini with actual audio.
+    // HARD CONSTRAINTS:
+    // - Use ONLY the provided audio (base64 or fetched from audio_url).
+    // - If audio is missing/unreadable, mark as "No audio recorded" / "Inaudible" and DO NOT invent content.
+    // - Downstream results must always reflect actual audio reality.
     console.log('🎤 Starting individual audio transcriptions...');
-    const transcriptionsWithAnalysis = await Promise.all(normalized.map(async (rec, idx) => {
-      let transcription = '';
-      let audioAnalysis = null;
-      
-      // Try to get audio data
-      let audioData: string | null = null;
-      let mimeType = 'audio/webm';
-      
-      if (rec.audio_base64) {
-        audioData = rec.audio_base64;
-      } else if (rec.audio_url && rec.audio_url.startsWith('https://')) {
-        try {
-          console.log(`📥 Fetching audio from URL for ${rec.part}: ${rec.audio_url}`);
-          const audioResponse = await fetch(rec.audio_url);
-          if (audioResponse.ok) {
-            const audioBlob = await audioResponse.arrayBuffer();
-            audioData = btoa(String.fromCharCode(...new Uint8Array(audioBlob)));
-            // Determine mime type from URL or response headers
-            const contentType = audioResponse.headers.get('content-type') || 'audio/webm';
-            mimeType = contentType;
+    const transcriptionsWithAnalysis = await Promise.all(
+      normalized.map(async (rec) => {
+        let transcription = '';
+
+        // Get audio as base64 if available
+        let audioData: string | null = null;
+        let mimeType = 'audio/webm';
+
+        if (rec.audio_base64) {
+          audioData = rec.audio_base64;
+        } else if (rec.audio_url && rec.audio_url.startsWith('https://')) {
+          try {
+            console.log(`📥 Fetching audio from URL for ${rec.part}: ${rec.audio_url}`);
+            const audioResponse = await fetch(rec.audio_url);
+            if (audioResponse.ok) {
+              const audioBlob = await audioResponse.arrayBuffer();
+              audioData = btoa(String.fromCharCode(...new Uint8Array(audioBlob)));
+              const contentType =
+                audioResponse.headers.get('content-type') || 'audio/webm';
+              mimeType = contentType;
+            }
+          } catch (err) {
+            console.error(`❌ Failed to fetch audio for ${rec.part}:`, err);
           }
-        } catch (err) {
-          console.error(`❌ Failed to fetch audio for ${rec.part}:`, err);
         }
-      }
-      
-      // If we have audio, transcribe it with Gemini via OpenRouter
-      if (audioData) {
+
+        // If no usable audio, mark clearly and never fabricate
+        if (!audioData) {
+          transcription = 'No audio recorded';
+          return {
+            ...rec,
+            transcription,
+            audioData: 'missing',
+          };
+        }
+
         try {
-          console.log(`🎯 Transcribing audio for ${rec.part} using Gemini via OpenRouter...`);
+          console.log(
+            `🎯 Transcribing audio for ${rec.part} using Gemini via OpenRouter (audio-only, no hallucinations)...`
+          );
           const geminiResponse = await fetch(
             `https://openrouter.ai/api/v1/chat/completions`,
             {
@@ -136,7 +150,8 @@ serve(async (req) => {
                 Authorization: `Bearer ${openrouterKey}`,
                 'Content-Type': 'application/json',
                 'HTTP-Referer': 'https://englishaidol.com',
-                'X-Title': 'English Aidol IELTS Speaking Transcription',
+                'X-Title':
+                  'English Aidol IELTS Speaking Transcription (audio-grounded)',
               },
               body: JSON.stringify({
                 model: 'google/gemini-2.5-flash-preview-09-2025',
@@ -146,51 +161,70 @@ serve(async (req) => {
                     content: [
                       {
                         type: 'text',
-                        text: `Transcribe this IELTS Speaking test audio exactly as spoken. Include filler words like "um", "uh", "like". If any part is unclear, mark it as "[inaudible]". Return ONLY the transcription text, nothing else.`
+                        text:
+                          'Transcribe this IELTS Speaking test audio EXACTLY as spoken. ' +
+                          'Only use information from the audio. ' +
+                          'Include fillers like "um", "uh". ' +
+                          'If unclear, use "[inaudible]". ' +
+                          'Return ONLY the raw transcription text, no explanations, no extra sentences.',
                       },
                       {
                         type: 'image_url',
                         image_url: {
-                          url: `data:${mimeType};base64,${audioData}`
-                        }
-                      }
-                    ]
-                  }
+                          // OpenRouter treats this generically as binary; naming stays for compatibility.
+                          url: `data:${mimeType};base64,${audioData}`,
+                        },
+                      },
+                    ],
+                  },
                 ],
-                temperature: 0.1,
-                max_tokens: 1000,
+                temperature: 0.0,
+                max_tokens: 800,
               }),
             }
           );
-          
-          if (geminiResponse.ok) {
-            const geminiResult = await geminiResponse.json();
-            transcription = geminiResult.choices?.[0]?.message?.content?.trim() || '';
-            // Clean up transcription - remove any markdown or extra formatting
-            transcription = transcription.replace(/```/g, '').replace(/transcription:/gi, '').trim();
-            if (!transcription || transcription.toLowerCase().includes('cannot') || transcription.toLowerCase().includes('unable')) {
-              transcription = 'Inaudible - audio could not be transcribed';
-            }
-            console.log(`✅ Transcription for ${rec.part}: ${transcription.substring(0, 100)}...`);
-          } else {
+
+          if (!geminiResponse.ok) {
             const errorText = await geminiResponse.text();
-            console.error(`❌ Transcription failed for ${rec.part}:`, errorText);
-            transcription = 'Inaudible - audio could not be transcribed';
+            console.error(
+              `❌ Transcription request failed for ${rec.part}:`,
+              errorText
+            );
+            transcription =
+              'Inaudible - audio could not be transcribed';
+          } else {
+            const geminiResult = await geminiResponse.json();
+            transcription =
+              geminiResult.choices?.[0]?.message?.content?.trim() || '';
+            // Normalize / sanitize
+            transcription = transcription
+              .replace(/```/g, '')
+              .replace(/^transcription[:\-]\s*/i, '')
+              .trim();
+            if (
+              !transcription ||
+              /cannot transcribe|no audio|unable to/i.test(transcription)
+            ) {
+              transcription =
+                'Inaudible - audio could not be transcribed';
+            }
           }
         } catch (err) {
-          console.error(`❌ Transcription error for ${rec.part}:`, err);
-          transcription = 'Inaudible - audio transcription failed';
+          console.error(
+            `❌ Transcription error for ${rec.part}:`,
+            err
+          );
+          transcription =
+            'Inaudible - audio transcription failed';
         }
-      } else {
-        transcription = 'No audio recorded';
-      }
-      
-      return {
-        ...rec,
-        transcription,
-        audioData: audioData ? 'present' : 'missing'
-      };
-    }));
+
+        return {
+          ...rec,
+          transcription,
+          audioData: 'present',
+        };
+      })
+    );
     
     console.log('✅ Completed transcriptions:', transcriptionsWithAnalysis.map(r => ({
       part: r.part,

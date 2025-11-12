@@ -38,7 +38,7 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
         {/* Original transcription with red highlights for errors */}
         {!hideOriginal && (
           <div>
-            <div className="text-caption mb-2 text-text-tertiary">Your Writing (enhancement opportunities in blue)</div>
+            <div className="text-caption mb-2 text-text-tertiary">Your Answer (enhancement opportunities in blue)</div>
             <div className="text-sm leading-relaxed text-text-secondary">
               {originalSpans.map((s, i) => (
                 <span key={`o-${i}`} className={spanClass(s.status, "left", dimNeutral)}>{sanitize(s.text)}</span>
@@ -48,7 +48,7 @@ export const SuggestionVisualizer: React.FC<SuggestionVisualizerProps> = ({ orig
         )}
         {/* Enhanced version below in same container */}
         <div>
-          <div className="text-caption mb-2 text-text-tertiary">Enhanced Version (improvements highlighted in green)</div>
+          <div className="text-caption mb-2 text-text-tertiary">Improved Version (improvements highlighted in green)</div>
           <div className="text-sm leading-relaxed text-text-secondary">
             {suggestedSpans.map((s, i) => (
               <span key={`c-${i}`} className={spanClass(s.status, "right", dimNeutral)}>{sanitize(s.text)}</span>

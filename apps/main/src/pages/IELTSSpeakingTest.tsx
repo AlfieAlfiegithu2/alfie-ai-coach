@@ -194,6 +194,9 @@ const IELTSSpeakingTest = () => {
   const [part2Notes, setPart2Notes] = useState("");
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
+  // Feedback language preference shown at end of Part 3
+  const [showLanguagePreference, setShowLanguagePreference] = useState(false);
+  const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAIAssistantVisible, setShowAIAssistantVisible] = useState(false); // for dock-style animation
   const [showQuestion, setShowQuestion] = useState(false);
@@ -437,11 +440,23 @@ const IELTSSpeakingTest = () => {
 
       const promptsList = prompts || [];
       console.log(`📝 Loaded ${promptsList.length} total speaking prompts`);
+      
+      // Debug: Log audio URLs for each prompt
+      promptsList.forEach((p: any) => {
+        console.log(`🔊 Prompt: ${p.title} (Part ${p.part_number}) - audio_url:`, p.audio_url || 'NOT SET');
+      });
 
       if (promptsList.length > 0) {
         const part1 = promptsList.filter(p => p.part_number === 1);
         const part2 = promptsList.find(p => p.part_number === 2);
         const part3 = promptsList.filter(p => p.part_number === 3);
+        
+        // Debug: Log Part 1 prompts specifically
+        console.log(`🔊 Part 1 prompts (${part1.length}):`, part1.map((p: any) => ({ 
+          title: p.title, 
+          audio_url: p.audio_url || 'NOT SET',
+          has_audio: !!p.audio_url 
+        })));
 
         setTestData({
           id: testData.id,
@@ -514,8 +529,61 @@ const IELTSSpeakingTest = () => {
         );
       }
 
-      console.log(`✅ Found ${finalTests.length} available speaking tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
-      setAvailableTests(finalTests);
+      // Filter out invalid test names and deduplicate
+      const seenIds = new Set<string>();
+      const seenNames = new Set<string>();
+      const validTests = finalTests.filter((test: any) => {
+        // Skip if no ID
+        if (!test.id) return false;
+        
+        // Skip if duplicate ID
+        if (seenIds.has(test.id)) {
+          console.log(`⚠️ Duplicate test ID skipped: ${test.id} - ${test.test_name}`);
+          return false;
+        }
+        
+        // Skip if invalid test name
+        const testName = (test.test_name || '').trim();
+        if (!testName || 
+            testName === 'test ?' || 
+            testName === 'another test?' ||
+            testName.toLowerCase().includes('quick test') ||
+            testName.length < 2) {
+          console.log(`⚠️ Invalid test name skipped: ${test.id} - "${testName}"`);
+          return false;
+        }
+        
+        // Skip if duplicate name (keep the first one)
+        const normalizedName = testName.toLowerCase().trim();
+        if (seenNames.has(normalizedName)) {
+          console.log(`⚠️ Duplicate test name skipped: ${test.id} - "${testName}"`);
+          return false;
+        }
+        
+        seenIds.add(test.id);
+        seenNames.add(normalizedName);
+        return true;
+      });
+
+      // Also verify tests have speaking prompts (optimized with single query)
+      const testIds = validTests.map((t: any) => t.id);
+      const { data: promptsData } = await supabase
+        .from('speaking_prompts')
+        .select('test_id')
+        .in('test_id', testIds);
+      
+      const testsWithPromptsSet = new Set((promptsData || []).map((p: any) => p.test_id));
+      const testsWithPrompts = validTests.filter((test: any) => {
+        if (testsWithPromptsSet.has(test.id)) {
+          return true;
+        } else {
+          console.log(`⚠️ Test has no speaking prompts, skipping: ${test.test_name}`);
+          return false;
+        }
+      });
+
+      console.log(`✅ Found ${testsWithPrompts.length} valid speaking tests:`, testsWithPrompts.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
+      setAvailableTests(testsWithPrompts);
     } catch (error) {
       console.error('❌ Error loading tests:', error);
       toast({
@@ -566,7 +634,7 @@ const IELTSSpeakingTest = () => {
         audioRef.current = null;
         toast({
           title: "Audio Error",
-          description: "Failed to play audio prompt",
+          description: "Failed to play audio prompt. The audio may be inaudible or unavailable.",
           variant: "destructive"
         });
       };
@@ -616,7 +684,7 @@ const IELTSSpeakingTest = () => {
       } else {
         toast({
           title: "Audio Error", 
-          description: "Failed to play audio prompt. Please try again.",
+          description: "Failed to play audio prompt. The audio may be inaudible or unavailable. Please try again.",
           variant: "destructive"
         });
       }
@@ -786,6 +854,11 @@ const IELTSSpeakingTest = () => {
         setCurrentPlayingRecording(null);
         setCurrentAudioElement(null);
         console.error(`❌ Recording playback error: ${recordingKey}`);
+        toast({
+          title: "Playback Error",
+          description: "Failed to play your recording. The audio may be inaudible or corrupted.",
+          variant: "destructive"
+        });
       };
 
       await audio.play();
@@ -863,8 +936,8 @@ const IELTSSpeakingTest = () => {
   const nextQuestion = () => {
     if (currentPart === 1) {
       if (currentQuestion < (testData?.part1_prompts.length || 0) - 1) {
+        // More Part 1 questions remaining
         setCurrentQuestion(currentQuestion + 1);
-        // Clear chat for new question
         setChatMessages([{
           id: '1',
           type: 'bot',
@@ -873,10 +946,47 @@ const IELTSSpeakingTest = () => {
         }]);
         console.log(`➡️ Moving to Part 1, Question ${currentQuestion + 2}`);
       } else {
-        // Move to Part 2
-        setCurrentPart(2);
+        // Last Part 1 question just completed
+        const hasPart2 = !!testData?.part2_prompt;
+        const hasPart3 = !!(testData?.part3_prompts && testData.part3_prompts.length > 0);
+
+        if (!hasPart2 && !hasPart3) {
+          // CASE: Only Part 1 exists for this test
+          // Immediately show language preference so they can submit and get AI analysis after Part 1 only.
+          console.log("🏁 Part 1-only test completed - prompting for feedback language (AI analysis after Part 1).");
+          setShowLanguagePreference(true);
+        } else if (hasPart2) {
+          // Normal flow: move to Part 2
+          setCurrentPart(2);
+          setCurrentQuestion(0);
+          setPreparationTime(60);
+          setChatMessages([{
+            id: '1',
+            type: 'bot',
+            content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
+            timestamp: new Date()
+          }]);
+          console.log("➡️ Moving to Part 2 - Long Turn");
+          startPreparationTimer();
+        } else if (hasPart3) {
+          // No Part 2, but Part 3 exists: move directly to Part 3
+          setCurrentPart(3);
+          setCurrentQuestion(0);
+          setChatMessages([{
+            id: '1',
+            type: 'bot',
+            content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
+            timestamp: new Date()
+          }]);
+          console.log("➡️ Moving to Part 3 - Discussion (no Part 2 for this test)");
+        }
+      }
+    } else if (currentPart === 2) {
+      // Part 2 completed, check if Part 3 exists
+      if (testData?.part3_prompts && testData.part3_prompts.length > 0) {
+        // Move to Part 3
+        setCurrentPart(3);
         setCurrentQuestion(0);
-        setPreparationTime(60);
         // Clear chat for new part
         setChatMessages([{
           id: '1',
@@ -884,21 +994,12 @@ const IELTSSpeakingTest = () => {
           content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
           timestamp: new Date()
         }]);
-        console.log(`➡️ Moving to Part 2 - Long Turn`);
-        startPreparationTimer();
+        console.log(`➡️ Moving to Part 3 - Discussion`);
+      } else {
+        // No Part 3, show language preference and allow submission
+        console.log(`🏁 Part 2 completed - no Part 3 available, prompting for feedback language`);
+        setShowLanguagePreference(true);
       }
-    } else if (currentPart === 2) {
-      // Move to Part 3 after Part 2
-      setCurrentPart(3);
-      setCurrentQuestion(0);
-      // Clear chat for new part
-      setChatMessages([{
-        id: '1',
-        type: 'bot',
-        content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
-        timestamp: new Date()
-      }]);
-      console.log(`➡️ Moving to Part 3 - Discussion`);
     } else if (currentPart === 3) {
       if (currentQuestion < (testData?.part3_prompts.length || 0) - 1) {
         setCurrentQuestion(currentQuestion + 1);
@@ -911,9 +1012,9 @@ const IELTSSpeakingTest = () => {
         }]);
         console.log(`➡️ Moving to Part 3, Question ${currentQuestion + 2}`);
       } else {
-        // Test complete
-        console.log(`🏁 Test completed`);
-        submitTest();
+        // Last question completed: show language preference + submit option
+        console.log(`🏁 Last question completed - prompting for feedback language`);
+        setShowLanguagePreference(true);
       }
     }
   };
@@ -989,9 +1090,31 @@ const IELTSSpeakingTest = () => {
 
           console.log(`✅ Speaking recording uploaded successfully: ${finalUrl}`);
 
+          // Get question text for this recording
+          let questionText = '';
+          const partMatch = key.match(/^part(\d+)_q(\d+)$/);
+          if (partMatch) {
+            const partNum = parseInt(partMatch[1], 10);
+            const qIndex = parseInt(partMatch[2], 10);
+            if (partNum === 1 && testData?.part1_prompts?.[qIndex]) {
+              questionText = testData.part1_prompts[qIndex]?.prompt_text || 
+                            testData.part1_prompts[qIndex]?.transcription || 
+                            testData.part1_prompts[qIndex]?.title || '';
+            } else if (partNum === 2 && testData?.part2_prompt) {
+              questionText = testData.part2_prompt.prompt_text || 
+                            testData.part2_prompt.transcription || 
+                            testData.part2_prompt.title || '';
+            } else if (partNum === 3 && testData?.part3_prompts?.[qIndex]) {
+              questionText = testData.part3_prompts[qIndex]?.prompt_text || 
+                            testData.part3_prompts[qIndex]?.transcription || 
+                            testData.part3_prompts[qIndex]?.title || '';
+            }
+          }
+
           return {
             part: key,
             audio_url: finalUrl,
+            question_text: questionText,
             upload_error: false,
           };
         } catch (error: any) {
@@ -1014,9 +1137,31 @@ const IELTSSpeakingTest = () => {
             safeTestId
           )}/${encodeURIComponent(key)}/${timestamp}.webm`;
 
+          // Get question text for this recording (even if upload failed)
+          let questionText = '';
+          const partMatch = key.match(/^part(\d+)_q(\d+)$/);
+          if (partMatch) {
+            const partNum = parseInt(partMatch[1], 10);
+            const qIndex = parseInt(partMatch[2], 10);
+            if (partNum === 1 && testData?.part1_prompts?.[qIndex]) {
+              questionText = testData.part1_prompts[qIndex]?.prompt_text || 
+                            testData.part1_prompts[qIndex]?.transcription || 
+                            testData.part1_prompts[qIndex]?.title || '';
+            } else if (partNum === 2 && testData?.part2_prompt) {
+              questionText = testData.part2_prompt.prompt_text || 
+                            testData.part2_prompt.transcription || 
+                            testData.part2_prompt.title || '';
+            } else if (partNum === 3 && testData?.part3_prompts?.[qIndex]) {
+              questionText = testData.part3_prompts[qIndex]?.prompt_text || 
+                            testData.part3_prompts[qIndex]?.transcription || 
+                            testData.part3_prompts[qIndex]?.title || '';
+            }
+          }
+
           return {
             part: key,
             audio_url: mockUrl,
+            question_text: questionText,
             upload_error: true,
             error_message: message,
           };
@@ -1067,7 +1212,18 @@ const IELTSSpeakingTest = () => {
             score_percentage: 0, // will be updated after AI scoring
             time_taken: 15 * 60,
             audio_urls: audioUrls,
-            audio_retention_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            /**
+             * IMPORTANT:
+             * We intentionally do NOT expire speaking recordings automatically.
+             * Cloudflare R2 storage is low-cost for this use case, and long-term
+             * retention allows:
+             * - Students to revisit historical attempts.
+             * - Consistent training/benchmarking over time.
+             *
+             * If you ever want time-based deletion, reintroduce a computed
+             * audio_retention_expires_at here or control expiry via R2 lifecycle rules.
+             */
+            audio_retention_expires_at: null,
             test_data: {
               recordings_count: uploadedRecordings.length,
               parts_completed: [1, 2, 3],
@@ -1076,6 +1232,7 @@ const IELTSSpeakingTest = () => {
                 successful: successfulCount,
                 failed: failedCount,
               },
+              retention_policy: 'no_auto_expiry_r2_persistent'
             } as any
           })
           .select()
@@ -1580,13 +1737,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <div className="text-center h-[80px] flex items-center justify-center relative">
                 {isRecording ? (
                   <>
-                    {/* Live Audio Waveform - Centered Between Question Text and Stop Button */}
-                    <div className="absolute inset-x-0 -top-4 flex justify-center">
+                    {/* Live Audio Waveform - 50% narrower than previous, centered above stop button */}
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[130px] sm:w-[180px]">
                       <LiveWaveform
                         active={true}
-                        height={65}
-                        barWidth={10}
-                        barGap={3}
+                        height={55}
+                        barWidth={6}
+                        barGap={2}
                         barRadius={3}
                         mode="static"
                         fadeEdges={false}
@@ -1688,7 +1845,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             )}
 
             {/* Question Navigation Buttons - Bottom Corners */}
-            {(currentPart === 1 || currentPart === 3) && (
+            {(currentPart === 1 || currentPart === 3) && !showLanguagePreference && (
               <TooltipProvider>
                 <>
                   {/* Previous Question Button - Bottom Left */}
@@ -1731,7 +1888,13 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{recordings[`part${currentPart}_q${currentQuestion}`] === undefined ? "Please record your answer first" : "Next question"}</p>
+                      <p>
+                        {recordings[`part${currentPart}_q${currentQuestion}`] === undefined 
+                          ? "Please record your answer first" 
+                          : (currentQuestion === (testData?.part1_prompts.length || 0) - 1 && currentPart === 1 && !testData?.part2_prompt && (!testData?.part3_prompts || testData.part3_prompts.length === 0))
+                            ? "Complete test"
+                            : "Next question"}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </>
@@ -1739,7 +1902,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             )}
 
             {/* Part 2 Navigation Button - Go to Part 3 */}
-            {currentPart === 2 && (
+            {currentPart === 2 && !showLanguagePreference && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1755,14 +1918,93 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <ArrowRight className="w-5 h-5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{recordings[`part${currentPart}_q${currentQuestion}`] === undefined ? "Please record your answer first" : "Go to Part 3"}</p>
-                  </TooltipContent>
+                    <TooltipContent>
+                      <p>
+                        {recordings[`part${currentPart}_q${currentQuestion}`] === undefined 
+                          ? "Please record your answer first" 
+                          : (testData?.part3_prompts && testData.part3_prompts.length > 0)
+                            ? "Go to Part 3"
+                            : "Complete test"}
+                      </p>
+                    </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
           </CardContent>
         </Card>
+
+        {/* Final feedback language + submit prompt when last question completed */}
+        {showLanguagePreference && (
+          <div className="mt-4 p-4 rounded-2xl bg-primary/5 border border-primary/20 flex flex-col gap-3">
+            <p className="text-sm font-medium text-foreground">
+              Would you like your IELTS Speaking feedback in your native language?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { code: "en", label: "English" },
+                { code: "zh", label: "Chinese" },
+                { code: "ja", label: "Japanese" },
+                { code: "ko", label: "Korean" },
+                { code: "vi", label: "Vietnamese" },
+                { code: "th", label: "Thai" },
+                { code: "ar", label: "Arabic" },
+                { code: "es", label: "Spanish" },
+                { code: "pt", label: "Portuguese" },
+              ].map((lang) => (
+                <Button
+                  key={lang.code}
+                  type="button"
+                  variant={feedbackLanguage === lang.code ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setFeedbackLanguage(lang.code)}
+                >
+                  {lang.label}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <Button
+                type="button"
+                onClick={() => {
+                  // Persist preference so backend / results page can localize feedback
+                  try {
+                    localStorage.setItem(
+                      "ielts_speaking_feedback_language",
+                      feedbackLanguage || "en"
+                    );
+                  } catch (e) {
+                    console.warn("Unable to persist feedback language preference", e);
+                  }
+                  submitTest();
+                }}
+                className="mt-1"
+              >
+                Submit test with this feedback language
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-1 text-xs"
+                onClick={() => {
+                  setFeedbackLanguage("en");
+                  try {
+                    localStorage.setItem(
+                      "ielts_speaking_feedback_language",
+                      "en"
+                    );
+                  } catch (e) {
+                    console.warn("Unable to persist feedback language preference", e);
+                  }
+                  submitTest();
+                }}
+              >
+                Skip – English feedback is fine
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Exit Test - fixed but kept subtle in corner */}
         <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">

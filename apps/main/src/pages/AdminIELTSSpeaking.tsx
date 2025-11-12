@@ -358,14 +358,17 @@ const AdminIELTSSpeaking = () => {
       
       if (partNumber === 1) {
         // Save all Part 1 prompts regardless of audio (audio and transcription can be added separately)
+        // IMPORTANT: Preserve audio_url and transcription when mapping
         prompts = part1Prompts.map((prompt, index) => ({
           ...prompt,
           title: `Interview Question ${index + 1}`,
-          prompt_text: "Audio prompt",
+          prompt_text: prompt.prompt_text || "Audio prompt",
           part_number: 1,
-          time_limit: 2
+          time_limit: prompt.time_limit || 2,
+          audio_url: prompt.audio_url || undefined, // Explicitly preserve audio_url
+          transcription: prompt.transcription || undefined // Explicitly preserve transcription
         }));
-        console.log(`📝 Part 1 prompts to save:`, prompts);
+        console.log(`📝 Part 1 prompts to save:`, prompts.map(p => ({ title: p.title, has_audio: !!p.audio_url, audio_url: p.audio_url })));
       } else if (partNumber === 2) {
         if (!includePart2) {
           // Delete Part 2 prompts if Part 2 is disabled
@@ -402,14 +405,17 @@ const AdminIELTSSpeaking = () => {
           return;
         }
         // Save all Part 3 prompts regardless of audio (audio and transcription can be added separately)
+        // IMPORTANT: Preserve audio_url and transcription when mapping
         prompts = part3Prompts.map((prompt, index) => ({
           ...prompt,
           title: `Discussion Question ${index + 1}`,
-          prompt_text: "Audio prompt",
+          prompt_text: prompt.prompt_text || "Audio prompt",
           part_number: 3,
-          time_limit: 2
+          time_limit: prompt.time_limit || 2,
+          audio_url: prompt.audio_url || undefined, // Explicitly preserve audio_url
+          transcription: prompt.transcription || undefined // Explicitly preserve transcription
         }));
-        console.log(`📝 Part 3 prompts to save:`, prompts);
+        console.log(`📝 Part 3 prompts to save:`, prompts.map(p => ({ title: p.title, has_audio: !!p.audio_url, audio_url: p.audio_url })));
       }
 
       // For standalone prompts, we update existing prompts or create new ones
@@ -440,16 +446,19 @@ const AdminIELTSSpeaking = () => {
               sample_answer: null,
               test_id: testId,
               transcription: prompt.transcription || null,
-              audio_url: prompt.audio_url || null,
+              audio_url: prompt.audio_url || null, // Use prompt.audio_url from state
               is_locked: true
             };
 
             if (existingPrompt) {
-              // Update existing prompt - preserve audio_url if not explicitly set
+              // Update existing prompt - use new audio_url if provided, otherwise preserve existing
               const updateData = {
                 ...promptData,
-                audio_url: prompt.audio_url || existingPrompt.audio_url || null
+                audio_url: prompt.audio_url !== undefined && prompt.audio_url !== null 
+                  ? prompt.audio_url 
+                  : (existingPrompt.audio_url || null)
               };
+              console.log(`🔊 Saving audio_url for ${prompt.title}:`, updateData.audio_url);
               console.log(`📝 Updating existing prompt: ${prompt.title}`);
               const { error: updateError } = await supabase
                 .from('speaking_prompts')
@@ -492,11 +501,14 @@ const AdminIELTSSpeaking = () => {
           };
 
           if (existingPrompt) {
-            // Update existing prompt - preserve audio_url if not explicitly set
+            // Update existing prompt - use new audio_url if provided, otherwise preserve existing
             const updateData = {
               ...promptData,
-              audio_url: prompt.audio_url || existingPrompt.audio_url || null
+              audio_url: prompt.audio_url !== undefined && prompt.audio_url !== null 
+                ? prompt.audio_url 
+                : (existingPrompt.audio_url || null)
             };
+            console.log(`🔊 Saving audio_url for Part 2:`, updateData.audio_url);
             console.log(`📝 Updating existing Part 2 prompt`);
             const { error: updateError } = await supabase
               .from('speaking_prompts')

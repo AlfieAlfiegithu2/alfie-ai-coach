@@ -13,6 +13,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
 import LanguageWelcomeBanner from "./components/LanguageWelcomeBanner";
+import ComingSoonModal from "./components/ComingSoonModal";
 import Index from "./pages/Index";
 import HeroIndex from "./pages/HeroIndex";
 
@@ -166,6 +167,7 @@ const App = () => {
                 <LanguageWelcomeBanner />
                 <Toaster />
                 <Sonner />
+                <ComingSoonModal />
                 <Suspense
                   fallback={
                     <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">

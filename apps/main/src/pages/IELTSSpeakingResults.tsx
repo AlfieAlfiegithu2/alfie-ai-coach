@@ -60,170 +60,41 @@ const IELTSSpeakingResults = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<Record<string, AISuggestion>>({});
+  const [analysisCompleted, setAnalysisCompleted] = useState(false);
 
   const { testData, recordings, audioBlobs } = (location.state as any) || {};
 
+  // NEW: allow both in-memory state (ideal) and direct-load via test_result_id in URL
+  const searchParams = new URLSearchParams(location.search);
+  const testResultIdFromUrl = searchParams.get("test_result_id") || searchParams.get("id");
+  const testResultId = (location.state as any)?.testResultId || (location.state as any)?.test_result_id || testResultIdFromUrl || null;
+
   useEffect(() => {
-    if (!testData || !recordings || !audioBlobs) {
-      navigate("/ielts-portal");
+    // Prevent multiple analysis calls
+    if (analysisCompleted) return;
+
+    // If we have full state from IELTSSpeakingTest, use it (existing behavior)
+    if (testData && Array.isArray(recordings) && audioBlobs) {
+      setAnalysisCompleted(true);
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      analyzeTestResults(recordings, testData, audioBlobs);
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    analyzeTestResults();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testData, recordings, audioBlobs]);
 
-  const analyzeTestResults = async () => {
-    setIsLoading(true);
-    try {
-      const recordingsWithDetails = recordings.map((recording: any) => {
-        // Expect keys like "part1_q0", "part2_q0", etc.
-        const match = recording.part.match(/^part(\d+)_q(\d+)/i);
-        const partNumber = match ? parseInt(match[1], 10) : 0;
-        const questionIndex = match ? parseInt(match[2], 10) : 0;
-
-        let questionText = "";
-        if (partNumber === 1 && testData.part1_prompts?.[questionIndex]) {
-          questionText =
-            testData.part1_prompts[questionIndex].prompt_text ||
-            testData.part1_prompts[questionIndex].transcription ||
-            testData.part1_prompts[questionIndex].title ||
-            "";
-        } else if (partNumber === 2 && testData.part2_prompt) {
-          questionText =
-            testData.part2_prompt.prompt_text ||
-            testData.part2_prompt.transcription ||
-            testData.part2_prompt.title ||
-            "";
-        } else if (partNumber === 3 && testData.part3_prompts?.[questionIndex]) {
-          questionText =
-            testData.part3_prompts[questionIndex].prompt_text ||
-            testData.part3_prompts[questionIndex].transcription ||
-            testData.part3_prompts[questionIndex].title ||
-            "";
-        }
-
-        const audioKey = recording.part;
-        const audioBlob = audioBlobs?.[audioKey];
-
-        // If blob missing, still return a sane analysis entry without NaN
-        if (!audioBlob || !match) {
-          console.warn("Missing audio blob or invalid key for speaking result:", {
-            key: recording.part,
-            hasBlob: !!audioBlob,
-          });
-          return {
-            part: partNumber ? `Part ${partNumber}` : "Part 1",
-            partNumber: partNumber || 1,
-            questionIndex: isNaN(questionIndex) ? 0 : questionIndex,
-            questionText: questionText || "Question",
-            transcription: "",
-            audio_url: recording.audio_url,
-            feedback: "",
-          } as QuestionAnalysis;
-        }
-
-        const reader = new FileReader();
-        return new Promise<QuestionAnalysis>((resolve) => {
-          reader.onloadend = () => {
-            resolve({
-              part: `Part ${partNumber}`,
-              partNumber,
-              questionIndex,
-              questionText: questionText || "Question",
-              transcription: "",
-              audio_url: recording.audio_url,
-              feedback: "",
-            });
-          };
-          reader.readAsDataURL(audioBlob);
-        });
-      });
-
-      const baseAnalyses = await Promise.all(recordingsWithDetails);
-
-      const { data: result, error } = await supabase.functions.invoke(
-        "enhanced-speech-analysis",
-        {
-          body: {
-            allRecordings: baseAnalyses,
-            testData,
-            analysisType: "comprehensive",
-          },
-        }
-      );
-
-      if (error) throw error;
-
-      if (result?.individualAnalyses?.length) {
-        // Trust edge function structure for per-question analyses
-        setQuestionAnalyses(result.individualAnalyses as QuestionAnalysis[]);
-      } else {
-        console.warn("⚠️ No individual analyses received");
-      }
-
-      if (result?.analysis) {
-        const overallData = parseOverallAnalysis(result.analysis as string);
-        setOverallFeedback(overallData);
-      } else {
-        console.warn("⚠️ No overall analysis received");
-      }
-
-      if (result?.individualAnalyses?.length) {
-        const suggestions: Record<string, AISuggestion> = {};
-        for (const a of result.individualAnalyses) {
-          const key = `${a.part}_${a.questionIndex}`;
-          if (a.original_spans && a.suggested_spans) {
-            suggestions[key] = {
-              original_spans: a.original_spans,
-              suggested_spans: a.suggested_spans,
-            };
-          }
-        }
-        setAiSuggestions(suggestions);
-      }
-    } catch (err) {
-      console.error("Error analyzing test results:", err);
-      toast({
-        title: "Analysis Error",
-        description: "Failed to analyze your test results. Please try again.",
-        variant: "destructive",
-      });
-
-      // Safe fallback so UI still renders
-      setOverallFeedback({
-        overall_band_score: 1.0,
-        fluency_coherence: {
-          score: 1,
-          feedback:
-            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
-        },
-        lexical_resource: {
-          score: 1,
-          feedback:
-            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
-        },
-        grammatical_range: {
-          score: 1,
-          feedback:
-            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
-        },
-        pronunciation: {
-          score: 1,
-          feedback:
-            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
-        },
-        path_to_higher_score: [
-          "Technical error occurred during analysis. Please retake the test for accurate assessment.",
-          "Ensure you speak clearly and provide substantial responses to each question.",
-          "Practice speaking for the full allocated time with relevant content.",
-        ],
-      });
-    } finally {
-      setIsLoading(false);
+    // Fallback: if we at least have a testResultId (via state or URL), try load from Supabase
+    if (testResultId) {
+      setAnalysisCompleted(true);
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      analyzeFromSupabase(testResultId);
+      return;
     }
-  };
 
+    // If nothing available, redirect as before
+    navigate("/ielts-portal");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testData, recordings, audioBlobs, testResultId, analysisCompleted]);
+
+  // Helper functions for analysis
   const roundToIELTSBandScore = (score: number): number => {
     if (score < 0) return 0;
     if (score > 9) return 9;
@@ -238,19 +109,19 @@ const IELTSSpeakingResults = () => {
     const cleanText = analysisText.replace(/\*\*/g, "");
 
     const fluencyMatch = cleanText.match(
-      /FLUENCY & COHERENCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/
+      /FLUENCY & COHERENCE:\s*\[?(\d(?:\.\d)?)\]?\s*-\s*([^A-Z]*)/
     );
     const lexicalMatch = cleanText.match(
-      /LEXICAL RESOURCE:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/
+      /LEXICAL RESOURCE:\s*\[?(\d(?:\.\d)?)\]?\s*-\s*([^A-Z]*)/
     );
     const grammarMatch = cleanText.match(
-      /GRAMMATICAL RANGE & ACCURACY:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/
+      /GRAMMATICAL RANGE & ACCURACY:\s*\[?(\d(?:\.\d)?)\]?\s*-\s*([^A-Z]*)/
     );
     const pronunciationMatch = cleanText.match(
-      /PRONUNCIATION:\s*(\d(?:\.\d)?)\s*-\s*([^A-Z]*)/
+      /PRONUNCIATION:\s*\[?(\d(?:\.\d)?)\]?\s*-\s*([^A-Z]*)/
     );
     const overallMatch = cleanText.match(
-      /OVERALL BAND SCORE:\s*(\d(?:\.\d)?)/
+      /OVERALL BAND SCORE:\s*\[?(\d(?:\.\d)?)\]?/
     );
     const feedbackMatch = cleanText.match(
       /COMPREHENSIVE FEEDBACK:\s*([^E]+?)(?=ENHANCED|$)/
@@ -340,9 +211,718 @@ const IELTSSpeakingResults = () => {
     };
   };
 
+  // NEW: fallback loader using stored speaking_test_results
+  const analyzeFromSupabase = async (id: string) => {
+    try {
+      setIsLoading(true);
+      console.log("[IELTSSpeakingResults] Fallback load for test_result_id:", id);
+
+      const { data: testResult, error: trError } = await supabase
+        .from("test_results")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (trError) {
+        console.error("[IELTSSpeakingResults] Error loading test_results:", trError);
+      }
+
+      const { data: speakingRows, error: srError } = await supabase
+        .from("speaking_test_results")
+        .select("*")
+        .eq("test_result_id", id)
+        .order("part_number", { ascending: true });
+
+      if (srError) {
+        console.error("[IELTSSpeakingResults] Error loading speaking_test_results:", srError);
+      }
+
+      const safeRows = Array.isArray(speakingRows) ? speakingRows : [];
+      if (!safeRows.length) {
+        console.warn("[IELTSSpeakingResults] No speaking_test_results for test_result_id:", id);
+        setIsLoading(false);
+        return;
+      }
+
+      // Reconstruct a minimal recordings array compatible with analyzer
+      const reconstructed = safeRows.map((row, idx) => {
+        const partNumber = row.part_number || 1;
+        const questionIndex = 0;
+        const partKey = `part${partNumber}_q${questionIndex}`;
+        return {
+          part: partKey,
+          partNumber,
+          questionIndex,
+          questionText: row.question_text || "",
+          audio_url: row.audio_url || "",
+        };
+      });
+
+      const effectiveTestData =
+        ((testResult?.test_data as any)?.testData || (testResult?.test_data as any)) || {};
+
+      await analyzeTestResults(reconstructed, effectiveTestData, {});
+    } catch (error) {
+      console.error("[IELTSSpeakingResults] analyzeFromSupabase error:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const analyzeTestResults = async (
+    incomingRecordings: any[],
+    incomingTestData: any,
+    incomingAudioBlobs: Record<string, Blob>
+  ) => {
+    setIsLoading(true);
+    try {
+      console.log('🔍 analyzeTestResults called with:', {
+        recordingsCount: incomingRecordings?.length || 0,
+        testDataKeys: incomingTestData ? Object.keys(incomingTestData) : [],
+        hasPart1Prompts: !!incomingTestData?.part1_prompts,
+        part1PromptsCount: incomingTestData?.part1_prompts?.length || 0,
+        hasPart2Prompt: !!incomingTestData?.part2_prompt,
+        hasPart3Prompts: !!incomingTestData?.part3_prompts,
+        part3PromptsCount: incomingTestData?.part3_prompts?.length || 0,
+        audioBlobsKeys: incomingAudioBlobs ? Object.keys(incomingAudioBlobs) : []
+      });
+
+      if (!Array.isArray(incomingRecordings) || incomingRecordings.length === 0) {
+        throw new Error("No recordings provided to analysis page");
+      }
+
+      // Helper function to convert blob to base64
+      const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = reader.result as string;
+            // Remove data URL prefix if present
+            const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+            resolve(base64Data);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      };
+
+      // Helper function to fetch audio from URL and convert to base64.
+      // IMPORTANT: This is OPTIONAL - the edge function will fetch audio server-side if this fails.
+      // R2 CORS issue: Browser fetch() may be blocked, but edge function can fetch server-side.
+      // This is a best-effort optimization to avoid extra server-side fetches when possible.
+      const fetchAudioAsBase64 = async (url: string): Promise<string | null> => {
+        try {
+          console.log(`🔄 Attempting to fetch audio for AI analysis (optional optimization): ${url}`);
+          const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors', // Explicitly request CORS mode
+            headers: {
+              'Accept': 'audio/*',
+              'Cache-Control': 'no-cache'
+            },
+            // Add timeout to prevent hanging
+            signal: AbortSignal.timeout(5000) // 5 second timeout
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch audio: ${response.status} ${response.statusText}`);
+          }
+
+          const blob = await response.blob();
+          console.log(`📦 Successfully fetched audio blob, size: ${blob.size} bytes`);
+          return await blobToBase64(blob);
+        } catch (error) {
+          console.log(`ℹ️ Browser fetch failed (expected due to CORS) - edge function will fetch audio server-side instead: ${url}`);
+          // Returning null is fine - the edge function will fetch from audio_url server-side
+          return null;
+        }
+      };
+
+      const recordingsWithDetails = await Promise.all(incomingRecordings.map(async (recording: any) => {
+        // Robustly parse keys like "part1_q0", "part2_q0", etc.
+        const match = typeof recording.part === "string"
+          ? recording.part.match(/^part(\d+)_q(\d+)$/i)
+          : null;
+
+        const partNumber = match ? parseInt(match[1], 10) : 0;
+        const questionIndex = match ? parseInt(match[2], 10) : 0;
+
+        // Derive question text safely so we never end up with "Part NaN / Question NaN"
+        // Priority: Use question_text from recording (saved during test) > admin prompt > fallback
+        // This ensures we show the exact question the student saw, not admin metadata
+        let questionText = recording.question_text || recording.questionText || "";
+        
+        // If no question_text from recording, fall back to admin prompt
+        if (!questionText || questionText === "Audio prompt") {
+          if (partNumber === 1 && incomingTestData?.part1_prompts?.[questionIndex]) {
+            const p = incomingTestData.part1_prompts[questionIndex];
+            questionText =
+              p.prompt_text ||
+              p.transcription ||
+              p.title ||
+              "";
+            // Skip if it's just "Audio prompt" placeholder
+            if (questionText === "Audio prompt") {
+              questionText = p.title || `Part 1 Question ${questionIndex + 1}`;
+            }
+            console.log(
+              `📝 Part 1 Q${questionIndex} text from admin prompt: "${questionText}"`,
+              p
+            );
+          } else if (partNumber === 2 && incomingTestData?.part2_prompt) {
+            const p = incomingTestData.part2_prompt;
+            questionText =
+              p.prompt_text ||
+              p.transcription ||
+              p.title ||
+              "";
+            if (questionText === "Audio prompt") {
+              questionText = p.title || "Part 2 Cue Card";
+            }
+            console.log(
+              `📝 Part 2 cue card text from admin prompt: "${questionText}"`,
+              p
+            );
+          } else if (partNumber === 3 && incomingTestData?.part3_prompts?.[questionIndex]) {
+            const p = incomingTestData.part3_prompts[questionIndex];
+            questionText =
+              p.prompt_text ||
+              p.transcription ||
+              p.title ||
+              "";
+            if (questionText === "Audio prompt") {
+              questionText = p.title || `Part 3 Question ${questionIndex + 1}`;
+            }
+            console.log(
+              `📝 Part 3 Q${questionIndex} text from admin prompt: "${questionText}"`,
+              p
+            );
+          }
+        } else {
+          console.log(
+            `📝 Using saved question_text from test submission: "${questionText}"`
+          );
+        }
+
+        // Fallback text for malformed keys or missing mapping
+        if (!questionText) {
+          console.log(`⚠️ No question text found for ${recording.part}, using fallback`);
+          if (partNumber === 1) questionText = "Part 1 question";
+          else if (partNumber === 2) questionText = "Part 2 question";
+          else if (partNumber === 3) questionText = "Part 3 question";
+          else questionText = "Question";
+        }
+
+        const audioKey = recording.part;
+        const audioBlob = audioBlobs?.[audioKey];
+        
+        // Convert audio to base64 (best-effort). If unavailable, we still keep audio_url.
+        let audioBase64: string | undefined = undefined;
+        let hasAudioData = false;
+        if (recording.audio_url && recording.audio_url.startsWith("https://")) {
+          console.log(`📥 Fetching audio from R2 URL for ${audioKey}: ${recording.audio_url}`);
+          const fetchedBase64 = await fetchAudioAsBase64(recording.audio_url);
+          if (fetchedBase64) {
+            audioBase64 = fetchedBase64;
+            hasAudioData = true;
+            console.log(`✅ Fetched and converted audio to base64 for ${audioKey}`);
+          } else {
+            console.log(`ℹ️ Browser fetch failed for ${audioKey} - edge function will fetch server-side from audio_url`);
+          }
+        } else if (audioBlob) {
+          audioBase64 = await blobToBase64(audioBlob);
+          hasAudioData = true;
+          console.log(`✅ Converted audio blob to base64 for ${audioKey}`);
+        } else {
+          console.warn(`⚠️ No audio available for ${audioKey} (no URL or blob)`);
+        }
+
+        // Always return a well-formed QuestionAnalysis, even if blob is missing or key malformed.
+        // This prevents "Part NaN / Question NaN" issues.
+        if (!match || !partNumber || isNaN(partNumber)) {
+          console.warn("Invalid recording.part key format for speaking result:", {
+            part: recording.part,
+          });
+          return {
+            part: "Part 1",
+            partNumber: 1,
+            questionIndex: 0,
+            questionText,
+            transcription: "",
+            audio_url: recording.audio_url,
+            audio_base64: audioBase64,
+            hasAudioData,
+            partNum: 1,
+            questionTranscription: questionText,
+            feedback: "",
+          };
+        }
+
+        return {
+          part: `Part ${partNumber}`,
+          partNumber,
+          questionIndex: isNaN(questionIndex) ? 0 : questionIndex,
+          questionText,
+          transcription: "",
+          audio_url: recording.audio_url,
+          audio_base64: audioBase64,
+          hasAudioData,
+          partNum: partNumber,
+          questionTranscription: questionText,
+          feedback: "",
+        };
+      }));
+
+      const baseAnalyses = recordingsWithDetails;
+
+      // Filter out any obviously invalid entries before calling AI, to avoid NaN parts
+      const sanitizedAnalyses = baseAnalyses.filter((a) => {
+        if (!a) return false;
+        if (!a.partNumber || isNaN(a.partNumber)) return false;
+        if (typeof a.questionIndex !== "number" || isNaN(a.questionIndex)) return false;
+        if (!a.audio_url && !a.hasAudioData) {
+          console.warn(`⚠️ Skipping recording without any audio data: ${a.part} Q${a.questionIndex}`);
+          return false;
+        }
+        return true;
+      });
+
+      if (!sanitizedAnalyses.length) {
+        throw new Error("No valid recordings available for AI analysis");
+      }
+
+      console.log(`📊 Sending ${sanitizedAnalyses.length} recordings to enhanced-speech-analysis:`,
+        sanitizedAnalyses.map(a => ({
+          part: a.part,
+          hasAudioData: a.hasAudioData,
+          hasAudioBase64: !!a.audio_base64,
+          audioBase64Type: typeof a.audio_base64,
+          audioBase64Length: a.audio_base64?.length || 0,
+          hasAudioUrl: !!a.audio_url
+        }))
+      );
+
+      // IMPORTANT:
+      // Supabase Edge Function "enhanced-speech-analysis" (supabase/functions/enhanced-speech-analysis/index.ts)
+      // expects lightweight metadata (no mandatory audio_base64) and returns:
+      // - success: boolean
+      // - analysis: string (overall analysis text) OR structured fields
+      // - overallBandScore?: number
+      // - criteria?: { fluency, lexical, grammar, pronunciation }
+      // - path_to_higher_score?: string[]
+      // - individualAnalyses: per-question feedback array
+      //
+      // Some older/local implementations required audio_base64 and would break when R2 fetch failed.
+      // To keep behaviour consistent and robust (especially when R2 URLs intermittently fail),
+      // we:
+      // 1) Send sanitizedAnalyses (metadata + any available audio_base64) but do NOT depend on audio_base64.
+      // 2) Tolerate partial audio failures (net::ERR_CONNECTION_RESET etc.).
+      // 3) Parse both the new structured response and the legacy text-only response.
+      const { data: result, error } = await supabase.functions.invoke(
+        "enhanced-speech-analysis",
+        {
+          body: {
+            allRecordings: sanitizedAnalyses,
+            testData: incomingTestData,
+            analysisType: "comprehensive",
+          },
+        }
+      );
+
+      if (error) {
+        console.error("❌ enhanced-speech-analysis error:", error);
+        throw error;
+      }
+
+      if (!result) {
+        console.warn("⚠️ No response from enhanced-speech-analysis");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("📊 Full result from enhanced-speech-analysis:", {
+        hasSuccessFlag: typeof result?.success === "boolean",
+        hasIndividualAnalyses: Array.isArray(result?.individualAnalyses),
+        individualAnalysesCount: result?.individualAnalyses?.length || 0,
+        hasAnalysis: !!result?.analysis,
+        hasOverallBandScore: !!result?.overallBandScore,
+        hasCriteria: !!result?.criteria,
+        resultKeys: Object.keys(result || {})
+      });
+
+      // 1) Per-question analyses
+      // 1) Per-question analyses (support new structured schema)
+      const rawIndividualAnalyses: any[] = Array.isArray(result?.individualAnalyses)
+        ? result.individualAnalyses
+        : Array.isArray((result as any)?.per_question)
+        ? (result as any).per_question
+        : [];
+
+      if (rawIndividualAnalyses.length) {
+        console.log("📝 Processing individual analyses:", result.individualAnalyses.map((a: any) => ({
+          part: a.part,
+          partNumber: a.partNumber,
+          questionIndex: a.questionIndex,
+          hasFeedback: !!a.feedback,
+          feedbackLength: a.feedback?.length || 0,
+          hasTranscription: !!a.transcription
+        })));
+
+        const normalized: QuestionAnalysis[] = rawIndividualAnalyses.map((a: any, idx: number) => {
+          const safePartNumber =
+            typeof a.partNumber === "number"
+              ? a.partNumber
+              : typeof a.partNum === "number"
+              ? a.partNum
+              : parseInt(String(a.part || ""), 10) || sanitizedAnalyses[idx]?.partNumber || 1;
+
+          const safeQuestionIndex =
+            typeof a.questionIndex === "number" && !isNaN(a.questionIndex)
+              ? a.questionIndex
+              : typeof a.qIndex === "number"
+              ? a.qIndex
+              : sanitizedAnalyses[idx]?.questionIndex || 0;
+
+          // Try multiple feedback field names and provide meaningful fallback
+          let feedback = a.feedback || 
+                          a.overall_feedback || 
+                          (Array.isArray(a.feedback_bullets) ? a.feedback_bullets.join('\n') : '') ||
+                          "";
+          
+          // If still empty, create feedback from available metrics
+          if (!feedback && a.metrics) {
+            const metrics = a.metrics;
+            const scores = [];
+            if (metrics.pronunciation_score) scores.push(`Pronunciation: ${metrics.pronunciation_score}/9`);
+            if (metrics.fluency_score) scores.push(`Fluency: ${metrics.fluency_score}/9`);
+            if (metrics.grammar_score) scores.push(`Grammar: ${metrics.grammar_score}/9`);
+            if (metrics.vocabulary_score) scores.push(`Vocabulary: ${metrics.vocabulary_score}/9`);
+            
+            if (scores.length > 0) {
+              feedback = `Performance scores: ${scores.join(', ')}. `;
+              if (metrics.minimal) {
+                feedback += "Your response was quite brief. Try to expand your answers with more detail and examples.";
+              } else if (metrics.word_count) {
+                feedback += `You provided ${metrics.word_count} words. Continue practicing to develop longer, more detailed responses.`;
+              }
+            }
+          }
+          
+          // Final fallback if everything is empty
+          if (!feedback) {
+            if (a.transcription && a.transcription.trim() && !a.transcription.toLowerCase().includes('inaudible') && !a.transcription.toLowerCase().includes('no audio')) {
+              feedback = `Your response: "${a.transcription.substring(0, 100)}${a.transcription.length > 100 ? '...' : ''}". Continue practicing to improve your speaking skills.`;
+            } else {
+              feedback = "Inaudible: No audio was recorded or the audio could not be understood. Please ensure your microphone is working properly and try recording again with clear speech.";
+            }
+          }
+
+          return {
+            part: `Part ${safePartNumber}`,
+            partNumber: safePartNumber,
+            questionIndex: safeQuestionIndex,
+            questionText:
+              sanitizedAnalyses[idx]?.questionText ||
+              a.questionText ||
+              a.question ||
+              a.questionTranscription ||
+              "Question",
+            transcription: a.transcription || "",
+            audio_url: a.audio_url || sanitizedAnalyses[idx]?.audio_url || "",
+            feedback: feedback,
+          };
+        });
+
+        console.log("✅ Normalized analyses:", normalized.map(a => ({
+          part: a.part,
+          questionIndex: a.questionIndex,
+          feedbackLength: a.feedback?.length || 0
+        })));
+
+        setQuestionAnalyses(normalized);
+
+        // Map AI suggestions by part/questionIndex
+        const suggestions: Record<string, AISuggestion> = {};
+        for (const a of normalized) {
+          const src = rawIndividualAnalyses.find(
+            (orig: any) =>
+              (orig.partNumber === a.partNumber ||
+                orig.partNum === a.partNumber ||
+                String(orig.part || "").includes(String(a.partNumber))) &&
+              (orig.questionIndex === a.questionIndex ||
+                orig.qIndex === a.questionIndex)
+          );
+          if (src?.original_spans && src?.suggested_spans) {
+            const key = `${a.part}_${a.questionIndex}`;
+            suggestions[key] = {
+              original_spans: src.original_spans,
+              suggested_spans: src.suggested_spans,
+            };
+          }
+        }
+        setAiSuggestions(suggestions);
+      } else {
+        console.warn("⚠️ No individual analyses received from enhanced-speech-analysis");
+      }
+
+      // 2) Overall analysis (band scores etc.)
+      // Helper to extract JSON from markdown code blocks
+      const extractJsonFromMarkdown = (text: string): any | null => {
+        try {
+          // First, try to find JSON wrapped in ```json ... ``` or ``` ... ```
+          const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          if (codeBlockMatch && codeBlockMatch[1]) {
+            const jsonText = codeBlockMatch[1].trim();
+            // Try to find the JSON object within the code block
+            const jsonObjMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (jsonObjMatch) {
+              return JSON.parse(jsonObjMatch[0]);
+            }
+            // If no object found, try parsing the whole code block content
+            return JSON.parse(jsonText);
+          }
+          
+          // If no code blocks, try to find JSON object directly
+          const directJsonMatch = text.match(/\{[\s\S]*\}/);
+          if (directJsonMatch && directJsonMatch[0]) {
+            return JSON.parse(directJsonMatch[0]);
+          }
+          
+          return null;
+        } catch (e) {
+          console.warn("⚠️ Failed to extract JSON from markdown:", e);
+          return null;
+        }
+      };
+
+      if (typeof result?.analysis === "string" && result.analysis.trim().length > 0) {
+        console.log("📊 Parsing overall analysis text:", result.analysis.substring(0, 200) + "...");
+        
+        // First, try to extract JSON from markdown code blocks
+        const extractedJson = extractJsonFromMarkdown(result.analysis);
+        console.log("🔍 Extracted JSON:", extractedJson ? Object.keys(extractedJson) : "null");
+        
+        // Check if JSON has 'overall' property or if it's at root level
+        if (extractedJson) {
+          const overall = extractedJson.overall || extractedJson;
+          const hasOverallProperty = !!extractedJson.overall;
+          
+          if (overall && (overall.overallBandScore !== undefined || overall.criteria)) {
+            console.log("✅ Found JSON in markdown code blocks, using structured format", {
+              hasOverallProperty,
+              overallBandScore: overall.overallBandScore,
+              hasCriteria: !!overall.criteria,
+              criteriaKeys: overall.criteria ? Object.keys(overall.criteria) : [],
+              extractedJsonKeys: Object.keys(extractedJson)
+            });
+            const criteria = overall.criteria || {};
+            
+            const overallBand = typeof overall.overallBandScore === "number" ? overall.overallBandScore : 5;
+            const pathToHigherScore = Array.isArray(overall.path_to_higher_score) ? overall.path_to_higher_score : [];
+            
+            // Extract score and feedback - handle both new format (object with score/feedback) and legacy format (just number)
+            const getCriterionData = (key: string, defaultScore: number, defaultFeedback: string) => {
+              const criterion = criteria[key];
+              if (criterion && typeof criterion === "object" && criterion.score !== undefined) {
+                // New format: { score: number, feedback: string }
+                return {
+                  score: roundToIELTSBandScore(typeof criterion.score === "number" ? criterion.score : defaultScore),
+                  feedback: criterion.feedback || criterion.feedbackText || defaultFeedback
+                };
+              } else if (typeof criterion === "number") {
+                // Legacy format: just a number
+                return {
+                  score: roundToIELTSBandScore(criterion),
+                  feedback: criteria[`${key}Feedback`] || 
+                           criteria[`${key}_feedback`] || 
+                           criteria[`${key}FeedbackText`] ||
+                           criteria[`${key}_feedback_text`] ||
+                           defaultFeedback
+                };
+              } else {
+                // Fallback
+                return {
+                  score: roundToIELTSBandScore(defaultScore),
+                  feedback: defaultFeedback
+                };
+              }
+            };
+            
+            const fluencyData = getCriterionData("fluency", 5, "Fluency feedback not provided.");
+            const lexicalData = getCriterionData("lexical", 5, "Lexical feedback not provided.");
+            const grammarData = getCriterionData("grammar", 5, "Grammar feedback not provided.");
+            const pronunciationData = getCriterionData("pronunciation", 5, "Pronunciation feedback not provided.");
+            
+            setOverallFeedback({
+              overall_band_score: roundToIELTSBandScore(overallBand),
+              fluency_coherence: fluencyData,
+              lexical_resource: lexicalData,
+              grammatical_range: grammarData,
+              pronunciation: pronunciationData,
+              path_to_higher_score: pathToHigherScore.length > 0 ? pathToHigherScore : [
+                "Speak for the full time and fully develop each answer.",
+                "Use a wider range of topic-specific vocabulary.",
+                "Reduce hesitations and self-corrections.",
+              ],
+              stress_patterns_to_improve: overall.stress_patterns_to_improve || [],
+              intonation_recommendations: overall.intonation_recommendations || [],
+              phonetic_focus_areas: overall.phonetic_focus_areas || [],
+              word_stress_issues: overall.word_stress_issues || [],
+            });
+            console.log("✅ Set overall feedback with band score:", roundToIELTSBandScore(overallBand));
+          }
+        } else {
+          // If JSON extraction failed or didn't have the right structure
+          if (extractedJson) {
+            console.warn("⚠️ Extracted JSON but missing required fields, falling back to text parsing");
+          } else {
+            console.log("ℹ️ No JSON found in markdown, using text parsing");
+          }
+          
+          // Fall back to text parsing
+          const overallData = parseOverallAnalysis(result.analysis as string);
+          console.log("✅ Parsed overall feedback:", {
+            overallBand: overallData.overall_band_score,
+            hasFluencyFeedback: !!overallData.fluency_coherence.feedback,
+            hasLexicalFeedback: !!overallData.lexical_resource.feedback
+          });
+          setOverallFeedback(overallData);
+        }
+      } else if (result?.overallBandScore || result?.criteria || (result as any)?.overall) {
+        // 2) Overall analysis: support structured responses from the new Edge Function
+        console.log("📊 Using structured overall response format");
+
+        const overall = (result as any).overall || result;
+        const criteria = overall.criteria || result.criteria || {};
+
+        const overallBandRaw =
+          typeof overall.overallBandScore === "number"
+            ? overall.overallBandScore
+            : typeof result.overallBandScore === "number"
+            ? result.overallBandScore
+            : undefined;
+
+        const overallBand =
+          typeof overallBandRaw === "number" ? overallBandRaw : 5;
+
+        const pathToHigherScore =
+          (overall.path_to_higher_score ||
+            result.path_to_higher_score ||
+            []) as string[];
+
+        // Extract score and feedback - handle both new format (object with score/feedback) and legacy format (just number)
+        const getCriterionData = (key: string, defaultScore: number, defaultFeedback: string) => {
+          const criterion = criteria[key];
+          if (criterion && typeof criterion === "object" && criterion.score !== undefined) {
+            // New format: { score: number, feedback: string }
+            return {
+              score: roundToIELTSBandScore(typeof criterion.score === "number" ? criterion.score : defaultScore),
+              feedback: criterion.feedback || criterion.feedbackText || defaultFeedback
+            };
+          } else if (typeof criterion === "number") {
+            // Legacy format: just a number
+            return {
+              score: roundToIELTSBandScore(criterion),
+              feedback: criteria[`${key}Feedback`] || 
+                       criteria[`${key}_feedback`] || 
+                       criteria[`${key}FeedbackText`] ||
+                       criteria[`${key}_feedback_text`] ||
+                       defaultFeedback
+            };
+          } else {
+            // Fallback
+            return {
+              score: roundToIELTSBandScore(defaultScore),
+              feedback: defaultFeedback
+            };
+          }
+        };
+
+        const fluencyData = getCriterionData("fluency", 5, "Fluency feedback not provided.");
+        const lexicalData = getCriterionData("lexical", 5, "Lexical feedback not provided.");
+        const grammarData = getCriterionData("grammar", 5, "Grammar feedback not provided.");
+        const pronunciationData = getCriterionData("pronunciation", 5, "Pronunciation feedback not provided.");
+
+        setOverallFeedback({
+          overall_band_score: roundToIELTSBandScore(overallBand),
+          fluency_coherence: fluencyData,
+          lexical_resource: lexicalData,
+          grammatical_range: grammarData,
+          pronunciation: pronunciationData,
+          path_to_higher_score:
+            Array.isArray(pathToHigherScore) && pathToHigherScore.length > 0
+              ? pathToHigherScore
+              : [
+                  "Speak for the full time and fully develop each answer.",
+                  "Use a wider range of topic-specific vocabulary.",
+                  "Reduce hesitations and self-corrections.",
+                ],
+          // The current structured Edge Function can be extended to return these;
+          // keep arrays present so UI sections render cleanly if provided.
+          stress_patterns_to_improve:
+            overall.stress_patterns_to_improve || [],
+          intonation_recommendations:
+            overall.intonation_recommendations || [],
+          phonetic_focus_areas: overall.phonetic_focus_areas || [],
+          word_stress_issues: overall.word_stress_issues || [],
+        });
+      } else {
+        console.warn("⚠️ No overall analysis received from enhanced-speech-analysis");
+        console.warn("⚠️ Result structure:", JSON.stringify(result, null, 2).substring(0, 500));
+      }
+    } catch (err) {
+      console.error("Error analyzing test results:", err);
+      toast({
+        title: "Analysis Error",
+        description: "Failed to analyze your test results. Please try again.",
+        variant: "destructive",
+      });
+
+      // Safe fallback so UI still renders
+      setOverallFeedback({
+        overall_band_score: 1.0,
+        fluency_coherence: {
+          score: 1,
+          feedback:
+            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
+        },
+        lexical_resource: {
+          score: 1,
+          feedback:
+            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
+        },
+        grammatical_range: {
+          score: 1,
+          feedback:
+            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
+        },
+        pronunciation: {
+          score: 1,
+          feedback:
+            "Unable to assess due to technical issues. Please retake the test to receive proper evaluation.",
+        },
+        path_to_higher_score: [
+          "Technical error occurred during analysis. Please retake the test for accurate assessment.",
+          "Ensure you speak clearly and provide substantial responses to each question.",
+          "Practice speaking for the full allocated time with relevant content.",
+        ],
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const playAudio = async (audioUrl: string, questionId: string) => {
     if (playingAudio === questionId) {
       setPlayingAudio(null);
+      return;
+    }
+
+    if (!audioUrl || audioUrl.startsWith('https://mock-r2-fallback.local') || audioUrl.startsWith('https://placeholder-r2')) {
+      toast({
+        title: "Audio Not Available",
+        description: "The audio recording is not available or could not be loaded.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -358,7 +938,7 @@ const IELTSSpeakingResults = () => {
         setPlayingAudio(null);
         toast({
           title: "Audio Error",
-          description: "Failed to play audio recording",
+          description: "Failed to play audio recording. The audio may be inaudible or corrupted.",
           variant: "destructive",
         });
       };
@@ -367,6 +947,11 @@ const IELTSSpeakingResults = () => {
     } catch (error) {
       console.error("Error playing audio:", error);
       setPlayingAudio(null);
+      toast({
+        title: "Audio Playback Failed",
+        description: "Could not play the audio recording. It may be inaudible or unavailable.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -672,6 +1257,7 @@ const IELTSSpeakingResults = () => {
               </h2>
               {questionAnalyses
                 .filter((a) => a.part === "Part 1")
+                .sort((a, b) => a.questionIndex - b.questionIndex)
                 .map((analysis, index) => (
                   <div
                     key={`p1-${index}`}
@@ -693,41 +1279,60 @@ const IELTSSpeakingResults = () => {
                         {analysis.questionText || "Question text not available"}
                       </div>
                     </div>
-                    <div className="bg-slate-50 rounded-xl p-3 sm:p-4">
+                    <div className="bg-slate-50 rounded-xl p-3 sm:p-4 space-y-3">
                       <h4 className="font-medium mb-2 flex items-center gap-2 text-xs text-slate-800">
                         <Volume2 className="w-3 h-3" />
                         Your recorded answer
                       </h4>
+                      {analysis.transcription && analysis.transcription.trim() ? (
+                        <div className="bg-white rounded-lg p-3 border border-slate-200">
+                          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                            "{analysis.transcription}"
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                          <p className="text-xs sm:text-sm text-yellow-800 leading-relaxed italic">
+                            <span className="font-medium">Inaudible:</span> No audio was recorded or the audio could not be understood. Please ensure your microphone is working and try recording again.
+                          </p>
+                        </div>
+                      )}
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <Button
-                          onClick={() =>
-                            playAudio(
-                              analysis.audio_url,
+                        {analysis.audio_url ? (
+                          <Button
+                            onClick={() =>
+                              playAudio(
+                                analysis.audio_url,
+                                `${analysis.part}_${analysis.questionIndex}`
+                              )
+                            }
+                            variant={
+                              playingAudio ===
                               `${analysis.part}_${analysis.questionIndex}`
-                            )
-                          }
-                          variant={
-                            playingAudio ===
-                            `${analysis.part}_${analysis.questionIndex}`
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs"
-                        >
-                          {playingAudio ===
-                          `${analysis.part}_${analysis.questionIndex}` ? (
-                            <>
-                              <Pause className="w-4 h-4" />
-                              Stop Audio
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4" />
-                              Play Your Answer
-                            </>
-                          )}
-                        </Button>
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs"
+                          >
+                            {playingAudio ===
+                            `${analysis.part}_${analysis.questionIndex}` ? (
+                              <>
+                                <Pause className="w-4 h-4" />
+                                Stop Audio
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4" />
+                                Play Your Answer
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <div className="text-xs text-slate-500 italic">
+                            Audio recording not available
+                          </div>
+                        )}
                       </div>
                     </div>
                     {(() => {
@@ -817,43 +1422,99 @@ const IELTSSpeakingResults = () => {
                         {analysis.questionText || "Question text not available"}
                       </div>
                     </div>
-                    <div className="bg-slate-50 rounded-xl p-3 sm:p-4">
+                    <div className="bg-slate-50 rounded-xl p-3 sm:p-4 space-y-3">
                       <h4 className="font-medium mb-2 flex items-center gap-2 text-xs text-slate-800">
                         <Volume2 className="w-3 h-3" />
                         Your recorded answer
                       </h4>
+                      {analysis.transcription && analysis.transcription.trim() ? (
+                        <div className="bg-white rounded-lg p-3 border border-slate-200">
+                          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                            "{analysis.transcription}"
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                          <p className="text-xs sm:text-sm text-yellow-800 leading-relaxed italic">
+                            <span className="font-medium">Inaudible:</span> No audio was recorded or the audio could not be understood. Please ensure your microphone is working and try recording again.
+                          </p>
+                        </div>
+                      )}
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <Button
-                          onClick={() =>
-                            playAudio(
-                              analysis.audio_url,
+                        {analysis.audio_url ? (
+                          <Button
+                            onClick={() =>
+                              playAudio(
+                                analysis.audio_url,
+                                `${analysis.part}_${analysis.questionIndex}`
+                              )
+                            }
+                            variant={
+                              playingAudio ===
                               `${analysis.part}_${analysis.questionIndex}`
-                            )
-                          }
-                          variant={
-                            playingAudio ===
-                            `${analysis.part}_${analysis.questionIndex}`
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs"
-                        >
-                          {playingAudio ===
-                          `${analysis.part}_${analysis.questionIndex}` ? (
-                            <>
-                              <Pause className="w-4 h-4" />
-                              Stop Audio
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4" />
-                              Play Your Answer
-                            </>
-                          )}
-                        </Button>
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs"
+                          >
+                            {playingAudio ===
+                            `${analysis.part}_${analysis.questionIndex}` ? (
+                              <>
+                                <Pause className="w-4 h-4" />
+                                Stop Audio
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4" />
+                                Play Your Answer
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <div className="text-xs text-slate-500 italic">
+                            Audio recording not available
+                          </div>
+                        )}
                       </div>
                     </div>
+                    {(() => {
+                      const key = `${analysis.part}_${analysis.questionIndex}`;
+                      const suggestion = aiSuggestions[key];
+                      if (
+                        suggestion &&
+                        suggestion.original_spans &&
+                        suggestion.suggested_spans
+                      ) {
+                        return (
+                          <div className="bg-white rounded-xl p-3 mt-4 border border-slate-200/80">
+                            <h4 className="font-medium mb-2 flex items-center gap-2 text-xs text-slate-900">
+                              <TrendingUp className="w-3 h-3 text-blue-600" />
+                              Improved version of your answer
+                            </h4>
+                            <SuggestionVisualizer
+                              originalSpans={suggestion.original_spans}
+                              suggestedSpans={suggestion.suggested_spans}
+                              dimNeutral={false}
+                              hideOriginal={false}
+                            />
+                            <div className="mt-3 flex justify-end">
+                              <ElevenLabsVoiceOptimized
+                                text={
+                                  suggestion.suggested_spans
+                                    ?.map((span) => span?.text || "")
+                                    .filter(Boolean)
+                                    .join("") || ""
+                                }
+                                className="text-xs"
+                                questionId={`suggestion_${key}`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     <div>
                       <h4 className="font-medium text-xs sm:text-sm text-blue-900 mb-2 flex items-center gap-2">
                         <Sparkles className="w-3 h-3 text-blue-600" />
@@ -883,6 +1544,7 @@ const IELTSSpeakingResults = () => {
               </h2>
               {questionAnalyses
                 .filter((a) => a.part === "Part 3")
+                .sort((a, b) => a.questionIndex - b.questionIndex)
                 .map((analysis, index) => (
                   <div
                     key={`p3-${index}`}
@@ -904,43 +1566,99 @@ const IELTSSpeakingResults = () => {
                         {analysis.questionText || "Question text not available"}
                       </div>
                     </div>
-                    <div className="bg-slate-50 rounded-xl p-3 sm:p-4">
+                    <div className="bg-slate-50 rounded-xl p-3 sm:p-4 space-y-3">
                       <h4 className="font-medium mb-2 flex items-center gap-2 text-xs text-slate-800">
                         <Volume2 className="w-3 h-3" />
                         Your recorded answer
                       </h4>
+                      {analysis.transcription && analysis.transcription.trim() ? (
+                        <div className="bg-white rounded-lg p-3 border border-slate-200">
+                          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                            "{analysis.transcription}"
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                          <p className="text-xs sm:text-sm text-yellow-800 leading-relaxed italic">
+                            <span className="font-medium">Inaudible:</span> No audio was recorded or the audio could not be understood. Please ensure your microphone is working and try recording again.
+                          </p>
+                        </div>
+                      )}
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <Button
-                          onClick={() =>
-                            playAudio(
-                              analysis.audio_url,
+                        {analysis.audio_url ? (
+                          <Button
+                            onClick={() =>
+                              playAudio(
+                                analysis.audio_url,
+                                `${analysis.part}_${analysis.questionIndex}`
+                              )
+                            }
+                            variant={
+                              playingAudio ===
                               `${analysis.part}_${analysis.questionIndex}`
-                            )
-                          }
-                          variant={
-                            playingAudio ===
-                            `${analysis.part}_${analysis.questionIndex}`
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs"
-                        >
-                          {playingAudio ===
-                          `${analysis.part}_${analysis.questionIndex}` ? (
-                            <>
-                              <Pause className="w-4 h-4" />
-                              Stop Audio
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4" />
-                              Play Your Answer
-                            </>
-                          )}
-                        </Button>
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs"
+                          >
+                            {playingAudio ===
+                            `${analysis.part}_${analysis.questionIndex}` ? (
+                              <>
+                                <Pause className="w-4 h-4" />
+                                Stop Audio
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4" />
+                                Play Your Answer
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <div className="text-xs text-slate-500 italic">
+                            Audio recording not available
+                          </div>
+                        )}
                       </div>
                     </div>
+                    {(() => {
+                      const key = `${analysis.part}_${analysis.questionIndex}`;
+                      const suggestion = aiSuggestions[key];
+                      if (
+                        suggestion &&
+                        suggestion.original_spans &&
+                        suggestion.suggested_spans
+                      ) {
+                        return (
+                          <div className="bg-white rounded-xl p-3 mt-4 border border-slate-200/80">
+                            <h4 className="font-medium mb-2 flex items-center gap-2 text-xs text-slate-900">
+                              <TrendingUp className="w-3 h-3 text-blue-600" />
+                              Improved version of your answer
+                            </h4>
+                            <SuggestionVisualizer
+                              originalSpans={suggestion.original_spans}
+                              suggestedSpans={suggestion.suggested_spans}
+                              dimNeutral={false}
+                              hideOriginal={false}
+                            />
+                            <div className="mt-3 flex justify-end">
+                              <ElevenLabsVoiceOptimized
+                                text={
+                                  suggestion.suggested_spans
+                                    ?.map((span) => span?.text || "")
+                                    .filter(Boolean)
+                                    .join("") || ""
+                                }
+                                className="text-xs"
+                                questionId={`suggestion_${key}`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     <div>
                       <h4 className="font-medium text-xs sm:text-sm text-blue-900 mb-2 flex items-center gap-2">
                         <Sparkles className="w-3 h-3 text-blue-600" />

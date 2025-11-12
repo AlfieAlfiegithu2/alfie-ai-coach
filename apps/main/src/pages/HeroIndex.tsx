@@ -948,6 +948,19 @@ const HeroIndex = () => {
               </Link>
             </div>
           </div>
+
+          {/* Hero page specific privacy & no-liability notice */}
+          <div className="mt-4 pt-4 border-t border-black/5 text-[9px] sm:text-[10px] text-black/60 space-y-1 font-nunito">
+            <p>
+              We securely store your practice data and audio recordings long-term so you can review your history, track progress, and receive better AI feedback over time.
+            </p>
+            <p>
+              All feedback and scores are AI-generated for learning purposes only. This is not an official test, does not guarantee future exam results, and does not constitute legal, immigration, or professional advice.
+            </p>
+            <p className="font-semibold text-black/70">
+              By using this site you accept that you are responsible for how you use these results; the creator assumes no liability for any decisions or outcomes based on this tool.
+            </p>
+          </div>
         </div>
       </footer>
 

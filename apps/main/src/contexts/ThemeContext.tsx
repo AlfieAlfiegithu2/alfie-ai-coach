@@ -27,8 +27,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
             .eq('user_id', user.id)
             .maybeSingle();
           
-          if (data?.dashboard_theme) {
-            const userTheme = data.dashboard_theme as ThemeName;
+          if (data && (data as any).dashboard_theme) {
+            const userTheme = (data as any).dashboard_theme as ThemeName;
             setThemeNameState(userTheme);
             setThemeState(getTheme(userTheme));
             saveTheme(userTheme);
@@ -48,9 +48,30 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: themeName }));
   }, [themeName]);
 
-  const setTheme = (newTheme: ThemeName) => {
+  const setTheme = async (newTheme: ThemeName) => {
     setThemeNameState(newTheme);
     saveTheme(newTheme);
+    
+    // Save to Supabase if user is logged in
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('user_preferences')
+          .upsert({
+            user_id: user.id,
+            dashboard_theme: newTheme
+          }, {
+            onConflict: 'user_id'
+          });
+        
+        if (error) {
+          console.warn('Error saving theme to Supabase:', error);
+        }
+      } catch (error) {
+        console.warn('Error saving theme to Supabase:', error);
+      }
+    }
+    
     // Trigger a custom event so components can react to theme changes
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: newTheme }));
   };

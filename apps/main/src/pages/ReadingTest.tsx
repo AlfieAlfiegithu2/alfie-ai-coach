@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import StudentLayout from '@/components/StudentLayout';
 import TestResults from '@/components/TestResults';
 import SpotlightCard from '@/components/SpotlightCard';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface ReadingPassage {
   id: string;
@@ -44,6 +45,7 @@ const ReadingTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { testId } = useParams();
+  const themeStyles = useThemeStyles();
   const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes
   const [currentPart, setCurrentPart] = useState(1);
   const [testParts, setTestParts] = useState<{[key: number]: TestPart}>({});
@@ -381,8 +383,10 @@ const ReadingTest = () => {
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
              style={{
-               backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-               backgroundColor: '#ffffff'
+               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                 ? 'none'
+                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+               backgroundColor: themeStyles.backgroundImageColor
              }} />
         <div className="relative z-10">
           <StudentLayout title="Available Reading Tests">

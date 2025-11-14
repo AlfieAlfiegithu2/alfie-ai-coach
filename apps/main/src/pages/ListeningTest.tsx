@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import StudentLayout from '@/components/StudentLayout';
 import SpotlightCard from '@/components/SpotlightCard';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface ListeningSection {
   id: string;
@@ -38,6 +39,7 @@ const ListeningTest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { testId } = useParams();
+  const themeStyles = useThemeStyles();
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes
   const [currentSection, setCurrentSection] = useState<ListeningSection | null>(null);
   const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
@@ -506,8 +508,10 @@ const ListeningTest = () => {
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
              style={{
-               backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-               backgroundColor: '#ffffff'
+               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                 ? 'none'
+                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+               backgroundColor: themeStyles.backgroundImageColor
              }} />
         <div className="relative z-10">
           <StudentLayout title="Available Listening Tests">

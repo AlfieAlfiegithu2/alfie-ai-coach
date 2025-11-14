@@ -91,9 +91,9 @@ export const themes: Record<ThemeName, Theme> = {
     label: 'Dark',
     description: 'Dark mode theme',
     colors: {
-      background: '#1e293b',
+      background: '#0f172a',
       backgroundGradient: 'linear-gradient(to bottom, #1e293b 0%, #0f172a 100%)',
-      backgroundOverlay: 'rgba(30, 41, 59, 0.8)',
+      backgroundOverlay: 'rgba(15, 23, 42, 0.9)',
       backgroundImageColor: '#0f172a',
       border: '#334155',
       textPrimary: '#f1f5f9',

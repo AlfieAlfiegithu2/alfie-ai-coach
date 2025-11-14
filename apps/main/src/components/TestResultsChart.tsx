@@ -103,33 +103,60 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
   const generateMockData = () => {
     if (!user) return;
 
-    // Generate 8 tests with gradually increasing scores
-    // Starting from around 50% (5.0 IELTS) to around 85% (8.0 IELTS)
+    // Generate 8 tests with realistic variation
+    // Overall trend: gradually increasing but with some same scores and fluctuations
     const basePercentage = 50;
-    const increment = (85 - 50) / 7; // Divide the range across 7 increments (8 tests total)
+    const targetPercentage = 85;
+    const trend = (targetPercentage - basePercentage) / 7; // Overall trend
     
     const mockResults: TestResult[] = [];
     const now = new Date();
     
+    // Generate random dates over the last 30 days (not sequential)
+    const dates: Date[] = [];
     for (let i = 0; i < 8; i++) {
-      const percentage = basePercentage + (increment * i);
+      const randomDaysAgo = Math.floor(Math.random() * 30); // Random day within last 30 days
       const testDate = new Date(now);
-      testDate.setDate(testDate.getDate() - (7 - i)); // Spread over last 7 days
+      testDate.setDate(testDate.getDate() - randomDaysAgo);
+      dates.push(testDate);
+    }
+    // Sort dates chronologically
+    dates.sort((a, b) => a.getTime() - b.getTime());
+    
+    // Generate scores with realistic variation
+    const scores: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      const trendValue = basePercentage + (trend * i);
+      // Add random variation: -5% to +5% around the trend
+      const variation = (Math.random() * 10) - 5;
+      let percentage = trendValue + variation;
       
-      // Determine test type based on selected skill
-      let testType = 'IELTS';
-      if (selectedSkill !== 'overall') {
-        if (selectedSkill === 'reading') testType = 'IELTS Reading';
-        else if (selectedSkill === 'listening') testType = 'IELTS Listening';
-        else if (selectedSkill === 'writing') testType = 'writing';
-        else if (selectedSkill === 'speaking') testType = 'speaking';
+      // Sometimes use the same score as previous (30% chance after first test)
+      if (i > 0 && Math.random() < 0.3) {
+        percentage = scores[i - 1];
       }
       
+      // Ensure score stays within reasonable bounds
+      percentage = Math.max(45, Math.min(90, percentage));
+      scores.push(Math.round(percentage * 10) / 10);
+    }
+    
+    // Determine test type based on selected skill
+    let testType = 'IELTS';
+    if (selectedSkill !== 'overall') {
+      if (selectedSkill === 'reading') testType = 'IELTS Reading';
+      else if (selectedSkill === 'listening') testType = 'IELTS Listening';
+      else if (selectedSkill === 'writing') testType = 'writing';
+      else if (selectedSkill === 'speaking') testType = 'speaking';
+    }
+    
+    // Create mock results
+    for (let i = 0; i < 8; i++) {
       mockResults.push({
         id: `mock-${i}-${Date.now()}`,
-        score_percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal
+        score_percentage: scores[i],
         test_type: testType,
-        created_at: testDate.toISOString(),
+        created_at: dates[i].toISOString(),
         test_data: null
       });
     }
@@ -162,7 +189,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
   };
 
   const chartData = testResults.map((result, index) => ({
-    test: `Test ${index + 1}`,
+    test: format(new Date(result.created_at), 'MMM dd'),
     score: convertToIELTSScore(result.score_percentage || 0),
     date: format(new Date(result.created_at), 'MMM dd'),
     type: result.test_type

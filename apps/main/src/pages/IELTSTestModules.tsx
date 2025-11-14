@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 // IELTS Test Modules Component - Updated with consistent styling
 const IELTSTestModules = () => {
@@ -15,6 +16,7 @@ const IELTSTestModules = () => {
     testId: string;
   }>();
   const navigate = useNavigate();
+  const themeStyles = useThemeStyles();
   const [test, setTest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -98,13 +100,25 @@ const IELTSTestModules = () => {
   if (!test) {
     return <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" style={{
-        backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-        backgroundColor: '#f3f4f6'
+        backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+          ? 'none'
+          : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+        backgroundColor: themeStyles.backgroundImageColor
       }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <p className="text-lg text-white">Test not found</p>
-            <Button onClick={() => navigate('/ielts-portal')} className="mt-4 rounded-2xl bg-white text-black border-2 border-black hover:bg-black hover:text-white">
+            <p className="text-lg" style={{ color: themeStyles.textPrimary }}>Test not found</p>
+            <Button 
+              onClick={() => navigate('/ielts-portal')} 
+              className="mt-4 rounded-2xl border-2"
+              style={{
+                backgroundColor: themeStyles.buttonPrimary,
+                borderColor: themeStyles.buttonPrimary,
+                color: 'white'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+            >
               Back to IELTS Portal
             </Button>
           </div>
@@ -113,20 +127,29 @@ const IELTSTestModules = () => {
   }
   return <div className="min-h-screen relative">
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" style={{
-      backgroundImage: `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
-      backgroundColor: '#f3f4f6'
+      backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist'
+        ? 'none'
+        : `url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')`,
+      backgroundColor: themeStyles.backgroundImageColor
     }} />
       <div className="relative z-10">
         <StudentLayout title={test.test_name} showBackButton backPath="/ielts-portal">
       <div className="space-y-6 max-w-5xl mx-auto">
         <div className="flex items-center mb-2">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="text-text-secondary px-2 py-1 h-8">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)} 
+            className="px-2 py-1 h-8"
+            style={{ color: themeStyles.textSecondary }}
+            onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+            onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+          >
             Go Back
           </Button>
         </div>
         <div className="text-center">
           
-          <h1 className="text-3xl font-bold mb-3 text-foreground">{test.test_name}</h1>
+          <h1 className="text-3xl font-bold mb-3" style={{ color: themeStyles.textPrimary }}>{test.test_name}</h1>
           
         </div>
 
@@ -135,36 +158,58 @@ const IELTSTestModules = () => {
           <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
             {modules.map(module => {
                 const isAvailable = module.id === 'writing' || module.id === 'reading' || module.id === 'speaking';
-                return <Card key={module.id} className="rounded-2xl border-light-border shadow-soft hover:scale-105 transition-all duration-200" style={{
-                  background: 'var(--gradient-card)'
-                }}>
+                return <Card 
+                  key={module.id} 
+                  className="rounded-2xl shadow-soft hover:scale-105 transition-all duration-200" 
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    ...themeStyles.cardStyle
+                  }}
+                >
                   <CardHeader className="text-center pb-3">
-                    <CardTitle className="text-xl text-foreground">
+                    <CardTitle className="text-xl" style={{ color: themeStyles.textPrimary }}>
                       {module.name}
                     </CardTitle>
-                    <p className="text-sm text-warm-gray">{module.description}</p>
+                    <p className="text-sm" style={{ color: themeStyles.textSecondary }}>{module.description}</p>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-1 gap-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-warm-gray">Duration:</span>
-                        <span className="font-medium text-foreground">{module.duration}</span>
+                        <span style={{ color: themeStyles.textSecondary }}>Duration:</span>
+                        <span className="font-medium" style={{ color: themeStyles.textPrimary }}>{module.duration}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-warm-gray">Sections:</span>
-                        <span className="font-medium text-foreground">{module.sections}</span>
+                        <span style={{ color: themeStyles.textSecondary }}>Sections:</span>
+                        <span className="font-medium" style={{ color: themeStyles.textPrimary }}>{module.sections}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-warm-gray">Content:</span>
-                        <span className="font-medium text-foreground">{module.questions}</span>
+                        <span style={{ color: themeStyles.textSecondary }}>Content:</span>
+                        <span className="font-medium" style={{ color: themeStyles.textPrimary }}>{module.questions}</span>
                       </div>
                     </div>
 
-                    <Button onClick={() => handleModuleSelect(module.id)} className="w-full rounded-2xl font-semibold bg-white text-black border-2 border-black hover:bg-black hover:text-white" size="sm" disabled={!isAvailable} style={{
-                      border: isAvailable ? '2px solid black' : '2px solid #d1d5db',
-                      background: isAvailable ? 'white' : '#f3f4f6',
-                      color: isAvailable ? 'black' : '#9ca3af'
-                    }}>
+                    <Button 
+                      onClick={() => handleModuleSelect(module.id)} 
+                      className="w-full rounded-2xl font-semibold border-2" 
+                      size="sm" 
+                      disabled={!isAvailable} 
+                      style={{
+                        borderColor: isAvailable ? themeStyles.buttonPrimary : themeStyles.border,
+                        backgroundColor: isAvailable ? themeStyles.buttonPrimary : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : themeStyles.theme.colors.cardBackground),
+                        color: isAvailable ? 'white' : themeStyles.textSecondary
+                      }}
+                      onMouseEnter={(e) => {
+                        if (isAvailable) {
+                          e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (isAvailable) {
+                          e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary;
+                        }
+                      }}
+                    >
                       {isAvailable ? `Start ${module.name}` : 'Coming Soon'}
                     </Button>
                   </CardContent>

@@ -288,10 +288,13 @@ const StudyPlanTodoList = () => {
     }
   };
 
-  // Calculate stats safely
+  // Calculate stats safely - keep track of original indices
   const dayTasks = useMemo(() => {
     if (!day?.tasks || !Array.isArray(day.tasks)) return [];
-    return day.tasks.slice(0, 5).filter((_, i) => !hiddenAi.has(String(i)));
+    return day.tasks.slice(0, 5)
+      .map((task, originalIndex) => ({ task, originalIndex }))
+      .filter(({ originalIndex }) => !hiddenAi.has(String(originalIndex)))
+      .map(({ task, originalIndex }) => ({ ...task, originalIndex }));
   }, [day, hiddenAi]);
 
 
@@ -393,7 +396,7 @@ const StudyPlanTodoList = () => {
   }
 
   return (
-    <div className={`${themeStyles.cardClassName} rounded-xl p-4 lg:p-5 shadow-md flex flex-col h-full`} style={themeStyles.cardStyle}>
+    <div className={`${themeStyles.cardClassName} rounded-xl p-4 lg:p-5 shadow-md flex flex-col min-h-[400px]`} style={themeStyles.cardStyle}>
       {/* Header with Date Navigation */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -474,15 +477,16 @@ const StudyPlanTodoList = () => {
       )}
 
       {/* Task List */}
-      <div className="flex-1 min-h-0 overflow-y-auto mb-4">
+      <div className="flex-1 min-h-[200px] overflow-y-auto mb-4">
         <div className="space-y-2">
           {/* AI-generated tasks */}
           {dayTasks.map((task, i) => {
             if (!task || !task.title) return null;
-            const isCompleted = checked[i] === true;
+            const originalIndex = (task as any).originalIndex ?? i;
+            const isCompleted = checked[originalIndex] === true;
             return (
               <div
-                key={`ai-${i}`}
+                key={`ai-${originalIndex}`}
                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                   isCompleted ? 'line-through opacity-60' : 'hover:shadow-sm'
                 }`}
@@ -493,13 +497,13 @@ const StudyPlanTodoList = () => {
                   borderColor: themeStyles.border,
                   boxShadow: isCompleted ? 'none' : '0 1px 2px rgba(0,0,0,0.05)'
                 }}
-                onClick={() => toggleTask(i)}
+                onClick={() => toggleTask(originalIndex)}
               >
                 <button
                   className="flex-shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleTask(i);
+                    toggleTask(originalIndex);
                   }}
                 >
                   {isCompleted ? (
@@ -515,13 +519,17 @@ const StudyPlanTodoList = () => {
                   {task.title || 'Untitled task'}
                 </span>
                 <button
-                  className="text-xs font-bold"
-                  style={{ color: themeStyles.chartTarget }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  className="text-xs font-bold flex-shrink-0 z-10"
+                  style={{ 
+                    color: themeStyles.chartTarget,
+                    opacity: isCompleted ? 0.8 : 1
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = isCompleted ? '0.8' : '1'}
                   onClick={(e) => {
                     e.stopPropagation();
-                    hideAiTask(i);
+                    e.preventDefault();
+                    hideAiTask(originalIndex);
                   }}
                   title="Remove"
                 >
@@ -571,12 +579,16 @@ const StudyPlanTodoList = () => {
                   {task.title || 'Untitled task'}
                 </span>
                 <button
-                  className="text-xs font-bold"
-                  style={{ color: themeStyles.chartTarget }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  className="text-xs font-bold flex-shrink-0 z-10"
+                  style={{ 
+                    color: themeStyles.chartTarget,
+                    opacity: isCompleted ? 0.8 : 1
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = isCompleted ? '0.8' : '1'}
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     removeCustomTask(i);
                   }}
                   title="Remove"
@@ -641,10 +653,24 @@ const MiniCalendar = ({
   onSelectDate: (date: Date) => void;
 }) => {
   const themeStyles = useThemeStyles();
-  const [offset, setOffset] = useState(0);
+  const now = new Date();
+  // Initialize offset to show the month of selectedDate
+  const [offset, setOffset] = useState(() => {
+    const selected = normalizeToLocalMidnight(selectedDate);
+    const monthDiff = (selected.getFullYear() - now.getFullYear()) * 12 + (selected.getMonth() - now.getMonth());
+    return monthDiff;
+  });
+  
+  // Update offset when selectedDate changes
+  useEffect(() => {
+    const selected = normalizeToLocalMidnight(selectedDate);
+    const monthDiff = (selected.getFullYear() - now.getFullYear()) * 12 + (selected.getMonth() - now.getMonth());
+    setOffset(monthDiff);
+  }, [selectedDate]);
+  
   const startISO = plan?.meta?.startDateISO || new Date().toISOString();
   const startDate = new Date(startISO);
-  const first = new Date(startDate.getFullYear(), startDate.getMonth() + offset, 1);
+  const first = new Date(now.getFullYear(), now.getMonth() + offset, 1);
   const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   const label = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
   const leading = first.getDay();
@@ -681,7 +707,6 @@ const MiniCalendar = ({
     days.push({ date, hasTasks, allCompleted });
   }
 
-  const now = new Date();
   const isSelected = (date: Date) => {
     return selectedDate.getTime() === normalizeToLocalMidnight(date).getTime();
   };
@@ -692,13 +717,13 @@ const MiniCalendar = ({
   };
 
   return (
-    <div className={`rounded-xl border p-3 shadow-sm ${themeStyles.cardClassName}`} style={themeStyles.cardStyle}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>{label}</div>
+    <div className={`rounded-xl border p-4 shadow-sm ${themeStyles.cardClassName}`} style={themeStyles.cardStyle}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-base font-medium" style={{ color: themeStyles.textPrimary }}>{label}</div>
         <div className="flex items-center gap-2">
           <button
             aria-label="Previous"
-            className="rounded-md border px-2 py-1 text-xs transition"
+            className="rounded-md border px-3 py-1.5 text-sm transition"
             style={{
               borderColor: themeStyles.border,
               color: themeStyles.textSecondary,
@@ -712,7 +737,7 @@ const MiniCalendar = ({
           </button>
           <button
             aria-label="Next"
-            className="rounded-md border px-2 py-1 text-xs transition"
+            className="rounded-md border px-3 py-1.5 text-sm transition"
             style={{
               borderColor: themeStyles.border,
               color: themeStyles.textSecondary,
@@ -726,14 +751,14 @@ const MiniCalendar = ({
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-xs mb-2" style={{ color: themeStyles.textSecondary }}>
+      <div className="grid grid-cols-7 gap-2 text-sm mb-3 font-medium" style={{ color: themeStyles.textSecondary }}>
         {headers.map(h => (
           <div key={h} className="text-center">{h}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-2">
         {blanks.map(b => (
-          <div key={`b${b}`} className="h-8" />
+          <div key={`b${b}`} className="h-10" />
         ))}
         {days.map((d, di) => {
           const normalizedDate = normalizeToLocalMidnight(d.date);
@@ -744,14 +769,19 @@ const MiniCalendar = ({
             <button
               key={di}
               onClick={() => onSelectDate(normalizedDate)}
-              className="relative h-8 rounded-lg border text-xs transition"
+              className="relative h-10 rounded-lg border text-sm transition"
               style={{
                 backgroundColor: selected
                   ? themeStyles.buttonPrimary
-                  : d.hasTasks
+                  : isToday && !selected
                   ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)')
                   : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.3)'),
-                borderColor: selected ? themeStyles.buttonPrimary : themeStyles.border,
+                borderColor: selected 
+                  ? themeStyles.buttonPrimary 
+                  : d.allCompleted 
+                  ? '#D4AF37' 
+                  : themeStyles.border,
+                borderWidth: d.allCompleted ? '2px' : '1px',
                 color: selected ? 'white' : (d.hasTasks ? themeStyles.textPrimary : themeStyles.textSecondary)
               }}
               onMouseEnter={(e) => {
@@ -761,21 +791,18 @@ const MiniCalendar = ({
               }}
               onMouseLeave={(e) => {
                 if (!selected) {
-                  e.currentTarget.style.backgroundColor = d.hasTasks
+                  e.currentTarget.style.backgroundColor = isToday && !selected
                     ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)')
                     : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.3)');
                 }
               }}
             >
-              <span>{d.date.getDate()}</span>
+              <span className="relative z-10">{d.date.getDate()}</span>
               {d.allCompleted && (
-                <div className="absolute top-0 right-0 text-[8px]">⭐</div>
+                <div className="absolute top-0.5 right-0.5 text-[10px] z-10">⭐</div>
               )}
               {!d.allCompleted && d.hasTasks && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-current" />
-              )}
-              {isToday && !selected && (
-                <div className="absolute inset-0 rounded-lg ring-1 pointer-events-none" style={{ ringColor: themeStyles.textSecondary }} />
+                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-current" />
               )}
             </button>
           );

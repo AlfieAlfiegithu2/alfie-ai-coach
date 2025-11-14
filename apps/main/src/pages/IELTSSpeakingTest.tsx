@@ -29,6 +29,8 @@ import { Message, MessageContent } from "@/components/ui/message";
 import { Response } from "@/components/ui/response";
 import { Orb } from "@/components/ui/orb";
 import { ShimmeringText } from "@/components/ui/shimmering-text";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SpeakingPrompt {
   id: string;
@@ -175,8 +177,9 @@ const IELTSSpeakingTest = () => {
   // Support both testId (UUID) and testName (legacy) for backward compatibility
   const testId = params.testId || params.testName;
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const { toast } = useToast();
-
+  const themeStyles = useThemeStyles();
   
   const [testData, setTestData] = useState<TestData | null>(null);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
@@ -1366,11 +1369,18 @@ const IELTSSpeakingTest = () => {
   // Show test selection if no testId provided (regardless of whether tests are found)
   if (!testId) {
     return (
-      <div className="min-h-screen relative">
+      <div 
+        className="min-h-screen relative"
+        style={{
+          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        }}
+      >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
              style={{
-               backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-               backgroundColor: '#ffffff'
+               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                 ? 'none'
+                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+               backgroundColor: themeStyles.backgroundImageColor
              }} />
         <div className="relative z-10">
           <StudentLayout title="Available Speaking Tests">
@@ -1378,23 +1388,42 @@ const IELTSSpeakingTest = () => {
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
                   <div className="mb-8 text-center">
-                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS speaking tests</h1>
+                    <h1 className="text-4xl font-bold mb-2" style={{ color: themeStyles.textPrimary }}>IELTS speaking tests</h1>
                   </div>
 
                   {availableTests.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {availableTests.map((test) => (
-                        <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}>
+                        <SpotlightCard 
+                          key={test.id} 
+                          className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center" 
+                          onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                            borderColor: themeStyles.border,
+                            ...themeStyles.cardStyle
+                          }}
+                        >
                           <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                            <h3 className="font-semibold text-sm">{test.test_name}</h3>
+                            <h3 className="font-semibold text-sm" style={{ color: themeStyles.textPrimary }}>{test.test_name}</h3>
                           </CardContent>
                         </SpotlightCard>
                       ))}
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <p className="text-lg text-muted-foreground mb-4">No speaking tests available yet</p>
-                      <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+                      <p className="text-lg mb-4" style={{ color: themeStyles.textSecondary }}>No speaking tests available yet</p>
+                      <Button 
+                        onClick={() => navigate('/ielts-portal')} 
+                        variant="outline"
+                        style={{
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary,
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.hoverBg}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground}
+                      >
                         Back to Portal
                       </Button>
                     </div>
@@ -1541,20 +1570,32 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
   const questionType = getQuestionType();
 
   return (
-    <div className="min-h-screen relative">
+    <div 
+      className="min-h-screen relative"
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
            style={{
-             backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-             backgroundColor: '#ffffff'
+             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+               ? 'none'
+               : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+             backgroundColor: themeStyles.backgroundImageColor
            }} />
-      <div className="relative z-10 min-h-screen flex flex-col">
+      <div 
+        className="relative z-10 min-h-screen flex flex-col"
+        style={{
+          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        }}
+      >
         <StudentLayout title={`IELTS Speaking - ${testData.test_name}`} showBackButton>
           {/* Desktop: keep original centered layout; Mobile: move content higher */}
           <div className="flex-1 flex justify-center min-h-[calc(100vh-120px)] py-8 sm:items-center sm:py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col">
             {/* Current Part Indicator */}
             <div className="text-center py-2 sm:py-2 sm:mb-0 mb-0">
-              <span className="text-lg font-semibold text-foreground">
+              <span className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>
                 Part {currentPart}
               </span>
             </div>
@@ -1562,10 +1603,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             {/* Main Content Card - stays upper; Catie dock is anchored separately at bottom */}
             <Card
               ref={mainCardRef}
-              className="bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl border border-white/60 flex flex-col"
+              className="backdrop-blur-sm shadow-lg rounded-2xl flex flex-col"
               style={{
-                boxShadow:
-                  '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                boxShadow: themeStyles.theme.name === 'dark' 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : themeStyles.theme.name === 'note'
+                  ? themeStyles.theme.styles.cardStyle?.boxShadow
+                  : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                ...themeStyles.cardStyle
               }}
             >
           <CardHeader>
@@ -1580,17 +1628,25 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       <TooltipTrigger asChild>
                         <div
                           onClick={() => setShowQuestion(!showQuestion)}
-                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-gray-300 dark:bg-gray-600"
+                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                          style={{
+                            backgroundColor: showQuestion 
+                              ? themeStyles.buttonPrimary 
+                              : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                          }}
                           data-state={showQuestion ? "checked" : "unchecked"}
                         >
                           <div
-                            className="pointer-events-none flex h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 items-center justify-center"
+                            className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 items-center justify-center"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                            }}
                             data-state={showQuestion ? "checked" : "unchecked"}
                           >
                             {showQuestion ? (
-                              <Eye className="w-3 h-3 text-primary dark:text-primary" />
+                              <Eye className="w-3 h-3" style={{ color: 'white' }} />
                             ) : (
-                              <EyeOff className="w-3 h-3 text-muted-foreground dark:text-slate-400" />
+                              <EyeOff className="w-3 h-3" style={{ color: themeStyles.textSecondary }} />
                             )}
                           </div>
                         </div>
@@ -1605,8 +1661,16 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {/* AI Assistant moved to floating bottom-right */}
 
                 {timeLeft > 0 && (
-                  <Badge variant="outline" className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
+                  <Badge 
+                    variant="outline" 
+                    className="flex items-center gap-2"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                      color: themeStyles.textPrimary
+                    }}
+                  >
+                    <Clock className="w-4 h-4" style={{ color: themeStyles.textPrimary }} />
                     {formatTime(timeLeft)}
                   </Badge>
                 )}
@@ -1618,8 +1682,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             {currentPart === 2 && preparationTime > 0 && (
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2">
-                  <Clock className="w-5 h-5 text-primary" />
-                  <p className="text-xl font-bold text-primary">{formatTime(preparationTime)}</p>
+                  <Clock className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
+                  <p className="text-xl font-bold" style={{ color: themeStyles.buttonPrimary }}>{formatTime(preparationTime)}</p>
                 </div>
               </div>
             )}
@@ -1631,7 +1695,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {/* Question Text - Fixed Height Container */}
                 <div className="min-h-[200px] flex items-center justify-center flex-1">
                   {showQuestion && (
-                    <div className="text-lg font-medium text-center select-none">
+                    <div className="text-lg font-medium text-center select-none" style={{ color: themeStyles.textPrimary }}>
                       {getCurrentQuestionText()}
                     </div>
                   )}
@@ -1645,7 +1709,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 {/* Question Text - Fixed Height Container */}
                 <div className="min-h-[200px] flex items-center justify-center flex-1">
                   {showQuestion && (
-                    <div className="text-lg font-medium text-center select-none">
+                    <div className="text-lg font-medium text-center select-none" style={{ color: themeStyles.textPrimary }}>
                       {getCurrentQuestionText()}
                     </div>
                   )}
@@ -1655,9 +1719,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
 
             {/* Cue Card Display */}
             {currentPart === 2 && currentPrompt && (
-               <div className="p-6 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold mb-3">Cue Card</h3>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+               <div 
+                 className="p-6 rounded-lg"
+                 style={{
+                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                   borderColor: themeStyles.border,
+                   borderWidth: '1px',
+                   borderStyle: 'solid'
+                 }}
+               >
+                <h3 className="font-semibold mb-3" style={{ color: themeStyles.textPrimary }}>Cue Card</h3>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: themeStyles.textSecondary }}>
                   {currentPrompt.prompt_text}
                 </div>
               </div>
@@ -1668,7 +1740,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               <>
                 {/* Note-taking area during preparation */}
                 {preparationTime > 0 && (
-                  <div className="relative bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div 
+                    className="relative rounded-lg p-4"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
+                      borderColor: themeStyles.border,
+                      borderWidth: '1px',
+                      borderStyle: 'solid'
+                    }}
+                  >
                     {/* +1 Minute Icon Button - Top Right */}
                     <TooltipProvider>
                       <Tooltip>
@@ -1679,7 +1759,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                             onClick={() => {
                               setPreparationTime(prev => prev + 60);
                             }}
-                            className="absolute top-2 right-2 h-8 w-8 text-primary"
+                            className="absolute top-2 right-2 h-8 w-8"
+                            style={{ color: themeStyles.buttonPrimary }}
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -1694,13 +1775,27 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       value={part2Notes}
                       onChange={(e) => setPart2Notes(e.target.value)}
                       className="w-full h-32 p-3 bg-transparent resize-none focus:outline-none"
+                      style={{ color: themeStyles.textPrimary }}
                     />
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      textarea[placeholder="Write your preparation notes here..."]::placeholder {
+                        color: ${themeStyles.textSecondary};
+                      }
+                    ` }} />
                   </div>
                 )}
 
                 {/* Notes Display During/After Recording */}
                 {preparationTime === 0 && part2Notes && (
-                  <div className="relative bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div 
+                    className="relative rounded-lg p-4"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
+                      borderColor: themeStyles.border,
+                      borderWidth: '1px',
+                      borderStyle: 'solid'
+                    }}
+                  >
                     {/* +1 Minute Icon Button - Top Right */}
                     {!isRecording && (
                       <TooltipProvider>
@@ -1760,7 +1855,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       onClick={stopRecording}
                       variant="outline"
                       size="icon"
-                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2 border-primary/40 text-primary"
+                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                      style={{
+                        borderColor: themeStyles.border,
+                        color: themeStyles.buttonPrimary
+                      }}
                     >
                       <Square className="w-4 h-4" />
                     </Button>
@@ -1774,9 +1873,22 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                           <Button
                             onClick={startRecording}
                             variant="outline"
-                              className="rounded-xl bg-white/80 text-foreground border border-red-400/70 shadow-sm h-12 w-12 hover:bg-red-50 hover:text-red-600"
-                            size="icon"
-                          >
+                              className="rounded-xl shadow-sm h-12 w-12"
+                              size="icon"
+                              style={{
+                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                borderColor: themeStyles.border,
+                                color: themeStyles.textPrimary
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                e.currentTarget.style.color = themeStyles.buttonPrimary;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                                e.currentTarget.style.color = themeStyles.textPrimary;
+                              }}
+                            >
                             <Mic className="w-5 h-5" />
                           </Button>
                         </TooltipTrigger>
@@ -1794,7 +1906,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               disabled={isPlaying}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+                              className="h-12 w-12 rounded-xl"
+                              style={{
+                                borderColor: themeStyles.border,
+                                color: themeStyles.buttonPrimary,
+                                backgroundColor: 'transparent'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
                             >
                               {isPlaying ? (
                                 <Pause className="w-5 h-5" />
@@ -1824,7 +1947,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                               }}
                               variant="outline"
                               size="icon"
-                              className="h-12 w-12 rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+                              className="h-12 w-12 rounded-xl"
+                              style={{
+                                borderColor: themeStyles.border,
+                                color: themeStyles.buttonPrimary,
+                                backgroundColor: 'transparent'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
                             >
                               {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
                                 <Pause className="w-5 h-5" />
@@ -1861,7 +1995,16 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         }}
                         disabled={currentQuestion === 0}
                         size="icon"
-                        className="absolute bottom-0 left-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
+                        className="absolute bottom-0 left-0 h-12 w-12"
+                        style={{ color: themeStyles.textSecondary }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = themeStyles.buttonPrimary;
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = themeStyles.textSecondary;
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </Button>
@@ -1882,7 +2025,16 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         }}
                         disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
                         size="icon"
-                        className="absolute bottom-0 right-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
+                        className="absolute bottom-0 right-0 h-12 w-12"
+                        style={{ color: themeStyles.textSecondary }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = themeStyles.buttonPrimary;
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = themeStyles.textSecondary;
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                       >
                         <ArrowRight className="w-5 h-5" />
                       </Button>
@@ -2010,7 +2162,10 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">
           <button
             onClick={() => navigate('/ielts-portal')}
-            className="text-lg text-foreground cursor-pointer hover:text-primary transition-colors"
+            className="text-lg cursor-pointer transition-colors"
+            style={{ color: themeStyles.textSecondary }}
+            onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+            onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
           >
             Exit Test
           </button>
@@ -2032,7 +2187,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     size="icon"
                     onClick={() => handleSuggestionClick('Help with Speaking Structure')}
                     disabled={isChatLoading}
-                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 border-primary/30 bg-white/80 dark:bg-slate-800/95 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
+                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                    }}
                   >
                     <ListTree className="w-4 h-4 sm:w-6 sm:h-6" />
                   </Button>
@@ -2052,7 +2217,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     size="icon"
                     onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
                     disabled={isChatLoading}
-                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 border-primary/30 bg-white/80 dark:bg-slate-800/95 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
+                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                    }}
                   >
                     <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
                   </Button>
@@ -2076,7 +2251,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       )
                     }
                     disabled={isChatLoading}
-                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 border-primary/30 bg-white/80 dark:bg-slate-800/95 backdrop-blur-sm shadow-lg hover:bg-primary/10 dark:hover:bg-primary/20"
+                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                    }}
                   >
                     <Sparkles className="w-4 h-4 sm:w-6 sm:h-6" />
                   </Button>
@@ -2095,11 +2280,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           {/* Chat card */}
           {showAIAssistant && (
             <Card
-              className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${
+              className={`backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${
                 showAIAssistantVisible
                   ? 'opacity-100 scale-100 translate-y-0'
                   : 'opacity-0 scale-75 translate-y-8'
               }`}
+              style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                ...themeStyles.cardStyle
+              }}
             >
               <CardHeader className="pb-1 sm:pb-2 rounded-t-3xl relative">
                 <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
@@ -2107,7 +2298,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     variant="ghost"
                     size="icon"
                     onClick={closeAIAssistant}
-                    className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-foreground"
+                    className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                    style={{ color: themeStyles.textPrimary }}
                   >
                     ✕
                   </Button>
@@ -2118,30 +2310,58 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                   <ConversationContent className="flex-1 min-h-0">
                     {chatMessages.length === 0 && !isChatLoading ? (
                       <ConversationEmptyState
-                        icon={<Orb className="size-9 sm:size-12" />}
+                        icon={<Orb className="size-9 sm:size-12" style={{ color: themeStyles.textSecondary }} />}
                         title="Start a conversation"
                         description="Ask for help with your IELTS speaking practice"
                       />
                     ) : (
                       <>
                         {/* Current question displayed at the top of chat */}
-                        <div className="rounded-lg p-3 bg-muted/60 border border-border mb-4">
-                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
-                          <div className="text-xs sm:text-sm font-medium text-foreground">{questionType}</div>
-                          <div className="text-[10px] sm:text-sm text-muted-foreground whitespace-pre-wrap mt-1">
+                        <div 
+                          className="rounded-lg p-3 mb-4"
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                            borderColor: themeStyles.border,
+                            borderWidth: '1px',
+                            borderStyle: 'solid'
+                          }}
+                        >
+                          <div className="text-xs uppercase tracking-wide mb-1" style={{ color: themeStyles.textSecondary }}>Question</div>
+                          <div className="text-xs sm:text-sm font-medium" style={{ color: themeStyles.textPrimary }}>{questionType}</div>
+                          <div className="text-[10px] sm:text-sm whitespace-pre-wrap mt-1" style={{ color: themeStyles.textSecondary }}>
                             {currentQuestionText || 'No question available.'}
                           </div>
                         </div>
 
                         {chatMessages.map((message) => (
                           <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
+                            {message.type === 'bot' && (
+                              <div
+                                style={{
+                                  borderRadius: '50%',
+                                  overflow: 'hidden',
+                                  width: '52px',
+                                  height: '52px',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <img
+                                  src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                  alt="Catie"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              </div>
+                            )}
                             <MessageContent>
                               <div
-                                className={`px-3 py-2 rounded-xl text-sm ${
-                                  message.type === 'user'
-                                    ? 'bg-muted/50 text-foreground border border-border/50'
-                                    : 'bg-muted/50 text-foreground border border-border/50'
-                                }`}
+                                className="px-3 py-2 rounded-xl text-sm"
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                  borderColor: themeStyles.border,
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid',
+                                  color: themeStyles.textPrimary
+                                }}
                               >
                                 <Response
                                   dangerouslySetInnerHTML={{
@@ -2155,18 +2375,19 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                 />
                               </div>
                             </MessageContent>
-                            {message.type === 'bot' && (
+                            {message.type === 'user' && profile?.avatar_url && (
                               <div
                                 style={{
                                   borderRadius: '50%',
                                   overflow: 'hidden',
                                   width: '52px',
                                   height: '52px',
+                                  flexShrink: 0
                                 }}
                               >
                                 <img
-                                  src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
-                                  alt="Catie"
+                                  src={profile.avatar_url}
+                                  alt="Your avatar"
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
                               </div>
@@ -2176,7 +2397,15 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         {isChatLoading && (
                           <Message from="assistant">
                             <MessageContent>
-                              <div className="bg-muted border border-border px-3 py-2 rounded-xl text-sm">
+                              <div 
+                                className="px-3 py-2 rounded-xl text-sm"
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                  borderColor: themeStyles.border,
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid'
+                                }}
+                              >
                                 <ShimmeringText text="Thinking..." />
                               </div>
                             </MessageContent>
@@ -2211,18 +2440,31 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()
                       }
                       placeholder="Ask for speaking help..."
-                      className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none"
+                      className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:ring-0 resize-none"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        color: themeStyles.textPrimary
+                      }}
                       disabled={isChatLoading}
                     />
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      input[placeholder="Ask for speaking help..."]::placeholder {
+                        color: ${themeStyles.textSecondary};
+                      }
+                    ` }} />
                     <Button
                       onClick={() => sendChatMessage()}
                       disabled={isChatLoading || !newMessage.trim()}
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-foreground"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                    style={{ color: themeStyles.textPrimary }}
                     >
                       {isChatLoading ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground" />
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: themeStyles.textPrimary }} />
                       ) : (
                         <Send className="w-4 h-4" />
                       )}

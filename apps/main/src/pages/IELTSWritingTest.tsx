@@ -14,6 +14,7 @@ import { Bot, BookOpen, ListTree, Clock, FileText, PenTool, Languages } from "lu
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface Task {
   id: string;
@@ -36,6 +37,7 @@ const IELTSWritingTestInterface = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const themeStyles = useThemeStyles();
 
   const [test, setTest] = useState<any>(null);
   const [task1, setTask1] = useState<Task | null>(null);
@@ -521,8 +523,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
              style={{
-               backgroundImage: `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-               backgroundColor: '#ffffff'
+               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                 ? 'none'
+                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+               backgroundColor: themeStyles.backgroundImageColor
              }} />
         <div className="relative z-10">
           <StudentLayout title="Available Writing Tests">

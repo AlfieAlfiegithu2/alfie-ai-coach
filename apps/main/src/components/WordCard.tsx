@@ -2,6 +2,7 @@ import { memo, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface SavedWord {
   id: string;
@@ -24,6 +25,7 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [currentAccentIndex, setCurrentAccentIndex] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const themeStyles = useThemeStyles();
   
   const ACCENTS = ['US', 'UK', 'AUS', 'IND'];
 
@@ -126,7 +128,12 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggleSelect?.(word.id)}
-            className="w-6 h-6 rounded-full bg-white/90 border-2 border-slate-400/50 data-[state=checked]:bg-rose-400 data-[state=checked]:border-rose-400 shadow-sm hover:border-rose-300 transition-all"
+            className="w-6 h-6 rounded-full shadow-sm transition-all"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.9)',
+              borderColor: themeStyles.border,
+              borderWidth: '2px'
+            }}
           />
         </div>
       )}
@@ -135,16 +142,42 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
       <div
         className={`word-card word-card-hover-reveal ${isEditMode ? 'cursor-pointer' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
         onClick={handleCardClick}
-        style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}
+        style={{ 
+          fontFamily: 'Bricolage Grotesque, sans-serif',
+          background: themeStyles.theme.name === 'glassmorphism' 
+            ? 'rgba(255,255,255,0.1)' 
+            : themeStyles.theme.name === 'dark' 
+            ? 'rgba(255,255,255,0.1)' 
+            : themeStyles.theme.name === 'minimalist'
+            ? '#ffffff'
+            : themeStyles.theme.colors.cardBackground,
+          borderColor: themeStyles.border,
+          color: themeStyles.textPrimary,
+          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(16px)' : themeStyles.theme.name === 'dark' ? 'blur(16px)' : 'none',
+          boxShadow: themeStyles.theme.name === 'note' ? themeStyles.theme.styles.cardStyle?.boxShadow : 'none'
+        }}
       >
         <div className="text-center relative h-full flex flex-col items-center justify-center">
           {/* Word - shown by default, hidden on hover */}
           <div className="word-card-content word-card-word absolute inset-0 flex flex-col items-center justify-center transition-all duration-300 ease-in-out">
-            <div className="font-bold text-lg mb-1">
+            <div className="font-bold text-lg mb-1" style={{ color: themeStyles.textPrimary }}>
               {word.word}
             </div>
             {word.context && (
-              <div className="text-xs opacity-60 px-2 py-1 bg-white/20 rounded-full inline-block">
+              <div 
+                className="text-xs px-2 py-1 rounded-full inline-block"
+                style={{
+                  opacity: 0.7,
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                    ? 'rgba(255,255,255,0.2)' 
+                    : themeStyles.theme.name === 'dark' 
+                    ? 'rgba(255,255,255,0.2)' 
+                    : themeStyles.theme.name === 'minimalist'
+                    ? '#f3f4f6'
+                    : 'rgba(255,255,255,0.6)',
+                  color: themeStyles.textSecondary
+                }}
+              >
                 {word.context}
               </div>
             )}
@@ -152,7 +185,7 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
           
           {/* Translation - hidden by default, shown on hover */}
           <div className="word-card-content word-card-translation absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out opacity-0 pointer-events-none">
-            <div className="font-bold text-lg text-black dark:text-black text-center">
+            <div className="font-bold text-lg text-center" style={{ color: themeStyles.textPrimary }}>
               {word.translations && word.translations.length > 0 
                 ? word.translations.join(', ')
                 : 'No translation available'}

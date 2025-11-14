@@ -396,19 +396,24 @@ const Dashboard = () => {
   // Guest mode: allow viewing dashboard without login (removed - now requires auth)
   // If not logged in, we render a limited dashboard without user-specific data
 
-  return <div className="h-screen relative overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
-      backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' 
-        ? 'none' 
-        : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-      backgroundColor: themeStyles.backgroundImageColor
-    }} />
+  return <div 
+            className="h-screen relative overflow-hidden"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+            }}
+          >
+              {/* Background Image */}
+              <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
+                backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                  ? 'none'
+                  : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+                backgroundColor: themeStyles.backgroundImageColor
+              }} />
       
       <div className="relative z-10 h-full w-full flex flex-col">
       
       <div 
-        className={`relative w-full h-full overflow-hidden border backdrop-blur-xl`}
+        className={`relative w-full h-full overflow-y-auto border backdrop-blur-xl`}
         style={{
           backgroundColor: themeStyles.backgroundOverlay,
           borderColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255, 255, 255, 0.3)' : themeStyles.border + '40',
@@ -572,7 +577,7 @@ const Dashboard = () => {
               </div>
               
               {/* Study Plan Todo List */}
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 min-h-[400px]">
                 <StudyPlanTodoList />
               </div>
 

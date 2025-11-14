@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import WordCard from '@/components/WordCard';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface SavedWord {
   id: string;
@@ -22,6 +23,7 @@ const MyWordBook = () => {
   const navigate = useNavigate();
   const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const themeStyles = useThemeStyles();
   
   // State management for word book functionality
   const [words, setWords] = useState<SavedWord[]>([]);
@@ -171,7 +173,7 @@ const MyWordBook = () => {
   // Wait for auth to finish loading before checking user
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.backgroundImageColor }}>
         <LoadingAnimation />
       </div>
     );
@@ -180,29 +182,67 @@ const MyWordBook = () => {
   // Show sign-in prompt if user is not logged in after auth loading completes
   if (!authLoading && !user) {
     return (
-      <div className="min-h-screen relative">
+      <div 
+        className="min-h-screen relative"
+        style={{
+          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        }}
+      >
         {/* Background Image */}
         <div 
           className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
           style={{
-            backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-            backgroundColor: '#a2d2ff'
+            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none' 
+              : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+            backgroundColor: themeStyles.backgroundImageColor
           }}
         />
         
         <div className="relative z-10 min-h-full flex items-center justify-center">
-          <Card className="p-8 text-center bg-white/20 border-white/30 backdrop-blur-xl shadow-xl">
+          <Card 
+            className="p-8 text-center backdrop-blur-xl shadow-xl border rounded-xl"
+            style={{
+              backgroundColor: themeStyles.backgroundOverlay,
+              borderColor: themeStyles.border
+            }}
+          >
             <CardContent>
               <div className="mb-4">
-                <User className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-slate-800 mb-2">Sign in Required</h2>
-                <p className="text-slate-600 mb-6">Please sign in to access your Word Book and save your progress.</p>
+                <User className="w-16 h-16 mx-auto mb-4" style={{ color: themeStyles.textSecondary }} />
+                <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'Bricolage Grotesque, sans-serif', color: themeStyles.textPrimary }}>
+                  Sign in Required
+                </h2>
+                <p className="mb-6" style={{ fontFamily: 'Inter, sans-serif', color: themeStyles.textSecondary }}>
+                  Please sign in to access your Word Book and save your progress.
+                </p>
               </div>
               <div className="flex gap-3 justify-center">
-                <Button onClick={() => navigate('/auth')} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2">
+                <Button 
+                  onClick={() => navigate('/auth')} 
+                  className="px-6 py-2 text-white"
+                  style={{
+                    backgroundColor: themeStyles.buttonPrimary,
+                    fontFamily: 'Inter, sans-serif'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+                >
                   Sign In
                 </Button>
-                <Button onClick={() => navigate('/dashboard')} variant="outline" className="bg-white/50 border-white/30 text-slate-800 hover:bg-white/70">
+                <Button 
+                  onClick={() => navigate('/dashboard')} 
+                  variant="outline" 
+                  className="px-6 py-2"
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.5)',
+                    borderColor: themeStyles.border,
+                    color: themeStyles.textPrimary,
+                    fontFamily: 'Inter, sans-serif'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.hoverBg}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.5)'}
+                >
                   Go to Dashboard
                 </Button>
               </div>
@@ -215,89 +255,127 @@ const MyWordBook = () => {
 
   if (loading || !imageLoaded) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.backgroundImageColor }}>
         <LoadingAnimation />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen relative">
-      {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
-        style={{
-          backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-          backgroundColor: '#a2d2ff'
-        }}
-      />
+          return (
+            <div 
+              className="min-h-screen relative"
+              style={{
+                backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+              }}
+            >
+              {/* Background Image */}
+              <div 
+                className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed"
+                style={{
+                  backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                    ? 'none' 
+                    : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+                  backgroundColor: themeStyles.backgroundImageColor
+                }}
+              />
       
-      <div className="relative z-10 min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
-        <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
-          {/* Header */}
-          <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center border-b border-white/20 relative">
-            <div className="absolute left-4 sm:left-6 lg:left-12">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center text-slate-800 hover:text-blue-600 p-2"
-                style={{ fontFamily: 'Inter, sans-serif' }}
+      <div className="relative z-10 min-h-full lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
+        {/* Header */}
+        <header 
+          className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center border-b relative"
+          style={{ borderColor: themeStyles.border + '60' }}
+        >
+          <div className="absolute left-4 sm:left-6 lg:left-12">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center p-2"
+              style={{ 
+                fontFamily: 'Inter, sans-serif',
+                color: themeStyles.textSecondary
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="flex-1 flex justify-center items-center">
+            <h1 
+              className="text-xl lg:text-2xl tracking-tight font-semibold text-center" 
+              style={{ 
+                fontFamily: 'Bricolage Grotesque, sans-serif',
+                color: themeStyles.textPrimary
+              }}
+            >
+              My Word Book
+            </h1>
+          </div>
+          
+          <div className="w-10 sm:w-12 lg:w-16">
+            {/* Spacer to balance the back button */}
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="relative sm:px-6 lg:px-12 pr-4 pb-12 pl-4 pt-10 lg:pt-12">
+
+          {/* Empty State */}
+          {words.length === 0 ? (
+            <div className="text-center py-16">
+              <BookOpen className="w-20 h-20 mx-auto mb-6" style={{ color: themeStyles.textSecondary + '80' }} />
+              <h3 
+                className="text-2xl font-semibold mb-4" 
+                style={{ 
+                  fontFamily: 'Bricolage Grotesque, sans-serif',
+                  color: themeStyles.textPrimary
+                }}
               >
-                <ArrowLeft className="w-4 h-4" />
+                Your Word Book is empty
+              </h3>
+              <p 
+                className="mb-8 max-w-md mx-auto" 
+                style={{ 
+                  fontFamily: 'Inter, sans-serif',
+                  color: themeStyles.textSecondary
+                }}
+              >
+                Start building your vocabulary by selecting words during reading tests and clicking "Add to Word Book" in the translation popup.
+              </p>
+              <Button 
+                onClick={() => navigate('/ielts-portal')} 
+                className="px-6 py-3 rounded-xl backdrop-blur-sm border text-white"
+                style={{
+                  backgroundColor: themeStyles.buttonPrimary,
+                  borderColor: themeStyles.border,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+              >
+                Start Learning
               </Button>
             </div>
-            
-            <div className="flex-1 flex justify-center items-center">
-              <h1 className="text-xl lg:text-2xl text-slate-800 tracking-tight font-semibold text-center" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                My Word Book
-              </h1>
-            </div>
-            
-            <div className="w-10 sm:w-12 lg:w-16">
-              {/* Spacer to balance the back button */}
-            </div>
-          </header>
-
-          {/* Main Content */}
-          <main className="relative sm:px-6 lg:px-12 pr-4 pb-12 pl-4 pt-10 lg:pt-12">
-
-            {/* Empty State */}
-            {words.length === 0 ? (
-              <div className="text-center py-16">
-                <BookOpen className="w-20 h-20 text-slate-400/50 mx-auto mb-6" />
-                <h3 className="text-2xl font-semibold text-slate-800 mb-4" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                  Your Word Book is empty
-                </h3>
-                <p className="text-slate-600 mb-8 max-w-md mx-auto" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Start building your vocabulary by selecting words during reading tests and clicking "Add to Word Book" in the translation popup.
-                </p>
-                <Button 
-                  onClick={() => navigate('/ielts-portal')} 
-                  className="bg-slate-800/80 hover:bg-slate-800 text-white px-6 py-3 rounded-xl backdrop-blur-sm border border-white/20"
-                >
-                  Start Learning
-                </Button>
+          ) : (
+            <>
+              {/* Word Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 word-card-grid">
+                {words.map((word) => (
+                  <WordCard
+                    key={word.id}
+                    word={word}
+                    onRemove={removeWord}
+                    isEditMode={false}
+                    isSelected={false}
+                    onToggleSelect={undefined}
+                  />
+                ))}
               </div>
-            ) : (
-              <>
-                {/* Word Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 word-card-grid">
-                  {words.map((word) => (
-                    <WordCard
-                      key={word.id}
-                      word={word}
-                      onRemove={removeWord}
-                      isEditMode={false}
-                      isSelected={false}
-                      onToggleSelect={undefined}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </main>
-        </div>
+            </>
+          )}
+        </main>
       </div>
       
     </div>

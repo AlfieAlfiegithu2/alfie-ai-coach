@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Headphones, Play, Pause } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 interface ListeningSection {
   id: string;
@@ -125,19 +125,46 @@ const Listening = () => {
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const seoProps = {
+    title: "IELTS Listening Practice | Audio Mock Test & Instant Feedback",
+    description:
+      "Simulate the IELTS Listening exam with authentic audio tracks, transcripts, timers, and auto-scoring so you can sharpen note-taking skills.",
+    keywords:
+      "IELTS listening practice, IELTS audio mock test, IELTS listening questions, band score listening, IELTS listening timer",
+    type: "article",
+    schemaType: "faq" as const,
+    url: "https://englishaidol.com/listening",
+    faqs: [
+      {
+        question: "Can I replay IELTS listening audio tracks?",
+        answer:
+          "You control playback to mimic exam pacing, but we recommend listening once to build real test stamina. Transcripts are available for review afterward."
+      },
+      {
+        question: "What feedback do I get after finishing a section?",
+        answer:
+          "We tally your correct answers, highlight weak question types, and suggest listening strategies so you know exactly how to improve."
+      }
+    ]
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading listening test...</p>
+      <>
+        <SEO {...seoProps} />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading listening test...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO {...seoProps} />
       {/* Header */}
       <div className="bg-white border-b-2 border-gray-200 p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 interface ReadingPassage {
   id: string;
@@ -106,19 +106,46 @@ const Reading = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const seoProps = {
+    title: "IELTS Reading Practice Test Online | Timed Passages & Answers",
+    description:
+      "Train for IELTS Reading with realistic passages, question types, and countdown timers. Track accuracy and build scanning strategies in one dashboard.",
+    keywords:
+      "IELTS reading practice, IELTS reading mock test, reading passage PDF, IELTS skimming scanning tips, IELTS multiple choice practice",
+    type: "article",
+    schemaType: "faq" as const,
+    url: "https://englishaidol.com/reading",
+    faqs: [
+      {
+        question: "What IELTS reading question types can I practice here?",
+        answer:
+          "You can work through matching headings, True/False/Not Given, multiple choice, and summary completion question sets, mirroring the official exam format."
+      },
+      {
+        question: "Do I get a timer like the real IELTS Reading section?",
+        answer:
+          "Yes. A built-in one-hour timer keeps you on pace, then we calculate accuracy so you can see if you are meeting your target band score."
+      }
+    ]
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading reading test...</p>
+      <>
+        <SEO {...seoProps} />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading reading test...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO {...seoProps} />
       {/* Header */}
       <div className="bg-white border-b-2 border-gray-200 p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

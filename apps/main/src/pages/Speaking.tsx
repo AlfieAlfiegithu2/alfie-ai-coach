@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useSpeakingTest } from "@/hooks/useSpeakingTest";
 import SpeakingQuestionByQuestion from "@/components/SpeakingQuestionByQuestion";
 import VolumeSlider from "@/components/ui/VolumeSlider";
+import SEO from "@/components/SEO";
 
 const Speaking = () => {
   const navigate = useNavigate();
@@ -115,42 +116,72 @@ const Speaking = () => {
     }
   };
 
+  const seoProps = {
+    title: "IELTS Speaking Practice | AI Examiner Feedback & Transcripts",
+    description:
+      "Record IELTS Speaking responses, get instant transcripts, fluency analytics, pronunciation tips, and follow-up questions built by real examiners.",
+    keywords:
+      "IELTS speaking practice, AI speaking examiner, IELTS speaking feedback, pronunciation analysis, IELTS speaking timer",
+    type: "article",
+    schemaType: "faq" as const,
+    url: "https://englishaidol.com/speaking",
+    faqs: [
+      {
+        question: "How does the AI evaluate my IELTS Speaking performance?",
+        answer:
+          "It listens to your recording, transcribes it, then scores Fluency, Lexical Resource, Grammar, and Pronunciation based on examiner rubrics, delivering actionable tips."
+      },
+      {
+        question: "Can I practice Part 1, Part 2, and Part 3 questions?",
+        answer:
+          "Yes. Switch between all three parts, hear follow-up questions, and use the built-in timer to mimic the real interview experience."
+      }
+    ]
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen glass-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-brand-blue" />
-          <p className="text-text-secondary">Loading speaking test...</p>
+      <>
+        <SEO {...seoProps} />
+        <div className="min-h-screen glass-background flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-brand-blue" />
+            <p className="text-text-secondary">Loading speaking test...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!currentPrompt) {
     return (
-      <div className="min-h-screen glass-background flex items-center justify-center">
-        <div className="text-center glass-card p-8 rounded-2xl max-w-md">
-          <Mic className="h-12 w-12 mx-auto mb-4 text-text-secondary" />
-          <h2 className="text-heading-2 mb-2 text-text-primary">No Speaking Test Available</h2>
-          <p className="text-text-secondary mb-6">
-            No speaking prompts found for this test. Please check with your instructor to upload content.
-          </p>
-          <div className="space-y-3">
-            <Button onClick={() => navigate(-1)} variant="outline" className="w-full">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Go Back
-            </Button>
-            <Button onClick={() => navigate('/tests')} className="w-full btn-primary">
-              Browse Other Tests
-            </Button>
+      <>
+        <SEO {...seoProps} />
+        <div className="min-h-screen glass-background flex items-center justify-center">
+          <div className="text-center glass-card p-8 rounded-2xl max-w-md">
+            <Mic className="h-12 w-12 mx-auto mb-4 text-text-secondary" />
+            <h2 className="text-heading-2 mb-2 text-text-primary">No Speaking Test Available</h2>
+            <p className="text-text-secondary mb-6">
+              No speaking prompts found for this test. Please check with your instructor to upload content.
+            </p>
+            <div className="space-y-3">
+              <Button onClick={() => navigate(-1)} variant="outline" className="w-full">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Go Back
+              </Button>
+              <Button onClick={() => navigate('/tests')} className="w-full btn-primary">
+                Browse Other Tests
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-surface-1/30 to-primary/5">
+      <SEO {...seoProps} />
       {/* Modern Header */}
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl shadow-sm">
         <div className="container mx-auto px-4 py-4">

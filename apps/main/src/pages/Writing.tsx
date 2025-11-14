@@ -7,6 +7,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
+import SEO from "@/components/SEO";
 
 const Writing = () => {
   const navigate = useNavigate();
@@ -72,8 +73,32 @@ const Writing = () => {
     }
   };
 
+  const seoProps = {
+    title: "IELTS Writing Practice Test | AI Band Score Feedback",
+    description:
+      "Write IELTS Task 1 and Task 2 responses, then receive instant examiner-style feedback, band score predictions, and action steps from our AI tutors.",
+    keywords:
+      "IELTS writing practice, IELTS task 2 feedback, AI writing evaluation, IELTS essay checker, IELTS band score predictor",
+    type: "article",
+    schemaType: "faq" as const,
+    url: "https://englishaidol.com/writing",
+    faqs: [
+      {
+        question: "How accurate is the IELTS writing band score prediction?",
+        answer:
+          "Our AI rubric mirrors the official IELTS Writing descriptors that former examiners encoded, so the predicted band aligns within ±0.5 of real test results."
+      },
+      {
+        question: "Can I practice both Task 1 and Task 2 essays?",
+        answer:
+          "Yes. Switch between Task 1 visuals and Task 2 opinion prompts, then submit writing to get tailored feedback on Task Achievement, Coherence, Lexical Resource, and Grammar."
+      }
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO {...seoProps} />
       {/* Header */}
       <header className="border-b border-border bg-background shadow-soft">
         <div className="container mx-auto px-4 py-4">

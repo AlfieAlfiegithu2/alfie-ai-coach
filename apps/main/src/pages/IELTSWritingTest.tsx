@@ -547,67 +547,24 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <StudentLayout title="IELTS Writing Tests">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
-                <div className="max-w-4xl mx-auto">
-                  <div className="mb-12 text-center">
-                    <h1 className="text-4xl font-bold text-foreground mb-4">Choose Your IELTS Writing Test Type</h1>
-                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                      Select whether you want to practice Academic or General Training writing tasks
-                    </p>
-                  </div>
-
-                  <div className="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto">
-                    {/* Academic Training Card */}
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <div className="grid gap-8 md:grid-cols-2 max-w-2xl">
+                    {/* Academic Card */}
                     <SpotlightCard
-                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl"
-                      style={{
-                        background: themeStyles.theme.name === 'glassmorphism'
-                          ? 'rgba(255,255,255,0.1)'
-                          : themeStyles.theme.name === 'dark'
-                            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)'
-                            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)',
-                        borderColor: themeStyles.border,
-                        color: themeStyles.textPrimary
-                      }}
+                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-12 text-center ${themeStyles.cardClassName}`}
+                      style={themeStyles.cardStyle}
                       onClick={() => setSelectedTrainingType('Academic')}
                     >
-                      <CardContent className="p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-3" style={{ color: themeStyles.textPrimary }}>Academic Training</h3>
-                        <p className="mb-4" style={{ color: themeStyles.textSecondary }}>
-                          For students applying to universities and higher education institutions
-                        </p>
-                        <ul className="text-left space-y-2" style={{ color: themeStyles.textSecondary }}>
-                          <li>• Academic data interpretation</li>
-                          <li>• Academic essay writing</li>
-                          <li>• Formal academic language</li>
-                        </ul>
-                      </CardContent>
+                      <h3 className="text-3xl font-bold" style={{ color: themeStyles.textPrimary }}>Academic</h3>
                     </SpotlightCard>
 
-                    {/* General Training Card */}
+                    {/* General Card */}
                     <SpotlightCard
-                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl"
-                      style={{
-                        background: themeStyles.theme.name === 'glassmorphism'
-                          ? 'rgba(255,255,255,0.1)'
-                          : themeStyles.theme.name === 'dark'
-                            ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)'
-                            : 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)',
-                        borderColor: themeStyles.border,
-                        color: themeStyles.textPrimary
-                      }}
+                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-12 text-center ${themeStyles.cardClassName}`}
+                      style={themeStyles.cardStyle}
                       onClick={() => setSelectedTrainingType('General')}
                     >
-                      <CardContent className="p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-3" style={{ color: themeStyles.textPrimary }}>General Training</h3>
-                        <p className="mb-4" style={{ color: themeStyles.textSecondary }}>
-                          For work, immigration, or general communication purposes
-                        </p>
-                        <ul className="text-left space-y-2" style={{ color: themeStyles.textSecondary }}>
-                          <li>• Letter writing</li>
-                          <li>• General essay writing</li>
-                          <li>• Practical communication skills</li>
-                        </ul>
-                      </CardContent>
+                      <h3 className="text-3xl font-bold" style={{ color: themeStyles.textPrimary }}>General</h3>
                     </SpotlightCard>
                   </div>
                 </div>

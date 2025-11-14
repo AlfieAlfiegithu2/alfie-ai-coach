@@ -17,3 +17,5 @@ SET test_subtype = 'Academic'
 WHERE skill_category = 'Writing' AND test_subtype IS NULL;
 
 
+
+

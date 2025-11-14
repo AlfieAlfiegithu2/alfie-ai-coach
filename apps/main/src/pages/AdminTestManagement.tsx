@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookOpen, Headphones, PenTool, Mic, Clock, Users, Info, Plus } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -22,6 +23,7 @@ const AdminTestManagement = () => {
   const [tests, setTests] = useState<any[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newTestName, setNewTestName] = useState("");
+  const [trainingType, setTrainingType] = useState<'Academic' | 'General' | ''>('');
 
   useEffect(() => {
     if (!loading && !admin) {
@@ -63,22 +65,34 @@ const AdminTestManagement = () => {
       return;
     }
 
+    // Require training type selection for writing tests
+    if (testType === 'writing' && !trainingType) {
+      toast.error('Please select Academic or General training type for writing tests');
+      return;
+    }
+
     setIsCreating(true);
     try {
-      console.log('Creating test:', { newTestName, testType });
-      
-      const testData = {
+      console.log('Creating test:', { newTestName, testType, trainingType });
+
+      const testData: any = {
         test_name: newTestName,
         test_type: testType,
         module: testType === 'ielts' ? 'reading' : testType // Default module
       };
 
+      // Add training type for writing tests
+      if (testType === 'writing' && trainingType) {
+        testData.training_type = trainingType;
+      }
+
       const response = await createContent('tests', testData);
       console.log('Test created:', response);
-      
+
       toast.success('Test created successfully');
       setIsCreating(false);
       setNewTestName('');
+      setTrainingType('');
       loadTests();
     } catch (error: any) {
       console.error('Error creating test:', error);
@@ -182,6 +196,23 @@ const AdminTestManagement = () => {
                       placeholder={`e.g., ${testType?.toUpperCase()} Practice Test 1`}
                     />
                   </div>
+                  {testType === 'writing' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="trainingType">Training Type</Label>
+                      <Select value={trainingType} onValueChange={(value: 'Academic' | 'General' | '') => setTrainingType(value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select training type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Academic">Academic Training</SelectItem>
+                          <SelectItem value="General">General Training</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Choose the IELTS training type for this writing test
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Button onClick={createNewTest} className="flex-1">
                       Create Test

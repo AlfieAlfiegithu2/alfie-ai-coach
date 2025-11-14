@@ -70,6 +70,8 @@ const IELTSWritingTestInterface = () => {
   const [isDraggableChatOpen, setIsDraggableChatOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
+  const [selectedTrainingType, setSelectedTrainingType] = useState<'Academic' | 'General' | null>(null);
+  const [filteredTests, setFilteredTests] = useState<any[]>([]);
 
   // Timer states
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -116,6 +118,19 @@ const IELTSWritingTestInterface = () => {
       if (interval) clearInterval(interval);
     };
   }, [timerStarted, timeRemaining]);
+
+  // Filter tests based on selected training type
+  useEffect(() => {
+    if (selectedTrainingType && availableTests.length > 0) {
+      const filtered = availableTests.filter(test =>
+        test.training_type === selectedTrainingType ||
+        (!test.training_type && selectedTrainingType === 'Academic') // Default to Academic if not set
+      );
+      setFilteredTests(filtered);
+    } else {
+      setFilteredTests(availableTests);
+    }
+  }, [selectedTrainingType, availableTests]);
 
   useEffect(() => {
     if (testId) {
@@ -517,8 +532,83 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     }
   }, [timerStarted]);
 
-  // Show test selection if no testId provided
-  if (!testId && availableTests.length > 0) {
+  // Show training type selection first if no testId provided
+  if (!testId && !selectedTrainingType && availableTests.length > 0) {
+    return (
+      <div className="min-h-screen relative">
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+             style={{
+               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                 ? 'none'
+                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+               backgroundColor: themeStyles.backgroundImageColor
+             }} />
+        <div className="relative z-10">
+          <StudentLayout title="IELTS Writing Tests">
+            <div className="min-h-screen py-12">
+              <div className="container mx-auto px-4">
+                <div className="max-w-4xl mx-auto">
+                  <div className="mb-12 text-center">
+                    <h1 className="text-4xl font-bold text-foreground mb-4">Choose Your IELTS Writing Test Type</h1>
+                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                      Select whether you want to practice Academic or General Training writing tasks
+                    </p>
+                  </div>
+
+                  <div className="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto">
+                    {/* Academic Training Card */}
+                    <SpotlightCard
+                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200"
+                      onClick={() => setSelectedTrainingType('Academic')}
+                    >
+                      <CardContent className="p-8 text-center">
+                        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
+                          <BookOpen className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-blue-900 mb-3">Academic Training</h3>
+                        <p className="text-blue-700 mb-4">
+                          For students applying to universities and higher education institutions
+                        </p>
+                        <ul className="text-left text-blue-800 space-y-2">
+                          <li>• Task 1: Academic data interpretation</li>
+                          <li>• Task 2: Academic essay writing</li>
+                          <li>• Formal academic language</li>
+                        </ul>
+                      </CardContent>
+                    </SpotlightCard>
+
+                    {/* General Training Card */}
+                    <SpotlightCard
+                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+                      onClick={() => setSelectedTrainingType('General')}
+                    >
+                      <CardContent className="p-8 text-center">
+                        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-green-500 text-white flex items-center justify-center">
+                          <Languages className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-green-900 mb-3">General Training</h3>
+                        <p className="text-green-700 mb-4">
+                          For work, immigration, or general communication purposes
+                        </p>
+                        <ul className="text-left text-green-800 space-y-2">
+                          <li>• Task 1: Letter writing</li>
+                          <li>• Task 2: General essay writing</li>
+                          <li>• Practical communication skills</li>
+                        </ul>
+                      </CardContent>
+                    </SpotlightCard>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </StudentLayout>
+        </div>
+      </div>
+    );
+  }
+
+  // Show test selection if training type is selected but no testId provided
+  if (!testId && selectedTrainingType && filteredTests.length > 0) {
     return (
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
@@ -534,15 +624,29 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
                   <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-foreground mb-2">IELTS Writing Tests</h1>
-                    <p className="text-lg text-muted-foreground">Choose a test to begin your writing practice</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedTrainingType(null)}
+                      className="mb-4"
+                    >
+                      ← Back to Test Type Selection
+                    </Button>
+                    <h1 className="text-4xl font-bold text-foreground mb-2">
+                      IELTS {selectedTrainingType} Writing Tests
+                    </h1>
+                    <p className="text-lg text-muted-foreground">
+                      Choose a {selectedTrainingType.toLowerCase()} writing test to begin your practice
+                    </p>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {availableTests.map((test) => (
+                    {filteredTests.map((test) => (
                       <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/writing/${test.id}`)}>
                         <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
                           <h3 className="font-semibold text-sm">{test.test_name}</h3>
+                          {test.training_type && (
+                            <p className="text-xs text-muted-foreground mt-1">{test.training_type}</p>
+                          )}
                         </CardContent>
                       </SpotlightCard>
                     ))}

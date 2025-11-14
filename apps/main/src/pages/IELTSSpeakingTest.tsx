@@ -31,6 +31,7 @@ import { Orb } from "@/components/ui/orb";
 import { ShimmeringText } from "@/components/ui/shimmering-text";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
 import { useAuth } from "@/hooks/useAuth";
+import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
 interface SpeakingPrompt {
   id: string;
@@ -388,34 +389,35 @@ const IELTSSpeakingTest = () => {
     try {
       console.log(`🔍 Loading speaking test data for test ID: ${testId}`);
 
-      // Get the test details - try ID first (UUID), then test_name if ID fails (legacy support)
-      let testData, testError;
+      // OPTIMIZATION: Determine query type first, then use parallel queries
+      const isUUID = testId.includes('-') && testId.length === 36;
       
-      // Check if testId looks like a UUID (has dashes and is 36 chars)
-      if (testId.includes('-') && testId.length === 36) {
-        // It's a UUID, query by id
-        const result = await supabase
-          .from('tests')
+      // OPTIMIZATION: Load test and prompts in parallel
+      const [testResult, promptsResult] = await Promise.all([
+        isUUID
+          ? supabase
+              .from('tests')
+              .select('id, test_name')
+              .eq('id', testId)
+              .single()
+          : supabase
+              .from('tests')
+              .select('id, test_name')
+              .eq('test_name', testId)
+              .eq('test_type', 'IELTS')
+              .eq('module', 'Speaking')
+              .maybeSingle(),
+        // Start loading prompts immediately (we'll use test ID from result)
+        supabase
+          .from('speaking_prompts')
           .select('*')
-          .eq('id', testId)
-          .single();
-        testData = result.data;
-        testError = result.error;
-      } else {
-        // It's a test name (legacy), query by test_name
-        const result = await supabase
-          .from('tests')
-          .select('*')
-          .eq('test_name', testId)
-          .eq('test_type', 'IELTS')
-          .eq('module', 'Speaking')
-          .maybeSingle();
-        testData = result.data;
-        testError = result.error;
-      }
+          .eq('test_id', testId) // Try with testId first (works if it's UUID)
+          .order('part_number', { ascending: true })
+      ]);
 
-      if (testError) throw testError;
+      if (testResult.error) throw testResult.error;
       
+      const testData = testResult.data;
       if (!testData) {
         toast({
           title: "Test Not Found",
@@ -428,58 +430,39 @@ const IELTSSpeakingTest = () => {
       
       console.log('✅ Test loaded:', testData.test_name);
 
-      // Load speaking prompts for this specific test - use actual test ID from database
-      const actualTestId = testData.id;
-      const { data: prompts, error: promptsError } = await supabase
-        .from('speaking_prompts')
-        .select('*')
-        .eq('test_id', actualTestId)
-        .order('part_number', { ascending: true });
-
-      if (promptsError) {
-        console.error('❌ Error loading prompts:', promptsError);
-        // Continue anyway - show empty test
+      // OPTIMIZATION: If prompts weren't loaded with testId, load with actual test ID
+      let prompts = promptsResult.data || [];
+      if (prompts.length === 0 && testData.id !== testId) {
+        const { data: promptsData } = await supabase
+          .from('speaking_prompts')
+          .select('*')
+          .eq('test_id', testData.id)
+          .order('part_number', { ascending: true });
+        prompts = promptsData || [];
       }
 
-      const promptsList = prompts || [];
-      console.log(`📝 Loaded ${promptsList.length} total speaking prompts`);
+      console.log(`📝 Loaded ${prompts.length} total speaking prompts`);
+
+      // OPTIMIZATION: Single pass to organize prompts
+      const part1: any[] = [];
+      let part2: any = null;
+      const part3: any[] = [];
       
-      // Debug: Log audio URLs for each prompt
-      promptsList.forEach((p: any) => {
-        console.log(`🔊 Prompt: ${p.title} (Part ${p.part_number}) - audio_url:`, p.audio_url || 'NOT SET');
+      prompts.forEach((p: any) => {
+        if (p.part_number === 1) part1.push(p);
+        else if (p.part_number === 2) part2 = p;
+        else if (p.part_number === 3) part3.push(p);
       });
 
-      if (promptsList.length > 0) {
-        const part1 = promptsList.filter(p => p.part_number === 1);
-        const part2 = promptsList.find(p => p.part_number === 2);
-        const part3 = promptsList.filter(p => p.part_number === 3);
+      setTestData({
+        id: testData.id,
+        test_name: testData.test_name,
+        part1_prompts: part1,
+        part2_prompt: part2,
+        part3_prompts: part3
+      });
         
-        // Debug: Log Part 1 prompts specifically
-        console.log(`🔊 Part 1 prompts (${part1.length}):`, part1.map((p: any) => ({ 
-          title: p.title, 
-          audio_url: p.audio_url || 'NOT SET',
-          has_audio: !!p.audio_url 
-        })));
-
-        setTestData({
-          id: testData.id,
-          test_name: testData.test_name,
-          part1_prompts: part1,
-          part2_prompt: part2 || null,
-          part3_prompts: part3
-        });
-        
-        console.log(`✅ Test ready: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
-      } else {
-        console.log(`ℹ️ No speaking prompts available - showing blank test`);
-        setTestData({
-          id: testData.id,
-          test_name: testData.test_name,
-          part1_prompts: [],
-          part2_prompt: null,
-          part3_prompts: []
-        });
-      }
+      console.log(`✅ Test ready: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
     } catch (error) {
       console.error('❌ Error:', error);
       // Still show the test so student can record
@@ -497,96 +480,65 @@ const IELTSSpeakingTest = () => {
     }
   };
 
-  // Load list of available speaking tests
+  // Load list of available speaking tests - OPTIMIZED
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
       console.log('📋 Loading available speaking tests...');
       
-      // Match admin query exactly: filter for tests where module='Speaking' OR skill_category='Speaking'
-      const { data: tests, error: testsError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('test_type', 'IELTS')
-        .or('module.eq.Speaking,skill_category.eq.Speaking')
-        .order('created_at', { ascending: false });
-
-      if (testsError) {
-        console.error('❌ Error loading tests:', testsError);
-        throw testsError;
-      }
-
-      // Fallback: if no tests found with exact match, try case-insensitive
-      let finalTests = tests || [];
-      if (finalTests.length === 0) {
-        console.log('🔄 No exact matches, trying case-insensitive search...');
-        const { data: allIeltsTests } = await supabase
+      // OPTIMIZATION: Use parallel queries and single optimized query
+      // Query 1: Get tests with speaking module/category (case-insensitive using ilike)
+      // Query 2: Get all test_ids that have speaking prompts
+      const [testsResult, promptsResult] = await Promise.all([
+        supabase
           .from('tests')
-          .select('*')
+          .select('id, test_name, module, skill_category, created_at')
           .eq('test_type', 'IELTS')
-          .order('created_at', { ascending: false });
-        
-        // Filter client-side exactly like admin does
-        finalTests = (allIeltsTests || []).filter((test: any) => 
-          test.module === 'Speaking' || test.skill_category === 'Speaking'
-        );
+          .or('module.ilike.Speaking,skill_category.ilike.Speaking')
+          .order('created_at', { ascending: false })
+          .limit(100), // Limit to prevent loading too many
+        supabase
+          .from('speaking_prompts')
+          .select('test_id')
+          .limit(1000) // Get all prompts efficiently
+      ]);
+
+      if (testsResult.error) {
+        console.error('❌ Error loading tests:', testsResult.error);
+        throw testsResult.error;
       }
 
-      // Filter out invalid test names and deduplicate
+      const tests = testsResult.data || [];
+      const promptsData = promptsResult.data || [];
+      
+      // Create set of test IDs that have prompts (fast lookup)
+      const testsWithPromptsSet = new Set(promptsData.map((p: any) => p.test_id));
+      
+      // OPTIMIZATION: Single pass filtering with early returns
       const seenIds = new Set<string>();
       const seenNames = new Set<string>();
-      const validTests = finalTests.filter((test: any) => {
-        // Skip if no ID
-        if (!test.id) return false;
+      const invalidNames = new Set(['test ?', 'another test?', '']);
+      
+      const validTests = tests.filter((test: any) => {
+        // Early return checks (fastest first)
+        if (!test.id || seenIds.has(test.id)) return false;
+        if (!testsWithPromptsSet.has(test.id)) return false; // Skip tests without prompts early
         
-        // Skip if duplicate ID
-        if (seenIds.has(test.id)) {
-          console.log(`⚠️ Duplicate test ID skipped: ${test.id} - ${test.test_name}`);
-          return false;
-        }
-        
-        // Skip if invalid test name
         const testName = (test.test_name || '').trim();
-        if (!testName || 
-            testName === 'test ?' || 
-            testName === 'another test?' ||
-            testName.toLowerCase().includes('quick test') ||
-            testName.length < 2) {
-          console.log(`⚠️ Invalid test name skipped: ${test.id} - "${testName}"`);
-          return false;
-        }
+        if (!testName || testName.length < 2) return false;
+        if (invalidNames.has(testName)) return false;
+        if (testName.toLowerCase().includes('quick test')) return false;
         
-        // Skip if duplicate name (keep the first one)
-        const normalizedName = testName.toLowerCase().trim();
-        if (seenNames.has(normalizedName)) {
-          console.log(`⚠️ Duplicate test name skipped: ${test.id} - "${testName}"`);
-          return false;
-        }
+        const normalizedName = testName.toLowerCase();
+        if (seenNames.has(normalizedName)) return false;
         
         seenIds.add(test.id);
         seenNames.add(normalizedName);
         return true;
       });
 
-      // Also verify tests have speaking prompts (optimized with single query)
-      const testIds = validTests.map((t: any) => t.id);
-      const { data: promptsData } = await supabase
-        .from('speaking_prompts')
-        .select('test_id')
-        .in('test_id', testIds);
-      
-      const testsWithPromptsSet = new Set((promptsData || []).map((p: any) => p.test_id));
-      const testsWithPrompts = validTests.filter((test: any) => {
-        if (testsWithPromptsSet.has(test.id)) {
-          return true;
-        } else {
-          console.log(`⚠️ Test has no speaking prompts, skipping: ${test.test_name}`);
-          return false;
-        }
-      });
-
-      console.log(`✅ Found ${testsWithPrompts.length} valid speaking tests:`, testsWithPrompts.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
-      setAvailableTests(testsWithPrompts);
+      console.log(`✅ Found ${validTests.length} valid speaking tests`);
+      setAvailableTests(validTests);
     } catch (error) {
       console.error('❌ Error loading tests:', error);
       toast({
@@ -1357,11 +1309,8 @@ const IELTSSpeakingTest = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Loading speaking tests...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
+        <LottieLoadingAnimation size="lg" message="Loading speaking tests..." />
       </div>
     );
   }

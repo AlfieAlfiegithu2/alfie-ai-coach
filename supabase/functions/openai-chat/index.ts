@@ -2,7 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY'); // Fallback
 
 // Initialize Supabase client for caching
 const supabase = createClient(
@@ -22,23 +23,24 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 Environment check - DEEPSEEK_API_KEY exists:', !!deepSeekApiKey);
-    console.log('🔍 All environment variables:', Object.keys(Deno.env.toObject()));
+    console.log('🔍 Environment check - OPENROUTER_API_KEY exists:', !!openRouterApiKey);
+    console.log('🔍 Fallback DEEPSEEK_API_KEY exists:', !!deepSeekApiKey);
     
-    // Check if DeepSeek API key is configured
-    if (!deepSeekApiKey) {
-      console.error('❌ DeepSeek API key not configured. Available env vars:', Object.keys(Deno.env.toObject()));
+    // Check if OpenRouter API key is configured (primary)
+    if (!openRouterApiKey && !deepSeekApiKey) {
+      console.error('❌ No AI API key configured. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'AI service temporarily unavailable. Please try again in a moment.',
-        details: 'DeepSeek API key not configured'
+        details: 'No AI API key configured'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ DeepSeek API key found, length:', deepSeekApiKey.length);
+    const useOpenRouter = !!openRouterApiKey;
+    console.log(`✅ Using ${useOpenRouter ? 'OpenRouter (Gemini 2.5 Flash Lite)' : 'DeepSeek (fallback)'} for AI chat`);
 
     const body = await req.json();
     const { messages, message, context = "catbot", imageContext, taskType, taskInstructions, skipCache = false } = body;
@@ -69,7 +71,7 @@ serve(async (req) => {
         .select('response, hit_count')
         .eq('cache_key', cacheKey)
         .gt('expires_at', new Date().toISOString())
-        .single();
+        .maybeSingle(); // Changed from .single() to .maybeSingle() for better performance
       cachedResponse = cacheData;
     } else {
       console.log('⏭️ Skipping cache check (skipCache=true)');
@@ -225,37 +227,136 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
 
     const complexity = analyzeComplexity(finalMessage);
     console.log(`📊 Question complexity: ${complexity.level}, allocated tokens: ${complexity.tokens}`);
-    console.log('Making DeepSeek request with API key:', deepSeekApiKey ? 'Present' : 'Missing');
     
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${deepSeekApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: apiMessages,
-        max_tokens: complexity.tokens,
-        temperature: 0.7,
-      }),
-    });
+    let response;
+    let apiProvider = 'unknown';
+    
+    if (useOpenRouter) {
+      // Use OpenRouter with Gemini 2.5 Flash Lite
+      console.log('💨 Calling OpenRouter API (Gemini 2.5 Flash Lite)...');
+      apiProvider = 'openrouter-gemini';
+      
+      response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openRouterApiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://englishaidol.com',
+          'X-Title': 'English AI Coach',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-lite',
+          messages: apiMessages,
+          max_tokens: complexity.tokens,
+          temperature: 0.5, // Lower temperature for faster, more deterministic responses
+          stream: true, // Enable streaming for progressive responses
+        }),
+      });
+    } else {
+      // Fallback to DeepSeek
+      console.log('💨 Calling DeepSeek API (fallback)...');
+      apiProvider = 'deepseek';
+      
+      response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${deepSeekApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: apiMessages,
+          max_tokens: complexity.tokens,
+          temperature: 0.5, // Lower temperature for faster, more deterministic responses
+        }),
+      });
+    }
 
-    console.log('DeepSeek response status:', response.status);
+    console.log(`${apiProvider} response status:`, response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('DeepSeek API error:', errorText);
-      throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+      console.error(`${apiProvider} API error:`, errorText);
+      throw new Error(`${apiProvider} API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
-    const choice = data.choices[0];
-    let aiResponse = choice.message.content;
+    let aiResponse = '';
+    let finishReason = 'stop';
+    let wasTruncated = false;
     
-    // Check for response truncation and handle accordingly
-    const finishReason = choice.finish_reason;
-    const wasTruncated = finishReason === 'length';
+    // Handle streaming response for OpenRouter/Gemini
+    if (useOpenRouter && response.body) {
+      console.log('📡 Processing streaming response...');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const delta = json.choices?.[0]?.delta?.content;
+                if (delta) {
+                  aiResponse += delta;
+                }
+                // Check for finish reason
+                if (json.choices?.[0]?.finish_reason) {
+                  finishReason = json.choices[0].finish_reason;
+                }
+              } catch (e) {
+                // Skip invalid JSON lines
+              }
+            }
+          }
+        }
+        
+        // Process any remaining buffer
+        if (buffer.startsWith('data: ') && buffer !== 'data: [DONE]') {
+          try {
+            const json = JSON.parse(buffer.slice(6));
+            const delta = json.choices?.[0]?.delta?.content;
+            if (delta) {
+              aiResponse += delta;
+            }
+            if (json.choices?.[0]?.finish_reason) {
+              finishReason = json.choices[0].finish_reason;
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+        
+        wasTruncated = finishReason === 'length';
+        console.log(`✅ Streamed response complete: ${aiResponse.length} chars, finish_reason: ${finishReason}`);
+      } catch (streamError) {
+        console.error('❌ Streaming error:', streamError);
+        // Fallback: try to parse as regular JSON
+        const fallbackData = await response.json().catch(() => null);
+        if (fallbackData?.choices?.[0]?.message?.content) {
+          aiResponse = fallbackData.choices[0].message.content;
+          finishReason = fallbackData.choices[0]?.finish_reason || 'stop';
+          wasTruncated = finishReason === 'length';
+        } else {
+          throw streamError;
+        }
+      }
+    } else {
+      // Non-streaming response (DeepSeek fallback)
+      const data = await response.json();
+      const choice = data.choices[0];
+      aiResponse = choice.message.content;
+      finishReason = choice.finish_reason || 'stop';
+      wasTruncated = finishReason === 'length';
+    }
     
     console.log(`🔍 Response completion status: ${finishReason}, truncated: ${wasTruncated}`);
     console.log(`📏 Token usage - requested: ${complexity.tokens}, response length: ${aiResponse.length} chars`);
@@ -293,20 +394,18 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
 
     console.log('✅ AI Chat Response generated successfully');
 
-    // Cache the response for future use with completion metadata (only if caching is enabled)
+    // Cache the response asynchronously (non-blocking) for future use
+    // This doesn't block the response, improving perceived performance
     if (!skipCache) {
-      try {
-        const taskContext = [taskType, taskInstructions, imageContext].filter(Boolean).join(' | ');
-
-        await supabase
-          .from('chat_cache')
-          .insert({
+      // Fire-and-forget cache write - don't await it
+      supabase
+        .from('chat_cache')
+        .insert({
           cache_key: cacheKey,
           response: aiResponse,
-          task_context: taskContext || null,
+          task_context: [taskType, taskInstructions, imageContext].filter(Boolean).join(' | ') || null,
           hit_count: 1,
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-          // Store metadata for monitoring and optimization
           metadata: {
             complexity_level: complexity.level,
             tokens_allocated: complexity.tokens,
@@ -315,18 +414,14 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
             finish_reason: finishReason,
             question_length: finalMessage.length
           }
+        })
+        .then(() => {
+          console.log('💾 Response cached successfully (async)');
+        })
+        .catch((cacheError) => {
+          console.warn('⚠️ Failed to cache response (non-blocking):', cacheError);
+          // Don't fail the request if caching fails
         });
-      
-      console.log('💾 Response cached successfully with metadata');
-      
-      // Log usage statistics for monitoring
-      if (wasTruncated) {
-        console.log(`📈 Truncation event logged - complexity: ${complexity.level}, tokens: ${complexity.tokens}`);
-      }
-    } catch (cacheError) {
-      console.warn('⚠️ Failed to cache response:', cacheError);
-      // Don't fail the request if caching fails
-    }
     } else {
       console.log('⏭️ Skipping response caching (skipCache=true)');
     }

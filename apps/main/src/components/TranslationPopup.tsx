@@ -20,7 +20,6 @@ interface TranslationResult {
   alternatives?: Array<{ meaning: string; pos?: string } | string>;
   pos?: string;
   ipa?: string;
-  englishIpa?: string; // English IPA pronunciation
   context?: string;
 }
 
@@ -49,33 +48,6 @@ export default function TranslationPopup({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch English IPA pronunciation with timeout (silent - IPA is optional)
-  const fetchEnglishIPA = async (word: string): Promise<string | null> => {
-    try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('IPA fetch timeout')), 3000)
-      );
-
-      const fetchPromise = supabase.functions.invoke('translation-service', {
-        body: {
-          text: word,
-          sourceLang: 'en',
-          targetLang: 'en',
-          includeContext: true
-        }
-      });
-
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
-
-      if (error || !data?.success) return null;
-      
-      return data?.result?.ipa || null;
-    } catch (error) {
-      // Silently fail - IPA is optional and not critical
-      // Don't log errors for timeouts or network issues
-      return null;
-    }
-  };
 
   // Fetch translation on mount
   useEffect(() => {
@@ -229,8 +201,7 @@ export default function TranslationPopup({
                       alternatives: processedAlternatives,
                       pos: result.pos || undefined,
                       ipa: result.ipa || undefined,
-                      context: result.context || undefined,
-                      englishIpa: undefined
+                      context: result.context || undefined
                     });
                   } else {
                     // Full details received
@@ -245,8 +216,7 @@ export default function TranslationPopup({
                       alternatives: processedAlternatives,
                       pos: result.pos || undefined,
                       ipa: result.ipa || undefined,
-                      context: result.context || undefined,
-                      englishIpa: undefined
+                      context: result.context || undefined
                     };
                     setTranslation(fullTranslation);
                     
@@ -258,27 +228,13 @@ export default function TranslationPopup({
                       // Ignore storage errors
                     }
                   }
-                  
-                  // Fetch English IPA in background
-                  fetchEnglishIPA(selectedText).then(ipa => {
-                    if (ipa) {
-                      setTranslation(prev => prev ? { ...prev, englishIpa: ipa } : null);
-                    }
-                  }).catch(() => {});
                 } else {
-                  // Fallback: use cached translation but try to get IPA
+                  // Fallback: use cached translation
                   console.log('⚠️ Full details fetch failed, using cached translation');
                   setTranslation({
                     translation: data.result.translation,
-                    alternatives: [],
-                    englishIpa: undefined
+                    alternatives: []
                   });
-                  
-                  fetchEnglishIPA(selectedText).then(ipa => {
-                    if (ipa) {
-                      setTranslation(prev => prev ? { ...prev, englishIpa: ipa } : null);
-                    }
-                  }).catch(() => {});
                 }
               } catch (error: any) {
                 console.error('❌ Error fetching full details:', error);
@@ -302,8 +258,7 @@ export default function TranslationPopup({
                         translation: cachedData.translation || data.result.translation,
                         alternatives: cachedData.alternatives || [],
                         pos: cachedData.pos,
-                        ipa: cachedData.ipa,
-                        englishIpa: undefined
+                        ipa: cachedData.ipa
                       });
                       setIsLoading(false);
                       return;
@@ -316,16 +271,8 @@ export default function TranslationPopup({
                 // Fallback: use cached simple translation
                 setTranslation({
                   translation: data.result.translation,
-                  alternatives: [],
-                  englishIpa: undefined
+                  alternatives: []
                 });
-                
-                // Try IPA as last resort
-                fetchEnglishIPA(selectedText).then(ipa => {
-                  if (ipa) {
-                    setTranslation(prev => prev ? { ...prev, englishIpa: ipa } : null);
-                  }
-                }).catch(() => {});
               } finally {
                 setIsLoading(false);
               }
@@ -366,8 +313,7 @@ export default function TranslationPopup({
               alternatives: processedAlternatives,
               pos: result.pos || undefined,
               ipa: result.ipa || undefined,
-              context: result.context || undefined,
-              englishIpa: undefined
+              context: result.context || undefined
             };
             setTranslation(fullTranslation);
             
@@ -378,15 +324,6 @@ export default function TranslationPopup({
             } catch (e) {
               // Ignore storage errors
             }
-            
-            // Fetch English IPA in background (non-blocking, optional)
-            fetchEnglishIPA(selectedText).then(ipa => {
-              if (ipa) {
-                setTranslation(prev => prev ? { ...prev, englishIpa: ipa } : null);
-              }
-            }).catch(() => {
-              // Silently fail - IPA is optional
-            });
           }
         } else {
           console.error('❌ Translation failed:', data);
@@ -417,8 +354,7 @@ export default function TranslationPopup({
                 translation: cachedData.translation || selectedText,
                 alternatives: cachedData.alternatives || [],
                 pos: cachedData.pos,
-                ipa: cachedData.ipa,
-                englishIpa: undefined
+                ipa: cachedData.ipa
               });
               setIsLoading(false);
               return;
@@ -431,8 +367,7 @@ export default function TranslationPopup({
           console.warn('Translation timeout/connection error, showing fallback');
           setTranslation({
             translation: selectedText,
-            alternatives: [],
-            englishIpa: undefined
+            alternatives: []
           });
         } else {
           // For other errors, show error toast
@@ -675,18 +610,12 @@ export default function TranslationPopup({
             <p className={`text-slate-900 dark:text-slate-100 ${langStyles.fontSize.original} font-semibold ${langStyles.lineHeight}`}>
               {selectedText}
             </p>
-            {/* POS and IPA underneath original word - only show if available */}
+            {/* POS underneath original word - only show if available */}
             <div className="space-y-0.5 mt-0.5">
               {/* Show POS only if it exists and is not empty */}
               {primaryPOS && primaryPOS.trim() !== '' && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {primaryPOS}
-                </p>
-              )}
-              {/* Show IPA only if English IPA is available (don't show source language IPA) */}
-              {translation?.englishIpa && (
-                <p className={`text-xs text-slate-500 dark:text-slate-500 font-mono`}>
-                  /{translation.englishIpa}/
                 </p>
               )}
             </div>

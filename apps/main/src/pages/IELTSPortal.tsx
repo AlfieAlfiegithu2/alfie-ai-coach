@@ -54,25 +54,18 @@ const IELTSPortal = () => {
   const [ieltsSkillProgress, setIeltsSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
   const [vocabProgress, setVocabProgress] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   useEffect(() => {
-    loadAvailableTests();
-
-    if (user) {
-      loadSkillBands();
-      loadSkillProgress();
-    }
-
-    // Preload the background image
-    const img = new Image();
-    img.onload = () => setImageLoaded(true);
-    img.src = 'https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png';
-
-    // Auto-refresh available tests every 30 seconds to show new admin-created tests
-    const testRefreshInterval = setInterval(() => {
-      console.log('🔄 Auto-refreshing available tests...');
-      loadAvailableTests();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(testRefreshInterval);
+    // Don't block UI on image loading - show content immediately
+    setImageLoaded(true);
+    
+    // Load all data in parallel
+    const loadData = async () => {
+      await Promise.all([
+        loadAvailableTests(),
+        user ? Promise.all([loadSkillBands(), loadSkillProgress()]) : Promise.resolve()
+      ]);
+    };
+    
+    loadData();
   }, [user]);
 
   // Recompute IELTS skill progress whenever tests load or user changes
@@ -94,37 +87,29 @@ const IELTSPortal = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
-      // Fetch all IELTS tests from admin (case insensitive)
-      const {
-        data: testsData,
-        error: testsError
-      } = await supabase.from('tests').select('*').ilike('test_type', 'IELTS').order('created_at', {
-        ascending: true
-      });
-      if (testsError) {
-        console.error('Error fetching tests:', testsError);
-        throw testsError;
+      // Fetch all data in parallel for faster loading
+      const [testsResult, questionsResult, speakingResult] = await Promise.all([
+        supabase.from('tests').select('*').ilike('test_type', 'IELTS').order('created_at', { ascending: true }),
+        supabase.from('questions').select('test_id, part_number, id, audio_url, choices'),
+        supabase.from('speaking_prompts').select('test_id, id')
+      ]);
+
+      if (testsResult.error) {
+        console.error('Error fetching tests:', testsResult.error);
+        throw testsResult.error;
+      }
+      if (questionsResult.error) {
+        console.error('Error fetching questions:', questionsResult.error);
+        throw questionsResult.error;
+      }
+      if (speakingResult.error) {
+        console.error('Error fetching speaking prompts:', speakingResult.error);
+        throw speakingResult.error;
       }
 
-      // Fetch questions to check test completion status
-      const {
-        data: questionsData,
-        error: questionsError
-      } = await supabase.from('questions').select('test_id, part_number, id, audio_url, choices');
-      if (questionsError) {
-        console.error('Error fetching questions:', questionsError);
-        throw questionsError;
-      }
-
-      // Fetch speaking prompts to check speaking tests
-      const {
-        data: speakingData,
-        error: speakingError
-      } = await supabase.from('speaking_prompts').select('test_id, id');
-      if (speakingError) {
-        console.error('Error fetching speaking prompts:', speakingError);
-        throw speakingError;
-      }
+      const testsData = testsResult.data;
+      const questionsData = questionsResult.data;
+      const speakingData = speakingResult.data;
 
       // Seed module availability from tests table metadata and names
       const testModules = new Map();
@@ -257,23 +242,29 @@ const IELTSPortal = () => {
     if (!user) return;
     try {
       const skillsToFetch = ['reading', 'listening', 'writing', 'speaking'];
-      const bands: Record<string, string> = {};
-
-      for (const s of skillsToFetch) {
-        const { data, error } = await supabase
+      
+      // Fetch all skill bands in parallel
+      const bandPromises = skillsToFetch.map(skill =>
+        supabase
           .from('test_results')
           .select('score_percentage, created_at, test_type')
           .eq('user_id', user.id)
-          .ilike('test_type', `%${s}%`)
+          .ilike('test_type', `%${skill}%`)
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle();
+          .maybeSingle()
+      );
 
+      const results = await Promise.all(bandPromises);
+      const bands: Record<string, string> = {};
+
+      results.forEach(({ data, error }, index) => {
+        const skill = skillsToFetch[index];
         if (!error && data?.score_percentage != null) {
           const band = percentageToIELTSBand(data.score_percentage);
-          bands[s] = `Band ${band}`;
+          bands[skill] = `Band ${band}`;
         }
-      }
+      });
 
       setSkillBands(bands);
     } catch (e) {
@@ -286,26 +277,31 @@ const IELTSPortal = () => {
     try {
       const progress: Record<string, { completed: number; total: number }> = {};
       
-      for (const skill of SKILLS) {
-        // Get user progress for this skill
-        const { data: userProgress } = await supabase
-          .from('user_skill_progress')
-          .select('max_unlocked_level')
-          .eq('user_id', user.id)
-          .eq('skill_slug', skill.slug)
-          .maybeSingle();
+      // Fetch all skill progress in parallel
+      const progressPromises = SKILLS.map(skill =>
+        Promise.all([
+          supabase
+            .from('user_skill_progress')
+            .select('max_unlocked_level')
+            .eq('user_id', user.id)
+            .eq('skill_slug', skill.slug)
+            .maybeSingle(),
+          supabase
+            .from('skill_tests')
+            .select('id', { count: 'exact', head: true })
+            .eq('skill_slug', skill.slug)
+        ])
+      );
 
-        // Get total available tests for this skill
-        const { data: totalTests } = await supabase
-          .from('skill_tests')
-          .select('id')
-          .eq('skill_slug', skill.slug);
+      const results = await Promise.all(progressPromises);
 
-        const completed = userProgress?.max_unlocked_level || 0;
-        const total = totalTests?.length || 10; // Default to 10 if no tests found
+      results.forEach(([userProgressResult, totalTestsResult], index) => {
+        const skill = SKILLS[index];
+        const completed = userProgressResult.data?.max_unlocked_level || 0;
+        const total = totalTestsResult.count || 10; // Default to 10 if no tests found
         
         progress[skill.slug] = { completed, total };
-      }
+      });
       
       setSkillProgress(progress);
     } catch (error) {
@@ -384,8 +380,9 @@ const IELTSPortal = () => {
     }
   };
 
-  if (!imageLoaded) {
-    return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+  // Show loading only for actual data, not image
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent' }}>
         <LoadingAnimation />
       </div>;
   }

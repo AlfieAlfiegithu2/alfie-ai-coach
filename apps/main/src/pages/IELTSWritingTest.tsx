@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, BookOpen, ListTree, Clock, FileText, PenTool, Languages } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool, Languages } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -558,20 +558,26 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   <div className="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto">
                     {/* Academic Training Card */}
                     <SpotlightCard
-                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200"
+                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl"
+                      style={{
+                        background: themeStyles.theme.name === 'glassmorphism'
+                          ? 'rgba(255,255,255,0.1)'
+                          : themeStyles.theme.name === 'dark'
+                            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)'
+                            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)',
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary
+                      }}
                       onClick={() => setSelectedTrainingType('Academic')}
                     >
                       <CardContent className="p-8 text-center">
-                        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
-                          <BookOpen className="w-8 h-8" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-blue-900 mb-3">Academic Training</h3>
-                        <p className="text-blue-700 mb-4">
+                        <h3 className="text-2xl font-bold mb-3" style={{ color: themeStyles.textPrimary }}>Academic Training</h3>
+                        <p className="mb-4" style={{ color: themeStyles.textSecondary }}>
                           For students applying to universities and higher education institutions
                         </p>
-                        <ul className="text-left text-blue-800 space-y-2">
-                          <li>• Task 1: Academic data interpretation</li>
-                          <li>• Task 2: Academic essay writing</li>
+                        <ul className="text-left space-y-2" style={{ color: themeStyles.textSecondary }}>
+                          <li>• Academic data interpretation</li>
+                          <li>• Academic essay writing</li>
                           <li>• Formal academic language</li>
                         </ul>
                       </CardContent>
@@ -579,20 +585,26 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
                     {/* General Training Card */}
                     <SpotlightCard
-                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+                      className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl"
+                      style={{
+                        background: themeStyles.theme.name === 'glassmorphism'
+                          ? 'rgba(255,255,255,0.1)'
+                          : themeStyles.theme.name === 'dark'
+                            ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)'
+                            : 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)',
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary
+                      }}
                       onClick={() => setSelectedTrainingType('General')}
                     >
                       <CardContent className="p-8 text-center">
-                        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-green-500 text-white flex items-center justify-center">
-                          <Languages className="w-8 h-8" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-green-900 mb-3">General Training</h3>
-                        <p className="text-green-700 mb-4">
+                        <h3 className="text-2xl font-bold mb-3" style={{ color: themeStyles.textPrimary }}>General Training</h3>
+                        <p className="mb-4" style={{ color: themeStyles.textSecondary }}>
                           For work, immigration, or general communication purposes
                         </p>
-                        <ul className="text-left text-green-800 space-y-2">
-                          <li>• Task 1: Letter writing</li>
-                          <li>• Task 2: General essay writing</li>
+                        <ul className="text-left space-y-2" style={{ color: themeStyles.textSecondary }}>
+                          <li>• Letter writing</li>
+                          <li>• General essay writing</li>
                           <li>• Practical communication skills</li>
                         </ul>
                       </CardContent>

@@ -16,7 +16,10 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
+import LanguageSelector from '@/components/LanguageSelector';
 import { getLanguagesForSettings } from '@/lib/languageUtils';
+import { useTheme } from '@/contexts/ThemeContext';
+import { themes, ThemeName } from '@/lib/themes';
 
 interface SectionScores {
   reading: number;
@@ -43,6 +46,7 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
   const { user, signOut, profile } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const { themeName, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -122,6 +126,11 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
         console.log('📝 No native language found, using default');
       }
 
+      // Load theme preference
+      if ((data as any)?.dashboard_theme) {
+        setTheme((data as any).dashboard_theme as ThemeName);
+      }
+
       if (data) {
         const defaultScores = {
           reading: 7.0,
@@ -184,7 +193,8 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
           preferred_name: preferences.preferred_name,
           native_language: nativeLanguage,
-          target_scores: preferences.target_scores as any
+          target_scores: preferences.target_scores as any,
+          dashboard_theme: themeName as any
         }, {
           onConflict: 'user_id'
         });
@@ -233,12 +243,12 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-slate-800">{t('settings.title')}</DialogTitle>
+        <DialogHeader className="items-center">
+          <DialogTitle className="text-slate-800 text-lg font-semibold">{t('settings.title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           {/* Profile Photo Section */}
-          <div className="flex items-center gap-4 p-4 bg-white/30 rounded-lg border border-white/20">
+          <div className="flex items-center justify-center gap-4 p-4 bg-white/30 rounded-lg border border-white/20">
             <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
               <div className="w-16 h-16 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity">
                 {profile?.avatar_url ? (
@@ -254,36 +264,70 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
             </ProfilePhotoSelector>
           </div>
 
+          {/* Nickname first */}
           <div>
-            <Label htmlFor="preferred_name" className="text-slate-700">{t('settings.preferredName')}</Label>
+            <Label htmlFor="preferred_name" className="text-slate-700">{t('settings.nickname', { defaultValue: 'Nickname' })}</Label>
             <Input
               id="preferred_name"
               value={preferences.preferred_name}
               onChange={(e) => setPreferences(prev => ({ ...prev, preferred_name: e.target.value }))}
-              placeholder="Enter your preferred name"
+              placeholder="Enter your nickname"
               className="bg-white/50 border-white/30"
             />
           </div>
 
-
+          {/* Language Selector */}
           <div>
-            <Label htmlFor="native_language" className="text-slate-700">{t('settings.nativeLanguage')}</Label>
-            <Select 
-              value={nativeLanguage} 
-              onValueChange={setNativeLanguage}
-            >
-              <SelectTrigger className="bg-white/50 border-white/30">
-                <SelectValue placeholder="Select your language" />
-              </SelectTrigger>
-              <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
-                {languages.map(lang => (
-                  <SelectItem key={lang.value} value={lang.value}>
-                    {lang.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-slate-700 mb-1 block">
+              {t('settings.language', { defaultValue: 'Language' })}
+            </Label>
+            <LanguageSelector />
           </div>
+
+          {/* Theme Selector */}
+          <div>
+            <Label className="text-slate-700 mb-2 block">
+              {t('settings.theme', { defaultValue: 'Dashboard Theme' })}
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.values(themes).map((theme) => (
+                <button
+                  key={theme.name}
+                  onClick={() => setTheme(theme.name)}
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    themeName === theme.name
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium text-slate-800 mb-1">{theme.label}</div>
+                  <div className="text-xs text-slate-600">{theme.description}</div>
+                  <div className="mt-2 flex gap-1">
+                    <div 
+                      className="w-4 h-4 rounded border"
+                      style={{ 
+                        backgroundColor: theme.colors.background,
+                        borderColor: theme.colors.border 
+                      }}
+                    />
+                    <div 
+                      className="w-4 h-4 rounded border"
+                      style={{ 
+                        backgroundColor: theme.colors.cardBackground,
+                        borderColor: theme.colors.cardBorder 
+                      }}
+                    />
+                    <div 
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: theme.colors.textPrimary }}
+                    />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Native language is stored but follows the interface language for simplicity */}
 
           <div>
             <Label htmlFor="test_type" className="text-slate-700">{t('settings.targetTestType')}</Label>
@@ -398,7 +442,7 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           </div>
 
           {/* Reset Test Results */}
-          <div className="pt-2 border-t border-white/20">
+          <div className="pt-3 border-t border-white/20">
             <Button
               variant="outline"
               className="w-full border-red-200/50 text-red-600 hover:bg-red-50/50 hover:text-red-700"
@@ -432,20 +476,6 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
               disabled={loading}
             >
               🔄 {t('dashboard.resetResults')}
-            </Button>
-          </div>
-
-          {/* Retake Assessment Action */}
-          <div className="pt-2">
-            <Button
-              variant="outline"
-              className="w-full border-slate-300"
-              onClick={() => {
-                setOpen(false);
-                navigate('/onboarding/assessment');
-              }}
-            >
-              {t('studyPlan.retakeAssessment')}
             </Button>
           </div>
           

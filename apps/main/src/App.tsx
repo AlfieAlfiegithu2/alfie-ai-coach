@@ -9,6 +9,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Analytics } from "@vercel/analytics/react";
 import i18n from './lib/i18n';
 import { Suspense, lazy, useEffect } from 'react';
+import { ThemeProvider as DashboardThemeProvider } from '@/contexts/ThemeContext';
 // Import supabase client dynamically to avoid bundling conflicts
 import MinimalisticChatbot from "./components/MinimalisticChatbot";
 import GlobalTextSelection from "./components/GlobalTextSelection";
@@ -161,9 +162,10 @@ const App = () => {
       <HelmetProvider>
         <I18nextProvider i18n={i18n}>
           <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-              <TooltipProvider>
-              <GlobalTextSelection>
+            <DashboardThemeProvider>
+              <BrowserRouter>
+                <TooltipProvider>
+                <GlobalTextSelection>
                 <LanguageWelcomeBanner />
                 <Toaster />
                 <Sonner />
@@ -348,6 +350,7 @@ const App = () => {
               </GlobalTextSelection>
             </TooltipProvider>
           </BrowserRouter>
+            </DashboardThemeProvider>
         </QueryClientProvider>
       </I18nextProvider>
     </HelmetProvider>

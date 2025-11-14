@@ -15,6 +15,11 @@ const LanguageSelector = () => {
   const handleLanguageChange = async (languageCode: string) => {
     try {
       await i18n.changeLanguage(languageCode);
+      try {
+        localStorage.setItem('alfie-language', languageCode);
+      } catch (e) {
+        console.warn('Unable to persist language preference', e);
+      }
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to change language:', error);
@@ -34,6 +39,20 @@ const LanguageSelector = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Restore persisted language on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('alfie-language');
+      if (stored && stored !== i18n.language) {
+        i18n.changeLanguage(stored).catch(err =>
+          console.error('Failed to restore language from storage', err)
+        );
+      }
+    } catch (e) {
+      console.warn('Unable to read persisted language', e);
+    }
+  }, [i18n]);
 
   return (
     <div className="relative" ref={dropdownRef}>

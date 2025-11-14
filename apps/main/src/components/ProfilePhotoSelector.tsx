@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { User, Upload, Camera } from 'lucide-react';
+import { User, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioR2 } from '@/lib/cloudflare-r2';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,53 +41,6 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
-
-  const uploadCustomPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    setUploading(true);
-    try {
-      console.log(`📤 Uploading avatar: ${file.name} (${file.size} bytes)`);
-
-      // Upload to R2 instead of Supabase
-      const result = await AudioR2.uploadAvatar(file, user.id);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Upload failed');
-      }
-
-      console.log(`✅ Avatar uploaded successfully: ${result.url}`);
-
-      // Update profile with R2 URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: result.url })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      // Refresh profile to show new photo
-      await refreshProfile();
-
-      toast({
-        title: "Success!",
-        description: "Profile photo updated successfully!"
-      });
-
-      setOpen(false);
-      onPhotoUpdate?.();
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to upload profile photo. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const selectAnimalPhoto = async (photoSrc: string) => {
     if (!user) return;
@@ -132,37 +85,20 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
         {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20">
-        <DialogHeader>
+        <DialogHeader className="items-center">
           <DialogTitle className="text-slate-800 flex items-center gap-2">
             <Camera className="w-5 h-5" />
             Choose Profile Photo
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Select one of the animal avatars to use as your profile photo.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Upload Custom Photo */}
-          <div className="text-center">
-            <h3 className="text-sm font-medium text-slate-700 mb-3">Upload Your Own Photo</h3>
-            <Button
-              onClick={() => document.getElementById('custom-photo-upload')?.click()}
-              disabled={uploading}
-              className="bg-slate-800 hover:bg-slate-700 text-white"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {uploading ? 'Uploading...' : 'Upload Photo'}
-            </Button>
-            <input
-              id="custom-photo-upload"
-              type="file"
-              accept="image/*"
-              onChange={uploadCustomPhoto}
-              className="hidden"
-            />
-          </div>
-
           {/* Animal Photos Grid */}
           <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-3">Or Choose an Animal Avatar</h3>
+            <h3 className="text-sm font-medium text-slate-700 mb-3 text-center">Choose an Animal Avatar</h3>
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-60 overflow-y-auto">
               {animalPhotos.map((animal) => (
                 <button
@@ -182,22 +118,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
             </div>
           </div>
 
-          {/* Other Actions */}
-          <div className="pt-2 border-t border-slate-200/60">
-            <h3 className="text-sm font-medium text-slate-700 mb-3">Other Actions</h3>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="outline"
-                className="border-slate-300"
-                onClick={() => {
-                  setOpen(false);
-                  navigate('/onboarding/assessment');
-                }}
-              >
-                Retake Level Assessment
-              </Button>
-            </div>
-          </div>
+          {/* Other actions removed for a cleaner experience */}
         </div>
       </DialogContent>
     </Dialog>

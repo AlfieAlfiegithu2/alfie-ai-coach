@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, subDays, subMonths, isAfter } from 'date-fns';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface TestResult {
   id: string;
@@ -23,7 +24,8 @@ interface TestResultsChartProps {
 const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartProps) => {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [dateRange, setDateRange] = useState('1week');
+  const themeStyles = useThemeStyles();
+  const [dateRange, setDateRange] = useState('week');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [userPreferences, setUserPreferences] = useState<{ target_score?: number; target_deadline?: string; target_scores?: any } | null>(null);
@@ -61,27 +63,25 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
 
     setLoading(true);
     try {
-      let fromDate: Date;
-      
-      switch (dateRange) {
-        case '1week':
-          fromDate = subDays(new Date(), 7);
-          break;
-        case '1month':
-          fromDate = subMonths(new Date(), 1);
-          break;
-        case '3months':
-          fromDate = subMonths(new Date(), 3);
-          break;
-        default:
-          fromDate = subDays(new Date(), 7);
-      }
-
       let query = supabase
         .from('test_results')
         .select('*')
-        .eq('user_id', user.id)
-        .gte('created_at', fromDate.toISOString());
+        .eq('user_id', user.id);
+
+      if (dateRange !== 'full') {
+        let fromDate: Date;
+        switch (dateRange) {
+          case 'week':
+            fromDate = subDays(new Date(), 7);
+            break;
+          case 'month':
+            fromDate = subMonths(new Date(), 1);
+            break;
+          default:
+            fromDate = subDays(new Date(), 7);
+        }
+        query = query.gte('created_at', fromDate.toISOString());
+      }
 
       // Filter by skill if not overall
       if (selectedSkill !== 'overall') {
@@ -98,6 +98,44 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateMockData = () => {
+    if (!user) return;
+
+    // Generate 8 tests with gradually increasing scores
+    // Starting from around 50% (5.0 IELTS) to around 85% (8.0 IELTS)
+    const basePercentage = 50;
+    const increment = (85 - 50) / 7; // Divide the range across 7 increments (8 tests total)
+    
+    const mockResults: TestResult[] = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 8; i++) {
+      const percentage = basePercentage + (increment * i);
+      const testDate = new Date(now);
+      testDate.setDate(testDate.getDate() - (7 - i)); // Spread over last 7 days
+      
+      // Determine test type based on selected skill
+      let testType = 'IELTS';
+      if (selectedSkill !== 'overall') {
+        if (selectedSkill === 'reading') testType = 'IELTS Reading';
+        else if (selectedSkill === 'listening') testType = 'IELTS Listening';
+        else if (selectedSkill === 'writing') testType = 'writing';
+        else if (selectedSkill === 'speaking') testType = 'speaking';
+      }
+      
+      mockResults.push({
+        id: `mock-${i}-${Date.now()}`,
+        score_percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal
+        test_type: testType,
+        created_at: testDate.toISOString(),
+        test_data: null
+      });
+    }
+    
+    setTestResults(mockResults);
+    setLoading(false);
   };
 
   // Convert percentage to IELTS band score
@@ -138,50 +176,89 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     ? convertToIELTSScore(testResults[testResults.length - 1]?.score_percentage || 0) - convertToIELTSScore(testResults[0]?.score_percentage || 0)
     : 0;
 
+  const deadlineDays = userPreferences?.target_deadline
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(userPreferences.target_deadline).getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
+    : null;
+
   return (
-    <Card className="bg-white/10 border-white/20 backdrop-blur-xl">
-      <CardHeader>
+    <Card className={`${themeStyles.cardClassName} h-full flex flex-col shadow-md`} style={themeStyles.cardStyle}>
+      <CardHeader className="pb-2 relative flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-800">
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
             {selectedSkill === 'overall' 
               ? t('testResults.overallResults', { defaultValue: 'Overall Test Results' })
-              : t('dashboard.resultsFeedback', { skill: selectedSkill, defaultValue: `${selectedSkill} Results & Feedback` })}
+              : ''}
           </CardTitle>
+          {/* Period selector inside container - tiny */}
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-32 bg-white/50 border-white/30">
+            <SelectTrigger 
+              className={`w-auto min-w-[70px] h-7 text-xs border`} 
+              style={{ 
+                fontFamily: 'Poppins, sans-serif',
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                borderColor: themeStyles.border,
+                color: themeStyles.textPrimary
+              }}
+            >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
-              <SelectItem value="1week">{t('common.week', { defaultValue: 'Week' })}</SelectItem>
-              <SelectItem value="1month">{t('studyPlan.thisMonth', { defaultValue: 'This month' })}</SelectItem>
-              <SelectItem value="3months">{t('timeUnits.months', { defaultValue: 'Months' })}</SelectItem>
+            <SelectContent 
+              className={`backdrop-blur-xl border`}
+              style={{
+                backgroundColor: themeStyles.cardBackground,
+                borderColor: themeStyles.border
+              }}
+            >
+              <SelectItem value="week" className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>Week</SelectItem>
+              <SelectItem value="month" className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>Month</SelectItem>
+              <SelectItem value="full" className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>Full</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="h-64 flex items-center justify-center">
-            <p className="text-slate-600">{t('common.loading', { defaultValue: 'Loading...' })}</p>
-          </div>
-        ) : testResults.length === 0 ? (
-          <div className="h-64 flex items-center justify-center">
-            <p className="text-slate-600">{t('testResults.noneForPeriod', { defaultValue: 'No test results found for this period' })}</p>
-          </div>
-        ) : (
-          <>
-            {/* Chart */}
-            <div className="h-64 mb-6">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
+      <CardContent className="px-0 lg:px-2 flex-1 flex flex-col min-h-0">
+        {/* Chart area: fixed height whether or not there is data */}
+        <div className="h-64 mb-4 w-full flex items-center justify-center flex-shrink-0">
+          {loading ? (
+            <p style={{ color: themeStyles.textSecondary }}>
+              {t('common.loading', { defaultValue: 'Loading...' })}
+            </p>
+          ) : testResults.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 px-4">
+              <p className="text-sm text-center" style={{ fontFamily: 'Inter, sans-serif', color: themeStyles.textSecondary }}>
+                No data available for graph
+              </p>
+              <button
+                onClick={generateMockData}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm"
+                style={{
+                  fontFamily: 'Poppins, sans-serif',
+                  backgroundColor: themeStyles.buttonPrimary,
+                  color: 'white'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+              >
+                Generate Mock Data
+              </button>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ left: -10, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.textSecondary + '40'} />
                   <XAxis 
                     dataKey="test" 
-                    stroke="rgb(71, 85, 105)"
+                    stroke={themeStyles.textSecondary}
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke="rgb(71, 85, 105)"
+                    stroke={themeStyles.textSecondary}
                     fontSize={12}
                     domain={[0, 9]}
                     ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
@@ -189,10 +266,10 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   />
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      backgroundColor: themeStyles.cardBackground,
+                      border: `1px solid ${themeStyles.border}`,
                       borderRadius: '8px',
-                      backdropFilter: 'blur(12px)'
+                      color: themeStyles.textPrimary
                     }}
                     formatter={(value: number, name: string) => [`${value}`, 'IELTS Band']}
                     labelFormatter={(label) => `${label}`}
@@ -200,17 +277,17 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   <Line 
                     type="monotone" 
                     dataKey="score" 
-                    stroke="rgb(59, 130, 246)" 
+                    stroke={themeStyles.chartLine} 
                     strokeWidth={3}
-                    dot={{ fill: 'rgb(59, 130, 246)', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: 'rgb(59, 130, 246)', strokeWidth: 2 }}
+                    dot={{ fill: themeStyles.chartLine, strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: themeStyles.chartLine, strokeWidth: 2 }}
                   />
                   {/* Target Score Line */}
                   {userPreferences?.target_scores && selectedSkill !== 'overall' ? (
                     <Line 
                       type="monotone"
                       dataKey={() => (userPreferences.target_scores as any)?.[selectedSkill] || userPreferences.target_score}
-                      stroke="rgb(239, 68, 68)" 
+                      stroke={themeStyles.chartTarget} 
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
@@ -220,7 +297,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                     <Line 
                       type="monotone"
                       dataKey={() => userPreferences.target_score}
-                      stroke="rgb(239, 68, 68)" 
+                      stroke={themeStyles.chartTarget} 
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
@@ -229,36 +306,37 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                   )}
                 </LineChart>
               </ResponsiveContainer>
-            </div>
+          )}
+        </div>
 
-            {/* Statistics */}
-            <div className="grid grid-cols-3 gap-4">
+        {/* Statistics: always reserved space so card height stays consistent */}
+        {!loading && (
+          <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+            <div className="text-center">
+              <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+                {deadlineDays !== null ? deadlineDays : '—'}
+              </p>
+              <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+                {t('dashboard.daysLeft', { defaultValue: 'Days Left' })}
+              </p>
+            </div>
               <div className="text-center">
-                <p className="text-2xl font-semibold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                  {testResults.length}
-                </p>
-                <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  {t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-slate-800" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
                   {averageScore.toFixed(1)}
                 </p>
-                <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
+                <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
                   {t('dashboard.averageScore', { defaultValue: 'Average Score' })}
                 </p>
               </div>
               <div className="text-center">
-                <p className={`text-2xl font-semibold ${improvement >= 0 ? 'text-green-600' : 'text-red-600'}`} style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: improvement >= 0 ? themeStyles.textSecondary : themeStyles.chartTarget }}>
                   {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}
                 </p>
-                <p className="text-xs text-slate-600" style={{ fontFamily: 'Inter, sans-serif' }}>
+                <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
                   {t('testResults.improvement', { defaultValue: 'Improvement' })}
                 </p>
-              </div>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

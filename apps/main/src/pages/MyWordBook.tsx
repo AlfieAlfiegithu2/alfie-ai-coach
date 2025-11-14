@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { BookOpen, ArrowLeft, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -63,7 +62,7 @@ const MyWordBook = () => {
         id: item.id,
         word: item.word,
         translations: item.translations || ['No translation available'],
-        context: item.part_of_speech || '',
+        context: '', // Don't show POS in wordbook
         savedAt: item.created_at,
         languageCode: 'en' // Default since we don't store this
       })) || [];
@@ -236,35 +235,32 @@ const MyWordBook = () => {
       <div className="relative z-10 min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
         <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
           {/* Header */}
-          <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20">
-            <div className="flex items-center gap-3">
+          <header className="flex sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center border-b border-white/20 relative">
+            <div className="absolute left-4 sm:left-6 lg:left-12">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 text-slate-800 hover:text-blue-600"
+                className="flex items-center text-slate-800 hover:text-blue-600 p-2"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Dashboard
               </Button>
             </div>
             
-            <div className="flex items-center gap-3 lg:gap-4">
+            <div className="flex-1 flex justify-center items-center">
+              <h1 className="text-xl lg:text-2xl text-slate-800 tracking-tight font-semibold text-center" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                My Word Book
+              </h1>
+            </div>
+            
+            <div className="w-10 sm:w-12 lg:w-16">
+              {/* Spacer to balance the back button */}
             </div>
           </header>
 
           {/* Main Content */}
-          <main className="relative sm:px-6 lg:px-12 pr-4 pb-12 pl-4">
-            {/* Title */}
-            <div className="text-center mb-8 pt-6">
-              <h1 className="text-2xl lg:text-3xl text-slate-800 tracking-tight font-semibold mb-4" style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}>
-                My Word Book
-              </h1>
-              <Badge variant="secondary" className="bg-white/20 text-slate-700 border-white/30">
-                {words.length} {words.length === 1 ? 'word' : 'words'} saved
-              </Badge>
-            </div>
+          <main className="relative sm:px-6 lg:px-12 pr-4 pb-12 pl-4 pt-10 lg:pt-12">
 
             {/* Empty State */}
             {words.length === 0 ? (
@@ -285,13 +281,6 @@ const MyWordBook = () => {
               </div>
             ) : (
               <>
-                {/* Notification Suggestion */}
-                <div className="mb-6 text-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
-                    <span>Click any word for pronunciation</span>
-                  </div>
-                </div>
-
                 {/* Word Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 word-card-grid">
                   {words.map((word) => (

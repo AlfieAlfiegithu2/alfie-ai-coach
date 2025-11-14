@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, Settings } from "lucide-react";
+import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, Settings, History } from "lucide-react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/hooks/useAuth";
@@ -15,10 +15,10 @@ import LoadingAnimation from "@/components/animations/LoadingAnimation";
 import SettingsModal from "@/components/SettingsModal";
 import StudyPlanModal from "@/components/StudyPlanModal";
 import TestResultsChart from "@/components/TestResultsChart";
-import CountdownTimer from "@/components/CountdownTimer";
-import LanguageSelector from "@/components/LanguageSelector";
+import StudyPlanTodoList from "@/components/StudyPlanTodoList";
 import LanguagePicker from "@/components/LanguagePicker";
 import { normalizeLanguageCode } from "@/lib/languageUtils";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
 
 interface UserStats {
   totalTests: number;
@@ -35,13 +35,6 @@ interface TestResult {
   band_score?: number;
   created_at: string;
   user_id: string;
-}
-
-interface SavedWord {
-  id: string;
-  term: string;
-  translation: string;
-  created_at: string;
 }
 
 interface UserPreferences {
@@ -65,12 +58,13 @@ const Dashboard = () => {
   const {
     toast
   } = useToast();
+  const themeStyles = useThemeStyles();
   const [selectedTestType, setSelectedTestType] = useState("IELTS");
   const [selectedSkill, setSelectedSkill] = useState("reading");
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
+  const [savedWordsCount, setSavedWordsCount] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -109,10 +103,10 @@ const Dashboard = () => {
     borderColor: "border-gray-500/20"
   }];
   const skills = [
-    { id: 'reading', label: t('skills.reading'), icon: BookOpen },
-    { id: 'listening', label: t('skills.listening'), icon: Volume2 },
-    { id: 'writing', label: t('skills.writing'), icon: PenTool },
-    { id: 'speaking', label: t('skills.speaking'), icon: MessageSquare }
+    { id: 'reading', label: 'R', fullLabel: t('skills.reading'), icon: BookOpen },
+    { id: 'listening', label: 'L', fullLabel: t('skills.listening'), icon: Volume2 },
+    { id: 'writing', label: 'W', fullLabel: t('skills.writing'), icon: PenTool },
+    { id: 'speaking', label: 'S', fullLabel: t('skills.speaking'), icon: MessageSquare }
   ];
   const achievements = [{
     icon: Trophy,
@@ -317,16 +311,26 @@ const Dashboard = () => {
       }
     };
     fetchUserData();
-    loadSavedWords();
+    loadSavedWordsCount();
   }, [user]);
-  const loadSavedWords = () => {
-    const saved = localStorage.getItem('alfie-saved-vocabulary');
-    if (saved) {
-      try {
-        setSavedWords(JSON.parse(saved));
-      } catch (error) {
-        console.error('Error loading vocabulary:', error);
+
+  const loadSavedWordsCount = async () => {
+    if (!user) return;
+
+    try {
+      const { count, error } = await supabase
+        .from('user_vocabulary')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.warn('Error loading vocabulary count:', error);
+        return;
       }
+
+      setSavedWordsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading vocabulary count:', error);
     }
   };
   const handleStartPractice = () => {
@@ -392,18 +396,34 @@ const Dashboard = () => {
   // Guest mode: allow viewing dashboard without login (removed - now requires auth)
   // If not logged in, we render a limited dashboard without user-specific data
 
-  return <div className="min-h-screen relative">
+  return <div className="h-screen relative overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
-      backgroundImage: `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-      backgroundColor: '#a2d2ff'
+      backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' 
+        ? 'none' 
+        : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+      backgroundColor: themeStyles.backgroundImageColor
     }} />
       
-      <div className="relative z-10 min-h-full flex items-center justify-center lg:py-10 lg:px-6 pt-6 pr-4 pb-6 pl-4">
+      <div className="relative z-10 h-full w-full flex flex-col">
       
-      <div className="relative w-full max-w-[1440px] lg:rounded-3xl overflow-hidden lg:mx-8 shadow-black/10 bg-white/20 border-white/30 border rounded-2xl mr-4 ml-4 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] backdrop-blur-xl">
+      <div 
+        className={`relative w-full h-full overflow-hidden border backdrop-blur-xl`}
+        style={{
+          backgroundColor: themeStyles.backgroundOverlay,
+          borderColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255, 255, 255, 0.3)' : themeStyles.border + '40',
+          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none'
+        }}
+      >
         {/* Header */}
-        <header className="flex flex-col lg:flex-row sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b border-white/20 gap-4 lg:gap-0">
+        <header 
+          className="flex flex-col lg:flex-row sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b gap-4 lg:gap-0"
+          style={{
+            borderColor: themeStyles.theme.name === 'glassmorphism' 
+              ? 'rgba(255, 255, 255, 0.2)' 
+              : themeStyles.border + '60'
+          }}
+        >
           {/* Left section - empty for now */}
           <div className="flex items-center gap-3 order-3 lg:order-1">
             
@@ -411,43 +431,77 @@ const Dashboard = () => {
           
           {/* Center section - Navigation */}
           <nav className="flex items-center gap-4 lg:gap-6 text-sm font-medium order-1 lg:order-2 flex-wrap justify-center">
-            <button onClick={() => navigate('/dashboard/my-word-book')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
-              fontFamily: 'Inter, sans-serif'
-            }}>
+            <button 
+              onClick={() => navigate('/dashboard/my-word-book')} 
+              className="transition whitespace-nowrap" 
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                color: themeStyles.textSecondary
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+            >
               {t('dashboard.myWordBook')}
             </button>
             
-            <button onClick={() => navigate('/ielts-portal')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
-              fontFamily: 'Inter, sans-serif'
-            }}>
+            <button 
+              onClick={() => navigate('/ielts-portal')} 
+              className="transition whitespace-nowrap" 
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                color: themeStyles.textSecondary
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+            >
               {t('dashboard.tests')}
             </button>
             
             {/* Study Plan Button next to Tests as nav text */}
             <StudyPlanModal>
-              <button type="button" className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
-                fontFamily: 'Inter, sans-serif'
-              }}>
+              <button 
+                type="button" 
+                className="transition whitespace-nowrap" 
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  color: themeStyles.textSecondary
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+                onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+              >
                 {t('dashboard.studyPlan')}
               </button>
             </StudyPlanModal>
             
-            <button onClick={() => navigate('/hero')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
-              fontFamily: 'Inter, sans-serif'
-            }}>{t('dashboard.home')}</button>
+            <button 
+              onClick={() => navigate('/hero')} 
+              className="transition whitespace-nowrap" 
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                color: themeStyles.textSecondary
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+            >
+              {t('dashboard.home')}
+            </button>
             
-            <button onClick={() => navigate('/community')} className="text-slate-600 hover:text-blue-600 transition whitespace-nowrap" style={{
-              fontFamily: 'Inter, sans-serif'
-            }}>
+            <button 
+              onClick={() => navigate('/community')} 
+              className="transition whitespace-nowrap" 
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                color: themeStyles.textSecondary
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+            >
               {t('navigation.community')}
             </button>
           </nav>
           
           {/* Right section - Controls */}
           <div className="flex items-center gap-2 lg:gap-3 order-2 lg:order-3 relative z-50">
-            {/* Language Selector - Compact for header */}
-            <LanguageSelector />
-            
             {/* Clickable User Avatar - Opens Settings */}
             <SettingsModal onSettingsChange={() => {
               reloadUserPreferences();
@@ -467,14 +521,15 @@ const Dashboard = () => {
         </header>
 
         {/* Main Content */}
-        <main className="relative sm:px-6 lg:px-12 pr-4 pb-32 pl-4">
+        <main className="relative flex-1 overflow-y-auto sm:px-6 lg:px-12 pr-4 pb-4 pl-4">
           {/* Greeting / Title Row */}
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 pt-6 lg:pt-8">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 pt-3 lg:pt-4">
             {/* Left column */}
-            <div className="flex flex-col gap-4 lg:gap-6">
+            <div className="flex flex-col gap-4 h-full">
               {/* Greeting */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl text-slate-800 tracking-tight font-semibold" style={{
-                fontFamily: 'Bricolage Grotesque, sans-serif'
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
+                fontFamily: 'Comfortaa, cursive',
+                color: themeStyles.textPrimary
               }}>
                 {t('dashboard.helloUser', {
                   name: (userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner')
@@ -482,77 +537,54 @@ const Dashboard = () => {
               </h1>
 
               {/* Skills Selection Card */}
-              <div className="grid grid-cols-4 gap-2 lg:gap-3">
+              <div className="grid grid-cols-4 gap-2 lg:gap-3 flex-shrink-0">
                 {skills.map(skill => {
                   const isSelected = selectedSkill === skill.id;
-                  return <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border backdrop-blur-xl transition-all min-h-[60px] ${isSelected ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}>
-                      <span className={`text-xs lg:text-sm font-medium text-center leading-tight px-1 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`} style={{
-                      fontFamily: 'Inter, sans-serif'
-                    }}>
-                        {skill.label}
+                  return <button 
+                    key={skill.id} 
+                    onClick={() => setSelectedSkill(skill.id)} 
+                    className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border transition-all min-h-[60px] ${isSelected ? themeStyles.cardClassName + ' shadow-md' : `bg-white/40 border-[${themeStyles.border}] hover:bg-[${themeStyles.hoverBg}]`}`} 
+                    style={{
+                      ...(isSelected ? themeStyles.cardStyle : {}),
+                      borderColor: themeStyles.border,
+                    }}
+                  >
+                      <span 
+                        className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`} 
+                        style={{
+                          fontFamily: 'Poppins, sans-serif',
+                          color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
+                        }}
+                      >
+                        {skill.fullLabel}
                       </span>
                     </button>;
                 })}
               </div>
 
-              {/* Target Score Display */}
-              <div className="flex flex-col gap-2">
-                
-                
-              </div>
-
               {/* Test Results Chart */}
-              <TestResultsChart
-                key={refreshKey}
-                selectedSkill={selectedSkill}
-                selectedTestType={selectedTestType}
-              />
+              <div className="flex-1 min-h-0">
+                <TestResultsChart
+                  key={refreshKey}
+                  selectedSkill={selectedSkill}
+                  selectedTestType={selectedTestType}
+                />
+              </div>
               
-              {/* Countdown Timer */}
-              <CountdownTimer targetDate={userPreferences?.target_deadline || null} />
-
-              {/* Analytics Card */}
-              <div className="relative lg:p-6 bg-white/10 border-white/20 rounded-2xl mt-6 pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-                <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4 text-slate-800" style={{
-                  fontFamily: 'Inter, sans-serif'
-                }}>{t('dashboard.studyProgress')}</h3>
-                <div className="grid grid-cols-3 gap-3 lg:gap-4">
-                  <div>
-                    <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
-                      fontFamily: 'Bricolage Grotesque, sans-serif'
-                    }}>{userStats?.totalTests || 0}</p>
-                    <p className="text-xs text-slate-600" style={{
-                      fontFamily: 'Inter, sans-serif'
-                    }}>{t('dashboard.testsTaken')}</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
-                      fontFamily: 'Bricolage Grotesque, sans-serif'
-                    }}>{savedWords.length}</p>
-                    <p className="text-xs text-slate-600" style={{
-                      fontFamily: 'Inter, sans-serif'
-                    }}>{t('dashboard.wordsSaved')}</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl lg:text-3xl text-slate-800 font-semibold" style={{
-                      fontFamily: 'Bricolage Grotesque, sans-serif'
-                    }}>7</p>
-                    <p className="text-xs text-slate-600" style={{
-                      fontFamily: 'Inter, sans-serif'
-                    }}>{t('dashboard.dayStreak')}</p>
-                  </div>
-                </div>
+              {/* Study Plan Todo List */}
+              <div className="flex-shrink-0">
+                <StudyPlanTodoList />
               </div>
 
 
             </div>
 
             {/* Right column */}
-            <div className="flex flex-col gap-4 lg:gap-6">
-
-              <div className="grid xl:grid-cols-1 gap-4 lg:gap-6">
+            <div className="flex flex-col h-full">
+              {/* Add padding-top to align with left column content (after greeting) */}
+              <div className="grid xl:grid-cols-1 h-full pt-12 sm:pt-16 lg:pt-20">
                 {/* Test Results and Feedback Cards */}
-                <div className="flex flex-col gap-4 lg:gap-6">
+                <div className="flex flex-col flex-1 justify-start gap-4">
                   {skills.map(skill => {
                     // Get recent test results for this skill
                     const skillResults = testResults.filter(result => {
@@ -562,69 +594,93 @@ const Dashboard = () => {
                       return result.test_type && result.test_type.toLowerCase().includes(skill.id.toLowerCase());
                     }).slice(0, 3);
                     const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
-                    return <div key={skill.id} className="relative lg:p-6 bg-white/10 border-white/20 rounded-xl pt-4 pr-4 pb-4 pl-4 backdrop-blur-xl">
-                        <div className="flex items-center justify-between mb-3 lg:mb-4">
-                          <h3 className="text-sm lg:text-base font-semibold text-slate-800" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>
-                            {skill.label}
+                    const isWritingOrSpeaking = skill.id === 'writing' || skill.id === 'speaking';
+                    return <div 
+                      key={skill.id} 
+                      className={`relative lg:p-6 ${themeStyles.cardClassName} rounded-xl pt-4 pr-4 pb-4 pl-4 min-h-[190px] flex flex-col transition-all hover:shadow-md`} 
+                      style={themeStyles.cardStyle}
+                    >
+                        <div className="relative flex items-center justify-center mb-3">
+                          <h3 className="text-sm lg:text-base tracking-tight font-normal text-center" style={{
+                            fontFamily: 'Poppins, sans-serif',
+                            color: themeStyles.textPrimary
+                          }}>
+                            {skill.fullLabel}
                           </h3>
-                          {skill.id === 'writing' && <Button variant="ghost" size="sm" onClick={e => {
-                          e.stopPropagation();
-                          navigate('/dashboard/writing-history');
-                        }} className="text-xs text-slate-600 hover:text-slate-800">
-                              View History
-                            </Button>}
+                          <History
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleViewResults(skill.id);
+                            }}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 cursor-pointer transition-colors"
+                            style={{ color: themeStyles.textSecondary }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.textPrimary}
+                            onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+                            aria-label="View history"
+                            title="View detailed test history"
+                          />
                         </div>
                         
-                        {skillResults.length > 0 ? <div className="space-y-3">
-                            <div className="grid grid-cols-3 gap-3 text-xs text-slate-600 mb-4">
-                              <div>
-                                <p className="font-medium text-slate-800" style={{
-                              fontFamily: 'Inter, sans-serif'
+                        {skillResults.length > 0 ? <div className="flex-1 flex flex-col justify-end">
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
+                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                                borderColor: themeStyles.border
+                              }}>
+                                <p className="text-xs font-normal mb-1" style={{
+                              fontFamily: 'Poppins, sans-serif',
+                              color: themeStyles.textSecondary
                             }}>
-                                  {t('dashboard.testsTaken')}:
+                                  {t('dashboard.testsTaken')}
                                 </p>
-                                <p style={{
-                              fontFamily: 'Inter, sans-serif'
+                                <p className="text-sm lg:text-base font-normal" style={{
+                              fontFamily: 'Poppins, sans-serif',
+                              color: themeStyles.textPrimary
                             }}>{skillResults.length}</p>
                               </div>
-                              <div>
-                                <p className="font-medium text-slate-800" style={{
-                              fontFamily: 'Inter, sans-serif'
+                              <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
+                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                                borderColor: themeStyles.border
+                              }}>
+                                <p className="text-xs font-normal mb-1" style={{
+                              fontFamily: 'Poppins, sans-serif',
+                              color: themeStyles.textSecondary
                             }}>
-                                  {t('dashboard.averageScore')}:
+                                  {t('dashboard.averageScore')}
                                 </p>
-                                <p style={{
-                              fontFamily: 'Inter, sans-serif'
+                                <p className="text-sm lg:text-base font-normal" style={{
+                              fontFamily: 'Poppins, sans-serif',
+                              color: themeStyles.textPrimary
                             }}>{convertToIELTSScore(averageScore)}</p>
                               </div>
-                              <div>
-                                <p className="font-medium text-slate-800" style={{
-                              fontFamily: 'Inter, sans-serif'
+                              <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
+                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                                borderColor: themeStyles.border
+                              }}>
+                                <p className="text-xs font-normal mb-1" style={{
+                              fontFamily: 'Poppins, sans-serif',
+                              color: themeStyles.textSecondary
                             }}>
-                                  {t('dashboard.latestScore')}:
+                                  {t('dashboard.latestScore')}
                                 </p>
-                                <p style={{
-                              fontFamily: 'Inter, sans-serif'
+                                <p className="text-sm lg:text-base font-normal" style={{
+                              fontFamily: 'Poppins, sans-serif',
+                              color: themeStyles.textPrimary
                             }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
                               </div>
                             </div>
-                            
-                            <button onClick={() => handleViewResults(skill.id)} className="w-full text-sm font-medium bg-slate-800/80 backdrop-blur-sm text-white px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-700/80 transition border border-white/20" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>
-                              {t('dashboard.viewDetailedResults')} <ChevronRight className="w-4 h-4" />
-                            </button>
-                          </div> : <div className="text-center py-6">
-                            <p className="text-slate-600 mb-4" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>
-                              {t('dashboard.noTestsYet', { skill: skill.id })}
-                            </p>
-                            <button onClick={() => navigate('/ielts-portal')} className="text-sm font-medium bg-[#FFFFF0] backdrop-blur-sm text-black px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-[#F5F5DC] transition border border-white/20" style={{
-                          fontFamily: 'Inter, sans-serif'
-                        }}>
+                          </div> : <div className="flex-1 flex flex-col justify-center items-center">
+                            <button 
+                              onClick={() => navigate('/ielts-portal')} 
+                              className="text-sm font-medium px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 transition shadow-sm mx-auto" 
+                              style={{
+                                fontFamily: 'Poppins, sans-serif',
+                                backgroundColor: themeStyles.buttonPrimary,
+                                color: 'white'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+                            >
                               {t('dashboard.startFirstTest')} <ChevronRight className="w-4 h-4" />
                             </button>
                           </div>}

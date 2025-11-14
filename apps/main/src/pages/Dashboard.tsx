@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import DailyChallenge from "@/components/DailyChallenge";
 import LoadingAnimation from "@/components/animations/LoadingAnimation";
 import SettingsModal from "@/components/SettingsModal";
-import StudyPlanModal from "@/components/StudyPlanModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import StudyPlanTodoList from "@/components/StudyPlanTodoList";
 import LanguagePicker from "@/components/LanguagePicker";
@@ -136,8 +135,22 @@ const Dashboard = () => {
         data: preferences,
         error: prefError
       } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
+      
       if (prefError) {
-        console.warn('Error fetching preferences:', prefError);
+        // Check if it's a column error (400 Bad Request when column doesn't exist)
+        const isColumnError = 
+          prefError.code === 'PGRST204' ||
+          prefError.code === '42703' ||
+          prefError.code === '42P01' ||
+          prefError.message?.toLowerCase().includes('column') ||
+          prefError.message?.toLowerCase().includes('does not exist') ||
+          prefError.message?.toLowerCase().includes('bad request');
+        
+        // Silently ignore column errors - use defaults
+        if (!isColumnError) {
+          console.warn('Error fetching preferences:', prefError);
+        }
+        setUserPreferences(null);
       } else if (preferences) {
         setUserPreferences(preferences);
         setSelectedTestType(preferences.target_test_type || 'IELTS');
@@ -146,8 +159,20 @@ const Dashboard = () => {
         // If no preferences found, set to null to use fallback
         setUserPreferences(null);
       }
-    } catch (error) {
-      console.error('Error reloading preferences:', error);
+    } catch (error: any) {
+      // Check if it's a column error
+      const isColumnError = 
+        error?.code === 'PGRST204' ||
+        error?.code === '42703' ||
+        error?.code === '42P01' ||
+        error?.message?.toLowerCase().includes('column') ||
+        error?.message?.toLowerCase().includes('does not exist') ||
+        error?.message?.toLowerCase().includes('bad request');
+      
+      if (!isColumnError) {
+        console.error('Error reloading preferences:', error);
+      }
+      setUserPreferences(null);
     }
   };
 
@@ -462,22 +487,6 @@ const Dashboard = () => {
               {t('dashboard.tests')}
             </button>
             
-            {/* Study Plan Button next to Tests as nav text */}
-            <StudyPlanModal>
-              <button 
-                type="button" 
-                className="transition whitespace-nowrap" 
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  color: themeStyles.textSecondary
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
-                onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-              >
-                {t('dashboard.studyPlan')}
-              </button>
-            </StudyPlanModal>
-            
             <button 
               onClick={() => navigate('/hero')} 
               className="transition whitespace-nowrap" 
@@ -567,8 +576,8 @@ const Dashboard = () => {
                 })}
               </div>
 
-              {/* Test Results Chart */}
-              <div className="flex-1 min-h-0">
+              {/* Test Results Chart - Fixed height */}
+              <div className="flex-shrink-0" style={{ height: '400px' }}>
                 <TestResultsChart
                   key={refreshKey}
                   selectedSkill={selectedSkill}
@@ -576,8 +585,8 @@ const Dashboard = () => {
                 />
               </div>
               
-              {/* Study Plan Todo List */}
-              <div className="flex-shrink-0 min-h-[400px]">
+              {/* Study Plan Todo List - Fixed top position */}
+              <div className="flex-shrink-0 mt-4">
                 <StudyPlanTodoList />
               </div>
 

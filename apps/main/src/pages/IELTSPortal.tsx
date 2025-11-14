@@ -411,7 +411,7 @@ const IELTSPortal = () => {
              backgroundColor: themeStyles.backgroundImageColor
            }} />
       <div className="relative z-10">
-        <StudentLayout title="My IELTS Dashboard" showBackButton>
+        <StudentLayout title="Dashboard" showBackButton>
           <div className="space-y-3 md:space-y-4 max-w-6xl mx-auto px-3 md:px-4">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <button 
@@ -430,7 +430,7 @@ const IELTSPortal = () => {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <Home className="h-4 w-4" /> Home
+                <Home className="h-4 w-4" />
               </button>
               <button 
                 onClick={() => navigate('/dashboard')} 
@@ -448,7 +448,7 @@ const IELTSPortal = () => {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                My Dashboard
+                Dashboard
               </button>
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />

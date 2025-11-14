@@ -45,16 +45,42 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
         .from('user_preferences')
         .select('target_score, target_deadline, target_scores')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading user preferences:', error);
+      if (error) {
+        // Check if it's a column error (400 Bad Request when column doesn't exist)
+        const isColumnError = 
+          error.code === 'PGRST204' ||
+          error.code === '42703' ||
+          error.code === '42P01' ||
+          error.code === 'PGRST116' || // No rows returned
+          error.message?.toLowerCase().includes('column') ||
+          error.message?.toLowerCase().includes('does not exist') ||
+          error.message?.toLowerCase().includes('bad request');
+        
+        // Silently ignore column errors and missing records - use defaults
+        if (!isColumnError) {
+          console.error('Error loading user preferences:', error);
+        }
         return;
       }
 
       setUserPreferences(data);
-    } catch (error) {
-      console.error('Error loading user preferences:', error);
+    } catch (error: any) {
+      // Check if it's a column error
+      const isColumnError = 
+        error?.code === 'PGRST204' ||
+        error?.code === '42703' ||
+        error?.code === '42P01' ||
+        error?.code === 'PGRST116' ||
+        error?.message?.toLowerCase().includes('column') ||
+        error?.message?.toLowerCase().includes('does not exist') ||
+        error?.message?.toLowerCase().includes('bad request');
+      
+      if (!isColumnError) {
+        console.error('Error loading user preferences:', error);
+      }
+      // Silently ignore column errors
     }
   };
 

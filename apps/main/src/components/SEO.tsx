@@ -59,16 +59,16 @@ const SEO: React.FC<SEOProps> = ({
   lang = 'en',
 }) => {
   const siteName = 'English AIdol';
-  const defaultTitle = 'Study English with AI tutor';
-  const defaultDescription = 'Master English with AI-powered learning. Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English.';
+  const defaultTitle = 'English AIdol - AI-Powered English Learning Platform | IELTS & General English';
+  const defaultDescription = 'Master English with AI-powered learning. Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English. Created by TESOL-certified experts and former IELTS examiners.';
   const defaultImage = 'https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/social-images/social-1758811085448-Upscale_this_adorable_bunny_character_wearing_glas-1758810348175.png';
   const defaultUrl = 'https://englishaidol.com';
 
-  const metaTitle = title ? `${title} | ${siteName}` : `${defaultTitle} | ${siteName}`;
+  const metaTitle = title || defaultTitle;
   const metaDescription = description || defaultDescription;
   const metaImage = image || defaultImage;
   const metaUrl = url || defaultUrl;
-  const metaKeywords = keywords || 'English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice';
+  const metaKeywords = keywords || 'English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation';
 
   // Generate structured data based on schema type
   let finalStructuredData = structuredData;
@@ -130,6 +130,10 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="description" content={metaDescription} />
       <meta name="keywords" content={metaKeywords} />
       <meta name="author" content={author} />
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+      <meta name="googlebot" content="index, follow" />
+      <meta name="application-name" content={siteName} />
+      <meta name="apple-mobile-web-app-title" content={siteName} />
       {published && <meta name="article:published_time" content={published} />}
       {modified && <meta name="article:modified_time" content={modified} />}
       {section && <meta name="article:section" content={section} />}
@@ -161,10 +165,10 @@ const SEO: React.FC<SEOProps> = ({
 
       {/* Hreflang tags for multilingual SEO */}
       {hreflang && hreflang.map((alt) => (
-        <link key={alt.lang} rel="alternate" hreflang={alt.lang} href={alt.url} />
+        <link key={alt.lang} rel="alternate" hrefLang={alt.lang} href={alt.url} />
       ))}
       {hreflang && (
-        <link rel="alternate" hreflang="x-default" href={metaUrl} />
+        <link rel="alternate" hrefLang="x-default" href={metaUrl} />
       )}
 
       {/* Structured Data */}

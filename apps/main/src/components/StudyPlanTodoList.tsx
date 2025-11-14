@@ -396,7 +396,7 @@ const StudyPlanTodoList = () => {
   }
 
   return (
-    <div className={`${themeStyles.cardClassName} rounded-xl p-4 lg:p-5 shadow-md flex flex-col min-h-[400px]`} style={themeStyles.cardStyle}>
+    <div className={`${themeStyles.cardClassName} rounded-xl p-4 lg:p-5 shadow-md flex flex-col`} style={themeStyles.cardStyle}>
       {/* Header with Date Navigation */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -477,7 +477,7 @@ const StudyPlanTodoList = () => {
       )}
 
       {/* Task List */}
-      <div className="flex-1 min-h-[200px] overflow-y-auto mb-4">
+      <div className="overflow-y-auto mb-4" style={{ maxHeight: '400px' }}>
         <div className="space-y-2">
           {/* AI-generated tasks */}
           {dayTasks.map((task, i) => {
@@ -599,44 +599,43 @@ const StudyPlanTodoList = () => {
             );
           })}
 
+          {/* Add Task Input - moved inside scrollable area */}
+          <div className="flex gap-2 mt-2 pt-2 border-t" style={{ borderColor: themeStyles.border }}>
+            <input
+              type="text"
+              value={customTask.title}
+              onChange={(e) => setCustomTask({ ...customTask, title: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addCustomTask();
+                }
+              }}
+              placeholder=""
+              className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              style={{ 
+                fontFamily: 'Poppins, sans-serif',
+                borderColor: themeStyles.border,
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                color: themeStyles.textPrimary,
+                '--tw-ring-color': themeStyles.textSecondary
+              } as React.CSSProperties}
+            />
+            <button
+              onClick={addCustomTask}
+              className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm"
+              style={{ 
+                fontFamily: 'Poppins, sans-serif',
+                backgroundColor: themeStyles.buttonPrimary,
+                color: 'white'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Add Task Input */}
-      <div className="flex gap-2 flex-shrink-0">
-        <input
-          type="text"
-          value={customTask.title}
-          onChange={(e) => setCustomTask({ ...customTask, title: e.target.value })}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addCustomTask();
-            }
-          }}
-          placeholder=""
-          className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-          style={{ 
-            fontFamily: 'Poppins, sans-serif',
-            borderColor: themeStyles.border,
-            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
-            color: themeStyles.textPrimary,
-            '--tw-ring-color': themeStyles.textSecondary
-          } as React.CSSProperties}
-        />
-        <button
-          onClick={addCustomTask}
-          className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm"
-          style={{ 
-            fontFamily: 'Poppins, sans-serif',
-            backgroundColor: themeStyles.buttonPrimary,
-            color: 'white'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );

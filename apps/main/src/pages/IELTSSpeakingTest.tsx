@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square, Send, Sparkles } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square, Send, Sparkles, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
@@ -242,6 +242,13 @@ const IELTSSpeakingTest = () => {
   useEffect(() => {
     if (testId) {
       loadTestData();
+      // Reset chat messages when a new test is loaded
+      setChatMessages([{
+        id: '1',
+        type: 'bot',
+        content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
+        timestamp: new Date()
+      }]);
     } else {
       loadAvailableTests();
     }
@@ -882,6 +889,7 @@ const IELTSSpeakingTest = () => {
     // Mac-style "suck into dock" animation:
     // 1) Animate card down + shrink (showAIAssistantVisible -> false).
     // 2) After animation completes, unmount card and show avatar.
+    // Note: Chat memory persists - only closes the UI, doesn't reset conversation
     setShowAIAssistantVisible(false);
     setTimeout(() => {
       setShowAIAssistant(false);
@@ -893,12 +901,7 @@ const IELTSSpeakingTest = () => {
       if (currentQuestion < (testData?.part1_prompts.length || 0) - 1) {
         // More Part 1 questions remaining
         setCurrentQuestion(currentQuestion + 1);
-        setChatMessages([{
-          id: '1',
-          type: 'bot',
-          content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
-          timestamp: new Date()
-        }]);
+        // Keep chat memory across questions
         console.log(`➡️ Moving to Part 1, Question ${currentQuestion + 2}`);
       } else {
         // Last Part 1 question just completed
@@ -915,24 +918,14 @@ const IELTSSpeakingTest = () => {
           setCurrentPart(2);
           setCurrentQuestion(0);
           setPreparationTime(60);
-          setChatMessages([{
-            id: '1',
-            type: 'bot',
-            content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
-            timestamp: new Date()
-          }]);
+          // Keep chat memory across parts
           console.log("➡️ Moving to Part 2 - Long Turn");
           startPreparationTimer();
         } else if (hasPart3) {
           // No Part 2, but Part 3 exists: move directly to Part 3
           setCurrentPart(3);
           setCurrentQuestion(0);
-          setChatMessages([{
-            id: '1',
-            type: 'bot',
-            content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
-            timestamp: new Date()
-          }]);
+          // Keep chat memory across parts
           console.log("➡️ Moving to Part 3 - Discussion (no Part 2 for this test)");
         }
       }
@@ -942,13 +935,7 @@ const IELTSSpeakingTest = () => {
         // Move to Part 3
         setCurrentPart(3);
         setCurrentQuestion(0);
-        // Clear chat for new part
-        setChatMessages([{
-          id: '1',
-          type: 'bot',
-          content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
-          timestamp: new Date()
-        }]);
+        // Keep chat memory across parts
         console.log(`➡️ Moving to Part 3 - Discussion`);
       } else {
         // No Part 3, show language preference and allow submission
@@ -958,13 +945,7 @@ const IELTSSpeakingTest = () => {
     } else if (currentPart === 3) {
       if (currentQuestion < (testData?.part3_prompts.length || 0) - 1) {
         setCurrentQuestion(currentQuestion + 1);
-        // Clear chat for new question
-        setChatMessages([{
-          id: '1',
-          type: 'bot',
-          content: "Hello! I'm Catie, your expert IELTS Speaking tutor. I'm here to guide you through strategic speaking techniques, structure, and vocabulary enhancement. What specific aspect of your speaking would you like to work on?",
-          timestamp: new Date()
-        }]);
+        // Keep chat memory across questions
         console.log(`➡️ Moving to Part 3, Question ${currentQuestion + 2}`);
       } else {
         // Last question completed: show language preference + submit option
@@ -1472,24 +1453,49 @@ const IELTSSpeakingTest = () => {
       content: message,
       timestamp: new Date(),
     };
+    
+    // Add user message to UI immediately
     setChatMessages((prev) => [...prev, userMessage]);
     if (!messageText) setNewMessage("");
     setIsChatLoading(true);
 
     try {
       const questionText = getCurrentQuestionText();
-      const contextPrompt = `CONTEXT: The student is practicing IELTS Speaking Part ${currentPart}.
+      
+      // Build conversation history with context
+      // Include system prompt with context, then all previous messages
+      const questionContext = `CONTEXT: The student is practicing IELTS Speaking Part ${currentPart}.
 
 Question: "${questionText}"
 
-Student: "${message}"
-
 Please provide concise, practical speaking guidance (ideas, vocabulary, structure). Do NOT write a full answer.`;
 
+      // Convert previous chatMessages to API format (role: 'user' or 'assistant')
+      // Note: chatMessages state hasn't updated yet (React state is async), so we use the current state
+      const conversationHistory = chatMessages
+        .filter(msg => msg.type === 'user' || msg.type === 'bot')
+        .map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }));
+
+      // Add current user message (not yet in chatMessages state due to async update)
+      conversationHistory.push({
+        role: 'user',
+        content: message
+      });
+
+      // Send full conversation history with context
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           skipCache: true,
-          message: contextPrompt,
+          messages: [
+            {
+              role: 'system',
+              content: questionContext
+            },
+            ...conversationHistory
+          ],
           context: 'catbot',
         },
       });
@@ -2123,10 +2129,11 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         {/* Quick suggestion buttons next to Catie bot:
             - Structure
             - Vocabulary
-            - Example answers (new)
+            - Example answers
+            - Grammar
         */}
         {showAIAssistant && (
-          <div className="fixed bottom-24 right-4 sm:bottom-36 sm:right-[420px] z-50 flex flex-col gap-2 sm:gap-3">
+          <div className="fixed bottom-12 right-4 sm:bottom-20 sm:right-[420px] z-50 flex flex-col gap-2 sm:gap-3">
             {/* Structure helper */}
             <TooltipProvider>
               <Tooltip>
@@ -2187,7 +2194,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </Tooltip>
             </TooltipProvider>
 
-            {/* Example answers helper (new) */}
+            {/* Example answers helper */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -2217,6 +2224,36 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                 </TooltipTrigger>
                 <TooltipContent side="left">
                   <p>View band 7+ example answers</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Grammar helper */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleSuggestionClick('Help me with grammar for this speaking question')}
+                    disabled={isChatLoading}
+                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                    style={{
+                      borderColor: themeStyles.border,
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                    }}
+                  >
+                    <FileText className="w-4 h-4 sm:w-6 sm:h-6" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Get grammar help</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -2460,13 +2497,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           )}
         </div>
 
-        {/* Overlay to close Catie when clicking outside (triggers bin-style close) */}
-        {showAIAssistant && (
-          <div
-            className="fixed inset-0 z-40"
-            onClick={closeAIAssistant}
-          />
-        )}
             </div>
           </div>
         </StudentLayout>

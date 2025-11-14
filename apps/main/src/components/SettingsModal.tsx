@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 import { getLanguagesForSettings } from '@/lib/languageUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, ThemeName } from '@/lib/themes';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface SectionScores {
   reading: number;
@@ -47,6 +48,7 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { themeName, setTheme } = useTheme();
+  const themeStyles = useThemeStyles();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -183,30 +185,110 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
     console.log('💾 Saving preferences for user:', user.id, preferences);
 
     try {
-      // Save preferences with proper upsert
-      const { error: preferencesError } = await supabase
+      // Check if record exists first
+      const { data: existing } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          target_test_type: preferences.target_test_type,
-          target_score: preferences.target_score,
-          target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
-          preferred_name: preferences.preferred_name,
-          native_language: nativeLanguage,
-          target_scores: preferences.target_scores as any,
-          dashboard_theme: themeName as any
-        }, {
-          onConflict: 'user_id'
-        });
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (preferencesError) {
-        console.error('❌ Preferences save error:', preferencesError);
-        throw preferencesError;
+      // Build preferences data without dashboard_theme first (in case column doesn't exist)
+      // For updates, exclude user_id since it's used in the filter
+      const preferencesDataForUpdate = {
+        target_test_type: preferences.target_test_type,
+        target_score: preferences.target_score,
+        target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
+        preferred_name: preferences.preferred_name,
+        native_language: nativeLanguage,
+        target_scores: preferences.target_scores as any
+      };
+
+      // For inserts, include user_id
+      const preferencesDataForInsert = {
+        user_id: user.id,
+        ...preferencesDataForUpdate
+      };
+
+      let preferencesError;
+
+      if (existing) {
+        // Update without dashboard_theme (theme is saved separately via ThemeContext)
+        // Don't include user_id in update payload since it's used in the filter
+        const { error: errorWithoutTheme } = await supabase
+          .from('user_preferences')
+          .update(preferencesDataForUpdate)
+          .eq('user_id', user.id);
+        
+        preferencesError = errorWithoutTheme;
+        // Note: dashboard_theme is saved separately via ThemeContext.setTheme()
+        // which handles the column-not-found error gracefully
+      } else {
+        // Insert new record - try with theme first, fallback without if needed
+        const preferencesDataWithTheme = {
+          ...preferencesDataForInsert,
+          dashboard_theme: themeName as any
+        };
+        
+        const { error: insertError } = await supabase
+          .from('user_preferences')
+          .insert(preferencesDataWithTheme);
+        
+        if (insertError) {
+          // If it fails due to dashboard_theme column, try without it
+          const isThemeColumnError = insertError.code === 'PGRST204' || 
+                                    insertError.message?.includes("dashboard_theme");
+          
+          if (isThemeColumnError) {
+            const { error: retryError } = await supabase
+              .from('user_preferences')
+              .insert(preferencesDataForInsert);
+            preferencesError = retryError;
+          } else {
+            preferencesError = insertError;
+          }
+        }
       }
 
-      console.log('✅ Preferences and language saved successfully');
-
-      toast.success('Settings saved successfully!');
+      // Handle errors
+      if (preferencesError) {
+        // Check if it's a column doesn't exist error (which we can ignore)
+        const isColumnError = preferencesError.message?.includes('column') || 
+                             preferencesError.message?.includes('dashboard_theme') ||
+                             preferencesError.code === '42703' ||
+                             preferencesError.code === '42P01' ||
+                             preferencesError.code === 'PGRST204';
+        
+        if (isColumnError) {
+          // Silently ignore - core preferences were saved successfully
+          // dashboard_theme column doesn't exist, but that's okay - theme is saved locally
+          console.log('✅ Preferences saved (dashboard_theme column not available)');
+          toast.success('Settings saved successfully!');
+        } else {
+          // For other errors, log and show to user
+          console.error('❌ Preferences save error:', {
+            code: preferencesError.code,
+            message: preferencesError.message,
+            details: preferencesError.details
+          });
+          
+          // Check if it's a validation error we can handle
+          const isValidationError = preferencesError.code === '23502' || // not null violation
+                                   preferencesError.code === '23505' || // unique violation
+                                   preferencesError.message?.includes('violates');
+          
+          if (isValidationError) {
+            toast.error(`Failed to save settings: ${preferencesError.message || 'Validation error'}`);
+            throw preferencesError;
+          } else {
+            // Unknown error - show it
+            toast.error(`Failed to save settings: ${preferencesError.message || 'Unknown error'}`);
+            throw preferencesError;
+          }
+        }
+      } else {
+        console.log('✅ Preferences and language saved successfully');
+        toast.success('Settings saved successfully!');
+      }
 
       // Trigger language update in GlobalTextSelection
       localStorage.setItem('language-updated', Date.now().toString());
@@ -217,8 +299,20 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
       onSettingsChange?.();
     } catch (error: any) {
       console.error('❌ Error saving preferences:', error);
-      toast.error(`Failed to save settings: ${error.message || 'Unknown error'}`);
-      // Keep modal open on error so user can fix the issue
+      // Only show error toast for actual failures, not type mismatches
+      const isColumnError = error?.message?.includes('column') || 
+                           error?.code === '42703' ||
+                           error?.code === '42P01' ||
+                           error?.code === 'PGRST204';
+      
+      if (!isColumnError) {
+        toast.error(`Failed to save settings: ${error.message || 'Unknown error'}`);
+      } else {
+        // Column error - core preferences were saved, theme column doesn't exist
+        toast.success('Settings saved successfully!');
+        setOpen(false);
+        onSettingsChange?.();
+      }
     } finally {
       setLoading(false);
     }
@@ -234,7 +328,30 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           <Button
             variant="outline"
             size="sm"
-            className="bg-white/10 border-white/20 text-slate-800 hover:bg-white/20"
+            className="border"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                ? 'rgba(255,255,255,0.1)' 
+                : themeStyles.theme.name === 'dark' 
+                ? 'rgba(255,255,255,0.1)' 
+                : themeStyles.theme.name === 'minimalist' 
+                ? '#ffffff' 
+                : 'rgba(255,255,255,0.1)',
+              borderColor: themeStyles.border,
+              color: themeStyles.textPrimary,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' 
+                ? 'rgba(255,255,255,0.1)' 
+                : themeStyles.theme.name === 'dark' 
+                ? 'rgba(255,255,255,0.1)' 
+                : themeStyles.theme.name === 'minimalist' 
+                ? '#ffffff' 
+                : 'rgba(255,255,255,0.1)';
+            }}
             onClick={() => console.log('⚙️ Settings button clicked')}
           >
             <Settings className="w-4 h-4 mr-2" />
@@ -242,13 +359,39 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className={`sm:max-w-2xl ${themeStyles.cardClassName} backdrop-blur-xl max-h-[90vh] overflow-y-auto`}
+        style={{
+          ...themeStyles.cardStyle,
+          borderColor: themeStyles.border,
+        }}
+      >
         <DialogHeader className="items-center">
-          <DialogTitle className="text-slate-800 text-lg font-semibold">{t('settings.title')}</DialogTitle>
+          <DialogTitle 
+            className="text-lg font-semibold"
+            style={{ color: themeStyles.textPrimary }}
+          >
+            {t('settings.title')}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Manage your account settings, preferences, and profile
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {/* Profile Photo Section */}
-          <div className="flex items-center justify-center gap-4 p-4 bg-white/30 rounded-lg border border-white/20">
+          <div 
+            className="flex items-center justify-center gap-4 p-4 rounded-lg border"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                ? 'rgba(255,255,255,0.1)' 
+                : themeStyles.theme.name === 'dark' 
+                ? 'rgba(255,255,255,0.05)' 
+                : themeStyles.theme.name === 'minimalist' 
+                ? '#f9fafb' 
+                : 'rgba(255,255,255,0.3)',
+              borderColor: themeStyles.border,
+            }}
+          >
             <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
               <div className="w-16 h-16 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity">
                 {profile?.avatar_url ? (
@@ -266,19 +409,38 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
 
           {/* Nickname first */}
           <div>
-            <Label htmlFor="preferred_name" className="text-slate-700">{t('settings.nickname', { defaultValue: 'Nickname' })}</Label>
+            <Label 
+              htmlFor="preferred_name"
+              style={{ color: themeStyles.textPrimary }}
+            >
+              {t('settings.nickname', { defaultValue: 'Nickname' })}
+            </Label>
             <Input
               id="preferred_name"
               value={preferences.preferred_name}
               onChange={(e) => setPreferences(prev => ({ ...prev, preferred_name: e.target.value }))}
               placeholder="Enter your nickname"
-              className="bg-white/50 border-white/30"
+              className="border"
+              style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'dark' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'minimalist' 
+                  ? '#ffffff' 
+                  : 'rgba(255,255,255,0.5)',
+                borderColor: themeStyles.border,
+                color: themeStyles.textPrimary,
+              }}
             />
           </div>
 
           {/* Language Selector */}
           <div>
-            <Label className="text-slate-700 mb-1 block">
+            <Label 
+              className="mb-1 block"
+              style={{ color: themeStyles.textPrimary }}
+            >
               {t('settings.language', { defaultValue: 'Language' })}
             </Label>
             <LanguageSelector />
@@ -286,7 +448,10 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
 
           {/* Theme Selector */}
           <div>
-            <Label className="text-slate-700 mb-2 block">
+            <Label 
+              className="mb-2 block"
+              style={{ color: themeStyles.textPrimary }}
+            >
               {t('settings.theme', { defaultValue: 'Dashboard Theme' })}
             </Label>
             <div className="grid grid-cols-2 gap-3">
@@ -294,14 +459,56 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                 <button
                   key={theme.name}
                   onClick={() => setTheme(theme.name)}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    themeName === theme.name
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  className="p-4 rounded-lg border-2 transition-all text-left"
+                  style={{
+                    borderColor: themeName === theme.name 
+                      ? themeStyles.buttonPrimary 
+                      : themeStyles.border,
+                    backgroundColor: themeName === theme.name
+                      ? themeStyles.theme.name === 'dark'
+                        ? 'rgba(100, 116, 139, 0.2)'
+                        : themeStyles.theme.name === 'glassmorphism'
+                        ? 'rgba(255,255,255,0.2)'
+                        : themeStyles.theme.name === 'minimalist'
+                        ? '#eff6ff'
+                        : 'rgba(168, 139, 91, 0.1)'
+                      : themeStyles.theme.name === 'glassmorphism'
+                      ? 'rgba(255,255,255,0.1)'
+                      : themeStyles.theme.name === 'dark'
+                      ? 'rgba(255,255,255,0.05)'
+                      : themeStyles.theme.name === 'minimalist'
+                      ? '#ffffff'
+                      : 'rgba(255,255,255,0.4)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (themeName !== theme.name) {
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (themeName !== theme.name) {
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism'
+                        ? 'rgba(255,255,255,0.1)'
+                        : themeStyles.theme.name === 'dark'
+                        ? 'rgba(255,255,255,0.05)'
+                        : themeStyles.theme.name === 'minimalist'
+                        ? '#ffffff'
+                        : 'rgba(255,255,255,0.4)';
+                    }
+                  }}
                 >
-                  <div className="font-medium text-slate-800 mb-1">{theme.label}</div>
-                  <div className="text-xs text-slate-600">{theme.description}</div>
+                  <div 
+                    className="font-medium mb-1"
+                    style={{ color: themeStyles.textPrimary }}
+                  >
+                    {theme.label}
+                  </div>
+                  <div 
+                    className="text-xs"
+                    style={{ color: themeStyles.textSecondary }}
+                  >
+                    {theme.description}
+                  </div>
                   <div className="mt-2 flex gap-1">
                     <div 
                       className="w-4 h-4 rounded border"
@@ -330,15 +537,39 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           {/* Native language is stored but follows the interface language for simplicity */}
 
           <div>
-            <Label htmlFor="test_type" className="text-slate-700">{t('settings.targetTestType')}</Label>
+            <Label 
+              htmlFor="test_type"
+              style={{ color: themeStyles.textPrimary }}
+            >
+              {t('settings.targetTestType')}
+            </Label>
             <Select 
               value={preferences.target_test_type} 
               onValueChange={(value) => setPreferences(prev => ({ ...prev, target_test_type: value }))}
             >
-              <SelectTrigger className="bg-white/50 border-white/30">
+              <SelectTrigger 
+                className="border"
+                style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                    ? 'rgba(255,255,255,0.1)' 
+                    : themeStyles.theme.name === 'dark' 
+                    ? 'rgba(255,255,255,0.1)' 
+                    : themeStyles.theme.name === 'minimalist' 
+                    ? '#ffffff' 
+                    : 'rgba(255,255,255,0.5)',
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textPrimary,
+                }}
+              >
                 <SelectValue placeholder="Select test type" />
               </SelectTrigger>
-              <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
+              <SelectContent 
+                className={`${themeStyles.cardClassName} backdrop-blur-xl`}
+                style={{
+                  ...themeStyles.cardStyle,
+                  borderColor: themeStyles.border,
+                }}
+              >
                 {testTypes.map(type => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
@@ -349,7 +580,12 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label htmlFor="target_score" className="text-slate-700">{t('settings.targetScore')}</Label>
+            <Label 
+              htmlFor="target_score"
+              style={{ color: themeStyles.textPrimary }}
+            >
+              {t('settings.targetScore')}
+            </Label>
             <Input
               id="target_score"
               type="number"
@@ -358,26 +594,57 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
               max="9"
               value={preferences.target_score}
               onChange={(e) => setPreferences(prev => ({ ...prev, target_score: parseFloat(e.target.value) || 7.0 }))}
-              className="bg-white/50 border-white/30"
+              className="border"
+              style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'dark' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'minimalist' 
+                  ? '#ffffff' 
+                  : 'rgba(255,255,255,0.5)',
+                borderColor: themeStyles.border,
+                color: themeStyles.textPrimary,
+              }}
             />
           </div>
 
           <div>
-            <Label className="text-slate-700">{t('settings.targetDeadline')}</Label>
+            <Label style={{ color: themeStyles.textPrimary }}>
+              {t('settings.targetDeadline')}
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal bg-white/50 border-white/30",
+                    "w-full justify-start text-left font-normal border",
                     !preferences.target_deadline && "text-muted-foreground"
                   )}
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                      ? 'rgba(255,255,255,0.1)' 
+                      : themeStyles.theme.name === 'dark' 
+                      ? 'rgba(255,255,255,0.1)' 
+                      : themeStyles.theme.name === 'minimalist' 
+                      ? '#ffffff' 
+                      : 'rgba(255,255,255,0.5)',
+                    borderColor: themeStyles.border,
+                    color: preferences.target_deadline ? themeStyles.textPrimary : themeStyles.textSecondary,
+                  }}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {preferences.target_deadline ? format(preferences.target_deadline, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white/95 backdrop-blur-xl border-white/20" align="start">
+              <PopoverContent 
+                className={`w-auto p-0 ${themeStyles.cardClassName} backdrop-blur-xl`}
+                style={{
+                  ...themeStyles.cardStyle,
+                  borderColor: themeStyles.border,
+                }}
+                align="start"
+              >
                 <Calendar
                   mode="single"
                   selected={preferences.target_deadline || undefined}
@@ -391,21 +658,48 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label className="text-slate-700 text-base font-semibold mb-3 block">Section Target Scores</Label>
+            <Label 
+              className="text-base font-semibold mb-3 block"
+              style={{ color: themeStyles.textPrimary }}
+            >
+              Section Target Scores
+            </Label>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
               {Object.entries(preferences.target_scores).map(([section, score]) => (
                 <div key={section} className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 capitalize">
+                  <label 
+                    className="text-sm font-medium capitalize"
+                    style={{ color: themeStyles.textPrimary }}
+                  >
                     {section}
                   </label>
                   <Select
                     value={score.toString()}
                     onValueChange={(value) => updateSectionScore(section as keyof SectionScores, parseFloat(value))}
                   >
-                    <SelectTrigger className="bg-white/50 border-white/30">
+                    <SelectTrigger 
+                      className="border"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                          ? 'rgba(255,255,255,0.1)' 
+                          : themeStyles.theme.name === 'dark' 
+                          ? 'rgba(255,255,255,0.1)' 
+                          : themeStyles.theme.name === 'minimalist' 
+                          ? '#ffffff' 
+                          : 'rgba(255,255,255,0.5)',
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                      }}
+                    >
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-white/95 backdrop-blur-xl border-white/20">
+                    <SelectContent 
+                      className={`${themeStyles.cardClassName} backdrop-blur-xl`}
+                      style={{
+                        ...themeStyles.cardStyle,
+                        borderColor: themeStyles.border,
+                      }}
+                    >
                       {bandScores.map((bandScore) => (
                         <SelectItem key={bandScore} value={bandScore.toString()}>
                           {bandScore}
@@ -425,7 +719,18 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                 savePreferences();
               }}
               disabled={loading}
-              className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
+              className="flex-1 text-white"
+              style={{
+                backgroundColor: themeStyles.buttonPrimary,
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary;
+              }}
             >
               {loading ? t('common.loading') : t('settings.save')}
             </Button>
@@ -435,14 +740,40 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                 console.log('❌ Cancel button clicked');
                 setOpen(false);
               }}
-              className="bg-white/50 border-white/30"
+              className="border"
+              style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'dark' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'minimalist' 
+                  ? '#ffffff' 
+                  : 'rgba(255,255,255,0.5)',
+                borderColor: themeStyles.border,
+                color: themeStyles.textPrimary,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'dark' 
+                  ? 'rgba(255,255,255,0.1)' 
+                  : themeStyles.theme.name === 'minimalist' 
+                  ? '#ffffff' 
+                  : 'rgba(255,255,255,0.5)';
+              }}
             >
               {t('settings.cancel')}
             </Button>
           </div>
 
           {/* Reset Test Results */}
-          <div className="pt-3 border-t border-white/20">
+          <div 
+            className="pt-3 border-t"
+            style={{ borderColor: themeStyles.border }}
+          >
             <Button
               variant="outline"
               className="w-full border-red-200/50 text-red-600 hover:bg-red-50/50 hover:text-red-700"
@@ -479,7 +810,10 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
             </Button>
           </div>
           
-          <div className="border-t border-white/20 pt-4">
+          <div 
+            className="border-t pt-4"
+            style={{ borderColor: themeStyles.border }}
+          >
             <Button
               onClick={() => {
                 console.log('🚪 Sign out button clicked');

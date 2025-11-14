@@ -133,8 +133,8 @@ export const themes: Record<ThemeName, Theme> = {
       shadow: '0 1px 3px rgba(0,0,0,0.1)',
       chartLine: '#3b82f6',
       chartTarget: '#ef4444',
-      buttonPrimary: '#6b7280',
-      buttonPrimaryHover: '#4b5563',
+      buttonPrimary: '#2563eb',
+      buttonPrimaryHover: '#1d4ed8',
     },
     styles: {
       cardStyle: {

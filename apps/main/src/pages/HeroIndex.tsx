@@ -349,11 +349,12 @@ const HeroIndex = () => {
     fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'"
   }}>
       <SEO
-        title="Master English with AI-Powered Learning"
-        description="Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English."
-        keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC"
+        title="English AIdol - AI-Powered English Learning Platform | IELTS & General English"
+        description="Master English with AI-powered learning. Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English. Created by TESOL-certified experts and former IELTS examiners."
+        keywords="English learning, IELTS preparation, AI tutor, language learning, speaking practice, writing feedback, vocabulary builder, grammar practice, TOEFL, PTE, TOEIC, English AIdol, AI English tutor, IELTS practice tests, English exam preparation"
         type="website"
         schemaType="organization"
+        url="https://englishaidol.com"
       />
       {/* Language Welcome Banner */}
       <LanguageWelcomeBanner onLanguageSelected={(lang) => {
@@ -464,70 +465,16 @@ const HeroIndex = () => {
         </div>
       </section>
 
-      {/* About Section - Highlights */}
-      <section className="sm:py-20 pt-16 pb-16" id="about">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border p-6 border-black/10 bg-black/5">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
-                <Brain className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
-                {getText(['highlights', 'aiFeedback', 'title'])}
-              </h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">
-                {getText(['highlights', 'aiFeedback', 'description'])}
-              </p>
-            </div>
-            <div className="rounded-2xl border p-6 border-black/10 bg-black/5">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
-                <Target className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
-                {getText(['highlights', 'adaptive', 'title'])}
-              </h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">
-                {getText(['highlights', 'adaptive', 'description'])}
-              </p>
-            </div>
-            <div className="rounded-2xl border p-6 border-black/10 bg-black/5">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
-                <Shield className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
-                {getText(['highlights', 'proven', 'title'])}
-              </h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">
-                {getText(['highlights', 'proven', 'description'])}
-              </p>
-            </div>
-            <div className="rounded-2xl border p-6 border-black/10 bg-black/5">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-neutral-100">
-                <HeartHandshake className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight font-nunito">
-                {getText(['highlights', 'community', 'title'])}
-              </h3>
-              <p className="mt-2 text-sm text-black/70 font-nunito">
-                {getText(['highlights', 'community', 'description'])}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Programs */}
       <section className="sm:py-8 pt-4 pb-4" id="programs">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between gap-6">
-            <div>
-              <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
-                {getText(['programs', 'title'])}
-              </h2>
-              <p className="mt-2 text-sm text-black/70 font-nunito">
-                {getText(['programs', 'subtitle'])}
-              </p>
-            </div>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl sm:text-4xl tracking-tight font-nunito font-semibold">
+              {getText(['programs', 'title'])}
+            </h2>
+            <p className="mt-2 text-sm text-black/70 font-nunito">
+              {getText(['programs', 'subtitle'])}
+            </p>
           </div>
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mt-8">
@@ -622,21 +569,29 @@ const HeroIndex = () => {
                 </tr>
               </thead>
               <tbody>
-                {getArray(['comparison', 'rows']).map((row: any, rIdx: number) => (
-                  <motion.tr 
-                    key={rIdx} 
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: rIdx * 0.05 }}
-                    className="border-t border-black/10 hover:bg-blue-50/50 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-black/70 font-medium">{row.label}</td>
-                    <td className="px-4 py-3 text-black/60">{row.traditional}</td>
-                    <td className="px-4 py-3 font-semibold text-black bg-green-50/30">{row.ai}</td>
-                    <td className="px-4 py-3 text-black/60">{row.self}</td>
-                  </motion.tr>
-                ))}
+                {getArray(['comparison', 'rows']).map((rowStr: string, rIdx: number) => {
+                  let row: any;
+                  try {
+                    row = JSON.parse(rowStr);
+                  } catch {
+                    return null;
+                  }
+                  return (
+                    <motion.tr 
+                      key={rIdx} 
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: rIdx * 0.05 }}
+                      className="border-t border-black/10 hover:bg-blue-50/50 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-black/70 font-medium">{row.label}</td>
+                      <td className="px-4 py-3 text-black/60">{row.traditional}</td>
+                      <td className="px-4 py-3 font-semibold text-black bg-green-50/30">{row.ai}</td>
+                      <td className="px-4 py-3 text-black/60">{row.self}</td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </motion.div>

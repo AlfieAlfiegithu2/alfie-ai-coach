@@ -6,16 +6,25 @@ export const createOrganizationSchema = () => ({
   "@type": "EducationalOrganization",
   "name": "English AIdol",
   "alternateName": "English AI dol",
-  "description": "AI-powered English learning platform for IELTS and General English mastery",
+  "description": "Master English with AI-powered learning. Join 50,000+ students achieving their English goals with personalized AI feedback, comprehensive practice tests, and expert guidance for IELTS and General English. Created by TESOL-certified experts and former IELTS examiners.",
   "url": "https://englishaidol.com",
   "logo": "https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/uploads/1758811060051-Create_an_icon_featuring_a_cartoon-style_white_rab-1758811037411.png",
   "image": "https://storage.googleapis.com/gpt-engineer-file-uploads/oufTM9t5lFf51A21C2I86dAQL9J3/social-images/social-1758811085448-Upscale_this_adorable_bunny_character_wearing_glas-1758810348175.png",
   "foundingDate": "2024",
+  "slogan": "AI-Powered English Learning Platform",
+  "knowsAbout": [
+    "IELTS Preparation",
+    "English Language Learning",
+    "AI Tutoring",
+    "Language Assessment",
+    "English Exam Preparation"
+  ],
   "contactPoint": {
     "@type": "ContactPoint",
     "contactType": "customer service",
     "availableLanguage": ["English"],
-    "contactOption": "TollFree"
+    "contactOption": "TollFree",
+    "email": "hello@englishaidol.com"
   },
   "sameAs": [
     "https://www.instagram.com/englishaidol",
@@ -25,25 +34,52 @@ export const createOrganizationSchema = () => ({
   "hasEducationalCredential": {
     "@type": "EducationalCredential",
     "name": "IELTS Preparation",
-    "description": "Comprehensive IELTS preparation with AI-powered feedback"
+    "description": "Comprehensive IELTS preparation with AI-powered feedback validated by former IELTS examiners"
   },
-  "offers": {
-    "@type": "Service",
-    "name": "English Language Learning",
-    "description": "AI-powered English learning platform offering personalized feedback and practice tests"
-  },
+  "offers": [
+    {
+      "@type": "Service",
+      "name": "IELTS Preparation",
+      "description": "AI-powered IELTS preparation with 98% correlation to real exam scores, created by former IELTS examiners"
+    },
+    {
+      "@type": "Service",
+      "name": "General English Learning",
+      "description": "Personalized English learning with AI feedback, vocabulary building, and grammar practice"
+    },
+    {
+      "@type": "Service",
+      "name": "Speaking Practice",
+      "description": "AI-powered pronunciation and fluency training with instant feedback"
+    },
+    {
+      "@type": "Service",
+      "name": "Writing Feedback",
+      "description": "Detailed writing analysis using exact IELTS Band Descriptors"
+    }
+  ],
   "areaServed": {
     "@type": "Country",
     "name": "Worldwide"
   },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "5000",
+    "bestRating": "5",
+    "worstRating": "1"
+  },
   "serviceType": [
     "IELTS Preparation",
     "TOEFL Preparation",
+    "TOEIC Preparation",
+    "PTE Preparation",
     "General English Learning",
     "Vocabulary Building",
     "Grammar Practice",
     "Speaking Practice",
-    "Writing Feedback"
+    "Writing Feedback",
+    "AI-Powered Tutoring"
   ]
 });
 

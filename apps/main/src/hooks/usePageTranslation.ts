@@ -26,11 +26,9 @@ export const usePageTranslation = (pageKey: string, defaultContent: PageContent,
     // If English, use default content
     if (language === 'en') {
       setContent(defaultContent);
-      // Silently try to update content hash (don't fail if no permissions)
-      // Use setTimeout to make it truly async and prevent blocking
-      setTimeout(() => {
-        updateContentVersion(pageKey, defaultContent).catch(() => {});
-      }, 0);
+      // Skip content version update - this requires service_role permissions
+      // and causes 403 errors for regular users. This is a background operation
+      // that doesn't affect functionality, so we skip it entirely.
       return;
     }
 
@@ -85,27 +83,12 @@ export const usePageTranslation = (pageKey: string, defaultContent: PageContent,
   return { content, isLoading };
 };
 
-// Helper function to update content version - completely silent
+// Helper function to update content version - DISABLED
+// This function is disabled because it requires service_role permissions
+// and causes 403 errors for regular authenticated users.
+// Content version tracking should be handled server-side if needed.
 async function updateContentVersion(pageKey: string, content: PageContent) {
-  try {
-    const contentHash = createContentHash(content);
-    // Use a timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 2000)
-    );
-
-    await Promise.race([
-      supabase
-        .from('page_content_versions')
-        .upsert({
-          page_key: pageKey,
-          content_hash: contentHash,
-          last_updated: new Date().toISOString()
-        }),
-      timeoutPromise
-    ]);
-  } catch (error) {
-    // Completely silent - no console logging
-    return;
-  }
+  // Function disabled to prevent 403 errors
+  // This is a background operation that doesn't affect user experience
+  return;
 }

@@ -27,3 +27,4 @@ CREATE POLICY "Service role can manage page translations"
   FOR ALL
   USING (auth.role() = 'service_role');
 
+

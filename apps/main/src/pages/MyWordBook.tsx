@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, ArrowLeft, User, Edit3, Trash2 } from 'lucide-react';
+import { BookOpen, ArrowLeft, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
 import WordCard from '@/components/WordCard';
-import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
 
 interface SavedWord {
   id: string;
@@ -29,7 +28,6 @@ const MyWordBook = () => {
   const [words, setWords] = useState<SavedWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -121,11 +119,6 @@ const MyWordBook = () => {
     }
   };
 
-  const toggleEditMode = () => {
-    setIsEditMode(!isEditMode);
-    setSelectedWords(new Set());
-  };
-
   const toggleWordSelection = (wordId: string) => {
     setSelectedWords(prev => {
       const newSet = new Set(prev);
@@ -157,7 +150,6 @@ const MyWordBook = () => {
       // Remove the words from local state
       setWords(prev => prev.filter(w => !selectedWords.has(w.id)));
       setSelectedWords(new Set());
-      setIsEditMode(false);
       
       toast({
         title: "✅ Words Removed",
@@ -211,8 +203,8 @@ const MyWordBook = () => {
                 <Button onClick={() => navigate('/auth')} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2">
                   Sign In
                 </Button>
-                <Button onClick={() => navigate('/')} variant="outline" className="bg-white/50 border-white/30 text-slate-800 hover:bg-white/70">
-                  Go Home
+                <Button onClick={() => navigate('/dashboard')} variant="outline" className="bg-white/50 border-white/30 text-slate-800 hover:bg-white/70">
+                  Go to Dashboard
                 </Button>
               </div>
             </CardContent>
@@ -249,67 +241,16 @@ const MyWordBook = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-2 text-slate-800 hover:text-blue-600"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Home
+                Dashboard
               </Button>
             </div>
             
             <div className="flex items-center gap-3 lg:gap-4">
-              {/* Edit Mode Controls */}
-              {words.length > 0 && (
-                <div className="flex items-center gap-2">
-                  {isEditMode && selectedWords.size > 0 && (
-                    <Button
-                      onClick={deleteSelectedWords}
-                      variant="destructive"
-                      size="sm"
-                      className="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete ({selectedWords.size})
-                    </Button>
-                  )}
-                  <Button
-                    onClick={toggleEditMode}
-                    variant={isEditMode ? "secondary" : "outline"}
-                    size="sm"
-                    className={isEditMode 
-                      ? "bg-white/20 text-slate-800 border-white/30" 
-                      : "bg-white/10 text-slate-800 border-white/30 hover:bg-white/20"
-                    }
-                  >
-                    <Edit3 className="w-4 h-4 mr-1" />
-                    {isEditMode ? 'Done' : 'Modify'}
-                  </Button>
-                </div>
-              )}
-              
-              {/* Clickable User Avatar for Photo Upload */}
-              <ProfilePhotoSelector onPhotoUpdate={() => refreshProfile()}>
-                <button
-                  className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105"
-                  title="Click to change profile photo"
-                >
-                  {profile?.avatar_url ? (
-                    <img 
-                      src={profile.avatar_url} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    />
-                  ) : (
-                    <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />
-                  )}
-                  
-                  {/* Upload overlay on hover */}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-                    <User className="w-3 h-3 text-white" />
-                  </div>
-                </button>
-              </ProfilePhotoSelector>
             </div>
           </header>
 
@@ -358,9 +299,9 @@ const MyWordBook = () => {
                       key={word.id}
                       word={word}
                       onRemove={removeWord}
-                      isEditMode={isEditMode}
-                      isSelected={selectedWords.has(word.id)}
-                      onToggleSelect={toggleWordSelection}
+                      isEditMode={false}
+                      isSelected={false}
+                      onToggleSelect={undefined}
                     />
                   ))}
                 </div>

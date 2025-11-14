@@ -1,326 +1,280 @@
 import React, { useState, useEffect, useRef } from 'react';
-import TranslationHelper from './TranslationHelper';
 import { useAuth } from '@/hooks/useAuth';
+import TranslationPopup from './TranslationPopup';
+import { normalizeLanguageCode } from '@/lib/languageUtils';
 
 interface GlobalTextSelectionProps {
   children: React.ReactNode;
 }
 
 const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) => {
-  const [selectedText, setSelectedText] = useState('');
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [showHelper, setShowHelper] = useState(false);
-  const [targetLanguage, setTargetLanguage] = useState('en');
-  const [isSaving, setIsSaving] = useState(false);
-  const selectionTimeoutRef = useRef<NodeJS.Timeout>();
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef<NodeJS.Timeout>();
-  const lastClickTimeRef = useRef(0);
-  const { user } = useAuth();
+  const [selectedText, setSelectedText] = useState<string | null>(null);
+  const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
+  const [targetLanguage, setTargetLanguage] = useState<string>('en');
+  const { profile } = useAuth();
+  const lastClickTime = useRef<number>(0);
+  const lastClickElement = useRef<HTMLElement | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const mouseDownRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const isDraggingRef = useRef<boolean>(false);
 
-  // Load and refresh user's preferred language
+  // Get user's native language
   useEffect(() => {
-    const loadUserLanguage = async (retryCount = 0) => {
-      const maxRetries = 3;
-      const retryDelay = Math.pow(2, retryCount) * 1000;
-
-      if (user) {
-        try {
-          const { supabase } = await import('@/integrations/supabase/client');
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('native_language')
-            .eq('id', user.id)
-            .maybeSingle(); // Use maybeSingle to avoid errors when profile doesn't exist
-
-          if (error) {
-            // Check if it's a network error that we should retry
-            const isNetworkError = error.message?.includes('Failed to fetch') ||
-                                  error.message?.includes('ERR_CONNECTION_CLOSED') ||
-                                  error.message?.includes('NetworkError');
-
-            if (isNetworkError && retryCount < maxRetries) {
-              console.warn(`Network error loading user language (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
-              setTimeout(() => loadUserLanguage(retryCount + 1), retryDelay);
-              return;
-            }
-
-            console.warn('Error loading user language:', error.message);
-            return;
-          }
-
-          if (profile?.native_language) {
-            setTargetLanguage(profile.native_language);
-          }
-        } catch (error: any) {
-          // Check if it's a network error that we should retry
-          const isNetworkError = error.message?.includes('Failed to fetch') ||
-                                error.message?.includes('ERR_CONNECTION_CLOSED') ||
-                                error.message?.includes('NetworkError');
-
-          if (isNetworkError && retryCount < maxRetries) {
-            console.warn(`Network error loading user language (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
-            setTimeout(() => loadUserLanguage(retryCount + 1), retryDelay);
-            return;
-          }
-
-          console.warn('Failed to load user language after retries:', error.message || error);
-        }
+    if (profile?.native_language) {
+      const normalized = normalizeLanguageCode(profile.native_language);
+      if (normalized !== 'en') {
+        setTargetLanguage(normalized);
       }
-    };
+    }
+  }, [profile]);
 
-    loadUserLanguage();
-    
-    // Listen for storage events to detect language changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'language-updated') {
-        loadUserLanguage();
-        localStorage.removeItem('language-updated');
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [user]);
-
+  // Handle double-click (desktop) - for single words
   useEffect(() => {
-    // Enable translation selection for authenticated users, disable gracefully for others
-    if (!user) {
-      if (import.meta.env.DEV) {
-        console.log('ℹ️ Translation disabled: No authenticated user');
-      }
-      setShowHelper(false);
-      return;
-    }
-    if (import.meta.env.DEV) {
-      console.log('✅ Translation enabled for user:', user.email);
-    }
-
-    const handleMouseUp = (e: MouseEvent) => {
-      console.log('🐭 Mouse up detected');
-
-      // Clear any existing timeout
-      if (selectionTimeoutRef.current) {
-        clearTimeout(selectionTimeoutRef.current);
-      }
-
-      // Track double-clicks with proper timing
-      const currentTime = Date.now();
-      const timeSinceLastClick = currentTime - lastClickTimeRef.current;
-      lastClickTimeRef.current = currentTime;
-
-      // If more than 400ms since last click, reset counter
-      if (timeSinceLastClick > 400) {
-        clickCountRef.current = 0;
-      }
-
-      clickCountRef.current++;
-      console.log('👆 Click count:', clickCountRef.current, 'Time since last click:', timeSinceLastClick);
-
-      // Clear existing timer
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
-
-      // Set timer to reset click count after 400ms
-      clickTimerRef.current = setTimeout(() => {
-        console.log('⏱️ Click counter reset after 400ms');
-        clickCountRef.current = 0;
-      }, 400);
-
-      // Handle double-click (2 clicks within 400ms)
-      if (clickCountRef.current === 2) {
-        console.log('🔥 DOUBLE-CLICK DETECTED!');
-        clickCountRef.current = 0; // Reset immediately
-        
-        // Don't show new translations if we're currently saving
-        if (isSaving) {
-          console.log('⚠️ Saving in progress, ignoring double-click');
-          return;
-        }
-
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) {
-          console.log('❌ No selection found');
-          return;
-        }
-
-        const text = selection.toString().trim();
-        console.log('📝 Double-click text selected:', text, 'length:', text.length);
-
-        // Show for meaningful text selections
-        if (text.length >= 2 && text.length <= 500 && !text.includes('\n')) {
-          console.log('✅ Double-click text meets criteria, checking if selectable...');
-          const range = selection.getRangeAt(0);
-          const container = range.commonAncestorContainer;
-          const element = container.nodeType === Node.TEXT_NODE
-            ? container.parentElement
-            : container as Element;
-
-          // Skip if it's part of navigation, buttons, or form elements
-          if (element && !isSelectableContent(element)) {
-            console.log('❌ Element is not selectable content');
-            return;
-          }
-
-          // Get more precise positioning based on selection bounds
-          const rect = range.getBoundingClientRect();
-          const selectionX = rect.left + (rect.width / 2);
-          const selectionY = rect.bottom;
-
-          setSelectedText(text);
-          setPosition({
-            x: selectionX,
-            y: selectionY + window.scrollY + 5
-          });
-          console.log('🎯 Showing translation helper at position:', { x: selectionX, y: selectionY + window.scrollY + 5 });
-          setShowHelper(true);
-        }
+    const handleDoubleClick = (e: MouseEvent) => {
+      // Ignore if clicking on interactive elements
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'BUTTON' ||
+        target.tagName === 'A' ||
+        target.closest('button') ||
+        target.closest('a') ||
+        target.closest('[role="button"]') ||
+        target.closest('[contenteditable="true"]')
+      ) {
         return;
       }
 
-      // Single-click: wait 350ms to see if there's a second click
-      // Only process if this is the first click (after reset)
-      if (clickCountRef.current === 1) {
-        selectionTimeoutRef.current = setTimeout(() => {
-          // Check if still at click count 1 (no double-click happened)
-          if (clickCountRef.current === 1) {
-            console.log('👉 SINGLE-CLICK DETECTED (no second click within 350ms)');
-            
-            if (isSaving) return;
+      // Use a small delay to let browser finish selecting the word
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (!selection) return;
 
-            const selection = window.getSelection();
-            if (!selection || selection.rangeCount === 0) return;
+        // Browser automatically selects word on double-click, so just read it
+        const text = selection.toString().trim();
+        
+        if (!text || text.length === 0) {
+          console.log('🔍 No text selected on double-click');
+          return;
+        }
 
-            const text = selection.toString().trim();
-            console.log('📝 Single-click text selected:', text, 'length:', text.length);
+        console.log('🔍 Double-click detected, selected text:', text);
 
-            if (text.length >= 2 && text.length <= 500 && !text.includes('\n')) {
-              console.log('✅ Single-click text meets criteria, checking if selectable...');
-              const range = selection.getRangeAt(0);
-              const container = range.commonAncestorContainer;
-              const element = container.nodeType === Node.TEXT_NODE
-                ? container.parentElement
-                : container as Element;
-
-              if (element && !isSelectableContent(element)) {
-                console.log('❌ Element is not selectable content');
-                return;
-              }
-
-              const rect = range.getBoundingClientRect();
-              const selectionX = rect.left + (rect.width / 2);
-              const selectionY = rect.bottom;
-
-              setSelectedText(text);
-              setPosition({
-                x: selectionX,
-                y: selectionY + window.scrollY + 5
-              });
-              console.log('🎯 Showing translation helper at position:', { x: selectionX, y: selectionY + window.scrollY + 5 });
-              setShowHelper(true);
-            }
+        // Get selection position - position popup at the word that was clicked
+        try {
+          const selectedRange = selection.getRangeAt(0);
+          const rect = selectedRange.getBoundingClientRect();
+          
+          if (rect) {
+            // Position popup below the selected word, centered horizontally
+            // Use getBoundingClientRect() which is already relative to viewport (for fixed positioning)
+            setSelectionPosition({
+              x: rect.left + rect.width / 2,
+              y: rect.bottom + 8 // 8px below the word (no scrollY needed for fixed positioning)
+            });
+            setSelectedText(text);
+            console.log('✅ Translation popup triggered for:', text);
           }
-        }, 350);
-      }
+        } catch (err) {
+          console.error('Error getting selection range:', err);
+        }
+      }, 10); // Small delay to ensure selection is complete
     };
+
+    document.addEventListener('dblclick', handleDoubleClick);
+    return () => document.removeEventListener('dblclick', handleDoubleClick);
+  }, []);
+
+  // Handle mouse drag selection (desktop) - for sentences (more than 2 words)
+  useEffect(() => {
+    let selectionTimeout: NodeJS.Timeout;
 
     const handleMouseDown = (e: MouseEvent) => {
-      // Don't hide helper if clicking inside the translation helper popup
-      const target = e.target as Element;
-      if (target && target.closest('[data-translation-helper]')) {
+      // Ignore if clicking on interactive elements
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'BUTTON' ||
+        target.tagName === 'A' ||
+        target.closest('button') ||
+        target.closest('a') ||
+        target.closest('[role="button"]') ||
+        target.closest('[contenteditable="true"]')
+      ) {
         return;
       }
-      setShowHelper(false);
+
+      mouseDownRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now()
+      };
+      isDraggingRef.current = false;
     };
 
-    document.addEventListener('mouseup', handleMouseUp);
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!mouseDownRef.current) return;
+
+      const deltaX = Math.abs(e.clientX - mouseDownRef.current.x);
+      const deltaY = Math.abs(e.clientY - mouseDownRef.current.y);
+
+      // If mouse moved significantly, it's a drag
+      if (deltaX > 5 || deltaY > 5) {
+        isDraggingRef.current = true;
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (!mouseDownRef.current) return;
+
+      const deltaX = Math.abs(e.clientX - mouseDownRef.current.x);
+      const deltaY = Math.abs(e.clientY - mouseDownRef.current.y);
+
+      // If user dragged (not just clicked), check for selection
+      if (isDraggingRef.current && (deltaX > 10 || deltaY > 10)) {
+        clearTimeout(selectionTimeout);
+        selectionTimeout = setTimeout(() => {
+          const selection = window.getSelection();
+          const text = selection?.toString().trim();
+
+          // Ignore if selection is in input fields or textareas
+          const activeElement = document.activeElement;
+          if (
+            activeElement?.tagName === 'INPUT' ||
+            activeElement?.tagName === 'TEXTAREA' ||
+            activeElement?.getAttribute('contenteditable') === 'true'
+          ) {
+            mouseDownRef.current = null;
+            isDraggingRef.current = false;
+            return;
+          }
+
+          // Only trigger for sentences (more than 2 words)
+          if (text && text.split(/\s+/).length > 2) {
+            const range = selection?.getRangeAt(0);
+            const rect = range?.getBoundingClientRect();
+
+            if (rect) {
+              // Position popup below the selected text, centered horizontally
+              // Use getBoundingClientRect() which is already relative to viewport (for fixed positioning)
+              setSelectionPosition({
+                x: rect.left + rect.width / 2,
+                y: rect.bottom + 8 // 8px below the selection (no scrollY needed for fixed positioning)
+              });
+              setSelectedText(text);
+              console.log('✅ Translation popup triggered for sentence:', text);
+            }
+          }
+
+          mouseDownRef.current = null;
+          isDraggingRef.current = false;
+        }, 200); // Delay to ensure selection is complete
+      } else {
+        mouseDownRef.current = null;
+        isDraggingRef.current = false;
+      }
+    };
+
     document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousedown', handleMouseDown);
-      if (selectionTimeoutRef.current) {
-        clearTimeout(selectionTimeoutRef.current);
-      }
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      clearTimeout(selectionTimeout);
     };
-  }, [isSaving, user]);
+  }, []);
 
-  // Function to determine if content is selectable for translation
-  const isSelectableContent = (element: Element): boolean => {
-    if (!element) return false;
+  // Note: Desktop uses double-click handler above
+  // Mobile drag selection is handled by touch events below
 
-    // Get all parent elements
-    const parents = [];
-    let current = element;
-    while (current && current !== document.body) {
-      parents.push(current);
-      current = current.parentElement!;
-    }
+  // Handle touch events for mobile drag selection
+  useEffect(() => {
+    let selectionTimeout: NodeJS.Timeout;
 
-    // Check if any parent has attributes or classes that indicate it's not selectable content
-    for (const parent of parents) {
-      const tagName = parent.tagName.toLowerCase();
-      const className = parent.className || '';
-      const role = parent.getAttribute('role') || '';
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now()
+      };
+    };
 
-      // Skip UI elements - be more restrictive to avoid interfering with normal UI
-      if (
-        ['button', 'input', 'select', 'textarea', 'nav', 'header', 'aside'].includes(tagName) ||
-        className.includes('btn') ||
-        className.includes('button') ||
-        className.includes('nav') ||
-        className.includes('header') ||
-        className.includes('sidebar') ||
-        className.includes('menu') ||
-        className.includes('toast') ||
-        className.includes('dialog') ||
-        className.includes('modal') ||
-        className.includes('lucide') ||
-        className.includes('icon') ||
-        role === 'button' ||
-        role === 'navigation' ||
-        role === 'menubar' ||
-        parent.getAttribute('data-translation-helper')
-      ) {
-        return false;
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+
+      const touchEnd = {
+        x: e.changedTouches[0].clientX,
+        y: e.changedTouches[0].clientY,
+        time: Date.now()
+      };
+
+      const deltaX = Math.abs(touchEnd.x - touchStartRef.current.x);
+      const deltaY = Math.abs(touchEnd.y - touchStartRef.current.y);
+
+      // If user dragged (not just tapped), check for selection after a delay
+      if (deltaX > 10 || deltaY > 10) {
+        clearTimeout(selectionTimeout);
+        selectionTimeout = setTimeout(() => {
+          const selection = window.getSelection();
+          const text = selection?.toString().trim();
+
+          // Ignore if selection is in input fields or textareas
+          const activeElement = document.activeElement;
+          if (
+            activeElement?.tagName === 'INPUT' ||
+            activeElement?.tagName === 'TEXTAREA' ||
+            activeElement?.getAttribute('contenteditable') === 'true'
+          ) {
+            return;
+          }
+
+          if (text && text.length >= 2) {
+            const range = selection?.getRangeAt(0);
+            const rect = range?.getBoundingClientRect();
+
+            if (rect) {
+              // Position popup below the selected text, centered horizontally
+              // Use getBoundingClientRect() which is already relative to viewport (for fixed positioning)
+              setSelectionPosition({
+                x: rect.left + rect.width / 2,
+                y: rect.bottom + 8 // 8px below the selection (no scrollY needed for fixed positioning)
+              });
+              setSelectedText(text);
+            }
+          }
+        }, 300); // Delay to ensure selection is complete
       }
-    }
 
-    return true;
-  };
+      touchStartRef.current = null;
+    };
 
-  const handleSaveStart = () => {
-    setIsSaving(true);
-    setShowHelper(false);
-  };
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchend', handleTouchEnd);
 
-  const handleCloseHelper = () => {
-    setShowHelper(false);
-    setIsSaving(false);
-    // Clear text selection
-    const selection = window.getSelection();
-    if (selection) {
-      selection.removeAllRanges();
-    }
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+      clearTimeout(selectionTimeout);
+    };
+  }, []);
+
+  const handleClose = () => {
+    setSelectedText(null);
+    setSelectionPosition(null);
+    // Clear selection
+    window.getSelection()?.removeAllRanges();
   };
 
   return (
     <>
       {children}
-      {showHelper && selectedText && (
-        <TranslationHelper
+      {selectedText && selectionPosition && (
+        <TranslationPopup
           selectedText={selectedText}
-          position={position}
-          onClose={handleCloseHelper}
-          onSaveStart={handleSaveStart}
-          language={targetLanguage}
+          position={selectionPosition}
+          onClose={handleClose}
+          targetLanguage={targetLanguage}
         />
       )}
     </>

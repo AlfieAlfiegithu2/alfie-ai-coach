@@ -12,6 +12,7 @@ import StudentLayout from '@/components/StudentLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { getLanguagesForSettings } from '@/lib/languageUtils';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -232,16 +233,11 @@ const SettingsPage = () => {
                   <SelectValue />
                 </SelectTrigger>
                  <SelectContent>
-                   <SelectItem value="Spanish">Spanish (Español)</SelectItem>
-                   <SelectItem value="French">French (Français)</SelectItem>
-                   <SelectItem value="German">German (Deutsch)</SelectItem>
-                   <SelectItem value="Italian">Italian (Italiano)</SelectItem>
-                   <SelectItem value="Portuguese">Portuguese (Português)</SelectItem>
-                   <SelectItem value="Chinese">Chinese (中文)</SelectItem>
-                   <SelectItem value="Japanese">Japanese (日本語)</SelectItem>
-                   <SelectItem value="Korean">Korean (한국어)</SelectItem>
-                   <SelectItem value="Arabic">Arabic (العربية)</SelectItem>
-                   <SelectItem value="Hindi">Hindi (हिन्दी)</SelectItem>
+                   {getLanguagesForSettings().map(lang => (
+                     <SelectItem key={lang.value} value={lang.value}>
+                       {lang.label}
+                     </SelectItem>
+                   ))}
                  </SelectContent>
               </Select>
               <p className="text-sm text-text-secondary mt-1">

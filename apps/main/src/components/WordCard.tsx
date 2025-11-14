@@ -1,6 +1,7 @@
 import { memo, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SavedWord {
   id: string;
@@ -130,22 +131,33 @@ const WordCard = memo(({ word, onRemove, isEditMode = false, isSelected = false,
         </div>
       )}
 
-      {/* Word Card with Corner-Wipe Animation */}
+      {/* Word Card with Translation Reveal on Hover */}
       <div
-        className={`word-card ${isEditMode ? 'cursor-pointer' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
-        data-translation={word.translations.join(', ')}
+        className={`word-card word-card-hover-reveal ${isEditMode ? 'cursor-pointer' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
         onClick={handleCardClick}
         style={{ fontFamily: 'Bricolage Grotesque, sans-serif' }}
       >
-        <div className="text-center relative">
-          <div className="font-bold text-lg mb-1">
-            {word.word}
-          </div>
-          {word.context && (
-            <div className="text-xs opacity-60 px-2 py-1 bg-white/20 rounded-full inline-block">
-              {word.context}
+        <div className="text-center relative h-full flex flex-col items-center justify-center">
+          {/* Word - shown by default, hidden on hover */}
+          <div className="word-card-content word-card-word absolute inset-0 flex flex-col items-center justify-center transition-all duration-300 ease-in-out">
+            <div className="font-bold text-lg mb-1">
+              {word.word}
             </div>
-          )}
+            {word.context && (
+              <div className="text-xs opacity-60 px-2 py-1 bg-white/20 rounded-full inline-block">
+                {word.context}
+              </div>
+            )}
+          </div>
+          
+          {/* Translation - hidden by default, shown on hover */}
+          <div className="word-card-content word-card-translation absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out opacity-0 pointer-events-none">
+            <div className="font-bold text-lg text-black dark:text-black text-center">
+              {word.translations && word.translations.length > 0 
+                ? word.translations.join(', ')
+                : 'No translation available'}
+            </div>
+          </div>
         </div>
       </div>
     </div>

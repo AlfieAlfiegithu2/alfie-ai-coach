@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
+import { getLanguagesForSettings } from '@/lib/languageUtils';
 
 interface SectionScores {
   reading: number;
@@ -35,9 +36,10 @@ interface UserPreferences {
 
 interface SettingsModalProps {
   onSettingsChange?: () => void;
+  children?: React.ReactNode;
 }
 
-const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
+const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
   const { user, signOut, profile } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -58,54 +60,9 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
     }
   });
 
-  const [nativeLanguage, setNativeLanguage] = useState('Spanish');
+  const [nativeLanguage, setNativeLanguage] = useState('English');
 
-  const languages = [
-    { value: 'Spanish', label: 'Spanish (Español)' },
-    { value: 'French', label: 'French (Français)' },
-    { value: 'German', label: 'German (Deutsch)' },
-    { value: 'Italian', label: 'Italian (Italiano)' },
-    { value: 'Portuguese', label: 'Portuguese (Português)' },
-    { value: 'Chinese', label: 'Chinese (中文)' },
-    { value: 'Japanese', label: 'Japanese (日本語)' },
-    { value: 'Korean', label: 'Korean (한국어)' },
-    { value: 'Arabic', label: 'Arabic (العربية)' },
-    { value: 'Hindi', label: 'Hindi (हिन्दी)' },
-    { value: 'Vietnamese', label: 'Vietnamese (Tiếng Việt)' },
-    { value: 'Indonesian', label: 'Indonesian (Bahasa Indonesia)' },
-    { value: 'Thai', label: 'Thai (ไทย)' },
-    { value: 'Malay', label: 'Malay (Bahasa Melayu)' },
-    { value: 'Filipino', label: 'Filipino (Tagalog)' },
-    { value: 'Turkish', label: 'Turkish (Türkçe)' },
-    { value: 'Russian', label: 'Russian (Русский)' },
-    { value: 'Polish', label: 'Polish (Polski)' },
-    { value: 'Dutch', label: 'Dutch (Nederlands)' },
-    { value: 'Swedish', label: 'Swedish (Svenska)' },
-    { value: 'Norwegian', label: 'Norwegian (Norsk)' },
-    { value: 'Danish', label: 'Danish (Dansk)' },
-    { value: 'Finnish', label: 'Finnish (Suomi)' },
-    { value: 'Hebrew', label: 'Hebrew (עברית)' },
-    { value: 'Persian', label: 'Persian (فارسی)' },
-    { value: 'Urdu', label: 'Urdu (اردو)' },
-    { value: 'Bengali', label: 'Bengali (বাংলা)' },
-    { value: 'Tamil', label: 'Tamil (தமிழ்)' },
-    { value: 'Telugu', label: 'Telugu (తెలుగు)' },
-    { value: 'Marathi', label: 'Marathi (मराठी)' },
-    { value: 'Gujarati', label: 'Gujarati (ગુજરાતી)' },
-    { value: 'Punjabi', label: 'Punjabi (ਪੰਜਾਬੀ)' },
-    { value: 'Czech', label: 'Czech (Čeština)' },
-    { value: 'Hungarian', label: 'Hungarian (Magyar)' },
-    { value: 'Romanian', label: 'Romanian (Română)' },
-    { value: 'Bulgarian', label: 'Bulgarian (Български)' },
-    { value: 'Croatian', label: 'Croatian (Hrvatski)' },
-    { value: 'Greek', label: 'Greek (Ελληνικά)' },
-    { value: 'Ukrainian', label: 'Ukrainian (Українська)' },
-    { value: 'Slovak', label: 'Slovak (Slovenčina)' },
-    { value: 'Slovenian', label: 'Slovenian (Slovenščina)' },
-    { value: 'Estonian', label: 'Estonian (Eesti)' },
-    { value: 'Latvian', label: 'Latvian (Latviešu)' },
-    { value: 'Lithuanian', label: 'Lithuanian (Lietuvių)' }
-  ];
+  const languages = getLanguagesForSettings();
 
   const testTypes = [
     { value: 'IELTS', label: 'IELTS' },
@@ -200,14 +157,10 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
   const handleLogout = async () => {
     console.log('🚪 Initiating logout for user:', user?.id);
     try {
-      const result = await signOut();
-      if (result?.success) {
-        console.log('✅ Logout successful');
-        navigate('/');
-        setOpen(false);
-      } else {
-        throw new Error('Logout failed');
-      }
+      await signOut();
+      console.log('✅ Logout successful');
+      navigate('/');
+      setOpen(false);
     } catch (error: any) {
       console.error('❌ Logout error:', error);
       toast.error(`Failed to logout: ${error.message || 'Unknown error'}`);
@@ -267,15 +220,17 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
       setOpen(newOpen);
     }}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="bg-white/10 border-white/20 text-slate-800 hover:bg-white/20"
-          onClick={() => console.log('⚙️ Settings button clicked')}
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Settings
-        </Button>
+        {children || (
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-white/10 border-white/20 text-slate-800 hover:bg-white/20"
+            onClick={() => console.log('⚙️ Settings button clicked')}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -284,33 +239,19 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
         <div className="space-y-4">
           {/* Profile Photo Section */}
           <div className="flex items-center gap-4 p-4 bg-white/30 rounded-lg border border-white/20">
-            <div className="w-16 h-16 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden">
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-8 h-8 text-white" />
-              )}
-            </div>
-            <div className="flex-1">
-              <Label className="text-slate-700 font-medium">{t('settings.profilePhoto')}</Label>
-              <p className="text-sm text-slate-600 mb-2">{t('settings.profilePhotoHelp')}</p>
-              <div className="flex items-center gap-2">
-                <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-white/50 border-white/30 text-slate-700 hover:bg-white/70"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {t('settings.changePhoto')}
-                  </Button>
-                </ProfilePhotoSelector>
+            <ProfilePhotoSelector onPhotoUpdate={handlePhotoUpdate}>
+              <div className="w-16 h-16 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-8 h-8 text-white" />
+                )}
               </div>
-            </div>
+            </ProfilePhotoSelector>
           </div>
 
           <div>
@@ -453,6 +394,44 @@ const SettingsModal = ({ onSettingsChange }: SettingsModalProps) => {
               className="bg-white/50 border-white/30"
             >
               {t('settings.cancel')}
+            </Button>
+          </div>
+
+          {/* Reset Test Results */}
+          <div className="pt-2 border-t border-white/20">
+            <Button
+              variant="outline"
+              className="w-full border-red-200/50 text-red-600 hover:bg-red-50/50 hover:text-red-700"
+              onClick={async () => {
+                if (!user) return;
+                const confirmed = window.confirm('This will permanently delete all your saved test results (reading, listening, writing, speaking). Continue?');
+                if (!confirmed) return;
+                
+                setLoading(true);
+                try {
+                  // Delete skill-specific results first (foreign keys)
+                  await supabase.from('writing_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('reading_test_results').delete().eq('user_id', user.id);
+                  await supabase.from('listening_test_results').delete().eq('user_id', user.id);
+
+                  // Delete main test results
+                  const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
+                  if (tErr) throw tErr;
+                  
+                  toast.success('All test results have been reset successfully.');
+                  setOpen(false);
+                  onSettingsChange?.();
+                } catch (e: any) {
+                  console.error('Failed to reset results', e);
+                  toast.error('Failed to reset results. Please try again.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+            >
+              🔄 {t('dashboard.resetResults')}
             </Button>
           </div>
 

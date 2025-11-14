@@ -76,12 +76,63 @@
   top: 0;
   right: 0;
   border-radius: 0 12px 0 100%;
+  background: transparent;
+  transform: scale(0);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .word-card::after {
   bottom: 0;
   left: 0;
   border-radius: 0 100% 0 12px;
+  background: transparent;
+  transform: scale(0);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+}
+
+.word-card:hover::before,
+.word-card:hover::after {
+  transform: scale(1);
+}
+
+/* Word Card Hover Reveal - Translation Animation */
+.word-card-hover-reveal {
+  position: relative;
+}
+
+.word-card-hover-reveal .word-card-word {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.word-card-hover-reveal .word-card-translation {
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.word-card-hover-reveal .word-card-translation > div {
+  display: inline-block;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  white-space: nowrap;
+  direction: ltr;
+  unicode-bidi: bidi-override;
+}
+
+.word-card-hover-reveal:hover .word-card-word {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+  pointer-events: none;
+}
+
+.word-card-hover-reveal:hover .word-card-translation {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
 

@@ -430,8 +430,16 @@ const HeroIndex = () => {
           <div className="h-full w-full overflow-hidden">
             <img 
               className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:opacity-100 object-center md:object-[35%_center] md:scale-100 scale-[1.15] md:translate-x-0 -translate-x-[10%]" 
-              src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png" 
-              alt="Updated hero background image" 
+              src="/1000031207.png" 
+              alt="Updated hero background image"
+              onError={(e) => {
+                // Fallback to GitHub URL if local file fails
+                const target = e.currentTarget;
+                if (!target.src.includes('githubusercontent.com')) {
+                  target.src = 'https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png';
+                }
+              }}
+              loading="eager"
             />
           </div>
         </div>

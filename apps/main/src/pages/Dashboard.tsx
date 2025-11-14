@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home } from "lucide-react";
+import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, Settings } from "lucide-react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +16,6 @@ import SettingsModal from "@/components/SettingsModal";
 import StudyPlanModal from "@/components/StudyPlanModal";
 import TestResultsChart from "@/components/TestResultsChart";
 import CountdownTimer from "@/components/CountdownTimer";
-import ProfilePhotoSelector from "@/components/ProfilePhotoSelector";
 import LanguageSelector from "@/components/LanguageSelector";
 import LanguagePicker from "@/components/LanguagePicker";
 import { normalizeLanguageCode } from "@/lib/languageUtils";
@@ -46,9 +45,12 @@ interface SavedWord {
 }
 
 interface UserPreferences {
-  target_test_type: string;
-  native_language: string;
-  study_goals: string[];
+  target_test_type?: string;
+  native_language?: string;
+  study_goals?: string[];
+  preferred_name?: string;
+  target_score?: number;
+  target_deadline?: string | null;
 }
 
 const Dashboard = () => {
@@ -131,6 +133,30 @@ const Dashboard = () => {
   }];
 
 
+  // Function to reload user preferences
+  const reloadUserPreferences = async () => {
+    if (!user) return;
+    
+    try {
+      const {
+        data: preferences,
+        error: prefError
+      } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
+      if (prefError) {
+        console.warn('Error fetching preferences:', prefError);
+      } else if (preferences) {
+        setUserPreferences(preferences);
+        setSelectedTestType(preferences.target_test_type || 'IELTS');
+        setRefreshKey(prev => prev + 1);
+      } else {
+        // If no preferences found, set to null to use fallback
+        setUserPreferences(null);
+      }
+    } catch (error) {
+      console.error('Error reloading preferences:', error);
+    }
+  };
+
   // Fetch user data from Supabase
   useEffect(() => {
     // Preload the background image
@@ -144,17 +170,7 @@ const Dashboard = () => {
       }
       try {
         // Fetch user preferences
-        const {
-          data: preferences,
-          error: prefError
-        } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
-        if (prefError) {
-          console.warn('Error fetching preferences:', prefError);
-        } else if (preferences) {
-          setUserPreferences(preferences);
-          setSelectedTestType(preferences.target_test_type || 'IELTS');
-          setRefreshKey(prev => prev + 1);
-        }
+        await reloadUserPreferences();
 
         // Fetch test results
         const {
@@ -432,104 +448,21 @@ const Dashboard = () => {
             {/* Language Selector - Compact for header */}
             <LanguageSelector />
             
-            {/* Settings Button */}
-            <div className="relative z-50">
-              <SettingsModal onSettingsChange={() => setRefreshKey(prev => prev + 1)} />
-            </div>
-            
-            {/* Mobile Reset Button - Icon only */}
-            <Button
-              onClick={async () => {
-                if (!user) return;
-                  const confirmed = window.confirm('This will permanently delete all your saved test results (reading, listening, writing, speaking). Continue?');
-                if (!confirmed) return;
-                try {
-                  setLoading(true);
-                  
-                  // Delete skill-specific results first (foreign keys)
-                  await supabase.from('writing_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('reading_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('listening_test_results').delete().eq('user_id', user.id);
-
-                  // Delete main test results
-                  const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
-                  if (tErr) throw tErr;
-                  
-                  // Clear local state for instant UI feedback
-                  setTestResults([]);
-                  setUserStats({ totalTests: 0, avgScore: 0, recentImprovement: 0, weeklyProgress: 0 });
-                  toast({ title: 'Results reset', description: 'All your test results have been removed.' });
-                  setRefreshKey(prev => prev + 1);
-                } catch (e: any) {
-                  console.error('Failed to reset results', e);
-                  toast({ title: 'Error', description: 'Failed to reset results. Please try again.', variant: 'destructive' });
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              variant="ghost"
-              size="sm"
-              className="xl:hidden bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700 p-2"
-              title={t('dashboard.resetResults')}
-            >
-              🔄
-            </Button>
-            
-            {/* Clickable User Avatar for Photo Upload */}
-            <ProfilePhotoSelector onPhotoUpdate={() => {
+            {/* Clickable User Avatar - Opens Settings */}
+            <SettingsModal onSettingsChange={() => {
+              reloadUserPreferences();
               refreshProfile();
               setRefreshKey(prev => prev + 1);
             }}>
-              <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title="Click to change profile photo">
+              <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title="Click to open settings">
                 {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
                 
-                {/* Upload overlay on hover */}
+                {/* Settings overlay on hover */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-                  <User className="w-3 h-3 text-white" />
+                  <Settings className="w-3 h-3 text-white" />
                 </div>
               </button>
-            </ProfilePhotoSelector>
-
-            {/* Reset Results Button */}
-            <Button
-              onClick={async () => {
-                if (!user) return;
-                  const confirmed = window.confirm('This will permanently delete all your saved test results (reading, listening, writing, speaking). Continue?');
-                if (!confirmed) return;
-                try {
-                  setLoading(true);
-                  
-                  // Delete skill-specific results first (foreign keys)
-                  await supabase.from('writing_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('reading_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('listening_test_results').delete().eq('user_id', user.id);
-
-                  // Delete main test results
-                  const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
-                  if (tErr) throw tErr;
-                  
-                  // Clear local state for instant UI feedback
-                  setTestResults([]);
-                  setUserStats({ totalTests: 0, avgScore: 0, recentImprovement: 0, weeklyProgress: 0 });
-                  toast({ title: 'Results reset', description: 'All your test results have been removed.' });
-                  setRefreshKey(prev => prev + 1);
-                } catch (e: any) {
-                  console.error('Failed to reset results', e);
-                  toast({ title: 'Error', description: 'Failed to reset results. Please try again.', variant: 'destructive' });
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              variant="ghost"
-              size="sm"
-              className="hidden xl:inline-flex bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-slate-700 text-xs px-2 py-1 whitespace-nowrap min-w-0"
-            >
-              <span className="truncate max-w-[120px]" title={t('dashboard.resetResults')}>
-                {t('dashboard.resetResults')}
-              </span>
-            </Button>
+            </SettingsModal>
           </div>
         </header>
 
@@ -616,16 +549,6 @@ const Dashboard = () => {
 
             {/* Right column */}
             <div className="flex flex-col gap-4 lg:gap-6">
-              {/* Today's Schedule Heading */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h2 className="text-lg lg:text-xl font-semibold text-slate-800" style={{
-                  fontFamily: 'Inter, sans-serif'
-                }}>{t('dashboard.practiceAreas')}</h2>
-                <div className="flex items-center gap-3 text-sm">
-                  
-                  
-                </div>
-              </div>
 
               <div className="grid xl:grid-cols-1 gap-4 lg:gap-6">
                 {/* Test Results and Feedback Cards */}

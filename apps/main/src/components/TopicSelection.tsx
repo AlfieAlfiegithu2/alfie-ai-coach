@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, BookOpen, MessageCircle, Target, Lightbulb, Globe, Languages } from 'lucide-react';
+import { getLanguagesWithFlags } from '@/lib/languageUtils';
 
 interface TopicOption {
   id: string;
@@ -23,18 +24,7 @@ interface TopicSelectionProps {
   onSkip: () => void;
 }
 
-const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'pt', name: 'Português', flag: '🇵🇹' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'ko', name: '한국어', flag: '🇰🇷' },
-  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
-];
+const LANGUAGES = getLanguagesWithFlags();
 
 const TOPIC_OPTIONS: TopicOption[] = [
   {

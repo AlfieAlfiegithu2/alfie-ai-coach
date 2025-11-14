@@ -1,39 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Check } from 'lucide-react';
+import { getLanguagesWithFlags, type LanguageWithFlag } from '@/lib/languageUtils';
 
-interface Language {
-  code: string;
-  name: string;
-  flag: string;
-  nativeName: string;
-}
-
-const languages: Language[] = [
-  { code: 'en', name: 'English', flag: '🇺🇸', nativeName: 'English' },
-  { code: 'es', name: 'Español', flag: '🇪🇸', nativeName: 'Español' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷', nativeName: 'Français' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪', nativeName: 'Deutsch' },
-  { code: 'ko', name: '한국어', flag: '🇰🇷', nativeName: '한국어' },
-  { code: 'zh', name: '中文', flag: '🇨🇳', nativeName: '中文' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵', nativeName: '日本語' },
-  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳', nativeName: 'Tiếng Việt' },
-  { code: 'pt', name: 'Português', flag: '🇵🇹', nativeName: 'Português' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺', nativeName: 'Русский' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦', nativeName: 'العربية' },
-  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳', nativeName: 'हिन्दी' },
-  { code: 'bn', name: 'বাংলা', flag: '🇧🇩', nativeName: 'বাংলা' },
-  { code: 'ur', name: 'اردو', flag: '🇵🇰', nativeName: 'اردو' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩', nativeName: 'Bahasa Indonesia' },
-  { code: 'tr', name: 'Türkçe', flag: '🇹🇷', nativeName: 'Türkçe' },
-  { code: 'fa', name: 'فارسی', flag: '🇮🇷', nativeName: 'فارسی' },
-  { code: 'ta', name: 'தமிழ்', flag: '🇮🇳', nativeName: 'தமிழ்' },
-  { code: 'ne', name: 'नेपाली', flag: '🇳🇵', nativeName: 'नेपाली' },
-  { code: 'th', name: 'ไทย', flag: '🇹🇭', nativeName: 'ไทย' },
-  { code: 'yue', name: '粵語', flag: '🇭🇰', nativeName: '粵語' },
-  { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾', nativeName: 'Bahasa Melayu' },
-  { code: 'kk', name: 'Қазақ тілі', flag: '🇰🇿', nativeName: 'Қазақша' },
-];
+const languages = getLanguagesWithFlags();
 
 const LanguageSelector = () => {
   const { i18n } = useTranslation();

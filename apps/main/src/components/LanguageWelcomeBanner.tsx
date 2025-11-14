@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Globe } from 'lucide-react';
+import { getLanguagesWithFlags } from '@/lib/languageUtils';
 
 interface LanguageWelcomeBannerProps {
   onLanguageSelected?: (language: string) => void;
@@ -11,30 +12,7 @@ const LanguageWelcomeBanner: React.FC<LanguageWelcomeBannerProps> = ({ onLanguag
   const [showBanner, setShowBanner] = useState(false);
   const [detectedLanguage, setDetectedLanguage] = useState<string>('');
 
-  const supportedLanguages = [
-    { code: 'ko', name: '한국어', flag: '🇰🇷' },
-    { code: 'zh', name: '中文', flag: '🇨🇳' },
-    { code: 'ja', name: '日本語', flag: '🇯🇵' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'pt', name: 'Português', flag: '🇵🇹' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-    { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
-    { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
-    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-    { code: 'bn', name: 'বাংলা', flag: '🇧🇩' },
-    { code: 'ur', name: 'اردو', flag: '🇵🇰' },
-    { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
-    { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
-    { code: 'fa', name: 'فارسی', flag: '🇮🇷' },
-    { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
-    { code: 'ne', name: 'नेपाली', flag: '🇳🇵' },
-    { code: 'th', name: 'ไทย', flag: '🇹🇭' },
-    { code: 'yue', name: '粵語', flag: '🇭🇰' },
-    { code: 'ms', name: 'Bahasa Melayu', flag: '🇲🇾' },
-    { code: 'kk', name: 'Қазақша', flag: '🇰🇿' }
-  ];
+  const supportedLanguages = getLanguagesWithFlags();
 
   useEffect(() => {
     // Check if user has already made a language choice

@@ -109,7 +109,7 @@ serve(async (req) => {
 
     console.log('✅ OpenRouter key found for translation');
 
-    const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false } = await req.json();
+    const { text, texts, sourceLang = "auto", targetLang = "en", includeContext = false, bypassCache = false } = await req.json();
     
     // Support batch translation
     const isBatch = Array.isArray(texts);
@@ -123,68 +123,79 @@ serve(async (req) => {
       count: textArray.length, 
       sample: textArray[0]?.substring(0, 30) + '...', 
       sourceLang, 
-      targetLang 
+      targetLang,
+      bypassCache
     });
 
-    // Batch processing - check cache for all texts
+    // Batch processing - check cache for all texts (unless bypassCache is true)
     const results: any[] = [];
     const uncachedIndices: number[] = [];
     const uncachedTexts: string[] = [];
 
-    if (isBatch) {
-      for (let i = 0; i < textArray.length; i++) {
-        const currentText = textArray[i];
-        const shouldCache = currentText.length <= 50 && currentText.trim().split(/\s+/).length <= 5;
-        
+    if (!bypassCache) {
+      if (isBatch) {
+        for (let i = 0; i < textArray.length; i++) {
+          const currentText = textArray[i];
+          const shouldCache = currentText.length <= 50 && currentText.trim().split(/\s+/).length <= 5;
+          
+          if (shouldCache) {
+            const { data } = await supabase
+              .from('translation_cache')
+              .select('translation, hit_count')
+              .eq('word', currentText.toLowerCase().trim())
+              .eq('source_lang', sourceLang)
+              .eq('target_lang', targetLang)
+              .gt('expires_at', new Date().toISOString())
+              .single();
+
+            if (data) {
+              results[i] = {
+                translation: data.translation,
+                cached: true
+              };
+              continue;
+            }
+          }
+          
+          uncachedIndices.push(i);
+          uncachedTexts.push(currentText);
+        }
+      } else {
+        // Single text cache check
+        const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
         if (shouldCache) {
           const { data } = await supabase
             .from('translation_cache')
             .select('translation, hit_count')
-            .eq('word', currentText.toLowerCase().trim())
+            .eq('word', text.toLowerCase().trim())
             .eq('source_lang', sourceLang)
             .eq('target_lang', targetLang)
             .gt('expires_at', new Date().toISOString())
             .single();
 
           if (data) {
-            results[i] = {
-              translation: data.translation,
-              cached: true
-            };
-            continue;
+            console.log('🚀 Translation cache hit!');
+            return new Response(JSON.stringify({ 
+              success: true, 
+              result: {
+                translation: data.translation,
+                simple: true,
+                cached: true
+              },
+              sourceLang: sourceLang,
+              targetLang: targetLang
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
           }
         }
-        
-        uncachedIndices.push(i);
-        uncachedTexts.push(currentText);
       }
     } else {
-      // Single text cache check
-      const shouldCache = text.length <= 50 && text.trim().split(/\s+/).length <= 5;
-      if (shouldCache) {
-        const { data } = await supabase
-          .from('translation_cache')
-          .select('translation, hit_count')
-          .eq('word', text.toLowerCase().trim())
-          .eq('source_lang', sourceLang)
-          .eq('target_lang', targetLang)
-          .gt('expires_at', new Date().toISOString())
-          .single();
-
-        if (data) {
-          console.log('🚀 Translation cache hit!');
-          return new Response(JSON.stringify({ 
-            success: true, 
-            result: {
-              translation: data.translation,
-              simple: true,
-              cached: true
-            },
-            sourceLang: sourceLang,
-            targetLang: targetLang
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+      // Bypass cache - process all texts
+      if (isBatch) {
+        for (let i = 0; i < textArray.length; i++) {
+          uncachedIndices.push(i);
+          uncachedTexts.push(textArray[i]);
         }
       }
     }

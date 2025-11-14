@@ -1,6 +1,12 @@
+// @deno-types="https://deno.land/x/types/index.d.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore - Deno types
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore - Deno types
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// @ts-ignore - Deno global
+declare const Deno: any;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,9 +35,9 @@ serve(async (req) => {
     const supabaseServiceRole = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const requestData = await req.json();
-    const { test_name, test_type, module, skill_category } = requestData;
+    const { test_name, test_type, module, skill_category, training_type, test_subtype } = requestData;
 
-    console.log('Creating test:', { test_name, test_type, module, skill_category });
+    console.log('Creating test:', { test_name, test_type, module, skill_category, training_type, test_subtype });
 
     // Validate input
     if (!test_name || !test_type || !module) {
@@ -53,13 +59,76 @@ serve(async (req) => {
       insertData.skill_category = skill_category;
     }
 
+    // Add test_subtype (supports both training_type and test_subtype for backward compatibility)
+    const subtype = test_subtype || training_type;
+    
+    console.log('📋 Requested test_subtype:', subtype);
     console.log('Inserting data:', insertData);
 
-    const { data, error } = await supabaseServiceRole
+    // Try inserting with test_subtype first
+    let insertDataWithSubtype = { ...insertData };
+    if (subtype) {
+      insertDataWithSubtype.test_subtype = subtype;
+      console.log('✅ Attempting to create test with test_subtype:', subtype);
+    }
+
+    let { data, error } = await supabaseServiceRole
       .from('tests')
-      .insert(insertData)
-      .select()
+      .insert(insertDataWithSubtype)
+      .select('*, test_subtype')
       .single();
+
+    // If error is about missing column, try without test_subtype, then update if possible
+    if (error && error.message && (error.message.includes('test_subtype') || error.message.includes('column'))) {
+      console.warn('⚠️ test_subtype column does not exist. Creating test without it first...');
+      console.warn('⚠️ Please apply migration 20251113221619_add_test_subtype_to_tests.sql');
+      
+      // Retry without test_subtype
+      const { data: retryData, error: retryError } = await supabaseServiceRole
+        .from('tests')
+        .insert(insertData)
+        .select('*, test_subtype')
+        .single();
+      
+      if (retryError) {
+        console.error('Error creating test:', retryError);
+        return new Response(
+          JSON.stringify({ error: retryError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      data = retryData;
+      error = null;
+      
+      // Try to update with test_subtype if column exists (will fail silently if it doesn't)
+      if (subtype && data && data.id) {
+        console.log('🔄 Attempting to update test with test_subtype:', subtype);
+        const { error: updateError } = await supabaseServiceRole
+          .from('tests')
+          .update({ test_subtype: subtype })
+          .eq('id', data.id);
+        
+        if (updateError) {
+          console.warn('⚠️ Could not update test_subtype (column may not exist):', updateError.message);
+          console.warn('⚠️ Test created but test_subtype not saved. Apply migration to enable this feature.');
+        } else {
+          console.log('✅ Successfully updated test with test_subtype:', subtype);
+          // Refetch to get updated data with test_subtype
+          const { data: updatedData, error: refetchError } = await supabaseServiceRole
+            .from('tests')
+            .select('*, test_subtype')
+            .eq('id', data.id)
+            .single();
+          if (updatedData) {
+            console.log('✅ Refetched test with test_subtype:', updatedData.test_subtype);
+            data = updatedData;
+          } else if (refetchError) {
+            console.warn('⚠️ Could not refetch test:', refetchError.message);
+          }
+        }
+      }
+    }
 
     if (error) {
       console.error('Error creating test:', error);

@@ -21,19 +21,36 @@ import { useThemeStyles } from "@/hooks/useThemeStyles";
 
 interface UserStats {
   totalTests: number;
-  completedTests: number;
-  averageScore: number;
-  studyStreak: number;
+  completedTests?: number;
+  averageScore?: number;
+  avgScore?: number;
+  studyStreak?: number;
+  recentImprovement?: number;
+  weeklyProgress?: number;
 }
 
 interface TestResult {
   id: string;
   test_type: string;
-  skill: string;
-  score: number;
+  skill?: string;
+  score?: number;
+  score_percentage?: number;
   band_score?: number;
+  band_scores?: Record<string, number> | any;
   created_at: string;
   user_id: string;
+  task_number?: number;
+  test_data?: any;
+  section_number?: number | null;
+  total_questions?: number | null;
+  correct_answers?: number | null;
+  time_taken?: number | null;
+  completed_at?: string | null;
+  audio_retention_expires_at?: string | null;
+  detailed_feedback?: any;
+  question_analysis?: any;
+  performance_metrics?: any;
+  skill_breakdown?: any;
 }
 
 interface UserPreferences {
@@ -235,8 +252,8 @@ const Dashboard = () => {
               test_data: { readingResult: result },
               // Required fields for test_results table structure
               section_number: null,
-              total_questions: result.questions_data?.questions?.length || result.questions_data?.length || 0,
-              correct_answers: Math.floor((result.comprehension_score || 0) * (result.questions_data?.questions?.length || result.questions_data?.length || 1)),
+              total_questions: ((result.questions_data as any)?.questions?.length || (result.questions_data as any)?.length || 0),
+              correct_answers: Math.floor((result.comprehension_score || 0) * ((result.questions_data as any)?.questions?.length || (result.questions_data as any)?.length || 1)),
               time_taken: result.reading_time_seconds,
               completed_at: result.created_at,
               audio_retention_expires_at: null,
@@ -253,8 +270,8 @@ const Dashboard = () => {
         // Add writing results as synthetic test results for dashboard display
         if (writingResults) {
           // Group writing results by test_result_id or date
-          const writingByTest: { [key: string]: TestResult[] } = {};
-          writingResults.forEach(result => {
+          const writingByTest: { [key: string]: any[] } = {};
+          writingResults.forEach((result: any) => {
             const key = result.test_result_id || result.created_at?.split('T')[0] || 'standalone';
             if (!writingByTest[key]) {
               writingByTest[key] = [];
@@ -270,12 +287,12 @@ const Dashboard = () => {
             }
 
             // Calculate overall writing score
-            const task1Result = results.find(r => r.task_number === 1);
-            const task2Result = results.find(r => r.task_number === 2);
+            const task1Result = results.find((r: any) => r.task_number === 1);
+            const task2Result = results.find((r: any) => r.task_number === 2);
             let overallScore = 70; // Default 7.0 band
 
             if (task1Result && task2Result) {
-              const extractBandFromResult = (result: { band_scores?: Record<string, number> }): number => {
+              const extractBandFromResult = (result: any): number => {
                 if (result.band_scores && typeof result.band_scores === 'object') {
                   const bands = Object.values(result.band_scores).filter(v => typeof v === 'number') as number[];
                   if (bands.length > 0) {
@@ -297,7 +314,7 @@ const Dashboard = () => {
               test_type: 'writing',
               score_percentage: overallScore,
               created_at: results[0].created_at,
-              test_data: { writingResults: results },
+              test_data: { writingResults: results } as any,
               // Required fields for test_results table structure
               section_number: null,
               total_questions: results.length,
@@ -318,7 +335,7 @@ const Dashboard = () => {
         // Sort all results by date
         allResults.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         
-        setTestResults(allResults);
+        setTestResults(allResults as TestResult[]);
 
         // Calculate user stats from all test results
         const totalTests = allResults.length;
@@ -631,7 +648,6 @@ const Dashboard = () => {
                             onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.textPrimary}
                             onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
                             aria-label="View history"
-                            title="View detailed test history"
                           />
                         </div>
                         

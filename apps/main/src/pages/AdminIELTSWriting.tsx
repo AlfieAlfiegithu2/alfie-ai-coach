@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { PenTool, Plus, Calendar, Users, Edit3, Trash2, Check, X } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cuumxmfzhwljylbdlflj.supabase.co';
 
 const AdminIELTSWriting = () => {
   const navigate = useNavigate();
@@ -19,15 +23,17 @@ const AdminIELTSWriting = () => {
   const [loading, setLoading] = useState(true);
   const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [editingTestName, setEditingTestName] = useState("");
+  const [newTestName, setNewTestName] = useState("");
+  const [trainingType, setTrainingType] = useState<'Academic' | 'General'>('Academic');
 
   const loadTests = async () => {
     try {
       setLoading(true);
       console.log('📝 Loading writing tests...');
-      console.log('🔗 Using Supabase URL:', supabase.supabaseUrl);
+      console.log('🔗 Using Supabase URL:', SUPABASE_URL);
       
       // Try fetching via REST API directly to bypass client library issues
-      const url = `${supabase.supabaseUrl}/rest/v1/tests?test_type=eq.IELTS`;
+      const url = `${SUPABASE_URL}/rest/v1/tests?test_type=eq.IELTS`;
       const headers = {
         'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI',
         'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI`,
@@ -84,49 +90,30 @@ const AdminIELTSWriting = () => {
   }, [admin, authLoading, navigate]);
 
   const handleCreateTest = async () => {
+    if (!newTestName.trim()) {
+      toast.error('Please enter a test name');
+      return;
+    }
+
     try {
       setLoading(true);
       console.log('📝 Creating new writing test...');
+      console.log('🎯 Selected trainingType:', trainingType);
       
-      // First, fetch existing tests to calculate next test number
-      const url = `${supabase.supabaseUrl}/rest/v1/tests?test_type=eq.IELTS`;
-      const headers = {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI',
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI`,
-        'Content-Type': 'application/json'
-      };
-      
-      console.log('🔄 Fetching existing tests for numbering...');
-      const response = await fetch(url, { headers });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tests: ${response.status}`);
-      }
-      
-      const allTests = await response.json();
-      const writingTests = allTests?.filter((t: any) => 
-        t.module === 'Writing' || t.skill_category === 'Writing' || t.test_name?.includes('Writing')
-      ) || [];
-      
-      const maxTestNumber = writingTests.length > 0 
-        ? Math.max(...writingTests.map((t: any) => t.test_number || 1))
-        : 0;
-      
-      const nextTestNumber = maxTestNumber + 1;
-      
-      console.log(`📊 Current writing tests: ${writingTests.length}, Next test_number: ${nextTestNumber}`);
-      
-      const insertData = {
-        test_name: `IELTS Writing Test ${nextTestNumber}`,
+      const insertData: any = {
+        test_name: newTestName.trim(),
         test_type: 'IELTS',
-        module: 'Writing'
+        module: 'Writing',
+        skill_category: 'Writing',
+        test_subtype: trainingType  // Use test_subtype to match database schema
       };
       
-      console.log('Creating test via edge function:', insertData);
+      console.log('📤 Sending to edge function:', insertData);
+      console.log('✅ test_subtype value:', insertData.test_subtype);
       
       // Call the create-test edge function which uses service role to bypass RLS
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const edgeFunctionUrl = `${supabase.supabaseUrl}/functions/v1/create-test`;
+      const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/create-test`;
       const insertResponse = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
@@ -147,9 +134,32 @@ const AdminIELTSWriting = () => {
       
       const responseJson = await insertResponse.json();
       const createdTest = responseJson.data;
-      console.log('Test created successfully:', createdTest);
+      console.log('✅ Test created successfully:', createdTest);
+      console.log('📋 Created test test_subtype:', createdTest?.test_subtype, '(type:', typeof createdTest?.test_subtype, ')');
+      console.log('📋 Expected test_subtype:', trainingType, '(type:', typeof trainingType, ')');
+      console.log('📋 Full test object keys:', Object.keys(createdTest || {}));
       
-      toast.success('Test created successfully');
+      // Check if test_subtype matches (with type coercion for safety)
+      const actualSubtype = String(createdTest?.test_subtype || '').trim();
+      const expectedSubtype = String(trainingType || '').trim();
+      
+      if (actualSubtype !== expectedSubtype && actualSubtype !== '') {
+        console.warn('⚠️ WARNING: Created test test_subtype does not match selected type!');
+        console.warn(`⚠️ Actual: "${actualSubtype}" !== Expected: "${expectedSubtype}"`);
+        console.warn('⚠️ This may mean the migration has not been applied yet.');
+        console.warn('⚠️ Please apply migration: 20251113221619_add_test_subtype_to_tests.sql');
+      } else if (actualSubtype === '') {
+        console.warn('⚠️ WARNING: test_subtype is empty/null - migration may not be applied');
+        console.warn('⚠️ Please apply migration: 20251113221619_add_test_subtype_to_tests.sql');
+      } else {
+        console.log('✅ test_subtype matches correctly!');
+      }
+      
+      toast.success(`Test created successfully${createdTest?.test_subtype ? ` (${createdTest.test_subtype})` : ''}`);
+      
+      // Reset form
+      setNewTestName("");
+      setTrainingType('Academic');
       
       // Reload tests list to reflect new test
       await loadTests();
@@ -203,7 +213,7 @@ const AdminIELTSWriting = () => {
       console.log('🗑️ Deleting test via edge function:', testId);
       
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const edgeFunctionUrl = `${supabase.supabaseUrl}/functions/v1/delete-test`;
+      const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/delete-test`;
       console.log('🔗 Edge Function URL:', edgeFunctionUrl);
       console.log('📤 Sending testId:', testId);
       
@@ -268,18 +278,91 @@ const AdminIELTSWriting = () => {
               IELTS Writing Tests
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage IELTS Writing test content with Task 1 and Task 2
+              Manage writing test content and questions
             </p>
           </div>
           <Button 
-            onClick={handleCreateTest}
-            disabled={loading}
-            className="bg-primary hover:bg-primary/90"
+            onClick={() => navigate('/admin/ielts')}
+            variant="outline"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Writing Test
+            Writing Management
           </Button>
         </div>
+
+        {/* Create New Writing Test Card */}
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Create New Writing Test
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Add a new IELTS writing test to your collection
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Test Name Field */}
+            <div className="space-y-2">
+              <Label htmlFor="test-name" className="text-base font-medium">
+                Test Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="test-name"
+                value={newTestName}
+                onChange={(e) => setNewTestName(e.target.value)}
+                placeholder="Test name (e.g., Writing Test 1)"
+                disabled={loading}
+                className="h-11"
+              />
+            </div>
+
+            {/* Training Type Dropdown - Made Very Visible */}
+            <div className="space-y-2">
+              <Label htmlFor="training-type" className="text-base font-semibold text-foreground block">
+                Training Type <span className="text-red-500">*</span>
+              </Label>
+              <Select 
+                value={trainingType} 
+                onValueChange={(value: 'Academic' | 'General') => {
+                  console.log('Training type changed to:', value);
+                  setTrainingType(value);
+                }}
+                disabled={loading}
+              >
+                <SelectTrigger 
+                  id="training-type" 
+                  className="w-full h-12 border-2 border-primary/40 focus:ring-2 focus:ring-primary bg-background font-semibold text-foreground shadow-md hover:border-primary/60 transition-colors"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[100]">
+                  <SelectItem value="Academic">Academic Training</SelectItem>
+                  <SelectItem value="General">General Training</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  Choose Academic for data description tasks or General for letter writing tasks
+                </p>
+                <p className="text-sm text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
+                  Selected: {trainingType === 'Academic' ? 'Academic Training' : 'General Training'}
+                </p>
+              </div>
+            </div>
+
+            {/* Create Button */}
+            <div className="flex justify-end pt-2">
+              <Button 
+                onClick={handleCreateTest}
+                disabled={loading || !newTestName.trim()}
+                className="bg-primary hover:bg-primary/90 w-full md:w-auto min-w-[140px] h-11"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Test
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
@@ -355,6 +438,12 @@ const AdminIELTSWriting = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Badge variant="secondary">Writing</Badge>
+                    <Badge 
+                      variant={(test.test_subtype || test.training_type) === 'General' ? 'default' : 'outline'}
+                      className={(test.test_subtype || test.training_type) === 'General' ? 'bg-green-600 text-white' : ''}
+                    >
+                      {(test.test_subtype || test.training_type) === 'General' ? 'General' : 'Academic'}
+                    </Badge>
                     {editingTestId !== test.id && (
                       <div className="flex items-center gap-1 ml-2">
                         <Button 
@@ -402,9 +491,17 @@ const AdminIELTSWriting = () => {
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Task 1 & Task 2 • 60 minutes total
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    Task 1 & Task 2 • 60 minutes total
+                  </p>
+                  <Badge 
+                    variant={(test.test_subtype || test.training_type) === 'General' ? 'default' : 'outline'}
+                    className={(test.test_subtype || test.training_type) === 'General' ? 'bg-green-600 text-white text-xs' : 'text-xs'}
+                  >
+                    {(test.test_subtype || test.training_type) === 'General' ? 'General' : 'Academic'}
+                  </Badge>
+                </div>
               </CardHeader>
               
               <CardContent className="space-y-4">

@@ -34,6 +34,21 @@ export const useThemeStyles = () => {
   const chartTarget = useMemo(() => theme.colors.chartTarget, [theme]);
   const backgroundOverlay = useMemo(() => theme.colors.backgroundOverlay || 'rgba(255, 255, 255, 0.2)', [theme]);
   const backgroundImageColor = useMemo(() => theme.colors.backgroundImageColor || '#a2d2ff', [theme]);
+  
+  const cardBackground = useMemo(() => {
+    switch (theme.name) {
+      case 'note':
+        return '#FEF9E7';
+      case 'glassmorphism':
+        return 'rgba(255, 255, 255, 0.1)';
+      case 'dark':
+        return 'rgba(255, 255, 255, 0.1)';
+      case 'minimalist':
+        return '#ffffff';
+      default:
+        return 'rgba(255, 255, 255, 0.6)';
+    }
+  }, [theme.name]);
 
   return {
     cardClassName,
@@ -49,6 +64,7 @@ export const useThemeStyles = () => {
     chartTarget,
     backgroundOverlay,
     backgroundImageColor,
+    cardBackground,
     theme,
   };
 };

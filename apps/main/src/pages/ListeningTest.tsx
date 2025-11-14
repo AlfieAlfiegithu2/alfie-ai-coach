@@ -22,6 +22,7 @@ interface ListeningSection {
   photo_url?: string;
   cambridge_book?: string;
   test_number?: number;
+  part_number?: number;
 }
 
 interface ListeningQuestion {
@@ -175,7 +176,7 @@ const ListeningTest = () => {
         audio_url: audioUrl,
         transcript: firstQuestion.transcription || '',
         part_number: firstPart,
-        test_number: testData.test_number || 1
+        test_number: (testData as any).test_number || 1
       };
 
       setCurrentSection(section);
@@ -211,7 +212,7 @@ const ListeningTest = () => {
           audio_url: partFirstQuestion.audio_url || null,
           transcript: partFirstQuestion.transcription || '',
           part_number: partNum,
-          test_number: testData.test_number || 1
+          test_number: (testData as any).test_number || 1
         };
 
         const partFormattedQuestions: ListeningQuestion[] = partQuestions.map((q, idx) => ({

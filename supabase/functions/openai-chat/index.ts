@@ -1,6 +1,12 @@
+// @deno-types="https://deno.land/x/types/index.d.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore - Deno types
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore - Deno types
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// @ts-ignore - Deno global
+declare const Deno: any;
 
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 const deepSeekApiKey = Deno.env.get('DEEPSEEK_API_KEY'); // Fallback
@@ -78,20 +84,21 @@ serve(async (req) => {
     }
 
     if (cachedResponse) {
-      console.log('🚀 Cache hit! Using cached response, hit count:', cachedResponse.hit_count);
+      const cached = cachedResponse as any;
+      console.log('🚀 Cache hit! Using cached response, hit count:', cached.hit_count);
       
       // Update hit count
       await supabase
         .from('chat_cache')
         .update({ 
-          hit_count: cachedResponse.hit_count + 1,
+          hit_count: (cached.hit_count || 0) + 1,
           updated_at: new Date().toISOString()
         })
         .eq('cache_key', cacheKey);
 
       return new Response(JSON.stringify({ 
         success: true, 
-        response: cachedResponse.response,
+        response: cached.response,
         context: context,
         cached: true
       }), {
@@ -170,11 +177,11 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
     };
 
     // Build messages array for the API
-    let apiMessages = [];
+    let apiMessages: any[] = [];
     
     if (messages && Array.isArray(messages)) {
       // New format with full conversation history
-      apiMessages = messages;
+      apiMessages = messages as any[];
     } else {
       // Build context-aware system prompt
       let systemPrompt = systemPrompts[context as keyof typeof systemPrompts] || systemPrompts.general;
@@ -203,8 +210,8 @@ Always keep responses under 200 words, use simple formatting, and be encouraging
         { 
           role: 'system', 
           content: systemPrompt
-        },
-        { role: 'user', content: finalMessage }
+        } as any,
+        { role: 'user', content: finalMessage } as any
       ];
     }
 

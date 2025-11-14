@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import StudentLayout from '@/components/StudentLayout';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingAnimation from '@/components/animations/LoadingAnimation';
@@ -48,6 +49,7 @@ const IELTSPortal = () => {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
+  const [showWritingModal, setShowWritingModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [skillBands, setSkillBands] = useState<Record<string, string>>({});
   const [skillProgress, setSkillProgress] = useState<Record<string, { completed: number; total: number }>>({});
@@ -368,7 +370,7 @@ const IELTSPortal = () => {
     if (skillSlug === 'sentence-mastery') {
       navigate('/skills/sentence-mastery');
     } else if (skillSlug === 'writing') {
-      navigate('/ielts-writing-test');
+      setShowWritingModal(true);
     } else if (skillSlug === 'speaking') {
       navigate('/ielts-speaking-test');
     } else if (skillSlug === 'reading') {
@@ -378,6 +380,11 @@ const IELTSPortal = () => {
     } else {
       navigate(`/skills/${skillSlug}`);
     }
+  };
+
+  const handleWritingTypeSelect = (trainingType: 'Academic' | 'General') => {
+    setShowWritingModal(false);
+    navigate(`/ielts-writing-test?training=${trainingType}`);
   };
 
   // Show loading only for actual data, not image
@@ -567,6 +574,60 @@ const IELTSPortal = () => {
 
           </div>
         </StudentLayout>
+
+        {/* Writing Type Selection Modal */}
+        <Dialog open={showWritingModal} onOpenChange={setShowWritingModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="text-center">
+              <DialogTitle className="text-center">Choose IELTS Writing Type</DialogTitle>
+              <DialogDescription className="text-center">
+                Select your preferred IELTS writing training module
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => handleWritingTypeSelect('Academic')}
+                className="w-full h-12 text-base font-medium"
+                variant="outline"
+                style={{
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textPrimary,
+                  backgroundColor: themeStyles.theme.colors.cardBackground
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = themeStyles.theme.colors.cardBackground;
+                  e.currentTarget.style.color = themeStyles.textPrimary;
+                }}
+              >
+                Academic Training
+              </Button>
+              <Button
+                onClick={() => handleWritingTypeSelect('General')}
+                className="w-full h-12 text-base font-medium"
+                variant="outline"
+                style={{
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textPrimary,
+                  backgroundColor: themeStyles.theme.colors.cardBackground
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                  e.currentTarget.style.color = themeStyles.buttonPrimary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = themeStyles.theme.colors.cardBackground;
+                  e.currentTarget.style.color = themeStyles.textPrimary;
+                }}
+              >
+                General Training
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

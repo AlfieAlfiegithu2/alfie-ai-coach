@@ -173,7 +173,7 @@ const ReadingTest = () => {
             title: partTitle,
             content: firstQuestion?.passage_text || 'Passage content not available',
             part_number: partNumber,
-            test_number: test.test_number || 1
+            test_number: (test as any).test_number || 1
           },
           questions: partQuestions.map((q, idx) => ({
             id: q.id,

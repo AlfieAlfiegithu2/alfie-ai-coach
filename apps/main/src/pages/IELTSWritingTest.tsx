@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, ListTree, Clock, FileText, PenTool, Languages } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -70,7 +70,8 @@ const IELTSWritingTestInterface = () => {
   const [isDraggableChatOpen, setIsDraggableChatOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
-  const [selectedTrainingType, setSelectedTrainingType] = useState<'Academic' | 'General' | null>(null);
+  const [searchParams] = useSearchParams();
+  const selectedTrainingType = searchParams.get('training') as 'Academic' | 'General' | null;
   const [filteredTests, setFilteredTests] = useState<any[]>([]);
 
   // Timer states
@@ -532,66 +533,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     }
   }, [timerStarted]);
 
-  // Show training type selection first if no testId provided
-  if (!testId && !selectedTrainingType && availableTests.length > 0) {
-    return (
-      <div className="min-h-screen relative">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-             style={{
-               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-                 ? 'none'
-                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-               backgroundColor: themeStyles.backgroundImageColor
-             }} />
-        <div className="relative z-10">
-          <StudentLayout title="IELTS Writing Tests">
-            <div className="min-h-screen py-12">
-              <div className="container mx-auto px-4">
-                <div className="max-w-4xl mx-auto">
-                  {/* Back Button */}
-                  <div className="mb-6">
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate('/ielts-portal')}
-                      className="flex items-center gap-2"
-                    >
-                      ← Back to IELTS Portal
-                    </Button>
-                  </div>
-
-                  {/* Header */}
-                  <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-foreground mb-4">Choose your IELTS writing test type</h1>
-                  </div>
-
-                  <div className="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto">
-                    {/* Academic Card */}
-                    <SpotlightCard
-                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-8 text-center ${themeStyles.cardClassName}`}
-                      style={themeStyles.cardStyle}
-                      onClick={() => setSelectedTrainingType('Academic')}
-                    >
-                      <h3 className="text-3xl font-medium" style={{ color: themeStyles.textPrimary }}>Academic</h3>
-                    </SpotlightCard>
-
-                    {/* General Card */}
-                    <SpotlightCard
-                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-8 text-center ${themeStyles.cardClassName}`}
-                      style={themeStyles.cardStyle}
-                      onClick={() => setSelectedTrainingType('General')}
-                    >
-                      <h3 className="text-3xl font-medium" style={{ color: themeStyles.textPrimary }}>General</h3>
-                    </SpotlightCard>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </StudentLayout>
-        </div>
-      </div>
-    );
-  }
-
   // Show test selection if training type is selected but no testId provided
   if (!testId && selectedTrainingType && filteredTests.length > 0) {
     return (
@@ -611,10 +552,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   <div className="mb-8">
                     <Button
                       variant="outline"
-                      onClick={() => setSelectedTrainingType(null)}
+                      onClick={() => navigate('/ielts-portal')}
                       className="mb-4"
                     >
-                      ← Back to Test Type Selection
+                      ← Back to IELTS Portal
                     </Button>
                     <h1 className="text-4xl font-bold text-foreground mb-2">
                       IELTS {selectedTrainingType} Writing Tests
@@ -881,7 +822,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <div className="space-y-4 mt-4">
                 {/* Feedback Language Selector */}
                 <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-xl border border-border">
-                  <Languages className="w-5 h-5 text-brand-blue" />
+                  <FileText className="w-5 h-5 text-brand-blue" />
                   <div className="flex-1">
                     <Label htmlFor="feedback-language" className="text-sm font-medium mb-1 block">
                       Feedback Language

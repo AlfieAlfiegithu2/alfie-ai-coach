@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { PenTool, Save, Image, FileText, Upload, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,8 @@ import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cuumxmfzhwljylbdlflj.supabase.co';
+
 const AdminIELTSWritingTest = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
@@ -20,6 +23,7 @@ const AdminIELTSWritingTest = () => {
   const { toast } = useToast();
 
   const [test, setTest] = useState<any>(null);
+  const [trainingType, setTrainingType] = useState<'Academic' | 'General'>('Academic');
   const [task1, setTask1] = useState({
     id: null,
     instructions: "",
@@ -44,6 +48,19 @@ const AdminIELTSWritingTest = () => {
     }
   }, [testId]);
 
+  // Sync trainingType when test data changes
+  useEffect(() => {
+    if (test) {
+      // Use test_subtype (database column) or fallback to training_type
+      const testSubtype = test.test_subtype || test.training_type;
+      if (testSubtype) {
+        const newTrainingType = testSubtype === 'General' ? 'General' : 'Academic';
+        console.log('🔄 Syncing trainingType from test data:', newTrainingType, 'Current:', trainingType);
+        setTrainingType(newTrainingType);
+      }
+    }
+  }, [test?.test_subtype, test?.training_type]);
+
   const loadTestData = async () => {
     try {
       console.log('📝 Loading test data for testId:', testId);
@@ -57,7 +74,7 @@ const AdminIELTSWritingTest = () => {
       
       // Use REST API directly with timeout instead of Supabase client
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1dW14bWZ6aHdsanlsYmRsZmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTkxMjEsImV4cCI6MjA2OTA5NTEyMX0.8jqO_ciOttSxSLZnKY0i5oJmEn79ROF53TjUMYhNemI';
-      const baseUrl = supabase.supabaseUrl;
+      const baseUrl = SUPABASE_URL;
       
       // Set a 5 second timeout
       const controller = new AbortController();
@@ -93,7 +110,13 @@ const AdminIELTSWritingTest = () => {
         }
 
         console.log('✅ Test loaded:', testData);
+        console.log('📋 Test subtype from test data:', testData.test_subtype, 'Training type:', testData.training_type);
         setTest(testData);
+        // Use test_subtype (database column) or fallback to training_type for backward compatibility
+        // Handle empty strings properly - if either field explicitly says 'General', use General, otherwise Academic
+        const loadedTrainingType = (testData.test_subtype === 'General' || testData.training_type === 'General') ? 'General' : 'Academic';
+        console.log('🎯 Setting training type to:', loadedTrainingType);
+        setTrainingType(loadedTrainingType);
 
         // Fetch questions
         console.log('📝 Fetching questions via REST API...');
@@ -225,7 +248,7 @@ const AdminIELTSWritingTest = () => {
   const saveTask = async (taskNumber: 1 | 2) => {
     try {
       const taskData = taskNumber === 1 ? task1 : task2;
-      const questionData = {
+      const questionData: any = {
         test_id: testId,
         part_number: taskNumber,
         question_number_in_part: 1,
@@ -234,11 +257,20 @@ const AdminIELTSWritingTest = () => {
         question_type: `Task ${taskNumber}`,
         correct_answer: "N/A", // Required field
         transcription: taskData.modelAnswer, // Store model answer in transcription field
-        ...(taskNumber === 1 && {
-          image_url: task1.imageUrl,
-          explanation: task1.imageContext
-        })
       };
+
+      // For Task 1, handle differently based on training type
+      if (taskNumber === 1) {
+        if (trainingType === 'Academic') {
+          // Academic: include image_url and explanation (image context)
+          questionData.image_url = task1.imageUrl || null;
+          questionData.explanation = task1.imageContext || null;
+        } else {
+          // General: no image_url or explanation needed (simplified interface)
+          questionData.image_url = null;
+          questionData.explanation = null;
+        }
+      }
 
       if (taskData.id) {
         // Update existing question
@@ -350,92 +382,160 @@ const AdminIELTSWritingTest = () => {
           </div>
         </div>
 
+        {/* Training Type Selector - Add this to fix existing tests */}
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Training Type</h3>
+                <p className="text-sm text-muted-foreground">Choose the training type for this test</p>
+              </div>
+              <Select value={trainingType} onValueChange={(value: 'Academic' | 'General') => {
+                console.log('Training type manually changed to:', value);
+                setTrainingType(value);
+              }}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Academic">Academic Training</SelectItem>
+                  <SelectItem value="General">General Training</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Debug Info - Remove in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 text-xs rounded">
+            Debug: Current trainingType = "{trainingType}" | Test test_subtype = "{test?.test_subtype}" | Test training_type = "{test?.training_type}"
+          </div>
+        )}
+
         {/* Task 1 Section */}
         <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Image className="w-5 h-5" />
-              Task 1 - Data Description
+              {trainingType === 'Academic' ? <Image className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+              Task 1 - {trainingType === 'Academic' ? 'Data Description' : 'Task Instructions'}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Task 1 requires students to describe visual information (graphs, charts, tables, etc.)
+              {trainingType === 'Academic'
+                ? 'Task 1 requires students to describe visual information (graphs, charts, tables, etc.)'
+                : 'Task 1 requires students to follow the given instructions to complete the writing task'
+              }
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="task1-instructions">Task Instructions</Label>
-              <Textarea
-                id="task1-instructions"
-                rows={6}
-                value={task1.instructions}
-                onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
-                placeholder="Write the complete task instructions here..."
-                disabled={isLocked && !isModifying}
-              />
+            {/* DEBUG: What trainingType value? */}
+            <div style={{background: 'red', color: 'white', padding: '10px', margin: '10px 0'}}>
+              DEBUG: trainingType = "{trainingType}" | test.test_subtype = "{test?.test_subtype}" | test.training_type = "{test?.training_type}"
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="task1-image">Upload Image</Label>
-              <div className="flex items-center gap-4">
-                <Input
-                  id="task1-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setSelectedFile(file);
-                      handleFileUpload(file);
-                    }
-                  }}
-                  disabled={uploading || (isLocked && !isModifying)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={uploading || (isLocked && !isModifying)}
-                  onClick={() => document.getElementById('task1-image')?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {uploading ? 'Uploading...' : 'Choose File'}
-                </Button>
-              </div>
-              {task1.imageUrl && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-muted-foreground">Current image:</p>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleDeleteImage}
-                      disabled={isLocked && !isModifying}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete Image
-                    </Button>
-                  </div>
-                  <img 
-                    src={task1.imageUrl} 
-                    alt="Task 1 chart/graph" 
-                    className="max-w-full h-48 object-contain border rounded-md"
+            {/* Academic Training - Show Task Instructions */}
+            {trainingType === 'Academic' && (
+              <div style={{background: 'green', color: 'white', padding: '10px', margin: '10px 0'}}>
+                ACADEMIC MODE ACTIVE
+                <div className="space-y-2">
+                  <Label htmlFor="task1-instructions">Task Instructions</Label>
+                  <Textarea
+                    id="task1-instructions"
+                    rows={6}
+                    value={task1.instructions}
+                    onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
+                    placeholder="Write the complete task instructions here..."
+                    disabled={isLocked && !isModifying}
                   />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="task1-context">Image Context Description</Label>
-              <Textarea
-                id="task1-context"
-                rows={4}
-                value={task1.imageContext}
-                onChange={(e) => setTask1(prev => ({ ...prev, imageContext: e.target.value }))}
-                placeholder="Detailed description of the image/chart for accessibility and context..."
-                disabled={isLocked && !isModifying}
-              />
-            </div>
+            {/* Academic Training - Show Image Upload */}
+            {trainingType === 'Academic' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="task1-image">Upload Image</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="task1-image"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedFile(file);
+                          handleFileUpload(file);
+                        }
+                      }}
+                      disabled={uploading || (isLocked && !isModifying)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploading || (isLocked && !isModifying)}
+                      onClick={() => document.getElementById('task1-image')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploading ? 'Uploading...' : 'Choose File'}
+                    </Button>
+                  </div>
+                  {task1.imageUrl && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-muted-foreground">Current image:</p>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleDeleteImage}
+                          disabled={isLocked && !isModifying}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Image
+                        </Button>
+                      </div>
+                      <img
+                        src={task1.imageUrl}
+                        alt="Task 1 chart/graph"
+                        className="max-w-full h-48 object-contain border rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="task1-context">Image Context Description</Label>
+                  <Textarea
+                    id="task1-context"
+                    rows={4}
+                    value={task1.imageContext}
+                    onChange={(e) => setTask1(prev => ({ ...prev, imageContext: e.target.value }))}
+                    placeholder="Detailed description of the image/chart for accessibility and context..."
+                    disabled={isLocked && !isModifying}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* General Training - Show Task Instructions (Same as Task 2) */}
+            {trainingType === 'General' && (
+              <div style={{background: 'blue', color: 'white', padding: '10px', margin: '10px 0'}}>
+                GENERAL MODE ACTIVE
+                <div className="space-y-2">
+                  <Label htmlFor="task1-instructions-general">Task Instructions</Label>
+                  <Textarea
+                    id="task1-instructions-general"
+                    rows={8}
+                    value={task1.instructions}
+                    onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
+                    placeholder="Write the complete task instructions here..."
+                    disabled={isLocked && !isModifying}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="task1-model-answer">Model Answer (Optional)</Label>

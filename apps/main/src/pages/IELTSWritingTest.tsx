@@ -547,24 +547,40 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           <StudentLayout title="IELTS Writing Tests">
             <div className="min-h-screen py-12">
               <div className="container mx-auto px-4">
-                <div className="flex items-center justify-center min-h-[60vh]">
-                  <div className="grid gap-8 md:grid-cols-2 max-w-2xl">
+                <div className="max-w-4xl mx-auto">
+                  {/* Back Button */}
+                  <div className="mb-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate('/ielts-portal')}
+                      className="flex items-center gap-2"
+                    >
+                      ← Back to IELTS Portal
+                    </Button>
+                  </div>
+
+                  {/* Header */}
+                  <div className="text-center mb-12">
+                    <h1 className="text-4xl font-bold text-foreground mb-4">Choose your IELTS writing test type</h1>
+                  </div>
+
+                  <div className="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto">
                     {/* Academic Card */}
                     <SpotlightCard
-                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-12 text-center ${themeStyles.cardClassName}`}
+                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-8 text-center ${themeStyles.cardClassName}`}
                       style={themeStyles.cardStyle}
                       onClick={() => setSelectedTrainingType('Academic')}
                     >
-                      <h3 className="text-3xl font-bold" style={{ color: themeStyles.textPrimary }}>Academic</h3>
+                      <h3 className="text-3xl font-medium" style={{ color: themeStyles.textPrimary }}>Academic</h3>
                     </SpotlightCard>
 
                     {/* General Card */}
                     <SpotlightCard
-                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-12 text-center ${themeStyles.cardClassName}`}
+                      className={`cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl p-8 text-center ${themeStyles.cardClassName}`}
                       style={themeStyles.cardStyle}
                       onClick={() => setSelectedTrainingType('General')}
                     >
-                      <h3 className="text-3xl font-bold" style={{ color: themeStyles.textPrimary }}>General</h3>
+                      <h3 className="text-3xl font-medium" style={{ color: themeStyles.textPrimary }}>General</h3>
                     </SpotlightCard>
                   </div>
                 </div>

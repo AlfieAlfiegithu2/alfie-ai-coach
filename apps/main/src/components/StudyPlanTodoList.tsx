@@ -451,22 +451,10 @@ const StudyPlanTodoList = () => {
       )}
 
       {/* Task List */}
-      <div className="overflow-y-auto mb-4" style={{ maxHeight: '400px' }}>
+      <div className="flex-1 overflow-y-auto mb-4 min-h-0" style={{ maxHeight: '400px' }}>
         <div className="space-y-2">
-          {/* Show message if no plan */}
-          {!plan && (
-            <div className="text-center py-4">
-              <p className="text-sm mb-2" style={{ color: themeStyles.textSecondary }}>
-                {t('studyPlan.noPlanYet', { defaultValue: 'You don\'t have a plan yet.' })}
-              </p>
-              <p className="text-xs" style={{ color: themeStyles.textTertiary }}>
-                {t('studyPlan.addCustomTasks', { defaultValue: 'You can still add custom tasks below.' })}
-              </p>
-            </div>
-          )}
-          
           {/* AI-generated tasks - only show if plan exists */}
-          {plan && dayTasks.map((task, i) => {
+          {plan && dayTasks.length > 0 && dayTasks.map((task, i) => {
             if (!task || !task.title) return null;
             const originalIndex = (task as any).originalIndex ?? i;
             const isCompleted = checked[originalIndex] === true;
@@ -526,7 +514,7 @@ const StudyPlanTodoList = () => {
           })}
 
           {/* Custom tasks */}
-          {customTasks.map((task, i) => {
+          {customTasks.length > 0 && customTasks.map((task, i) => {
             if (!task || !task.title) return null;
             const customKey = `c${i}`;
             const isCompleted = checked[customKey] === true;
@@ -585,8 +573,8 @@ const StudyPlanTodoList = () => {
             );
           })}
 
-          {/* Add Task Input - moved inside scrollable area */}
-          <div className="flex gap-2 mt-2 pt-2 border-t" style={{ borderColor: themeStyles.border }}>
+          {/* Add Task Input - always visible at bottom */}
+          <div className="flex gap-2 mt-2 pt-2 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
             <input
               type="text"
               value={customTask.title}

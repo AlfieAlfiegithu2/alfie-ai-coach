@@ -597,14 +597,24 @@ const StudyPlanTodoList = () => {
             />
             <button
               onClick={addCustomTask}
-              className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm"
+              className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-0"
               style={{ 
                 fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 backgroundColor: themeStyles.buttonPrimary,
-                color: 'white'
+                color: 'white',
+                minWidth: '44px',
+                minHeight: '38px',
+                boxSizing: 'border-box'
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = 'none';
+                e.currentTarget.style.boxShadow = `0 0 0 2px ${themeStyles.buttonPrimary}40`;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.boxShadow = '';
+              }}
             >
               <Plus className="w-4 h-4" />
             </button>

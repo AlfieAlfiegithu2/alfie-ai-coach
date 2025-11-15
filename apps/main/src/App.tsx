@@ -122,6 +122,7 @@ import PlanPage from "./pages/Plan";
 import BlogListing from "./pages/BlogListing";
 import BlogDetail from "./pages/BlogDetail";
 import AdminBlogManagement from "./pages/AdminBlogManagement";
+import AuthCallback from "./pages/AuthCallback";
 import { useAdminAuth } from './hooks/useAdminAuth';
 
 const queryClient = new QueryClient();
@@ -335,6 +336,7 @@ const App = () => {
             <Route path="/vocabulary/test/:deckId" element={<VocabTest />} />
             <Route path="/vocabulary/review/:deckId" element={<VocabReview />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/skills/vocabulary-builder/test/:testId" element={<VocabularyQuiz />} />
             <Route path="/skills/paraphrasing-challenge/test/:testId" element={<ParaphraseQuiz />} />
             <Route path="/skills/sentence-structure-scramble/test/:testId" element={<SentenceScrambleQuiz />} />

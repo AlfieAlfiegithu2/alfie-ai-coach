@@ -23,6 +23,17 @@ const Auth = () => {
   const [resetMode, setResetMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Check for OAuth error in URL query params (from callback redirect)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam));
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Reset submitting state if user successfully signs in
   useEffect(() => {
     if (user && submitting) {

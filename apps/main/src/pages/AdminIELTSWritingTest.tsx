@@ -446,6 +446,7 @@ const AdminIELTSWritingTest = () => {
                     onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
                     placeholder="Write the complete task instructions here..."
                     disabled={isLocked && !isModifying}
+                    className="text-black"
                   />
                 </div>
               </div>
@@ -514,6 +515,7 @@ const AdminIELTSWritingTest = () => {
                     onChange={(e) => setTask1(prev => ({ ...prev, imageContext: e.target.value }))}
                     placeholder="Detailed description of the image/chart for accessibility and context..."
                     disabled={isLocked && !isModifying}
+                    className="text-black"
                   />
                 </div>
               </>
@@ -532,6 +534,7 @@ const AdminIELTSWritingTest = () => {
                     onChange={(e) => setTask1(prev => ({ ...prev, instructions: e.target.value }))}
                     placeholder="Write the complete task instructions here..."
                     disabled={isLocked && !isModifying}
+                    className="text-black"
                   />
                 </div>
               </div>
@@ -546,6 +549,7 @@ const AdminIELTSWritingTest = () => {
                 onChange={(e) => setTask1(prev => ({ ...prev, modelAnswer: e.target.value }))}
                 placeholder="Provide a high-band sample answer for Task 1 that students can view after completing the test..."
                 disabled={isLocked && !isModifying}
+                className="text-black"
               />
               <p className="text-xs text-muted-foreground">
                 This model answer will be shown to students after they complete the test

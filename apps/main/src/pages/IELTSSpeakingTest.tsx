@@ -1813,10 +1813,17 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                       className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
                       style={{
                         borderColor: themeStyles.border,
-                        color: themeStyles.buttonPrimary
+                        color: themeStyles.buttonPrimary,
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
                       }}
                     >
-                      <Square className="w-4 h-4" />
+                      <Square className="w-4 h-4" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
                     </Button>
                   </>
                 ) : (
@@ -2145,17 +2152,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     disabled={isChatLoading}
                     className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
                     style={{
-                      borderColor: themeStyles.border,
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                      borderColor: themeStyles.border || '#e5e7eb',
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                      color: themeStyles.buttonPrimary || '#2563eb'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
                     }}
                   >
-                    <ListTree className="w-4 h-4 sm:w-6 sm:h-6" />
+                    <ListTree className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -2175,17 +2183,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     disabled={isChatLoading}
                     className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
                     style={{
-                      borderColor: themeStyles.border,
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                      borderColor: themeStyles.border || '#e5e7eb',
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                      color: themeStyles.buttonPrimary || '#2563eb'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
                     }}
                   >
-                    <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
+                    <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -2209,17 +2218,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     disabled={isChatLoading}
                     className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
                     style={{
-                      borderColor: themeStyles.border,
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                      borderColor: themeStyles.border || '#e5e7eb',
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                      color: themeStyles.buttonPrimary || '#2563eb'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
                     }}
                   >
-                    <Sparkles className="w-4 h-4 sm:w-6 sm:h-6" />
+                    <Sparkles className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
@@ -2239,17 +2249,18 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                     disabled={isChatLoading}
                     className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
                     style={{
-                      borderColor: themeStyles.border,
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                      borderColor: themeStyles.border || '#e5e7eb',
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                      color: themeStyles.buttonPrimary || '#2563eb'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
                     }}
                   >
-                    <FileText className="w-4 h-4 sm:w-6 sm:h-6" />
+                    <FileText className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">

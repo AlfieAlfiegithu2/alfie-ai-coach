@@ -20,6 +20,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: '5173',
+        VITE_PUBLIC_SITE_URL: 'https://englishaidol.com',
       },
       instances: 2,
       exec_mode: 'cluster',

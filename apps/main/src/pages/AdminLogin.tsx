@@ -13,6 +13,8 @@ const AdminLogin = () => {
   const { login } = useAdminAuth();
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -36,6 +38,8 @@ const AdminLogin = () => {
 
       if (result.success) {
         console.log('✅ Login successful, localStorage admin_session set');
+        setRemainingAttempts(null);
+        setIsBlocked(false);
         toast({
           title: "Access granted",
           description: "Welcome to the admin panel",
@@ -44,12 +48,26 @@ const AdminLogin = () => {
         navigate("/admin");
       } else {
         console.log('❌ Login failed:', result.error);
+        
+        // Update attempt tracking
+        if (result.blocked) {
+          setIsBlocked(true);
+          setRemainingAttempts(0);
+        } else {
+          setIsBlocked(false);
+          setRemainingAttempts(result.remaining ?? null);
+        }
+        
         toast({
-          title: "Access denied",
+          title: result.blocked ? "Access Blocked" : "Access denied",
           description: result.error || "Failed to login",
           variant: "destructive",
         });
-        setPassword("");
+        
+        // Don't clear password if blocked (user might want to see the message)
+        if (!result.blocked) {
+          setPassword("");
+        }
       }
     } catch (error) {
       console.error('❌ Login error:', error);
@@ -101,18 +119,35 @@ const AdminLogin = () => {
                   type="password"
                   placeholder="Enter admin password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    // Clear attempt info when user starts typing
+                    if (remainingAttempts !== null || isBlocked) {
+                      setRemainingAttempts(null);
+                      setIsBlocked(false);
+                    }
+                  }}
                   onKeyPress={handleKeyPress}
-                  disabled={isLoading}
+                  disabled={isLoading || isBlocked}
                   className="bg-white/20 border-white/30 text-zinc-950 placeholder:text-zinc-600"
                 />
+                {remainingAttempts !== null && remainingAttempts > 0 && !isBlocked && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    {remainingAttempts} attempt{remainingAttempts !== 1 ? 's' : ''} remaining
+                  </p>
+                )}
+                {isBlocked && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    Too many failed attempts. Please try again in 30 minutes.
+                  </p>
+                )}
               </div>
               <Button 
                 onClick={onLogin} 
                 className="w-full" 
-                disabled={isLoading || !password}
+                disabled={isLoading || !password || isBlocked}
               >
-                {isLoading ? "Accessing..." : "Access Admin Panel"}
+                {isLoading ? "Accessing..." : isBlocked ? "Blocked - Try Again Later" : "Access Admin Panel"}
               </Button>
             </CardContent>
           </Card>

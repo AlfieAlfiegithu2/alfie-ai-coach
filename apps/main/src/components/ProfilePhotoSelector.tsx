@@ -36,7 +36,7 @@ const animalPhotos = [
 ];
 
 const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorProps) => {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, updateProfileAvatar } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -47,33 +47,76 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
 
     setUploading(true);
     try {
-      // Update profile with selected animal photo
+      // Optimistically update profile state IMMEDIATELY for instant UI feedback
+      // This ensures the photo displays right away in SettingsModal before DB update completes
+      updateProfileAvatar(photoSrc);
+      
+      // Update profile with selected animal photo in database
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: photoSrc })
         .eq('id', user.id);
 
-      if (error) throw error;
-
-        console.log('✅ Animal photo selected successfully');
-        
-        // Refresh profile to show new photo
+      if (error) {
+        // If DB update fails, revert the optimistic update
         await refreshProfile();
+        throw error;
+      }
+
+      console.log('✅ Animal photo selected successfully');
+      
+      // Refresh profile to sync with database (with retry on network errors)
+      // This ensures we have the latest data, but UI already shows the new photo
+      try {
+        await refreshProfile();
+      } catch (refreshError) {
+        // If refresh fails due to network, the optimistic update already shows the photo
+        console.warn('Profile refresh failed, but photo was updated:', refreshError);
+      }
+      
+      toast({
+        title: "Success!",
+        description: "Profile photo updated successfully!"
+      });
+      
+      setOpen(false);
+      onPhotoUpdate?.();
+    } catch (error: any) {
+      console.error('Error updating photo:', error);
+      
+      // Revert optimistic update on error
+      try {
+        await refreshProfile();
+      } catch (e) {
+        console.warn('Error reverting profile:', e);
+      }
+      
+      // Check if it's a network error
+      const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
+                            error?.message?.includes('Failed to fetch') ||
+                            error?.message?.includes('NetworkError');
+      
+      if (isNetworkError) {
+        // For network errors, try to refresh profile after a delay
+        setTimeout(async () => {
+          try {
+            await refreshProfile();
+          } catch (e) {
+            console.warn('Retry refresh failed:', e);
+          }
+        }, 2000);
         
         toast({
-          title: "Success!",
-          description: "Profile photo updated successfully!"
+          title: "Photo Updated",
+          description: "Your photo is being saved. It may take a moment to appear.",
         });
-        
-        setOpen(false);
-        onPhotoUpdate?.();
-    } catch (error) {
-      console.error('Error updating photo:', error);
-      toast({
-        title: "Update Failed",
-        description: "Failed to update profile photo. Please try again.",
-        variant: "destructive"
-      });
+      } else {
+        toast({
+          title: "Update Failed",
+          description: "Failed to update profile photo. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setUploading(false);
     }

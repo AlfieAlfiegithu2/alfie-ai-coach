@@ -26,6 +26,7 @@ interface UseAuthReturn {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   refreshProfile: () => Promise<void>;
+  updateProfileAvatar: (avatarUrl: string) => void;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -62,16 +63,67 @@ export function useAuth(): UseAuthReturn {
       }
     );
 
-    // Initial session check - let the auth state listener handle the state updates
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return;
-      // The auth state change listener will handle setting all state
-    }).catch(error => {
-      console.error('Error getting session:', error);
-      if (isMounted) {
-        setLoading(false);
+    // Initial session check with retry logic - let the auth state listener handle the state updates
+    const getSessionWithRetry = async (retryCount = 0) => {
+      const maxRetries = 3;
+      const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+
+        if (error) {
+          // Check if it's a network error that we should retry
+          const isNetworkError = error.message?.includes('Failed to fetch') ||
+                                error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                                error.message?.includes('NetworkError') ||
+                                error.message?.includes('fetch');
+
+          if (isNetworkError && retryCount < maxRetries) {
+            console.warn(`Network error getting session (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            return getSessionWithRetry(retryCount + 1);
+          }
+
+          // Suppress non-critical errors in production
+          if (import.meta.env.PROD) {
+            console.warn('Session check error (suppressed in production):', error.message);
+          } else {
+            console.error('Error getting session:', error);
+          }
+        }
+        
+        // The auth state change listener will handle setting all state
+      } catch (error: any) {
+        if (!isMounted) return;
+
+        // Check if it's a network error that we should retry
+        const isNetworkError = error.message?.includes('Failed to fetch') ||
+                              error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                              error.message?.includes('NetworkError') ||
+                              error.message?.includes('fetch');
+
+        if (isNetworkError && retryCount < maxRetries) {
+          console.warn(`Network error getting session (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return getSessionWithRetry(retryCount + 1);
+        }
+
+        // Suppress non-critical errors in production
+        if (import.meta.env.PROD) {
+          console.warn('Session check exception (suppressed in production):', error.message || error);
+        } else {
+          console.error('Error getting session:', error);
+        }
+
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    });
+    };
+
+    getSessionWithRetry();
 
     return () => {
       isMounted = false;
@@ -80,8 +132,8 @@ export function useAuth(): UseAuthReturn {
   }, []);
 
   const fetchProfile = async (userId: string, retryCount = 0) => {
-    const maxRetries = 3;
-    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+    const maxRetries = 2; // Reduced from 3 to 2 to prevent too many retries
+    const retryDelay = Math.min(Math.pow(2, retryCount) * 1000, 3000); // Cap at 3s: 1s, 2s, 3s
 
     try {
       const { data, error } = await supabase
@@ -97,12 +149,18 @@ export function useAuth(): UseAuthReturn {
                               error.message?.includes('NetworkError');
 
         if (isNetworkError && retryCount < maxRetries) {
-          console.warn(`Network error fetching profile (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+          // Only log in dev mode to reduce console noise
+          if (import.meta.env.DEV) {
+            console.warn(`Network error fetching profile (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+          }
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           return fetchProfile(userId, retryCount + 1);
         }
 
-        console.warn('Profile fetch error (non-retryable):', error.message);
+        // Suppress non-critical errors in production
+        if (import.meta.env.DEV) {
+          console.warn('Profile fetch error (non-retryable):', error.message);
+        }
         // Don't return early on profile fetch errors - still allow auth to complete
       }
 
@@ -143,20 +201,49 @@ export function useAuth(): UseAuthReturn {
                             error.message?.includes('NetworkError');
 
       if (isNetworkError && retryCount < maxRetries) {
-        console.warn(`Network error fetching profile (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+        // Only log in dev mode
+        if (import.meta.env.DEV) {
+          console.warn(`Network error fetching profile (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+        }
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         return fetchProfile(userId, retryCount + 1);
       }
 
-      console.warn('Profile fetch failed after retries:', error.message || error);
-      // Ensure profile is cleared on error
-      setProfile(null);
+      // Suppress errors in production, only log in dev
+      if (import.meta.env.DEV) {
+        console.warn('Profile fetch failed after retries:', error.message || error);
+      }
+      // Don't clear profile on error - keep existing profile data if available
+      // setProfile(null); // Removed to prevent clearing profile on transient errors
     }
   };
 
   const refreshProfile = async () => {
     if (user?.id) {
       await fetchProfile(user.id);
+    }
+  };
+
+  // Optimistically update profile avatar URL for instant UI feedback
+  const updateProfileAvatar = (avatarUrl: string) => {
+    if (user?.id) {
+      // Update profile state immediately, even if profile is null (create minimal profile)
+      if (profile) {
+        setProfile({
+          ...profile,
+          avatar_url: avatarUrl
+        });
+      } else {
+        // If profile doesn't exist yet, create a minimal one with just the avatar
+        setProfile({
+          id: user.id,
+          full_name: user.email?.split('@')[0] || '',
+          role: 'user',
+          subscription_status: 'free',
+          native_language: 'en',
+          avatar_url: avatarUrl
+        });
+      }
     }
   };
 
@@ -239,7 +326,15 @@ export function useAuth(): UseAuthReturn {
 
   const signInWithGoogle = async () => {
     try {
-      const redirectTo = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || `${window.location.origin}`; // prefer configured site URL
+      // Get the site URL - prefer configured, fallback to current origin
+      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
+      
+      // Supabase OAuth requires redirect to a callback route
+      // The callback route will handle the OAuth response and redirect to dashboard
+      const redirectTo = `${siteUrl}/auth/callback`;
+      
+      console.log('🔐 Initiating Google OAuth sign-in, redirectTo:', redirectTo);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -252,11 +347,16 @@ export function useAuth(): UseAuthReturn {
       });
 
       if (error) {
-      return { error: error.message };
+        console.error('❌ Google OAuth error:', error);
+        return { error: error.message };
       }
 
+      // OAuth will redirect the user, so we don't need to do anything here
+      // The callback route will handle the rest
+      console.log('✅ Google OAuth redirect initiated');
       return {};
     } catch (error: any) {
+      console.error('❌ Google OAuth exception:', error);
       return { error: error.message || 'An error occurred during Google sign in' };
     }
   };
@@ -325,6 +425,7 @@ export function useAuth(): UseAuthReturn {
     signInWithGoogle,
     signOut,
     resetPassword,
-    refreshProfile
+    refreshProfile,
+    updateProfileAvatar
   };
 }

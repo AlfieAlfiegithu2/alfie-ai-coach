@@ -15,16 +15,11 @@ interface UseAdminAuthReturn {
 }
 
 const ADMIN_SESSION_KEY = 'admin_session';
-const ADMIN_PASSWORD = 'myye65402086'; // Your password
+const ADMIN_PASSWORD = 'myye65402086'; // Admin password
 
 export function useAdminAuth(): UseAdminAuthReturn {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const validateSession = (): boolean => {
-    const session = localStorage.getItem(ADMIN_SESSION_KEY);
-    return session === 'true';
-  };
 
   useEffect(() => {
     console.log('🔍 Checking admin session...');
@@ -38,7 +33,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
         name: 'Admin'
       });
     } else {
-      console.log('❌ No valid admin session - redirecting to login');
+      console.log('❌ No valid admin session');
       setAdmin(null);
     }
 
@@ -49,7 +44,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
     console.log('🔐 Attempting admin login...');
 
     try {
-      // Validate password
+      // Simple password check
       if (password !== ADMIN_PASSWORD) {
         console.log('❌ Invalid password');
         return { error: 'Invalid password' };
@@ -57,7 +52,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
 
       console.log('✅ Password validated');
 
-      // Only set admin session after password is validated
+      // Set admin session
       localStorage.setItem(ADMIN_SESSION_KEY, 'true');
       setAdmin({
         id: 'admin',
@@ -83,6 +78,8 @@ export function useAdminAuth(): UseAdminAuthReturn {
     loading,
     login,
     logout,
-    validateSession
+    validateSession: (): boolean => {
+      return localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    }
   };
 }

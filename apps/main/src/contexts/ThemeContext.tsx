@@ -19,7 +19,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // Load theme from user preferences when user logs in
   useEffect(() => {
     if (user) {
-      const loadUserTheme = async () => {
+      const loadUserTheme = async (retryCount = 0) => {
+        const maxRetries = 1; // Only retry once
+        const retryDelay = 2000; // 2 second delay
+        
         try {
           // Select all columns to avoid issues if dashboard_theme doesn't exist yet
           const { data, error } = await supabase
@@ -30,6 +33,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
           
           // Silently handle all errors - use stored theme as fallback
           if (error) {
+            // Check if it's a network error that we should retry
+            const isNetworkError = error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                                  error.message?.includes('Failed to fetch') ||
+                                  error.message?.includes('NetworkError');
+            
             // Check if it's a column error or 400 Bad Request (column doesn't exist)
             const isColumnError = 
               error.code === 'PGRST204' ||
@@ -39,8 +47,17 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
               error.message?.toLowerCase().includes('does not exist') ||
               error.message?.toLowerCase().includes('bad request');
             
+            // Retry network errors once
+            if (isNetworkError && retryCount < maxRetries) {
+              if (import.meta.env.DEV) {
+                console.warn(`Network error loading theme (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+              }
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+              return loadUserTheme(retryCount + 1);
+            }
+            
             // Silently ignore column errors - use stored theme
-            if (!isColumnError) {
+            if (!isColumnError && !isNetworkError && import.meta.env.DEV) {
               console.warn('Error loading user theme:', error);
             }
             return; // Use the stored theme from localStorage
@@ -53,7 +70,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
             saveTheme(userTheme);
           }
         } catch (error: any) {
-          // Silently fail - use stored theme from localStorage instead
+          // Check if it's a network error
+          const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
+                                error?.message?.includes('Failed to fetch') ||
+                                error?.message?.includes('NetworkError');
+          
           // Check if it's a column error
           const isColumnError = 
             error?.code === 'PGRST204' ||
@@ -63,10 +84,20 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
             error?.message?.toLowerCase().includes('does not exist') ||
             error?.message?.toLowerCase().includes('bad request');
           
-          if (!isColumnError) {
+          // Retry network errors once
+          if (isNetworkError && retryCount < 1) {
+            if (import.meta.env.DEV) {
+              console.warn(`Network error loading theme (attempt ${retryCount + 1}/2), retrying in 2000ms...`);
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return loadUserTheme(retryCount + 1);
+          }
+          
+          // Silently fail - use stored theme from localStorage instead
+          if (!isColumnError && !isNetworkError && import.meta.env.DEV) {
             console.warn('Error loading user theme:', error);
           }
-          // Silently ignore column errors
+          // Silently ignore column errors and network errors after retry
         }
       };
       loadUserTheme();

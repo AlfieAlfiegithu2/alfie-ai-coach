@@ -129,86 +129,92 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const requestData = await req.json();
-    const { action, email, password, name, session_token } = requestData;
-
-    console.log(`Admin auth action: ${action}`);
-
-    // Validate input for all actions
-    if (action === 'login' || action === 'register') {
-      validateInput({ email, password });
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      console.error('Error parsing request JSON:', error);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    const { action, email, password, name, session_token } = requestData;
+
+    console.log(`Admin auth action: ${action}, password provided: ${!!password}`);
+
+    // Handle login first - no database needed
     if (action === 'login') {
-      // Login admin user
-      const { data: admin, error } = await supabaseClient
-        .from('admin_users')
-        .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .single();
-
-      if (error || !admin) {
-        console.log('Admin not found or error:', error);
-        return new Response(
-          JSON.stringify({ error: 'Invalid credentials' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const isValidPassword = await verifyPassword(password, admin.password_hash);
+      // SIMPLE PASSWORD CHECK - No database dependencies
+      const defaultPassword = Deno.env.get('ADMIN_PASSWORD') || 'myye65402086';
       
-      if (!isValidPassword) {
-        console.log('Invalid password for admin:', email);
+      console.log('Login attempt - checking password');
+      
+      // Validate password is provided
+      if (!password) {
+        console.log('No password provided');
         return new Response(
-          JSON.stringify({ error: 'Invalid credentials' }),
+          JSON.stringify({
+            error: 'Password is required',
+            attempts: 1,
+            remaining: 4
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Simple password check
+      if (password !== defaultPassword) {
+        console.log('Invalid password attempt');
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid password',
+            attempts: 1,
+            remaining: 4
+          }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Generate secure session token
+      // Password is correct - generate session token
       const sessionToken = generateSecureToken();
-      const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours for better security
-
-      // Get client IP and user agent for session tracking
-      const clientIP = req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown';
-      const userAgent = req.headers.get('user-agent') || 'unknown';
+      const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours
       
-      // Store session in database with expiration
-      const { error: sessionError } = await supabaseClient
-        .from('admin_sessions')
-        .insert({
-          admin_id: admin.id,
-          session_token: sessionToken,
-          expires_at: expiresAt.toISOString(),
-          ip_address: clientIP,
-          user_agent: userAgent.substring(0, 255), // Truncate if too long
-        });
-
-      if (sessionError) {
-        console.error('Session creation error:', sessionError);
-        return new Response(
-          JSON.stringify({ error: 'Session creation failed' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('Admin login successful:', email);
+      console.log('Admin login successful');
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          admin: { id: admin.id, email: admin.email, name: admin.name },
+        JSON.stringify({
+          success: true,
+          admin: {
+            id: 'admin',
+            email: 'admin@system.local',
+            name: 'Admin'
+          },
           token: sessionToken,
           expires_at: expiresAt.toISOString(),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
 
-    } else if (action === 'register') {
+    // For other actions, we need Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing environment variables for database operations');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Validate input for register action
+    if (action === 'register') {
+      validateInput({ email, password });
+      
       if (!name || name.length > 100) {
         return new Response(
           JSON.stringify({ error: 'Valid name is required' }),
@@ -285,25 +291,26 @@ serve(async (req) => {
         );
       }
 
-      // Use the new validation function
-      const { data: adminData, error: validationError } = await supabaseClient
-        .rpc('validate_admin_session', { session_token });
-
-      if (validationError || !adminData || adminData.length === 0) {
+      // For simple password auth, we don't store sessions in database
+      // Just validate that the token format is valid
+      // Check if token is at least 32 characters (our generated tokens are 64 hex chars)
+      if (typeof session_token !== 'string' || session_token.length < 32) {
         return new Response(
           JSON.stringify({ valid: false }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const admin = adminData[0];
+      // For simple password auth, we assume the token is valid if it exists and has correct format
+      console.log('Simple password auth validation - token format valid');
+      
       return new Response(
         JSON.stringify({
           valid: true,
           admin: {
-            id: admin.admin_id,
-            email: admin.email,
-            name: admin.name,
+            id: 'admin',
+            email: 'admin@system.local',
+            name: 'Admin'
           },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

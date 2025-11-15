@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { BookOpen, Target, TrendingUp, Trophy, Users, User, Zap, ChevronRight, Globe, GraduationCap, MessageSquare, PenTool, Volume2, CheckCircle, Star, Clock, Award, BarChart3, PieChart, Activity, Languages, Calendar, Home, Settings, History } from "lucide-react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +64,7 @@ interface UserPreferences {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
   const {
     user,
@@ -85,6 +86,7 @@ const Dashboard = () => {
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const testTypes = [{
     id: "IELTS",
     name: "IELTS",
@@ -143,9 +145,12 @@ const Dashboard = () => {
   }];
 
 
-  // Function to reload user preferences
-  const reloadUserPreferences = async () => {
+  // Function to reload user preferences with retry logic
+  const reloadUserPreferences = async (retryCount = 0) => {
     if (!user) return;
+    
+    const maxRetries = 1; // Only retry once to prevent too many requests
+    const retryDelay = 2000; // 2 second delay
     
     try {
       const {
@@ -154,6 +159,11 @@ const Dashboard = () => {
       } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
       
       if (prefError) {
+        // Check if it's a network error that we should retry
+        const isNetworkError = prefError.message?.includes('ERR_CONNECTION_CLOSED') ||
+                              prefError.message?.includes('Failed to fetch') ||
+                              prefError.message?.includes('NetworkError');
+        
         // Check if it's a column error (400 Bad Request when column doesn't exist)
         const isColumnError = 
           prefError.code === 'PGRST204' ||
@@ -163,8 +173,17 @@ const Dashboard = () => {
           prefError.message?.toLowerCase().includes('does not exist') ||
           prefError.message?.toLowerCase().includes('bad request');
         
+        // Retry network errors once
+        if (isNetworkError && retryCount < maxRetries) {
+          if (import.meta.env.DEV) {
+            console.warn(`Network error fetching preferences (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+          }
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return reloadUserPreferences(retryCount + 1);
+        }
+        
         // Silently ignore column errors - use defaults
-        if (!isColumnError) {
+        if (!isColumnError && !isNetworkError && import.meta.env.DEV) {
           console.warn('Error fetching preferences:', prefError);
         }
         setUserPreferences(null);
@@ -177,6 +196,11 @@ const Dashboard = () => {
         setUserPreferences(null);
       }
     } catch (error: any) {
+      // Check if it's a network error
+      const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
+                            error?.message?.includes('Failed to fetch') ||
+                            error?.message?.includes('NetworkError');
+      
       // Check if it's a column error
       const isColumnError = 
         error?.code === 'PGRST204' ||
@@ -186,12 +210,44 @@ const Dashboard = () => {
         error?.message?.toLowerCase().includes('does not exist') ||
         error?.message?.toLowerCase().includes('bad request');
       
-      if (!isColumnError) {
+      // Retry network errors once
+      if (isNetworkError && retryCount < maxRetries) {
+        if (import.meta.env.DEV) {
+          console.warn(`Network error reloading preferences (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+        }
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return reloadUserPreferences(retryCount + 1);
+      }
+      
+      if (!isColumnError && !isNetworkError && import.meta.env.DEV) {
         console.error('Error reloading preferences:', error);
       }
       setUserPreferences(null);
     }
   };
+
+  // Check if settings setup is required (for new Google sign-in users)
+  useEffect(() => {
+    if (!user || authLoading || loading) return;
+    
+    const setupRequired = searchParams.get('setup') === 'required';
+    const needsSetup = !userPreferences || !userPreferences.target_test_type;
+    
+    if (setupRequired || needsSetup) {
+      console.log('🆕 New user detected, opening settings modal');
+      setSettingsModalOpen(true);
+      // Remove query parameter from URL
+      if (setupRequired) {
+        setSearchParams({}, { replace: true });
+      }
+      // Show toast to guide user
+      toast({
+        title: "Welcome! Complete your profile",
+        description: "Please set up your preferences to get started.",
+        duration: 5000,
+      });
+    }
+  }, [user, userPreferences, authLoading, loading, searchParams, setSearchParams, toast]);
 
   // Fetch user data from Supabase
   useEffect(() => {
@@ -534,11 +590,16 @@ const Dashboard = () => {
           {/* Right section - Controls */}
           <div className="flex items-center gap-2 lg:gap-3 order-2 lg:order-3 relative z-50">
             {/* Clickable User Avatar - Opens Settings */}
-            <SettingsModal onSettingsChange={() => {
-              reloadUserPreferences();
-              refreshProfile();
-              setRefreshKey(prev => prev + 1);
-            }}>
+            <SettingsModal 
+              open={settingsModalOpen}
+              onOpenChange={setSettingsModalOpen}
+              onSettingsChange={() => {
+                reloadUserPreferences();
+                refreshProfile();
+                setRefreshKey(prev => prev + 1);
+                // Close modal after settings are saved
+                setSettingsModalOpen(false);
+              }}>
               <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title="Click to open settings">
                 {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
                 

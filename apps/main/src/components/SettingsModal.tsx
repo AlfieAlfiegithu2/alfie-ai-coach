@@ -17,10 +17,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
 import LanguageSelector from '@/components/LanguageSelector';
+import TestTranslationLanguageSelector from '@/components/MotherLanguageSelector';
 import { getLanguagesForSettings, codeToEnglishName, englishNameToCode } from '@/lib/languageUtils';
 import { useTheme } from '@/contexts/ThemeContext';
-import { themes, ThemeName } from '@/lib/themes';
+import { themes, ThemeName, getStoredTheme, saveTheme } from '@/lib/themes';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 interface SectionScores {
   reading: number;
@@ -41,15 +44,21 @@ interface UserPreferences {
 interface SettingsModalProps {
   onSettingsChange?: () => void;
   children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
-  const { user, signOut, profile } = useAuth();
+const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpenChange }: SettingsModalProps) => {
+  const { user, signOut, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { themeName, setTheme } = useTheme();
   const themeStyles = useThemeStyles();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Use controlled open if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [loading, setLoading] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -65,6 +74,10 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
       overall: 7.0
     }
   });
+  const [originalPreferences, setOriginalPreferences] = useState<UserPreferences | null>(null);
+  const [originalTheme, setOriginalTheme] = useState<ThemeName | null>(null);
+  const [originalProfile, setOriginalProfile] = useState<typeof profile | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const [nativeLanguage, setNativeLanguage] = useState('English');
 
@@ -87,21 +100,28 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
         [section]: score
       }
     }));
+    setHasUnsavedChanges(true);
   };
 
 
   useEffect(() => {
     console.log('🔧 SettingsModal effect:', { user: user?.id, open });
     if (user && open) {
+      // Store original theme and profile when opening
+      setOriginalTheme(themeName);
+      setOriginalProfile(profile ? JSON.parse(JSON.stringify(profile)) : null);
       loadUserPreferences();
     }
   }, [user, open]);
 
-  const loadUserPreferences = async () => {
+  const loadUserPreferences = async (retryCount = 0) => {
     if (!user) {
       console.log('❌ Cannot load preferences: No user');
       return;
     }
+
+    const maxRetries = 1; // Only retry once
+    const retryDelay = 2000; // 2 second delay
 
     console.log('📥 Loading preferences for user:', user.id);
 
@@ -114,7 +134,23 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ Error loading preferences:', error);
+        // Check if it's a network error that we should retry
+        const isNetworkError = error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                              error.message?.includes('Failed to fetch') ||
+                              error.message?.includes('NetworkError');
+        
+        if (isNetworkError && retryCount < maxRetries) {
+          if (import.meta.env.DEV) {
+            console.warn(`Network error loading preferences (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
+          }
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return loadUserPreferences(retryCount + 1);
+        }
+        
+        // Only log non-network errors in dev mode
+        if (!isNetworkError && import.meta.env.DEV) {
+          console.error('❌ Error loading preferences:', error);
+        }
         return;
       }
 
@@ -154,16 +190,45 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
 
         console.log('🔄 Setting preferences:', newPreferences);
         setPreferences(newPreferences);
+        // Store original preferences when loading
+        setOriginalPreferences(JSON.parse(JSON.stringify(newPreferences)));
       } else {
         console.log('📝 No existing preferences found, using defaults');
+        // Store original defaults
+        setOriginalPreferences(JSON.parse(JSON.stringify(preferences)));
       }
-    } catch (error) {
-      console.error('❌ Error loading preferences:', error);
+    } catch (error: any) {
+      // Check if it's a network error
+      const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
+                            error?.message?.includes('Failed to fetch') ||
+                            error?.message?.includes('NetworkError');
+      
+      // Retry network errors once
+      if (isNetworkError && retryCount < 1) {
+        if (import.meta.env.DEV) {
+          console.warn(`Network error loading preferences (attempt ${retryCount + 1}/2), retrying in 2000ms...`);
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return loadUserPreferences(retryCount + 1);
+      }
+      
+      // Only log non-network errors in dev mode
+      if (!isNetworkError && import.meta.env.DEV) {
+        console.error('❌ Error loading preferences:', error);
+      }
     }
   };
 
-  const handlePhotoUpdate = () => {
+  const handlePhotoUpdate = async () => {
     console.log('📸 Profile photo updated');
+    // Force refresh profile to show new photo immediately
+    if (user) {
+      try {
+        await refreshProfile();
+      } catch (error) {
+        console.warn('Error refreshing profile after photo update:', error);
+      }
+    }
     onSettingsChange?.();
   };
 
@@ -297,6 +362,12 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
       localStorage.setItem('language-updated', Date.now().toString());
       window.dispatchEvent(new StorageEvent('storage', { key: 'language-updated' }));
 
+      // Clear original preferences and unsaved changes flag after successful save
+      setOriginalPreferences(null);
+      setOriginalTheme(null);
+      setOriginalProfile(null);
+      setHasUnsavedChanges(false);
+      
       // Close modal after successful save
       setOpen(false);
       onSettingsChange?.();
@@ -321,11 +392,43 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    console.log('🔧 Settings modal open state changed:', newOpen);
+    
+    if (!newOpen && hasUnsavedChanges) {
+      // When closing without saving (X button or ESC), restore everything
+      if (originalPreferences) {
+        setPreferences(originalPreferences);
+        setOriginalPreferences(null);
+      }
+      
+      // Restore original theme if it was changed (theme is saved to localStorage immediately, so restore it)
+      if (originalTheme && originalTheme !== themeName) {
+        // Restore theme in context and localStorage
+        setTheme(originalTheme);
+        saveTheme(originalTheme);
+        setOriginalTheme(null);
+      }
+      
+      // Restore original profile photo by refreshing from database
+      if (user) {
+        refreshProfile();
+        setOriginalProfile(null);
+      }
+      
+      setHasUnsavedChanges(false);
+    } else if (!newOpen) {
+      // Just closing, no unsaved changes - clear tracking
+      setOriginalPreferences(null);
+      setOriginalTheme(null);
+      setOriginalProfile(null);
+    }
+    
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      console.log('🔧 Settings modal open state changed:', newOpen);
-      setOpen(newOpen);
-    }}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children || (
           <Button
@@ -367,6 +470,10 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
         style={{
           ...themeStyles.cardStyle,
           borderColor: themeStyles.border,
+        }}
+        onInteractOutside={(e) => {
+          // Prevent closing on outside click - user must use X or Save
+          e.preventDefault();
         }}
       >
         <DialogHeader className="items-center">
@@ -416,12 +523,15 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
               htmlFor="preferred_name"
               style={{ color: themeStyles.textPrimary }}
             >
-              {t('settings.nickname', { defaultValue: 'Nickname' })}
+              Nickname
             </Label>
             <Input
               id="preferred_name"
               value={preferences.preferred_name}
-              onChange={(e) => setPreferences(prev => ({ ...prev, preferred_name: e.target.value }))}
+              onChange={(e) => {
+                setPreferences(prev => ({ ...prev, preferred_name: e.target.value }));
+                setHasUnsavedChanges(true);
+              }}
               placeholder="Enter your nickname"
               className="border"
               style={{
@@ -438,15 +548,86 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
             />
           </div>
 
-          {/* Language Selector */}
-          <div>
-            <Label 
-              className="mb-1 block"
-              style={{ color: themeStyles.textPrimary }}
-            >
-              {t('settings.language', { defaultValue: 'Language' })}
-            </Label>
-            <LanguageSelector />
+          {/* Language Selectors - Combined Container */}
+          <div 
+            className="p-4 rounded-lg border space-y-4"
+            style={{
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' 
+                ? 'rgba(255,255,255,0.1)' 
+                : themeStyles.theme.name === 'dark' 
+                ? 'rgba(255,255,255,0.05)' 
+                : themeStyles.theme.name === 'minimalist' 
+                ? '#f9fafb' 
+                : 'rgba(255,255,255,0.3)',
+              borderColor: themeStyles.border,
+            }}
+          >
+            {/* Display Language Selector */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Label 
+                  className="block"
+                  style={{ color: themeStyles.textPrimary }}
+                >
+                  Display Language
+                </Label>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      className="max-w-xs z-[10000]"
+                      style={{
+                        backgroundColor: themeStyles.cardBackground,
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                      }}
+                    >
+                      <p className="text-sm">
+                        Choose the language for displaying the website interface, menus, buttons, and all UI elements. This changes how the website looks to you.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <LanguageSelector />
+            </div>
+
+            {/* Preferred Feedback Language Selector */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Label 
+                  className="block"
+                  style={{ color: themeStyles.textPrimary }}
+                >
+                  Preferred Feedback Language
+                </Label>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 cursor-help" style={{ color: themeStyles.textSecondary }} />
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      className="max-w-xs z-[10000]"
+                      style={{
+                        backgroundColor: themeStyles.cardBackground,
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                      }}
+                    >
+                      <p className="text-sm mb-2">
+                        Your native language for receiving feedback and explanations. This helps us provide better translations when you're practicing speaking or writing in English.
+                      </p>
+                      <p className="text-xs" style={{ color: themeStyles.textSecondary }}>
+                        Don't worry - you'll be able to choose if you want the feedback to be in English at the submit page.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <TestTranslationLanguageSelector />
+            </div>
           </div>
 
           {/* Theme Selector */}
@@ -461,7 +642,10 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
               {Object.values(themes).map((theme) => (
                 <button
                   key={theme.name}
-                  onClick={() => setTheme(theme.name)}
+                  onClick={() => {
+                    setTheme(theme.name);
+                    setHasUnsavedChanges(true);
+                  }}
                   className="p-4 rounded-lg border-2 transition-all text-left"
                   style={{
                     borderColor: themeName === theme.name 
@@ -517,14 +701,24 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                       className="w-4 h-4 rounded border"
                       style={{ 
                         backgroundColor: theme.colors.background,
-                        borderColor: theme.colors.border 
+                        borderColor: theme.colors.border,
+                        borderWidth: '1px'
                       }}
                     />
                     <div 
                       className="w-4 h-4 rounded border"
                       style={{ 
                         backgroundColor: theme.colors.cardBackground,
-                        borderColor: theme.colors.cardBorder 
+                        borderColor: theme.colors.cardBorder,
+                        borderWidth: '1px'
+                      }}
+                    />
+                    <div 
+                      className="w-4 h-4 rounded border"
+                      style={{ 
+                        backgroundColor: theme.colors.buttonPrimary,
+                        borderColor: theme.colors.border,
+                        borderWidth: '1px'
                       }}
                     />
                     <div 
@@ -548,7 +742,10 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
             </Label>
             <Select 
               value={preferences.target_test_type} 
-              onValueChange={(value) => setPreferences(prev => ({ ...prev, target_test_type: value }))}
+              onValueChange={(value) => {
+                setPreferences(prev => ({ ...prev, target_test_type: value }));
+                setHasUnsavedChanges(true);
+              }}
             >
               <SelectTrigger 
                 className="border"
@@ -572,6 +769,8 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                   ...themeStyles.cardStyle,
                   borderColor: themeStyles.border,
                 }}
+                side="bottom"
+                align="start"
               >
                 {testTypes.map(type => (
                   <SelectItem key={type.value} value={type.value}>
@@ -580,36 +779,6 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div>
-            <Label 
-              htmlFor="target_score"
-              style={{ color: themeStyles.textPrimary }}
-            >
-              {t('settings.targetScore')}
-            </Label>
-            <Input
-              id="target_score"
-              type="number"
-              step="0.5"
-              min="1"
-              max="9"
-              value={preferences.target_score}
-              onChange={(e) => setPreferences(prev => ({ ...prev, target_score: parseFloat(e.target.value) || 7.0 }))}
-              className="border"
-              style={{
-                backgroundColor: themeStyles.theme.name === 'glassmorphism' 
-                  ? 'rgba(255,255,255,0.1)' 
-                  : themeStyles.theme.name === 'dark' 
-                  ? 'rgba(255,255,255,0.1)' 
-                  : themeStyles.theme.name === 'minimalist' 
-                  ? '#ffffff' 
-                  : 'rgba(255,255,255,0.5)',
-                borderColor: themeStyles.border,
-                color: themeStyles.textPrimary,
-              }}
-            />
           </div>
 
           <div>
@@ -651,7 +820,10 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                 <Calendar
                   mode="single"
                   selected={preferences.target_deadline || undefined}
-                  onSelect={(date) => setPreferences(prev => ({ ...prev, target_deadline: date || null }))}
+                  onSelect={(date) => {
+                    setPreferences(prev => ({ ...prev, target_deadline: date || null }));
+                    setHasUnsavedChanges(true);
+                  }}
                   disabled={(date) => date < new Date()}
                   initialFocus
                   className="p-3 pointer-events-auto"
@@ -661,12 +833,6 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
           </div>
 
           <div>
-            <Label 
-              className="text-base font-semibold mb-3 block"
-              style={{ color: themeStyles.textPrimary }}
-            >
-              Section Target Scores
-            </Label>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
               {Object.entries(preferences.target_scores).map(([section, score]) => (
                 <div key={section} className="space-y-2">
@@ -702,6 +868,8 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
                         ...themeStyles.cardStyle,
                         borderColor: themeStyles.border,
                       }}
+                      side="bottom"
+                      align="start"
                     >
                       {bandScores.map((bandScore) => (
                         <SelectItem key={bandScore} value={bandScore.toString()}>
@@ -715,14 +883,14 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
             </div>
           </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="pt-4">
             <Button
               onClick={() => {
                 console.log('💾 Save button clicked');
                 savePreferences();
               }}
               disabled={loading}
-              className="flex-1 text-white"
+              className="w-full text-white"
               style={{
                 backgroundColor: themeStyles.buttonPrimary,
               }}
@@ -737,93 +905,100 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
             >
               {loading ? t('common.loading') : t('settings.save')}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                console.log('❌ Cancel button clicked');
-                setOpen(false);
-              }}
-              className="border"
-              style={{
-                backgroundColor: themeStyles.theme.name === 'glassmorphism' 
-                  ? 'rgba(255,255,255,0.1)' 
-                  : themeStyles.theme.name === 'dark' 
-                  ? 'rgba(255,255,255,0.1)' 
-                  : themeStyles.theme.name === 'minimalist' 
-                  ? '#ffffff' 
-                  : 'rgba(255,255,255,0.5)',
-                borderColor: themeStyles.border,
-                color: themeStyles.textPrimary,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' 
-                  ? 'rgba(255,255,255,0.1)' 
-                  : themeStyles.theme.name === 'dark' 
-                  ? 'rgba(255,255,255,0.1)' 
-                  : themeStyles.theme.name === 'minimalist' 
-                  ? '#ffffff' 
-                  : 'rgba(255,255,255,0.5)';
-              }}
-            >
-              {t('settings.cancel')}
-            </Button>
           </div>
 
-          {/* Reset Test Results */}
+          {/* Reset Test Results and Sign Out - Same Row */}
           <div 
-            className="pt-3 border-t"
+            className="pt-3 border-t flex gap-2"
             style={{ borderColor: themeStyles.border }}
           >
-            <Button
-              variant="outline"
-              className="w-full border-red-200/50 text-red-600 hover:bg-red-50/50 hover:text-red-700"
-              onClick={async () => {
-                if (!user) return;
-                const confirmed = window.confirm('This will permanently delete all your saved test results (reading, listening, writing, speaking). Continue?');
-                if (!confirmed) return;
-                
-                setLoading(true);
-                try {
-                  // Delete skill-specific results first (foreign keys)
-                  await supabase.from('writing_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('reading_test_results').delete().eq('user_id', user.id);
-                  await supabase.from('listening_test_results').delete().eq('user_id', user.id);
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex-1 transition-all"
+                    style={{
+                      borderColor: themeStyles.theme.name === 'dark' 
+                        ? 'rgba(239, 68, 68, 0.3)' 
+                        : 'rgba(239, 68, 68, 0.2)',
+                      color: themeStyles.theme.name === 'dark' 
+                        ? '#fca5a5' 
+                        : '#dc2626',
+                      backgroundColor: themeStyles.theme.name === 'dark' 
+                        ? 'rgba(239, 68, 68, 0.1)' 
+                        : 'rgba(239, 68, 68, 0.05)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'dark' 
+                        ? 'rgba(239, 68, 68, 0.2)' 
+                        : 'rgba(239, 68, 68, 0.1)';
+                      e.currentTarget.style.borderColor = themeStyles.theme.name === 'dark' 
+                        ? 'rgba(239, 68, 68, 0.4)' 
+                        : 'rgba(239, 68, 68, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'dark' 
+                        ? 'rgba(239, 68, 68, 0.1)' 
+                        : 'rgba(239, 68, 68, 0.05)';
+                      e.currentTarget.style.borderColor = themeStyles.theme.name === 'dark' 
+                        ? 'rgba(239, 68, 68, 0.3)' 
+                        : 'rgba(239, 68, 68, 0.2)';
+                    }}
+                    onClick={async () => {
+                      if (!user) return;
+                      const confirmed = window.confirm('This will permanently delete all your saved test results (reading, listening, writing, speaking). Continue?');
+                      if (!confirmed) return;
+                      
+                      setLoading(true);
+                      try {
+                        // Delete skill-specific results first (foreign keys)
+                        await supabase.from('writing_test_results').delete().eq('user_id', user.id);
+                        await supabase.from('speaking_test_results').delete().eq('user_id', user.id);
+                        await supabase.from('reading_test_results').delete().eq('user_id', user.id);
+                        await supabase.from('listening_test_results').delete().eq('user_id', user.id);
 
-                  // Delete main test results
-                  const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
-                  if (tErr) throw tErr;
-                  
-                  toast.success('All test results have been reset successfully.');
-                  setOpen(false);
-                  onSettingsChange?.();
-                } catch (e: any) {
-                  console.error('Failed to reset results', e);
-                  toast.error('Failed to reset results. Please try again.');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              disabled={loading}
-            >
-              🔄 {t('dashboard.resetResults')}
-            </Button>
-          </div>
-          
-          <div 
-            className="border-t pt-4"
-            style={{ borderColor: themeStyles.border }}
-          >
+                        // Delete main test results
+                        const { error: tErr } = await supabase.from('test_results').delete().eq('user_id', user.id);
+                        if (tErr) throw tErr;
+                        
+                        toast.success('All test results have been reset successfully.');
+                        setOpen(false);
+                        onSettingsChange?.();
+                      } catch (e: any) {
+                        console.error('Failed to reset results', e);
+                        toast.error('Failed to reset results. Please try again.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    Reset Test Results
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  className="max-w-xs z-[10000]"
+                  style={{
+                    backgroundColor: themeStyles.cardBackground,
+                    borderColor: themeStyles.border,
+                    color: themeStyles.textPrimary,
+                  }}
+                >
+                  <p className="text-sm">
+                    Permanently delete all your saved test results including reading, listening, writing, and speaking scores. This action cannot be undone.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
             <Button
               onClick={() => {
                 console.log('🚪 Sign out button clicked');
                 handleLogout();
               }}
               variant="outline"
-              className="w-full bg-red-50/50 border-red-200/50 text-red-600 hover:bg-red-100/50 hover:text-red-700"
+              className="flex-1 bg-red-50/50 border-red-200/50 text-red-600 hover:bg-red-100/50 hover:text-red-700"
             >
               <LogOut className="w-4 h-4 mr-2" />
               {t('settings.signOut')}

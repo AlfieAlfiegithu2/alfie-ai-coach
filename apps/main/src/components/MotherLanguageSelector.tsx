@@ -1,32 +1,45 @@
 import { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ChevronDown, Check } from 'lucide-react';
-import { getLanguagesWithFlags, type LanguageWithFlag } from '@/lib/languageUtils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Label } from '@/components/ui/label';
+import { Info, ChevronDown, Check } from 'lucide-react';
+import { getLanguagesWithFlags, codeToEnglishName, englishNameToCode } from '@/lib/languageUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
 
-const languages = getLanguagesWithFlags();
-
-const LanguageSelector = () => {
-  const { i18n } = useTranslation();
+const TestTranslationLanguageSelector = () => {
+  const { user } = useAuth();
   const themeStyles = useThemeStyles();
+  const languages = getLanguagesWithFlags();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [testTranslationLanguage, setTestTranslationLanguage] = useState('en');
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  // Load test translation language from user preferences
+  useEffect(() => {
+    if (!user) return;
 
-  const handleLanguageChange = async (languageCode: string) => {
-    try {
-      await i18n.changeLanguage(languageCode);
+    const loadTestTranslationLanguage = async () => {
       try {
-        localStorage.setItem('alfie-language', languageCode);
-      } catch (e) {
-        console.warn('Unable to persist language preference', e);
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('native_language')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (data?.native_language) {
+          const lang = languages.find(l => l.code === data.native_language);
+          if (lang) {
+            setTestTranslationLanguage(lang.code);
+          }
+        }
+      } catch (error) {
+        console.warn('Error loading test translation language:', error);
       }
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Failed to change language:', error);
-    }
-  };
+    };
+
+    loadTestTranslationLanguage();
+  }, [user, languages]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -42,19 +55,36 @@ const LanguageSelector = () => {
     };
   }, []);
 
-  // Restore persisted language on mount
-  useEffect(() => {
+  const handleLanguageChange = async (languageCode: string) => {
+    setTestTranslationLanguage(languageCode);
+    setIsOpen(false);
+    
+    if (!user) return;
+
     try {
-      const stored = localStorage.getItem('alfie-language');
-      if (stored && stored !== i18n.language) {
-        i18n.changeLanguage(stored).catch(err =>
-          console.error('Failed to restore language from storage', err)
-        );
+      // Update user preferences
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('user_preferences')
+          .update({ native_language: languageCode })
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('user_preferences')
+          .insert({ user_id: user.id, native_language: languageCode });
       }
-    } catch (e) {
-      console.warn('Unable to read persisted language', e);
+    } catch (error) {
+      console.error('Error saving test translation language:', error);
     }
-  }, [i18n]);
+  };
+
+  const currentLanguage = languages.find(lang => lang.code === testTranslationLanguage) || languages.find(lang => lang.code === 'en') || languages[0];
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -84,7 +114,7 @@ const LanguageSelector = () => {
             ? '#ffffff' 
             : 'rgba(255,255,255,0.5)';
         }}
-        aria-label="Select language"
+        aria-label="Select test translation language"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
@@ -103,7 +133,7 @@ const LanguageSelector = () => {
             borderStyle: 'solid',
           }}
           role="listbox"
-          aria-label="Language options"
+          aria-label="Test translation language options"
         >
           <div className="py-2">
             {languages.map((language) => (
@@ -112,22 +142,22 @@ const LanguageSelector = () => {
                 onClick={() => handleLanguageChange(language.code)}
                 className="w-full flex items-center justify-between px-4 py-2 text-left transition-colors"
                 style={{
-                  backgroundColor: i18n.language === language.code 
+                  backgroundColor: testTranslationLanguage === language.code 
                     ? themeStyles.hoverBg 
                     : 'transparent',
                 }}
                 onMouseEnter={(e) => {
-                  if (i18n.language !== language.code) {
+                  if (testTranslationLanguage !== language.code) {
                     e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (i18n.language !== language.code) {
+                  if (testTranslationLanguage !== language.code) {
                     e.currentTarget.style.backgroundColor = 'transparent';
                   }
                 }}
                 role="option"
-                aria-selected={i18n.language === language.code}
+                aria-selected={testTranslationLanguage === language.code}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{language.flag}</span>
@@ -146,7 +176,7 @@ const LanguageSelector = () => {
                     </span>
                   </div>
                 </div>
-                {i18n.language === language.code && (
+                {testTranslationLanguage === language.code && (
                   <Check 
                     className="w-4 h-4" 
                     style={{ color: themeStyles.buttonPrimary }}
@@ -161,4 +191,5 @@ const LanguageSelector = () => {
   );
 };
 
-export default LanguageSelector;
+export default TestTranslationLanguageSelector;
+

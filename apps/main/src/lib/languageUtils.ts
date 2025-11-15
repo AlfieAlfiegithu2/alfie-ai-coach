@@ -244,4 +244,28 @@ export function getLanguagesForSettings(): { value: string; label: string }[] {
   }));
 }
 
+// Convert language code to English name (for UI display)
+export function codeToEnglishName(code: string | null | undefined): string {
+  if (!code) return 'English';
+  const normalized = normalizeLanguageCode(code);
+  return CODE_TO_ENGLISH_NAME[normalized] || 'English';
+}
+
+// Convert English name to language code (for DB storage)
+export function englishNameToCode(name: string | null | undefined): string {
+  if (!name) return 'en';
+  // First try normalizeLanguageCode which handles both codes and names
+  const code = normalizeLanguageCode(name);
+  // Verify it's a valid code by checking if it exists in CODE_TO_ENGLISH_NAME
+  if (CODE_TO_ENGLISH_NAME[code]) {
+    return code;
+  }
+  // If not found, try reverse lookup
+  const reverseMap: Record<string, string> = {};
+  Object.entries(CODE_TO_ENGLISH_NAME).forEach(([code, name]) => {
+    reverseMap[name.toLowerCase()] = code;
+  });
+  return reverseMap[name.toLowerCase()] || 'en';
+}
+
 

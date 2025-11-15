@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => {
   const earthwormApiTarget = isProd ? 'https://your-earthworm-app.vercel.app/api' : 'http://localhost:3001/api';
 
   return {
+    // Ensure consistent base path in dev and production
+    base: '/',
     server: {
       host: "0.0.0.0",
       port: 5173,

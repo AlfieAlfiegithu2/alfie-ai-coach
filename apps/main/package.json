@@ -10,6 +10,7 @@
     "generate:sitemap": "node scripts/generate-sitemap.js",
     "lint": "eslint .",
     "preview": "vite preview",
+    "verify:build": "node scripts/verify-build.js",
     "mcp:analyze": "node scripts/mcp-setup.js",
     "mcp:dashboard": "node scripts/mcp-dashboard.js",
     "mcp:setup": "echo 'MCP configuration created. Run npm run mcp:dashboard for comprehensive analysis.'",

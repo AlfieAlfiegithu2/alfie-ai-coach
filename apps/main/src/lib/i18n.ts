@@ -3,6 +3,20 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
 
+// Normalize language codes (strip region codes like en-GB -> en)
+function normalizeLanguageCode(lng: string): string {
+  if (!lng) return 'en';
+  // Split by hyphen and take the first part (language code)
+  const parts = lng.split('-');
+  return parts[0].toLowerCase();
+}
+
+// Supported language codes (matching available locale files)
+const SUPPORTED_LANGUAGES = [
+  'en', 'ko', 'zh', 'ja', 'es', 'pt', 'fr', 'de', 'ru', 'hi', 'vi',
+  'ar', 'bn', 'ur', 'id', 'tr', 'fa', 'ta', 'ne', 'th', 'yue', 'ms', 'kk', 'sr'
+];
+
 // Language resources will be loaded dynamically from JSON files via backend
 
 i18n
@@ -21,11 +35,26 @@ i18n
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
       lookupLocalStorage: 'ui_language',
+      // Normalize detected language codes
+      convertDetectedLanguage: (lng: string) => {
+        const normalized = normalizeLanguageCode(lng);
+        // Only return if it's a supported language, otherwise fallback to 'en'
+        return SUPPORTED_LANGUAGES.includes(normalized) ? normalized : 'en';
+      },
     },
 
     // Backend options
     backend: {
-      loadPath: `${(import.meta as any)?.env?.BASE_URL || '/'}locales/{{lng}}.json`,
+      // Normalize language code before loading
+      loadPath: (lngs: string[], namespaces: string[]) => {
+        const normalizedLng = normalizeLanguageCode(lngs[0]);
+        // Use consistent base path - always use root relative path
+        // This ensures same behavior in dev and production
+        const baseUrl = import.meta.env.BASE_URL || '/';
+        // Ensure baseUrl ends with / for proper path joining
+        const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+        return `${normalizedBase}locales/${normalizedLng}.json`;
+      },
       requestOptions: {
         cache: 'default',
       },

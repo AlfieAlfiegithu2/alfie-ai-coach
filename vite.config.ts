@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
   
   return {
     root: appRoot,
+    // Ensure consistent base path in dev and production
+    base: '/',
     server: {
       host: "0.0.0.0",
       port: 8080,

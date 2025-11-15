@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProfilePhotoSelector from '@/components/ProfilePhotoSelector';
 import LanguageSelector from '@/components/LanguageSelector';
-import { getLanguagesForSettings } from '@/lib/languageUtils';
+import { getLanguagesForSettings, codeToEnglishName, englishNameToCode } from '@/lib/languageUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { themes, ThemeName } from '@/lib/themes';
 import { useThemeStyles } from '@/hooks/useThemeStyles';
@@ -121,9 +121,11 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
       console.log('📋 Loaded preferences:', data);
 
       // Load native language from user_preferences (where it actually exists)
+      // Convert DB code to English name for dropdown
       if (data?.native_language) {
         console.log('🌐 Loaded native language from preferences:', data.native_language);
-        setNativeLanguage(data.native_language);
+        const englishName = codeToEnglishName(data.native_language);
+        setNativeLanguage(englishName);
       } else {
         console.log('📝 No native language found, using default');
       }
@@ -194,12 +196,13 @@ const SettingsModal = ({ onSettingsChange, children }: SettingsModalProps) => {
 
       // Build preferences data without dashboard_theme first (in case column doesn't exist)
       // For updates, exclude user_id since it's used in the filter
+      // Convert English name to language code for DB storage
       const preferencesDataForUpdate = {
         target_test_type: preferences.target_test_type,
         target_score: preferences.target_score,
         target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
         preferred_name: preferences.preferred_name,
-        native_language: nativeLanguage,
+        native_language: englishNameToCode(nativeLanguage), // Convert to code for DB
         target_scores: preferences.target_scores as any
       };
 

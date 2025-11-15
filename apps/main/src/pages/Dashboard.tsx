@@ -559,7 +559,7 @@ const Dashboard = () => {
             <div className="flex flex-col gap-4 h-full">
               {/* Greeting */}
               <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
-                fontFamily: 'Comfortaa, cursive',
+                fontFamily: 'Comfortaa, cursive, sans-serif',
                 color: themeStyles.textPrimary
               }}>
                 {t('dashboard.helloUser', {
@@ -583,7 +583,7 @@ const Dashboard = () => {
                       <span 
                         className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`} 
                         style={{
-                          fontFamily: 'Poppins, sans-serif',
+                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                           color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
                         }}
                       >
@@ -633,7 +633,7 @@ const Dashboard = () => {
                     >
                         <div className="relative flex items-center justify-center mb-3">
                           <h3 className="text-sm lg:text-base tracking-tight font-normal text-center" style={{
-                            fontFamily: 'Poppins, sans-serif',
+                            fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             color: themeStyles.textPrimary
                           }}>
                             {skill.fullLabel}
@@ -658,13 +658,13 @@ const Dashboard = () => {
                                 borderColor: themeStyles.border
                               }}>
                                 <p className="text-xs font-normal mb-1" style={{
-                              fontFamily: 'Poppins, sans-serif',
+                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                                   {t('dashboard.testsTaken')}
                                 </p>
                                 <p className="text-sm lg:text-base font-normal" style={{
-                              fontFamily: 'Poppins, sans-serif',
+                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{skillResults.length}</p>
                               </div>
@@ -673,13 +673,13 @@ const Dashboard = () => {
                                 borderColor: themeStyles.border
                               }}>
                                 <p className="text-xs font-normal mb-1" style={{
-                              fontFamily: 'Poppins, sans-serif',
+                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                                   {t('dashboard.averageScore')}
                                 </p>
                                 <p className="text-sm lg:text-base font-normal" style={{
-                              fontFamily: 'Poppins, sans-serif',
+                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{convertToIELTSScore(averageScore)}</p>
                               </div>
@@ -688,13 +688,13 @@ const Dashboard = () => {
                                 borderColor: themeStyles.border
                               }}>
                                 <p className="text-xs font-normal mb-1" style={{
-                              fontFamily: 'Poppins, sans-serif',
+                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
                                   {t('dashboard.latestScore')}
                                 </p>
                                 <p className="text-sm lg:text-base font-normal" style={{
-                              fontFamily: 'Poppins, sans-serif',
+                              fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
                               </div>
@@ -704,7 +704,7 @@ const Dashboard = () => {
                               onClick={() => navigate('/ielts-portal')} 
                               className="text-sm font-medium px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 transition shadow-sm mx-auto" 
                               style={{
-                                fontFamily: 'Poppins, sans-serif',
+                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 backgroundColor: themeStyles.buttonPrimary,
                                 color: 'white'
                               }}

@@ -353,7 +353,7 @@ const StudyPlanTodoList = () => {
     return (
       <div className={`${themeStyles.cardClassName} rounded-xl p-4 shadow-md`} style={themeStyles.cardStyle}>
         <div className="flex items-center gap-2 mb-3">
-          <h3 className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+          <h3 className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
             {formattedDate}
             {isToday && (
               <span className="ml-2 text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
@@ -367,26 +367,26 @@ const StudyPlanTodoList = () => {
         </p>
         <div className="grid grid-cols-3 gap-3 text-center pt-3 border-t" style={{ borderColor: themeStyles.border }}>
           <div>
-            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
               {userStats.totalTests}
             </p>
-            <p className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+            <p className="text-xs" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textSecondary }}>
               {t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}
             </p>
           </div>
           <div>
-            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
               {userStats.savedWords}
             </p>
-            <p className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+            <p className="text-xs" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textSecondary }}>
               {t('dashboard.wordsSaved', { defaultValue: 'Words Saved' })}
             </p>
           </div>
           <div>
-            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
               {userStats.dayStreak}
             </p>
-            <p className="text-xs" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+            <p className="text-xs" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textSecondary }}>
               {t('dashboard.dayStreak', { defaultValue: 'Day Streak' })}
             </p>
           </div>
@@ -400,7 +400,7 @@ const StudyPlanTodoList = () => {
       {/* Header with Date Navigation */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+          <h3 className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
             {formattedDate}
             {isToday && (
               <span className="ml-2 text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
@@ -513,7 +513,7 @@ const StudyPlanTodoList = () => {
                   )}
                 </button>
                 <span className="flex-1 text-sm" style={{ 
-                  fontFamily: 'Poppins, sans-serif',
+                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
                   {task.title || 'Untitled task'}
@@ -573,7 +573,7 @@ const StudyPlanTodoList = () => {
                   )}
                 </button>
                 <span className="flex-1 text-sm" style={{ 
-                  fontFamily: 'Poppins, sans-serif',
+                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
                   {task.title || 'Untitled task'}
@@ -611,10 +611,10 @@ const StudyPlanTodoList = () => {
                   addCustomTask();
                 }
               }}
-              placeholder=""
+              placeholder={t('studyPlan.addTask', { defaultValue: 'Add a task...' })}
               className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
               style={{ 
-                fontFamily: 'Poppins, sans-serif',
+                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 borderColor: themeStyles.border,
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
                 color: themeStyles.textPrimary,
@@ -625,7 +625,7 @@ const StudyPlanTodoList = () => {
               onClick={addCustomTask}
               className="rounded-lg px-3 py-2 transition flex items-center justify-center shadow-sm"
               style={{ 
-                fontFamily: 'Poppins, sans-serif',
+                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 backgroundColor: themeStyles.buttonPrimary,
                 color: 'white'
               }}

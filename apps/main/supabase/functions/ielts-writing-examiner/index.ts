@@ -102,6 +102,67 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
   }
 }
 
+async function callKimiK2Thinking(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://englishaidol.com',
+        'X-Title': 'IELTS Writing Examiner'
+      },
+      body: JSON.stringify({
+        model: 'moonshotai/kimi-k2-thinking',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 8000
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Kimi K2 Thinking API Error:', errorText);
+      throw new Error(`Kimi K2 Thinking API failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ Kimi K2 Thinking API call successful`);
+    
+    // Extract content from response (OpenRouter format)
+    const content = data.choices?.[0]?.message?.content ?? '';
+    
+    // Return in a format compatible with existing code
+    return {
+      choices: [{
+        message: {
+          content: content
+        }
+      }]
+    };
+  } catch (error) {
+    console.error(`❌ Kimi K2 Thinking attempt ${retryCount + 1} failed:`, (error as any).message);
+    
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying Kimi K2 Thinking API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callKimiK2Thinking(prompt, apiKey, retryCount + 1);
+    }
+    
+    throw error;
+  }
+}
+
 async function callDeepSeek(prompt: string, apiKey: string, retryCount = 0) {
   console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2)...`);
   try {
@@ -148,8 +209,17 @@ serve(async (req) => {
   try {
     const { task1Answer, task2Answer, task1Data, task2Data, apiProvider = 'gemini', targetLanguage } = await req.json();
 
+    // Determine training type from task1Data
+    const trainingType = task1Data?.trainingType || 'Academic';
+
+    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    // Kimi K2 Thinking is now the primary model via OpenRouter
+    if (!openRouterApiKey) {
+      console.warn('⚠️ No OpenRouter API key found, will fallback to Gemini/OpenAI');
+    }
     
     if (apiProvider === 'gemini' && !geminiApiKey) {
       console.error('❌ No Gemini API key found');
@@ -228,52 +298,123 @@ You must perform all analysis yourself. Your expert judgment is the only thing t
 Official IELTS Band Descriptors (Complete 0-9 Scale)
 
 Task Achievement (Task 1) / Task Response (Task 2):
-9: Fully satisfies all requirements. A fully developed and comprehensive response.
-8: Sufficiently covers all requirements. A well-developed response.
-7: Addresses all parts of the prompt, though some may be more developed than others.
-6: Addresses the prompt, but the treatment is more general and may be underdeveloped.
-5: Partially addresses the prompt. Ideas are limited and not well-supported.
-4: Responds to the task only in a minimal way. Content is often irrelevant.
-3: Fails to address the task. Ideas are largely irrelevant to the prompt.
-2: Response is barely related to the task. The writer has failed to understand the prompt.
-1: Fails to attend to the task at all. The content has no relation to the question.
-0: Did not attend, or wrote a response that is completely memorized and unrelated.
+${trainingType === 'General' || trainingType === 'Academic' ? `**For Task 1 (Updated May 2023):**
 
-Coherence & Cohesion:
-9: Uses cohesion seamlessly and naturally. Paragraphing is flawless.
-8: Information is sequenced logically. Paragraphing is well-managed.
-7: Logically organized with clear progression. Uses a range of cohesive devices.
-6: Organization is apparent but can be mechanical or repetitive.
-5: Some organization, but not logical. Paragraphing is confusing. Causes significant difficulty for the reader.
-4: Not logically organized. Very limited and incorrect use of linking words.
-3: Ideas are disconnected. No logical progression.
-2: Has very little control of organizational features.
-1: Fails to communicate any message.
-0: Did not attend.
+9: All the requirements of the task are fully and appropriately satisfied. There may be extremely rare lapses in content.
 
-Lexical Resource (Vocabulary):
-9: Wide range of vocabulary used with very natural and sophisticated control.
-8: Wide vocabulary used fluently and flexibly. Skillfully uses less common vocabulary.
-7: Sufficient range of vocabulary with some flexibility. Attempts less common vocabulary.
-6: Vocabulary is adequate for the task. Errors do not generally impede communication.
-5: Limited and repetitive vocabulary. Frequent errors cause difficulty for the reader.
-4: Uses only very basic vocabulary. Errors cause severe difficulty.
-3: Extremely limited vocabulary. Severe errors distort meaning.
-2: Can only use isolated words.
-1: No evidence of any vocabulary knowledge.
-0: Did not attend.
+8: The response covers all the requirements of the task appropriately, relevantly and sufficiently. There may be occasional omissions or lapses in content.
+(Academic) Key features are skilfully selected, and clearly presented, highlighted and illustrated.
+(General Training) All bullet points are clearly presented, and appropriately illustrated or extended.
 
-Grammatical Range and Accuracy:
-9: Wide range of structures used with full flexibility and accuracy. Almost entirely error-free.
-8: Wide range of structures. The majority of sentences are error-free.
-7: Uses a variety of complex sentence structures, but with some errors.
-6: Uses a mix of simple and complex sentences. Some errors, but they rarely reduce communication.
-5: Limited range of structures. Frequent errors cause some difficulty for the reader.
-4: Uses only very basic sentence structures. Frequent errors cause significant confusion.
-3: Cannot produce basic sentence forms.
-2: Cannot write in sentences at all.
-1: No evidence of sentence structure.
-0: Did not attend.
+7: The response covers the requirements of the task. The content is relevant and accurate – there may be a few omissions or lapses. The format is appropriate.
+(Academic) Key features which are selected are covered and clearly highlighted but could be more fully or more appropriately illustrated or extended.
+(Academic) It presents a clear overview, the data are appropriately categorised, and main trends or differences are identified.
+(General Training) All bullet points are covered and clearly highlighted but could be more fully or more appropriately illustrated or extended. It presents a clear purpose. The tone is consistent and appropriate to the task. Any lapses are minimal.
+
+6: The response focuses on the requirements of the task and an appropriate format is used. Some irrelevant, inappropriate or inaccurate information may occur in areas of detail or when illustrating or extending the main points. Some details may be missing (or excessive) and further extension or illustration may be needed.
+(Academic) Key features which are selected are covered and adequately highlighted. A relevant overview is attempted. Information is appropriately selected and supported using figures/data.
+(General Training) All bullet points are covered and adequately highlighted. The purpose is generally clear. There may be minor inconsistencies in tone.
+
+5: The response generally addresses the requirements of the task. The format may be inappropriate in places. There may be a tendency to focus on details (without referring to the bigger picture). The inclusion of irrelevant, inappropriate or inaccurate material in key areas detracts from the task achievement. There is limited detail when extending and illustrating the main points.
+(Academic) Key features which are selected are not adequately covered. The recounting of detail is mainly mechanical. There may be no data to support the description.
+(General Training) All bullet points are presented but one or more may not be adequately covered. The purpose may be unclear at times. The tone may be variable and sometimes inappropriate.
+
+4: The response is an attempt to address the task. The format may be inappropriate. Key features/bullet points which are presented may be irrelevant, repetitive, inaccurate or inappropriate.
+(Academic) Few key features have been selected.
+(General Training) Not all bullet points are presented.
+(General Training) The purpose of the letter is not clearly explained and may be confused. The tone may be inappropriate.
+
+3: The response does not address the requirements of the task (possibly because of misunderstanding of the data/diagram/situation). Key features/bullet points which are presented may be largely irrelevant. Limited information is presented, and this may be used repetitively.
+
+2: The content barely relates to the task.
+
+1: Responses of 20 words or fewer are rated at Band 1. The content is wholly unrelated to the task. Any copied rubric must be discounted.
+
+0: Should only be used where a candidate did not attend or attempt the question in any way, used a language other than English throughout, or where there is proof that a candidate's answer has been totally memorized.
+
+**For Task 2 (Essay) - Applies to both Academic and General Training:**
+` : ''}9: The prompt is appropriately addressed and explored in depth. A clear and fully developed position is presented which directly answers the question/s. Ideas are relevant, fully extended and well supported. Any lapses in content or support are extremely rare.
+
+8: The prompt is appropriately and sufficiently addressed. A clear and well-developed position is presented in response to the question/s. Ideas are relevant, well extended and supported. There may be occasional omissions or lapses in content.
+
+7: The main parts of the prompt are appropriately addressed. A clear and developed position is presented. Main ideas are extended and supported but there may be a tendency to over-generalise or there may be a lack of focus and precision in supporting ideas/material.
+
+6: The main parts of the prompt are addressed (though some may be more fully covered than others). An appropriate format is used. A position is presented that is directly relevant to the prompt, although the conclusions drawn may be unclear, unjustified or repetitive. Main ideas are relevant, but some may be insufficiently developed or may lack clarity, while some supporting arguments and evidence may be less relevant or inadequate.
+
+5: The main parts of the prompt are incompletely addressed. The format may be inappropriate in places. The writer expresses a position, but the development is not always clear. Some main ideas are put forward, but they are limited and are not sufficiently developed and/or there may be irrelevant detail. There may be some repetition.
+
+4: The prompt is tackled in a minimal way, or the answer is tangential, possibly due to some misunderstanding of the prompt. The format may be inappropriate. A position is discernible, but the reader has to read carefully to find it. Main ideas are difficult to identify and such ideas that are identifiable may lack relevance, clarity and/or support. Large parts of the response may be repetitive.
+
+3: No part of the prompt is adequately addressed, or the prompt has been misunderstood. No relevant position can be identified, and/or there is little direct response to the question/s. There are few ideas, and these may be irrelevant or insufficiently developed.
+
+2: The content is barely related to the prompt. No position can be identified. There may be glimpses of one or two ideas without development.
+
+1: Responses of 20 words or fewer are rated at Band 1. The content is wholly unrelated to the prompt. Any copied rubric must be discounted.
+
+0: Should only be used where a candidate did not attend or attempt the question in any way, used a language other than English throughout, or where there is proof that a candidate's answer has been totally memorized.
+
+Coherence & Cohesion (Applies to both Academic and General Training, Task 1 and Task 2):
+9: The message can be followed effortlessly. Cohesion is used in such a way that it very rarely attracts attention. Any lapses in coherence or cohesion are minimal. Paragraphing is skilfully managed.
+
+8: The message can be followed with ease. Information and ideas are logically sequenced, and cohesion is well managed. Occasional lapses in coherence and cohesion may occur. Paragraphing is used sufficiently and appropriately.
+
+7: Information and ideas are logically organised, and there is a clear progression throughout the response. (A few lapses may occur, but these are minor.) A range of cohesive devices including reference and substitution is used flexibly but with some inaccuracies or some over/under use. Paragraphing is generally used effectively to support overall coherence, and the sequencing of ideas within a paragraph is generally logical.
+
+6: Information and ideas are generally arranged coherently and there is a clear overall progression. Cohesive devices are used to some good effect but cohesion within and/or between sentences may be faulty or mechanical due to misuse, overuse or omission. The use of reference and substitution may lack flexibility or clarity and result in some repetition or error. Paragraphing may not always be logical and/or the central topic may not always be clear.
+
+5: Organisation is evident but is not wholly logical and there may be a lack of overall progression. Nevertheless, there is a sense of underlying coherence to the response. The relationship of ideas can be followed but the sentences are not fluently linked to each other. There may be limited/overuse of cohesive devices with some inaccuracy. The writing may be repetitive due to inadequate and/or inaccurate use of reference and substitution. Paragraphing may be inadequate or missing.
+
+4: Information and ideas are evident but not arranged coherently and there is no clear progression within the response. Relationships between ideas can be unclear and/or inadequately marked. There is some use of basic cohesive devices, which may be inaccurate or repetitive. There is inaccurate use or a lack of substitution or referencing. There may be no paragraphing and/or no clear main topic within paragraphs.
+
+3: There is no apparent logical organisation. Ideas are discernible but difficult to relate to each other. There is minimal use of sequencers or cohesive devices. Those used do not necessarily indicate a logical relationship between ideas. There is difficulty in identifying referencing. Any attempts at paragraphing are unhelpful.
+
+2: There is little relevant message, or the entire response may be off-topic. There is little evidence of control of organisational features.
+
+1: Responses of 20 words or fewer are rated at Band 1. The writing fails to communicate any message and appears to be by a virtual non-writer.
+
+0: Should only be used where a candidate did not attend or attempt the question in any way.
+
+Lexical Resource (Applies to both Academic and General Training, Task 1 and Task 2):
+9: Full flexibility and precise use are widely evident. A wide range of vocabulary is used accurately and appropriately with very natural and sophisticated control of lexical features. Minor errors in spelling and word formation are extremely rare and have minimal impact on communication.
+
+8: A wide resource is fluently and flexibly used to convey precise meanings. There is skilful use of uncommon and/or idiomatic items when appropriate, despite occasional inaccuracies in word choice and collocation. Occasional errors in spelling and/or word formation may occur, but have minimal impact on communication.
+
+7: The resource is sufficient to allow some flexibility and precision. There is some ability to use less common and/or idiomatic items. An awareness of style and collocation is evident, though inappropriacies occur. There are only a few errors in spelling and/or word formation and they do not detract from overall clarity.
+
+6: The resource is generally adequate and appropriate for the task. The meaning is generally clear in spite of a rather restricted range or a lack of precision in word choice. If the writer is a risk-taker, there will be a wider range of vocabulary used but higher degrees of inaccuracy or inappropriacy. There are some errors in spelling and/or word formation, but these do not impede communication.
+
+5: The resource is limited but minimally adequate for the task. Simple vocabulary may be used accurately but the range does not permit much variation in expression. There may be frequent lapses in the appropriacy of word choice, and a lack of flexibility is apparent in frequent simplifications and/or repetitions. Errors in spelling and/or word formation may be noticeable and may cause some difficulty for the reader.
+
+4: The resource is limited and inadequate for or unrelated to the task. Vocabulary is basic and may be used repetitively. There may be inappropriate use of lexical chunks (e.g. memorised phrases, formulaic language and/or language from the input material). Inappropriate word choice and/or errors in word formation and/or in spelling may impede meaning.
+
+3: The resource is inadequate (which may be due to the response being significantly underlength). Possible over-dependence on input material or memorised language. Control of word choice and/or spelling is very limited, and errors predominate. These errors may severely impede meaning.
+
+2: The resource is extremely limited with few recognisable strings, apart from memorised phrases. There is no apparent control of word formation and/or spelling.
+
+1: Responses of 20 words or fewer are rated at Band 1. No resource is apparent, except for a few isolated words.
+
+0: Should only be used where a candidate did not attend or attempt the question in any way.
+
+Grammatical Range and Accuracy (Applies to both Academic and General Training, Task 1 and Task 2):
+9: A wide range of structures is used with full flexibility and control. Punctuation and grammar are used appropriately throughout. Minor errors are extremely rare and have minimal impact on communication.
+
+8: A wide range of structures is flexibly and accurately used. The majority of sentences are error-free, and punctuation is well managed. Occasional, non-systematic errors and inappropriacies occur, but have minimal impact on communication.
+
+7: A variety of complex structures is used with some flexibility and accuracy. Grammar and punctuation are generally well controlled, and error-free sentences are frequent. A few errors in grammar may persist, but these do not impede communication.
+
+6: A mix of simple and complex sentence forms is used but flexibility is limited. Examples of more complex structures are not marked by the same level of accuracy as in simple structures. Errors in grammar and punctuation occur, but rarely impede communication.
+
+5: The range of structures is limited and rather repetitive. Although complex sentences are attempted, they tend to be faulty, and the greatest accuracy is achieved on simple sentences. Grammatical errors may be frequent and cause some difficulty for the reader. Punctuation may be faulty.
+
+4: A very limited range of structures is used. Subordinate clauses are rare and simple sentences predominate. Some structures are produced accurately but grammatical errors are frequent and may impede meaning. Punctuation is often faulty or inadequate.
+
+3: Sentence forms are attempted, but errors in grammar and punctuation predominate (except in memorised phrases or those taken from the input material). This prevents most meaning from coming through. Length may be insufficient to provide evidence of control of sentence forms.
+
+2: There is little or no evidence of sentence forms (except in memorised phrases).
+
+1: Responses of 20 words or fewer are rated at Band 1. No rateable language is evident.
+
+0: Should only be used where a candidate did not attend or attempt the question in any way.
 
 Your Required Tasks & Output Format
 
@@ -307,10 +448,19 @@ Requirements for improvements:
 - Always preserve the student's original ideas and arguments
 
 Task 1:
+${trainingType === 'General' ? `LETTER WRITING (General Training)
+Letter Prompt: ${task1Data?.title || 'Task 1'}
+Letter Type: ${task1Data?.letterType || 'Formal'}
+Instructions: ${task1Data?.instructions || ''}
+Word Count: ${task1Answer.trim().split(/\s+/).length}
+Student Letter: "${task1Answer}"
+
+**CRITICAL:** Evaluate this as a LETTER. Task Achievement must consider: (1) whether all requirements are addressed, (2) whether the tone and register are appropriate for the situation and relationship, and (3) whether the letter format is appropriate (salutation, closing, paragraphing).` : `DATA DESCRIPTION (Academic)
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
 ${task1Data?.imageContext ? `Visual Data: ${task1Data.imageContext}` : ''}
-Student Response: "${task1Answer}"
+Word Count: ${task1Answer.trim().split(/\s+/).length}
+Student Response: "${task1Answer}"`}
 
 Task 2:
 Prompt: ${task2Data?.title || 'Task 2'}
@@ -424,35 +574,86 @@ JSON SCHEMA:
   ]
 }`;
 
-    // Use selected API provider with fallback
+    // Use Kimi K2 Thinking as primary, with fallbacks
     let aiResponse: any;
     let modelUsed: string;
     let content: string;
 
-    if (apiProvider === 'openai') {
-      console.log('🔄 Using OpenAI API...');
-      aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
-      modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'}`;
-      content = aiResponse.choices?.[0]?.message?.content ?? '';
-      console.log('✅ OpenAI API succeeded');
-    } else {
+    // Primary: Kimi K2 Thinking via OpenRouter
+    if (openRouterApiKey) {
       try {
-        console.log('🔄 Using Gemini API...');
-        aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
-        modelUsed = 'Google Gemini AI';
-        content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-        console.log('✅ Gemini API succeeded');
-      } catch (geminiError) {
-        console.log('⚠️ Gemini failed, falling back to DeepSeek:', (geminiError as any).message);
-        const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-        if (!deepseekKey) {
-          throw new Error('Gemini failed and no DEEPSEEK_API_KEY available for fallback');
-        }
-        console.log('🔄 Fallback: Using DeepSeek API...');
-        aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey);
-        modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Fallback)`;
+        console.log('🔄 Using Kimi K2 Thinking (OpenRouter) as primary model...');
+        aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey);
+        modelUsed = 'Kimi K2 Thinking (OpenRouter)';
         content = aiResponse.choices?.[0]?.message?.content ?? '';
-        console.log('✅ DeepSeek fallback succeeded');
+        console.log('✅ Kimi K2 Thinking succeeded');
+      } catch (kimiError) {
+        console.log('⚠️ Kimi K2 Thinking failed, falling back to secondary models:', (kimiError as any).message);
+        
+        // Fallback 1: Use requested provider or Gemini
+        if (apiProvider === 'openai' && openaiApiKey) {
+          try {
+            console.log('🔄 Fallback 1: Using OpenAI API...');
+            aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
+            modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'} (Fallback)`;
+            content = aiResponse.choices?.[0]?.message?.content ?? '';
+            console.log('✅ OpenAI fallback succeeded');
+          } catch (openaiError) {
+            console.log('⚠️ OpenAI fallback failed, trying Gemini:', (openaiError as any).message);
+            throw openaiError; // Will trigger Gemini fallback
+          }
+        } else if (geminiApiKey) {
+          try {
+            console.log('🔄 Fallback 1: Using Gemini API...');
+            aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
+            modelUsed = 'Google Gemini AI (Fallback)';
+            content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+            console.log('✅ Gemini fallback succeeded');
+          } catch (geminiError) {
+            console.log('⚠️ Gemini fallback failed, trying DeepSeek:', (geminiError as any).message);
+            // Final fallback: DeepSeek
+            const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+            if (deepseekKey) {
+              console.log('🔄 Final Fallback: Using DeepSeek API...');
+              aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey);
+              modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Final Fallback)`;
+              content = aiResponse.choices?.[0]?.message?.content ?? '';
+              console.log('✅ DeepSeek final fallback succeeded');
+            } else {
+              throw new Error('All models failed and no DEEPSEEK_API_KEY available for final fallback');
+            }
+          }
+        } else {
+          throw new Error('Kimi K2 Thinking failed and no fallback API keys available');
+        }
+      }
+    } else {
+      // No OpenRouter key, use legacy flow
+      if (apiProvider === 'openai') {
+        console.log('🔄 Using OpenAI API (no OpenRouter key)...');
+        aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
+        modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'}`;
+        content = aiResponse.choices?.[0]?.message?.content ?? '';
+        console.log('✅ OpenAI API succeeded');
+      } else {
+        try {
+          console.log('🔄 Using Gemini API (no OpenRouter key)...');
+          aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
+          modelUsed = 'Google Gemini AI';
+          content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+          console.log('✅ Gemini API succeeded');
+        } catch (geminiError) {
+          console.log('⚠️ Gemini failed, falling back to DeepSeek:', (geminiError as any).message);
+          const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+          if (!deepseekKey) {
+            throw new Error('Gemini failed and no DEEPSEEK_API_KEY available for fallback');
+          }
+          console.log('🔄 Fallback: Using DeepSeek API...');
+          aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey);
+          modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Fallback)`;
+          content = aiResponse.choices?.[0]?.message?.content ?? '';
+          console.log('✅ DeepSeek fallback succeeded');
+        }
       }
     }
 
@@ -463,8 +664,15 @@ JSON SCHEMA:
       throw new Error('API returned empty or invalid response');
     }
     
-    console.log('🔍 Raw API response first 500 chars:', content.substring(0, 500));
-    console.log('🔍 Raw API response last 500 chars:', content.substring(content.length - 500));
+    // Optimized logging: only log in development or truncate
+    const isDevelopment = Deno.env.get('ENV') === 'development' || Deno.env.get('DENO_ENV') === 'development';
+    if (isDevelopment) {
+      console.log('🔍 Raw API response first 500 chars:', content.substring(0, 500));
+      console.log('🔍 Raw API response last 500 chars:', content.substring(content.length - 500));
+    } else {
+      // Production: only log truncated version
+      console.log('🔍 Raw API response preview:', content.substring(0, 100) + '...');
+    }
 
     let structured: any = null;
     try {
@@ -473,6 +681,7 @@ JSON SCHEMA:
     } catch (_e) {
       console.log('⚠️ Failed to parse JSON directly, attempting extraction...');
       
+      // Optimized JSON parsing: max 2 attempts
       let extractedJson = '';
       let cleaned = content.trim();
       
@@ -496,17 +705,19 @@ JSON SCHEMA:
       if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
         extractedJson = cleaned.substring(firstBrace, lastBrace + 1);
         
-        console.log('🔍 Extracted JSON length:', extractedJson.length);
-        console.log('🔍 Extracted JSON first 200 chars:', extractedJson.substring(0, 200));
-        console.log('🔍 Extracted JSON last 200 chars:', extractedJson.substring(extractedJson.length - 200));
+        const isDevelopment = Deno.env.get('ENV') === 'development' || Deno.env.get('DENO_ENV') === 'development';
+        if (isDevelopment) {
+          console.log('🔍 Extracted JSON length:', extractedJson.length);
+          console.log('🔍 Extracted JSON preview:', extractedJson.substring(0, 200) + '...');
+        }
         
         try {
           structured = JSON.parse(extractedJson);
           console.log('✅ Successfully parsed extracted JSON');
         } catch (parseError) {
-          console.log('❌ Failed to parse extracted JSON:', parseError.message);
+          console.log('❌ Failed to parse extracted JSON, attempting fix...');
           
-          // Try to fix common JSON issues
+          // Single fix attempt: remove trailing commas and balance braces
           try {
             let fixedJson = extractedJson.replace(/,(\s*[}\]])/g, '$1');
             
@@ -518,11 +729,11 @@ JSON SCHEMA:
               fixedJson += '}'.repeat(openBraces - closeBraces);
             }
             
-            console.log('🔧 Attempting to parse fixed JSON...');
             structured = JSON.parse(fixedJson);
             console.log('✅ Successfully parsed fixed JSON');
           } catch (fixError) {
             console.log('❌ Final parsing attempt failed:', fixError.message);
+            // Will fall through to fallback structure
           }
         }
       }
@@ -562,17 +773,45 @@ JSON SCHEMA:
 
     // Validate and add fallback data for frontend compatibility
     if (structured) {
+      // Improved: Only auto-fill if 1-2 criteria missing, not all 4
       const ensureCriteria = (task: any, type: 'task1' | 'task2') => {
         const overall = typeof task?.overall_band === 'number' ? task.overall_band : (typeof structured?.overall?.band === 'number' ? structured.overall.band : 6.5);
         task.criteria = task.criteria || {};
-        if (type === 'task1') {
-          task.criteria.task_achievement = task.criteria.task_achievement || { band: overall, justification: 'Auto-filled from overall score.' };
-        } else {
-          task.criteria.task_response = task.criteria.task_response || { band: overall, justification: 'Auto-filled from overall score.' };
+        
+        // Count how many criteria are missing
+        const criteriaNames = type === 'task1' 
+          ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
+          : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
+        
+        const missingCount = criteriaNames.filter(name => !task.criteria[name] || typeof task.criteria[name]?.band !== 'number').length;
+        
+        // Only auto-fill if 1-2 criteria missing (not 3-4)
+        if (missingCount > 2) {
+          console.warn(`⚠️ Too many missing criteria (${missingCount}/4) for ${type}. Marking as incomplete.`);
+          task.analysis_incomplete = true;
+          task.incomplete_reason = `${missingCount} out of 4 criteria were not provided by the AI analysis.`;
         }
-        task.criteria.coherence_and_cohesion = task.criteria.coherence_and_cohesion || { band: overall, justification: 'Auto-filled from overall score.' };
-        task.criteria.lexical_resource = task.criteria.lexical_resource || { band: overall, justification: 'Auto-filled from overall score.' };
-        task.criteria.grammatical_range_and_accuracy = task.criteria.grammatical_range_and_accuracy || { band: overall, justification: 'Auto-filled from overall score.' };
+        
+        // Auto-fill only missing ones (if <= 2 missing)
+        if (type === 'task1') {
+          if (!task.criteria.task_achievement && missingCount <= 2) {
+            task.criteria.task_achievement = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
+          }
+        } else {
+          if (!task.criteria.task_response && missingCount <= 2) {
+            task.criteria.task_response = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
+          }
+        }
+        
+        if (!task.criteria.coherence_and_cohesion && missingCount <= 2) {
+          task.criteria.coherence_and_cohesion = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
+        }
+        if (!task.criteria.lexical_resource && missingCount <= 2) {
+          task.criteria.lexical_resource = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
+        }
+        if (!task.criteria.grammatical_range_and_accuracy && missingCount <= 2) {
+          task.criteria.grammatical_range_and_accuracy = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
+        }
       };
 
       ensureCriteria(structured.task1 || (structured.task1 = {}), 'task1');
@@ -588,6 +827,40 @@ JSON SCHEMA:
         return [b1, b2, b3, b4];
       };
 
+      // Validate score-justification consistency
+      const validateScoreConsistency = (criteria: any, criterionName: string): boolean => {
+        if (!criteria?.band || !criteria?.justification) return false;
+        
+        const band = criteria.band;
+        const justification = criteria.justification.toLowerCase();
+        
+        // Check if justification mentions a band level that matches the score
+        const bandMentions = [
+          { level: 9, keywords: ['band 9', 'excellent', 'outstanding', 'perfect', 'flawless'] },
+          { level: 8, keywords: ['band 8', 'very good', 'strong', 'well-developed'] },
+          { level: 7, keywords: ['band 7', 'good', 'adequate', 'sufficient'] },
+          { level: 6, keywords: ['band 6', 'competent', 'adequate', 'satisfactory'] },
+          { level: 5, keywords: ['band 5', 'limited', 'basic', 'modest'] },
+          { level: 4, keywords: ['band 4', 'minimal', 'very limited', 'poor'] },
+        ];
+        
+        // Check if justification mentions band level close to actual score
+        const mentionedLevel = bandMentions.find(m => 
+          m.keywords.some(kw => justification.includes(kw))
+        );
+        
+        if (mentionedLevel) {
+          const levelDiff = Math.abs(mentionedLevel.level - band);
+          // Allow 0.5-1.0 band difference (e.g., justification says "band 7" but score is 6.5 is OK)
+          if (levelDiff > 1.0) {
+            console.warn(`⚠️ Score-justification mismatch for ${criterionName}: score=${band}, justification mentions ~${mentionedLevel.level}`);
+            return false;
+          }
+        }
+        
+        return true;
+      };
+
       const bandsMissingOrAutoFilled = (task: any, type: 'task1' | 'task2', overall: number) => {
         const c = task?.criteria || {};
         const justs = [
@@ -598,52 +871,136 @@ JSON SCHEMA:
         ];
         const bands = getTaskBands(task, type);
         const incomplete = bands.some((b) => typeof b !== 'number');
-        const allEqualOverall = bands.every((b) => typeof b === 'number' && b === overall);
         const autoFilled = justs.every((j) => typeof j === 'string' && j.includes('Auto-filled'));
-        return incomplete || allEqualOverall || autoFilled;
+        
+        // Improved: Only flag all-equal if justifications are also generic/identical
+        const allEqualOverall = bands.every((b) => typeof b === 'number' && b === overall);
+        const justificationsGeneric = justs.every((j) => 
+          typeof j === 'string' && (
+            j.includes('Auto-filled') || 
+            j.length < 50 || // Very short justifications
+            justs.filter(j2 => j2 === j).length > 1 // Identical justifications
+          )
+        );
+        
+        // Only trigger rescore if scores equal AND justifications are generic
+        const suspiciousAllEqual = allEqualOverall && justificationsGeneric;
+        
+        return incomplete || autoFilled || suspiciousAllEqual;
       };
 
       const maybeRescore = async () => {
         const overall = typeof structured?.overall?.band === 'number' ? structured.overall.band : 6.5;
         const needsTask1 = bandsMissingOrAutoFilled(structured.task1, 'task1', overall);
         const needsTask2 = bandsMissingOrAutoFilled(structured.task2, 'task2', overall);
-        if (!needsTask1 && !needsTask2) return;
+        
+        // Early return - skip async call if not needed
+        if (!needsTask1 && !needsTask2) {
+          console.log('✅ All scores valid, skipping rescore');
+          return;
+        }
 
-        const scoringPrompt = `Return ONLY JSON with numeric bands (.0 or .5). No explanations.\nSchema:\n{\n  "task1": {"task_achievement": 0.0, "coherence_and_cohesion": 0.0, "lexical_resource": 0.0, "grammatical_range_and_accuracy": 0.0},\n  "task2": {"task_response": 0.0, "coherence_and_cohesion": 0.0, "lexical_resource": 0.0, "grammatical_range_and_accuracy": 0.0}\n}\nRules: Use official IELTS descriptors.\nTask 1: ${task1Answer}\nTask 2: ${task2Answer}`;
+        console.log(`🔄 Rescoring needed: Task1=${needsTask1}, Task2=${needsTask2}`);
 
-        const tryRescore = async (): Promise<any | null> => {
-          try {
-            if (geminiApiKey) {
-              const scoreResp = await callGemini(scoringPrompt, geminiApiKey);
-              const scoreText = scoreResp.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-              return JSON.parse((scoreText.match(/\{[\s\S]*\}/) || [scoreText])[0]);
-            }
-          } catch (e) {
-            console.log('⚠️ Rescore via Gemini failed:', (e as any)?.message);
+        // Improved rescore prompt with full context
+        const scoringPrompt = `You are an expert IELTS examiner. Return ONLY valid JSON with numeric band scores (0.0-9.0 in 0.5 increments).
+
+JSON Schema:
+{
+  "task1": {
+    "task_achievement": 0.0,
+    "coherence_and_cohesion": 0.0,
+    "lexical_resource": 0.0,
+    "grammatical_range_and_accuracy": 0.0
+  },
+  "task2": {
+    "task_response": 0.0,
+    "coherence_and_cohesion": 0.0,
+    "lexical_resource": 0.0,
+    "grammatical_range_and_accuracy": 0.0
+  }
+}
+
+Task 1:
+Prompt: ${task1Data?.title || 'Task 1'}
+Instructions: ${task1Data?.instructions || ''}
+Student Response: "${task1Answer}"
+Word Count: ${task1Answer.trim().split(/\s+/).length}
+
+Task 2:
+Prompt: ${task2Data?.title || 'Task 2'}
+Instructions: ${task2Data?.instructions || ''}
+Student Response: "${task2Answer}"
+Word Count: ${task2Answer.trim().split(/\s+/).length}
+
+Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSON object, no additional text.`;
+
+        // Parallel rescoring - try all providers simultaneously
+        const tryRescoreParallel = async (): Promise<any | null> => {
+          const promises: Promise<any>[] = [];
+          
+          if (geminiApiKey) {
+            promises.push(
+              callGemini(scoringPrompt, geminiApiKey)
+                .then(resp => {
+                  const scoreText = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+                  return JSON.parse((scoreText.match(/\{[\s\S]*\}/) || [scoreText])[0]);
+                })
+                .catch(e => {
+                  console.log('⚠️ Rescore via Gemini failed:', (e as any)?.message);
+                  throw e;
+                })
+            );
           }
-          try {
-            const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-            if (deepseekKey) {
-              const ds = await callDeepSeek(scoringPrompt, deepseekKey);
-              const text = ds.choices?.[0]?.message?.content ?? '';
-              return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
-            }
-          } catch (e2) {
-            console.log('⚠️ Rescore via DeepSeek failed:', (e2 as any)?.message);
+          
+          const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+          if (deepseekKey) {
+            promises.push(
+              callDeepSeek(scoringPrompt, deepseekKey)
+                .then(resp => {
+                  const text = resp.choices?.[0]?.message?.content ?? '';
+                  return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
+                })
+                .catch(e => {
+                  console.log('⚠️ Rescore via DeepSeek failed:', (e as any)?.message);
+                  throw e;
+                })
+            );
           }
-          try {
-            if (openaiApiKey) {
-              const oa = await callOpenAI(`You must return ONLY JSON in the schema above. ${scoringPrompt}`, openaiApiKey);
-              const text = oa.choices?.[0]?.message?.content ?? '';
-              return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
-            }
-          } catch (e3) {
-            console.log('❌ Rescore via OpenAI failed:', (e3 as any)?.message);
+          
+          if (openaiApiKey) {
+            promises.push(
+              callOpenAI(`You must return ONLY JSON in the schema above. ${scoringPrompt}`, openaiApiKey)
+                .then(resp => {
+                  const text = resp.choices?.[0]?.message?.content ?? '';
+                  return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
+                })
+                .catch(e => {
+                  console.log('⚠️ Rescore via OpenAI failed:', (e as any)?.message);
+                  throw e;
+                })
+            );
           }
+          
+          if (promises.length === 0) {
+            return null;
+          }
+          
+          // Use Promise.allSettled to get first successful result
+          const results = await Promise.allSettled(promises);
+          
+          for (const result of results) {
+            if (result.status === 'fulfilled') {
+              console.log('✅ Rescore succeeded via parallel call');
+              return result.value;
+            }
+          }
+          
+          console.log('❌ All rescore attempts failed');
           return null;
         };
 
-        const parsed = await tryRescore();
+        const parsed = await tryRescoreParallel();
         if (parsed) {
           if (needsTask1 && parsed?.task1) {
             structured.task1.criteria.task_achievement.band = parsed.task1.task_achievement ?? structured.task1.criteria.task_achievement.band;
@@ -704,6 +1061,71 @@ JSON SCHEMA:
         };
       }
       
+      // Validate improvements array quality
+      const validateImprovements = (improvements: any[], taskName: string) => {
+        if (!Array.isArray(improvements)) return [];
+        
+        return improvements.filter((imp, idx) => {
+          // Check required fields
+          if (!imp.issue || !imp.original || !imp.improved || !imp.explanation) {
+            console.warn(`⚠️ Improvement ${idx} in ${taskName} missing required fields, filtering out`);
+            return false;
+          }
+          
+          // Check if improved is actually different from original
+          if (imp.original.trim().toLowerCase() === imp.improved.trim().toLowerCase()) {
+            console.warn(`⚠️ Improvement ${idx} in ${taskName} has identical original/improved text, filtering out`);
+            return false;
+          }
+          
+          // Check if fields are not empty
+          if (!imp.issue.trim() || !imp.original.trim() || !imp.improved.trim() || !imp.explanation.trim()) {
+            console.warn(`⚠️ Improvement ${idx} in ${taskName} has empty fields, filtering out`);
+            return false;
+          }
+          
+          return true;
+        });
+      };
+      
+      // Validate and clean improvements
+      if (structured.task1?.feedback?.improvements) {
+        structured.task1.feedback.improvements = validateImprovements(
+          structured.task1.feedback.improvements,
+          'task1'
+        );
+      }
+      
+      if (structured.task2?.feedback?.improvements) {
+        structured.task2.feedback.improvements = validateImprovements(
+          structured.task2.feedback.improvements,
+          'task2'
+        );
+      }
+      
+      // Validate score-justification consistency for all criteria
+      if (structured.task1?.criteria) {
+        const t1Valid = validateScoreConsistency(structured.task1.criteria.task_achievement, 'task1.task_achievement');
+        const t1ccValid = validateScoreConsistency(structured.task1.criteria.coherence_and_cohesion, 'task1.coherence_and_cohesion');
+        const t1lrValid = validateScoreConsistency(structured.task1.criteria.lexical_resource, 'task1.lexical_resource');
+        const t1grValid = validateScoreConsistency(structured.task1.criteria.grammatical_range_and_accuracy, 'task1.grammatical_range_and_accuracy');
+        
+        if (!t1Valid || !t1ccValid || !t1lrValid || !t1grValid) {
+          console.warn('⚠️ Some Task 1 score-justification mismatches detected');
+        }
+      }
+      
+      if (structured.task2?.criteria) {
+        const t2Valid = validateScoreConsistency(structured.task2.criteria.task_response, 'task2.task_response');
+        const t2ccValid = validateScoreConsistency(structured.task2.criteria.coherence_and_cohesion, 'task2.coherence_and_cohesion');
+        const t2lrValid = validateScoreConsistency(structured.task2.criteria.lexical_resource, 'task2.lexical_resource');
+        const t2grValid = validateScoreConsistency(structured.task2.criteria.grammatical_range_and_accuracy, 'task2.grammatical_range_and_accuracy');
+        
+        if (!t2Valid || !t2ccValid || !t2lrValid || !t2grValid) {
+          console.warn('⚠️ Some Task 2 score-justification mismatches detected');
+        }
+      }
+      
       // Migrate legacy specific_improvements to task-specific feedback if needed
       if (structured.specific_improvements && Array.isArray(structured.specific_improvements)) {
         console.log('🔄 Migrating legacy specific_improvements to task-specific format...');
@@ -722,10 +1144,10 @@ JSON SCHEMA:
         });
         
         if (task1Improvements.length > 0) {
-          structured.task1.feedback.improvements = task1Improvements;
+          structured.task1.feedback.improvements = validateImprovements(task1Improvements, 'task1');
         }
         if (task2Improvements.length > 0) {
-          structured.task2.feedback.improvements = task2Improvements;
+          structured.task2.feedback.improvements = validateImprovements(task2Improvements, 'task2');
         }
         
         // Remove legacy field

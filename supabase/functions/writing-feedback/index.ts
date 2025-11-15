@@ -6,27 +6,81 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function callKimiK2Thinking(prompt: string, systemPrompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://englishaidol.com',
+        'X-Title': 'Writing Feedback'
+      },
+      body: JSON.stringify({
+        model: 'moonshotai/kimi-k2-thinking',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 12000
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Kimi K2 Thinking API Error:', errorText);
+      throw new Error(`Kimi K2 Thinking API failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ Kimi K2 Thinking API call successful`);
+    
+    // Extract content from response (OpenRouter format)
+    return data.choices?.[0]?.message?.content ?? '';
+  } catch (error) {
+    console.error(`❌ Kimi K2 Thinking attempt ${retryCount + 1} failed:`, (error as any).message);
+    
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying Kimi K2 Thinking API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callKimiK2Thinking(prompt, systemPrompt, apiKey, retryCount + 1);
+    }
+    
+    throw error;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Check if Gemini API key is configured
+    // Check for OpenRouter API key (primary) or Gemini API key (fallback)
+    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      console.error('❌ Gemini API key not configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
+    
+    if (!openRouterApiKey && !geminiApiKey) {
+      console.error('❌ No API key configured for writing feedback. Available env vars:', Object.keys(Deno.env.toObject()));
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Writing feedback service temporarily unavailable. Please try again in a moment.',
-        details: 'Gemini API key not configured'
+        details: 'No API key configured (OpenRouter or Gemini)'
       }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ Gemini API key found for writing feedback, length:', geminiApiKey.length);
+    console.log('✅ API key found for writing feedback:', openRouterApiKey ? 'OpenRouter' : 'Gemini');
 
     const { writing, prompt, taskType } = await req.json();
 
@@ -108,41 +162,98 @@ JSON SCHEMA:
 
 Final Goal: The AI feedback is precise and complete. The student sees their original sentence with only the specific incorrect or weak phrases highlighted in red. Next to it, they see an improved sentence with only the new, high-level words highlighted in green. This must cover EVERY sentence in the input.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `${systemPrompt}\n\n${feedbackPrompt}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 12000,
-          topP: 0.9,
-          topK: 50
+    let generatedText: string = '';
+    
+    // Primary: Kimi K2 Thinking via OpenRouter
+    if (openRouterApiKey) {
+      try {
+        console.log('🔄 Using Kimi K2 Thinking (OpenRouter) as primary model...');
+        generatedText = await callKimiK2Thinking(feedbackPrompt, systemPrompt, openRouterApiKey);
+        console.log('✅ Kimi K2 Thinking succeeded, response length:', generatedText.length);
+      } catch (kimiError) {
+        console.log('⚠️ Kimi K2 Thinking failed, falling back to Gemini:', (kimiError as any).message);
+        
+        // Fallback: Gemini
+        if (geminiApiKey) {
+          console.log('🔄 Fallback: Using Gemini API...');
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `${systemPrompt}\n\n${feedbackPrompt}`
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 12000,
+                topP: 0.9,
+                topK: 50
+              }
+            }),
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            console.error('❌ Gemini API Error:', data);
+            throw new Error(`Gemini API request failed: ${data.error?.message || 'Unknown error'}`);
+          }
+
+          generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+          
+          if (!generatedText) {
+            console.error('❌ No content returned from Gemini API');
+            throw new Error('No content returned from writing analysis');
+          }
+
+          console.log('✅ Gemini fallback succeeded, response length:', generatedText.length);
+        } else {
+          throw new Error('Kimi K2 Thinking failed and no Gemini API key available for fallback');
         }
-      }),
-    });
+      }
+    } else {
+      // No OpenRouter key, use Gemini directly
+      console.log('🔄 Using Gemini API (no OpenRouter key)...');
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `${systemPrompt}\n\n${feedbackPrompt}`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 12000,
+            topP: 0.9,
+            topK: 50
+          }
+        }),
+      });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('❌ Gemini API Error:', data);
-      throw new Error(`Gemini API request failed: ${data.error?.message || 'Unknown error'}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('❌ Gemini API Error:', data);
+        throw new Error(`Gemini API request failed: ${data.error?.message || 'Unknown error'}`);
+      }
+
+      generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      
+      if (!generatedText) {
+        console.error('❌ No content returned from Gemini API');
+        throw new Error('No content returned from writing analysis');
+      }
+
+      console.log('✅ Writing analysis completed, response length:', generatedText.length);
     }
-
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!generatedText) {
-      console.error('❌ No content returned from Gemini API');
-      throw new Error('No content returned from writing analysis');
-    }
-
-    console.log('✅ Writing analysis completed, response length:', generatedText.length);
 
     let structured: any = null;
     try {

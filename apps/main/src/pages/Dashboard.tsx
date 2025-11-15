@@ -482,7 +482,7 @@ const Dashboard = () => {
               onClick={() => navigate('/dashboard/my-word-book')} 
               className="transition whitespace-nowrap" 
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
               }}
               onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -495,7 +495,7 @@ const Dashboard = () => {
               onClick={() => navigate('/ielts-portal')} 
               className="transition whitespace-nowrap" 
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
               }}
               onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -508,7 +508,7 @@ const Dashboard = () => {
               onClick={() => navigate('/hero')} 
               className="transition whitespace-nowrap" 
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
               }}
               onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -521,7 +521,7 @@ const Dashboard = () => {
               onClick={() => navigate('/community')} 
               className="transition whitespace-nowrap" 
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
               }}
               onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
@@ -558,8 +558,8 @@ const Dashboard = () => {
             {/* Left column */}
             <div className="flex flex-col gap-4 h-full">
               {/* Greeting */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
-                fontFamily: 'Comfortaa, cursive, sans-serif',
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0"               style={{
+                fontFamily: 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
                 color: themeStyles.textPrimary
               }}>
                 {t('dashboard.helloUser', {
@@ -583,7 +583,7 @@ const Dashboard = () => {
                       <span 
                         className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`} 
                         style={{
-                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                           color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
                         }}
                       >

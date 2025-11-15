@@ -76,37 +76,55 @@ const StudyPlanTodoList = () => {
         console.warn('Error reading local cache:', e);
       }
 
-      // Load from database
+      // Load from database - use separate queries for better reliability
       try {
-        const { data: profJoin, error: profError } = await (supabase as any)
+        // First, get the profile with current_plan_id
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('current_plan_id, study_plans!profiles_current_plan_id_fkey(id, plan, updated_at)')
+          .select('current_plan_id')
           .eq('id', user.id)
           .maybeSingle();
         
-        if (profError) {
-          console.warn('Error loading profile:', profError);
+        if (profileError) {
+          console.warn('Error loading profile:', profileError);
         }
         
-        const joined = profJoin?.['study_plans'];
-        const planRow = Array.isArray(joined) ? joined[0] : joined;
-        
-        if (planRow?.plan) {
-          const dbTime = new Date(planRow.updated_at).getTime();
-          const localTime = localCache?.ts || 0;
-          const timeDiff = Math.abs(dbTime - localTime);
+        // If profile has a current_plan_id, fetch the plan
+        if (profile?.current_plan_id) {
+          const { data: planRow, error: planError } = await supabase
+            .from('study_plans')
+            .select('plan, updated_at, created_at')
+            .eq('id', profile.current_plan_id)
+            .maybeSingle();
           
-          if (!localCache || timeDiff > 30000) {
-            setPlan(planRow.plan as PlanData);
-            try {
-              localStorage.setItem('latest_plan', JSON.stringify({ plan: planRow.plan, ts: Date.now() }));
-            } catch (e) {
-              console.warn('Error saving to localStorage:', e);
+          if (planError) {
+            console.warn('Error loading study plan:', planError);
+            // If error loading plan, fall back to cache if available
+            if (localCache?.plan) {
+              setPlan(localCache.plan as PlanData);
             }
-          } else {
+          } else if (planRow?.plan) {
+            // Use updated_at if available, otherwise created_at, otherwise current time
+            const dbTime = new Date(planRow.updated_at || planRow.created_at || Date.now()).getTime();
+            const localTime = localCache?.ts || 0;
+            const timeDiff = Math.abs(dbTime - localTime);
+            
+            if (!localCache || timeDiff > 30000) {
+              setPlan(planRow.plan as PlanData);
+              try {
+                localStorage.setItem('latest_plan', JSON.stringify({ plan: planRow.plan, ts: Date.now() }));
+              } catch (e) {
+                console.warn('Error saving to localStorage:', e);
+              }
+            } else {
+              setPlan(localCache.plan as PlanData);
+            }
+          } else if (localCache?.plan) {
+            // No plan in DB, but we have cached plan - use it
             setPlan(localCache.plan as PlanData);
           }
         } else if (localCache?.plan) {
+          // No current_plan_id, but we have cached plan - use it
           setPlan(localCache.plan as PlanData);
         }
       } catch (dbError) {
@@ -363,7 +381,7 @@ const StudyPlanTodoList = () => {
           </h3>
         </div>
         <p className="text-sm mb-3" style={{ color: themeStyles.textSecondary }}>
-          {t('studyPlan.noPlanYet', { defaultValue: 'No study plan yet. Create one to see your tasks!' })}
+          {t('studyPlan.noPlanYet', { defaultValue: 'You don\'t have a plan yet.' })}
         </p>
         <div className="grid grid-cols-3 gap-3 text-center pt-3 border-t" style={{ borderColor: themeStyles.border }}>
           <div>
@@ -513,7 +531,7 @@ const StudyPlanTodoList = () => {
                   )}
                 </button>
                 <span className="flex-1 text-sm" style={{ 
-                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
                   {task.title || 'Untitled task'}
@@ -573,7 +591,7 @@ const StudyPlanTodoList = () => {
                   )}
                 </button>
                 <span className="flex-1 text-sm" style={{ 
-                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                   color: isCompleted ? themeStyles.textSecondary : themeStyles.textPrimary
                 }}>
                   {task.title || 'Untitled task'}

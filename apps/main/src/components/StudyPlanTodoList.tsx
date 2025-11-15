@@ -367,51 +367,7 @@ const StudyPlanTodoList = () => {
     );
   }
 
-  if (!plan) {
-    return (
-      <div className={`${themeStyles.cardClassName} rounded-xl p-4 shadow-md`} style={themeStyles.cardStyle}>
-        <div className="flex items-center gap-2 mb-3">
-          <h3 className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
-            {formattedDate}
-            {isToday && (
-              <span className="ml-2 text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
-                Today
-              </span>
-            )}
-          </h3>
-        </div>
-        <p className="text-sm mb-3" style={{ color: themeStyles.textSecondary }}>
-          {t('studyPlan.noPlanYet', { defaultValue: 'You don\'t have a plan yet.' })}
-        </p>
-        <div className="grid grid-cols-3 gap-3 text-center pt-3 border-t" style={{ borderColor: themeStyles.border }}>
-          <div>
-            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
-              {userStats.totalTests}
-            </p>
-            <p className="text-xs" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textSecondary }}>
-              {t('dashboard.testsTaken', { defaultValue: 'Tests Taken' })}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
-              {userStats.savedWords}
-            </p>
-            <p className="text-xs" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textSecondary }}>
-              {t('dashboard.wordsSaved', { defaultValue: 'Words Saved' })}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm lg:text-base font-normal" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textPrimary }}>
-              {userStats.dayStreak}
-            </p>
-            <p className="text-xs" style={{ fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: themeStyles.textSecondary }}>
-              {t('dashboard.dayStreak', { defaultValue: 'Day Streak' })}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Always show the full UI, even when there's no plan
 
   return (
     <div className={`${themeStyles.cardClassName} rounded-xl p-4 lg:p-5 shadow-md flex flex-col`} style={themeStyles.cardStyle}>
@@ -484,7 +440,7 @@ const StudyPlanTodoList = () => {
       {showCalendar && (
         <div className="mb-4 flex-shrink-0">
           <MiniCalendar
-            plan={plan}
+            plan={plan || null}
             selectedDate={selectedDateLocal}
             onSelectDate={(date) => {
               setSelectedDate(date);
@@ -497,8 +453,20 @@ const StudyPlanTodoList = () => {
       {/* Task List */}
       <div className="overflow-y-auto mb-4" style={{ maxHeight: '400px' }}>
         <div className="space-y-2">
-          {/* AI-generated tasks */}
-          {dayTasks.map((task, i) => {
+          {/* Show message if no plan */}
+          {!plan && (
+            <div className="text-center py-4">
+              <p className="text-sm mb-2" style={{ color: themeStyles.textSecondary }}>
+                {t('studyPlan.noPlanYet', { defaultValue: 'You don\'t have a plan yet.' })}
+              </p>
+              <p className="text-xs" style={{ color: themeStyles.textTertiary }}>
+                {t('studyPlan.addCustomTasks', { defaultValue: 'You can still add custom tasks below.' })}
+              </p>
+            </div>
+          )}
+          
+          {/* AI-generated tasks - only show if plan exists */}
+          {plan && dayTasks.map((task, i) => {
             if (!task || !task.title) return null;
             const originalIndex = (task as any).originalIndex ?? i;
             const isCompleted = checked[originalIndex] === true;
@@ -701,20 +669,31 @@ const MiniCalendar = ({
     let allCompleted = false;
     
     try {
-      const dayObj = getPlanDayForLocalDate(plan, date);
-      const tasks = dayObj?.tasks;
-      if (Array.isArray(tasks) && tasks.length > 0) {
+      if (plan) {
+        const dayObj = getPlanDayForLocalDate(plan, date);
+        const tasks = dayObj?.tasks;
+        if (Array.isArray(tasks) && tasks.length > 0) {
+          const key = formatLocalISO(normalizeToLocalMidnight(date));
+          const hidden = new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]'));
+          const visibleTasks = tasks.filter((_, idx) => !hidden.has(String(idx)));
+          hasTasks = visibleTasks.length > 0;
+          
+          if (hasTasks) {
+            const checked = JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}');
+            const customTasks = JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]');
+            const allAiTasksCompleted = visibleTasks.every((_, idx) => checked[idx] === true);
+            const allCustomTasksCompleted = customTasks.every((_, idx) => checked[`c${idx}`] === true);
+            allCompleted = allAiTasksCompleted && allCustomTasksCompleted;
+          }
+        }
+      } else {
+        // Check for custom tasks even without a plan
         const key = formatLocalISO(normalizeToLocalMidnight(date));
-        const hidden = new Set(JSON.parse(localStorage.getItem(`quicktodo-hidden-ai-${key}`) || '[]'));
-        const visibleTasks = tasks.filter((_, idx) => !hidden.has(String(idx)));
-        hasTasks = visibleTasks.length > 0;
-        
-        if (hasTasks) {
+        const customTasks = JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]');
+        if (customTasks.length > 0) {
+          hasTasks = true;
           const checked = JSON.parse(localStorage.getItem(`quicktodo-${key}`) || '{}');
-          const customTasks = JSON.parse(localStorage.getItem(`quicktodo-custom-${key}`) || '[]');
-          const allAiTasksCompleted = visibleTasks.every((_, idx) => checked[idx] === true);
-          const allCustomTasksCompleted = customTasks.every((_, idx) => checked[`c${idx}`] === true);
-          allCompleted = allAiTasksCompleted && allCustomTasksCompleted;
+          allCompleted = customTasks.every((_, idx) => checked[`c${idx}`] === true);
         }
       }
     } catch {

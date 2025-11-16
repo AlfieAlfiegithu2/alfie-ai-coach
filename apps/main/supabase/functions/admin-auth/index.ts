@@ -1,5 +1,8 @@
+// @ts-nocheck - Deno runtime file, TypeScript errors for Deno imports are expected
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-expect-error - Deno std library import
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-expect-error - ESM.sh import
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

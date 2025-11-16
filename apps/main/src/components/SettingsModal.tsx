@@ -262,13 +262,16 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       // Build preferences data without dashboard_theme first (in case column doesn't exist)
       // For updates, exclude user_id since it's used in the filter
       // Convert English name to language code for DB storage
+      // NOTE: native_language is for UI language, NOT feedback language
+      // preferred_feedback_language is handled separately by TestTranslationLanguageSelector
       const preferencesDataForUpdate = {
         target_test_type: preferences.target_test_type,
         target_score: preferences.target_score,
         target_deadline: preferences.target_deadline?.toISOString().split('T')[0] || null,
         preferred_name: preferences.preferred_name,
-        native_language: englishNameToCode(nativeLanguage), // Convert to code for DB
+        native_language: englishNameToCode(nativeLanguage), // Convert to code for DB - this is UI language
         target_scores: preferences.target_scores as any
+        // Do NOT update preferred_feedback_language here - it's handled by TestTranslationLanguageSelector
       };
 
       // For inserts, include user_id
@@ -626,7 +629,7 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <TestTranslationLanguageSelector />
+              <TestTranslationLanguageSelector key={open ? 'open' : 'closed'} />
             </div>
           </div>
 

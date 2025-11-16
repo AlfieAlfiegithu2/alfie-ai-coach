@@ -20,6 +20,8 @@ const IELTSWritingResults = () => {
     testName,
     task1Answer,
     task2Answer,
+    task1Skipped,
+    task2Skipped,
     feedback,
     task1Data,
     task2Data,
@@ -120,7 +122,25 @@ const IELTSWritingResults = () => {
         const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
         const t1Overall = Math.round(avg(Object.values(t1c).map((x: any) => x.band)) * 2) / 2;
         const t2Overall = Math.round(avg(Object.values(t2c).map((x: any) => x.band)) * 2) / 2;
-        const overall = Math.round(((t1Overall + 2 * t2Overall) / 3) * 2) / 2;
+        
+        // Check if tasks are skipped (no writing_test_results entry means skipped)
+        const task1Skipped = !t1;
+        const task2Skipped = !t2;
+        
+        // Calculate overall band only from non-skipped tasks
+        let overall: number;
+        if (task1Skipped && task2Skipped) {
+          overall = 0;
+        } else if (task1Skipped) {
+          // Only Task 2 completed
+          overall = t2Overall;
+        } else if (task2Skipped) {
+          // Only Task 1 completed
+          overall = t1Overall;
+        } else {
+          // Both tasks completed - use standard IELTS weighting (Task 1 = 1/3, Task 2 = 2/3)
+          overall = Math.round(((t1Overall + 2 * t2Overall) / 3) * 2) / 2;
+        }
 
         const structuredLatest = {
           task1: { criteria: t1c, overall_band: t1Overall },
@@ -214,14 +234,29 @@ const IELTSWritingResults = () => {
       overallMatch = feedbackText.match(/\*\*Overall Writing Band Score: (\d+(?:\.\d+)?)\*\*/);
     }
     
+    // Check if tasks are skipped based on available data
+    const task1Skipped = task1Scores.length === 0 || task1Overall === 0;
+    const task2Skipped = task2Scores.length === 0 || task2Overall === 0;
+    
     // If no overall match found, calculate using correct weighting
     let overall = 7.0;
     if (overallMatch) {
       overall = roundToValidBandScore(parseFloat(overallMatch[1]));
     } else {
-      // Apply correct IELTS weighting: Task 1 = 33%, Task 2 = 67%
-      const weightedAverage = ((task1Overall * 1) + (task2Overall * 2)) / 3;
-      overall = roundToValidBandScore(weightedAverage);
+      // Calculate overall band only from non-skipped tasks
+      if (task1Skipped && task2Skipped) {
+        overall = 0;
+      } else if (task1Skipped) {
+        // Only Task 2 completed
+        overall = roundToValidBandScore(task2Overall);
+      } else if (task2Skipped) {
+        // Only Task 1 completed
+        overall = roundToValidBandScore(task1Overall);
+      } else {
+        // Both tasks completed - use standard IELTS weighting: Task 1 = 33%, Task 2 = 67%
+        const weightedAverage = ((task1Overall * 1) + (task2Overall * 2)) / 3;
+        overall = roundToValidBandScore(weightedAverage);
+      }
     }
 
     return { task1: task1Scores, task2: task2Scores, overall, task1Overall, task2Overall };
@@ -244,12 +279,41 @@ const IELTSWritingResults = () => {
         toNumber(t2.criteria?.lexical_resource?.band),
         toNumber(t2.criteria?.grammatical_range_and_accuracy?.band),
       ].filter(n => !isNaN(n)) : [];
+      // Check if tasks are skipped based on state and structured data
+      const isTask1Skipped = task1Skipped || !t1 || t1Arr.length === 0;
+      const isTask2Skipped = task2Skipped || !t2 || t2Arr.length === 0;
+      
+      const task1Overall = !isTask1Skipped && t1Arr.length > 0
+        ? (toNumber(t1?.overall_band) || roundToValidBandScore(t1Arr.reduce((a,b)=>a+b,0)/t1Arr.length))
+        : 0;
+      const task2Overall = !isTask2Skipped && t2Arr.length > 0
+        ? (toNumber(t2?.overall_band) || roundToValidBandScore(t2Arr.reduce((a,b)=>a+b,0)/t2Arr.length))
+        : 0;
+      
+      // Calculate overall band only from non-skipped tasks
+      // Prefer the overall band from structured data (should already account for skipped tasks)
+      let overall: number;
+      if (s?.overall?.band !== undefined && s?.overall?.band !== null) {
+        overall = toNumber(s.overall.band);
+      } else if (isTask1Skipped && isTask2Skipped) {
+        overall = 0;
+      } else if (isTask1Skipped) {
+        // Only Task 2 completed
+        overall = task2Overall;
+      } else if (isTask2Skipped) {
+        // Only Task 1 completed
+        overall = task1Overall;
+      } else {
+        // Both tasks completed - use standard IELTS weighting (Task 1 = 1/3, Task 2 = 2/3)
+        overall = roundToValidBandScore(((task1Overall * 1) + (task2Overall * 2)) / 3);
+      }
+      
       return {
         task1: t1Arr,
         task2: t2Arr,
-        task1Overall: toNumber(t1?.overall_band) || (t1Arr.length ? roundToValidBandScore(t1Arr.reduce((a,b)=>a+b,0)/t1Arr.length) : 7.0),
-        task2Overall: toNumber(t2?.overall_band) || (t2Arr.length ? roundToValidBandScore(t2Arr.reduce((a,b)=>a+b,0)/t2Arr.length) : 7.0),
-        overall: toNumber(s?.overall?.band) || 7.0,
+        task1Overall,
+        task2Overall,
+        overall,
       };
     } catch { return null; }
   };
@@ -384,13 +448,24 @@ const IELTSWritingResults = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-3xl font-bold mb-2 text-brand-blue">
-                {scores.task1Overall ? scores.task1Overall.toFixed(1) : '7.0'}
-              </div>
-              <p className="text-caption mb-2">Overall Band Score</p>
-              <Badge variant="outline" className="text-brand-blue border-brand-blue/30 rounded-full">
-                {task1WordCount || task1Answer?.trim().split(/\s+/).filter(word => word.length > 0).length || 0} words
-              </Badge>
+              {(task1Skipped || !effTask1Answer || !effTask1Answer.trim()) ? (
+                <div className="py-4">
+                  <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 rounded-full px-4 py-2">
+                    Task Skipped
+                  </Badge>
+                  <p className="text-sm text-text-secondary mt-2">This task was not completed</p>
+                </div>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold mb-2 text-brand-blue">
+                    {scores.task1Overall ? scores.task1Overall.toFixed(1) : '7.0'}
+                  </div>
+                  <p className="text-caption mb-2">Overall Band Score</p>
+                  <Badge variant="outline" className="text-brand-blue border-brand-blue/30 rounded-full">
+                    {task1WordCount || effTask1Answer?.trim().split(/\s+/).filter(word => word.length > 0).length || 0} words
+                  </Badge>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -404,71 +479,91 @@ const IELTSWritingResults = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="text-3xl font-bold mb-2 text-brand-purple">
-                {scores.task2Overall ? scores.task2Overall.toFixed(1) : '7.0'}
-              </div>
-              <p className="text-caption mb-2">Overall Band Score</p>
-              <Badge variant="outline" className="text-brand-purple border-brand-purple/30 rounded-full">
-                {task2WordCount || task2Answer?.trim().split(/\s+/).filter(word => word.length > 0).length || 0} words
-              </Badge>
+              {(task2Skipped || !effTask2Answer || !effTask2Answer.trim()) ? (
+                <div className="py-4">
+                  <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 rounded-full px-4 py-2">
+                    Task Skipped
+                  </Badge>
+                  <p className="text-sm text-text-secondary mt-2">This task was not completed</p>
+                </div>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold mb-2 text-brand-purple">
+                    {scores.task2Overall ? scores.task2Overall.toFixed(1) : '7.0'}
+                  </div>
+                  <p className="text-caption mb-2">Overall Band Score</p>
+                  <Badge variant="outline" className="text-brand-purple border-brand-purple/30 rounded-full">
+                    {task2WordCount || effTask2Answer?.trim().split(/\s+/).filter(word => word.length > 0).length || 0} words
+                  </Badge>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
 
         {/* Criteria Breakdown - Task 1 */}
-        <Card className="mb-6 card-elevated border-2 border-brand-blue/20">
-          <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-blue/5">
-            <CardTitle className="flex items-center gap-2 text-brand-blue">
-              <div className="p-2 rounded-xl bg-brand-blue/10">
-                <Target className="w-5 h-5" />
-              </div>
-              Task 1 - Criteria Breakdown
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-green/10 mb-2">
-                  <Target className="w-6 h-6 text-brand-green mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-green">
-                    {scores.task1.length > 0 ? scores.task1[0]?.toFixed(1) : '7.0'}
-                  </div>
+        {!task1Skipped && effTask1Answer && effTask1Answer.trim() ? (
+          <Card className="mb-6 card-elevated border-2 border-brand-blue/20">
+            <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-blue/5">
+              <CardTitle className="flex items-center gap-2 text-brand-blue">
+                <div className="p-2 rounded-xl bg-brand-blue/10">
+                  <Target className="w-5 h-5" />
                 </div>
-                <p className="text-sm font-medium text-text-primary">Task Achievement</p>
+                Task 1 - Criteria Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { label: 'Task Achievement', value: effStructured?.task1?.criteria?.task_achievement?.band, just: effStructured?.task1?.criteria?.task_achievement?.justification, icon: Target, color: 'brand-green' },
+                  { label: 'Coherence & Cohesion', value: effStructured?.task1?.criteria?.coherence_and_cohesion?.band, just: effStructured?.task1?.criteria?.coherence_and_cohesion?.justification, icon: MessageSquare, color: 'brand-blue' },
+                  { label: 'Lexical Resource', value: effStructured?.task1?.criteria?.lexical_resource?.band, just: effStructured?.task1?.criteria?.lexical_resource?.justification, icon: Book, color: 'brand-purple' },
+                  { label: 'Grammar Range & Accuracy', value: effStructured?.task1?.criteria?.grammatical_range_and_accuracy?.band, just: effStructured?.task1?.criteria?.grammatical_range_and_accuracy?.justification, icon: Edit3, color: 'brand-orange' },
+                ].map((item, idx) => {
+                  const Icon = item.icon;
+                  const value = typeof item.value === 'number' ? item.value : (scores.task1.length > idx ? scores.task1[idx] : 7.0);
+                  const justification = item.just && !item.just.includes('Quote specific examples') && !item.just.includes('Must be 2-3 sentences') ? item.just : null;
+                  
+                  return (
+                    <div key={item.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-text-primary">{item.label}</p>
+                        <Badge variant="outline" className="rounded-xl">
+                          {typeof value === 'number' ? value.toFixed(1) : '7.0'}
+                        </Badge>
+                      </div>
+                      {justification && (
+                        <div className="mt-2">
+                          <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Assessment Reasoning</p>
+                          <div className="text-sm text-text-secondary bg-surface-2/50 rounded-lg p-3 border border-border/50">
+                            {justification}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-blue/10 mb-2">
-                  <MessageSquare className="w-6 h-6 text-brand-blue mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-blue">
-                    {scores.task1.length > 1 ? scores.task1[1]?.toFixed(1) : '7.0'}
-                  </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-6 card-elevated border-2 border-amber-200">
+            <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100">
+              <CardTitle className="flex items-center gap-2 text-amber-700">
+                <div className="p-2 rounded-xl bg-amber-200">
+                  <Target className="w-5 h-5" />
                 </div>
-                <p className="text-sm font-medium text-text-primary">Coherence & Cohesion</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-purple/10 mb-2">
-                  <Book className="w-6 h-6 text-brand-purple mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-purple">
-                    {scores.task1.length > 2 ? scores.task1[2]?.toFixed(1) : '7.0'}
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-text-primary">Lexical Resource</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-orange/10 mb-2">
-                  <Edit3 className="w-6 h-6 text-brand-orange mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-orange">
-                    {scores.task1.length > 3 ? scores.task1[3]?.toFixed(1) : '7.0'}
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-text-primary">Grammar Range</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                Task 1 - Skipped
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 text-center">
+              <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 rounded-full px-4 py-2 mb-2">
+                This task was skipped
+              </Badge>
+              <p className="text-sm text-text-secondary mt-2">No assessment available for this task</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Task 2 Question */}
         {task2Data && (
@@ -493,59 +588,68 @@ const IELTSWritingResults = () => {
         )}
 
         {/* Criteria Breakdown - Task 2 */}
-        <Card className="mb-8 bg-surface-1 rounded-3xl shadow-lg border-2 border-brand-purple/20">
-          <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-purple/5">
-            <CardTitle className="flex items-center gap-2 text-brand-purple">
-              <div className="p-2 rounded-xl bg-brand-purple/10">
-                <Edit3 className="w-5 h-5" />
-              </div>
-              Task 2 - Criteria Breakdown
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-green/10 mb-2">
-                  <Target className="w-6 h-6 text-brand-green mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-green">
-                    {scores.task2.length > 0 ? scores.task2[0]?.toFixed(1) : '7.0'}
-                  </div>
+        {!task2Skipped && effTask2Answer && effTask2Answer.trim() ? (
+          <Card className="mb-8 bg-surface-1 rounded-3xl shadow-lg border-2 border-brand-purple/20">
+            <CardHeader className="bg-gradient-to-r from-brand-purple/10 to-brand-purple/5">
+              <CardTitle className="flex items-center gap-2 text-brand-purple">
+                <div className="p-2 rounded-xl bg-brand-purple/10">
+                  <Edit3 className="w-5 h-5" />
                 </div>
-                <p className="text-sm font-medium text-text-primary">Task Response</p>
+                Task 2 - Criteria Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { label: 'Task Response', value: effStructured?.task2?.criteria?.task_response?.band, just: effStructured?.task2?.criteria?.task_response?.justification, icon: Target, color: 'brand-green' },
+                  { label: 'Coherence & Cohesion', value: effStructured?.task2?.criteria?.coherence_and_cohesion?.band, just: effStructured?.task2?.criteria?.coherence_and_cohesion?.justification, icon: MessageSquare, color: 'brand-blue' },
+                  { label: 'Lexical Resource', value: effStructured?.task2?.criteria?.lexical_resource?.band, just: effStructured?.task2?.criteria?.lexical_resource?.justification, icon: Book, color: 'brand-purple' },
+                  { label: 'Grammar Range & Accuracy', value: effStructured?.task2?.criteria?.grammatical_range_and_accuracy?.band, just: effStructured?.task2?.criteria?.grammatical_range_and_accuracy?.justification, icon: Edit3, color: 'brand-orange' },
+                ].map((item, idx) => {
+                  const Icon = item.icon;
+                  const value = typeof item.value === 'number' ? item.value : (scores.task2.length > idx ? scores.task2[idx] : 7.0);
+                  const justification = item.just && !item.just.includes('Quote specific examples') && !item.just.includes('Must be 2-3 sentences') ? item.just : null;
+                  
+                  return (
+                    <div key={item.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-text-primary">{item.label}</p>
+                        <Badge variant="outline" className="rounded-xl">
+                          {typeof value === 'number' ? value.toFixed(1) : '7.0'}
+                        </Badge>
+                      </div>
+                      {justification && (
+                        <div className="mt-2">
+                          <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Assessment Reasoning</p>
+                          <div className="text-sm text-text-secondary bg-surface-2/50 rounded-lg p-3 border border-border/50">
+                            {justification}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-blue/10 mb-2">
-                  <MessageSquare className="w-6 h-6 text-brand-blue mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-blue">
-                    {scores.task2.length > 1 ? scores.task2[1]?.toFixed(1) : '7.0'}
-                  </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-8 bg-surface-1 rounded-3xl shadow-lg border-2 border-amber-200">
+            <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100">
+              <CardTitle className="flex items-center gap-2 text-amber-700">
+                <div className="p-2 rounded-xl bg-amber-200">
+                  <Edit3 className="w-5 h-5" />
                 </div>
-                <p className="text-sm font-medium text-text-primary">Coherence & Cohesion</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-purple/10 mb-2">
-                  <Book className="w-6 h-6 text-brand-purple mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-purple">
-                    {scores.task2.length > 2 ? scores.task2[2]?.toFixed(1) : '7.0'}
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-text-primary">Lexical Resource</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="p-4 rounded-2xl bg-brand-orange/10 mb-2">
-                  <Edit3 className="w-6 h-6 text-brand-orange mx-auto mb-1" />
-                  <div className="text-2xl font-bold text-brand-orange">
-                    {scores.task2.length > 3 ? scores.task2[3]?.toFixed(1) : '7.0'}
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-text-primary">Grammar Range</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                Task 2 - Skipped
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 text-center">
+              <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 rounded-full px-4 py-2 mb-2">
+                This task was skipped
+              </Badge>
+              <p className="text-sm text-text-secondary mt-2">No assessment available for this task</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* AI Examiner Report */}
         <Card className="mb-8 bg-surface-1 rounded-3xl shadow-lg border-2 border-brand-blue/20">

@@ -6,8 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
-  console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2)...`);
+// Phase 2: Generate deterministic seed from text content
+function createSeed(text: string): number {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  // Convert to positive number (max 2^31 - 1)
+  return Math.abs(hash) % 2147483647;
+}
+
+async function callGemini(prompt: string, apiKey: string, seed: number, retryCount = 0) {
+  console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -23,6 +35,7 @@ async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
         }],
         generationConfig: {
           temperature: 0.1,
+          seed: seed, // Phase 2: Add deterministic seed
           maxOutputTokens: 8000, // Increased for comprehensive IELTS analysis
           topP: 0.9,
           topK: 50
@@ -45,15 +58,15 @@ async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
     if (retryCount < 1) {
       console.log(`🔄 Retrying Gemini API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callGemini(prompt, apiKey, retryCount + 1);
+      return callGemini(prompt, apiKey, seed, retryCount + 1);
     }
     
     throw error;
   }
 }
 
-async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
-  console.log(`🚀 Attempting OpenAI API call (attempt ${retryCount + 1}/2)...`);
+async function callOpenAI(prompt: string, apiKey: string, seed: number, retryCount = 0) {
+  console.log(`🚀 Attempting OpenAI API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   
   try {
     const model = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
@@ -75,6 +88,8 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
             content: prompt
           }
         ],
+        temperature: 0.1, // Phase 1: Add low temperature for consistency
+        seed: seed, // Phase 2: Add deterministic seed
         response_format: { type: 'json_object' },
         max_completion_tokens: 4000
       }),
@@ -95,15 +110,15 @@ async function callOpenAI(prompt: string, apiKey: string, retryCount = 0) {
     if (retryCount < 1) {
       console.log(`🔄 Retrying OpenAI API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callOpenAI(prompt, apiKey, retryCount + 1);
+      return callOpenAI(prompt, apiKey, seed, retryCount + 1);
     }
     
     throw error;
   }
 }
 
-async function callKimiK2Thinking(prompt: string, apiKey: string, retryCount = 0) {
-  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
+async function callKimiK2Thinking(prompt: string, apiKey: string, seed: number, retryCount = 0) {
+  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -126,6 +141,7 @@ async function callKimiK2Thinking(prompt: string, apiKey: string, retryCount = 0
           }
         ],
         temperature: 0.1,
+        seed: seed, // Phase 2: Add deterministic seed
         max_tokens: 8000
       })
     });
@@ -156,15 +172,15 @@ async function callKimiK2Thinking(prompt: string, apiKey: string, retryCount = 0
     if (retryCount < 1) {
       console.log(`🔄 Retrying Kimi K2 Thinking API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callKimiK2Thinking(prompt, apiKey, retryCount + 1);
+      return callKimiK2Thinking(prompt, apiKey, seed, retryCount + 1);
     }
     
     throw error;
   }
 }
 
-async function callDeepSeek(prompt: string, apiKey: string, retryCount = 0) {
-  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2)...`);
+async function callDeepSeek(prompt: string, apiKey: string, seed: number, retryCount = 0) {
+  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   try {
     const model = Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner';
     const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -179,6 +195,8 @@ async function callDeepSeek(prompt: string, apiKey: string, retryCount = 0) {
           { role: 'system', content: 'You are an expert IELTS examiner. Return ONLY valid JSON.' },
           { role: 'user', content: prompt }
         ],
+        temperature: 0.1, // Phase 1: Add low temperature for consistency
+        seed: seed, // Phase 2: Add deterministic seed
         max_tokens: 4000
       })
     });
@@ -195,7 +213,7 @@ async function callDeepSeek(prompt: string, apiKey: string, retryCount = 0) {
     if (retryCount < 1) {
       console.log('🔄 Retrying DeepSeek API call in 500ms...');
       await new Promise(r => setTimeout(r, 500));
-      return callDeepSeek(prompt, apiKey, retryCount + 1);
+      return callDeepSeek(prompt, apiKey, seed, retryCount + 1);
     }
     throw error;
   }
@@ -240,8 +258,10 @@ serve(async (req) => {
     }
 
     console.log('🔍 AI Examiner Request:', { 
-      task1Length: task1Answer.length,
-      task2Length: task2Answer.length,
+      task1Length: task1Answer?.length || 0,
+      task2Length: task2Answer?.length || 0,
+      hasTask1,
+      hasTask2,
       targetLanguage: targetLanguage || 'en'
     });
 
@@ -418,11 +438,11 @@ Grammatical Range and Accuracy (Applies to both Academic and General Training, T
 
 Your Required Tasks & Output Format
 
-After analyzing the provided Task 1 and Task 2 essays, you must return a single, valid JSON object.
+${hasTask1 && hasTask2 ? 'After analyzing the provided Task 1 and Task 2 essays, you must return a single, valid JSON object.' : hasTask1 ? 'After analyzing the provided Task 1 essay, you must return a single, valid JSON object. ONLY analyze Task 1 - Task 2 was skipped by the student.' : 'After analyzing the provided Task 2 essay, you must return a single, valid JSON object. ONLY analyze Task 2 - Task 1 was skipped by the student.'}
 
-Score Each Criterion: For both Task 1 and Task 2, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
+Score Each Criterion: ${hasTask1 && hasTask2 ? 'For both Task 1 and Task 2' : hasTask1 ? 'For Task 1 only' : 'For Task 2 only'}, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
 
-Write Justifications: For each score, you must write a 2-3 sentence justification, quoting specific examples from the student's writing as evidence.
+Write Justifications: For each score, you must write a 2-3 sentence justification, quoting specific examples from the student's writing as evidence. CRITICAL: Do NOT use placeholder text like "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." You MUST provide actual, specific justifications with real examples from the student's writing.
 
 Handle Word Count: You must check if the essays are under the word count (150 for Task 1, 250 for Task 2). If an essay is significantly under length, you must state that this will lower the Task Achievement/Response score and reflect this in your scoring.
 
@@ -432,7 +452,7 @@ CRITICAL: Identify and Detail Multiple Areas for Improvement
 
 After you have completed the band score assessment, you must generate comprehensive feedback for each task.
 
-For EACH task (Task 1 and Task 2), you must analyze the submission and identify at least 3 to 5 distinct areas for improvement. Each area of improvement you identify must create a separate object in the improvements array.
+For ${hasTask1 && hasTask2 ? 'EACH task (Task 1 and Task 2)' : hasTask1 ? 'Task 1' : 'Task 2'}, you must analyze the submission and identify at least 3 to 5 distinct areas for improvement. Each area of improvement you identify must create a separate object in the improvements array.
 
 Each object in the improvements array MUST contain the following four keys:
 - issue: A short title for the problem area (e.g., "Repetitive Vocabulary," "Simple Sentence Structure," "Unsupported Idea").
@@ -447,7 +467,37 @@ Requirements for improvements:
 - Focus on the most impactful changes that would raise the band score
 - Always preserve the student's original ideas and arguments
 
-Task 1:
+CRITICAL: Generate Sentence-by-Sentence Comparisons
+
+For ${hasTask1 && hasTask2 ? 'EACH task (Task 1 and Task 2)' : hasTask1 ? 'Task 1' : 'Task 2'}, you MUST also generate sentence_comparisons. This is an array where each element represents ONE sentence from the student's writing.
+
+For EACH sentence in the student's text, create one object in sentence_comparisons with:
+- original_spans: An array of spans covering the ENTIRE original sentence (no gaps). Mark only truly problematic words/phrases as status: "error"; everything else is status: "neutral".
+- corrected_spans: An array of spans covering the ENTIRE improved sentence (no gaps). Mark only new or improved words/phrases as status: "improvement"; everything else is status: "neutral".
+- Do NOT highlight whole sentences unless the entire sentence is changed. Highlight only specific changed words/phrases.
+- IMPORTANT: Ensure there is at least ONE improvement span per sentence unless the sentence is already perfect (in which case keep it identical with all neutral spans).
+
+Example sentence_comparisons format:
+{
+  "sentence_comparisons": [
+    {
+      "original_spans": [
+        { "text": "In 2000, China ", "status": "neutral" },
+        { "text": "had the larger", "status": "error" },
+        { "text": " population, at approximately 1.25 billion.", "status": "neutral" }
+      ],
+      "corrected_spans": [
+        { "text": "In the year 2000, China ", "status": "neutral" },
+        { "text": "possessed a significantly greater", "status": "improvement" },
+        { "text": " population, standing at approximately 1.25 billion.", "status": "neutral" }
+      ]
+    }
+  ]
+}
+
+You MUST analyze EVERY sentence in the student's text. For each sentence, output EXACTLY one object in sentence_comparisons.
+
+${hasTask1 ? `Task 1:
 ${trainingType === 'General' ? `LETTER WRITING (General Training)
 Letter Prompt: ${task1Data?.title || 'Task 1'}
 Letter Type: ${task1Data?.letterType || 'Formal'}
@@ -461,31 +511,33 @@ Instructions: ${task1Data?.instructions || ''}
 ${task1Data?.imageContext ? `Visual Data: ${task1Data.imageContext}` : ''}
 Word Count: ${task1Answer.trim().split(/\s+/).length}
 Student Response: "${task1Answer}"`}
+` : ''}
 
-Task 2:
+${hasTask2 ? `Task 2:
 Prompt: ${task2Data?.title || 'Task 2'}
 Instructions: ${task2Data?.instructions || ''}
 Student Response: "${task2Answer}"
+` : ''}
 
 JSON SCHEMA:
 {
-  "task1": {
+${hasTask1 ? `  "task1": {
     "criteria": {
       "task_achievement": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "The response covers the main requirements of the task. For example, the student mentions key trends such as 'sales increased from 2010 to 2020' and provides relevant data points. However, some details could be more fully developed, and the overview could be clearer." 
       },
       "coherence_and_cohesion": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "Information is generally arranged coherently with a clear overall progression. The student uses basic cohesive devices like 'however' and 'in addition', but there are some mechanical transitions. Paragraphing is logical but could be improved." 
       },
       "lexical_resource": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "The vocabulary is generally adequate for the task. The student uses appropriate words like 'significant' and 'trend', but there is some repetition (e.g., 'increase' appears multiple times). Word choice is clear but lacks sophistication." 
       },
       "grammatical_range_and_accuracy": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "A mix of simple and complex sentence forms is used, such as 'While sales increased, profits remained stable.' However, some grammatical errors occur, like 'the data show' (should be 'shows'), which occasionally impede communication." 
       }
     },
     "feedback": {
@@ -511,26 +563,50 @@ JSON SCHEMA:
       ],
       "feedback_markdown": "## Task 1 Detailed Feedback\n\n**Strengths:** List specific Task 1 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 1 feedback here with specific examples."
     },
+    "sentence_comparisons": [
+      {
+        "original_spans": [
+          { "text": "Sample sentence with ", "status": "neutral" },
+          { "text": "error", "status": "error" },
+          { "text": " highlighted.", "status": "neutral" }
+        ],
+        "corrected_spans": [
+          { "text": "Sample sentence with ", "status": "neutral" },
+          { "text": "improvement", "status": "improvement" },
+          { "text": " highlighted.", "status": "neutral" }
+        ]
+      }
+    ],
+    "original_spans": [
+      { "text": "Full text with ", "status": "neutral" },
+      { "text": "errors", "status": "error" },
+      { "text": " marked.", "status": "neutral" }
+    ],
+    "corrected_spans": [
+      { "text": "Full text with ", "status": "neutral" },
+      { "text": "improvements", "status": "improvement" },
+      { "text": " marked.", "status": "neutral" }
+    ],
     "overall_band": 6.5,
     "word_count": ${task1Answer.trim().split(/\s+/).length}
-  },
-  "task2": {
+  }${hasTask2 ? ',' : ''}` : ''}
+${hasTask2 ? `  "task2": {
     "criteria": {
       "task_response": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "The main parts of the prompt are addressed with a clear position. For instance, the student states 'I believe that technology has both advantages and disadvantages' and provides relevant examples. However, some ideas could be more fully developed, and the conclusion could be stronger." 
       },
       "coherence_and_cohesion": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "Information is generally arranged coherently with a clear overall progression. The student uses cohesive devices like 'firstly', 'secondly', and 'in conclusion', but some transitions are mechanical. Paragraphing is logical and supports the overall structure." 
       },
       "lexical_resource": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "The vocabulary is generally adequate and appropriate. The student uses words like 'beneficial' and 'detrimental', but there is some repetition and limited use of less common vocabulary. Word choice is clear but could be more varied." 
       },
       "grammatical_range_and_accuracy": { 
         "band": 6.5, 
-        "justification": "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." 
+        "justification": "A mix of simple and complex sentence forms is used, such as 'Although technology brings benefits, it also creates challenges.' However, some grammatical errors occur, like subject-verb agreement issues, which occasionally affect clarity." 
       }
     },
     "feedback": {
@@ -562,9 +638,33 @@ JSON SCHEMA:
       ],
       "feedback_markdown": "## Task 2 Detailed Feedback\n\n**Strengths:** List specific Task 2 strengths here.\n\n**Areas for Improvement:** Provide detailed Task 2 feedback here with specific examples."
     },
+    "sentence_comparisons": [
+      {
+        "original_spans": [
+          { "text": "Sample sentence with ", "status": "neutral" },
+          { "text": "error", "status": "error" },
+          { "text": " highlighted.", "status": "neutral" }
+        ],
+        "corrected_spans": [
+          { "text": "Sample sentence with ", "status": "neutral" },
+          { "text": "improvement", "status": "improvement" },
+          { "text": " highlighted.", "status": "neutral" }
+        ]
+      }
+    ],
+    "original_spans": [
+      { "text": "Full text with ", "status": "neutral" },
+      { "text": "errors", "status": "error" },
+      { "text": " marked.", "status": "neutral" }
+    ],
+    "corrected_spans": [
+      { "text": "Full text with ", "status": "neutral" },
+      { "text": "improvements", "status": "improvement" },
+      { "text": " marked.", "status": "neutral" }
+    ],
     "overall_band": 6.5,
     "word_count": ${task2Answer.trim().split(/\s+/).length}
-  },
+  }` : ''}
   "overall": {
     "band": 6.5,
     "calculation": "Calculation explanation"
@@ -574,71 +674,130 @@ JSON SCHEMA:
   ]
 }`;
 
+    // Phase 2: Generate deterministic seed from student answers
+    const seedContent = [
+      task1Answer || '',
+      task2Answer || '',
+      task1Data?.title || '',
+      task1Data?.instructions || '',
+      task2Data?.title || '',
+      task2Data?.instructions || '',
+      targetLanguage || 'en'
+    ].join('|');
+    const seed = createSeed(seedContent);
+    console.log(`🌱 Generated seed: ${seed} from content hash`);
+
+    // Phase 3: Check cache before making API calls
+    const cacheKey = seedContent; // Use seed content as cache key
+    let cachedResult = null;
+    
+    // Try to get cached result from Supabase
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        const cacheResponse = await fetch(`${supabaseUrl}/rest/v1/writing_assessment_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=*`, {
+          headers: {
+            'apikey': supabaseServiceKey,
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (cacheResponse.ok) {
+          const cacheData = await cacheResponse.json();
+          if (cacheData && cacheData.length > 0 && cacheData[0].cached_result) {
+            const cacheAge = Date.now() - new Date(cacheData[0].created_at).getTime();
+            const cacheMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+            
+            if (cacheAge < cacheMaxAge) {
+              cachedResult = cacheData[0].cached_result;
+              console.log(`💾 Cache HIT! Using cached result (age: ${Math.round(cacheAge / (24 * 60 * 60 * 1000))} days)`);
+            } else {
+              console.log(`⏰ Cache expired (age: ${Math.round(cacheAge / (24 * 60 * 60 * 1000))} days), will fetch new result`);
+            }
+          }
+        }
+      }
+    } catch (cacheError) {
+      console.log('⚠️ Cache check failed (non-critical):', (cacheError as any).message);
+      // Continue without cache - non-critical error
+    }
+
     // Use Kimi K2 Thinking as primary, with fallbacks
     let aiResponse: any;
     let modelUsed: string;
     let content: string;
 
-    // Primary: Kimi K2 Thinking via OpenRouter
-    if (openRouterApiKey) {
-      try {
-        console.log('🔄 Using Kimi K2 Thinking (OpenRouter) as primary model...');
-        aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey);
-        modelUsed = 'Kimi K2 Thinking (OpenRouter)';
-        content = aiResponse.choices?.[0]?.message?.content ?? '';
-        console.log('✅ Kimi K2 Thinking succeeded');
-      } catch (kimiError) {
-        console.log('⚠️ Kimi K2 Thinking failed, falling back to secondary models:', (kimiError as any).message);
-        
-        // Fallback 1: Use requested provider or Gemini
-        if (apiProvider === 'openai' && openaiApiKey) {
-          try {
-            console.log('🔄 Fallback 1: Using OpenAI API...');
-            aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
-            modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'} (Fallback)`;
-            content = aiResponse.choices?.[0]?.message?.content ?? '';
-            console.log('✅ OpenAI fallback succeeded');
-          } catch (openaiError) {
-            console.log('⚠️ OpenAI fallback failed, trying Gemini:', (openaiError as any).message);
-            throw openaiError; // Will trigger Gemini fallback
-          }
-        } else if (geminiApiKey) {
-          try {
-            console.log('🔄 Fallback 1: Using Gemini API...');
-            aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
-            modelUsed = 'Google Gemini AI (Fallback)';
-            content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-            console.log('✅ Gemini fallback succeeded');
-          } catch (geminiError) {
-            console.log('⚠️ Gemini fallback failed, trying DeepSeek:', (geminiError as any).message);
-            // Final fallback: DeepSeek
-            const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-            if (deepseekKey) {
-              console.log('🔄 Final Fallback: Using DeepSeek API...');
-              aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey);
-              modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Final Fallback)`;
+    // If we have a cached result, use it instead of calling API
+    if (cachedResult) {
+      console.log('✅ Using cached assessment result');
+      content = (cachedResult as any).content || '';
+      modelUsed = (cachedResult as any).model_used || 'Cached';
+    } else {
+      console.log('🔄 Cache MISS - calling AI API...');
+      
+      // Primary: Kimi K2 Thinking via OpenRouter
+      if (openRouterApiKey) {
+        try {
+          console.log('🔄 Using Kimi K2 Thinking (OpenRouter) as primary model...');
+          aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey, seed);
+          modelUsed = 'Kimi K2 Thinking (OpenRouter)';
+          content = aiResponse.choices?.[0]?.message?.content ?? '';
+          console.log('✅ Kimi K2 Thinking succeeded');
+        } catch (kimiError) {
+          console.log('⚠️ Kimi K2 Thinking failed, falling back to secondary models:', (kimiError as any).message);
+          
+          // Fallback 1: Use requested provider or Gemini
+          if (apiProvider === 'openai' && openaiApiKey) {
+            try {
+              console.log('🔄 Fallback 1: Using OpenAI API...');
+              aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
+              modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'} (Fallback)`;
               content = aiResponse.choices?.[0]?.message?.content ?? '';
-              console.log('✅ DeepSeek final fallback succeeded');
-            } else {
-              throw new Error('All models failed and no DEEPSEEK_API_KEY available for final fallback');
+              console.log('✅ OpenAI fallback succeeded');
+            } catch (openaiError) {
+              console.log('⚠️ OpenAI fallback failed, trying Gemini:', (openaiError as any).message);
+              throw openaiError; // Will trigger Gemini fallback
             }
+          } else if (geminiApiKey) {
+            try {
+              console.log('🔄 Fallback 1: Using Gemini API...');
+              aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
+              modelUsed = 'Google Gemini AI (Fallback)';
+              content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+              console.log('✅ Gemini fallback succeeded');
+            } catch (geminiError) {
+              console.log('⚠️ Gemini fallback failed, trying DeepSeek:', (geminiError as any).message);
+              // Final fallback: DeepSeek
+              const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+              if (deepseekKey) {
+                console.log('🔄 Final Fallback: Using DeepSeek API...');
+                aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
+                modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Final Fallback)`;
+                content = aiResponse.choices?.[0]?.message?.content ?? '';
+                console.log('✅ DeepSeek final fallback succeeded');
+              } else {
+                throw new Error('All models failed and no DEEPSEEK_API_KEY available for final fallback');
+              }
+            }
+          } else {
+            throw new Error('Kimi K2 Thinking failed and no fallback API keys available');
           }
-        } else {
-          throw new Error('Kimi K2 Thinking failed and no fallback API keys available');
         }
-      }
     } else {
       // No OpenRouter key, use legacy flow
       if (apiProvider === 'openai') {
         console.log('🔄 Using OpenAI API (no OpenRouter key)...');
-        aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey);
+        aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
         modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'}`;
         content = aiResponse.choices?.[0]?.message?.content ?? '';
         console.log('✅ OpenAI API succeeded');
       } else {
         try {
           console.log('🔄 Using Gemini API (no OpenRouter key)...');
-          aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
+          aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
           modelUsed = 'Google Gemini AI';
           content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
           console.log('✅ Gemini API succeeded');
@@ -649,11 +808,43 @@ JSON SCHEMA:
             throw new Error('Gemini failed and no DEEPSEEK_API_KEY available for fallback');
           }
           console.log('🔄 Fallback: Using DeepSeek API...');
-          aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey);
+          aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
           modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Fallback)`;
           content = aiResponse.choices?.[0]?.message?.content ?? '';
           console.log('✅ DeepSeek fallback succeeded');
         }
+      }
+    }
+    
+    // Phase 3: Save result to cache if we got a new response (not from cache)
+    if (!cachedResult && content && content.length > 10) {
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        
+        if (supabaseUrl && supabaseServiceKey) {
+          await fetch(`${supabaseUrl}/rest/v1/writing_assessment_cache`, {
+            method: 'POST',
+            headers: {
+              'apikey': supabaseServiceKey,
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+              cache_key: cacheKey,
+              cached_result: {
+                content: content,
+                model_used: modelUsed
+              },
+              created_at: new Date().toISOString()
+            })
+          });
+          console.log('💾 Saved result to cache');
+        }
+      } catch (cacheSaveError) {
+        console.log('⚠️ Cache save failed (non-critical):', (cacheSaveError as any).message);
+        // Continue - cache save is non-critical
       }
     }
 
@@ -745,22 +936,26 @@ JSON SCHEMA:
     if (!structured) {
       console.warn('⚠️ No structured JSON parsed; building minimal fallback structure');
       structured = {
-        task1: {
-          criteria: {},
-          feedback: {
-            improvements: [],
-            feedback_markdown: '### Task 1 Assessment\n\nThe AI response could not be parsed into structured JSON.\n\nRaw summary (truncated):\n' + (content || '').slice(0, 800)
-          },
-          word_count: task1Answer.trim().split(/\s+/).length
-        },
-        task2: {
-          criteria: {},
-          feedback: {
-            improvements: [],
-            feedback_markdown: '### Task 2 Assessment\n\nThe AI response could not be parsed into structured JSON.\n\nRaw summary (truncated):\n' + (content || '').slice(0, 800)
-          },
-          word_count: task2Answer.trim().split(/\s+/).length
-        },
+        ...(hasTask1 ? {
+          task1: {
+            criteria: {},
+            feedback: {
+              improvements: [],
+              feedback_markdown: '### Task 1 Assessment\n\nThe AI response could not be parsed into structured JSON.\n\nRaw summary (truncated):\n' + (content || '').slice(0, 800)
+            },
+            word_count: task1Answer ? task1Answer.trim().split(/\s+/).length : 0
+          }
+        } : {}),
+        ...(hasTask2 ? {
+          task2: {
+            criteria: {},
+            feedback: {
+              improvements: [],
+              feedback_markdown: '### Task 2 Assessment\n\nThe AI response could not be parsed into structured JSON.\n\nRaw summary (truncated):\n' + (content || '').slice(0, 800)
+            },
+            word_count: task2Answer ? task2Answer.trim().split(/\s+/).length : 0
+          }
+        } : {}),
         overall: {
           band: 6.0,
           calculation: 'Fallback default because structured JSON was unavailable.'
@@ -891,8 +1086,8 @@ JSON SCHEMA:
 
       const maybeRescore = async () => {
         const overall = typeof structured?.overall?.band === 'number' ? structured.overall.band : 6.5;
-        const needsTask1 = bandsMissingOrAutoFilled(structured.task1, 'task1', overall);
-        const needsTask2 = bandsMissingOrAutoFilled(structured.task2, 'task2', overall);
+        const needsTask1 = hasTask1 && structured?.task1 ? bandsMissingOrAutoFilled(structured.task1, 'task1', overall) : false;
+        const needsTask2 = hasTask2 && structured?.task2 ? bandsMissingOrAutoFilled(structured.task2, 'task2', overall) : false;
         
         // Early return - skip async call if not needed
         if (!needsTask1 && !needsTask2) {
@@ -907,33 +1102,33 @@ JSON SCHEMA:
 
 JSON Schema:
 {
-  "task1": {
+${hasTask1 ? `  "task1": {
     "task_achievement": 0.0,
     "coherence_and_cohesion": 0.0,
     "lexical_resource": 0.0,
     "grammatical_range_and_accuracy": 0.0
-  },
-  "task2": {
+  }${hasTask2 ? ',' : ''}` : ''}
+${hasTask2 ? `  "task2": {
     "task_response": 0.0,
     "coherence_and_cohesion": 0.0,
     "lexical_resource": 0.0,
     "grammatical_range_and_accuracy": 0.0
-  }
+  }` : ''}
 }
 
-Task 1:
+${hasTask1 ? `Task 1:
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
 Student Response: "${task1Answer}"
 Word Count: ${task1Answer.trim().split(/\s+/).length}
-
-Task 2:
+` : ''}
+${hasTask2 ? `Task 2:
 Prompt: ${task2Data?.title || 'Task 2'}
 Instructions: ${task2Data?.instructions || ''}
 Student Response: "${task2Answer}"
 Word Count: ${task2Answer.trim().split(/\s+/).length}
-
-Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSON object, no additional text.`;
+` : ''}
+Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSON object, no additional text. ${hasTask1 && !hasTask2 ? 'ONLY analyze Task 1 - Task 2 was skipped.' : !hasTask1 && hasTask2 ? 'ONLY analyze Task 2 - Task 1 was skipped.' : ''}`;
 
         // Parallel rescoring - try all providers simultaneously
         const tryRescoreParallel = async (): Promise<any | null> => {
@@ -941,7 +1136,7 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
           
           if (geminiApiKey) {
             promises.push(
-              callGemini(scoringPrompt, geminiApiKey)
+              callGemini(scoringPrompt, geminiApiKey, seed)
                 .then(resp => {
                   const scoreText = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
                   return JSON.parse((scoreText.match(/\{[\s\S]*\}/) || [scoreText])[0]);
@@ -956,7 +1151,7 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
           const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
           if (deepseekKey) {
             promises.push(
-              callDeepSeek(scoringPrompt, deepseekKey)
+              callDeepSeek(scoringPrompt, deepseekKey, seed)
                 .then(resp => {
                   const text = resp.choices?.[0]?.message?.content ?? '';
                   return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
@@ -970,7 +1165,7 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
           
           if (openaiApiKey) {
             promises.push(
-              callOpenAI(`You must return ONLY JSON in the schema above. ${scoringPrompt}`, openaiApiKey)
+              callOpenAI(`You must return ONLY JSON in the schema above. ${scoringPrompt}`, openaiApiKey, seed)
                 .then(resp => {
                   const text = resp.choices?.[0]?.message?.content ?? '';
                   return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
@@ -1002,7 +1197,7 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
 
         const parsed = await tryRescoreParallel();
         if (parsed) {
-          if (needsTask1 && parsed?.task1) {
+          if (needsTask1 && hasTask1 && parsed?.task1 && structured?.task1) {
             structured.task1.criteria.task_achievement.band = parsed.task1.task_achievement ?? structured.task1.criteria.task_achievement.band;
             structured.task1.criteria.coherence_and_cohesion.band = parsed.task1.coherence_and_cohesion ?? structured.task1.criteria.coherence_and_cohesion.band;
             structured.task1.criteria.lexical_resource.band = parsed.task1.lexical_resource ?? structured.task1.criteria.lexical_resource.band;
@@ -1012,7 +1207,7 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
             structured.task1.criteria.lexical_resource.justification = structured.task1.criteria.lexical_resource.justification || 'Rescored numerically.';
             structured.task1.criteria.grammatical_range_and_accuracy.justification = structured.task1.criteria.grammatical_range_and_accuracy.justification || 'Rescored numerically.';
           }
-          if (needsTask2 && parsed?.task2) {
+          if (needsTask2 && hasTask2 && parsed?.task2 && structured?.task2) {
             structured.task2.criteria.task_response.band = parsed.task2.task_response ?? structured.task2.criteria.task_response.band;
             structured.task2.criteria.coherence_and_cohesion.band = parsed.task2.coherence_and_cohesion ?? structured.task2.criteria.coherence_and_cohesion.band;
             structured.task2.criteria.lexical_resource.band = parsed.task2.lexical_resource ?? structured.task2.criteria.lexical_resource.band;
@@ -1024,19 +1219,35 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
           }
 
           // Recalculate per-task and overall if not provided
-          const t1 = getTaskBands(structured.task1, 'task1').filter((b) => typeof b === 'number') as number[];
-          const t2 = getTaskBands(structured.task2, 'task2').filter((b) => typeof b === 'number') as number[];
+          const t1 = structured.task1 ? getTaskBands(structured.task1, 'task1').filter((b) => typeof b === 'number') as number[] : [];
+          const t2 = structured.task2 ? getTaskBands(structured.task2, 'task2').filter((b) => typeof b === 'number') as number[] : [];
           if (t1.length === 4) {
             structured.task1.overall_band = roundIELTS((t1[0] + t1[1] + t1[2] + t1[3]) / 4);
           }
           if (t2.length === 4) {
             structured.task2.overall_band = roundIELTS((t2[0] + t2[1] + t2[2] + t2[3]) / 4);
           }
-          if (typeof structured.task1?.overall_band === 'number' && typeof structured.task2?.overall_band === 'number') {
+          
+          // Calculate overall band only from non-skipped tasks
+          const hasTask1Band = typeof structured.task1?.overall_band === 'number';
+          const hasTask2Band = typeof structured.task2?.overall_band === 'number';
+          
+          if (hasTask1Band && hasTask2Band) {
+            // Both tasks completed - use standard IELTS weighting (Task 1 = 1/3, Task 2 = 2/3)
             const overallWeighted = roundIELTS((structured.task1.overall_band + 2 * structured.task2.overall_band) / 3);
             structured.overall = structured.overall || {};
             structured.overall.band = overallWeighted;
             structured.overall.calculation = 'Weighted average (Task 1 x1, Task 2 x2)';
+          } else if (hasTask1Band) {
+            // Only Task 1 completed
+            structured.overall = structured.overall || {};
+            structured.overall.band = structured.task1.overall_band;
+            structured.overall.calculation = 'Task 1 only (Task 2 was skipped)';
+          } else if (hasTask2Band) {
+            // Only Task 2 completed
+            structured.overall = structured.overall || {};
+            structured.overall.band = structured.task2.overall_band;
+            structured.overall.calculation = 'Task 2 only (Task 1 was skipped)';
           }
         }
       };
@@ -1061,6 +1272,126 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
         };
       }
       
+      // Post-process sentence_comparisons: ensure they exist and are properly formatted
+      const buildDiffSpans = (orig: string, imp: string) => {
+        const o = orig.split(/\s+/);
+        const p = imp.split(/\s+/);
+        const n = o.length, m = p.length;
+        const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+        for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
+        let i = 0, j = 0; while (i < n && j < m) { if (o[i] === p[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+        const push = (arr: any[], text: string, status: string) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
+        const original_spans: any[] = []; const corrected_spans: any[] = [];
+        let buf = '', cur = 'neutral';
+        for (let t = 0; t < n; t++) { const ns = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(original_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + o[t]; }
+        push(original_spans, buf, cur);
+        buf = ''; cur = 'neutral';
+        for (let t = 0; t < m; t++) { const ns = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(corrected_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + p[t]; }
+        push(corrected_spans, buf, cur);
+        return { original_spans, corrected_spans };
+      };
+
+      const spanHasImprovement = (spans: any[] | undefined) => Array.isArray(spans) && spans.some(s => s?.status === 'improvement');
+
+      // Process sentence_comparisons for Task 1
+      if (hasTask1 && structured?.task1) {
+        if (!Array.isArray(structured.task1.sentence_comparisons) || structured.task1.sentence_comparisons.length === 0) {
+          console.log('⚠️ Task 1 missing sentence_comparisons, generating from improvements...');
+          // Generate sentence_comparisons from improvements if available
+          const improvements = structured.task1.feedback?.improvements || [];
+          if (improvements.length > 0) {
+            structured.task1.sentence_comparisons = improvements.map((imp: any) => {
+              const orig = imp.original || '';
+              const impv = imp.improved || orig;
+              const d = buildDiffSpans(orig, impv);
+              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
+            });
+          } else {
+            // Fallback: create from full text
+            const sentences = (task1Answer || '').split(/[.!?]+/).filter(s => s.trim().length > 0);
+            structured.task1.sentence_comparisons = sentences.map((s: string) => {
+              const d = buildDiffSpans(s.trim(), s.trim());
+              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
+            });
+          }
+        } else {
+          // Validate and repair existing sentence_comparisons
+          structured.task1.sentence_comparisons = structured.task1.sentence_comparisons.map((s: any) => {
+            const originalText = Array.isArray(s.original_spans) ? s.original_spans.map((x: any) => x?.text || '').join('').trim() : (s.original || '');
+            const improvedText = Array.isArray(s.corrected_spans) ? s.corrected_spans.map((x: any) => x?.text || '').join('').trim() : (s.improved || '');
+            const needRepair = !spanHasImprovement(s.corrected_spans) || !Array.isArray(s.original_spans) || !Array.isArray(s.corrected_spans);
+            if (needRepair && originalText && improvedText) {
+              const d = buildDiffSpans(originalText, improvedText);
+              s.original_spans = d.original_spans;
+              s.corrected_spans = d.corrected_spans;
+            }
+            return s;
+          });
+        }
+
+        // Generate original_spans and corrected_spans for whole text view
+        if (!structured.task1.original_spans || !structured.task1.corrected_spans) {
+          const fullOriginal = task1Answer || '';
+          const fullImproved = structured.task1.sentence_comparisons
+            .map((sc: any) => (sc.corrected_spans || []).map((s: any) => s.text || '').join(''))
+            .join(' ')
+            .trim() || fullOriginal;
+          const d = buildDiffSpans(fullOriginal, fullImproved);
+          structured.task1.original_spans = d.original_spans;
+          structured.task1.corrected_spans = d.corrected_spans;
+        }
+      }
+
+      // Process sentence_comparisons for Task 2
+      if (hasTask2 && structured?.task2) {
+        if (!Array.isArray(structured.task2.sentence_comparisons) || structured.task2.sentence_comparisons.length === 0) {
+          console.log('⚠️ Task 2 missing sentence_comparisons, generating from improvements...');
+          // Generate sentence_comparisons from improvements if available
+          const improvements = structured.task2.feedback?.improvements || [];
+          if (improvements.length > 0) {
+            structured.task2.sentence_comparisons = improvements.map((imp: any) => {
+              const orig = imp.original || '';
+              const impv = imp.improved || orig;
+              const d = buildDiffSpans(orig, impv);
+              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
+            });
+          } else {
+            // Fallback: create from full text
+            const sentences = (task2Answer || '').split(/[.!?]+/).filter(s => s.trim().length > 0);
+            structured.task2.sentence_comparisons = sentences.map((s: string) => {
+              const d = buildDiffSpans(s.trim(), s.trim());
+              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
+            });
+          }
+        } else {
+          // Validate and repair existing sentence_comparisons
+          structured.task2.sentence_comparisons = structured.task2.sentence_comparisons.map((s: any) => {
+            const originalText = Array.isArray(s.original_spans) ? s.original_spans.map((x: any) => x?.text || '').join('').trim() : (s.original || '');
+            const improvedText = Array.isArray(s.corrected_spans) ? s.corrected_spans.map((x: any) => x?.text || '').join('').trim() : (s.improved || '');
+            const needRepair = !spanHasImprovement(s.corrected_spans) || !Array.isArray(s.original_spans) || !Array.isArray(s.corrected_spans);
+            if (needRepair && originalText && improvedText) {
+              const d = buildDiffSpans(originalText, improvedText);
+              s.original_spans = d.original_spans;
+              s.corrected_spans = d.corrected_spans;
+            }
+            return s;
+          });
+        }
+
+        // Generate original_spans and corrected_spans for whole text view
+        if (!structured.task2.original_spans || !structured.task2.corrected_spans) {
+          const fullOriginal = task2Answer || '';
+          const fullImproved = structured.task2.sentence_comparisons
+            .map((sc: any) => (sc.corrected_spans || []).map((s: any) => s.text || '').join(''))
+            .join(' ')
+            .trim() || fullOriginal;
+          const d = buildDiffSpans(fullOriginal, fullImproved);
+          structured.task2.original_spans = d.original_spans;
+          structured.task2.corrected_spans = d.corrected_spans;
+        }
+      }
+
       // Validate improvements array quality
       const validateImprovements = (improvements: any[], taskName: string) => {
         if (!Array.isArray(improvements)) return [];
@@ -1131,14 +1462,14 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
         console.log('🔄 Migrating legacy specific_improvements to task-specific format...');
         
         // Split improvements between tasks based on content analysis
-        const task1Improvements = [];
-        const task2Improvements = [];
+        const task1Improvements: any[] = [];
+        const task2Improvements: any[] = [];
         
-        structured.specific_improvements.forEach((improvement) => {
+        structured.specific_improvements.forEach((improvement: any) => {
           // Simple heuristic: if original text appears in task1Answer, assign to task1, otherwise task2
-          if (task1Answer.includes(improvement.original?.substring(0, 50) || '')) {
+          if (hasTask1 && task1Answer && task1Answer.includes(improvement.original?.substring(0, 50) || '')) {
             task1Improvements.push(improvement);
-          } else {
+          } else if (hasTask2) {
             task2Improvements.push(improvement);
           }
         });
@@ -1166,8 +1497,8 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
       feedback,
       structured,
       apiUsed: modelUsed,
-      task1WordCount: task1Answer.trim().split(/\s+/).length,
-      task2WordCount: task2Answer.trim().split(/\s+/).length
+      task1WordCount: hasTask1 && task1Answer ? task1Answer.trim().split(/\s+/).length : 0,
+      task2WordCount: hasTask2 && task2Answer ? task2Answer.trim().split(/\s+/).length : 0
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -20,33 +20,74 @@ interface ScoreSpiderChartProps {
 
 export default function ScoreSpiderChart({ task1Scores, task2Scores, className = "" }: ScoreSpiderChartProps) {
   // Calculate average scores for each criterion
+  // Only average when both tasks exist, otherwise use the single task's score
   const calculateAverageScores = () => {
     const t1 = task1Scores || {};
     const t2 = task2Scores || {};
     
-    // Task Achievement (Task 1) / Task Response (Task 2) average
-    const taScore = (
-      (t1.task_achievement || 0) + 
-      (t2.task_response || 0)
-    ) / 2;
+    // Check if tasks are skipped (no scores available)
+    const hasTask1 = t1.task_achievement !== undefined || t1.coherence_and_cohesion !== undefined;
+    const hasTask2 = t2.task_response !== undefined || t2.coherence_and_cohesion !== undefined;
     
-    // Coherence and Cohesion average
-    const ccScore = (
-      (t1.coherence_and_cohesion || 0) + 
-      (t2.coherence_and_cohesion || 0)
-    ) / 2;
+    // Task Achievement (Task 1) / Task Response (Task 2)
+    let taScore: number;
+    if (hasTask1 && hasTask2) {
+      // Both tasks completed - average them
+      taScore = ((t1.task_achievement || 0) + (t2.task_response || 0)) / 2;
+    } else if (hasTask1) {
+      // Only Task 1 completed
+      taScore = t1.task_achievement || 0;
+    } else if (hasTask2) {
+      // Only Task 2 completed
+      taScore = t2.task_response || 0;
+    } else {
+      taScore = 0;
+    }
     
-    // Lexical Resource average
-    const lrScore = (
-      (t1.lexical_resource || 0) + 
-      (t2.lexical_resource || 0)
-    ) / 2;
+    // Coherence and Cohesion
+    let ccScore: number;
+    if (hasTask1 && hasTask2) {
+      // Both tasks completed - average them
+      ccScore = ((t1.coherence_and_cohesion || 0) + (t2.coherence_and_cohesion || 0)) / 2;
+    } else if (hasTask1) {
+      // Only Task 1 completed
+      ccScore = t1.coherence_and_cohesion || 0;
+    } else if (hasTask2) {
+      // Only Task 2 completed
+      ccScore = t2.coherence_and_cohesion || 0;
+    } else {
+      ccScore = 0;
+    }
     
-    // Grammatical Range and Accuracy average
-    const graScore = (
-      (t1.grammatical_range_and_accuracy || 0) + 
-      (t2.grammatical_range_and_accuracy || 0)
-    ) / 2;
+    // Lexical Resource
+    let lrScore: number;
+    if (hasTask1 && hasTask2) {
+      // Both tasks completed - average them
+      lrScore = ((t1.lexical_resource || 0) + (t2.lexical_resource || 0)) / 2;
+    } else if (hasTask1) {
+      // Only Task 1 completed
+      lrScore = t1.lexical_resource || 0;
+    } else if (hasTask2) {
+      // Only Task 2 completed
+      lrScore = t2.lexical_resource || 0;
+    } else {
+      lrScore = 0;
+    }
+    
+    // Grammatical Range and Accuracy
+    let graScore: number;
+    if (hasTask1 && hasTask2) {
+      // Both tasks completed - average them
+      graScore = ((t1.grammatical_range_and_accuracy || 0) + (t2.grammatical_range_and_accuracy || 0)) / 2;
+    } else if (hasTask1) {
+      // Only Task 1 completed
+      graScore = t1.grammatical_range_and_accuracy || 0;
+    } else if (hasTask2) {
+      // Only Task 2 completed
+      graScore = t2.grammatical_range_and_accuracy || 0;
+    } else {
+      graScore = 0;
+    }
 
     return [
       { criterion: 'TA', score: Math.round(taScore * 2) / 2, fullName: 'Task Achievement' },

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -268,8 +268,8 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
   
-  // Always ensure we show the complete original text
-  const { originalSpans, improvedSpans, sentences } = (() => {
+  // Memoize spans processing to prevent recalculation on every render
+  const { originalSpans, improvedSpans, sentences } = useMemo(() => {
     // If we have AI-provided spans, use them but validate they contain the full text
     if (providedOriginalSpans && providedCorrectedSpans) {
       const originalSpansText = providedOriginalSpans.map(span => span.text).join('');
@@ -290,19 +290,19 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
     
     // Fall back to processing the full text
     return processTextForComparison(originalText, improvementSuggestions);
-  })();
+  }, [originalText, improvementSuggestions, providedOriginalSpans, providedCorrectedSpans, providedSentenceComparisons]);
 
-  // Make highlights less dense: only keywords
-  const refinedOriginalSpans = refineSpansForKeywords(originalSpans, 'original');
-  const refinedImprovedSpans = refineSpansForKeywords(improvedSpans, 'improved');
-  const refinedSentences = (sentences || []).map((s: any) => ({
+  // Memoize refined spans to prevent recalculation
+  const refinedOriginalSpans = useMemo(() => refineSpansForKeywords(originalSpans, 'original'), [originalSpans]);
+  const refinedImprovedSpans = useMemo(() => refineSpansForKeywords(improvedSpans, 'improved'), [improvedSpans]);
+  const refinedSentences = useMemo(() => (sentences || []).map((s: any) => ({
     ...s,
     original_spans: s.original_spans ? refineSpansForKeywords(s.original_spans, 'original') : s.original_spans,
     corrected_spans: s.corrected_spans ? refineSpansForKeywords(s.corrected_spans, 'improved') : s.corrected_spans,
-  }));
+  })), [sentences]);
 
-  // Build sentence view from whole view if missing
-  const buildSentencesFromWhole = (): any[] => {
+  // Memoize sentence building to prevent recalculation
+  const buildSentencesFromWhole = useMemo((): any[] => {
     const improvedWhole = improvedSpans.map(s => s.text).join("").trim();
     const origSentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => s.trim() + ".");
     const impSentences = improvedWhole.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => s.trim() + ".");
@@ -329,28 +329,33 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
       built.push({ original: a, improved: b, original_spans: orig, corrected_spans: imp });
     }
     return built;
-  };
+  }, [improvedSpans, originalText]);
 
-  const effectiveSentences = (providedSentenceComparisons && providedSentenceComparisons.length > 0)
-    ? providedSentenceComparisons.map((s: any) => ({
+  const effectiveSentences = useMemo(() => {
+    if (providedSentenceComparisons && providedSentenceComparisons.length > 0) {
+      return providedSentenceComparisons.map((s: any) => ({
         ...s,
         original_spans: s.original_spans ? refineSpansForKeywords(s.original_spans, 'original') : s.original_spans,
         corrected_spans: s.corrected_spans ? refineSpansForKeywords(s.corrected_spans, 'improved') : s.corrected_spans,
-      }))
-    : (refinedSentences.length > 0 ? refinedSentences : buildSentencesFromWhole());
+      }));
+    }
+    return refinedSentences.length > 0 ? refinedSentences : buildSentencesFromWhole;
+  }, [providedSentenceComparisons, refinedSentences, buildSentencesFromWhole]);
 
-  // Group sentences into intro / body / conclusion for clearer spacing
-  const groupSentences = (items: any[]) => {
-    const n = items.length;
-    if (n <= 3) return [items];
-    const introCount = Math.min(2, Math.max(1, Math.floor(n * 0.2)));
-    const conclCount = Math.min(2, Math.max(1, Math.floor(n * 0.2)));
-    const intro = items.slice(0, introCount);
-    const body = items.slice(introCount, Math.max(introCount, n - conclCount));
-    const concl = items.slice(Math.max(introCount, n - conclCount));
-    return [intro, body, concl].filter(g => g.length > 0);
-  };
-  const grouped = groupSentences(effectiveSentences);
+  // Memoize sentence grouping to prevent recalculation
+  const grouped = useMemo(() => {
+    const groupSentences = (items: any[]) => {
+      const n = items.length;
+      if (n <= 3) return [items];
+      const introCount = Math.min(2, Math.max(1, Math.floor(n * 0.2)));
+      const conclCount = Math.min(2, Math.max(1, Math.floor(n * 0.2)));
+      const intro = items.slice(0, introCount);
+      const body = items.slice(introCount, Math.max(introCount, n - conclCount));
+      const concl = items.slice(Math.max(introCount, n - conclCount));
+      return [intro, body, concl].filter(g => g.length > 0);
+    };
+    return groupSentences(effectiveSentences);
+  }, [effectiveSentences]);
 
   if (!originalText.trim()) {
     return null;

@@ -338,7 +338,7 @@ const IELTSWritingTestInterface = () => {
     return currentTask === 1 ? 150 : 250;
   };
 
-  const handleGrammarFeedback = async () => {
+  const handleGrammarFeedback = async (retryCount: number = 0) => {
     const currentAnswer = getCurrentAnswer();
     if (!currentAnswer || currentAnswer.trim().length < 10) {
       toast({
@@ -353,9 +353,10 @@ const IELTSWritingTestInterface = () => {
 
     try {
       const currentTaskData = getCurrentTask();
-      console.log('📝 Requesting grammar feedback for Task', currentTask);
+      console.log('📝 Requesting grammar feedback for Task', currentTask, retryCount > 0 ? `(retry ${retryCount})` : '');
       
-      const { data, error } = await supabase.functions.invoke('grammar-feedback', {
+      // Create the function invocation promise with timeout handling
+      const functionPromise = supabase.functions.invoke('grammar-feedback', {
         body: {
           writing: currentAnswer,
           taskType: currentTask === 1 ? 'Task 1 - Data Description' : 'Task 2 - Essay Writing',
@@ -364,10 +365,36 @@ const IELTSWritingTestInterface = () => {
         }
       });
 
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Request timeout - the grammar check is taking too long. Please try again.'));
+        }, 30000); // 30 second timeout
+      });
+
+      // Race between timeout and function call
+      const result = await Promise.race([functionPromise, timeoutPromise]);
+      const { data, error } = result as any;
+
       console.log('📥 Grammar feedback response:', { data, error });
 
       if (error) {
         console.error('❌ Grammar feedback error:', error);
+        
+        // Check if it's a connection error that might be retryable
+        const isConnectionError = 
+          error?.message?.includes('ERR_CONNECTION_CLOSED') ||
+          error?.message?.includes('Failed to send a request') ||
+          error?.message?.includes('network') ||
+          error?.message?.includes('timeout') ||
+          error?.name === 'FunctionsFetchError';
+
+        if (isConnectionError && retryCount < 2) {
+          console.log(`🔄 Retrying grammar feedback request (attempt ${retryCount + 1}/3)...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          return handleGrammarFeedback(retryCount + 1);
+        }
+        
         throw error;
       }
 
@@ -398,10 +425,25 @@ const IELTSWritingTestInterface = () => {
       }
     } catch (error: any) {
       console.error('❌ Grammar feedback catch error:', error);
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to get grammar feedback. Please try again.";
+      
+      if (error?.message?.includes('timeout')) {
+        errorMessage = "The grammar check is taking too long. Please try again in a moment.";
+      } else if (error?.message?.includes('ERR_CONNECTION_CLOSED') || error?.message?.includes('Failed to send a request')) {
+        errorMessage = "Connection error. Please check your internet connection and try again.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      }
+      
       toast({
         title: "Error",
-        description: error?.message || error?.error || "Failed to get grammar feedback. Please try again.",
-        variant: "destructive"
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000
       });
     } finally {
       setIsGrammarLoading(false);
@@ -545,6 +587,53 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       return;
     }
 
+    // Validate word count for non-skipped tasks
+    // If a task is NOT skipped, it MUST meet the minimum word count
+    const task1WordCount = getWordCount(task1Answer);
+    const task2WordCount = getWordCount(task2Answer);
+    const task1MinWords = 150;
+    const task2MinWords = 250;
+
+    // Task 1: If not skipped, must have content AND meet word count
+    if (!task1Skipped) {
+      if (!task1Answer.trim()) {
+        toast({
+          title: "Task 1 is required",
+          description: "Please complete Task 1 or skip it before submitting.",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (task1WordCount < task1MinWords) {
+        toast({
+          title: "Task 1 word count too low",
+          description: `Task 1 requires a minimum of ${task1MinWords} words. You currently have ${task1WordCount} words.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // Task 2: If not skipped, must have content AND meet word count
+    if (!task2Skipped) {
+      if (!task2Answer.trim()) {
+        toast({
+          title: "Task 2 is required",
+          description: "Please complete Task 2 or skip it before submitting.",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (task2WordCount < task2MinWords) {
+        toast({
+          title: "Task 2 word count too low",
+          description: `Task 2 requires a minimum of ${task2MinWords} words. You currently have ${task2WordCount} words.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       // Run AI examiner assessment only (corrections will be generated on-demand in results page)
@@ -667,8 +756,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           testName: test?.test_name,
           testId: testId,
           submissionId: testResult.id,
-          task1Answer,
-          task2Answer,
+          task1Answer: (!task1Skipped && task1Answer.trim()) ? task1Answer.trim() : null,
+          task2Answer: (!task2Skipped && task2Answer.trim()) ? task2Answer.trim() : null,
+          task1Skipped,
+          task2Skipped,
           feedback,
           structured,
           task1Data: task1,
@@ -1101,7 +1192,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={handleGrammarFeedback}
+                                onClick={() => handleGrammarFeedback(0)}
                                 disabled={isGrammarLoading || !task1Answer.trim() || task1Skipped}
                                 className="text-xs rounded-xl"
                                 style={{
@@ -1136,7 +1227,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     <Textarea 
                       value={task1Answer} 
                       onChange={e => setTask1Answer(e.target.value)} 
-                      placeholder={task1Skipped ? "Task 1 is skipped" : "Write your description here..."} 
+                      placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")} 
                       className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                       spellCheck={spellCheckEnabled}
                       disabled={task1Skipped}
@@ -1355,7 +1446,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={handleGrammarFeedback}
+                            onClick={() => handleGrammarFeedback(0)}
                             disabled={isGrammarLoading || !task1Answer.trim()}
                             className="text-xs rounded-xl"
                             style={{
@@ -1390,7 +1481,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <Textarea 
                   value={task1Answer} 
                   onChange={e => setTask1Answer(e.target.value)} 
-                  placeholder={task1Skipped ? "Task 1 is skipped" : "Write your description here..."} 
+                  placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")} 
                   className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                   spellCheck={spellCheckEnabled}
                   disabled={task1Skipped}
@@ -1607,7 +1698,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={handleGrammarFeedback}
+                          onClick={() => handleGrammarFeedback(0)}
                           disabled={isGrammarLoading || !task2Answer.trim() || task2Skipped}
                           className="text-xs rounded-xl"
                           style={{
@@ -1713,9 +1804,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </Button>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Label htmlFor="feedback-language-task2" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
-                      Feedback:
-                    </Label>
+                  <Label htmlFor="feedback-language-task2" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                    Feedback:
+                  </Label>
                   <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
                     <SelectTrigger 
                       id="feedback-language-task2"
@@ -1815,7 +1906,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       </TooltipProvider>
                   <Button 
                     onClick={submitTest} 
-                        disabled={isSubmitting || ((task1Skipped || !task1Answer.trim()) && (task2Skipped || !task2Answer.trim()))} 
+                    disabled={
+                      isSubmitting || 
+                      ((task1Skipped || !task1Answer.trim()) && (task2Skipped || !task2Answer.trim())) ||
+                      (!task1Skipped && task1Answer.trim() && getWordCount(task1Answer) < 150) ||
+                      (!task2Skipped && task2Answer.trim() && getWordCount(task2Answer) < 250) ||
+                      (!task1Skipped && !task1Answer.trim()) ||
+                      (!task2Skipped && !task2Answer.trim())
+                    } 
                     variant="default"
                     className="min-w-[120px]"
                     style={{

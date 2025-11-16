@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -141,6 +141,8 @@ export default function IELTSWritingProResults() {
     task2Data?: any;
     task1Answer?: string;
     task2Answer?: string;
+    task1Skipped?: boolean;
+    task2Skipped?: boolean;
   }>({});
 
   // Try to get data from location state first, then fallback to database
@@ -290,8 +292,10 @@ export default function IELTSWritingProResults() {
           full_report_markdown: `# IELTS Writing Assessment Results\n\n## Overall Band Score: ${savedOverallBand}\n\nThis assessment was reconstructed from your saved test results. For the most accurate and detailed feedback, please take a new test.`
         },
         testName: testResult.test_type || 'IELTS Writing Test',
-        task1Answer: task1Result?.user_response || '',
-        task2Answer: task2Result?.user_response || '',
+        task1Answer: task1Result?.user_response || null,
+        task2Answer: task2Result?.user_response || null,
+        task1Skipped: !task1Result,
+        task2Skipped: !task2Result,
         task1Data: {
           title: testData?.task1Data?.title || 'Task 1',
           instructions: task1Result?.prompt_text || testData?.task1Data?.instructions || 'Task 1 Instructions',
@@ -318,7 +322,7 @@ export default function IELTSWritingProResults() {
     }
   };
 
-  // On-demand feedback generation if missing in DB/response
+  // On-demand feedback generation if missing in DB/response (fallback only)
   useEffect(() => {
     const generateIfMissing = async () => {
       if (!resultsData || !user) return;
@@ -326,11 +330,24 @@ export default function IELTSWritingProResults() {
       const current = resultsData.structured;
       if (!current) return;
 
-      // Always generate analysis if sentence_comparisons are missing,
-      // regardless of whether generic improvements exist from the examiner
-      const needsTask1 = !!resultsData.task1Answer && (!current.task1?.sentence_comparisons || (current.task1?.sentence_comparisons as any[])?.length === 0);
-      const needsTask2 = !!resultsData.task2Answer && (!current.task2?.sentence_comparisons || (current.task2?.sentence_comparisons as any[])?.length === 0);
-      if (!needsTask1 && !needsTask2) return;
+      // Only generate if sentence_comparisons are truly missing (fallback for old submissions)
+      // New submissions should have sentence_comparisons from the examiner function
+      const needsTask1 = !!resultsData.task1Answer && 
+        (!current.task1?.sentence_comparisons || 
+         (current.task1?.sentence_comparisons as any[])?.length === 0 ||
+         !current.task1?.original_spans || 
+         !current.task1?.corrected_spans);
+      const needsTask2 = !!resultsData.task2Answer && 
+        (!current.task2?.sentence_comparisons || 
+         (current.task2?.sentence_comparisons as any[])?.length === 0 ||
+         !current.task2?.original_spans || 
+         !current.task2?.corrected_spans);
+      if (!needsTask1 && !needsTask2) {
+        console.log('✅ sentence_comparisons already present, skipping on-demand generation');
+        return;
+      }
+      
+      console.log('⚠️ sentence_comparisons missing, generating on-demand (fallback)...');
 
       try {
         setLoading(true);
@@ -407,7 +424,16 @@ export default function IELTSWritingProResults() {
           }
         }
 
-        setResultsData(prev => ({ ...prev, structured: updates }));
+        // Only update if there are actual changes to prevent unnecessary re-renders
+        const hasChanges = 
+          (needsTask1 && updates.task1?.sentence_comparisons) ||
+          (needsTask2 && updates.task2?.sentence_comparisons);
+        
+        if (hasChanges) {
+          setResultsData(prev => ({ ...prev, structured: updates }));
+        } else {
+          console.log('✅ No changes needed, skipping state update');
+        }
       } catch (e) {
         console.error('⚠️ On-demand feedback generation failed:', e);
       } finally {
@@ -415,8 +441,34 @@ export default function IELTSWritingProResults() {
       }
     };
 
+    // Only run if sentence_comparisons are truly missing
+    const current = resultsData?.structured;
+    const hasTask1Spans = current?.task1?.sentence_comparisons && 
+                          Array.isArray(current.task1.sentence_comparisons) && 
+                          current.task1.sentence_comparisons.length > 0 &&
+                          current.task1.original_spans &&
+                          current.task1.corrected_spans;
+    const hasTask2Spans = current?.task2?.sentence_comparisons && 
+                          Array.isArray(current.task2.sentence_comparisons) && 
+                          current.task2.sentence_comparisons.length > 0 &&
+                          current.task2.original_spans &&
+                          current.task2.corrected_spans;
+    
+    // Skip if both tasks already have spans
+    if (hasTask1Spans && hasTask2Spans) {
+      return;
+    }
+    
+    // Skip if task1 has spans and no task2 answer, or vice versa
+    if (hasTask1Spans && !resultsData?.task2Answer) {
+      return;
+    }
+    if (hasTask2Spans && !resultsData?.task1Answer) {
+      return;
+    }
+
     generateIfMissing();
-  }, [resultsData?.structured, resultsData?.task1Answer, resultsData?.task2Answer, user]);
+  }, [resultsData?.structured, resultsData?.task1Answer, resultsData?.task2Answer, user, location.state]);
 
   const {
     structured,
@@ -511,7 +563,19 @@ export default function IELTSWritingProResults() {
 
   const t1OverallComputed = computeTaskOverall(structured?.task1, 'task1');
   const t2OverallComputed = computeTaskOverall(structured?.task2, 'task2');
-  const denom = (Number.isNaN(t1OverallComputed) ? 0 : 1) + (Number.isNaN(t2OverallComputed) ? 0 : 2);
+  
+  // Check if tasks are skipped
+  const task1Skipped = resultsData.task1Skipped || !resultsData.task1Answer || !resultsData.task1Answer.trim();
+  const task2Skipped = resultsData.task2Skipped || !resultsData.task2Answer || !resultsData.task2Answer.trim();
+  
+  // Only include non-skipped tasks in the calculation
+  const hasTask1 = !task1Skipped && !Number.isNaN(t1OverallComputed);
+  const hasTask2 = !task2Skipped && !Number.isNaN(t2OverallComputed);
+  
+  // Calculate denominator based on which tasks are actually completed (not skipped)
+  // Task 1 = 1/3 weight, Task 2 = 2/3 weight
+  const denom = (hasTask1 ? 1 : 0) + (hasTask2 ? 2 : 0);
+  
   // Validate scores are within valid IELTS range (0-9)
   const validateScore = (score: number): number => {
     if (Number.isNaN(score) || score < 0) return 0;
@@ -519,11 +583,13 @@ export default function IELTSWritingProResults() {
     return score;
   };
   
-  const t1Valid = validateScore(t1OverallComputed);
-  const t2Valid = validateScore(t2OverallComputed);
+  const t1Valid = hasTask1 ? validateScore(t1OverallComputed) : 0;
+  const t2Valid = hasTask2 ? validateScore(t2OverallComputed) : 0;
+  
+  // Calculate overall band only from completed (non-skipped) tasks
   const overallBand = denom > 0
-    ? roundIELTS(((Number.isNaN(t1Valid) ? 0 : roundIELTS(t1Valid)) + 2 * (Number.isNaN(t2Valid) ? 0 : roundIELTS(t2Valid))) / denom)
-    : 0;
+    ? roundIELTS((t1Valid + 2 * t2Valid) / denom)
+    : (hasTask1 ? roundIELTS(t1Valid) : (hasTask2 ? roundIELTS(t2Valid) : 0));
   const overallMeta = bandToDesc(overallBand);
 
   const TaskSection = ({
@@ -532,13 +598,37 @@ export default function IELTSWritingProResults() {
     type,
     computedOverall,
     userAnswer,
+    isSkipped,
   }: {
     title: string;
     task?: TaskAssessment;
     type: "task1" | "task2";
     computedOverall?: number;
     userAnswer?: string;
+    isSkipped?: boolean;
   }) => {
+    // Show skipped message if task is skipped or has no answer
+    if (isSkipped || !userAnswer || !userAnswer.trim()) {
+      return (
+        <Card className="bg-surface-1 border-2 border-amber-200 rounded-3xl shadow-lg mb-8">
+          <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100">
+            <CardTitle className="flex items-center gap-2 text-amber-700">
+              <div className="p-2 rounded-xl bg-amber-200">
+                {type === "task1" ? "📊" : "✍️"}
+              </div>
+              {title} - Skipped
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 text-center">
+            <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 rounded-full px-4 py-2 mb-2">
+              This task was skipped
+            </Badge>
+            <p className="text-sm text-text-secondary mt-2">No assessment available for this task</p>
+          </CardContent>
+        </Card>
+      );
+    }
+    
     if (!task) return null;
     const crit = task.criteria || {};
     const items = [
@@ -707,18 +797,18 @@ export default function IELTSWritingProResults() {
                 </div>
               </div>
               <ScoreSpiderChart 
-                task1Scores={{
-                  task_achievement: structured?.task1?.criteria?.task_achievement?.band,
-                  coherence_and_cohesion: structured?.task1?.criteria?.coherence_and_cohesion?.band,
-                  lexical_resource: structured?.task1?.criteria?.lexical_resource?.band,
-                  grammatical_range_and_accuracy: structured?.task1?.criteria?.grammatical_range_and_accuracy?.band
-                }}
-                task2Scores={{
-                  task_response: structured?.task2?.criteria?.task_response?.band,
-                  coherence_and_cohesion: structured?.task2?.criteria?.coherence_and_cohesion?.band,
-                  lexical_resource: structured?.task2?.criteria?.lexical_resource?.band,
-                  grammatical_range_and_accuracy: structured?.task2?.criteria?.grammatical_range_and_accuracy?.band
-                }}
+                task1Scores={!task1Skipped && structured?.task1 ? {
+                  task_achievement: structured.task1.criteria?.task_achievement?.band,
+                  coherence_and_cohesion: structured.task1.criteria?.coherence_and_cohesion?.band,
+                  lexical_resource: structured.task1.criteria?.lexical_resource?.band,
+                  grammatical_range_and_accuracy: structured.task1.criteria?.grammatical_range_and_accuracy?.band
+                } : undefined}
+                task2Scores={!task2Skipped && structured?.task2 ? {
+                  task_response: structured.task2.criteria?.task_response?.band,
+                  coherence_and_cohesion: structured.task2.criteria?.coherence_and_cohesion?.band,
+                  lexical_resource: structured.task2.criteria?.lexical_resource?.band,
+                  grammatical_range_and_accuracy: structured.task2.criteria?.grammatical_range_and_accuracy?.band
+                } : undefined}
                 className="w-full max-w-sm lg:w-80 shrink-0"
               />
             </div>
@@ -731,7 +821,8 @@ export default function IELTSWritingProResults() {
           task={structured?.task1} 
           type="task1" 
           computedOverall={t1OverallComputed}
-          userAnswer={task1Answer}
+          userAnswer={resultsData.task1Answer}
+          isSkipped={resultsData.task1Skipped || !resultsData.task1Answer || !resultsData.task1Answer.trim()}
         />
         {(task1Data?.instructions || task1Data?.imageUrl) && (
           <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8">
@@ -761,7 +852,8 @@ export default function IELTSWritingProResults() {
           task={structured?.task2} 
           type="task2" 
           computedOverall={t2OverallComputed}
-          userAnswer={task2Answer}
+          userAnswer={resultsData.task2Answer}
+          isSkipped={resultsData.task2Skipped || !resultsData.task2Answer || !resultsData.task2Answer.trim()}
         />
         {task2Data?.instructions && (
           <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8">

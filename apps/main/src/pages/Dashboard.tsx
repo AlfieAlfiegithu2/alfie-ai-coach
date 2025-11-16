@@ -231,15 +231,14 @@ const Dashboard = () => {
     if (!user || authLoading || loading) return;
     
     const setupRequired = searchParams.get('setup') === 'required';
-    const needsSetup = !userPreferences || !userPreferences.target_test_type;
     
-    if (setupRequired || needsSetup) {
-      console.log('🆕 New user detected, opening settings modal');
+    // Only open settings modal if explicitly required via query parameter
+    // Don't auto-open based on missing preferences - let users access it manually
+    if (setupRequired) {
+      console.log('🆕 Settings setup explicitly required, opening settings modal');
       setSettingsModalOpen(true);
       // Remove query parameter from URL
-      if (setupRequired) {
-        setSearchParams({}, { replace: true });
-      }
+      setSearchParams({}, { replace: true });
       // Show toast to guide user
       toast({
         title: "Welcome! Complete your profile",
@@ -247,7 +246,7 @@ const Dashboard = () => {
         duration: 5000,
       });
     }
-  }, [user, userPreferences, authLoading, loading, searchParams, setSearchParams, toast]);
+  }, [user, authLoading, loading, searchParams, setSearchParams, toast]);
 
   // Fetch user data from Supabase
   useEffect(() => {

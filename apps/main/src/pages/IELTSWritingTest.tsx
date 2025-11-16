@@ -160,60 +160,37 @@ const IELTSWritingTestInterface = () => {
     setIsLoadingTest(true);
     try {
       if (!testId) {
-        console.error('❌ No testId provided');
         throw new Error('Test ID is required');
       }
 
-      console.log('🔍 Loading test data for testId:', testId);
-
-      // Load test and questions in parallel for faster loading
+      // Load test and questions in parallel - only select needed fields for faster queries
       const [testResult, questionsResult] = await Promise.all([
         supabase
           .from('tests')
-          .select('*')
+          .select('id, test_name, test_type, module, skill_category, test_subtype')
           .eq('id', testId)
           .maybeSingle(),
         supabase
           .from('questions')
-          .select('*')
+          .select('id, test_id, part_number, question_text, passage_text, image_url, explanation, transcription')
           .eq('test_id', testId)
           .in('part_number', [1, 2])
           .order('part_number')
       ]);
 
-      console.log('📊 Test query result:', { 
-        hasData: !!testResult.data, 
-        error: testResult.error,
-        testName: testResult.data?.test_name 
-      });
-      console.log('📊 Questions query result:', { 
-        count: questionsResult.data?.length || 0, 
-        error: questionsResult.error 
-      });
-
       if (testResult.error) {
-        console.error('❌ Test query error:', testResult.error);
         throw testResult.error;
       }
       if (questionsResult.error) {
-        console.error('❌ Questions query error:', questionsResult.error);
         throw questionsResult.error;
       }
 
       const testData = testResult.data;
       if (!testData) {
-        console.error('❌ Test not found in database for testId:', testId);
-        // Try to find any writing tests to help debug
-        const { data: allWritingTests } = await supabase
-          .from('tests')
-          .select('id, test_name, module, skill_category')
-          .or('module.eq.Writing,skill_category.eq.Writing')
-          .limit(5);
-        console.log('📋 Available writing tests:', allWritingTests);
-        throw new Error(`Test not found. Available test IDs: ${allWritingTests?.map(t => t.id).join(', ') || 'none'}`);
+        throw new Error('Test not found');
       }
       
-      console.log('✅ Test loaded successfully:', testData.test_name);
+      // Batch state updates to reduce re-renders
       setTest(testData);
 
       const questions = questionsResult.data || [];
@@ -222,46 +199,45 @@ const IELTSWritingTestInterface = () => {
       const task1Question = questions.find(q => q.part_number === 1);
       const task2Question = questions.find(q => q.part_number === 2);
 
-      // Always set tasks, even if questions aren't found (to prevent infinite loading)
-      if (task1Question) {
-        setTask1({
-          id: task1Question.id,
-          title: task1Question.question_text || "Task 1 - Data Description",
-          instructions: task1Question.passage_text || "",
-          imageUrl: task1Question.image_url || "",
-          imageContext: task1Question.explanation || "",
-          modelAnswer: task1Question.transcription || ""
-        });
-      } else {
-        // Set default task1 if not found
-        setTask1({
-          id: 'default-task1',
-          title: "Task 1 - Data Description",
-          instructions: "Task 1 question not found. Please contact support.",
-          imageUrl: "",
-          imageContext: "",
-          modelAnswer: ""
-        });
+      // Preload image if available for faster display
+      if (task1Question?.image_url) {
+        const img = new Image();
+        img.src = task1Question.image_url;
       }
 
-      if (task2Question) {
-        setTask2({
-          id: task2Question.id,
-          title: task2Question.question_text || "Task 2 - Essay Writing",
-          instructions: task2Question.passage_text || "",
-          modelAnswer: task2Question.transcription || ""
-        });
-      } else {
-        // Set default task2 if not found
-        setTask2({
-          id: 'default-task2',
-          title: "Task 2 - Essay Writing",
-          instructions: "Task 2 question not found. Please contact support.",
-          modelAnswer: ""
-        });
-      }
+      // Batch task state updates
+      const newTask1: Task = task1Question ? {
+        id: task1Question.id,
+        title: task1Question.question_text || "Task 1 - Data Description",
+        instructions: task1Question.passage_text || "",
+        imageUrl: task1Question.image_url || "",
+        imageContext: task1Question.explanation || "",
+        modelAnswer: task1Question.transcription || ""
+      } : {
+        id: 'default-task1',
+        title: "Task 1 - Data Description",
+        instructions: "Task 1 question not found. Please contact support.",
+        imageUrl: "",
+        imageContext: "",
+        modelAnswer: ""
+      };
+
+      const newTask2: Task = task2Question ? {
+        id: task2Question.id,
+        title: task2Question.question_text || "Task 2 - Essay Writing",
+        instructions: task2Question.passage_text || "",
+        modelAnswer: task2Question.transcription || ""
+      } : {
+        id: 'default-task2',
+        title: "Task 2 - Essay Writing",
+        instructions: "Task 2 question not found. Please contact support.",
+        modelAnswer: ""
+      };
+
+      // Update both tasks in a single batch
+      setTask1(newTask1);
+      setTask2(newTask2);
     } catch (error: any) {
-      console.error('❌ Error loading test data:', error);
       const errorMessage = error?.message || 'Failed to load test data. Please try again.';
       toast({
         title: "Error",
@@ -280,9 +256,7 @@ const IELTSWritingTestInterface = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
-      console.log('🔍 Loading available writing tests...');
-      
-      // Match admin query exactly: filter for tests where module='Writing' OR skill_category='Writing'
+      // Optimized query - only select needed fields
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
@@ -291,68 +265,36 @@ const IELTSWritingTestInterface = () => {
         .order('created_at', { ascending: false });
 
       if (testsError) {
-        console.error('❌ Error loading tests:', testsError);
         throw testsError;
       }
 
-      console.log('📊 Raw tests data:', tests);
-
       // Filter out any null or invalid tests
       let finalTests = (tests || []).filter((test: any) => {
-        const isValid = test && test.id && (test.test_name || test.module || test.skill_category);
-        if (!isValid) {
-          console.warn('⚠️ Filtered out invalid test:', test);
-        }
-        return isValid;
+        return test && test.id && (test.test_name || test.module || test.skill_category);
       });
 
-      // Fallback: if no tests found with exact match, try case-insensitive filter
+      // Fallback: if no tests found with exact match, try broader search
       if (finalTests.length === 0) {
-        console.log('🔄 No exact matches, trying broader search...');
         const { data: allIeltsTests, error: allTestsError } = await supabase
           .from('tests')
           .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
           .eq('test_type', 'IELTS')
           .order('created_at', { ascending: false });
         
-        if (allTestsError) {
-          console.error('❌ Error loading all IELTS tests:', allTestsError);
-        } else {
-          console.log('📊 All IELTS tests:', allIeltsTests);
+        if (!allTestsError && allIeltsTests) {
           // Filter client-side exactly like admin does
-          finalTests = (allIeltsTests || []).filter((test: any) => {
-            const matches = test && test.id && (
+          finalTests = allIeltsTests.filter((test: any) => {
+            return test && test.id && (
               test.module === 'Writing' || 
               test.skill_category === 'Writing' || 
               test.test_name?.toLowerCase().includes('writing')
             );
-            if (!matches && test) {
-              console.log('⚠️ Test does not match Writing filter:', { 
-                id: test.id, 
-                name: test.test_name, 
-                module: test.module, 
-                skill_category: test.skill_category 
-              });
-            }
-            return matches;
           });
         }
-      }
-
-      console.log(`✅ Found ${finalTests.length} available writing tests`);
-      if (finalTests.length > 0) {
-        console.log('📋 Test details:', finalTests.map(t => ({ 
-          id: t.id, 
-          name: t.test_name, 
-          module: t.module, 
-          skill_category: t.skill_category,
-          test_subtype: t.test_subtype
-        })));
       }
       
       setAvailableTests(finalTests);
     } catch (error) {
-      console.error('❌ Error loading tests:', error);
       toast({
         title: "Error",
         description: "Failed to load available writing tests. Please try again.",
@@ -455,8 +397,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
       setCurrentChatMessages(prev => [...prev, botMessage]);
     } catch (error: any) {
-      console.error('Error sending chat message:', error);
-      
       // Handle different error types with better user messaging
       let errorTitle = "Connection Issue";
       let errorDescription = "Failed to get response from Catie. Please try again.";
@@ -635,10 +575,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         }
       });
     } catch (error: any) {
-      console.error('Error submitting test:', error);
       toast({
         title: "Error",
-        description: "Failed to submit test for evaluation",
+        description: error?.message || "Failed to submit test for evaluation",
         variant: "destructive"
       });
     } finally {
@@ -718,7 +657,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {testsToShow.map((test) => {
                         if (!test || !test.id) {
-                          console.warn('Invalid test object:', test);
                           return null;
                         }
                         return (
@@ -827,16 +765,17 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
              backgroundColor: themeStyles.backgroundImageColor
            }} />
       <div 
-        className="relative z-10 min-h-screen flex flex-col"
+        className="relative z-10 flex flex-col"
         style={{
-          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent',
+          minHeight: 'calc(100vh - 80px)'
         }}
       >
         <StudentLayout title="IELTS Writing Test" showBackButton>
-          <div className="flex-1 flex justify-center min-h-[calc(100vh-120px)] py-8 sm:items-center sm:py-8">
-            <div className="w-full max-w-6xl mx-auto space-y-6 px-4 flex flex-col">
+          <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
+            <div className="w-full max-w-6xl mx-auto space-y-8 px-4 flex flex-col">
         {/* Task Description Section */}
-        <Card className="rounded-3xl relative" style={{
+        <Card className="rounded-3xl relative mt-6" style={{
           backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
           borderColor: themeStyles.border,
           backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
@@ -848,7 +787,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           ...themeStyles.cardStyle
         }}>
           {/* Floating Controls - Timer, Theme, Task Selection - Positioned at top-right of this card */}
-          <div className="absolute -top-12 right-0 z-40 flex items-center gap-3">
+          <div className="absolute -top-12 right-0 z-40 flex items-center gap-4">
           {/* Timer */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -953,7 +892,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {/* Main Content Layout */}
         {currentTask === 1 ? (
           currentTaskData?.imageUrl ? (
-            <ResizablePanelGroup direction="horizontal" className="gap-6" style={{
+            <ResizablePanelGroup direction="horizontal" className="gap-8" style={{
               minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
             }}>
               <ResizablePanel defaultSize={55} minSize={40}>
@@ -1010,6 +949,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           src={currentTaskData.imageUrl} 
                           alt="Task 1 visual data" 
                           className="max-w-full h-auto object-contain"
+                          loading="eager"
+                          decoding="async"
                           style={{
                             transform: `scale(${zoomScale})`,
                             transformOrigin: 'center',
@@ -1041,12 +982,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       Words: {getWordCount(task1Answer)} • Min: 150
                     </div>
                   </CardHeader>
-                  <CardContent className="h-full">
+                  <CardContent className="h-full p-4">
                     <Textarea 
                       value={task1Answer} 
                       onChange={e => setTask1Answer(e.target.value)} 
                       placeholder="Write your description here..." 
-                      className="h-[450px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                      className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                         borderColor: themeStyles.border,
@@ -1055,19 +996,111 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         boxShadow: 'none'
                       }} 
                     />
-                    <div className="flex justify-between items-center mt-4">
+                    <div className="flex justify-between items-center mt-4 gap-3">
                       <div></div>
-                      <Button 
-                        onClick={proceedToTask2} 
-                        disabled={!task1Answer.trim()} 
-                        variant="default"
-                        style={{
-                          backgroundColor: themeStyles.buttonPrimary,
-                          color: '#ffffff'
-                        }}
-                      >
-                        Continue to Task 2
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <Label htmlFor="feedback-language-task1" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                          Feedback:
+                        </Label>
+                        <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                          <SelectTrigger 
+                            id="feedback-language-task1"
+                            className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              borderColor: themeStyles.border,
+                              color: themeStyles.textPrimary,
+                              backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                            }}
+                          >
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                            <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                            <SelectItem value="es">Español (Spanish)</SelectItem>
+                            <SelectItem value="fr">Français (French)</SelectItem>
+                            <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                            <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                            <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                            <SelectItem value="ru">Русский (Russian)</SelectItem>
+                            <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                            <SelectItem value="ur">اردو (Urdu)</SelectItem>
+                            <SelectItem value="id">Bahasa Indonesia</SelectItem>
+                            <SelectItem value="de">Deutsch (German)</SelectItem>
+                            <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                            <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
+                            <SelectItem value="it">Italiano (Italian)</SelectItem>
+                            <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                            <SelectItem value="fa">فارسی (Persian)</SelectItem>
+                            <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+                            <SelectItem value="ne">नेपালी (Nepali)</SelectItem>
+                            <SelectItem value="th">ไทย (Thai)</SelectItem>
+                            <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
+                            <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
+                            <SelectItem value="te">తెలుగు (Telugu)</SelectItem>
+                            <SelectItem value="mr">मराठी (Marathi)</SelectItem>
+                            <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                            <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
+                            <SelectItem value="ml">മലയാളം (Malayalam)</SelectItem>
+                            <SelectItem value="pa">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
+                            <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
+                            <SelectItem value="as">অসমীয়া (Assamese)</SelectItem>
+                            <SelectItem value="sw">Kiswahili (Swahili)</SelectItem>
+                            <SelectItem value="ha">Hausa</SelectItem>
+                            <SelectItem value="yo">Yorùbá (Yoruba)</SelectItem>
+                            <SelectItem value="ig">Ásụ̀sụ́ Ìgbò (Igbo)</SelectItem>
+                            <SelectItem value="am">አማርኛ (Amharic)</SelectItem>
+                            <SelectItem value="zu">isiZulu (Zulu)</SelectItem>
+                            <SelectItem value="af">Afrikaans</SelectItem>
+                            <SelectItem value="pl">Polski (Polish)</SelectItem>
+                            <SelectItem value="uk">Українська (Ukrainian)</SelectItem>
+                            <SelectItem value="ro">Română (Romanian)</SelectItem>
+                            <SelectItem value="nl">Nederlands (Dutch)</SelectItem>
+                            <SelectItem value="el">Ελληνικά (Greek)</SelectItem>
+                            <SelectItem value="cs">Čeština (Czech)</SelectItem>
+                            <SelectItem value="hu">Magyar (Hungarian)</SelectItem>
+                            <SelectItem value="sv">Svenska (Swedish)</SelectItem>
+                            <SelectItem value="bg">Български (Bulgarian)</SelectItem>
+                            <SelectItem value="sr">Српски (Serbian)</SelectItem>
+                            <SelectItem value="hr">Hrvatski (Croatian)</SelectItem>
+                            <SelectItem value="sk">Slovenčina (Slovak)</SelectItem>
+                            <SelectItem value="no">Norsk (Norwegian)</SelectItem>
+                            <SelectItem value="da">Dansk (Danish)</SelectItem>
+                            <SelectItem value="fi">Suomi (Finnish)</SelectItem>
+                            <SelectItem value="sq">Shqip (Albanian)</SelectItem>
+                            <SelectItem value="sl">Slovenščina (Slovenian)</SelectItem>
+                            <SelectItem value="et">Eesti (Estonian)</SelectItem>
+                            <SelectItem value="lv">Latviešu (Latvian)</SelectItem>
+                            <SelectItem value="lt">Lietuvių (Lithuanian)</SelectItem>
+                            <SelectItem value="uz">Oʻzbek (Uzbek)</SelectItem>
+                            <SelectItem value="kk">Қазақша (Kazakh)</SelectItem>
+                            <SelectItem value="az">Azərbaycan (Azerbaijani)</SelectItem>
+                            <SelectItem value="mn">Монгол (Mongolian)</SelectItem>
+                            <SelectItem value="he">עברית (Hebrew)</SelectItem>
+                            <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                            <SelectItem value="ka">ქართული (Georgian)</SelectItem>
+                            <SelectItem value="hy">Հայերեն (Armenian)</SelectItem>
+                            <SelectItem value="tl">Tagalog</SelectItem>
+                            <SelectItem value="my">မြန်မာ (Burmese)</SelectItem>
+                            <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
+                            <SelectItem value="si">සිංහල (Sinhala)</SelectItem>
+                            <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          onClick={proceedToTask2} 
+                          disabled={!task1Answer.trim()} 
+                          variant="default"
+                          style={{
+                            backgroundColor: themeStyles.buttonPrimary,
+                            color: '#ffffff'
+                          }}
+                        >
+                          Continue to Task 2
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1095,12 +1128,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <Textarea 
                   value={task1Answer} 
                   onChange={e => setTask1Answer(e.target.value)} 
                   placeholder="Write your description here..." 
-                  className="min-h-[400px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                  className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                     borderColor: themeStyles.border,
@@ -1109,19 +1142,110 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     boxShadow: 'none'
                   }} 
                 />
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex justify-between items-center mt-4 gap-3">
                   <div></div>
-                  <Button 
-                    onClick={proceedToTask2} 
-                    disabled={!task1Answer.trim()} 
-                    variant="default"
-                    style={{
-                      backgroundColor: themeStyles.buttonPrimary,
-                      color: '#ffffff'
-                    }}
-                  >
-                    Continue to Task 2
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="feedback-language-task1-noimg" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                      Feedback:
+                    </Label>
+                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                      <SelectTrigger 
+                        id="feedback-language-task1-noimg"
+                        className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary,
+                          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                        }}
+                      >
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                        <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                        <SelectItem value="es">Español (Spanish)</SelectItem>
+                        <SelectItem value="fr">Français (French)</SelectItem>
+                        <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                        <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                        <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                        <SelectItem value="ru">Русский (Russian)</SelectItem>
+                        <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                        <SelectItem value="ur">اردو (Urdu)</SelectItem>
+                        <SelectItem value="id">Bahasa Indonesia</SelectItem>
+                        <SelectItem value="de">Deutsch (German)</SelectItem>
+                        <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                        <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
+                        <SelectItem value="it">Italiano (Italian)</SelectItem>
+                        <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                        <SelectItem value="fa">فارسی (Persian)</SelectItem>
+                        <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+                        <SelectItem value="th">ไทย (Thai)</SelectItem>
+                        <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
+                        <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
+                        <SelectItem value="te">తెలుగు (Telugu)</SelectItem>
+                        <SelectItem value="mr">मराठी (Marathi)</SelectItem>
+                        <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                        <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
+                        <SelectItem value="ml">മലയാളം (Malayalam)</SelectItem>
+                        <SelectItem value="pa">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
+                        <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
+                        <SelectItem value="as">অসমীয়া (Assamese)</SelectItem>
+                        <SelectItem value="sw">Kiswahili (Swahili)</SelectItem>
+                        <SelectItem value="ha">Hausa</SelectItem>
+                        <SelectItem value="yo">Yorùbá (Yoruba)</SelectItem>
+                        <SelectItem value="ig">Ásụ̀sụ́ Ìgbò (Igbo)</SelectItem>
+                        <SelectItem value="am">አማርኛ (Amharic)</SelectItem>
+                        <SelectItem value="zu">isiZulu (Zulu)</SelectItem>
+                        <SelectItem value="af">Afrikaans</SelectItem>
+                        <SelectItem value="pl">Polski (Polish)</SelectItem>
+                        <SelectItem value="uk">Українська (Ukrainian)</SelectItem>
+                        <SelectItem value="ro">Română (Romanian)</SelectItem>
+                        <SelectItem value="nl">Nederlands (Dutch)</SelectItem>
+                        <SelectItem value="el">Ελληνικά (Greek)</SelectItem>
+                        <SelectItem value="cs">Čeština (Czech)</SelectItem>
+                        <SelectItem value="hu">Magyar (Hungarian)</SelectItem>
+                        <SelectItem value="sv">Svenska (Swedish)</SelectItem>
+                        <SelectItem value="bg">Български (Bulgarian)</SelectItem>
+                        <SelectItem value="sr">Српски (Serbian)</SelectItem>
+                        <SelectItem value="hr">Hrvatski (Croatian)</SelectItem>
+                        <SelectItem value="sk">Slovenčina (Slovak)</SelectItem>
+                        <SelectItem value="no">Norsk (Norwegian)</SelectItem>
+                        <SelectItem value="da">Dansk (Danish)</SelectItem>
+                        <SelectItem value="fi">Suomi (Finnish)</SelectItem>
+                        <SelectItem value="sq">Shqip (Albanian)</SelectItem>
+                        <SelectItem value="sl">Slovenščina (Slovenian)</SelectItem>
+                        <SelectItem value="et">Eesti (Estonian)</SelectItem>
+                        <SelectItem value="lv">Latviešu (Latvian)</SelectItem>
+                        <SelectItem value="lt">Lietuvių (Lithuanian)</SelectItem>
+                        <SelectItem value="uz">Oʻzbek (Uzbek)</SelectItem>
+                        <SelectItem value="kk">Қазақша (Kazakh)</SelectItem>
+                        <SelectItem value="az">Azərbaycan (Azerbaijani)</SelectItem>
+                        <SelectItem value="mn">Монгол (Mongolian)</SelectItem>
+                        <SelectItem value="he">עברית (Hebrew)</SelectItem>
+                        <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                        <SelectItem value="ka">ქართული (Georgian)</SelectItem>
+                        <SelectItem value="hy">Հայերեն (Armenian)</SelectItem>
+                        <SelectItem value="tl">Tagalog</SelectItem>
+                        <SelectItem value="my">မြန်မာ (Burmese)</SelectItem>
+                        <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
+                        <SelectItem value="si">සිංහල (Sinhala)</SelectItem>
+                        <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={proceedToTask2} 
+                      disabled={!task1Answer.trim()} 
+                      variant="default"
+                      style={{
+                        backgroundColor: themeStyles.buttonPrimary,
+                        color: '#ffffff'
+                      }}
+                    >
+                      Continue to Task 2
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1148,12 +1272,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               <Textarea 
                 value={task2Answer} 
                 onChange={e => setTask2Answer(e.target.value)} 
                 placeholder="Write your essay here..." 
-                className="min-h-[400px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                 style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                   borderColor: themeStyles.border,
@@ -1162,59 +1286,111 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   boxShadow: 'none'
                 }} 
               />
-              <div className="flex justify-end items-center gap-3 mt-4">
-                {/* Feedback Language Selector - Simple, next to Submit */}
-                <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                  <SelectTrigger 
-                    className="w-[140px] h-9 text-sm border transition-colors rounded-xl"
+              <div className="mt-4">
+                {/* Feedback Language and Submit Button */}
+                <div className="flex items-center justify-end gap-3">
+                  <Label htmlFor="feedback-language-task2" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                    Feedback:
+                  </Label>
+                  <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                    <SelectTrigger 
+                      id="feedback-language-task2"
+                      className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                      }}
+                    >
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                      <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                      <SelectItem value="es">Español (Spanish)</SelectItem>
+                      <SelectItem value="fr">Français (French)</SelectItem>
+                      <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                      <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                      <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                      <SelectItem value="ru">Русский (Russian)</SelectItem>
+                      <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                      <SelectItem value="ur">اردو (Urdu)</SelectItem>
+                      <SelectItem value="id">Bahasa Indonesia</SelectItem>
+                      <SelectItem value="de">Deutsch (German)</SelectItem>
+                      <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                      <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
+                      <SelectItem value="it">Italiano (Italian)</SelectItem>
+                      <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                      <SelectItem value="fa">فارسی (Persian)</SelectItem>
+                      <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+                      <SelectItem value="th">ไทย (Thai)</SelectItem>
+                      <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
+                      <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
+                      <SelectItem value="te">తెలుగు (Telugu)</SelectItem>
+                      <SelectItem value="mr">मराठी (Marathi)</SelectItem>
+                      <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                      <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
+                      <SelectItem value="ml">മലയാളം (Malayalam)</SelectItem>
+                      <SelectItem value="pa">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
+                      <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
+                      <SelectItem value="as">অসমীয়া (Assamese)</SelectItem>
+                      <SelectItem value="sw">Kiswahili (Swahili)</SelectItem>
+                      <SelectItem value="ha">Hausa</SelectItem>
+                      <SelectItem value="yo">Yorùbá (Yoruba)</SelectItem>
+                      <SelectItem value="ig">Ásụ̀sụ́ Ìgbò (Igbo)</SelectItem>
+                      <SelectItem value="am">አማርኛ (Amharic)</SelectItem>
+                      <SelectItem value="zu">isiZulu (Zulu)</SelectItem>
+                      <SelectItem value="af">Afrikaans</SelectItem>
+                      <SelectItem value="pl">Polski (Polish)</SelectItem>
+                      <SelectItem value="uk">Українська (Ukrainian)</SelectItem>
+                      <SelectItem value="ro">Română (Romanian)</SelectItem>
+                      <SelectItem value="nl">Nederlands (Dutch)</SelectItem>
+                      <SelectItem value="el">Ελληνικά (Greek)</SelectItem>
+                      <SelectItem value="cs">Čeština (Czech)</SelectItem>
+                      <SelectItem value="hu">Magyar (Hungarian)</SelectItem>
+                      <SelectItem value="sv">Svenska (Swedish)</SelectItem>
+                      <SelectItem value="bg">Български (Bulgarian)</SelectItem>
+                      <SelectItem value="sr">Српски (Serbian)</SelectItem>
+                      <SelectItem value="hr">Hrvatski (Croatian)</SelectItem>
+                      <SelectItem value="sk">Slovenčina (Slovak)</SelectItem>
+                      <SelectItem value="no">Norsk (Norwegian)</SelectItem>
+                      <SelectItem value="da">Dansk (Danish)</SelectItem>
+                      <SelectItem value="fi">Suomi (Finnish)</SelectItem>
+                      <SelectItem value="sq">Shqip (Albanian)</SelectItem>
+                      <SelectItem value="sl">Slovenščina (Slovenian)</SelectItem>
+                      <SelectItem value="et">Eesti (Estonian)</SelectItem>
+                      <SelectItem value="lv">Latviešu (Latvian)</SelectItem>
+                      <SelectItem value="lt">Lietuvių (Lithuanian)</SelectItem>
+                      <SelectItem value="uz">Oʻzbek (Uzbek)</SelectItem>
+                      <SelectItem value="kk">Қазақша (Kazakh)</SelectItem>
+                      <SelectItem value="az">Azərbaycan (Azerbaijani)</SelectItem>
+                      <SelectItem value="mn">Монгол (Mongolian)</SelectItem>
+                      <SelectItem value="he">עברית (Hebrew)</SelectItem>
+                      <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                      <SelectItem value="ka">ქართული (Georgian)</SelectItem>
+                      <SelectItem value="hy">Հայերեն (Armenian)</SelectItem>
+                      <SelectItem value="tl">Tagalog</SelectItem>
+                      <SelectItem value="my">မြန်မာ (Burmese)</SelectItem>
+                      <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
+                      <SelectItem value="si">සිංහල (Sinhala)</SelectItem>
+                      <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={submitTest} 
+                    disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
+                    variant="default"
+                    className="min-w-[120px]"
                     style={{
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                      borderColor: themeStyles.border,
-                      color: themeStyles.textPrimary,
-                      backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                      backgroundColor: themeStyles.buttonPrimary,
+                      color: '#ffffff'
                     }}
                   >
-                    <SelectValue placeholder="Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ko">한국어 (Korean)</SelectItem>
-                    <SelectItem value="zh">中文 (Chinese)</SelectItem>
-                    <SelectItem value="ja">日本語 (Japanese)</SelectItem>
-                    <SelectItem value="es">Español (Spanish)</SelectItem>
-                    <SelectItem value="pt">Português (Portuguese)</SelectItem>
-                    <SelectItem value="fr">Français (French)</SelectItem>
-                    <SelectItem value="de">Deutsch (German)</SelectItem>
-                    <SelectItem value="ru">Русский (Russian)</SelectItem>
-                    <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
-                    <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
-                    <SelectItem value="ar">العربية (Arabic)</SelectItem>
-                    <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
-                    <SelectItem value="ur">اردو (Urdu)</SelectItem>
-                    <SelectItem value="id">Bahasa Indonesia</SelectItem>
-                    <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
-                    <SelectItem value="fa">فارسی (Persian)</SelectItem>
-                    <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
-                    <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
-                    <SelectItem value="th">ไทย (Thai)</SelectItem>
-                    <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
-                    <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
-                    <SelectItem value="kk">Қазақ (Kazakh)</SelectItem>
-                    <SelectItem value="sr">Српски (Serbian)</SelectItem>
-                    <SelectItem value="tl">Filipino</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  onClick={submitTest} 
-                  disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
-                  variant="default"
-                  style={{
-                    backgroundColor: themeStyles.buttonPrimary,
-                    color: '#ffffff'
-                  }}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Test"}
-                </Button>
+                    {isSubmitting ? "Submitting..." : "Submit Test"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

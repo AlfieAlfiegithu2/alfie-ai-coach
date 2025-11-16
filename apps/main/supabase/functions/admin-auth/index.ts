@@ -145,18 +145,13 @@ serve(async (req) => {
 
     const { action, email, password, name, session_token } = requestData;
 
-    console.log(`Admin auth action: ${action}, password provided: ${!!password}`);
-
     // Handle login first - no database needed
     if (action === 'login') {
       // SIMPLE PASSWORD CHECK - No database dependencies
       const defaultPassword = Deno.env.get('ADMIN_PASSWORD') || 'myye65402086';
       
-      console.log('Login attempt - checking password');
-      
       // Validate password is provided
       if (!password) {
-        console.log('No password provided');
         return new Response(
           JSON.stringify({
             error: 'Password is required',
@@ -169,7 +164,6 @@ serve(async (req) => {
       
       // Simple password check
       if (password !== defaultPassword) {
-        console.log('Invalid password attempt');
         return new Response(
           JSON.stringify({
             error: 'Invalid password',
@@ -184,7 +178,6 @@ serve(async (req) => {
       const sessionToken = generateSecureToken();
       const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours
       
-      console.log('Admin login successful');
       return new Response(
         JSON.stringify({
           success: true,
@@ -258,7 +251,6 @@ serve(async (req) => {
         );
       }
 
-      console.log('Admin registered successfully:', email);
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -305,7 +297,6 @@ serve(async (req) => {
       }
 
       // For simple password auth, we assume the token is valid if it exists and has correct format
-      console.log('Simple password auth validation - token format valid');
       
       return new Response(
         JSON.stringify({

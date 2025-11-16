@@ -8,6 +8,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
   // Production environment variables
   const isProd = mode === 'production';
+  // Check if local Supabase is available (default to false for safety)
+  const useLocalSupabase = process.env.USE_LOCAL_SUPABASE === 'true' && !isProd;
+  const supabaseUrl = useLocalSupabase 
+    ? 'http://localhost:54321/functions/v1' 
+    : 'https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1';
   const earthwormTarget = isProd ? 'https://your-earthworm-app.vercel.app' : 'http://localhost:3000';
   const earthwormApiTarget = isProd ? 'https://your-earthworm-app.vercel.app/api' : 'http://localhost:3001/api';
 
@@ -49,19 +54,41 @@ export default defineConfig(({ mode }) => {
         //     });
         //   },
         // },
-        // Proxy Supabase functions for local development
+        // Proxy Supabase functions - defaults to production for reliability
         '/functions/v1': {
-          target: 'http://localhost:54321/functions/v1',
+          target: supabaseUrl,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/functions\/v1/, ''),
-          secure: false,
+          secure: !useLocalSupabase,
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, res) => {
+              // If localhost isn't available, log warning but don't crash
+              if (useLocalSupabase && err.message.includes('ECONNREFUSED')) {
+                console.warn('⚠️ Local Supabase not running. Set USE_LOCAL_SUPABASE=true only when Supabase local is running.');
+                console.warn('💡 Falling back to production Supabase. To use local, run: supabase start');
+              } else {
+                console.error('Proxy error:', err.message);
+              }
+            });
+          },
         },
-        // Proxy API requests to Supabase functions
+        // Proxy API requests to Supabase functions - defaults to production for reliability
         '/api': {
-          target: isProd ? 'https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1' : 'http://localhost:54321/functions/v1',
+          target: supabaseUrl,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
-          secure: isProd,
+          secure: !useLocalSupabase,
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, res) => {
+              // If localhost isn't available, log warning but don't crash
+              if (useLocalSupabase && err.message.includes('ECONNREFUSED')) {
+                console.warn('⚠️ Local Supabase not running. Set USE_LOCAL_SUPABASE=true only when Supabase local is running.');
+                console.warn('💡 Falling back to production Supabase. To use local, run: supabase start');
+              } else {
+                console.error('Proxy error:', err.message);
+              }
+            });
+          },
         },
       },
     },

@@ -30,3 +30,4 @@ CREATE POLICY "Service role can manage page translations"
 
 
 
+

@@ -125,7 +125,8 @@
     "latestScore": "آخرین امتیاز",
     "noTestsYet": "هنوز تست {{skill}} انجام نشده",
     "startFirstTest": "شروع اولین تست",
-    "deadline": "مهلت"
+    "deadline": "مهلت",
+    "clickToOpenSettings": "برای باز کردن تنظیمات کلیک کنید"
   },
   "studyPlan": {
     "title": "برنامه مطالعه شما",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "جامعه مطالعاتی"
   }
 }

@@ -125,7 +125,8 @@
     "latestScore": "Skor Terkini",
     "noTestsYet": "Belum ada ujian {{skill}} yang diambil",
     "startFirstTest": "Mula Ujian Pertama",
-    "deadline": "Tarikh Akhir"
+    "deadline": "Tarikh Akhir",
+    "clickToOpenSettings": "Klik untuk membuka tetapan"
   },
   "studyPlan": {
     "title": "Pelan Pembelajaran Anda",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Komuniti Pembelajaran"
   }
 }

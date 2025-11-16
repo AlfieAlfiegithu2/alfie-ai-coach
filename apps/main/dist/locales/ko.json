@@ -125,7 +125,8 @@
     "latestScore": "최근 점수",
     "noTestsYet": "아직 {{skill}} 테스트가 없습니다",
     "startFirstTest": "첫 테스트 시작",
-    "deadline": "마감일"
+    "deadline": "마감일",
+    "clickToOpenSettings": "설정을 열려면 클릭하세요"
   },
   "studyPlan": {
     "title": "학습 계획",
@@ -251,6 +252,9 @@
       "title": "Expert Community",
       "description": "Connect with certified instructors and fellow learners for support and motivation."
     }
+  },
+  "community": {
+    "studyCommunity": "학습 커뮤니티"
   },
   "programs": {
     "title": "Learning Programs",

@@ -127,7 +127,8 @@
     "latestScore": "Letzte Punktzahl",
     "noTestsYet": "Noch keine {{skill}}-Tests absolviert",
     "startFirstTest": "Ersten Test starten",
-    "deadline": "Frist"
+    "deadline": "Frist",
+    "clickToOpenSettings": "Klicken Sie, um die Einstellungen zu öffnen"
   },
   "studyPlan": {
     "title": "Dein Lernplan",
@@ -406,5 +407,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Lerngemeinschaft"
   }
 }

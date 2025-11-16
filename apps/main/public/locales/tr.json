@@ -125,7 +125,8 @@
     "latestScore": "En Son Skor",
     "noTestsYet": "Henüz {{skill}} testi alınmadı",
     "startFirstTest": "İlk Testi Başlat",
-    "deadline": "Son Tarih"
+    "deadline": "Son Tarih",
+    "clickToOpenSettings": "Ayarları açmak için tıklayın"
   },
   "studyPlan": {
     "title": "Çalışma Planınız",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Çalışma Topluluğu"
   }
 }

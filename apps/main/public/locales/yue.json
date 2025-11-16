@@ -125,7 +125,8 @@
     "latestScore": "最新分數",
     "noTestsYet": "尚未完成{{skill}}測試",
     "startFirstTest": "開始第一個測試",
-    "deadline": "截止日期"
+    "deadline": "截止日期",
+    "clickToOpenSettings": "點擊打開設置"
   },
   "studyPlan": {
     "title": "您的學習計劃",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "學習社群"
   }
 }

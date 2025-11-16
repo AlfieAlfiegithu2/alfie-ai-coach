@@ -125,7 +125,8 @@
     "latestScore": "Skor Terbaru",
     "noTestsYet": "Belum ada tes {{skill}} yang diambil",
     "startFirstTest": "Mulai Tes Pertama",
-    "deadline": "Tenggat Waktu"
+    "deadline": "Tenggat Waktu",
+    "clickToOpenSettings": "Klik untuk membuka pengaturan"
   },
   "studyPlan": {
     "title": "Rencana Belajar Anda",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Komunitas Belajar"
   }
 }

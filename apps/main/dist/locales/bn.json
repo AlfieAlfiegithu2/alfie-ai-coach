@@ -125,7 +125,8 @@
     "latestScore": "সর্বশেষ স্কোর",
     "noTestsYet": "এখনও কোনো {{skill}} পরীক্ষা দেওয়া হয়নি",
     "startFirstTest": "প্রথম পরীক্ষা শুরু করুন",
-    "deadline": "নির্দিষ্ট সময়"
+    "deadline": "নির্দিষ্ট সময়",
+    "clickToOpenSettings": "সেটিংস খুলতে ক্লিক করুন"
   },
   "studyPlan": {
     "title": "আপনার শেখার পরিকল্পনা",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "অধ্যয়ন সম্প্রদায়"
   }
 }

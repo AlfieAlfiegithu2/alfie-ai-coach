@@ -125,7 +125,8 @@
     "latestScore": "Điểm gần nhất",
     "noTestsYet": "Chưa làm bài kiểm tra {{skill}} nào",
     "startFirstTest": "Bắt đầu bài kiểm tra đầu tiên",
-    "deadline": "Hạn chót"
+    "deadline": "Hạn chót",
+    "clickToOpenSettings": "Nhấp để mở cài đặt"
   },
   "studyPlan": {
     "title": "Kế hoạch học tập của bạn",
@@ -404,5 +405,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Cộng Đồng Học Tập"
   }
 }

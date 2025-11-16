@@ -125,7 +125,8 @@
     "latestScore": "تازہ ترین سکور",
     "noTestsYet": "ابھی تک کوئی {{skill}} ٹیسٹ نہیں دیا گیا",
     "startFirstTest": "پہلا ٹیسٹ شروع کریں",
-    "deadline": "آخری تاریخ"
+    "deadline": "آخری تاریخ",
+    "clickToOpenSettings": "ترتیبات کھولنے کے لیے کلک کریں"
   },
   "studyPlan": {
     "title": "آپ کا پڑھائی کا منصوبہ",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "مطالعہ کمیونٹی"
   }
 }

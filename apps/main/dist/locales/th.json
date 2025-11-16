@@ -125,7 +125,8 @@
     "latestScore": "คะแนนล่าสุด",
     "noTestsYet": "ยังไม่ได้ทำแบบทดสอบ {{skill}}",
     "startFirstTest": "เริ่มแบบทดสอบแรก",
-    "deadline": "กำหนดเวลา"
+    "deadline": "กำหนดเวลา",
+    "clickToOpenSettings": "คลิกเพื่อเปิดการตั้งค่า"
   },
   "studyPlan": {
     "title": "แผนการเรียนของคุณ",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "ชุมชนการศึกษา"
   }
 }

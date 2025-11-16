@@ -127,7 +127,8 @@
     "greeting": "सुप्रभात, {{name}}!",
     "overall": "समग्र",
     "resultsFeedback": "{{skill}} परिणाम और प्रतिक्रिया",
-    "viewHistory": "इतिहास देखें"
+    "viewHistory": "इतिहास देखें",
+    "clickToOpenSettings": "सेटिंग्स खोलने के लिए क्लिक करें"
   },
   "studyPlan": {
     "title": "आपका स्टडी प्लान",
@@ -406,5 +407,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "अध्ययन समुदाय"
   }
 }

@@ -600,7 +600,7 @@ const Dashboard = () => {
                 // Close modal after settings are saved
                 setSettingsModalOpen(false);
               }}>
-              <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title="Click to open settings">
+              <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title={t('dashboard.clickToOpenSettings')}>
                 {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
                 
                 {/* Settings overlay on hover */}
@@ -708,7 +708,7 @@ const Dashboard = () => {
                             style={{ color: themeStyles.textSecondary }}
                             onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.textPrimary}
                             onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-                            aria-label="View history"
+                            aria-label={t('dashboard.viewHistory')}
                           />
                         </div>
                         

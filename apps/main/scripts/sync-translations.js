@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 const LOCALES_DIR = path.join(__dirname, '../public/locales');
 const SUPPORTED_LANGUAGES = [
   'ko', 'zh', 'ja', 'es', 'pt', 'fr', 'de', 'ru', 'hi', 'vi', 'ar',
-  'bn', 'ur', 'id', 'tr', 'fa', 'ta', 'ne', 'th', 'yue', 'ms', 'kk'
+  'bn', 'ur', 'id', 'tr', 'fa', 'ta', 'ne', 'th', 'yue', 'ms', 'kk', 'sr', 'tl'
 ];
 
 const LANGUAGE_NAMES = {
@@ -45,7 +45,9 @@ const LANGUAGE_NAMES = {
   th: 'Thai',
   yue: 'Yue Chinese/Cantonese',
   ms: 'Malay',
-  kk: 'Kazakh'
+  kk: 'Kazakh',
+  sr: 'Serbian',
+  tl: 'Filipino/Tagalog'
 };
 
 // Provider configuration (DeepSeek preferred, OpenAI fallback)

@@ -11,8 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { logUserAction, logPageVisit } from '@/utils/analytics';
+import { useTranslation } from 'react-i18next';
 const CommunityPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     user
   } = useAuth();
@@ -153,13 +155,13 @@ const CommunityPage = () => {
         <h1 className="text-3xl font-semibold text-slate-800" style={{
         fontFamily: 'Bricolage Grotesque, sans-serif'
       }}>
-          Study Community
+          {t('community.studyCommunity')}
         </h1>
         <Button onClick={() => navigate('/')} variant="ghost" style={{
         fontFamily: 'Inter, sans-serif'
       }} className="hover:bg-white/10 flex items-center gap-2 text-slate-950">
           <Home className="w-4 h-4" />
-          Home
+          {t('navigation.home')}
         </Button>
       </header>
 

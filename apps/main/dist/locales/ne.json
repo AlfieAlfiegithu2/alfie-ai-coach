@@ -125,7 +125,8 @@
     "latestScore": "नवीनतम स्कोर",
     "noTestsYet": "अहिलेसम्म {{skill}} परीक्षण लिइएको छैन",
     "startFirstTest": "पहिलो परीक्षण सुरु गर्नुहोस्",
-    "deadline": "म्याद"
+    "deadline": "म्याद",
+    "clickToOpenSettings": "सेटिङहरू खोल्न क्लिक गर्नुहोस्"
   },
   "studyPlan": {
     "title": "तपाईंको अध्ययन योजना",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "अध्ययन समुदाय"
   }
 }

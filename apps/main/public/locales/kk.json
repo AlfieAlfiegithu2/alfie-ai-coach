@@ -125,7 +125,8 @@
     "latestScore": "Соңғы ұпай",
     "noTestsYet": "Әлі {{skill}} тесті алынбады",
     "startFirstTest": "Бірінші тестті бастау",
-    "deadline": "Мерзімі"
+    "deadline": "Мерзімі",
+    "clickToOpenSettings": "Баптауларды ашу үшін басыңыз"
   },
   "studyPlan": {
     "title": "Сіздің оқу жоспарыңыз",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Оқу Қауымдастығы"
   }
 }

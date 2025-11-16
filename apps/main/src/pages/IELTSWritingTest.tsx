@@ -10,11 +10,22 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, ListTree, Clock, FileText, PenTool } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
 import { useThemeStyles } from '@/hooks/useThemeStyles';
+import { useTheme } from '@/contexts/ThemeContext';
+import { themes, ThemeName } from '@/lib/themes';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+} from "@/components/ui/conversation";
+import { Message, MessageContent } from "@/components/ui/message";
+import { Response } from "@/components/ui/response";
+import { Orb } from "@/components/ui/orb";
+import { ShimmeringText } from "@/components/ui/shimmering-text";
 
 interface Task {
   id: string;
@@ -36,8 +47,9 @@ const IELTSWritingTestInterface = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const themeStyles = useThemeStyles();
+  const { themeName, setTheme } = useTheme();
 
   const [test, setTest] = useState<any>(null);
   const [task1, setTask1] = useState<Task | null>(null);
@@ -47,19 +59,20 @@ const IELTSWritingTestInterface = () => {
   const [task2Answer, setTask2Answer] = useState("");
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTest, setIsLoadingTest] = useState(false);
 
   // Separate chat messages for each task to prevent context bleeding
   const [task1ChatMessages, setTask1ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
-    content: "Hello! I'm Catbot, your IELTS Writing tutor. I'm here to help you with Task 1 - Data Description. I'll guide you through analyzing charts, graphs, or diagrams and structuring your description. What would you like help with?",
+    content: "Hello! I'm Catie, your expert IELTS Writing tutor. I'm here to help you with General Training Task 1 - Letter Writing. I'll guide you through writing formal, semi-formal, or informal letters with proper structure and tone. What would you like help with?",
     timestamp: new Date()
   }]);
   
   const [task2ChatMessages, setTask2ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
-    content: "Hello! I'm Catbot, your IELTS Writing tutor. I'm here to help you with Task 2 - Essay Writing. I'll guide you through structuring arguments, developing ideas, and presenting your opinion clearly. What would you like help with?",
+    content: "Hello! I'm Catie, your expert IELTS Writing tutor. I'm here to help you with Task 2 - Essay Writing. I'll guide you through structuring arguments, developing ideas, and presenting your opinion clearly. What would you like help with?",
     timestamp: new Date()
   }]);
 
@@ -68,6 +81,8 @@ const IELTSWritingTestInterface = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCatbotOpen, setIsCatbotOpen] = useState(false);
   const [isDraggableChatOpen, setIsDraggableChatOpen] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showAIAssistantVisible, setShowAIAssistantVisible] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
   const [searchParams] = useSearchParams();
@@ -124,8 +139,8 @@ const IELTSWritingTestInterface = () => {
   useEffect(() => {
     if (selectedTrainingType && availableTests.length > 0) {
       const filtered = availableTests.filter(test =>
-        test.training_type === selectedTrainingType ||
-        (!test.training_type && selectedTrainingType === 'Academic') // Default to Academic if not set
+        test.test_subtype === selectedTrainingType ||
+        (!test.test_subtype && selectedTrainingType === 'Academic') // Default to Academic if not set
       );
       setFilteredTests(filtered);
     } else {
@@ -142,30 +157,72 @@ const IELTSWritingTestInterface = () => {
   }, [testId]);
 
   const loadTestData = async () => {
+    setIsLoadingTest(true);
     try {
-      // Load test from tests table
-      const { data: testData, error: testError } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('id', testId)
-        .single();
+      if (!testId) {
+        console.error('❌ No testId provided');
+        throw new Error('Test ID is required');
+      }
 
-      if (testError) throw testError;
+      console.log('🔍 Loading test data for testId:', testId);
+
+      // Load test and questions in parallel for faster loading
+      const [testResult, questionsResult] = await Promise.all([
+        supabase
+          .from('tests')
+          .select('*')
+          .eq('id', testId)
+          .maybeSingle(),
+        supabase
+          .from('questions')
+          .select('*')
+          .eq('test_id', testId)
+          .in('part_number', [1, 2])
+          .order('part_number')
+      ]);
+
+      console.log('📊 Test query result:', { 
+        hasData: !!testResult.data, 
+        error: testResult.error,
+        testName: testResult.data?.test_name 
+      });
+      console.log('📊 Questions query result:', { 
+        count: questionsResult.data?.length || 0, 
+        error: questionsResult.error 
+      });
+
+      if (testResult.error) {
+        console.error('❌ Test query error:', testResult.error);
+        throw testResult.error;
+      }
+      if (questionsResult.error) {
+        console.error('❌ Questions query error:', questionsResult.error);
+        throw questionsResult.error;
+      }
+
+      const testData = testResult.data;
+      if (!testData) {
+        console.error('❌ Test not found in database for testId:', testId);
+        // Try to find any writing tests to help debug
+        const { data: allWritingTests } = await supabase
+          .from('tests')
+          .select('id, test_name, module, skill_category')
+          .or('module.eq.Writing,skill_category.eq.Writing')
+          .limit(5);
+        console.log('📋 Available writing tests:', allWritingTests);
+        throw new Error(`Test not found. Available test IDs: ${allWritingTests?.map(t => t.id).join(', ') || 'none'}`);
+      }
+      
+      console.log('✅ Test loaded successfully:', testData.test_name);
       setTest(testData);
 
-      // Load writing questions for this specific test
-      const { data: questions, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('test_id', testId)
-        .order('part_number');
-
-      if (questionsError) throw questionsError;
-
+      const questions = questionsResult.data || [];
+      
       // Find Task 1 and Task 2 questions
-      const task1Question = questions?.find(q => q.part_number === 1);
-      const task2Question = questions?.find(q => q.part_number === 2);
+      const task1Question = questions.find(q => q.part_number === 1);
+      const task2Question = questions.find(q => q.part_number === 2);
 
+      // Always set tasks, even if questions aren't found (to prevent infinite loading)
       if (task1Question) {
         setTask1({
           id: task1Question.id,
@@ -174,6 +231,16 @@ const IELTSWritingTestInterface = () => {
           imageUrl: task1Question.image_url || "",
           imageContext: task1Question.explanation || "",
           modelAnswer: task1Question.transcription || ""
+        });
+      } else {
+        // Set default task1 if not found
+        setTask1({
+          id: 'default-task1',
+          title: "Task 1 - Data Description",
+          instructions: "Task 1 question not found. Please contact support.",
+          imageUrl: "",
+          imageContext: "",
+          modelAnswer: ""
         });
       }
 
@@ -184,14 +251,29 @@ const IELTSWritingTestInterface = () => {
           instructions: task2Question.passage_text || "",
           modelAnswer: task2Question.transcription || ""
         });
+      } else {
+        // Set default task2 if not found
+        setTask2({
+          id: 'default-task2',
+          title: "Task 2 - Essay Writing",
+          instructions: "Task 2 question not found. Please contact support.",
+          modelAnswer: ""
+        });
       }
-    } catch (error) {
-      console.error('Error loading test data:', error);
+    } catch (error: any) {
+      console.error('❌ Error loading test data:', error);
+      const errorMessage = error?.message || 'Failed to load test data. Please try again.';
       toast({
         title: "Error",
-        description: "Failed to load test data",
+        description: errorMessage,
         variant: "destructive"
       });
+      // Reset state on error so error UI shows
+      setTest(null);
+      setTask1(null);
+      setTask2(null);
+    } finally {
+      setIsLoadingTest(false);
     }
   };
 
@@ -203,7 +285,7 @@ const IELTSWritingTestInterface = () => {
       // Match admin query exactly: filter for tests where module='Writing' OR skill_category='Writing'
       const { data: tests, error: testsError } = await supabase
         .from('tests')
-        .select('*')
+        .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
         .eq('test_type', 'IELTS')
         .or('module.eq.Writing,skill_category.eq.Writing')
         .order('created_at', { ascending: false });
@@ -213,30 +295,67 @@ const IELTSWritingTestInterface = () => {
         throw testsError;
       }
 
+      console.log('📊 Raw tests data:', tests);
+
+      // Filter out any null or invalid tests
+      let finalTests = (tests || []).filter((test: any) => {
+        const isValid = test && test.id && (test.test_name || test.module || test.skill_category);
+        if (!isValid) {
+          console.warn('⚠️ Filtered out invalid test:', test);
+        }
+        return isValid;
+      });
+
       // Fallback: if no tests found with exact match, try case-insensitive filter
-      let finalTests = tests || [];
       if (finalTests.length === 0) {
-        console.log('🔄 No exact matches, trying case-insensitive search...');
-        const { data: allIeltsTests } = await supabase
+        console.log('🔄 No exact matches, trying broader search...');
+        const { data: allIeltsTests, error: allTestsError } = await supabase
           .from('tests')
-          .select('*')
+          .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
           .eq('test_type', 'IELTS')
           .order('created_at', { ascending: false });
         
-        // Filter client-side exactly like admin does
-        finalTests = (allIeltsTests || []).filter((test: any) => 
-          test.module === 'Writing' || test.skill_category === 'Writing' || 
-          test.test_name?.includes('Writing')
-        );
+        if (allTestsError) {
+          console.error('❌ Error loading all IELTS tests:', allTestsError);
+        } else {
+          console.log('📊 All IELTS tests:', allIeltsTests);
+          // Filter client-side exactly like admin does
+          finalTests = (allIeltsTests || []).filter((test: any) => {
+            const matches = test && test.id && (
+              test.module === 'Writing' || 
+              test.skill_category === 'Writing' || 
+              test.test_name?.toLowerCase().includes('writing')
+            );
+            if (!matches && test) {
+              console.log('⚠️ Test does not match Writing filter:', { 
+                id: test.id, 
+                name: test.test_name, 
+                module: test.module, 
+                skill_category: test.skill_category 
+              });
+            }
+            return matches;
+          });
+        }
       }
 
-      console.log(`✅ Found ${finalTests.length} available writing tests:`, finalTests.map(t => ({ id: t.id, name: t.test_name, module: t.module, skill_category: t.skill_category })));
+      console.log(`✅ Found ${finalTests.length} available writing tests`);
+      if (finalTests.length > 0) {
+        console.log('📋 Test details:', finalTests.map(t => ({ 
+          id: t.id, 
+          name: t.test_name, 
+          module: t.module, 
+          skill_category: t.skill_category,
+          test_subtype: t.test_subtype
+        })));
+      }
+      
       setAvailableTests(finalTests);
     } catch (error) {
       console.error('❌ Error loading tests:', error);
       toast({
         title: "Error",
-        description: "Failed to load available writing tests",
+        description: "Failed to load available writing tests. Please try again.",
         variant: "destructive"
       });
       setAvailableTests([]);
@@ -257,6 +376,15 @@ const IELTSWritingTestInterface = () => {
 
   const getWordCount = (text: string) => {
     return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
+
+  const closeAIAssistant = () => {
+    // Mac-style "suck into dock" animation:
+    // 1) Animate card down + shrink (showAIAssistantVisible -> false).
+    // 2) After animation completes, unmount card and show avatar.
+    // Note: Chat memory persists - only closes the UI, doesn't reset conversation
+    setShowAIAssistantVisible(false);
+    setTimeout(() => setShowAIAssistant(false), 260);
   };
 
   // Get current chat messages based on active task
@@ -288,7 +416,7 @@ const IELTSWritingTestInterface = () => {
       const currentTaskData = getCurrentTask();
       if (!currentTaskData) throw new Error('No task data available');
 
-      // Create context-aware prompt for Catbot
+      // Create context-aware prompt for Catie
       let contextPrompt = `CONTEXT: The student is working on IELTS Writing Task ${currentTask}.
 
 **Task ${currentTask} Details:**
@@ -331,11 +459,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       
       // Handle different error types with better user messaging
       let errorTitle = "Connection Issue";
-      let errorDescription = "Failed to get response from Foxbot. Please try again.";
+      let errorDescription = "Failed to get response from Catie. Please try again.";
       
       if (error?.message?.includes('service temporarily unavailable') || error?.statusCode === 503) {
         errorTitle = "Service Update";
-        errorDescription = "Foxbot is being updated! Please try again in a moment.";
+        errorDescription = "Catie is being updated! Please try again in a moment.";
       } else if (error?.statusCode === 429) {
         errorTitle = "High Traffic";
         errorDescription = "Lots of students are getting help! Please wait a moment and try again.";
@@ -533,60 +661,88 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     }
   }, [timerStarted]);
 
-  // Show test selection if training type is selected but no testId provided
-  if (!testId && selectedTrainingType && filteredTests.length > 0) {
-    return (
-      <div className="min-h-screen relative">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-             style={{
-               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-                 ? 'none'
-                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-               backgroundColor: themeStyles.backgroundImageColor
-             }} />
-        <div className="relative z-10">
-          <StudentLayout title="Available Writing Tests">
-            <div className="min-h-screen py-12">
-              <div className="container mx-auto px-4">
-                <div className="max-w-4xl mx-auto">
-                  <div className="mb-8">
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate('/ielts-portal')}
-                      className="mb-4"
-                    >
-                      ← Back to IELTS Portal
-                    </Button>
-                    <h1 className="text-4xl font-bold text-foreground mb-2">
-                      IELTS {selectedTrainingType} Writing Tests
-                    </h1>
-                    <p className="text-lg text-muted-foreground">
-                      Choose a {selectedTrainingType.toLowerCase()} writing test to begin your practice
-                    </p>
-                  </div>
+  // Show test selection if no testId provided
+  if (!testId) {
+    // Show loading while fetching available tests
+    if (isLoading) {
+      return (
+        <StudentLayout title="Writing Tests">
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <DotLottieLoadingAnimation 
+                message="Loading available writing tests..."
+                subMessage="Please wait"
+                size={150}
+              />
+            </div>
+          </div>
+        </StudentLayout>
+      );
+    }
 
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredTests.map((test) => (
-                      <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/writing/${test.id}`)}>
-                        <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                          <h3 className="font-semibold text-sm">{test.test_name}</h3>
-                          {test.training_type && (
-                            <p className="text-xs text-muted-foreground mt-1">{test.training_type}</p>
-                          )}
-                        </CardContent>
-                      </SpotlightCard>
-                    ))}
+    // Show test selection if tests are available
+    if (filteredTests.length > 0 || availableTests.length > 0) {
+      const testsToShow = filteredTests.length > 0 ? filteredTests : availableTests;
+      return (
+        <div className="min-h-screen relative">
+          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+               style={{
+                 backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                   ? 'none'
+                   : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+                 backgroundColor: themeStyles.backgroundImageColor
+               }} />
+          <div className="relative z-10">
+            <StudentLayout title="Available Writing Tests">
+              <div className="min-h-screen py-12">
+                <div className="container mx-auto px-4">
+                  <div className="max-w-4xl mx-auto">
+                    <div className="mb-8">
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate('/ielts-portal')}
+                        className="mb-4"
+                      >
+                        ← Back to IELTS Portal
+                      </Button>
+                      <h1 className="text-4xl font-bold text-foreground mb-2">
+                        IELTS {selectedTrainingType || 'Writing'} Tests
+                      </h1>
+                      <p className="text-lg text-muted-foreground">
+                        {selectedTrainingType 
+                          ? `Choose a ${selectedTrainingType.toLowerCase()} writing test to begin your practice`
+                          : 'Choose a writing test to begin your practice'}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {testsToShow.map((test) => {
+                        if (!test || !test.id) {
+                          console.warn('Invalid test object:', test);
+                          return null;
+                        }
+                        return (
+                          <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/ielts-writing-test/${test.id}`)}>
+                             <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                               <h3 className="font-semibold text-sm">{test.test_name || 'Untitled Test'}</h3>
+                               {test.test_subtype && (
+                                 <p className="text-xs text-muted-foreground mt-1">{test.test_subtype}</p>
+                               )}
+                             </CardContent>
+                          </SpotlightCard>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </StudentLayout>
+            </StudentLayout>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!testId && availableTests.length === 0) {
+    // Show no tests available message
     return (
       <StudentLayout title="Writing Tests">
         <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 py-12">
@@ -602,13 +758,36 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     );
   }
 
-  if (!test || !task1 || !task2) {
+  // Show loading only while actively loading a specific test
+  if (isLoadingTest) {
     return (
       <StudentLayout title="IELTS Writing Test" showBackButton>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-sm text-text-tertiary">Loading IELTS Writing test...</p>
+            <DotLottieLoadingAnimation 
+              message="Loading IELTS Writing test..."
+              subMessage="Please wait while we fetch your test"
+              size={150}
+            />
+          </div>
+        </div>
+      </StudentLayout>
+    );
+  }
+
+  // Show error if test failed to load (only when testId exists)
+  if (testId && (!test || !task1 || !task2)) {
+    return (
+      <StudentLayout title="IELTS Writing Test" showBackButton>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <p className="text-lg text-foreground mb-4">Unable to load test</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {!test ? "Test not found" : !task1 || !task2 ? "Test data is incomplete" : "Unknown error"}
+            </p>
+            <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+              Back to Portal
+            </Button>
           </div>
         </div>
       </StudentLayout>
@@ -618,62 +797,151 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   const currentTaskData = getCurrentTask();
   const currentAnswer = getCurrentAnswer();
 
-  return (
-    <StudentLayout title="IELTS Writing Test" showBackButton>
-      <div className="space-y-6 relative z-10">
-        {/* Test Header */}
-        <div className="rounded-2xl border border-light-border p-4" style={{
-          background: 'var(--gradient-card)'
-        }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-heading-2 mb-1 text-foreground">{test.test_name}</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Timer */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg">
-                <Clock className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">
-                  Time Remaining: {formatTime(timeRemaining)}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate('/ielts/writing')} className="rounded-xl">
-                  Exit
-                </Button>
-                <Button variant={currentTask === 1 ? "default" : "outline"} size="sm" onClick={() => switchToTask(1)} className="rounded-xl">
-                  Task 1
-                </Button>
-                <Button variant={currentTask === 2 ? "default" : "outline"} size="sm" onClick={() => switchToTask(2)} className="rounded-xl">
-                  Task 2
-                </Button>
-              </div>
-            </div>
+  if (!currentTaskData) {
+    return (
+      <StudentLayout title="IELTS Writing Test" showBackButton>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <p className="text-lg text-foreground mb-4">Task data not available</p>
+            <Button onClick={() => navigate('/ielts-portal')} variant="outline">
+              Back to Portal
+            </Button>
           </div>
         </div>
+      </StudentLayout>
+    );
+  }
 
+  return (
+    <div 
+      className="min-h-screen relative"
+      style={{
+        backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+      }}
+    >
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+           style={{
+             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+               ? 'none'
+               : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+             backgroundColor: themeStyles.backgroundImageColor
+           }} />
+      <div 
+        className="relative z-10 min-h-screen flex flex-col"
+        style={{
+          backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+        }}
+      >
+        <StudentLayout title="IELTS Writing Test" showBackButton>
+          <div className="flex-1 flex justify-center min-h-[calc(100vh-120px)] py-8 sm:items-center sm:py-8">
+            <div className="w-full max-w-6xl mx-auto space-y-6 px-4 flex flex-col">
         {/* Task Description Section */}
-        <Card className="glass-card rounded-3xl">
+        <Card className="rounded-3xl relative" style={{
+          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+          borderColor: themeStyles.border,
+          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+          boxShadow: themeStyles.theme.name === 'dark' 
+            ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+            : themeStyles.theme.name === 'note'
+            ? themeStyles.theme.styles.cardStyle?.boxShadow
+            : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+          ...themeStyles.cardStyle
+        }}>
+          {/* Floating Controls - Timer, Theme, Task Selection - Positioned at top-right of this card */}
+          <div className="absolute -top-12 right-0 z-40 flex items-center gap-3">
+          {/* Timer */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
+            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+            borderColor: themeStyles.border,
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none',
+            boxShadow: themeStyles.theme.name === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+              : themeStyles.theme.name === 'note'
+              ? themeStyles.theme.styles.cardStyle?.boxShadow
+              : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)'
+          }}>
+            <Clock className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
+            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
+              {formatTime(timeRemaining)}
+            </span>
+          </div>
+          
+          {/* Theme Selector */}
+          <div className="flex items-center gap-2">
+            <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />
+            <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
+              <SelectTrigger 
+                className="w-[140px] h-8 text-sm border transition-colors rounded-xl"
+                style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textPrimary,
+                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                }}
+              >
+                <SelectValue placeholder="Theme" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(themes).map((theme) => (
+                  <SelectItem key={theme.name} value={theme.name}>
+                    {theme.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Task Selection Buttons */}
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              onClick={() => switchToTask(1)} 
+              className="rounded-xl"
+              style={{
+                backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
+                color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
+                borderColor: themeStyles.border,
+                borderWidth: '1px',
+                borderStyle: 'solid'
+              }}
+            >
+              Task 1
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={() => switchToTask(2)} 
+              className="rounded-xl"
+              style={{
+                backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
+                color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
+                borderColor: themeStyles.border,
+                borderWidth: '1px',
+                borderStyle: 'solid'
+              }}
+            >
+              Task 2
+            </Button>
+          </div>
+          </div>
           <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              {currentTaskData?.title || `Task ${currentTask} - ${currentTask === 1 ? 'Data Description' : 'Essay Writing'}`}
+            <CardTitle style={{ color: themeStyles.textPrimary }}>
+              {currentTaskData?.title || (currentTask === 1 ? 'Letter Writing' : 'Essay Writing')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-text-secondary">
-                {currentTask === 2 
-                  ? "Task 2 requires students to write an essay presenting arguments, opinions, and examples."
-                  : ""
-                }
-              </p>
-              
               {currentTaskData?.instructions && (
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">Task Instructions</h4>
-                  <div className="text-foreground whitespace-pre-wrap leading-relaxed bg-surface-3 p-4 rounded-lg border border-border">
+                  <h4 className="font-medium mb-2" style={{ color: themeStyles.textPrimary }}>Task Instructions</h4>
+                  <div className="whitespace-pre-wrap leading-relaxed p-4 rounded-lg" style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                    borderColor: themeStyles.border,
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    color: themeStyles.textPrimary
+                  }}>
                     {currentTaskData.instructions}
                   </div>
                 </div>
@@ -685,9 +953,21 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {/* Main Content Layout */}
         {currentTask === 1 ? (
           currentTaskData?.imageUrl ? (
-            <ResizablePanelGroup direction="horizontal" className="gap-6 min-h-[600px]">
+            <ResizablePanelGroup direction="horizontal" className="gap-6" style={{
+              minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
+            }}>
               <ResizablePanel defaultSize={55} minSize={40}>
-                <Card className="glass-card rounded-3xl h-full">
+                <Card className="rounded-3xl h-full" style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                  borderColor: themeStyles.border,
+                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                  boxShadow: themeStyles.theme.name === 'dark' 
+                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                    : themeStyles.theme.name === 'note'
+                    ? themeStyles.theme.styles.cardStyle?.boxShadow
+                    : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                  ...themeStyles.cardStyle
+                }}>
                   <CardContent className="p-4 h-full flex flex-col">
                     {/* Zoom Controls */}
                     <div className="flex items-center justify-end gap-2 mb-3">
@@ -696,22 +976,35 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         size="sm" 
                         onClick={() => setZoomScale(s => Math.max(0.5, Number((s - 0.25).toFixed(2))))}
                         className="w-8 h-8 p-0"
+                        style={{
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary
+                        }}
                       >
                         -
                       </Button>
-                      <span className="text-sm text-text-secondary min-w-12 text-center">{Math.round(zoomScale * 100)}%</span>
+                      <span className="text-sm min-w-12 text-center" style={{ color: themeStyles.textSecondary }}>{Math.round(zoomScale * 100)}%</span>
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}
                         className="w-8 h-8 p-0"
+                        style={{
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary
+                        }}
                       >
                         +
                       </Button>
                     </div>
                     
                     {/* Image Container - Minimal padding, tight fit */}
-                    <div className="flex-1 overflow-auto bg-white rounded-xl p-2">
+                    <div className="flex-1 overflow-auto rounded-xl p-2" style={{
+                      backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : '#ffffff',
+                      borderColor: themeStyles.border,
+                      borderWidth: '1px',
+                      borderStyle: 'solid'
+                    }}>
                       <div className="flex items-center justify-center min-h-full">
                         <img 
                           src={currentTaskData.imageUrl} 
@@ -732,9 +1025,19 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <ResizableHandle withHandle />
 
               <ResizablePanel defaultSize={45} minSize={35}>
-                <Card className="glass-card rounded-3xl h-full">
+                <Card className="rounded-3xl h-full" style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                  borderColor: themeStyles.border,
+                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                  boxShadow: themeStyles.theme.name === 'dark' 
+                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                    : themeStyles.theme.name === 'note'
+                    ? themeStyles.theme.styles.cardStyle?.boxShadow
+                    : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                  ...themeStyles.cardStyle
+                }}>
                   <CardHeader>
-                    <div className="text-xs text-text-tertiary">
+                    <div className="text-xs" style={{ color: themeStyles.textSecondary }}>
                       Words: {getWordCount(task1Answer)} • Min: 150
                     </div>
                   </CardHeader>
@@ -743,18 +1046,26 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       value={task1Answer} 
                       onChange={e => setTask1Answer(e.target.value)} 
                       placeholder="Write your description here..." 
-                      className="h-[450px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
+                      className="h-[450px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                        outline: 'none',
+                        boxShadow: 'none'
+                      }} 
                     />
                     <div className="flex justify-between items-center mt-4">
-                      <div className="text-sm">
-                        {getWordCount(task1Answer) >= 150 ? 
-                          <span className="text-brand-green">✓ Word count requirement met</span> : 
-                          <span className="text-brand-orange">
-                            {150 - getWordCount(task1Answer)} more words needed
-                          </span>
-                        }
-                      </div>
-                      <Button onClick={proceedToTask2} disabled={!task1Answer.trim()} variant="default">
+                      <div></div>
+                      <Button 
+                        onClick={proceedToTask2} 
+                        disabled={!task1Answer.trim()} 
+                        variant="default"
+                        style={{
+                          backgroundColor: themeStyles.buttonPrimary,
+                          color: '#ffffff'
+                        }}
+                      >
                         Continue to Task 2
                       </Button>
                     </div>
@@ -764,11 +1075,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </ResizablePanelGroup>
           ) : (
             // Task 1 without image
-            <Card className="glass-card rounded-3xl">
+            <Card className="rounded-3xl" style={{
+              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+              borderColor: themeStyles.border,
+              backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+              boxShadow: themeStyles.theme.name === 'dark' 
+                ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                : themeStyles.theme.name === 'note'
+                ? themeStyles.theme.styles.cardStyle?.boxShadow
+                : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+              ...themeStyles.cardStyle,
+              minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
+            }}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-foreground">Your Answer - Task 1</CardTitle>
-                  <div className="text-xs text-text-tertiary">
+                  {/* Title removed */}
+                  <div className="text-xs" style={{ color: themeStyles.textSecondary }}>
                     Words: {getWordCount(task1Answer)} • Min: 150
                   </div>
                 </div>
@@ -778,22 +1100,25 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   value={task1Answer} 
                   onChange={e => setTask1Answer(e.target.value)} 
                   placeholder="Write your description here..." 
-                  className="min-h-[400px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
+                  className="min-h-[400px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                  style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                    borderColor: themeStyles.border,
+                    color: themeStyles.textPrimary,
+                    outline: 'none',
+                    boxShadow: 'none'
+                  }} 
                 />
                 <div className="flex justify-between items-center mt-4">
-                  <div className="text-sm">
-                    {getWordCount(task1Answer) >= 150 ? (
-                      <span className="text-brand-green">✓ Word count requirement met</span>
-                    ) : (
-                      <span className="text-brand-orange">
-                        {150 - getWordCount(task1Answer)} more words needed
-                      </span>
-                    )}
-                  </div>
+                  <div></div>
                   <Button 
                     onClick={proceedToTask2} 
                     disabled={!task1Answer.trim()} 
                     variant="default"
+                    style={{
+                      backgroundColor: themeStyles.buttonPrimary,
+                      color: '#ffffff'
+                    }}
                   >
                     Continue to Task 2
                   </Button>
@@ -803,11 +1128,22 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           )
         ) : (
           // Task 2 - Essay Writing
-          <Card className="glass-card rounded-3xl">
+          <Card className="rounded-3xl" style={{
+            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+            borderColor: themeStyles.border,
+            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+            boxShadow: themeStyles.theme.name === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+              : themeStyles.theme.name === 'note'
+              ? themeStyles.theme.styles.cardStyle?.boxShadow
+              : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+            ...themeStyles.cardStyle,
+            minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
+          }}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground">Your Answer - Task 2</CardTitle>
-                <div className="text-xs text-text-tertiary">
+                <div></div>
+                <div className="text-xs" style={{ color: themeStyles.textSecondary }}>
                   Words: {getWordCount(task2Answer)} • Min: 250
                 </div>
               </div>
@@ -817,81 +1153,320 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 value={task2Answer} 
                 onChange={e => setTask2Answer(e.target.value)} 
                 placeholder="Write your essay here..." 
-                className="min-h-[400px] text-base leading-relaxed resize-none bg-surface-3 border-border text-foreground placeholder:text-text-tertiary rounded-2xl" 
+                className="min-h-[400px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textPrimary,
+                  outline: 'none',
+                  boxShadow: 'none'
+                }} 
               />
-              <div className="space-y-4 mt-4">
-                {/* Feedback Language Selector */}
-                <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-xl border border-border">
-                  <FileText className="w-5 h-5 text-brand-blue" />
-                  <div className="flex-1">
-                    <Label htmlFor="feedback-language" className="text-sm font-medium mb-1 block">
-                      Feedback Language
-                    </Label>
-                    <p className="text-xs text-text-secondary mb-2">
-                      Choose your preferred language for explanations and guidance. Your writing and key terms will remain in English.
-                    </p>
-                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                      <SelectTrigger id="feedback-language" className="w-full max-w-xs">
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="zh">中文 (Chinese)</SelectItem>
-                        <SelectItem value="es">Español (Spanish)</SelectItem>
-                        <SelectItem value="fr">Français (French)</SelectItem>
-                        <SelectItem value="de">Deutsch (German)</SelectItem>
-                        <SelectItem value="ja">日本語 (Japanese)</SelectItem>
-                        <SelectItem value="ko">한국어 (Korean)</SelectItem>
-                        <SelectItem value="ar">العربية (Arabic)</SelectItem>
-                        <SelectItem value="pt">Português (Portuguese)</SelectItem>
-                        <SelectItem value="ru">Русский (Russian)</SelectItem>
-                        <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
-                        <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="text-sm">
-                    {getWordCount(task2Answer) >= 250 ? 
-                      <span className="text-brand-green">✓ Word count requirement met</span> : 
-                      <span className="text-brand-orange">
-                        {250 - getWordCount(task2Answer)} more words needed
-                      </span>
-                    }
-                  </div>
-                  <Button 
-                    onClick={submitTest} 
-                    disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
-                    variant="default"
+              <div className="flex justify-end items-center gap-3 mt-4">
+                {/* Feedback Language Selector - Simple, next to Submit */}
+                <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                  <SelectTrigger 
+                    className="w-[140px] h-9 text-sm border transition-colors rounded-xl"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                      borderColor: themeStyles.border,
+                      color: themeStyles.textPrimary,
+                      backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                    }}
                   >
-                    {isSubmitting ? "Submitting..." : "Submit Test"}
-                  </Button>
-                </div>
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                    <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                    <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                    <SelectItem value="es">Español (Spanish)</SelectItem>
+                    <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                    <SelectItem value="fr">Français (French)</SelectItem>
+                    <SelectItem value="de">Deutsch (German)</SelectItem>
+                    <SelectItem value="ru">Русский (Russian)</SelectItem>
+                    <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                    <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                    <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                    <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                    <SelectItem value="ur">اردو (Urdu)</SelectItem>
+                    <SelectItem value="id">Bahasa Indonesia</SelectItem>
+                    <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
+                    <SelectItem value="fa">فارسی (Persian)</SelectItem>
+                    <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+                    <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
+                    <SelectItem value="th">ไทย (Thai)</SelectItem>
+                    <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
+                    <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
+                    <SelectItem value="kk">Қазақ (Kazakh)</SelectItem>
+                    <SelectItem value="sr">Српски (Serbian)</SelectItem>
+                    <SelectItem value="tl">Filipino</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  onClick={submitTest} 
+                  disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
+                  variant="default"
+                  style={{
+                    backgroundColor: themeStyles.buttonPrimary,
+                    color: '#ffffff'
+                  }}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Test"}
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Floating Foxbot Button */}
-        {!isDraggableChatOpen && (
-          <Button 
-            onClick={() => setIsDraggableChatOpen(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg bg-muted hover:bg-muted/80 transform hover:scale-110 transition-all duration-300 z-40"
-          >
-            <img src="/lovable-uploads/dc03c5f0-f40a-40f2-a71a-0b12438f0f6b.png" alt="Foxbot" className="w-10 h-10 rounded-full object-cover" />
-          </Button>
-        )}
+        {/* Exit Button - Fixed Bottom Left */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => navigate('/ielts/writing')} 
+          className="fixed bottom-6 left-6 z-50 rounded-xl"
+          style={{
+            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+            borderColor: themeStyles.border,
+            color: themeStyles.textPrimary
+          }}
+        >
+          Exit
+        </Button>
 
-        <DraggableChatbot
-          isVisible={isDraggableChatOpen}
-          onClose={() => setIsDraggableChatOpen(false)}
-          taskType={currentTaskData?.title || "IELTS Writing"}
-          taskInstructions={currentTaskData?.instructions || ""}
-          imageContext={currentTaskData?.imageContext}
-          initialPosition={{ x: Math.max(0, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 420), y: Math.max(0, (typeof window !== 'undefined' ? window.innerHeight : 800) - 520) }}
-        />
+        {/* Catie AI Assistant - Floating Bottom Right */}
+        <div className="fixed bottom-6 right-3 sm:bottom-6 sm:right-6 z-50">
+          {/* Chat card */}
+          {showAIAssistant && (
+            <Card
+              className={`backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${
+                showAIAssistantVisible
+                  ? 'opacity-100 scale-100 translate-y-0'
+                  : 'opacity-0 scale-75 translate-y-8'
+              }`}
+              style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                ...themeStyles.cardStyle
+              }}
+            >
+              <CardHeader className="pb-1 sm:pb-2 rounded-t-3xl relative">
+                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={closeAIAssistant}
+                    className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                    style={{ color: themeStyles.textPrimary }}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col px-2.5 py-2 sm:p-4 overflow-hidden">
+                <Conversation className="flex-1 min-h-0">
+                  <ConversationContent className="flex-1 min-h-0">
+                    {getCurrentChatMessages().length === 0 && !isChatLoading ? (
+                      <ConversationEmptyState
+                        icon={<Orb className="size-9 sm:size-12" style={{ color: themeStyles.textSecondary }} />}
+                        title="Start a conversation"
+                        description="Ask for help with your IELTS writing practice"
+                      />
+                    ) : (
+                      <>
+                        {/* Current task displayed at the top of chat */}
+                        <div 
+                          className="rounded-lg p-3 mb-4"
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                            borderColor: themeStyles.border,
+                            borderWidth: '1px',
+                            borderStyle: 'solid'
+                          }}
+                        >
+                          <div className="text-[10px] sm:text-sm whitespace-pre-wrap" style={{ color: themeStyles.textSecondary }}>
+                            {currentTaskData?.title || (currentTask === 1 ? 'Letter Writing' : 'Essay Writing')}
+                          </div>
+                        </div>
+
+                        {getCurrentChatMessages().map((message) => (
+                          <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
+                            {message.type === 'bot' && (
+                              <div
+                                style={{
+                                  borderRadius: '50%',
+                                  overflow: 'hidden',
+                                  width: '52px',
+                                  height: '52px',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <img
+                                  src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                  alt="Catie"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              </div>
+                            )}
+                            <MessageContent>
+                              <div
+                                className="px-3 py-2 rounded-xl text-sm"
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                  borderColor: themeStyles.border,
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid',
+                                  color: themeStyles.textPrimary
+                                }}
+                              >
+                                <Response
+                                  dangerouslySetInnerHTML={{
+                                    __html: message.content
+                                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                      .replace(/^• (.*)$/gm, '<li>$1</li>')
+                                      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                                      .replace(/\n/g, '<br>'),
+                                  }}
+                                />
+                              </div>
+                            </MessageContent>
+                            {message.type === 'user' && profile?.avatar_url && (
+                              <div
+                                style={{
+                                  borderRadius: '50%',
+                                  overflow: 'hidden',
+                                  width: '52px',
+                                  height: '52px',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <img
+                                  src={profile.avatar_url}
+                                  alt="Your avatar"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              </div>
+                            )}
+                          </Message>
+                        ))}
+                        {isChatLoading && (
+                          <Message from="assistant">
+                            <MessageContent>
+                              <div 
+                                className="px-3 py-2 rounded-xl text-sm"
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                  borderColor: themeStyles.border,
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid'
+                                }}
+                              >
+                                <ShimmeringText text="Thinking..." />
+                              </div>
+                            </MessageContent>
+                            <div
+                              style={{
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                width: '52px',
+                                height: '52px',
+                              }}
+                            >
+                              <img
+                                src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                alt="Catie"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            </div>
+                          </Message>
+                        )}
+                      </>
+                    )}
+                  </ConversationContent>
+                </Conversation>
+
+                <div className="flex-shrink-0 mt-2.5 sm:mt-4">
+                  <div className="flex gap-1.5 sm:gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) =>
+                        e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()
+                      }
+                      placeholder="Ask for writing help..."
+                      className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:ring-0 resize-none"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        color: themeStyles.textPrimary
+                      }}
+                      disabled={isChatLoading}
+                    />
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      input[placeholder="Ask for writing help..."]::placeholder {
+                        color: ${themeStyles.textSecondary};
+                      }
+                    ` }} />
+                    <Button
+                      onClick={() => sendChatMessage()}
+                      disabled={isChatLoading || !newMessage.trim()}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                      style={{ color: themeStyles.textPrimary }}
+                    >
+                      {isChatLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: themeStyles.textPrimary }} />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {/* Show Catie dock icon only when chat is fully closed */}
+          {!showAIAssistant && (
+            <div
+              style={{
+                borderRadius: '50%',
+                overflow: 'hidden',
+                width: '64px',
+                height: '64px',
+                cursor: 'pointer',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+                transition: 'transform 0.22s ease-out, box-shadow 0.22s ease-out',
+              }}
+              onClick={() => {
+                setShowAIAssistant(true);
+                requestAnimationFrame(() => setShowAIAssistantVisible(true));
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.transform = 'scale(1.06) translateY(-2px)';
+                el.style.boxShadow = '0 14px 30px rgba(0,0,0,0.24)';
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.transform = 'scale(1.0) translateY(0px)';
+                el.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+              }}
+            >
+              <img
+                src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                alt="Catie"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Loading Overlay */}
         {isSubmitting && (
@@ -905,8 +1480,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </div>
           </div>
         )}
+            </div>
+          </div>
+        </StudentLayout>
       </div>
-    </StudentLayout>
+    </div>
   );
 };
 

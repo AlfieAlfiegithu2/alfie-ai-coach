@@ -125,7 +125,8 @@
     "latestScore": "சமீபத்திய மதிப்பெண்",
     "noTestsYet": "இன்னும் {{skill}} சோதனை எடுக்கப்படவில்லை",
     "startFirstTest": "முதல் சோதனையைத் தொடங்குங்கள்",
-    "deadline": "கடைசி தேதி"
+    "deadline": "கடைசி தேதி",
+    "clickToOpenSettings": "அமைப்புகளைத் திறக்க கிளிக் செய்யவும்"
   },
   "studyPlan": {
     "title": "உங்கள் படிப்புத் திட்டம்",
@@ -403,5 +404,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "படிப்பு சமூகம்"
   }
 }

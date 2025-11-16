@@ -127,7 +127,8 @@
     "latestScore": "Последний балл",
     "noTestsYet": "Тесты по {{skill}} еще не пройдены",
     "startFirstTest": "Начать первый тест",
-    "deadline": "Срок"
+    "deadline": "Срок",
+    "clickToOpenSettings": "Нажмите, чтобы открыть настройки"
   },
   "studyPlan": {
     "title": "Ваш план обучения",
@@ -406,5 +407,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Учебное Сообщество"
   }
 }

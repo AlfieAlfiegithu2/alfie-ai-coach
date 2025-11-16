@@ -127,7 +127,8 @@
     "latestScore": "最新スコア",
     "noTestsYet": "{{skill}}のテストはまだ受験されていません",
     "startFirstTest": "最初のテストを開始",
-    "deadline": "期限"
+    "deadline": "期限",
+    "clickToOpenSettings": "設定を開くにはクリック"
   },
   "studyPlan": {
     "title": "あなたの学習プラン",
@@ -406,5 +407,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "学習コミュニティ"
   }
 }

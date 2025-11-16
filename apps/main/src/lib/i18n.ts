@@ -14,7 +14,7 @@ function normalizeLanguageCode(lng: string): string {
 // Supported language codes (matching available locale files)
 const SUPPORTED_LANGUAGES = [
   'en', 'ko', 'zh', 'ja', 'es', 'pt', 'fr', 'de', 'ru', 'hi', 'vi',
-  'ar', 'bn', 'ur', 'id', 'tr', 'fa', 'ta', 'ne', 'th', 'yue', 'ms', 'kk', 'sr'
+  'ar', 'bn', 'ur', 'id', 'tr', 'fa', 'ta', 'ne', 'th', 'yue', 'ms', 'kk', 'sr', 'tl'
 ];
 
 // Language resources will be loaded dynamically from JSON files via backend

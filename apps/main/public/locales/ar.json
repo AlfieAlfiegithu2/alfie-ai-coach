@@ -127,7 +127,8 @@
     "greeting": "صباح الخير، {{name}}!",
     "overall": "الإجمالي",
     "resultsFeedback": "نتائج {{skill}} والتقييم",
-    "viewHistory": "عرض السجل"
+    "viewHistory": "عرض السجل",
+    "clickToOpenSettings": "انقر لفتح الإعدادات"
   },
   "studyPlan": {
     "title": "خطة الدراسة",
@@ -406,5 +407,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "مجتمع الدراسة"
   }
 }

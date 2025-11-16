@@ -71,6 +71,9 @@
       "description": "Connect with certified instructors and fellow learners for support and motivation."
     }
   },
+  "community": {
+    "studyCommunity": "Study Community"
+  },
   "programs": {
     "title": "Learning Programs",
     "subtitle": "Choose your path to English mastery with our comprehensive programs.",
@@ -272,7 +275,8 @@
     "latestScore": "Latest Score",
     "noTestsYet": "No {{skill}} tests taken yet",
     "startFirstTest": "Start First Test",
-    "deadline": "Deadline"
+    "deadline": "Deadline",
+    "clickToOpenSettings": "Click to open settings"
   },
   "studyPlan": {
     "title": "Your Study Plan",

@@ -127,7 +127,8 @@
     "latestScore": "Dernier score",
     "noTestsYet": "Aucun test {{skill}} passé",
     "startFirstTest": "Commencer le premier test",
-    "deadline": "Échéance"
+    "deadline": "Échéance",
+    "clickToOpenSettings": "Cliquez pour ouvrir les paramètres"
   },
   "studyPlan": {
     "title": "Votre plan d'étude",
@@ -406,5 +407,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support"
+  },
+  "community": {
+    "studyCommunity": "Communauté d'Étude"
   }
 }

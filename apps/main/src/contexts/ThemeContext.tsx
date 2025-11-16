@@ -115,120 +115,62 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setThemeNameState(newTheme);
     saveTheme(newTheme);
     
-    // Save to Supabase if user is logged in
+    // Save to Supabase if user is logged in (fire and forget - don't block UI)
     if (user) {
-      try {
-        // First try to update existing record
-        const { data: existing } = await supabase
-          .from('user_preferences')
-          .select('user_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (existing) {
-          // Try to update dashboard_theme, but ignore errors if column doesn't exist
-          // Use a try-catch to prevent errors from propagating to console
-          try {
-            const { error } = await supabase
-              .from('user_preferences')
-              .update({ dashboard_theme: newTheme } as any)
-              .eq('user_id', user.id);
-            
-            if (error) {
-              // Silently ignore column-not-found errors - theme is saved locally anyway
-              // Check for various error codes and messages that indicate column doesn't exist
-              const isColumnError = 
-                error.code === 'PGRST204' || // Column not found
-                error.code === '42703' ||    // Undefined column
-                error.code === '42P01' ||    // Undefined table (shouldn't happen but just in case)
-                error.message?.toLowerCase().includes('dashboard_theme') ||
-                error.message?.toLowerCase().includes('column') ||
-                error.message?.toLowerCase().includes('does not exist') ||
-                error.message?.toLowerCase().includes('bad request');
-              
-              // Only log if it's NOT a column error (unexpected errors)
-              if (!isColumnError) {
-                console.warn('Error updating theme in Supabase:', error);
-              }
-              // Column errors are expected if migration hasn't been applied - ignore silently
-            }
-          } catch (err: any) {
-            // Catch any unexpected errors and check if they're column-related
+      // Use IIFE to run async code without blocking
+      (async () => {
+        try {
+          // First check if dashboard_theme column exists by trying a simple select
+          const { error: checkError } = await supabase
+            .from('user_preferences')
+            .select('dashboard_theme')
+            .eq('user_id', user.id)
+            .limit(1);
+          
+          // If check fails with column error, the column doesn't exist - skip update
+          const isColumnMissing = 
+            checkError?.code === 'PGRST204' ||
+            checkError?.code === '42703' ||
+            checkError?.code === '42P01' ||
+            checkError?.status === 400 ||
+            checkError?.message?.toLowerCase().includes('dashboard_theme') ||
+            checkError?.message?.toLowerCase().includes('column') ||
+            checkError?.message?.toLowerCase().includes('does not exist') ||
+            checkError?.message?.toLowerCase().includes('bad request');
+          
+          if (isColumnMissing) {
+            // Column doesn't exist - skip update silently (theme is saved locally)
+            return;
+          }
+          
+          // Column exists, proceed with upsert
+          const { error } = await supabase
+            .from('user_preferences')
+            .upsert({
+              user_id: user.id,
+              dashboard_theme: newTheme
+            } as any, {
+              onConflict: 'user_id'
+            });
+          
+          // Silently ignore any errors - theme is saved locally anyway
+          if (error && import.meta.env.DEV) {
             const isColumnError = 
-              err?.code === 'PGRST204' ||
-              err?.code === '42703' ||
-              err?.code === '42P01' ||
-              err?.message?.toLowerCase().includes('dashboard_theme') ||
-              err?.message?.toLowerCase().includes('column') ||
-              err?.message?.toLowerCase().includes('does not exist') ||
-              err?.message?.toLowerCase().includes('bad request');
+              error.code === 'PGRST204' ||
+              error.code === '42703' ||
+              error.code === '42P01' ||
+              error.status === 400;
             
-            // Only log if it's NOT a column error
+            // Only log non-column errors in dev mode
             if (!isColumnError) {
-              console.warn('Error saving theme to Supabase:', err);
-            }
-            // Silently ignore column errors - theme is saved locally anyway
-          }
-        } else {
-          // Try to insert with dashboard_theme, but fallback without it if column doesn't exist
-          try {
-            const { error: insertError } = await supabase
-              .from('user_preferences')
-              .insert({
-                user_id: user.id,
-                dashboard_theme: newTheme
-              } as any);
-            
-            if (insertError) {
-              // If it's a column error, try inserting without dashboard_theme
-              const isColumnError = 
-                insertError.code === 'PGRST204' ||
-                insertError.code === '42703' ||
-                insertError.code === '42P01' ||
-                insertError.message?.toLowerCase().includes('dashboard_theme') ||
-                insertError.message?.toLowerCase().includes('column') ||
-                insertError.message?.toLowerCase().includes('does not exist') ||
-                insertError.message?.toLowerCase().includes('bad request');
-              
-              if (isColumnError) {
-                // Try inserting just user_id to create the record
-                await supabase
-                  .from('user_preferences')
-                  .insert({ user_id: user.id } as any);
-              } else {
-                console.warn('Error inserting theme in Supabase:', insertError);
-              }
-            }
-          } catch (err: any) {
-            // Catch any unexpected errors and check if they're column-related
-            const isColumnError = 
-              err?.code === 'PGRST204' ||
-              err?.code === '42703' ||
-              err?.code === '42P01' ||
-              err?.status === 400 ||
-              err?.message?.toLowerCase().includes('dashboard_theme') ||
-              err?.message?.toLowerCase().includes('column') ||
-              err?.message?.toLowerCase().includes('does not exist') ||
-              err?.message?.toLowerCase().includes('bad request');
-            
-            if (isColumnError) {
-              // Try inserting just user_id to create the record
-              try {
-                await supabase
-                  .from('user_preferences')
-                  .insert({ user_id: user.id } as any);
-              } catch {
-                // Silently ignore - record might already exist
-              }
-            } else {
-              console.warn('Error inserting theme in Supabase:', err);
+              console.warn('Error saving theme to Supabase:', error);
             }
           }
+        } catch (error: any) {
+          // Silently ignore all errors - theme is saved locally
+          // Don't log to prevent console noise
         }
-      } catch (error) {
-        // Silently fail - theme is saved locally anyway
-        console.warn('Error saving theme to Supabase:', error);
-      }
+      })();
     }
     
     // Trigger a custom event so components can react to theme changes

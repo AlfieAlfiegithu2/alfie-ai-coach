@@ -6,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import StudentLayout from "@/components/StudentLayout";
-import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send } from "lucide-react";
+import { Bot, ListTree, Clock, FileText, PenTool, Palette, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { DraggableChatbot } from "@/components/DraggableChatbot";
 import DotLottieLoadingAnimation from "@/components/animations/DotLottieLoadingAnimation";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -93,6 +94,14 @@ const IELTSWritingTestInterface = () => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [timerStarted, setTimerStarted] = useState(false);
   const [totalTimeSpent, setTotalTimeSpent] = useState<number>(0);
+
+  // Spelling check and grammar feedback states
+  const [spellCheckEnabled, setSpellCheckEnabled] = useState(false);
+  const [isGrammarLoading, setIsGrammarLoading] = useState(false);
+  const [task1GrammarFeedback, setTask1GrammarFeedback] = useState<string | null>(null);
+  const [task1GrammarImproved, setTask1GrammarImproved] = useState<string | null>(null);
+  const [task2GrammarFeedback, setTask2GrammarFeedback] = useState<string | null>(null);
+  const [task2GrammarImproved, setTask2GrammarImproved] = useState<string | null>(null);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -320,6 +329,80 @@ const IELTSWritingTestInterface = () => {
     return text.trim().split(/\s+/).filter(word => word.length > 0).length;
   };
 
+  const getMinWordCount = () => {
+    return currentTask === 1 ? 150 : 250;
+  };
+
+  const handleGrammarFeedback = async () => {
+    const currentAnswer = getCurrentAnswer();
+    if (!currentAnswer || currentAnswer.trim().length < 10) {
+      toast({
+        title: "Insufficient content",
+        description: "Please write at least 10 characters before requesting grammar feedback.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGrammarLoading(true);
+
+    try {
+      const currentTaskData = getCurrentTask();
+      console.log('📝 Requesting grammar feedback for Task', currentTask);
+      
+      const { data, error } = await supabase.functions.invoke('grammar-feedback', {
+        body: {
+          writing: currentAnswer,
+          taskType: currentTask === 1 ? 'Task 1 - Data Description' : 'Task 2 - Essay Writing',
+          taskNumber: currentTask,
+          targetLanguage: feedbackLanguage !== "en" ? feedbackLanguage : undefined
+        }
+      });
+
+      console.log('📥 Grammar feedback response:', { data, error });
+
+      if (error) {
+        console.error('❌ Grammar feedback error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No response data received from grammar feedback service');
+      }
+
+      if (data.success && data.feedback) {
+        if (currentTask === 1) {
+          setTask1GrammarFeedback(data.feedback);
+          setTask1GrammarImproved(data.improved || null);
+        } else {
+          setTask2GrammarFeedback(data.feedback);
+          setTask2GrammarImproved(data.improved || null);
+        }
+        const toastId = toast({
+          title: "Grammar feedback ready",
+          description: "Grammar analysis completed. Check the feedback below.",
+        });
+        // Auto-dismiss after 1 second
+        setTimeout(() => {
+          toastId.dismiss();
+        }, 1000);
+      } else {
+        const errorMsg = data.error || data.details || 'Failed to get grammar feedback';
+        console.error('❌ Grammar feedback failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
+    } catch (error: any) {
+      console.error('❌ Grammar feedback catch error:', error);
+      toast({
+        title: "Error",
+        description: error?.message || error?.error || "Failed to get grammar feedback. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGrammarLoading(false);
+    }
+  };
+
   const closeAIAssistant = () => {
     // Mac-style "suck into dock" animation:
     // 1) Animate card down + shrink (showAIAssistantVisible -> false).
@@ -439,6 +522,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   const switchToTask = (taskNumber: 1 | 2) => {
     setCurrentTask(taskNumber);
     // Don't reset timer - it's shared between tasks
+    // Grammar feedback is stored per task, so no need to clear
   };
 
   const submitTest = async () => {
@@ -977,17 +1061,64 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
                   ...themeStyles.cardStyle
                 }}>
-                  <CardHeader>
-                    <div className="text-xs" style={{ color: themeStyles.textSecondary }}>
-                      Words: {getWordCount(task1Answer)} • Min: 150
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-end gap-4 flex-wrap">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="spellcheck-task1" className="text-sm" style={{ color: themeStyles.textSecondary }}>
+                            Spell Check
+                          </Label>
+                          <Switch
+                            id="spellcheck-task1"
+                            checked={spellCheckEnabled}
+                            onCheckedChange={setSpellCheckEnabled}
+                            style={{
+                              backgroundColor: spellCheckEnabled 
+                                ? themeStyles.buttonPrimary 
+                                : themeStyles.theme.name === 'dark' 
+                                  ? 'rgba(255,255,255,0.1)' 
+                                  : themeStyles.theme.name === 'glassmorphism'
+                                  ? 'rgba(255,255,255,0.2)'
+                                  : 'rgba(0,0,0,0.1)'
+                            }}
+                            className="data-[state=checked]:bg-primary"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleGrammarFeedback}
+                          disabled={isGrammarLoading || !task1Answer.trim()}
+                          className="text-xs rounded-xl"
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                            borderColor: themeStyles.border,
+                            color: themeStyles.textPrimary,
+                            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                          }}
+                        >
+                          {isGrammarLoading ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Grammar
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="h-full p-4">
+                  <CardContent className="h-full p-4 flex flex-col">
                     <Textarea 
                       value={task1Answer} 
                       onChange={e => setTask1Answer(e.target.value)} 
                       placeholder="Write your description here..." 
                       className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                      spellCheck={spellCheckEnabled}
                       style={{
                         backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                         borderColor: themeStyles.border,
@@ -996,8 +1127,34 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         boxShadow: 'none'
                       }} 
                     />
+                    {task1GrammarFeedback && currentTask === 1 && (
+                      <div className="mt-4 space-y-4">
+                        <div className="p-4 rounded-lg border" style={{
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border
+                        }}>
+                          <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Grammar Feedback:</h4>
+                          <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                            {task1GrammarFeedback}
+                          </div>
+                        </div>
+                        {task1GrammarImproved && (
+                          <div className="p-4 rounded-lg border" style={{
+                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                            borderColor: themeStyles.border
+                          }}>
+                            <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Improved Version:</h4>
+                            <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                              {task1GrammarImproved}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="flex justify-between items-center mt-4 gap-3">
-                      <div></div>
+                      <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                        <span className={getWordCount(task1Answer) < 150 ? "text-red-500" : "text-green-600"}>{getWordCount(task1Answer)}</span> / {getMinWordCount()}
+                      </div>
                       <div className="flex items-center gap-3">
                         <Label htmlFor="feedback-language-task1" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
                           Feedback:
@@ -1120,20 +1277,64 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               ...themeStyles.cardStyle,
               minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
             }}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  {/* Title removed */}
-                  <div className="text-xs" style={{ color: themeStyles.textSecondary }}>
-                    Words: {getWordCount(task1Answer)} • Min: 150
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-end gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="spellcheck-task1-noimg" className="text-sm" style={{ color: themeStyles.textSecondary }}>
+                        Spell Check
+                      </Label>
+                      <Switch
+                        id="spellcheck-task1-noimg"
+                        checked={spellCheckEnabled}
+                        onCheckedChange={setSpellCheckEnabled}
+                        style={{
+                          backgroundColor: spellCheckEnabled 
+                            ? themeStyles.buttonPrimary 
+                            : themeStyles.theme.name === 'dark' 
+                              ? 'rgba(255,255,255,0.1)' 
+                              : themeStyles.theme.name === 'glassmorphism'
+                              ? 'rgba(255,255,255,0.2)'
+                              : 'rgba(0,0,0,0.1)'
+                        }}
+                        className="data-[state=checked]:bg-primary"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleGrammarFeedback}
+                      disabled={isGrammarLoading || !task1Answer.trim()}
+                      className="text-xs rounded-xl"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                      }}
+                    >
+                      {isGrammarLoading ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Grammar
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-4">
+              <CardContent className="p-4 flex flex-col">
                 <Textarea 
                   value={task1Answer} 
                   onChange={e => setTask1Answer(e.target.value)} 
                   placeholder="Write your description here..." 
                   className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                  spellCheck={spellCheckEnabled}
                   style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                     borderColor: themeStyles.border,
@@ -1142,8 +1343,34 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     boxShadow: 'none'
                   }} 
                 />
+                {task1GrammarFeedback && currentTask === 1 && (
+                  <div className="mt-4 space-y-4">
+                    <div className="p-4 rounded-lg border" style={{
+                      backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                      borderColor: themeStyles.border
+                    }}>
+                      <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Grammar Feedback:</h4>
+                      <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                        {task1GrammarFeedback}
+                      </div>
+                    </div>
+                    {task1GrammarImproved && (
+                      <div className="p-4 rounded-lg border" style={{
+                        backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                        borderColor: themeStyles.border
+                      }}>
+                        <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Improved Version:</h4>
+                        <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                          {task1GrammarImproved}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex justify-between items-center mt-4 gap-3">
-                  <div></div>
+                  <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                    <span className={getWordCount(task1Answer) < 150 ? "text-red-500" : "text-green-600"}>{getWordCount(task1Answer)}</span> / {getMinWordCount()}
+                  </div>
                   <div className="flex items-center gap-3">
                     <Label htmlFor="feedback-language-task1-noimg" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
                       Feedback:
@@ -1264,20 +1491,64 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             ...themeStyles.cardStyle,
             minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
           }}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div></div>
-                <div className="text-xs" style={{ color: themeStyles.textSecondary }}>
-                  Words: {getWordCount(task2Answer)} • Min: 250
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-end gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="spellcheck-task2" className="text-sm" style={{ color: themeStyles.textSecondary }}>
+                      Spell Check
+                    </Label>
+                    <Switch
+                      id="spellcheck-task2"
+                      checked={spellCheckEnabled}
+                      onCheckedChange={setSpellCheckEnabled}
+                      style={{
+                        backgroundColor: spellCheckEnabled 
+                          ? themeStyles.buttonPrimary 
+                          : themeStyles.theme.name === 'dark' 
+                            ? 'rgba(255,255,255,0.1)' 
+                            : themeStyles.theme.name === 'glassmorphism'
+                            ? 'rgba(255,255,255,0.2)'
+                            : 'rgba(0,0,0,0.1)'
+                      }}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleGrammarFeedback}
+                    disabled={isGrammarLoading || !task2Answer.trim()}
+                    className="text-xs rounded-xl"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                      borderColor: themeStyles.border,
+                      color: themeStyles.textPrimary,
+                      backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                    }}
+                  >
+                    {isGrammarLoading ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Grammar
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-4 flex flex-col">
               <Textarea 
                 value={task2Answer} 
                 onChange={e => setTask2Answer(e.target.value)} 
                 placeholder="Write your essay here..." 
                 className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                spellCheck={spellCheckEnabled}
                 style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                   borderColor: themeStyles.border,
@@ -1286,110 +1557,139 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   boxShadow: 'none'
                 }} 
               />
+              {task2GrammarFeedback && currentTask === 2 && (
+                <div className="mt-4 space-y-4">
+                  <div className="p-4 rounded-lg border" style={{
+                    backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                    borderColor: themeStyles.border
+                  }}>
+                    <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Grammar Feedback:</h4>
+                    <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                      {task2GrammarFeedback}
+                    </div>
+                  </div>
+                  {task2GrammarImproved && (
+                    <div className="p-4 rounded-lg border" style={{
+                      backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                      borderColor: themeStyles.border
+                    }}>
+                      <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Improved Version:</h4>
+                      <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                        {task2GrammarImproved}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="mt-4">
                 {/* Feedback Language and Submit Button */}
-                <div className="flex items-center justify-end gap-3">
-                  <Label htmlFor="feedback-language-task2" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
-                    Feedback:
-                  </Label>
-                  <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                    <SelectTrigger 
-                      id="feedback-language-task2"
-                      className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                    <span className={getWordCount(task2Answer) < 250 ? "text-red-500" : "text-green-600"}>{getWordCount(task2Answer)}</span> / {getMinWordCount()}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="feedback-language-task2" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                      Feedback:
+                    </Label>
+                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                      <SelectTrigger 
+                        id="feedback-language-task2"
+                        className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary,
+                          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                        }}
+                      >
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                        <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                        <SelectItem value="es">Español (Spanish)</SelectItem>
+                        <SelectItem value="fr">Français (French)</SelectItem>
+                        <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                        <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                        <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                        <SelectItem value="ru">Русский (Russian)</SelectItem>
+                        <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                        <SelectItem value="ur">اردو (Urdu)</SelectItem>
+                        <SelectItem value="id">Bahasa Indonesia</SelectItem>
+                        <SelectItem value="de">Deutsch (German)</SelectItem>
+                        <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                        <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
+                        <SelectItem value="it">Italiano (Italian)</SelectItem>
+                        <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                        <SelectItem value="fa">فارسی (Persian)</SelectItem>
+                        <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+                        <SelectItem value="th">ไทย (Thai)</SelectItem>
+                        <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
+                        <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
+                        <SelectItem value="te">తెలుగు (Telugu)</SelectItem>
+                        <SelectItem value="mr">मराठी (Marathi)</SelectItem>
+                        <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                        <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
+                        <SelectItem value="ml">മലയാളം (Malayalam)</SelectItem>
+                        <SelectItem value="pa">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
+                        <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
+                        <SelectItem value="as">অসমীয়া (Assamese)</SelectItem>
+                        <SelectItem value="sw">Kiswahili (Swahili)</SelectItem>
+                        <SelectItem value="ha">Hausa</SelectItem>
+                        <SelectItem value="yo">Yorùbá (Yoruba)</SelectItem>
+                        <SelectItem value="ig">Ásụ̀sụ́ Ìgbò (Igbo)</SelectItem>
+                        <SelectItem value="am">አማርኛ (Amharic)</SelectItem>
+                        <SelectItem value="zu">isiZulu (Zulu)</SelectItem>
+                        <SelectItem value="af">Afrikaans</SelectItem>
+                        <SelectItem value="pl">Polski (Polish)</SelectItem>
+                        <SelectItem value="uk">Українська (Ukrainian)</SelectItem>
+                        <SelectItem value="ro">Română (Romanian)</SelectItem>
+                        <SelectItem value="nl">Nederlands (Dutch)</SelectItem>
+                        <SelectItem value="el">Ελληνικά (Greek)</SelectItem>
+                        <SelectItem value="cs">Čeština (Czech)</SelectItem>
+                        <SelectItem value="hu">Magyar (Hungarian)</SelectItem>
+                        <SelectItem value="sv">Svenska (Swedish)</SelectItem>
+                        <SelectItem value="bg">Български (Bulgarian)</SelectItem>
+                        <SelectItem value="sr">Српски (Serbian)</SelectItem>
+                        <SelectItem value="hr">Hrvatski (Croatian)</SelectItem>
+                        <SelectItem value="sk">Slovenčina (Slovak)</SelectItem>
+                        <SelectItem value="no">Norsk (Norwegian)</SelectItem>
+                        <SelectItem value="da">Dansk (Danish)</SelectItem>
+                        <SelectItem value="fi">Suomi (Finnish)</SelectItem>
+                        <SelectItem value="sq">Shqip (Albanian)</SelectItem>
+                        <SelectItem value="sl">Slovenščina (Slovenian)</SelectItem>
+                        <SelectItem value="et">Eesti (Estonian)</SelectItem>
+                        <SelectItem value="lv">Latviešu (Latvian)</SelectItem>
+                        <SelectItem value="lt">Lietuvių (Lithuanian)</SelectItem>
+                        <SelectItem value="uz">Oʻzbek (Uzbek)</SelectItem>
+                        <SelectItem value="kk">Қазақша (Kazakh)</SelectItem>
+                        <SelectItem value="az">Azərbaycan (Azerbaijani)</SelectItem>
+                        <SelectItem value="mn">Монгол (Mongolian)</SelectItem>
+                        <SelectItem value="he">עברית (Hebrew)</SelectItem>
+                        <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                        <SelectItem value="ka">ქართული (Georgian)</SelectItem>
+                        <SelectItem value="hy">Հայերեն (Armenian)</SelectItem>
+                        <SelectItem value="tl">Tagalog</SelectItem>
+                        <SelectItem value="my">မြန်မာ (Burmese)</SelectItem>
+                        <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
+                        <SelectItem value="si">සිංහල (Sinhala)</SelectItem>
+                        <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={submitTest} 
+                      disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
+                      variant="default"
+                      className="min-w-[120px]"
                       style={{
-                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                        borderColor: themeStyles.border,
-                        color: themeStyles.textPrimary,
-                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                        backgroundColor: themeStyles.buttonPrimary,
+                        color: '#ffffff'
                       }}
                     >
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="zh">中文 (Chinese)</SelectItem>
-                      <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
-                      <SelectItem value="es">Español (Spanish)</SelectItem>
-                      <SelectItem value="fr">Français (French)</SelectItem>
-                      <SelectItem value="ar">العربية (Arabic)</SelectItem>
-                      <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
-                      <SelectItem value="pt">Português (Portuguese)</SelectItem>
-                      <SelectItem value="ru">Русский (Russian)</SelectItem>
-                      <SelectItem value="ja">日本語 (Japanese)</SelectItem>
-                      <SelectItem value="ur">اردو (Urdu)</SelectItem>
-                      <SelectItem value="id">Bahasa Indonesia</SelectItem>
-                      <SelectItem value="de">Deutsch (German)</SelectItem>
-                      <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
-                      <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
-                      <SelectItem value="it">Italiano (Italian)</SelectItem>
-                      <SelectItem value="ko">한국어 (Korean)</SelectItem>
-                      <SelectItem value="fa">فارسی (Persian)</SelectItem>
-                      <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
-                      <SelectItem value="th">ไทย (Thai)</SelectItem>
-                      <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
-                      <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
-                      <SelectItem value="te">తెలుగు (Telugu)</SelectItem>
-                      <SelectItem value="mr">मराठी (Marathi)</SelectItem>
-                      <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
-                      <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
-                      <SelectItem value="ml">മലയാളം (Malayalam)</SelectItem>
-                      <SelectItem value="pa">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
-                      <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
-                      <SelectItem value="as">অসমীয়া (Assamese)</SelectItem>
-                      <SelectItem value="sw">Kiswahili (Swahili)</SelectItem>
-                      <SelectItem value="ha">Hausa</SelectItem>
-                      <SelectItem value="yo">Yorùbá (Yoruba)</SelectItem>
-                      <SelectItem value="ig">Ásụ̀sụ́ Ìgbò (Igbo)</SelectItem>
-                      <SelectItem value="am">አማርኛ (Amharic)</SelectItem>
-                      <SelectItem value="zu">isiZulu (Zulu)</SelectItem>
-                      <SelectItem value="af">Afrikaans</SelectItem>
-                      <SelectItem value="pl">Polski (Polish)</SelectItem>
-                      <SelectItem value="uk">Українська (Ukrainian)</SelectItem>
-                      <SelectItem value="ro">Română (Romanian)</SelectItem>
-                      <SelectItem value="nl">Nederlands (Dutch)</SelectItem>
-                      <SelectItem value="el">Ελληνικά (Greek)</SelectItem>
-                      <SelectItem value="cs">Čeština (Czech)</SelectItem>
-                      <SelectItem value="hu">Magyar (Hungarian)</SelectItem>
-                      <SelectItem value="sv">Svenska (Swedish)</SelectItem>
-                      <SelectItem value="bg">Български (Bulgarian)</SelectItem>
-                      <SelectItem value="sr">Српски (Serbian)</SelectItem>
-                      <SelectItem value="hr">Hrvatski (Croatian)</SelectItem>
-                      <SelectItem value="sk">Slovenčina (Slovak)</SelectItem>
-                      <SelectItem value="no">Norsk (Norwegian)</SelectItem>
-                      <SelectItem value="da">Dansk (Danish)</SelectItem>
-                      <SelectItem value="fi">Suomi (Finnish)</SelectItem>
-                      <SelectItem value="sq">Shqip (Albanian)</SelectItem>
-                      <SelectItem value="sl">Slovenščina (Slovenian)</SelectItem>
-                      <SelectItem value="et">Eesti (Estonian)</SelectItem>
-                      <SelectItem value="lv">Latviešu (Latvian)</SelectItem>
-                      <SelectItem value="lt">Lietuvių (Lithuanian)</SelectItem>
-                      <SelectItem value="uz">Oʻzbek (Uzbek)</SelectItem>
-                      <SelectItem value="kk">Қазақша (Kazakh)</SelectItem>
-                      <SelectItem value="az">Azərbaycan (Azerbaijani)</SelectItem>
-                      <SelectItem value="mn">Монгол (Mongolian)</SelectItem>
-                      <SelectItem value="he">עברית (Hebrew)</SelectItem>
-                      <SelectItem value="ps">پښتو (Pashto)</SelectItem>
-                      <SelectItem value="ka">ქართული (Georgian)</SelectItem>
-                      <SelectItem value="hy">Հայերեն (Armenian)</SelectItem>
-                      <SelectItem value="tl">Tagalog</SelectItem>
-                      <SelectItem value="my">မြန်မာ (Burmese)</SelectItem>
-                      <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
-                      <SelectItem value="si">සිංහල (Sinhala)</SelectItem>
-                      <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={submitTest} 
-                    disabled={isSubmitting || !task1Answer.trim() || !task2Answer.trim()} 
-                    variant="default"
-                    className="min-w-[120px]"
-                    style={{
-                      backgroundColor: themeStyles.buttonPrimary,
-                      color: '#ffffff'
-                    }}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Test"}
-                  </Button>
+                      {isSubmitting ? "Submitting..." : "Submit Test"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1660,6 +1960,21 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           </div>
         </StudentLayout>
       </div>
+      
+      {/* Enhanced Spell Check Styling */}
+      {spellCheckEnabled && (
+        <style>{`
+          /* Subtle underline only for spell check errors */
+          textarea[spellcheck="true"]::spelling-error {
+            text-decoration: wavy underline rgba(239, 68, 68, 0.6) 2px !important;
+            text-decoration-skip-ink: none !important;
+          }
+          
+          textarea[spellcheck="true"]:focus::spelling-error {
+            text-decoration: wavy underline rgba(239, 68, 68, 0.7) 2px !important;
+          }
+        `}</style>
+      )}
     </div>
   );
 };

@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Enhanced Spell Check Styling - Subtle underline only */
+textarea[spellcheck="true"] {
+  /* Force browser to show spell check errors */
+  -webkit-text-decoration-skip: none;
+  text-decoration-skip-ink: none;
+}
+
+/* For browsers that support ::spelling-error pseudo-element */
+textarea[spellcheck="true"]::spelling-error {
+  text-decoration: wavy underline rgba(239, 68, 68, 0.6) 2px !important;
+  text-decoration-skip-ink: none !important;
+}
+
+textarea[spellcheck="true"]:focus::spelling-error {
+  text-decoration: wavy underline rgba(239, 68, 68, 0.7) 2px !important;
+}
+
 /* Journey Button - Default CTA style across the website */
 .journey-btn {
   @apply inline-flex items-center gap-2 font-semibold font-nunito;

@@ -1,4 +1,6 @@
+// @ts-nocheck - Deno runtime file, TypeScript errors for Deno imports/globals are expected
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-expect-error - Deno std library import
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -70,6 +72,7 @@ async function callOpenAI(prompt: string, apiKey: string, seed: number, retryCou
   console.log(`🚀 Attempting OpenAI API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   
   try {
+    // @ts-expect-error - Deno global is available at runtime
     const model = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -198,6 +201,7 @@ async function callGeminiViaOpenRouter(prompt: string, apiKey: string, seed: num
 async function callDeepSeek(prompt: string, apiKey: string, seed: number, retryCount = 0) {
   console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   try {
+    // @ts-expect-error - Deno global is available at runtime
     const model = Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner';
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -235,19 +239,176 @@ async function callDeepSeek(prompt: string, apiKey: string, seed: number, retryC
   }
 }
 
+async function callKimiK2Thinking(prompt: string, apiKey: string, seed: number, retryCount = 0) {
+  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
+  try {
+    // Add timeout to prevent hanging (50 seconds - Supabase edge functions have 60s limit)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
+    
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://englishaidol.com',
+          'X-Title': 'IELTS Writing Examiner'
+        },
+        body: JSON.stringify({
+          model: 'moonshotai/kimi-k2-thinking',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          seed: seed,
+          max_tokens: 8000
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Kimi K2 Thinking (OpenRouter) API Error:', errorText);
+        throw new Error(`Kimi K2 Thinking (OpenRouter) API failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ Kimi K2 Thinking (OpenRouter) API call successful`);
+      
+      // Extract content from response (OpenRouter format)
+      const content = data.choices?.[0]?.message?.content ?? '';
+      
+      // Return in a format compatible with existing code
+      return {
+        choices: [{
+          message: {
+            content: content
+          }
+        }]
+      };
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error('OpenRouter API request timeout (60s exceeded)');
+      }
+      throw fetchError;
+    }
+  } catch (error) {
+    console.error(`❌ Kimi K2 Thinking (OpenRouter) attempt ${retryCount + 1} failed:`, (error as any).message);
+    
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying Kimi K2 Thinking (OpenRouter) API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callKimiK2Thinking(prompt, apiKey, seed, retryCount + 1);
+    }
+    
+    throw error;
+  }
+}
+
+async function callGPT51ViaOpenRouter(prompt: string, apiKey: string, seed: number, retryCount = 0) {
+  console.log(`🚀 Attempting GPT-5.1 API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
+  try {
+    // Add timeout to prevent hanging (50 seconds - Supabase edge functions have 60s limit)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
+    
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://englishaidol.com',
+          'X-Title': 'IELTS Writing Examiner'
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-5.1',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          seed: seed, // Phase 2: Add deterministic seed
+          max_tokens: 8000
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ GPT-5.1 (OpenRouter) API Error:', errorText);
+        throw new Error(`GPT-5.1 (OpenRouter) API failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ GPT-5.1 (OpenRouter) API call successful`);
+      
+      // Extract content from response (OpenRouter format)
+      const content = data.choices?.[0]?.message?.content ?? '';
+      
+      // Return in a format compatible with existing code
+      return {
+        choices: [{
+          message: {
+            content: content
+          }
+        }]
+      };
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error('OpenRouter API request timeout (60s exceeded)');
+      }
+      throw fetchError;
+    }
+  } catch (error) {
+    console.error(`❌ GPT-5.1 (OpenRouter) attempt ${retryCount + 1} failed:`, (error as any).message);
+    
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying GPT-5.1 (OpenRouter) API call in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return callGPT51ViaOpenRouter(prompt, apiKey, seed, retryCount + 1);
+    }
+    
+    throw error;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { task1Answer, task2Answer, task1Data, task2Data, apiProvider = 'gemini', targetLanguage } = await req.json();
+    const { task1Answer, task2Answer, task1Data, task2Data, apiProvider = 'gemini', targetLanguage, model } = await req.json();
 
     // Determine training type from task1Data
     const trainingType = task1Data?.trainingType || 'Academic';
 
+    // @ts-expect-error - Deno global is available at runtime
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+    // @ts-expect-error - Deno global is available at runtime
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    // @ts-expect-error - Deno global is available at runtime
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
     // Gemini 2.5 Flash via OpenRouter is now the primary model
@@ -288,7 +449,8 @@ serve(async (req) => {
       task2Length: task2Answer?.length || 0,
       hasTask1,
       hasTask2,
-      targetLanguage: targetLanguage || 'en'
+      targetLanguage: targetLanguage || 'en',
+      model: model || 'gemini-2.5-flash'
     });
 
     // Language instruction for translation
@@ -468,7 +630,19 @@ ${hasTask1 && hasTask2 ? 'After analyzing the provided Task 1 and Task 2 essays,
 
 Score Each Criterion: ${hasTask1 && hasTask2 ? 'For both Task 1 and Task 2' : hasTask1 ? 'For Task 1 only' : 'For Task 2 only'}, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
 
-Write Justifications: For each score, you must write a 2-3 sentence justification, quoting specific examples from the student's writing as evidence. CRITICAL: Do NOT use placeholder text like "Quote specific examples and reference band descriptors. Must be 2-3 sentences minimum." You MUST provide actual, specific justifications with real examples from the student's writing.
+⚠️ CRITICAL BAND DESCRIPTOR ENFORCEMENT:
+- BEFORE assigning any score, explicitly reference which band descriptor matches the writing
+- Your score MUST directly correspond to the band descriptors you just read
+- Example: "This is Band 6 because [reference to Band 6 descriptor], not Band 7 because [missing Band 7 requirement]"
+- If writing shows Band 5 characteristics (limited X, basic Y), score Band 5 - do not inflate to Band 6
+- If you cannot clearly match the writing to a descriptor, score LOWER, not higher
+- Every score must have explicit band descriptor reference in the justification
+
+Write Justifications: For each score, you must write a 3-4 sentence justification that:
+1. Names which band descriptor your score matches (e.g., "This is Band 6 - The response focuses on requirements")
+2. Quotes specific examples from student writing showing why this band applies
+3. Explains what's missing for the next band level (what prevents Band 7)
+CRITICAL: Do NOT use placeholder text. You MUST provide actual specific band descriptor references with real examples.
 
 Handle Word Count: You must check if the essays are under the word count (150 for Task 1, 250 for Task 2). If an essay is significantly under length, you must state that this will lower the Task Achievement/Response score and reflect this in your scoring.
 
@@ -715,32 +889,57 @@ ${hasTask2 ? `  "task2": {
     const seed = createSeed(seedContent);
     console.log(`🌱 Generated seed: ${seed} from content hash`);
 
-    // Use Gemini 2.5 Flash via OpenRouter as primary, with fallbacks
+    // Route to correct model based on model parameter
     let aiResponse: any;
     let modelUsed: string;
     let content: string;
     
-    // Primary: Gemini 2.5 Flash via OpenRouter
+    const selectedModel = model || 'gemini-2.5-flash';
+    console.log(`🎯 Selected model: ${selectedModel}`);
+    
+    // Route to correct model function
     if (openRouterApiKey) {
       try {
-        console.log('🔄 Using Gemini 2.5 Flash (OpenRouter) as primary model...');
-        console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
-        console.log('🤖 Model: google/gemini-2.5-flash via OpenRouter');
-        aiResponse = await callGeminiViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
-        modelUsed = 'Gemini 2.5 Flash (OpenRouter)';
-        content = aiResponse.choices?.[0]?.message?.content ?? '';
-        console.log('✅ Gemini 2.5 Flash (OpenRouter) succeeded');
-        console.log(`📝 Response length: ${content.length} characters`);
-      } catch (geminiError) {
-        console.error('❌ Gemini 2.5 Flash (OpenRouter) failed with error:', (geminiError as any).message);
-        console.error('❌ Error details:', geminiError);
-        console.log('⚠️ Gemini 2.5 Flash (OpenRouter) failed, falling back to secondary models');
+        if (selectedModel === 'kimi-k2-thinking') {
+          console.log('🔄 Using Kimi K2 Thinking (OpenRouter)...');
+          console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
+          console.log('🤖 Model: moonshotai/kimi-k2-thinking via OpenRouter');
+          aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey, seed);
+          modelUsed = 'Kimi K2 Thinking (OpenRouter)';
+          content = aiResponse.choices?.[0]?.message?.content ?? '';
+          console.log('✅ Kimi K2 Thinking (OpenRouter) succeeded');
+          console.log(`📝 Response length: ${content.length} characters`);
+        } else if (selectedModel === 'gpt-5.1' || selectedModel === 'chatgpt-5.1') {
+          console.log('🔄 Using GPT-5.1 (OpenRouter)...');
+          console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
+          console.log('🤖 Model: openai/gpt-5.1 via OpenRouter');
+          aiResponse = await callGPT51ViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
+          modelUsed = 'GPT-5.1 (OpenRouter)';
+          content = aiResponse.choices?.[0]?.message?.content ?? '';
+          console.log('✅ GPT-5.1 (OpenRouter) succeeded');
+          console.log(`📝 Response length: ${content.length} characters`);
+        } else {
+          // Default: Gemini 2.5 Flash
+          console.log('🔄 Using Gemini 2.5 Flash (OpenRouter) as default model...');
+          console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
+          console.log('🤖 Model: google/gemini-2.5-flash via OpenRouter');
+          aiResponse = await callGeminiViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
+          modelUsed = 'Gemini 2.5 Flash (OpenRouter)';
+          content = aiResponse.choices?.[0]?.message?.content ?? '';
+          console.log('✅ Gemini 2.5 Flash (OpenRouter) succeeded');
+          console.log(`📝 Response length: ${content.length} characters`);
+        }
+      } catch (modelError) {
+        console.error(`❌ ${selectedModel} (OpenRouter) failed with error:`, (modelError as any).message);
+        console.error('❌ Error details:', modelError);
+        console.log(`⚠️ ${selectedModel} (OpenRouter) failed, falling back to secondary models`);
         
         // Fallback 1: Use requested provider or Gemini
         if (apiProvider === 'openai' && openaiApiKey) {
           try {
             console.log('🔄 Fallback 1: Using OpenAI API...');
             aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
+            // @ts-expect-error - Deno global is available at runtime
             modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'} (Fallback)`;
             content = aiResponse.choices?.[0]?.message?.content ?? '';
             console.log('✅ OpenAI fallback succeeded');
@@ -758,10 +957,13 @@ ${hasTask2 ? `  "task2": {
           } catch (geminiError) {
             console.log('⚠️ Gemini fallback failed, trying DeepSeek:', (geminiError as any).message);
             // Final fallback: DeepSeek
-            const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+            // @ts-expect-error - Deno global is available at runtime
+            // @ts-expect-error - Deno global is available at runtime
+          const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
             if (deepseekKey) {
               console.log('🔄 Final Fallback: Using DeepSeek API...');
               aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
+              // @ts-expect-error - Deno global is available at runtime
               modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Final Fallback)`;
               content = aiResponse.choices?.[0]?.message?.content ?? '';
               console.log('✅ DeepSeek final fallback succeeded');
@@ -770,7 +972,7 @@ ${hasTask2 ? `  "task2": {
             }
           }
         } else {
-          throw new Error('Gemini 2.5 Flash (OpenRouter) failed and no fallback API keys available');
+          throw new Error(`${selectedModel} (OpenRouter) failed and no fallback API keys available`);
         }
       }
     } else {
@@ -778,6 +980,7 @@ ${hasTask2 ? `  "task2": {
       if (apiProvider === 'openai') {
         console.log('🔄 Using OpenAI API (no OpenRouter key)...');
         aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
+        // @ts-expect-error - Deno global is available at runtime
         modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'}`;
         content = aiResponse.choices?.[0]?.message?.content ?? '';
         console.log('✅ OpenAI API succeeded');
@@ -790,12 +993,16 @@ ${hasTask2 ? `  "task2": {
           console.log('✅ Gemini API succeeded');
         } catch (geminiError) {
           console.log('⚠️ Gemini failed, falling back to DeepSeek:', (geminiError as any).message);
+          // @ts-expect-error - Deno global is available at runtime
+          // @ts-expect-error - Deno global is available at runtime
+          // @ts-expect-error - Deno global is available at runtime
           const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
           if (!deepseekKey) {
             throw new Error('Gemini failed and no DEEPSEEK_API_KEY available for fallback');
           }
           console.log('🔄 Fallback: Using DeepSeek API...');
           aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
+          // @ts-expect-error - Deno global is available at runtime
           modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Fallback)`;
           content = aiResponse.choices?.[0]?.message?.content ?? '';
           console.log('✅ DeepSeek fallback succeeded');
@@ -811,6 +1018,7 @@ ${hasTask2 ? `  "task2": {
     }
     
     // Optimized logging: only log in development or truncate
+    // @ts-expect-error - Deno global is available at runtime
     const isDevelopment = Deno.env.get('ENV') === 'development' || Deno.env.get('DENO_ENV') === 'development';
     if (isDevelopment) {
       console.log('🔍 Raw API response first 500 chars:', content.substring(0, 500));
@@ -851,6 +1059,7 @@ ${hasTask2 ? `  "task2": {
       if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
         extractedJson = cleaned.substring(firstBrace, lastBrace + 1);
         
+        // @ts-expect-error - Deno global is available at runtime
         const isDevelopment = Deno.env.get('ENV') === 'development' || Deno.env.get('DENO_ENV') === 'development';
         if (isDevelopment) {
           console.log('🔍 Extracted JSON length:', extractedJson.length);
@@ -935,32 +1144,26 @@ ${hasTask2 ? `  "task2": {
         
         const missingCount = criteriaNames.filter(name => !task.criteria[name] || typeof task.criteria[name]?.band !== 'number').length;
         
-        // Only auto-fill if 1-2 criteria missing (not 3-4)
-        if (missingCount > 2) {
-          console.warn(`⚠️ Too many missing criteria (${missingCount}/4) for ${type}. Marking as incomplete.`);
+        // IMPROVED: Never auto-fill - require complete scoring
+        if (missingCount > 0) {
+          console.warn(`⚠️ Incomplete scoring for ${type}: ${missingCount} out of 4 criteria missing`);
           task.analysis_incomplete = true;
-          task.incomplete_reason = `${missingCount} out of 4 criteria were not provided by the AI analysis.`;
+          task.incomplete_reason = `${missingCount} criteria not provided - AI must score all 4 criteria`;
         }
         
-        // Auto-fill only missing ones (if <= 2 missing)
-        if (type === 'task1') {
-          if (!task.criteria.task_achievement && missingCount <= 2) {
-            task.criteria.task_achievement = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
-          }
-        } else {
-          if (!task.criteria.task_response && missingCount <= 2) {
-            task.criteria.task_response = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
-          }
-        }
+        // Fill missing criteria with 0 (not auto-filled to overall)
+        // This preserves incomplete status and forces accurate scoring
+        const criteriaList = type === 'task1' 
+          ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
+          : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
         
-        if (!task.criteria.coherence_and_cohesion && missingCount <= 2) {
-          task.criteria.coherence_and_cohesion = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
-        }
-        if (!task.criteria.lexical_resource && missingCount <= 2) {
-          task.criteria.lexical_resource = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
-        }
-        if (!task.criteria.grammatical_range_and_accuracy && missingCount <= 2) {
-          task.criteria.grammatical_range_and_accuracy = { band: overall, justification: 'Auto-filled from overall score (original analysis incomplete).' };
+        for (const criterion of criteriaList) {
+          if (!task.criteria[criterion] || typeof task.criteria[criterion]?.band !== 'number') {
+            task.criteria[criterion] = { 
+              band: 0, 
+              justification: 'Not provided by AI analysis - criterion scoring incomplete' 
+            };
+          }
         }
       };
 
@@ -1001,9 +1204,10 @@ ${hasTask2 ? `  "task2": {
         
         if (mentionedLevel) {
           const levelDiff = Math.abs(mentionedLevel.level - band);
-          // Allow 0.5-1.0 band difference (e.g., justification says "band 7" but score is 6.5 is OK)
-          if (levelDiff > 1.0) {
-            console.warn(`⚠️ Score-justification mismatch for ${criterionName}: score=${band}, justification mentions ~${mentionedLevel.level}`);
+          // STRICTER: Only allow 0.5 band difference (not 1.0)
+          // This prevents contradictions like "Band 6.5 score" with "Band 7+ justification"
+          if (levelDiff > 0.5) {
+            console.warn(`⚠️ STRICT Score-justification mismatch for ${criterionName}: score=${band}, justification mentions ~${mentionedLevel.level} (diff=${levelDiff})`);
             return false;
           }
         }
@@ -1103,6 +1307,7 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
             );
           }
           
+          // @ts-expect-error - Deno global is available at runtime
           const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
           if (deepseekKey) {
             promises.push(
@@ -1207,7 +1412,9 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
         }
       };
 
-      await maybeRescore();
+      // DISABLED: Rescoring causes inconsistency and adds 50% latency
+      // await maybeRescore();
+      console.log('✅ Skipping rescoring - trusting primary AI assessment');
 
       // Ensure task1 feedback structure exists
       if (!structured.task1?.feedback) {
@@ -1447,6 +1654,41 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
       }
       
       console.log('✅ Response structure validated and enhanced');
+      
+      // ENHANCED: Validate that scores match band descriptors
+      const validateBandDescriptorAlignment = (task: any, taskType: 'task1' | 'task2') => {
+        if (!task?.criteria) return;
+        
+        const criteria = task.criteria;
+        const bandLevelGuide = {
+          9: { keywords: ['fully and appropriately satisfied', 'all the requirements', 'expert', 'sophisticated'], min: 'perfect' },
+          8: { keywords: ['all the requirements', 'well-developed', 'strong', 'skilfully'], min: 'very good' },
+          7: { keywords: ['covers the requirements', 'clear', 'developed'], min: 'good' },
+          6: { keywords: ['focuses on', 'generally', 'adequately', 'satisfactory'], min: 'competent' },
+          5: { keywords: ['generally addresses', 'limited', 'basic', 'some'], min: 'modest' },
+          4: { keywords: ['attempt', 'minimal', 'few', 'little'], min: 'very limited' },
+        };
+        
+        for (const [criterion, data] of Object.entries(criteria)) {
+          if (data && typeof data.band === 'number' && data.justification) {
+            const band = Math.round(data.band);
+            const just = data.justification.toLowerCase();
+            
+            // Check if justification mentions band-appropriate keywords
+            const expectedKeywords = bandLevelGuide[band as keyof typeof bandLevelGuide]?.keywords || [];
+            const hasKeywords = expectedKeywords.some(kw => just.includes(kw.toLowerCase()));
+            
+            if (band >= 5 && band <= 9 && !hasKeywords) {
+              console.warn(`⚠️ Band ${band} alignment warning for ${criterion}: justification doesn't reference Band ${band} descriptors`);
+              console.log(`   Suggestion: Reference the Band ${band} descriptor in justification`);
+            }
+          }
+        }
+      };
+      
+      if (structured.task1) validateBandDescriptorAlignment(structured.task1, 'task1');
+      if (structured.task2) validateBandDescriptorAlignment(structured.task2, 'task2');
+      console.log('✅ Band descriptor alignment validated');
     }
 
     const feedback = structured ? 
@@ -1463,7 +1705,6 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
   } catch (error: any) {
     console.error('❌ Error in ielts-writing-examiner function:', error);
     return new Response(JSON.stringify({ 

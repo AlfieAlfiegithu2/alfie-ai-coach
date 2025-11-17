@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -144,10 +144,17 @@ export default function IELTSWritingProResults() {
     task1Skipped?: boolean;
     task2Skipped?: boolean;
   }>({});
+  const hasGeneratedRef = useRef<string | null>(null); // Track submissionId that has been processed
 
   // Try to get data from location state first, then fallback to database
   useEffect(() => {
     const stateData = location.state as any;
+    
+    // Reset generation flag when submission changes
+    const submissionId = stateData?.submissionId;
+    if (submissionId && hasGeneratedRef.current !== submissionId) {
+      hasGeneratedRef.current = null; // Reset when new submission loads
+    }
     
     if (stateData && stateData.structured) {
       // Use data from navigation state
@@ -228,28 +235,40 @@ export default function IELTSWritingProResults() {
 
       // Validate and enrich criteria data
       const enrichCriteria = (bandScores: any, taskType: 'task1' | 'task2') => {
+        const incompleteJustification = "Original analysis incomplete - criterion score not provided in assessment";
         const fallbackCriteria = taskType === 'task1' ? {
-          task_achievement: { band: 6.5, justification: "Score reconstructed from database" },
-          coherence_and_cohesion: { band: 6.5, justification: "Score reconstructed from database" },
-          lexical_resource: { band: 6.5, justification: "Score reconstructed from database" },
-          grammatical_range_and_accuracy: { band: 6.5, justification: "Score reconstructed from database" }
+          task_achievement: { band: 0, justification: incompleteJustification },
+          coherence_and_cohesion: { band: 0, justification: incompleteJustification },
+          lexical_resource: { band: 0, justification: incompleteJustification },
+          grammatical_range_and_accuracy: { band: 0, justification: incompleteJustification }
         } : {
-          task_response: { band: 6.5, justification: "Score reconstructed from database" },
-          coherence_and_cohesion: { band: 6.5, justification: "Score reconstructed from database" },
-          lexical_resource: { band: 6.5, justification: "Score reconstructed from database" },
-          grammatical_range_and_accuracy: { band: 6.5, justification: "Score reconstructed from database" }
+          task_response: { band: 0, justification: incompleteJustification },
+          coherence_and_cohesion: { band: 0, justification: incompleteJustification },
+          lexical_resource: { band: 0, justification: incompleteJustification },
+          grammatical_range_and_accuracy: { band: 0, justification: incompleteJustification }
         };
 
         if (!bandScores || typeof bandScores !== 'object') {
-          console.warn(`⚠️ Missing or invalid criteria for ${taskType}, using fallback`);
+          console.warn(`⚠️ Missing or invalid criteria for ${taskType} - analysis incomplete`);
           return fallbackCriteria;
         }
 
-        // Merge existing data with fallbacks where needed
-        const enriched = { ...fallbackCriteria };
+        // Only use existing data - don't fill missing criteria with fallbacks
+        const enriched: any = {};
         for (const [key, value] of Object.entries(bandScores)) {
           if (value && typeof value === 'object' && 'band' in value) {
-            enriched[key as keyof typeof enriched] = value as any;
+            enriched[key] = value;
+          }
+        }
+
+        // If any criteria are missing, mark them as incomplete
+        const requiredKeys = taskType === 'task1' 
+          ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
+          : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
+        
+        for (const key of requiredKeys) {
+          if (!enriched[key]) {
+            enriched[key] = { band: 0, justification: incompleteJustification };
           }
         }
 
@@ -326,28 +345,61 @@ export default function IELTSWritingProResults() {
   useEffect(() => {
     const generateIfMissing = async () => {
       if (!resultsData || !user) return;
+      
       const submissionId = (location.state as any)?.submissionId || (resultsData as any)?.submissionId;
-      const current = resultsData.structured;
-      if (!current) return;
-
-      // Only generate if sentence_comparisons are truly missing (fallback for old submissions)
-      // New submissions should have sentence_comparisons from the examiner function
-      const needsTask1 = !!resultsData.task1Answer && 
-        (!current.task1?.sentence_comparisons || 
-         (current.task1?.sentence_comparisons as any[])?.length === 0 ||
-         !current.task1?.original_spans || 
-         !current.task1?.corrected_spans);
-      const needsTask2 = !!resultsData.task2Answer && 
-        (!current.task2?.sentence_comparisons || 
-         (current.task2?.sentence_comparisons as any[])?.length === 0 ||
-         !current.task2?.original_spans || 
-         !current.task2?.corrected_spans);
-      if (!needsTask1 && !needsTask2) {
-        console.log('✅ sentence_comparisons already present, skipping on-demand generation');
+      
+      // CRITICAL: Prevent re-generation if this submission has already been processed
+      if (hasGeneratedRef.current === submissionId) {
+        console.log('✅ Submission already processed, skipping generation');
         return;
       }
       
-      console.log('⚠️ sentence_comparisons missing, generating on-demand (fallback)...');
+      // If no submissionId, use a fallback key based on answers
+      const fallbackKey = submissionId || `${resultsData.task1Answer?.slice(0, 50)}_${resultsData.task2Answer?.slice(0, 50)}`;
+      if (hasGeneratedRef.current === fallbackKey) {
+        console.log('✅ Content already processed, skipping generation');
+        return;
+      }
+      
+      const current = resultsData.structured;
+      if (!current) return;
+
+      // Check if sentence_comparisons already exist
+      const hasTask1Spans = current?.task1?.sentence_comparisons && 
+                          Array.isArray(current.task1.sentence_comparisons) && 
+                          current.task1.sentence_comparisons.length > 0 &&
+                          current.task1.original_spans &&
+                          current.task1.corrected_spans;
+      const hasTask2Spans = current?.task2?.sentence_comparisons && 
+                          Array.isArray(current.task2.sentence_comparisons) && 
+                          current.task2.sentence_comparisons.length > 0 &&
+                          current.task2.original_spans &&
+                          current.task2.corrected_spans;
+      
+      // If both tasks have spans, mark as processed and skip
+      if (hasTask1Spans && hasTask2Spans) {
+        hasGeneratedRef.current = submissionId || fallbackKey;
+        return;
+      }
+      
+      // If task1 has spans and no task2 answer, or vice versa, mark as processed
+      if ((hasTask1Spans && !resultsData.task2Answer) || (hasTask2Spans && !resultsData.task1Answer)) {
+        hasGeneratedRef.current = submissionId || fallbackKey;
+        return;
+      }
+
+      // Generate sentence_comparisons on-demand
+      const needsTask1 = !!resultsData.task1Answer && !hasTask1Spans;
+      const needsTask2 = !!resultsData.task2Answer && !hasTask2Spans;
+      
+      if (!needsTask1 && !needsTask2) {
+        hasGeneratedRef.current = submissionId || fallbackKey;
+        return;
+      }
+      
+      console.log('🔄 Generating sentence_comparisons on-demand (ONE TIME ONLY)...');
+      // Mark as processing IMMEDIATELY to prevent any duplicate calls
+      hasGeneratedRef.current = submissionId || fallbackKey;
 
       try {
         setLoading(true);
@@ -426,49 +478,31 @@ export default function IELTSWritingProResults() {
 
         // Only update if there are actual changes to prevent unnecessary re-renders
         const hasChanges = 
-          (needsTask1 && updates.task1?.sentence_comparisons) ||
-          (needsTask2 && updates.task2?.sentence_comparisons);
+          (needsTask1 && updates.task1?.sentence_comparisons && updates.task1.sentence_comparisons.length > 0) ||
+          (needsTask2 && updates.task2?.sentence_comparisons && updates.task2.sentence_comparisons.length > 0);
         
         if (hasChanges) {
           setResultsData(prev => ({ ...prev, structured: updates }));
+          console.log('✅ sentence_comparisons generated and updated (ONE TIME)');
         } else {
           console.log('✅ No changes needed, skipping state update');
         }
       } catch (e) {
         console.error('⚠️ On-demand feedback generation failed:', e);
+        // Reset on error to allow retry, but only if it's a different submission
+        const currentSubmissionId = (location.state as any)?.submissionId || (resultsData as any)?.submissionId;
+        if (hasGeneratedRef.current === currentSubmissionId) {
+          hasGeneratedRef.current = null;
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    // Only run if sentence_comparisons are truly missing
-    const current = resultsData?.structured;
-    const hasTask1Spans = current?.task1?.sentence_comparisons && 
-                          Array.isArray(current.task1.sentence_comparisons) && 
-                          current.task1.sentence_comparisons.length > 0 &&
-                          current.task1.original_spans &&
-                          current.task1.corrected_spans;
-    const hasTask2Spans = current?.task2?.sentence_comparisons && 
-                          Array.isArray(current.task2.sentence_comparisons) && 
-                          current.task2.sentence_comparisons.length > 0 &&
-                          current.task2.original_spans &&
-                          current.task2.corrected_spans;
-    
-    // Skip if both tasks already have spans
-    if (hasTask1Spans && hasTask2Spans) {
-      return;
-    }
-    
-    // Skip if task1 has spans and no task2 answer, or vice versa
-    if (hasTask1Spans && !resultsData?.task2Answer) {
-      return;
-    }
-    if (hasTask2Spans && !resultsData?.task1Answer) {
-      return;
-    }
-
     generateIfMissing();
-  }, [resultsData?.structured, resultsData?.task1Answer, resultsData?.task2Answer, user, location.state]);
+    // CRITICAL: Only depend on submissionId and user, NOT on resultsData properties that change
+    // This ensures the effect only runs once per submission
+  }, [(location.state as any)?.submissionId, (resultsData as any)?.submissionId, user?.id]);
 
   const {
     structured,

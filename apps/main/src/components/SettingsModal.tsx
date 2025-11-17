@@ -334,6 +334,17 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
           // dashboard_theme column doesn't exist, but that's okay - theme is saved locally
           console.log('✅ Preferences saved (dashboard_theme column not available)');
           toast.success('Settings saved successfully!');
+          // Cache nickname for instant display
+          if (preferences.preferred_name && user?.id) {
+            try {
+              localStorage.setItem(`nickname_${user.id}`, JSON.stringify({
+                nickname: preferences.preferred_name,
+                timestamp: Date.now()
+              }));
+            } catch (e) {
+              // Ignore localStorage errors
+            }
+          }
         } else {
           // For other errors, log and show to user
           console.error('❌ Preferences save error:', {
@@ -359,6 +370,17 @@ const SettingsModal = ({ onSettingsChange, children, open: controlledOpen, onOpe
       } else {
         console.log('✅ Preferences and language saved successfully');
         toast.success('Settings saved successfully!');
+        // Cache nickname for instant display
+        if (preferences.preferred_name && user?.id) {
+          try {
+            localStorage.setItem(`nickname_${user.id}`, JSON.stringify({
+              nickname: preferences.preferred_name,
+              timestamp: Date.now()
+            }));
+          } catch (e) {
+            // Ignore localStorage errors
+          }
+        }
       }
 
       // Trigger language update in GlobalTextSelection

@@ -87,6 +87,40 @@ const Dashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  
+  // Cache preferred_name in localStorage for instant display
+  const getCachedNickname = (): string | null => {
+    if (!user?.id) return null;
+    try {
+      const cached = localStorage.getItem(`nickname_${user.id}`);
+      if (cached) {
+        const { nickname, timestamp } = JSON.parse(cached);
+        // Cache valid for 24 hours
+        if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+          return nickname;
+        }
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    return null;
+  };
+  
+  const cacheNickname = (nickname: string | null) => {
+    if (!user?.id) return;
+    try {
+      if (nickname) {
+        localStorage.setItem(`nickname_${user.id}`, JSON.stringify({
+          nickname,
+          timestamp: Date.now()
+        }));
+      } else {
+        localStorage.removeItem(`nickname_${user.id}`);
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
   const testTypes = [{
     id: "IELTS",
     name: "IELTS",
@@ -191,9 +225,15 @@ const Dashboard = () => {
         setUserPreferences(preferences);
         setSelectedTestType(preferences.target_test_type || 'IELTS');
         setRefreshKey(prev => prev + 1);
+        // Cache nickname for instant display next time
+        if (preferences.preferred_name) {
+          cacheNickname(preferences.preferred_name);
+        }
       } else {
         // If no preferences found, set to null to use fallback
         setUserPreferences(null);
+        // Clear cached nickname if no preferences
+        cacheNickname(null);
       }
     } catch (error: any) {
       // Check if it's a network error
@@ -623,7 +663,22 @@ const Dashboard = () => {
                 color: themeStyles.textPrimary
               }}>
                 {t('dashboard.helloUser', {
-                  name: (userPreferences?.preferred_name || user?.email?.split('@')[0] || 'Learner')
+                  name: (() => {
+                    // Priority: cached nickname > userPreferences preferred_name > profile full_name > Learner
+                    // Use cached nickname for instant display, then update when DB loads
+                    const cachedNickname = getCachedNickname();
+                    if (cachedNickname) {
+                      return cachedNickname;
+                    }
+                    if (userPreferences?.preferred_name) {
+                      return userPreferences.preferred_name;
+                    }
+                    if (profile?.full_name) {
+                      return profile.full_name.split(' ')[0];
+                    }
+                    // Show "Learner" while loading instead of email
+                    return 'Learner';
+                  })()
                 })}
               </h1>
 

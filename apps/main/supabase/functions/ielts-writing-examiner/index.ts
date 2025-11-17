@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 // Phase 2: Generate deterministic seed from text content
@@ -117,62 +118,77 @@ async function callOpenAI(prompt: string, apiKey: string, seed: number, retryCou
   }
 }
 
-async function callKimiK2Thinking(prompt: string, apiKey: string, seed: number, retryCount = 0) {
-  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
+async function callGeminiViaOpenRouter(prompt: string, apiKey: string, seed: number, retryCount = 0) {
+  console.log(`🚀 Attempting Gemini 2.5 Flash API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://englishaidol.com',
-        'X-Title': 'IELTS Writing Examiner'
-      },
-      body: JSON.stringify({
-        model: 'moonshotai/kimi-k2-thinking',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
-          },
-          {
-            role: 'user',
-            content: prompt
+    // Add timeout to prevent hanging (50 seconds - Supabase edge functions have 60s limit)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
+    
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://englishaidol.com',
+          'X-Title': 'IELTS Writing Examiner'
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          seed: seed, // Phase 2: Add deterministic seed
+          max_tokens: 8000
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Gemini 2.5 Flash (OpenRouter) API Error:', errorText);
+        throw new Error(`Gemini 2.5 Flash (OpenRouter) API failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ Gemini 2.5 Flash (OpenRouter) API call successful`);
+      
+      // Extract content from response (OpenRouter format)
+      const content = data.choices?.[0]?.message?.content ?? '';
+      
+      // Return in a format compatible with existing code
+      return {
+        choices: [{
+          message: {
+            content: content
           }
-        ],
-        temperature: 0.1,
-        seed: seed, // Phase 2: Add deterministic seed
-        max_tokens: 8000
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Kimi K2 Thinking API Error:', errorText);
-      throw new Error(`Kimi K2 Thinking API failed: ${response.status} - ${errorText}`);
+        }]
+      };
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error('OpenRouter API request timeout (60s exceeded)');
+      }
+      throw fetchError;
     }
-
-    const data = await response.json();
-    console.log(`✅ Kimi K2 Thinking API call successful`);
-    
-    // Extract content from response (OpenRouter format)
-    const content = data.choices?.[0]?.message?.content ?? '';
-    
-    // Return in a format compatible with existing code
-    return {
-      choices: [{
-        message: {
-          content: content
-        }
-      }]
-    };
   } catch (error) {
-    console.error(`❌ Kimi K2 Thinking attempt ${retryCount + 1} failed:`, (error as any).message);
+    console.error(`❌ Gemini 2.5 Flash (OpenRouter) attempt ${retryCount + 1} failed:`, (error as any).message);
     
     if (retryCount < 1) {
-      console.log(`🔄 Retrying Kimi K2 Thinking API call in 500ms...`);
+      console.log(`🔄 Retrying Gemini 2.5 Flash (OpenRouter) API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callKimiK2Thinking(prompt, apiKey, seed, retryCount + 1);
+      return callGeminiViaOpenRouter(prompt, apiKey, seed, retryCount + 1);
     }
     
     throw error;
@@ -234,9 +250,19 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    // Kimi K2 Thinking is now the primary model via OpenRouter
+    // Gemini 2.5 Flash via OpenRouter is now the primary model
+    console.log('🔑 API Keys check:', {
+      hasOpenRouter: !!openRouterApiKey,
+      openRouterKeyLength: openRouterApiKey?.length || 0,
+      hasGemini: !!geminiApiKey,
+      hasOpenAI: !!openaiApiKey,
+      apiProvider
+    });
+    
     if (!openRouterApiKey) {
-      console.warn('⚠️ No OpenRouter API key found, will fallback to Gemini/OpenAI');
+      console.warn('⚠️ No OpenRouter API key found, will fallback to direct Gemini/OpenAI');
+    } else {
+      console.log('✅ OpenRouter API key found, will use Gemini 2.5 Flash (OpenRouter) as primary');
     }
     
     if (apiProvider === 'gemini' && !geminiApiKey) {
@@ -497,6 +523,8 @@ Example sentence_comparisons format:
 
 You MUST analyze EVERY sentence in the student's text. For each sentence, output EXACTLY one object in sentence_comparisons.
 
+CRITICAL: The sentence_comparisons array is MANDATORY and must be included in your JSON response. Do NOT omit it. If you fail to include sentence_comparisons, your response will be considered incomplete.
+
 ${hasTask1 ? `Task 1:
 ${trainingType === 'General' ? `LETTER WRITING (General Training)
 Letter Prompt: ${task1Data?.title || 'Task 1'}
@@ -674,7 +702,7 @@ ${hasTask2 ? `  "task2": {
   ]
 }`;
 
-    // Phase 2: Generate deterministic seed from student answers
+    // Generate deterministic seed from student answers
     const seedContent = [
       task1Answer || '',
       task2Answer || '',
@@ -687,105 +715,64 @@ ${hasTask2 ? `  "task2": {
     const seed = createSeed(seedContent);
     console.log(`🌱 Generated seed: ${seed} from content hash`);
 
-    // Phase 3: Check cache before making API calls
-    const cacheKey = seedContent; // Use seed content as cache key
-    let cachedResult = null;
-    
-    // Try to get cached result from Supabase
-    try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (supabaseUrl && supabaseServiceKey) {
-        const cacheResponse = await fetch(`${supabaseUrl}/rest/v1/writing_assessment_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=*`, {
-          headers: {
-            'apikey': supabaseServiceKey,
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (cacheResponse.ok) {
-          const cacheData = await cacheResponse.json();
-          if (cacheData && cacheData.length > 0 && cacheData[0].cached_result) {
-            const cacheAge = Date.now() - new Date(cacheData[0].created_at).getTime();
-            const cacheMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
-            
-            if (cacheAge < cacheMaxAge) {
-              cachedResult = cacheData[0].cached_result;
-              console.log(`💾 Cache HIT! Using cached result (age: ${Math.round(cacheAge / (24 * 60 * 60 * 1000))} days)`);
-            } else {
-              console.log(`⏰ Cache expired (age: ${Math.round(cacheAge / (24 * 60 * 60 * 1000))} days), will fetch new result`);
-            }
-          }
-        }
-      }
-    } catch (cacheError) {
-      console.log('⚠️ Cache check failed (non-critical):', (cacheError as any).message);
-      // Continue without cache - non-critical error
-    }
-
-    // Use Kimi K2 Thinking as primary, with fallbacks
+    // Use Gemini 2.5 Flash via OpenRouter as primary, with fallbacks
     let aiResponse: any;
     let modelUsed: string;
     let content: string;
-
-    // If we have a cached result, use it instead of calling API
-    if (cachedResult) {
-      console.log('✅ Using cached assessment result');
-      content = (cachedResult as any).content || '';
-      modelUsed = (cachedResult as any).model_used || 'Cached';
-    } else {
-      console.log('🔄 Cache MISS - calling AI API...');
-      
-      // Primary: Kimi K2 Thinking via OpenRouter
-      if (openRouterApiKey) {
-        try {
-          console.log('🔄 Using Kimi K2 Thinking (OpenRouter) as primary model...');
-          aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey, seed);
-          modelUsed = 'Kimi K2 Thinking (OpenRouter)';
-          content = aiResponse.choices?.[0]?.message?.content ?? '';
-          console.log('✅ Kimi K2 Thinking succeeded');
-        } catch (kimiError) {
-          console.log('⚠️ Kimi K2 Thinking failed, falling back to secondary models:', (kimiError as any).message);
-          
-          // Fallback 1: Use requested provider or Gemini
-          if (apiProvider === 'openai' && openaiApiKey) {
-            try {
-              console.log('🔄 Fallback 1: Using OpenAI API...');
-              aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
-              modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'} (Fallback)`;
-              content = aiResponse.choices?.[0]?.message?.content ?? '';
-              console.log('✅ OpenAI fallback succeeded');
-            } catch (openaiError) {
-              console.log('⚠️ OpenAI fallback failed, trying Gemini:', (openaiError as any).message);
-              throw openaiError; // Will trigger Gemini fallback
-            }
-          } else if (geminiApiKey) {
-            try {
-              console.log('🔄 Fallback 1: Using Gemini API...');
-              aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
-              modelUsed = 'Google Gemini AI (Fallback)';
-              content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-              console.log('✅ Gemini fallback succeeded');
-            } catch (geminiError) {
-              console.log('⚠️ Gemini fallback failed, trying DeepSeek:', (geminiError as any).message);
-              // Final fallback: DeepSeek
-              const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-              if (deepseekKey) {
-                console.log('🔄 Final Fallback: Using DeepSeek API...');
-                aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
-                modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Final Fallback)`;
-                content = aiResponse.choices?.[0]?.message?.content ?? '';
-                console.log('✅ DeepSeek final fallback succeeded');
-              } else {
-                throw new Error('All models failed and no DEEPSEEK_API_KEY available for final fallback');
-              }
-            }
-          } else {
-            throw new Error('Kimi K2 Thinking failed and no fallback API keys available');
+    
+    // Primary: Gemini 2.5 Flash via OpenRouter
+    if (openRouterApiKey) {
+      try {
+        console.log('🔄 Using Gemini 2.5 Flash (OpenRouter) as primary model...');
+        console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
+        console.log('🤖 Model: google/gemini-2.5-flash via OpenRouter');
+        aiResponse = await callGeminiViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
+        modelUsed = 'Gemini 2.5 Flash (OpenRouter)';
+        content = aiResponse.choices?.[0]?.message?.content ?? '';
+        console.log('✅ Gemini 2.5 Flash (OpenRouter) succeeded');
+        console.log(`📝 Response length: ${content.length} characters`);
+      } catch (geminiError) {
+        console.error('❌ Gemini 2.5 Flash (OpenRouter) failed with error:', (geminiError as any).message);
+        console.error('❌ Error details:', geminiError);
+        console.log('⚠️ Gemini 2.5 Flash (OpenRouter) failed, falling back to secondary models');
+        
+        // Fallback 1: Use requested provider or Gemini
+        if (apiProvider === 'openai' && openaiApiKey) {
+          try {
+            console.log('🔄 Fallback 1: Using OpenAI API...');
+            aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
+            modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'} (Fallback)`;
+            content = aiResponse.choices?.[0]?.message?.content ?? '';
+            console.log('✅ OpenAI fallback succeeded');
+          } catch (openaiError) {
+            console.log('⚠️ OpenAI fallback failed, trying Gemini:', (openaiError as any).message);
+            throw openaiError; // Will trigger Gemini fallback
           }
+        } else if (geminiApiKey) {
+          try {
+            console.log('🔄 Fallback 1: Using Gemini API...');
+            aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
+            modelUsed = 'Google Gemini AI (Fallback)';
+            content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+            console.log('✅ Gemini fallback succeeded');
+          } catch (geminiError) {
+            console.log('⚠️ Gemini fallback failed, trying DeepSeek:', (geminiError as any).message);
+            // Final fallback: DeepSeek
+            const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
+            if (deepseekKey) {
+              console.log('🔄 Final Fallback: Using DeepSeek API...');
+              aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
+              modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Final Fallback)`;
+              content = aiResponse.choices?.[0]?.message?.content ?? '';
+              console.log('✅ DeepSeek final fallback succeeded');
+            } else {
+              throw new Error('All models failed and no DEEPSEEK_API_KEY available for final fallback');
+            }
+          }
+        } else {
+          throw new Error('Gemini 2.5 Flash (OpenRouter) failed and no fallback API keys available');
         }
+      }
     } else {
       // No OpenRouter key, use legacy flow
       if (apiProvider === 'openai') {
@@ -813,38 +800,6 @@ ${hasTask2 ? `  "task2": {
           content = aiResponse.choices?.[0]?.message?.content ?? '';
           console.log('✅ DeepSeek fallback succeeded');
         }
-      }
-    }
-    
-    // Phase 3: Save result to cache if we got a new response (not from cache)
-    if (!cachedResult && content && content.length > 10) {
-      try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        
-        if (supabaseUrl && supabaseServiceKey) {
-          await fetch(`${supabaseUrl}/rest/v1/writing_assessment_cache`, {
-            method: 'POST',
-            headers: {
-              'apikey': supabaseServiceKey,
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'resolution=merge-duplicates'
-            },
-            body: JSON.stringify({
-              cache_key: cacheKey,
-              cached_result: {
-                content: content,
-                model_used: modelUsed
-              },
-              created_at: new Date().toISOString()
-            })
-          });
-          console.log('💾 Saved result to cache');
-        }
-      } catch (cacheSaveError) {
-        console.log('⚠️ Cache save failed (non-critical):', (cacheSaveError as any).message);
-        // Continue - cache save is non-critical
       }
     }
 
@@ -1296,7 +1251,10 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
 
       // Process sentence_comparisons for Task 1
       if (hasTask1 && structured?.task1) {
-        if (!Array.isArray(structured.task1.sentence_comparisons) || structured.task1.sentence_comparisons.length === 0) {
+        const hasSentenceComparisons = Array.isArray(structured.task1.sentence_comparisons) && structured.task1.sentence_comparisons.length > 0;
+        console.log(`🔍 Task 1 sentence_comparisons check: ${hasSentenceComparisons ? 'PRESENT' : 'MISSING'} (count: ${structured.task1.sentence_comparisons?.length || 0})`);
+        
+        if (!hasSentenceComparisons) {
           console.log('⚠️ Task 1 missing sentence_comparisons, generating from improvements...');
           // Generate sentence_comparisons from improvements if available
           const improvements = structured.task1.feedback?.improvements || [];
@@ -1345,7 +1303,10 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
 
       // Process sentence_comparisons for Task 2
       if (hasTask2 && structured?.task2) {
-        if (!Array.isArray(structured.task2.sentence_comparisons) || structured.task2.sentence_comparisons.length === 0) {
+        const hasSentenceComparisons = Array.isArray(structured.task2.sentence_comparisons) && structured.task2.sentence_comparisons.length > 0;
+        console.log(`🔍 Task 2 sentence_comparisons check: ${hasSentenceComparisons ? 'PRESENT' : 'MISSING'} (count: ${structured.task2.sentence_comparisons?.length || 0})`);
+        
+        if (!hasSentenceComparisons) {
           console.log('⚠️ Task 2 missing sentence_comparisons, generating from improvements...');
           // Generate sentence_comparisons from improvements if available
           const improvements = structured.task2.feedback?.improvements || [];
@@ -1503,11 +1464,12 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error in ielts-writing-examiner function:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: error?.message || 'Unknown error occurred',
+      details: error?.toString() || 'No additional details'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

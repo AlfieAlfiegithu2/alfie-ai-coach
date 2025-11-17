@@ -7,6 +7,7 @@ import DotLottieLoadingAnimation from '@/components/animations/DotLottieLoadingA
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeStyles } from '@/hooks/useThemeStyles';
 
 interface TranslationPopupProps {
   selectedText: string;
@@ -36,6 +37,7 @@ export default function TranslationPopup({
   const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const { toast } = useToast();
   const { user } = useAuth();
+  const themeStyles = useThemeStyles();
 
 
   // Update viewport size on resize
@@ -588,12 +590,34 @@ export default function TranslationPopup({
     ? [primaryPOS || normalizedPrimaryPOS, ...Object.keys(translationsByPOS).filter(pos => normalizePOS(pos) !== normalizedPrimaryPOS).sort()]
     : Object.keys(translationsByPOS).sort();
 
+  // Get theme-specific background with proper opacity
+  const getCardBackground = () => {
+    return themeStyles.cardBackground;
+  };
+
+  const getBackdropFilter = () => {
+    if (themeStyles.theme.name === 'glassmorphism') {
+      return 'blur(10px)';
+    }
+    return 'none';
+  };
+
   return (
     <div className="fixed inset-0 z-[9998]" onClick={onClose}>
       <Card 
-        style={popupStyle} 
+        style={{
+          ...popupStyle,
+          backgroundColor: getCardBackground(),
+          borderColor: themeStyles.border,
+          backdropFilter: getBackdropFilter(),
+          boxShadow: themeStyles.theme.name === 'glassmorphism' 
+            ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+            : themeStyles.theme.name === 'dark'
+            ? '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)'
+            : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        }}
         onClick={(e) => e.stopPropagation()} 
-        className={`bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl border border-white/60 dark:border-slate-700/60 shadow-lg animate-fade-in animate-slide-up ${isLoading ? 'overflow-visible' : ''}`}
+        className={`rounded-2xl shadow-lg animate-fade-in animate-slide-up ${isLoading ? 'overflow-visible' : ''}`}
       >
         <CardHeader className="pb-2 px-3 pt-3 relative">
           {/* Close button - absolute positioned */}
@@ -601,20 +625,36 @@ export default function TranslationPopup({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="absolute top-3 right-3 h-6 w-6 p-0 hover:bg-white/60 dark:hover:bg-slate-800/60 rounded-lg text-slate-400 dark:text-slate-500"
+            className="absolute top-3 right-3 h-6 w-6 p-0 rounded-lg"
+            style={{
+              color: themeStyles.textSecondary,
+              backgroundColor: 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <X className="h-3.5 w-3.5" />
           </Button>
           {/* Original word - centered */}
           <div className="text-center animate-fade-in">
-            <p className={`text-slate-900 dark:text-slate-100 ${langStyles.fontSize.original} font-semibold ${langStyles.lineHeight}`}>
+            <p 
+              className={`${langStyles.fontSize.original} font-semibold ${langStyles.lineHeight}`}
+              style={{ color: themeStyles.textPrimary }}
+            >
               {selectedText}
             </p>
             {/* POS underneath original word - only show if available */}
             <div className="space-y-0.5 mt-0.5">
               {/* Show POS only if it exists and is not empty */}
               {primaryPOS && primaryPOS.trim() !== '' && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <p 
+                  className="text-xs font-medium"
+                  style={{ color: themeStyles.textSecondary }}
+                >
                   {primaryPOS}
                 </p>
               )}
@@ -660,7 +700,10 @@ export default function TranslationPopup({
                         }}
                       >
                         {showPOSLabel && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium animate-slide-up">
+                          <p 
+                            className="text-xs font-medium animate-slide-up"
+                            style={{ color: themeStyles.textSecondary }}
+                          >
                             {pos}
                           </p>
                         )}
@@ -675,7 +718,10 @@ export default function TranslationPopup({
                                 animationFillMode: 'both'
                               }}
                             >
-                              <p className={`text-slate-700 dark:text-slate-300 ${langStyles.fontSize.translation} font-normal ${langStyles.lineHeight} text-center`}>
+                              <p 
+                                className={`${langStyles.fontSize.translation} font-normal ${langStyles.lineHeight} text-center`}
+                                style={{ color: themeStyles.textPrimary }}
+                              >
                                 {meaning}
                               </p>
                               {/* Add to Wordbook button - right corner, same row as last translation */}
@@ -687,7 +733,18 @@ export default function TranslationPopup({
                                         <button
                                           onClick={handleAddToWordbook}
                                           disabled={isSaving || isSaved}
-                                          className="h-5 w-5 text-slate-400 dark:text-slate-500 hover:text-primary dark:hover:text-primary transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                                          className="h-5 w-5 transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                                          style={{
+                                            color: themeStyles.textSecondary,
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            if (!isSaving && !isSaved) {
+                                              e.currentTarget.style.color = themeStyles.buttonPrimary;
+                                            }
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.color = themeStyles.textSecondary;
+                                          }}
                                         >
                                           {isSaved ? (
                                             <Check className="h-4 w-4" />
@@ -720,7 +777,10 @@ export default function TranslationPopup({
                       animationFillMode: 'both'
                     }}
                   >
-                    <p className={`text-slate-700 dark:text-slate-300 ${langStyles.fontSize.translation} font-normal ${langStyles.lineHeight} text-center`}>
+                    <p 
+                      className={`${langStyles.fontSize.translation} font-normal ${langStyles.lineHeight} text-center`}
+                      style={{ color: themeStyles.textPrimary }}
+                    >
                       {primaryTranslation}
                     </p>
                     {/* Add to Wordbook button - right corner, same row as translation */}
@@ -756,7 +816,12 @@ export default function TranslationPopup({
             </>
           ) : (
             <div className="py-6 text-center">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Translation not available</p>
+              <p 
+                className="text-xs"
+                style={{ color: themeStyles.textSecondary }}
+              >
+                Translation not available
+              </p>
             </div>
           )}
         </CardContent>

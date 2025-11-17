@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import TranslationPopup from './TranslationPopup';
+import TextActionMenu from './TextActionMenu';
 import { normalizeLanguageCode } from '@/lib/languageUtils';
+import { useToast } from '@/hooks/use-toast';
 
 interface GlobalTextSelectionProps {
   children: React.ReactNode;
@@ -10,8 +12,11 @@ interface GlobalTextSelectionProps {
 const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) => {
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState<string>('en');
   const { profile } = useAuth();
+  const { toast } = useToast();
   const lastClickTime = useRef<number>(0);
   const lastClickElement = useRef<HTMLElement | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -72,7 +77,9 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
               y: rect.bottom + 8 // 8px below the word (no scrollY needed for fixed positioning)
             });
             setSelectedText(text);
-            console.log('✅ Translation popup triggered for:', text);
+            setShowActionMenu(true);
+            setShowTranslation(false);
+            console.log('✅ Action menu triggered for:', text);
           }
         } catch (err) {
           console.error('Error getting selection range:', err);
@@ -160,7 +167,9 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
                 y: rect.bottom + 8 // 8px below the selection (no scrollY needed for fixed positioning)
               });
               setSelectedText(text);
-              console.log('✅ Translation popup triggered for sentence:', text);
+              setShowActionMenu(true);
+              setShowTranslation(false);
+              console.log('✅ Action menu triggered for sentence:', text);
             }
           }
 
@@ -241,6 +250,8 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
                 y: rect.bottom + 8 // 8px below the selection (no scrollY needed for fixed positioning)
               });
               setSelectedText(text);
+              setShowActionMenu(true);
+              setShowTranslation(false);
             }
           }
         }, 300); // Delay to ensure selection is complete
@@ -262,14 +273,38 @@ const GlobalTextSelection: React.FC<GlobalTextSelectionProps> = ({ children }) =
   const handleClose = () => {
     setSelectedText(null);
     setSelectionPosition(null);
+    setShowActionMenu(false);
+    setShowTranslation(false);
     // Clear selection
     window.getSelection()?.removeAllRanges();
+  };
+
+  const handleCopy = () => {
+    toast({
+      title: "Copied!",
+      description: `"${selectedText}" has been copied to clipboard.`,
+      duration: 2000,
+    });
+  };
+
+  const handleTranslate = () => {
+    setShowActionMenu(false);
+    setShowTranslation(true);
   };
 
   return (
     <>
       {children}
-      {selectedText && selectionPosition && (
+      {showActionMenu && selectedText && selectionPosition && (
+        <TextActionMenu
+          selectedText={selectedText}
+          position={selectionPosition}
+          onClose={handleClose}
+          onCopy={handleCopy}
+          onTranslate={handleTranslate}
+        />
+      )}
+      {showTranslation && selectedText && selectionPosition && (
         <TranslationPopup
           selectedText={selectedText}
           position={selectionPosition}

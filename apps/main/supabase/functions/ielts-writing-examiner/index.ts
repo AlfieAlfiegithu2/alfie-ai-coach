@@ -9,20 +9,8 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Phase 2: Generate deterministic seed from text content
-function createSeed(text: string): number {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  // Convert to positive number (max 2^31 - 1)
-  return Math.abs(hash) % 2147483647;
-}
-
-async function callGemini(prompt: string, apiKey: string, seed: number, retryCount = 0) {
-  console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
+async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting Gemini API call (attempt ${retryCount + 1}/2)...`);
   
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -38,7 +26,6 @@ async function callGemini(prompt: string, apiKey: string, seed: number, retryCou
         }],
         generationConfig: {
           temperature: 0.1,
-          seed: seed, // Phase 2: Add deterministic seed
           maxOutputTokens: 8000, // Increased for comprehensive IELTS analysis
           topP: 0.9,
           topK: 50
@@ -61,15 +48,15 @@ async function callGemini(prompt: string, apiKey: string, seed: number, retryCou
     if (retryCount < 1) {
       console.log(`🔄 Retrying Gemini API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callGemini(prompt, apiKey, seed, retryCount + 1);
+      return callGemini(prompt, apiKey, retryCount + 1);
     }
     
     throw error;
   }
 }
 
-async function callGeminiViaOpenRouter(prompt: string, apiKey: string, seed: number, retryCount = 0) {
-  console.log(`🚀 Attempting Gemini 2.5 Flash API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
+async function callGeminiViaOpenRouter(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting Gemini 2.5 Flash API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
   try {
     // Add timeout to prevent hanging (50 seconds - Supabase edge functions have 60s limit)
     const controller = new AbortController();
@@ -97,7 +84,6 @@ async function callGeminiViaOpenRouter(prompt: string, apiKey: string, seed: num
             }
           ],
           temperature: 0.1,
-          seed: seed, // Phase 2: Add deterministic seed
           max_tokens: 8000
         }),
         signal: controller.signal
@@ -138,15 +124,15 @@ async function callGeminiViaOpenRouter(prompt: string, apiKey: string, seed: num
     if (retryCount < 1) {
       console.log(`🔄 Retrying Gemini 2.5 Flash (OpenRouter) API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callGeminiViaOpenRouter(prompt, apiKey, seed, retryCount + 1);
+      return callGeminiViaOpenRouter(prompt, apiKey, retryCount + 1);
     }
     
     throw error;
   }
 }
 
-async function callKimiK2Thinking(prompt: string, apiKey: string, seed: number, retryCount = 0) {
-  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
+async function callKimiK2Thinking(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting Kimi K2 Thinking API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
   try {
     // Add timeout to prevent hanging (50 seconds - Supabase edge functions have 60s limit)
     const controller = new AbortController();
@@ -174,7 +160,6 @@ async function callKimiK2Thinking(prompt: string, apiKey: string, seed: number, 
             }
           ],
           temperature: 0.1,
-          seed: seed,
           max_tokens: 8000
         }),
         signal: controller.signal
@@ -215,15 +200,15 @@ async function callKimiK2Thinking(prompt: string, apiKey: string, seed: number, 
     if (retryCount < 1) {
       console.log(`🔄 Retrying Kimi K2 Thinking (OpenRouter) API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callKimiK2Thinking(prompt, apiKey, seed, retryCount + 1);
+      return callKimiK2Thinking(prompt, apiKey, retryCount + 1);
     }
     
     throw error;
   }
 }
 
-async function callGPT51ViaOpenRouter(prompt: string, apiKey: string, seed: number, retryCount = 0) {
-  console.log(`🚀 Attempting GPT-5.1 API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
+async function callGPT51ViaOpenRouter(prompt: string, apiKey: string, retryCount = 0) {
+  console.log(`🚀 Attempting GPT-5.1 API call via OpenRouter (attempt ${retryCount + 1}/2)...`);
   try {
     // Add timeout to prevent hanging (50 seconds - Supabase edge functions have 60s limit)
     const controller = new AbortController();
@@ -251,7 +236,6 @@ async function callGPT51ViaOpenRouter(prompt: string, apiKey: string, seed: numb
             }
           ],
           temperature: 0.1,
-          seed: seed, // Phase 2: Add deterministic seed
           max_tokens: 8000
         }),
         signal: controller.signal
@@ -292,7 +276,7 @@ async function callGPT51ViaOpenRouter(prompt: string, apiKey: string, seed: numb
     if (retryCount < 1) {
       console.log(`🔄 Retrying GPT-5.1 (OpenRouter) API call in 500ms...`);
       await new Promise(resolve => setTimeout(resolve, 500));
-      return callGPT51ViaOpenRouter(prompt, apiKey, seed, retryCount + 1);
+      return callGPT51ViaOpenRouter(prompt, apiKey, retryCount + 1);
     }
     
     throw error;
@@ -1056,19 +1040,6 @@ ${hasTask2 ? `  "task2": {
   ]
 }`;
 
-    // Generate deterministic seed from student answers
-    const seedContent = [
-      task1Answer || '',
-      task2Answer || '',
-      task1Data?.title || '',
-      task1Data?.instructions || '',
-      task2Data?.title || '',
-      task2Data?.instructions || '',
-      targetLanguage || 'en'
-    ].join('|');
-    const seed = createSeed(seedContent);
-    console.log(`🌱 Generated seed: ${seed} from content hash`);
-
     // SIMPLIFIED: Route to correct model with single fallback
     let aiResponse: any;
     let modelUsed: string;
@@ -1082,18 +1053,18 @@ ${hasTask2 ? `  "task2": {
       if (openRouterApiKey) {
         if (selectedModel === 'kimi-k2-thinking') {
           console.log('🔄 Using Kimi K2 Thinking (OpenRouter)...');
-          aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey, seed);
+          aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey);
           modelUsed = 'Kimi K2 Thinking (OpenRouter)';
           content = aiResponse.choices?.[0]?.message?.content ?? '';
         } else if (selectedModel === 'gpt-5.1' || selectedModel === 'chatgpt-5.1') {
           console.log('🔄 Using GPT-5.1 (OpenRouter)...');
-          aiResponse = await callGPT51ViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
+          aiResponse = await callGPT51ViaOpenRouter(masterExaminerPrompt, openRouterApiKey);
           modelUsed = 'GPT-5.1 (OpenRouter)';
           content = aiResponse.choices?.[0]?.message?.content ?? '';
         } else {
           // Default: Gemini 2.5 Flash via OpenRouter
           console.log('🔄 Using Gemini 2.5 Flash (OpenRouter)...');
-          aiResponse = await callGeminiViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
+          aiResponse = await callGeminiViaOpenRouter(masterExaminerPrompt, openRouterApiKey);
           modelUsed = 'Gemini 2.5 Flash (OpenRouter)';
           content = aiResponse.choices?.[0]?.message?.content ?? '';
         }
@@ -1102,7 +1073,7 @@ ${hasTask2 ? `  "task2": {
       } else if (geminiApiKey) {
         // Fallback: Direct Gemini API if no OpenRouter key
         console.log('🔄 Using Gemini API (direct - no OpenRouter key)...');
-        aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
+        aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
         modelUsed = 'Google Gemini AI';
         content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
         console.log('✅ Gemini API succeeded');
@@ -1115,7 +1086,7 @@ ${hasTask2 ? `  "task2": {
         console.error(`❌ ${selectedModel} (OpenRouter) failed:`, (primaryError as any).message);
         console.log('🔄 Falling back to direct Gemini API...');
         try {
-          aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
+          aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey);
           modelUsed = 'Google Gemini AI (Fallback)';
           content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
           console.log('✅ Gemini fallback succeeded');
@@ -1298,7 +1269,7 @@ Use official IELTS band descriptors. Return ONLY the JSON object, no additional 
           
           if (geminiApiKey) {
             promises.push(
-              callGemini(scoringPrompt, geminiApiKey, seed)
+              callGemini(scoringPrompt, geminiApiKey)
                 .then(resp => {
                   const scoreText = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
                   return JSON.parse((scoreText.match(/\{[\s\S]*\}/) || [scoreText])[0]);

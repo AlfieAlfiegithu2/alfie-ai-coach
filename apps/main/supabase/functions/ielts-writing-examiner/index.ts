@@ -68,59 +68,6 @@ async function callGemini(prompt: string, apiKey: string, seed: number, retryCou
   }
 }
 
-async function callOpenAI(prompt: string, apiKey: string, seed: number, retryCount = 0) {
-  console.log(`🚀 Attempting OpenAI API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
-  
-  try {
-    // @ts-expect-error - Deno global is available at runtime
-    const model = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert IELTS examiner with 15+ years of experience. You follow official IELTS band descriptors precisely and provide accurate, evidence-based scoring. You MUST return ONLY a valid JSON object with no additional text.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.1, // Phase 1: Add low temperature for consistency
-        seed: seed, // Phase 2: Add deterministic seed
-        response_format: { type: 'json_object' },
-        max_completion_tokens: 4000
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenAI API Error:', errorText);
-      throw new Error(`OpenAI API failed: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log(`✅ OpenAI API call successful (model: ${model})`);
-    return data;
-  } catch (error) {
-    console.error(`❌ OpenAI attempt ${retryCount + 1} failed:`, (error as any).message);
-    
-    if (retryCount < 1) {
-      console.log(`🔄 Retrying OpenAI API call in 500ms...`);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return callOpenAI(prompt, apiKey, seed, retryCount + 1);
-    }
-    
-    throw error;
-  }
-}
-
 async function callGeminiViaOpenRouter(prompt: string, apiKey: string, seed: number, retryCount = 0) {
   console.log(`🚀 Attempting Gemini 2.5 Flash API call via OpenRouter (attempt ${retryCount + 1}/2) with seed ${seed}...`);
   try {
@@ -194,47 +141,6 @@ async function callGeminiViaOpenRouter(prompt: string, apiKey: string, seed: num
       return callGeminiViaOpenRouter(prompt, apiKey, seed, retryCount + 1);
     }
     
-    throw error;
-  }
-}
-
-async function callDeepSeek(prompt: string, apiKey: string, seed: number, retryCount = 0) {
-  console.log(`🚀 Attempting DeepSeek API call (attempt ${retryCount + 1}/2) with seed ${seed}...`);
-  try {
-    // @ts-expect-error - Deno global is available at runtime
-    const model = Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner';
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: 'You are an expert IELTS examiner. Return ONLY valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.1, // Phase 1: Add low temperature for consistency
-        seed: seed, // Phase 2: Add deterministic seed
-        max_tokens: 4000
-      })
-    });
-    if (!response.ok) {
-      const t = await response.text();
-      console.error('❌ DeepSeek API Error:', t);
-      throw new Error(`DeepSeek API failed: ${response.status} - ${t}`);
-    }
-    const data = await response.json();
-    console.log(`✅ DeepSeek API call successful (model: ${model})`);
-    return data;
-  } catch (error) {
-    console.error(`❌ DeepSeek attempt ${retryCount + 1} failed:`, (error as any).message);
-    if (retryCount < 1) {
-      console.log('🔄 Retrying DeepSeek API call in 500ms...');
-      await new Promise(r => setTimeout(r, 500));
-      return callDeepSeek(prompt, apiKey, seed, retryCount + 1);
-    }
     throw error;
   }
 }
@@ -393,6 +299,296 @@ async function callGPT51ViaOpenRouter(prompt: string, apiKey: string, seed: numb
   }
 }
 
+// ============================================================================
+// HELPER FUNCTIONS - Extracted for better code organization
+// ============================================================================
+
+/**
+ * Parse AI response content, handling markdown code blocks and malformed JSON
+ * @param content Raw AI response content
+ * @returns Parsed JSON object or null if parsing fails
+ */
+function parseAIResponse(content: string): any | null {
+  try {
+    const parsed = JSON.parse(content);
+    console.log('✅ Successfully parsed structured response');
+    return parsed;
+  } catch (_e) {
+    console.log('⚠️ Failed to parse JSON directly, attempting extraction...');
+    
+    // Optimized JSON parsing: max 2 attempts
+    let extractedJson = '';
+    let cleaned = content.trim();
+    
+    // Remove markdown code blocks
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.substring(3);
+    }
+    
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+    
+    cleaned = cleaned.trim();
+    
+    // Find the main JSON object
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      extractedJson = cleaned.substring(firstBrace, lastBrace + 1);
+      
+      // @ts-expect-error - Deno global is available at runtime
+      const isDevelopment = Deno.env.get('ENV') === 'development' || Deno.env.get('DENO_ENV') === 'development';
+      if (isDevelopment) {
+        console.log('🔍 Extracted JSON length:', extractedJson.length);
+        console.log('🔍 Extracted JSON preview:', extractedJson.substring(0, 200) + '...');
+      }
+      
+      try {
+        const parsed = JSON.parse(extractedJson);
+        console.log('✅ Successfully parsed extracted JSON');
+        return parsed;
+      } catch (parseError) {
+        console.log('❌ Failed to parse extracted JSON, attempting fix...');
+        
+        // Single fix attempt: remove trailing commas and balance braces
+        try {
+          let fixedJson = extractedJson.replace(/,(\s*[}\]])/g, '$1');
+          
+          // Balance braces if needed
+          const openBraces = (fixedJson.match(/\{/g) || []).length;
+          const closeBraces = (fixedJson.match(/\}/g) || []).length;
+          
+          if (openBraces > closeBraces) {
+            fixedJson += '}'.repeat(openBraces - closeBraces);
+          }
+          
+          const parsed = JSON.parse(fixedJson);
+          console.log('✅ Successfully parsed fixed JSON');
+          return parsed;
+        } catch (fixError) {
+          console.log('❌ Final parsing attempt failed:', (fixError as any).message);
+          return null;
+        }
+      }
+    }
+    
+    return null;
+  }
+}
+
+/**
+ * Ensure all criteria are present in task, marking incomplete if missing
+ * @param task Task object (task1 or task2)
+ * @param type Task type ('task1' or 'task2')
+ * @param overall Overall band score for fallback
+ */
+function ensureCriteria(task: any, type: 'task1' | 'task2', overall: number): void {
+  task.criteria = task.criteria || {};
+  
+  // Count how many criteria are missing
+  const criteriaNames = type === 'task1' 
+    ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
+    : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
+  
+  const missingCount = criteriaNames.filter(name => !task.criteria[name] || typeof task.criteria[name]?.band !== 'number').length;
+  
+  // IMPROVED: Never auto-fill - require complete scoring
+  if (missingCount > 0) {
+    console.warn(`⚠️ Incomplete scoring for ${type}: ${missingCount} out of 4 criteria missing`);
+    task.analysis_incomplete = true;
+    task.incomplete_reason = `${missingCount} criteria not provided - AI must score all 4 criteria`;
+  }
+  
+  // Fill missing criteria with 0 (not auto-filled to overall)
+  const criteriaList = type === 'task1' 
+    ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
+    : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
+  
+  for (const criterion of criteriaList) {
+    if (!task.criteria[criterion] || typeof task.criteria[criterion]?.band !== 'number') {
+      task.criteria[criterion] = { 
+        band: 0, 
+        justification: 'Not provided by AI analysis - criterion scoring incomplete' 
+      };
+    }
+  }
+}
+
+/**
+ * Validate score-justification consistency
+ * @param criteria Criteria object with band and justification
+ * @param criterionName Name of the criterion for logging
+ * @returns true if consistent, false if mismatch detected
+ */
+function validateScoreConsistency(criteria: any, criterionName: string): boolean {
+  if (!criteria?.band || !criteria?.justification) return false;
+  
+  const band = criteria.band;
+  const justification = criteria.justification.toLowerCase();
+  
+  // Check if justification mentions a band level that matches the score
+  const bandMentions = [
+    { level: 9, keywords: ['band 9', 'excellent', 'outstanding', 'perfect', 'flawless'] },
+    { level: 8, keywords: ['band 8', 'very good', 'strong', 'well-developed'] },
+    { level: 7, keywords: ['band 7', 'good', 'adequate', 'sufficient'] },
+    { level: 6, keywords: ['band 6', 'competent', 'adequate', 'satisfactory'] },
+    { level: 5, keywords: ['band 5', 'limited', 'basic', 'modest'] },
+    { level: 4, keywords: ['band 4', 'minimal', 'very limited', 'poor'] },
+  ];
+  
+  // Check if justification mentions band level close to actual score
+  const mentionedLevel = bandMentions.find(m => 
+    m.keywords.some(kw => justification.includes(kw))
+  );
+  
+  if (mentionedLevel) {
+    const levelDiff = Math.abs(mentionedLevel.level - band);
+    // STRICTER: Only allow 0.5 band difference (not 1.0)
+    if (levelDiff > 0.5) {
+      console.warn(`⚠️ STRICT Score-justification mismatch for ${criterionName}: score=${band}, justification mentions ~${mentionedLevel.level} (diff=${levelDiff})`);
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Validate band descriptor alignment in justifications
+ * @param task Task object (task1 or task2)
+ * @param taskType Task type ('task1' or 'task2')
+ */
+function validateBandDescriptorAlignment(task: any, taskType: 'task1' | 'task2'): void {
+  if (!task?.criteria) return;
+  
+  const criteria = task.criteria;
+  const bandLevelGuide: Record<number, { keywords: string[]; min: string }> = {
+    9: { keywords: ['fully and appropriately satisfied', 'all the requirements', 'expert', 'sophisticated'], min: 'perfect' },
+    8: { keywords: ['all the requirements', 'well-developed', 'strong', 'skilfully'], min: 'very good' },
+    7: { keywords: ['covers the requirements', 'clear', 'developed'], min: 'good' },
+    6: { keywords: ['focuses on', 'generally', 'adequately', 'satisfactory'], min: 'competent' },
+    5: { keywords: ['generally addresses', 'limited', 'basic', 'some'], min: 'modest' },
+    4: { keywords: ['attempt', 'minimal', 'few', 'little'], min: 'very limited' },
+  };
+  
+  for (const [criterion, data] of Object.entries(criteria)) {
+    if (data && typeof (data as any).band === 'number' && (data as any).justification) {
+      const band = Math.round((data as any).band);
+      const just = ((data as any).justification as string).toLowerCase();
+      
+      // Check if justification mentions band-appropriate keywords
+      const expectedKeywords = bandLevelGuide[band as keyof typeof bandLevelGuide]?.keywords || [];
+      const hasKeywords = expectedKeywords.some(kw => just.includes(kw.toLowerCase()));
+      
+      if (band >= 5 && band <= 9 && !hasKeywords) {
+        console.warn(`⚠️ Band ${band} alignment warning for ${criterion}: justification doesn't reference Band ${band} descriptors`);
+        console.log(`   Suggestion: Reference the Band ${band} descriptor in justification`);
+      }
+    }
+  }
+}
+
+/**
+ * Build diff spans for sentence comparison using LCS algorithm
+ * @param orig Original sentence
+ * @param imp Improved sentence
+ * @returns Object with original_spans and corrected_spans arrays
+ */
+function buildDiffSpans(orig: string, imp: string): { original_spans: any[]; corrected_spans: any[] } {
+  const o = orig.split(/\s+/);
+  const p = imp.split(/\s+/);
+  const n = o.length, m = p.length;
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
+  let i = 0, j = 0; while (i < n && j < m) { if (o[i] === p[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+  const push = (arr: any[], text: string, status: string) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
+  const original_spans: any[] = []; const corrected_spans: any[] = [];
+  let buf = '', cur = 'neutral';
+  for (let t = 0; t < n; t++) { const ns = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(original_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + o[t]; }
+  push(original_spans, buf, cur);
+  buf = ''; cur = 'neutral';
+  for (let t = 0; t < m; t++) { const ns = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(corrected_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + p[t]; }
+  push(corrected_spans, buf, cur);
+  return { original_spans, corrected_spans };
+}
+
+/**
+ * Process sentence comparisons for a task, ensuring spans match original text
+ * @param task Task object (task1 or task2)
+ * @param taskAnswer Original task answer text
+ * @param taskType Task type identifier ('task1' or 'task2')
+ */
+function processSentenceComparisons(task: any, taskAnswer: string, taskType: 'task1' | 'task2'): void {
+  if (!task) return;
+  
+  const spanHasImprovement = (spans: any[] | undefined) => Array.isArray(spans) && spans.some(s => s?.status === 'improvement');
+  
+  const hasSentenceComparisons = Array.isArray(task.sentence_comparisons) && task.sentence_comparisons.length > 0;
+  const taskName = taskType === 'task1' ? 'Task 1' : 'Task 2';
+  console.log(`🔍 ${taskName} sentence_comparisons check: ${hasSentenceComparisons ? 'PRESENT' : 'MISSING'} (count: ${task.sentence_comparisons?.length || 0})`);
+  
+  if (!hasSentenceComparisons) {
+    console.log(`⚠️ ${taskName} missing sentence_comparisons, generating from improvements...`);
+    // Generate sentence_comparisons from improvements if available
+    const improvements = task.feedback?.improvements || [];
+    if (improvements.length > 0) {
+      task.sentence_comparisons = improvements.map((imp: any) => {
+        const orig = imp.original || '';
+        const impv = imp.improved || orig;
+        const d = buildDiffSpans(orig, impv);
+        return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
+      });
+    } else {
+      // Fallback: create from full text
+      const sentences = (taskAnswer || '').split(/[.!?]+/).filter(s => s.trim().length > 0);
+      task.sentence_comparisons = sentences.map((s: string) => {
+        const d = buildDiffSpans(s.trim(), s.trim());
+        return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
+      });
+    }
+  } else {
+    // Validate and repair existing sentence_comparisons
+    task.sentence_comparisons = task.sentence_comparisons.map((s: any) => {
+      const originalText = Array.isArray(s.original_spans) ? s.original_spans.map((x: any) => x?.text || '').join('').trim() : (s.original || '');
+      const improvedText = Array.isArray(s.corrected_spans) ? s.corrected_spans.map((x: any) => x?.text || '').join('').trim() : (s.improved || '');
+      const needRepair = !spanHasImprovement(s.corrected_spans) || !Array.isArray(s.original_spans) || !Array.isArray(s.corrected_spans);
+      if (needRepair && originalText && improvedText) {
+        const d = buildDiffSpans(originalText, improvedText);
+        s.original_spans = d.original_spans;
+        s.corrected_spans = d.corrected_spans;
+      }
+      return s;
+    });
+  }
+  
+  // Generate original_spans and corrected_spans for whole text view
+  // Ensure spans match the exact original text to avoid frontend warnings
+  const fullOriginal = (taskAnswer || '').trim();
+  const fullImproved = task.sentence_comparisons
+    .map((sc: any) => (sc.corrected_spans || []).map((s: any) => s.text || '').join(''))
+    .join(' ')
+    .trim() || fullOriginal;
+  
+  // Always regenerate to ensure perfect match with original text
+  const d = buildDiffSpans(fullOriginal, fullImproved);
+  task.original_spans = d.original_spans;
+  task.corrected_spans = d.corrected_spans;
+  
+  // Validate spans match original text exactly
+  const spansText = task.original_spans.map((s: any) => s.text || '').join('').trim();
+  if (spansText !== fullOriginal) {
+    console.warn(`⚠️ ${taskName} spans mismatch detected, regenerating...`);
+    const d2 = buildDiffSpans(fullOriginal, fullImproved);
+    task.original_spans = d2.original_spans;
+    task.corrected_spans = d2.corrected_spans;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -408,32 +604,23 @@ serve(async (req) => {
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     // @ts-expect-error - Deno global is available at runtime
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    // @ts-expect-error - Deno global is available at runtime
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    // Gemini 2.5 Flash via OpenRouter is now the primary model
+    // Simplified: Only OpenRouter (primary) and Gemini direct (fallback) supported
     console.log('🔑 API Keys check:', {
       hasOpenRouter: !!openRouterApiKey,
       openRouterKeyLength: openRouterApiKey?.length || 0,
-      hasGemini: !!geminiApiKey,
-      hasOpenAI: !!openaiApiKey,
-      apiProvider
+      hasGemini: !!geminiApiKey
     });
     
+    if (!openRouterApiKey && !geminiApiKey) {
+      console.error('❌ No API keys found - need OpenRouter or Gemini API key');
+      throw new Error('At least one API key (OpenRouter or Gemini) is required');
+    }
+    
     if (!openRouterApiKey) {
-      console.warn('⚠️ No OpenRouter API key found, will fallback to direct Gemini/OpenAI');
+      console.warn('⚠️ No OpenRouter API key found, will use direct Gemini API');
     } else {
-      console.log('✅ OpenRouter API key found, will use Gemini 2.5 Flash (OpenRouter) as primary');
-    }
-    
-    if (apiProvider === 'gemini' && !geminiApiKey) {
-      console.error('❌ No Gemini API key found');
-      throw new Error('Gemini API key is required');
-    }
-    
-    if (apiProvider === 'openai' && !openaiApiKey) {
-      console.error('❌ No OpenAI API key found');
-      throw new Error('OpenAI API key is required');
+      console.log('✅ OpenRouter API key found, will use OpenRouter models');
     }
 
     // Allow single task submissions - check for meaningful content
@@ -497,132 +684,120 @@ Your Role and Core Instruction:
 
 You are an expert IELTS examiner with 15+ years of experience. Your task is to provide a comprehensive, fair, and accurate assessment of an IELTS Writing submission (both Task 1 and Task 2).
 
-Your entire analysis must be based on the Official IELTS Band Descriptors provided below. You will first form a holistic, overall impression of the work, and then you will use the specific criteria to justify your scores.
+Your entire analysis must be based on the Custom Band Descriptors provided below. These descriptors are based on detailed analysis of official Band 9, 8, and 7 sample essays. You will first form a holistic, overall impression of the work, and then you will use the specific criteria to justify your scores.
 
-CRITICAL: You must be STRICT and ACCURATE in your scoring. Do not inflate scores out of kindness or optimism. If the writing demonstrates basic errors, limited vocabulary, or poor organization, score accordingly. A 6.5 should represent genuinely good writing, not average writing. Be honest and objective - this helps students understand their true level and areas for improvement.
+Evaluate the writing against the custom band descriptors provided below. Match each criterion to the band descriptor that best fits the writing's quality. Pay special attention to the specific examples and characteristics mentioned in each band level.
 
 You must perform all analysis yourself. Your expert judgment is the only thing that matters.
 
-Official IELTS Band Descriptors (Complete 0-9 Scale)
+Custom Band Descriptors (Based on Analysis of Official Band 9, 8, and 7 Samples)
 
 Task Achievement (Task 1) / Task Response (Task 2):
-${trainingType === 'General' || trainingType === 'Academic' ? `**For Task 1 (Updated May 2023):**
+${trainingType === 'General' || trainingType === 'Academic' ? `**For Task 1:**
 
-9: All the requirements of the task are fully and appropriately satisfied. There may be extremely rare lapses in content.
+9: All requirements are fully and completely satisfied. The response demonstrates complete understanding of the task. Key features (Academic) or bullet points (General Training) are expertly selected, clearly presented, and thoroughly illustrated with specific details and data. The overview (Academic) or purpose (General Training) is crystal clear. Any lapses are extremely rare and do not affect the overall quality.
 
-8: The response covers all the requirements of the task appropriately, relevantly and sufficiently. There may be occasional omissions or lapses in content.
-(Academic) Key features are skilfully selected, and clearly presented, highlighted and illustrated.
-(General Training) All bullet points are clearly presented, and appropriately illustrated or extended.
+8: All requirements are appropriately and sufficiently covered. Key features/bullet points are skilfully selected and clearly presented with good illustration. The overview/purpose is clear. There may be occasional minor omissions or lapses, but these do not significantly detract from the response.
 
-7: The response covers the requirements of the task. The content is relevant and accurate – there may be a few omissions or lapses. The format is appropriate.
-(Academic) Key features which are selected are covered and clearly highlighted but could be more fully or more appropriately illustrated or extended.
-(Academic) It presents a clear overview, the data are appropriately categorised, and main trends or differences are identified.
-(General Training) All bullet points are covered and clearly highlighted but could be more fully or more appropriately illustrated or extended. It presents a clear purpose. The tone is consistent and appropriate to the task. Any lapses are minimal.
+7: The requirements are covered adequately. Key features/bullet points are selected and highlighted clearly, though they could be more fully illustrated or extended. The overview/purpose is present but could be clearer. There may be a few omissions or minor lapses. The format is appropriate.
 
-6: The response focuses on the requirements of the task and an appropriate format is used. Some irrelevant, inappropriate or inaccurate information may occur in areas of detail or when illustrating or extending the main points. Some details may be missing (or excessive) and further extension or illustration may be needed.
-(Academic) Key features which are selected are covered and adequately highlighted. A relevant overview is attempted. Information is appropriately selected and supported using figures/data.
-(General Training) All bullet points are covered and adequately highlighted. The purpose is generally clear. There may be minor inconsistencies in tone.
+6: The response focuses on task requirements with an appropriate format. Key features/bullet points are covered but may lack detail or precision. Some information may be irrelevant or inaccurate. An overview/purpose is attempted but may be unclear. Some details may be missing or excessive.
 
-5: The response generally addresses the requirements of the task. The format may be inappropriate in places. There may be a tendency to focus on details (without referring to the bigger picture). The inclusion of irrelevant, inappropriate or inaccurate material in key areas detracts from the task achievement. There is limited detail when extending and illustrating the main points.
-(Academic) Key features which are selected are not adequately covered. The recounting of detail is mainly mechanical. There may be no data to support the description.
-(General Training) All bullet points are presented but one or more may not be adequately covered. The purpose may be unclear at times. The tone may be variable and sometimes inappropriate.
+5: The response generally addresses the task but may have format issues. Key features/bullet points may not be adequately covered. There may be irrelevant or inaccurate information. The overview/purpose may be unclear. Limited detail in illustration or extension.
 
-4: The response is an attempt to address the task. The format may be inappropriate. Key features/bullet points which are presented may be irrelevant, repetitive, inaccurate or inappropriate.
-(Academic) Few key features have been selected.
-(General Training) Not all bullet points are presented.
-(General Training) The purpose of the letter is not clearly explained and may be confused. The tone may be inappropriate.
+4: The response attempts to address the task but format may be inappropriate. Few key features/bullet points are presented, and they may be irrelevant or inaccurate. The purpose may be confused or unclear.
 
-3: The response does not address the requirements of the task (possibly because of misunderstanding of the data/diagram/situation). Key features/bullet points which are presented may be largely irrelevant. Limited information is presented, and this may be used repetitively.
+3: The response does not adequately address the task requirements. Key features/bullet points may be largely irrelevant. Limited information is presented, possibly repetitively.
 
 2: The content barely relates to the task.
 
-1: Responses of 20 words or fewer are rated at Band 1. The content is wholly unrelated to the task. Any copied rubric must be discounted.
+1: Responses of 20 words or fewer. Content is wholly unrelated to the task.
 
-0: Should only be used where a candidate did not attend or attempt the question in any way, used a language other than English throughout, or where there is proof that a candidate's answer has been totally memorized.
+0: No attempt made, wrong language used, or answer is memorized.
 
 **For Task 2 (Essay) - Applies to both Academic and General Training:**
-` : ''}9: The prompt is appropriately addressed and explored in depth. A clear and fully developed position is presented which directly answers the question/s. Ideas are relevant, fully extended and well supported. Any lapses in content or support are extremely rare.
+` : ''}9: The prompt is fully addressed in ALL parts with complete depth and thoroughness. A clear, fully developed position directly answers the question throughout. Ideas are relevant, fully extended with specific and detailed examples that strongly support the argument (e.g., "a recent Cambridge study showed that soccer players can – within the span of seconds – calculate over a dozen different permutations", "a study by The British Institute for Learning found that...", "in the UK, many boys are reluctant readers", "In Finland, early years' education focuses on playing", "Finland was ranked the sixth best in the world in terms of reading", "a study by the New York Child Learning Association found that children who read from picture books were 50% less likely to get distracted", "over 70% of young office workers admitted that they had spent long hours on computers"). Coverage is complete with no gaps or omissions. The conclusion effectively ties all ideas together. Any lapses in content or support are extremely rare.
 
-8: The prompt is appropriately and sufficiently addressed. A clear and well-developed position is presented in response to the question/s. Ideas are relevant, well extended and supported. There may be occasional omissions or lapses in content.
+8: The prompt is appropriately and sufficiently addressed in all parts. A clear, well-developed position is presented that directly answers the question. Ideas are relevant, well extended with good examples that support the argument (e.g., specific examples like "vegetarians will prefer beans rich in protein", "many European countries where advertising of fast food is prohibited"). Coverage is good but may have occasional minor omissions or lapses. Development is thorough but may not be as complete or detailed as Band 9. The conclusion ties ideas together well.
 
-7: The main parts of the prompt are appropriately addressed. A clear and developed position is presented. Main ideas are extended and supported but there may be a tendency to over-generalise or there may be a lack of focus and precision in supporting ideas/material.
+7: The main parts of the prompt are appropriately addressed. A clear and developed position is presented. Main ideas are extended and supported with examples, though they may lack detail or precision. There may be a tendency to over-generalise or a lack of focus in supporting material. Some parts may be less fully developed than others (e.g., one part of a two-part question may be adequately addressed while the other part is brief or underdeveloped). The conclusion is present but may be less effective or very brief.
 
-6: The main parts of the prompt are addressed (though some may be more fully covered than others). An appropriate format is used. A position is presented that is directly relevant to the prompt, although the conclusions drawn may be unclear, unjustified or repetitive. Main ideas are relevant, but some may be insufficiently developed or may lack clarity, while some supporting arguments and evidence may be less relevant or inadequate.
+6: The main parts are addressed, though some may be more fully covered than others. A position is presented that is relevant to the prompt, though conclusions may be unclear or repetitive. Main ideas are relevant but some may be insufficiently developed or lack clarity. Examples are present but may be less detailed or less effectively integrated. Supporting arguments may be less relevant or inadequate.
 
-5: The main parts of the prompt are incompletely addressed. The format may be inappropriate in places. The writer expresses a position, but the development is not always clear. Some main ideas are put forward, but they are limited and are not sufficiently developed and/or there may be irrelevant detail. There may be some repetition.
+5: The main parts are incompletely addressed. A position is expressed but development is not always clear. Some main ideas are limited and not sufficiently developed. Examples may be present but are basic and lack detail. There may be irrelevant detail or repetition. The conclusion may be present but is weak or repetitive.
 
-4: The prompt is tackled in a minimal way, or the answer is tangential, possibly due to some misunderstanding of the prompt. The format may be inappropriate. A position is discernible, but the reader has to read carefully to find it. Main ideas are difficult to identify and such ideas that are identifiable may lack relevance, clarity and/or support. Large parts of the response may be repetitive.
+4: The prompt is tackled minimally or tangentially. A position is discernible but the reader must search for it. Main ideas are difficult to identify and may lack relevance, clarity, or support. Examples may be present but are very basic, unclear, or irrelevant. Large parts may be repetitive. The response may address the prompt but in a confused or unclear way.
 
-3: No part of the prompt is adequately addressed, or the prompt has been misunderstood. No relevant position can be identified, and/or there is little direct response to the question/s. There are few ideas, and these may be irrelevant or insufficiently developed.
+3: No part is adequately addressed or the prompt is misunderstood. No relevant position can be identified. Few ideas, possibly irrelevant or insufficiently developed.
 
-2: The content is barely related to the prompt. No position can be identified. There may be glimpses of one or two ideas without development.
+2: Content barely related to the prompt. No position identifiable. May have glimpses of one or two undeveloped ideas.
 
-1: Responses of 20 words or fewer are rated at Band 1. The content is wholly unrelated to the prompt. Any copied rubric must be discounted.
+1: Responses of 20 words or fewer. Content wholly unrelated to the prompt.
 
-0: Should only be used where a candidate did not attend or attempt the question in any way, used a language other than English throughout, or where there is proof that a candidate's answer has been totally memorized.
+0: No attempt made, wrong language used, or answer is memorized.
 
 Coherence & Cohesion (Applies to both Academic and General Training, Task 1 and Task 2):
-9: The message can be followed effortlessly. Cohesion is used in such a way that it very rarely attracts attention. Any lapses in coherence or cohesion are minimal. Paragraphing is skilfully managed.
+9: The message can be followed EFFORTLESSLY without any confusion. Cohesion is used so naturally that it is INVISIBLE - transitions don't draw attention at all. Paragraph structure is perfect with each paragraph having one distinct main idea. Ideas progress logically and build naturally from one to the next. The flow is seamless and natural. Any lapses in coherence or cohesion are minimal or non-existent. Paragraphing is skilfully managed.
 
-8: The message can be followed with ease. Information and ideas are logically sequenced, and cohesion is well managed. Occasional lapses in coherence and cohesion may occur. Paragraphing is used sufficiently and appropriately.
+8: The message can be followed with EASE. Information and ideas are logically sequenced, and cohesion is WELL MANAGED. Transitions are clear and natural, though they may be slightly more noticeable than Band 9 (not as invisible). Paragraph structure is clear with distinct main ideas. Ideas progress logically and build well. The flow is smooth and natural. Occasional minor lapses in coherence or cohesion may occur but don't significantly affect understanding. Paragraphing is used sufficiently and appropriately.
 
-7: Information and ideas are logically organised, and there is a clear progression throughout the response. (A few lapses may occur, but these are minor.) A range of cohesive devices including reference and substitution is used flexibly but with some inaccuracies or some over/under use. Paragraphing is generally used effectively to support overall coherence, and the sequencing of ideas within a paragraph is generally logical.
+7: Information and ideas are logically organised with a clear progression throughout. Structure is clear but may be less sophisticated than Band 8. A range of cohesive devices is used, though there may be some inaccuracies or over/under use. Transitions are present but may feel slightly mechanical or formulaic at times (e.g., "First of all", "To start with", "Furthermore", "In conclusion"). Paragraphing is generally used effectively, though some paragraphs may lack clear focus. A few minor lapses may occur but don't impede understanding.
 
-6: Information and ideas are generally arranged coherently and there is a clear overall progression. Cohesive devices are used to some good effect but cohesion within and/or between sentences may be faulty or mechanical due to misuse, overuse or omission. The use of reference and substitution may lack flexibility or clarity and result in some repetition or error. Paragraphing may not always be logical and/or the central topic may not always be clear.
+6: Information and ideas are generally arranged coherently with a clear overall progression. Cohesive devices are used but may be faulty or mechanical due to misuse, overuse, or omission (e.g., "On the other hands" instead of "On the other hand", awkward transitions). Transitions may feel forced or mechanical. Paragraphing is present but may not always be logical, and central topics may not always be clear. The structure is generally clear but less sophisticated than Band 7.
 
-5: Organisation is evident but is not wholly logical and there may be a lack of overall progression. Nevertheless, there is a sense of underlying coherence to the response. The relationship of ideas can be followed but the sentences are not fluently linked to each other. There may be limited/overuse of cohesive devices with some inaccuracy. The writing may be repetitive due to inadequate and/or inaccurate use of reference and substitution. Paragraphing may be inadequate or missing.
+5: Organisation is evident but not wholly logical. There may be a lack of overall progression. Ideas can be followed but sentences are not fluently linked. Cohesive devices may be limited or inaccurate (e.g., awkward transitions like "In first point of view", "In second point", "In nutshell" instead of "In a nutshell"). Paragraphing may be inadequate or missing. Transitions are awkward and may confuse the reader.
 
-4: Information and ideas are evident but not arranged coherently and there is no clear progression within the response. Relationships between ideas can be unclear and/or inadequately marked. There is some use of basic cohesive devices, which may be inaccurate or repetitive. There is inaccurate use or a lack of substitution or referencing. There may be no paragraphing and/or no clear main topic within paragraphs.
+4: Information and ideas are evident but not arranged coherently. No clear progression. Relationships between ideas are unclear. Basic cohesive devices may be inaccurate or repetitive (e.g., "Further more" instead of "Furthermore", "On the contrary" used incorrectly, "Conclusion" instead of "In conclusion"). Paragraphing may be attempted but lacks clear structure or main topics. Ideas jump around without logical flow.
 
-3: There is no apparent logical organisation. Ideas are discernible but difficult to relate to each other. There is minimal use of sequencers or cohesive devices. Those used do not necessarily indicate a logical relationship between ideas. There is difficulty in identifying referencing. Any attempts at paragraphing are unhelpful.
+3: No apparent logical organisation. Ideas are difficult to relate. Minimal use of cohesive devices. Paragraphing attempts are unhelpful.
 
-2: There is little relevant message, or the entire response may be off-topic. There is little evidence of control of organisational features.
+2: Little relevant message or response is off-topic. Little evidence of organisational control.
 
-1: Responses of 20 words or fewer are rated at Band 1. The writing fails to communicate any message and appears to be by a virtual non-writer.
+1: Responses of 20 words or fewer. Writing fails to communicate any message.
 
-0: Should only be used where a candidate did not attend or attempt the question in any way.
+0: No attempt made.
 
 Lexical Resource (Applies to both Academic and General Training, Task 1 and Task 2):
-9: Full flexibility and precise use are widely evident. A wide range of vocabulary is used accurately and appropriately with very natural and sophisticated control of lexical features. Minor errors in spelling and word formation are extremely rare and have minimal impact on communication.
+9: Vocabulary is used with FULL PRECISION - the right word in the right place every time. Word choice is VERY NATURAL and fits context perfectly, never forced or awkward. A wide range of vocabulary is used accurately with NO errors in word choice or collocation. Less common and sophisticated words (e.g., "accentuate", "pervades", "plethora", "deleterious", "exigencies", "engender", "mitigated", "group-level cognition", "convincing evidence", "diverse range", "rapid mental calculations", "tight time constraints", "permutations", "predictive powers", "offspring", "detrimental", "repercussions", "self-directed approach", "counterparts", "vehemently opposed", "domestically trained specialists", "subsidised", "alumni", "debt of gratitude", "utmost importance", "increasingly exposed", "overwhelmingly detrimental", "cognitive science", "industrial psychology", "attention spans", "heavily reliant") are used appropriately and naturally. Spelling and word formation are error-free. Vocabulary demonstrates sophisticated control without being showy.
 
-8: A wide resource is fluently and flexibly used to convey precise meanings. There is skilful use of uncommon and/or idiomatic items when appropriate, despite occasional inaccuracies in word choice and collocation. Occasional errors in spelling and/or word formation may occur, but have minimal impact on communication.
+8: Vocabulary is used FLUENTLY and FLEXIBLY to convey precise meanings. There is SKILFUL use of uncommon and/or idiomatic items when appropriate (e.g., "diametrically opposed", "vast variety", "considerably vary", "tailored approach", "pernicious effect", "impressionable", "exert", "impart", "formative years", "remarkably prevalent", "diminished", "utilising", "augmenting"). Word choice is good and mostly natural, though occasional minor inaccuracies in word choice or collocation may occur (e.g., "retain stuff" instead of "retain staff"). Vocabulary is varied and appropriate. Occasional minor errors in spelling or word formation may occur but have minimal impact.
 
-7: The resource is sufficient to allow some flexibility and precision. There is some ability to use less common and/or idiomatic items. An awareness of style and collocation is evident, though inappropriacies occur. There are only a few errors in spelling and/or word formation and they do not detract from overall clarity.
+7: Vocabulary is SUFFICIENT to allow some flexibility and precision. There is SOME ability to use less common items (e.g., "imperative", "rudimentary", "foster"). An awareness of style and collocation is evident, though inappropriacies occur. Word choice is adequate but may lack precision (e.g., "many powers" instead of "extensive authority", "very poor conditions" instead of "precarious circumstances", "good money" instead of "substantial earnings"). There are a few errors in spelling or word formation (e.g., "know" instead of "known", "fundings" instead of "funding"), but they don't detract from overall clarity. Vocabulary may feel FORMULAIC at times (e.g., "It is clearly seen that", "There is no doubt that", "One possible reason").
 
-6: The resource is generally adequate and appropriate for the task. The meaning is generally clear in spite of a rather restricted range or a lack of precision in word choice. If the writer is a risk-taker, there will be a wider range of vocabulary used but higher degrees of inaccuracy or inappropriacy. There are some errors in spelling and/or word formation, but these do not impede communication.
+6: Vocabulary is generally adequate and appropriate. Meaning is generally clear but range may be restricted or lack precision. Word choice may be imprecise or awkward (e.g., "all around the world" instead of "around the world", "Regardless than" instead of "Regardless of"). There are some errors in spelling or word formation (e.g., "unknow words" instead of "unknown words", "Even tought" instead of "Even though", "investimento" instead of "investment", "politice" instead of "policy"), but these don't impede communication. Vocabulary is basic but functional.
 
-5: The resource is limited but minimally adequate for the task. Simple vocabulary may be used accurately but the range does not permit much variation in expression. There may be frequent lapses in the appropriacy of word choice, and a lack of flexibility is apparent in frequent simplifications and/or repetitions. Errors in spelling and/or word formation may be noticeable and may cause some difficulty for the reader.
+5: Vocabulary is limited but minimally adequate. Simple vocabulary used accurately but range doesn't permit much variation. Frequent lapses in appropriacy and word choice errors (e.g., "regardless to" instead of "regardless of", "there skills" instead of "their skills", "home wife" instead of "housewife", "fitness body" instead of "fit body", "charming sentences" instead of "charming sentence", "In nutshell" instead of "In a nutshell"). There are frequent spelling errors (e.g., "satify" instead of "satisfy", "indivuduals" instead of "individuals", "recieve" instead of "receive", "agreeded" instead of "agreed", "recente" instead of "recent", "assecure" instead of "ensure"). Errors may be noticeable and cause difficulty for the reader.
 
-4: The resource is limited and inadequate for or unrelated to the task. Vocabulary is basic and may be used repetitively. There may be inappropriate use of lexical chunks (e.g. memorised phrases, formulaic language and/or language from the input material). Inappropriate word choice and/or errors in word formation and/or in spelling may impede meaning.
+4: Vocabulary is limited and inadequate. Basic vocabulary used repetitively. There are frequent spelling errors that impede meaning (e.g., "exstremist" instead of "extremist", "vegeterian" instead of "vegetarian", "walfare" instead of "welfare", "animalist" instead of "animal rights activists", "demaging" instead of "damaging", "exetremist" instead of "extremist", "compherensive" instead of "comprehensive", "ectetera" instead of "etc.", "journela" instead of "journal", "revels" instead of "reveals", "nontheless" instead of "nonetheless", "uneffordable" instead of "unaffordable", "childrens" instead of "children", "psycologists" instead of "psychologists", "coursers" instead of "courses", "heiring" instead of "hiring"). Inappropriate word choice or awkward phrasing (e.g., "what concerne animals rights", "restyle" instead of "restructure", "toll of people" instead of "number of people") may impede meaning.
 
-3: The resource is inadequate (which may be due to the response being significantly underlength). Possible over-dependence on input material or memorised language. Control of word choice and/or spelling is very limited, and errors predominate. These errors may severely impede meaning.
+3: Vocabulary is inadequate. Over-dependence on memorised language. Errors predominate and may severely impede meaning.
 
-2: The resource is extremely limited with few recognisable strings, apart from memorised phrases. There is no apparent control of word formation and/or spelling.
+2: Vocabulary is extremely limited. Few recognisable strings apart from memorised phrases.
 
-1: Responses of 20 words or fewer are rated at Band 1. No resource is apparent, except for a few isolated words.
+1: Responses of 20 words or fewer. No resource apparent except isolated words.
 
-0: Should only be used where a candidate did not attend or attempt the question in any way.
+0: No attempt made.
 
 Grammatical Range and Accuracy (Applies to both Academic and General Training, Task 1 and Task 2):
-9: A wide range of structures is used with full flexibility and control. Punctuation and grammar are used appropriately throughout. Minor errors are extremely rare and have minimal impact on communication.
+9: A wide range of grammatical structures is used with FULL FLEXIBILITY and CONTROL. Complex structures are used ACCURATELY and NATURALLY. Grammar is ERROR-FREE throughout. Punctuation is appropriate and accurate. Sentence variety prevents repetition. Structures flow effortlessly. Minor errors are extremely rare and have no impact.
 
-8: A wide range of structures is flexibly and accurately used. The majority of sentences are error-free, and punctuation is well managed. Occasional, non-systematic errors and inappropriacies occur, but have minimal impact on communication.
+8: A wide range of structures is used FLEXIBLY and ACCURATELY. Complex structures are used correctly. The MAJORITY of sentences are error-free. Punctuation is well managed. Occasional, non-systematic errors may occur (e.g., "These measure" instead of "These measures", "retain stuff" instead of "retain staff") but have minimal impact. Structures are varied and natural.
 
-7: A variety of complex structures is used with some flexibility and accuracy. Grammar and punctuation are generally well controlled, and error-free sentences are frequent. A few errors in grammar may persist, but these do not impede communication.
+7: A VARIETY of complex structures is used with SOME flexibility and accuracy. Grammar and punctuation are GENERALLY well controlled, and error-free sentences are FREQUENT. However, there are A FEW ERRORS in grammar that persist (e.g., subject-verb agreement errors like "Government have", spelling errors like "know" instead of "known", "fundings" instead of "funding", awkward structures like "It is worth to mention", "Despite of these facts", "he/she deemed hundred per cent competence", incomplete sentences). These errors do not impede communication but are noticeable. Sentence variety is present but may be less sophisticated.
 
-6: A mix of simple and complex sentence forms is used but flexibility is limited. Examples of more complex structures are not marked by the same level of accuracy as in simple structures. Errors in grammar and punctuation occur, but rarely impede communication.
+6: A mix of simple and complex sentence forms is used but flexibility is limited. Complex structures may not be as accurate as simple ones. Errors in grammar and punctuation occur (e.g., subject-verb agreement errors like "School age children is" instead of "are", "exercises reduces" instead of "reduce", "may provides" instead of "may provide", "may leads" instead of "may lead", "a person came" instead of "comes", missing articles like "From young age" instead of "From a young age"), but these rarely impede communication. Sentence variety is present but less sophisticated than Band 7.
 
-5: The range of structures is limited and rather repetitive. Although complex sentences are attempted, they tend to be faulty, and the greatest accuracy is achieved on simple sentences. Grammatical errors may be frequent and cause some difficulty for the reader. Punctuation may be faulty.
+5: Range is limited and repetitive. Complex sentences attempted but tend to be faulty. Greatest accuracy on simple sentences. Grammatical errors are frequent (e.g., "they intent" instead of "intend", "Computer become" instead of "becomes", "a integral" instead of "an integral", "it would helps" instead of "it would help", "it invite" instead of "it invites", "they spent" instead of "spend", "it increase" instead of "it increases", "will made them" instead of "make them", "employ" instead of "employed", subject-verb agreement errors, tense errors). Errors may cause difficulty for the reader and impede understanding at times.
 
-4: A very limited range of structures is used. Subordinate clauses are rare and simple sentences predominate. Some structures are produced accurately but grammatical errors are frequent and may impede meaning. Punctuation is often faulty or inadequate.
+4: Very limited range. Subordinate clauses rare. Simple sentences predominate. Grammatical errors are frequent and impede meaning (e.g., "what concerne animals rights" instead of "what concerns animal rights", "Many school of thought" instead of "Many schools of thought", "Though it have" instead of "Though it has", "have prove" instead of "has proven", "every people" instead of "every person" or "all people", "deteriorated over times" instead of "deteriorates over time", "entire of our life" instead of "our entire life", "savings cash" instead of "saving cash", "acquire of" instead of "acquiring", "put money into on buying" instead of "put money into buying", "saving money it's" instead of "saving money is", "if he start" instead of "if he starts", "Spending money with close eyes" instead of "Spending money with closed eyes", "make life hard" instead of "makes life hard", "apply for the adolescent" instead of "applies to adolescents", "thing about" instead of "think about", "demonstrate" instead of "demonstrates", "this is happens" instead of "this happens", "jais" instead of "jails", "im similar" instead of "in similar", "measurements" instead of "measures", "old age" instead of "elderly people", "Childrens" instead of "Children"). Errors significantly impede understanding.
 
-3: Sentence forms are attempted, but errors in grammar and punctuation predominate (except in memorised phrases or those taken from the input material). This prevents most meaning from coming through. Length may be insufficient to provide evidence of control of sentence forms.
+3: Sentence forms attempted but errors predominate. Prevents most meaning from coming through.
 
-2: There is little or no evidence of sentence forms (except in memorised phrases).
+2: Little or no evidence of sentence forms except memorised phrases.
 
-1: Responses of 20 words or fewer are rated at Band 1. No rateable language is evident.
+1: Responses of 20 words or fewer. No rateable language evident.
 
-0: Should only be used where a candidate did not attend or attempt the question in any way.
+0: No attempt made.
 
 Your Required Tasks & Output Format
 
@@ -630,21 +805,28 @@ ${hasTask1 && hasTask2 ? 'After analyzing the provided Task 1 and Task 2 essays,
 
 Score Each Criterion: ${hasTask1 && hasTask2 ? 'For both Task 1 and Task 2' : hasTask1 ? 'For Task 1 only' : 'For Task 2 only'}, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
 
-⚠️ CRITICAL BAND DESCRIPTOR ENFORCEMENT:
-- BEFORE assigning any score, explicitly reference which band descriptor matches the writing
-- Your score MUST directly correspond to the band descriptors you just read
-- Example: "This is Band 6 because [reference to Band 6 descriptor], not Band 7 because [missing Band 7 requirement]"
-- If writing shows Band 5 characteristics (limited X, basic Y), score Band 5 - do not inflate to Band 6
-- If you cannot clearly match the writing to a descriptor, score LOWER, not higher
-- Every score must have explicit band descriptor reference in the justification
+CRITICAL: YOU MUST ASSESS EACH CRITERION COMPLETELY INDEPENDENTLY. Do NOT let one criterion's score influence another. Score each criterion separately based ONLY on its own specific evidence:
 
-Write Justifications: For each score, you must write a 3-4 sentence justification that:
-1. Names which band descriptor your score matches (e.g., "This is Band 6 - The response focuses on requirements")
-2. Quotes specific examples from student writing showing why this band applies
-3. Explains what's missing for the next band level (what prevents Band 7)
-CRITICAL: Do NOT use placeholder text. You MUST provide actual specific band descriptor references with real examples.
+- Task Response/Task Achievement: Evaluate ONLY how well the prompt is addressed, idea development, and example quality. Ignore grammar/vocabulary errors when scoring this.
+- Coherence & Cohesion: Evaluate ONLY organization, transitions, and paragraph structure. Ignore task response quality when scoring this.
+- Lexical Resource: Evaluate ONLY vocabulary range, precision, spelling, and word choice errors. Ignore grammar errors when scoring this.
+- Grammatical Range and Accuracy: Evaluate ONLY structure variety, accuracy, and grammar errors. Ignore vocabulary quality when scoring this.
 
-Handle Word Count: You must check if the essays are under the word count (150 for Task 1, 250 for Task 2). If an essay is significantly under length, you must state that this will lower the Task Achievement/Response score and reflect this in your scoring.
+MANDATORY: Before finalizing scores, ask yourself: "Do I have SPECIFIC, DIFFERENT evidence for each criterion, or am I unconsciously matching scores?" If all four criteria have the same score, you MUST verify that each criterion genuinely demonstrates the SAME level of performance. It is VERY RARE for all four criteria to be identical. If you find yourself giving the same score to all criteria, STOP and reassess each one independently.
+
+REMEMBER: It is NORMAL and EXPECTED for criteria to have DIFFERENT scores. Do NOT force them to match. Examples:
+- Strong ideas but weaker grammar → Task Response 8.0, Grammar 7.0
+- Good vocabulary but mechanical transitions → Lexical 8.0, Coherence 7.0
+- Perfect grammar but limited vocabulary → Grammar 8.0, Lexical 7.0
+- Clear structure but frequent errors → Coherence 7.0, Grammar 6.0
+- Well-developed ideas but formulaic vocabulary → Task Response 8.0, Lexical 7.0
+
+For each score, provide a justification (3-4 sentences) that:
+1. References the band descriptor your score matches
+2. Quotes specific examples from the student's writing showing why this band applies
+3. Explains why this band is appropriate based on what the writing demonstrates FOR THIS SPECIFIC CRITERION
+
+CRITICAL: If the writing clearly demonstrates Band 8 characteristics for a specific criterion (e.g., "well managed" cohesion, "skilful use" of vocabulary, "wide range" of structures), score Band 8 for THAT criterion. Do not downgrade to Band 7 based on vague or minor issues. Recognize what IS present in the writing for each criterion, not what might be missing.
 
 Provide Overall Feedback: Based on your analysis, provide a bulleted list of 2-3 "Key Strengths" and 2-3 "Specific, Actionable Improvements."
 
@@ -704,14 +886,12 @@ ${trainingType === 'General' ? `LETTER WRITING (General Training)
 Letter Prompt: ${task1Data?.title || 'Task 1'}
 Letter Type: ${task1Data?.letterType || 'Formal'}
 Instructions: ${task1Data?.instructions || ''}
-Word Count: ${task1Answer.trim().split(/\s+/).length}
 Student Letter: "${task1Answer}"
 
 **CRITICAL:** Evaluate this as a LETTER. Task Achievement must consider: (1) whether all requirements are addressed, (2) whether the tone and register are appropriate for the situation and relationship, and (3) whether the letter format is appropriate (salutation, closing, paragraphing).` : `DATA DESCRIPTION (Academic)
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
 ${task1Data?.imageContext ? `Visual Data: ${task1Data.imageContext}` : ''}
-Word Count: ${task1Answer.trim().split(/\s+/).length}
 Student Response: "${task1Answer}"`}
 ` : ''}
 
@@ -889,7 +1069,7 @@ ${hasTask2 ? `  "task2": {
     const seed = createSeed(seedContent);
     console.log(`🌱 Generated seed: ${seed} from content hash`);
 
-    // Route to correct model based on model parameter
+    // SIMPLIFIED: Route to correct model with single fallback
     let aiResponse: any;
     let modelUsed: string;
     let content: string;
@@ -897,116 +1077,53 @@ ${hasTask2 ? `  "task2": {
     const selectedModel = model || 'gemini-2.5-flash';
     console.log(`🎯 Selected model: ${selectedModel}`);
     
-    // Route to correct model function
-    if (openRouterApiKey) {
-      try {
+    try {
+      // Primary: Try OpenRouter models if key available
+      if (openRouterApiKey) {
         if (selectedModel === 'kimi-k2-thinking') {
           console.log('🔄 Using Kimi K2 Thinking (OpenRouter)...');
-          console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
-          console.log('🤖 Model: moonshotai/kimi-k2-thinking via OpenRouter');
           aiResponse = await callKimiK2Thinking(masterExaminerPrompt, openRouterApiKey, seed);
           modelUsed = 'Kimi K2 Thinking (OpenRouter)';
           content = aiResponse.choices?.[0]?.message?.content ?? '';
-          console.log('✅ Kimi K2 Thinking (OpenRouter) succeeded');
-          console.log(`📝 Response length: ${content.length} characters`);
         } else if (selectedModel === 'gpt-5.1' || selectedModel === 'chatgpt-5.1') {
           console.log('🔄 Using GPT-5.1 (OpenRouter)...');
-          console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
-          console.log('🤖 Model: openai/gpt-5.1 via OpenRouter');
           aiResponse = await callGPT51ViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
           modelUsed = 'GPT-5.1 (OpenRouter)';
           content = aiResponse.choices?.[0]?.message?.content ?? '';
-          console.log('✅ GPT-5.1 (OpenRouter) succeeded');
-          console.log(`📝 Response length: ${content.length} characters`);
         } else {
-          // Default: Gemini 2.5 Flash
-          console.log('🔄 Using Gemini 2.5 Flash (OpenRouter) as default model...');
-          console.log('🔑 OpenRouter API key present, length:', openRouterApiKey.length);
-          console.log('🤖 Model: google/gemini-2.5-flash via OpenRouter');
+          // Default: Gemini 2.5 Flash via OpenRouter
+          console.log('🔄 Using Gemini 2.5 Flash (OpenRouter)...');
           aiResponse = await callGeminiViaOpenRouter(masterExaminerPrompt, openRouterApiKey, seed);
           modelUsed = 'Gemini 2.5 Flash (OpenRouter)';
           content = aiResponse.choices?.[0]?.message?.content ?? '';
-          console.log('✅ Gemini 2.5 Flash (OpenRouter) succeeded');
-          console.log(`📝 Response length: ${content.length} characters`);
         }
-      } catch (modelError) {
-        console.error(`❌ ${selectedModel} (OpenRouter) failed with error:`, (modelError as any).message);
-        console.error('❌ Error details:', modelError);
-        console.log(`⚠️ ${selectedModel} (OpenRouter) failed, falling back to secondary models`);
-        
-        // Fallback 1: Use requested provider or Gemini
-        if (apiProvider === 'openai' && openaiApiKey) {
-          try {
-            console.log('🔄 Fallback 1: Using OpenAI API...');
-            aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
-            // @ts-expect-error - Deno global is available at runtime
-            modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'} (Fallback)`;
-            content = aiResponse.choices?.[0]?.message?.content ?? '';
-            console.log('✅ OpenAI fallback succeeded');
-          } catch (openaiError) {
-            console.log('⚠️ OpenAI fallback failed, trying Gemini:', (openaiError as any).message);
-            throw openaiError; // Will trigger Gemini fallback
-          }
-        } else if (geminiApiKey) {
-          try {
-            console.log('🔄 Fallback 1: Using Gemini API...');
-            aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
-            modelUsed = 'Google Gemini AI (Fallback)';
-            content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-            console.log('✅ Gemini fallback succeeded');
-          } catch (geminiError) {
-            console.log('⚠️ Gemini fallback failed, trying DeepSeek:', (geminiError as any).message);
-            // Final fallback: DeepSeek
-            // @ts-expect-error - Deno global is available at runtime
-            // @ts-expect-error - Deno global is available at runtime
-          const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-            if (deepseekKey) {
-              console.log('🔄 Final Fallback: Using DeepSeek API...');
-              aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
-              // @ts-expect-error - Deno global is available at runtime
-              modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Final Fallback)`;
-              content = aiResponse.choices?.[0]?.message?.content ?? '';
-              console.log('✅ DeepSeek final fallback succeeded');
-            } else {
-              throw new Error('All models failed and no DEEPSEEK_API_KEY available for final fallback');
-            }
-          }
-        } else {
-          throw new Error(`${selectedModel} (OpenRouter) failed and no fallback API keys available`);
-        }
-      }
-    } else {
-      // No OpenRouter key, use legacy flow
-      if (apiProvider === 'openai') {
-        console.log('🔄 Using OpenAI API (no OpenRouter key)...');
-        aiResponse = await callOpenAI(masterExaminerPrompt, openaiApiKey, seed);
-        // @ts-expect-error - Deno global is available at runtime
-        modelUsed = `OpenAI ${Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini'}`;
-        content = aiResponse.choices?.[0]?.message?.content ?? '';
-        console.log('✅ OpenAI API succeeded');
+        console.log(`✅ ${modelUsed} succeeded`);
+        console.log(`📝 Response length: ${content.length} characters`);
+      } else if (geminiApiKey) {
+        // Fallback: Direct Gemini API if no OpenRouter key
+        console.log('🔄 Using Gemini API (direct - no OpenRouter key)...');
+        aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
+        modelUsed = 'Google Gemini AI';
+        content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+        console.log('✅ Gemini API succeeded');
       } else {
+        throw new Error('No API keys available - need OpenRouter or Gemini API key');
+      }
+    } catch (primaryError) {
+      // Single fallback: Try direct Gemini if OpenRouter failed
+      if (openRouterApiKey && geminiApiKey) {
+        console.error(`❌ ${selectedModel} (OpenRouter) failed:`, (primaryError as any).message);
+        console.log('🔄 Falling back to direct Gemini API...');
         try {
-          console.log('🔄 Using Gemini API (no OpenRouter key)...');
           aiResponse = await callGemini(masterExaminerPrompt, geminiApiKey, seed);
-          modelUsed = 'Google Gemini AI';
+          modelUsed = 'Google Gemini AI (Fallback)';
           content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-          console.log('✅ Gemini API succeeded');
-        } catch (geminiError) {
-          console.log('⚠️ Gemini failed, falling back to DeepSeek:', (geminiError as any).message);
-          // @ts-expect-error - Deno global is available at runtime
-          // @ts-expect-error - Deno global is available at runtime
-          // @ts-expect-error - Deno global is available at runtime
-          const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-          if (!deepseekKey) {
-            throw new Error('Gemini failed and no DEEPSEEK_API_KEY available for fallback');
-          }
-          console.log('🔄 Fallback: Using DeepSeek API...');
-          aiResponse = await callDeepSeek(masterExaminerPrompt, deepseekKey, seed);
-          // @ts-expect-error - Deno global is available at runtime
-          modelUsed = `DeepSeek ${(Deno.env.get('DEEPSEEK_MODEL') || 'deepseek-reasoner')} (Fallback)`;
-          content = aiResponse.choices?.[0]?.message?.content ?? '';
-          console.log('✅ DeepSeek fallback succeeded');
+          console.log('✅ Gemini fallback succeeded');
+        } catch (fallbackError) {
+          throw new Error(`All models failed. OpenRouter error: ${(primaryError as any).message}. Gemini error: ${(fallbackError as any).message}`);
         }
+      } else {
+        throw primaryError;
       }
     }
 
@@ -1028,71 +1145,8 @@ ${hasTask2 ? `  "task2": {
       console.log('🔍 Raw API response preview:', content.substring(0, 100) + '...');
     }
 
-    let structured: any = null;
-    try {
-      structured = JSON.parse(content);
-      console.log('✅ Successfully parsed structured response');
-    } catch (_e) {
-      console.log('⚠️ Failed to parse JSON directly, attempting extraction...');
-      
-      // Optimized JSON parsing: max 2 attempts
-      let extractedJson = '';
-      let cleaned = content.trim();
-      
-      // Remove markdown code blocks
-      if (cleaned.startsWith('```json')) {
-        cleaned = cleaned.substring(7);
-      } else if (cleaned.startsWith('```')) {
-        cleaned = cleaned.substring(3);
-      }
-      
-      if (cleaned.endsWith('```')) {
-        cleaned = cleaned.substring(0, cleaned.length - 3);
-      }
-      
-      cleaned = cleaned.trim();
-      
-      // Find the main JSON object
-      const firstBrace = cleaned.indexOf('{');
-      const lastBrace = cleaned.lastIndexOf('}');
-      
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        extractedJson = cleaned.substring(firstBrace, lastBrace + 1);
-        
-        // @ts-expect-error - Deno global is available at runtime
-        const isDevelopment = Deno.env.get('ENV') === 'development' || Deno.env.get('DENO_ENV') === 'development';
-        if (isDevelopment) {
-          console.log('🔍 Extracted JSON length:', extractedJson.length);
-          console.log('🔍 Extracted JSON preview:', extractedJson.substring(0, 200) + '...');
-        }
-        
-        try {
-          structured = JSON.parse(extractedJson);
-          console.log('✅ Successfully parsed extracted JSON');
-        } catch (parseError) {
-          console.log('❌ Failed to parse extracted JSON, attempting fix...');
-          
-          // Single fix attempt: remove trailing commas and balance braces
-          try {
-            let fixedJson = extractedJson.replace(/,(\s*[}\]])/g, '$1');
-            
-            // Balance braces if needed
-            const openBraces = (fixedJson.match(/\{/g) || []).length;
-            const closeBraces = (fixedJson.match(/\}/g) || []).length;
-            
-            if (openBraces > closeBraces) {
-              fixedJson += '}'.repeat(openBraces - closeBraces);
-            }
-            
-            structured = JSON.parse(fixedJson);
-            console.log('✅ Successfully parsed fixed JSON');
-          } catch (fixError) {
-            console.log('❌ Final parsing attempt failed:', fixError.message);
-            // Will fall through to fallback structure
-          }
-        }
-      }
-    }
+    // Use helper function to parse AI response
+    let structured: any = parseAIResponse(content);
 
     // AI handles all scoring and word count considerations internally
 
@@ -1128,47 +1182,30 @@ ${hasTask2 ? `  "task2": {
     }
 
     // Helper: round to IELTS 0.5 steps and clamp 0..9
-    const roundIELTS = (n: number) => Math.min(9, Math.max(0, Math.round(n * 2) / 2));
+    // IELTS rounding rules:
+    // - 0.0-0.25 → rounds down to .0
+    // - 0.25-0.75 → rounds to .5
+    // - 0.75-1.0 → rounds up to next .0
+    const roundIELTS = (n: number) => {
+      const clamped = Math.min(9, Math.max(0, n));
+      const floor = Math.floor(clamped);
+      const decimal = clamped - floor;
+      
+      if (decimal < 0.25) {
+        return floor; // Round down to .0
+      } else if (decimal < 0.75) {
+        return floor + 0.5; // Round to .5
+      } else {
+        return floor + 1.0; // Round up to next .0
+      }
+    };
 
     // Validate and add fallback data for frontend compatibility
     if (structured) {
-      // Improved: Only auto-fill if 1-2 criteria missing, not all 4
-      const ensureCriteria = (task: any, type: 'task1' | 'task2') => {
-        const overall = typeof task?.overall_band === 'number' ? task.overall_band : (typeof structured?.overall?.band === 'number' ? structured.overall.band : 6.5);
-        task.criteria = task.criteria || {};
-        
-        // Count how many criteria are missing
-        const criteriaNames = type === 'task1' 
-          ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
-          : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
-        
-        const missingCount = criteriaNames.filter(name => !task.criteria[name] || typeof task.criteria[name]?.band !== 'number').length;
-        
-        // IMPROVED: Never auto-fill - require complete scoring
-        if (missingCount > 0) {
-          console.warn(`⚠️ Incomplete scoring for ${type}: ${missingCount} out of 4 criteria missing`);
-          task.analysis_incomplete = true;
-          task.incomplete_reason = `${missingCount} criteria not provided - AI must score all 4 criteria`;
-        }
-        
-        // Fill missing criteria with 0 (not auto-filled to overall)
-        // This preserves incomplete status and forces accurate scoring
-        const criteriaList = type === 'task1' 
-          ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
-          : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
-        
-        for (const criterion of criteriaList) {
-          if (!task.criteria[criterion] || typeof task.criteria[criterion]?.band !== 'number') {
-            task.criteria[criterion] = { 
-              band: 0, 
-              justification: 'Not provided by AI analysis - criterion scoring incomplete' 
-            };
-          }
-        }
-      };
-
-      ensureCriteria(structured.task1 || (structured.task1 = {}), 'task1');
-      ensureCriteria(structured.task2 || (structured.task2 = {}), 'task2');
+      // Use helper function to ensure all criteria are present
+      const overall = typeof structured?.overall?.band === 'number' ? structured.overall.band : 6.5;
+      ensureCriteria(structured.task1 || (structured.task1 = {}), 'task1', overall);
+      ensureCriteria(structured.task2 || (structured.task2 = {}), 'task2', overall);
 
       const isValidBand = (n: any) => typeof n === 'number' && n >= 0 && n <= 9 && (n * 2) % 1 === 0;
       const getTaskBands = (task: any, type: 'task1' | 'task2') => {
@@ -1180,40 +1217,7 @@ ${hasTask2 ? `  "task2": {
         return [b1, b2, b3, b4];
       };
 
-      // Validate score-justification consistency
-      const validateScoreConsistency = (criteria: any, criterionName: string): boolean => {
-        if (!criteria?.band || !criteria?.justification) return false;
-        
-        const band = criteria.band;
-        const justification = criteria.justification.toLowerCase();
-        
-        // Check if justification mentions a band level that matches the score
-        const bandMentions = [
-          { level: 9, keywords: ['band 9', 'excellent', 'outstanding', 'perfect', 'flawless'] },
-          { level: 8, keywords: ['band 8', 'very good', 'strong', 'well-developed'] },
-          { level: 7, keywords: ['band 7', 'good', 'adequate', 'sufficient'] },
-          { level: 6, keywords: ['band 6', 'competent', 'adequate', 'satisfactory'] },
-          { level: 5, keywords: ['band 5', 'limited', 'basic', 'modest'] },
-          { level: 4, keywords: ['band 4', 'minimal', 'very limited', 'poor'] },
-        ];
-        
-        // Check if justification mentions band level close to actual score
-        const mentionedLevel = bandMentions.find(m => 
-          m.keywords.some(kw => justification.includes(kw))
-        );
-        
-        if (mentionedLevel) {
-          const levelDiff = Math.abs(mentionedLevel.level - band);
-          // STRICTER: Only allow 0.5 band difference (not 1.0)
-          // This prevents contradictions like "Band 6.5 score" with "Band 7+ justification"
-          if (levelDiff > 0.5) {
-            console.warn(`⚠️ STRICT Score-justification mismatch for ${criterionName}: score=${band}, justification mentions ~${mentionedLevel.level} (diff=${levelDiff})`);
-            return false;
-          }
-        }
-        
-        return true;
-      };
+      // Use helper function to validate score-justification consistency
 
       const bandsMissingOrAutoFilled = (task: any, type: 'task1' | 'task2', overall: number) => {
         const c = task?.criteria || {};
@@ -1279,17 +1283,16 @@ ${hasTask1 ? `Task 1:
 Prompt: ${task1Data?.title || 'Task 1'}
 Instructions: ${task1Data?.instructions || ''}
 Student Response: "${task1Answer}"
-Word Count: ${task1Answer.trim().split(/\s+/).length}
 ` : ''}
 ${hasTask2 ? `Task 2:
 Prompt: ${task2Data?.title || 'Task 2'}
 Instructions: ${task2Data?.instructions || ''}
 Student Response: "${task2Answer}"
-Word Count: ${task2Answer.trim().split(/\s+/).length}
 ` : ''}
-Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSON object, no additional text. ${hasTask1 && !hasTask2 ? 'ONLY analyze Task 1 - Task 2 was skipped.' : !hasTask1 && hasTask2 ? 'ONLY analyze Task 2 - Task 1 was skipped.' : ''}`;
+Use official IELTS band descriptors. Return ONLY the JSON object, no additional text. ${hasTask1 && !hasTask2 ? 'ONLY analyze Task 1 - Task 2 was skipped.' : !hasTask1 && hasTask2 ? 'ONLY analyze Task 2 - Task 1 was skipped.' : ''}`;
 
-        // Parallel rescoring - try all providers simultaneously
+        // SIMPLIFIED: Parallel rescoring - only Gemini (OpenRouter disabled, so rescoring disabled)
+        // This function is kept for reference but rescoring is disabled above
         const tryRescoreParallel = async (): Promise<any | null> => {
           const promises: Promise<any>[] = [];
           
@@ -1302,36 +1305,6 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
                 })
                 .catch(e => {
                   console.log('⚠️ Rescore via Gemini failed:', (e as any)?.message);
-                  throw e;
-                })
-            );
-          }
-          
-          // @ts-expect-error - Deno global is available at runtime
-          const deepseekKey = Deno.env.get('DEEPSEEK_API_KEY');
-          if (deepseekKey) {
-            promises.push(
-              callDeepSeek(scoringPrompt, deepseekKey, seed)
-                .then(resp => {
-                  const text = resp.choices?.[0]?.message?.content ?? '';
-                  return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
-                })
-                .catch(e => {
-                  console.log('⚠️ Rescore via DeepSeek failed:', (e as any)?.message);
-                  throw e;
-                })
-            );
-          }
-          
-          if (openaiApiKey) {
-            promises.push(
-              callOpenAI(`You must return ONLY JSON in the schema above. ${scoringPrompt}`, openaiApiKey, seed)
-                .then(resp => {
-                  const text = resp.choices?.[0]?.message?.content ?? '';
-                  return JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
-                })
-                .catch(e => {
-                  console.log('⚠️ Rescore via OpenAI failed:', (e as any)?.message);
                   throw e;
                 })
             );
@@ -1434,130 +1407,12 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
         };
       }
       
-      // Post-process sentence_comparisons: ensure they exist and are properly formatted
-      const buildDiffSpans = (orig: string, imp: string) => {
-        const o = orig.split(/\s+/);
-        const p = imp.split(/\s+/);
-        const n = o.length, m = p.length;
-        const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
-        for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-        const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
-        let i = 0, j = 0; while (i < n && j < m) { if (o[i] === p[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
-        const push = (arr: any[], text: string, status: string) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
-        const original_spans: any[] = []; const corrected_spans: any[] = [];
-        let buf = '', cur = 'neutral';
-        for (let t = 0; t < n; t++) { const ns = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(original_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + o[t]; }
-        push(original_spans, buf, cur);
-        buf = ''; cur = 'neutral';
-        for (let t = 0; t < m; t++) { const ns = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(corrected_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + p[t]; }
-        push(corrected_spans, buf, cur);
-        return { original_spans, corrected_spans };
-      };
-
-      const spanHasImprovement = (spans: any[] | undefined) => Array.isArray(spans) && spans.some(s => s?.status === 'improvement');
-
-      // Process sentence_comparisons for Task 1
-      if (hasTask1 && structured?.task1) {
-        const hasSentenceComparisons = Array.isArray(structured.task1.sentence_comparisons) && structured.task1.sentence_comparisons.length > 0;
-        console.log(`🔍 Task 1 sentence_comparisons check: ${hasSentenceComparisons ? 'PRESENT' : 'MISSING'} (count: ${structured.task1.sentence_comparisons?.length || 0})`);
-        
-        if (!hasSentenceComparisons) {
-          console.log('⚠️ Task 1 missing sentence_comparisons, generating from improvements...');
-          // Generate sentence_comparisons from improvements if available
-          const improvements = structured.task1.feedback?.improvements || [];
-          if (improvements.length > 0) {
-            structured.task1.sentence_comparisons = improvements.map((imp: any) => {
-              const orig = imp.original || '';
-              const impv = imp.improved || orig;
-              const d = buildDiffSpans(orig, impv);
-              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
-            });
-          } else {
-            // Fallback: create from full text
-            const sentences = (task1Answer || '').split(/[.!?]+/).filter(s => s.trim().length > 0);
-            structured.task1.sentence_comparisons = sentences.map((s: string) => {
-              const d = buildDiffSpans(s.trim(), s.trim());
-              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
-            });
-          }
-        } else {
-          // Validate and repair existing sentence_comparisons
-          structured.task1.sentence_comparisons = structured.task1.sentence_comparisons.map((s: any) => {
-            const originalText = Array.isArray(s.original_spans) ? s.original_spans.map((x: any) => x?.text || '').join('').trim() : (s.original || '');
-            const improvedText = Array.isArray(s.corrected_spans) ? s.corrected_spans.map((x: any) => x?.text || '').join('').trim() : (s.improved || '');
-            const needRepair = !spanHasImprovement(s.corrected_spans) || !Array.isArray(s.original_spans) || !Array.isArray(s.corrected_spans);
-            if (needRepair && originalText && improvedText) {
-              const d = buildDiffSpans(originalText, improvedText);
-              s.original_spans = d.original_spans;
-              s.corrected_spans = d.corrected_spans;
-            }
-            return s;
-          });
-        }
-
-        // Generate original_spans and corrected_spans for whole text view
-        if (!structured.task1.original_spans || !structured.task1.corrected_spans) {
-          const fullOriginal = task1Answer || '';
-          const fullImproved = structured.task1.sentence_comparisons
-            .map((sc: any) => (sc.corrected_spans || []).map((s: any) => s.text || '').join(''))
-            .join(' ')
-            .trim() || fullOriginal;
-          const d = buildDiffSpans(fullOriginal, fullImproved);
-          structured.task1.original_spans = d.original_spans;
-          structured.task1.corrected_spans = d.corrected_spans;
-        }
+      // Use helper functions to process sentence comparisons
+      if (hasTask1 && structured.task1) {
+        processSentenceComparisons(structured.task1, task1Answer, 'task1');
       }
-
-      // Process sentence_comparisons for Task 2
-      if (hasTask2 && structured?.task2) {
-        const hasSentenceComparisons = Array.isArray(structured.task2.sentence_comparisons) && structured.task2.sentence_comparisons.length > 0;
-        console.log(`🔍 Task 2 sentence_comparisons check: ${hasSentenceComparisons ? 'PRESENT' : 'MISSING'} (count: ${structured.task2.sentence_comparisons?.length || 0})`);
-        
-        if (!hasSentenceComparisons) {
-          console.log('⚠️ Task 2 missing sentence_comparisons, generating from improvements...');
-          // Generate sentence_comparisons from improvements if available
-          const improvements = structured.task2.feedback?.improvements || [];
-          if (improvements.length > 0) {
-            structured.task2.sentence_comparisons = improvements.map((imp: any) => {
-              const orig = imp.original || '';
-              const impv = imp.improved || orig;
-              const d = buildDiffSpans(orig, impv);
-              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
-            });
-          } else {
-            // Fallback: create from full text
-            const sentences = (task2Answer || '').split(/[.!?]+/).filter(s => s.trim().length > 0);
-            structured.task2.sentence_comparisons = sentences.map((s: string) => {
-              const d = buildDiffSpans(s.trim(), s.trim());
-              return { original_spans: d.original_spans, corrected_spans: d.corrected_spans };
-            });
-          }
-        } else {
-          // Validate and repair existing sentence_comparisons
-          structured.task2.sentence_comparisons = structured.task2.sentence_comparisons.map((s: any) => {
-            const originalText = Array.isArray(s.original_spans) ? s.original_spans.map((x: any) => x?.text || '').join('').trim() : (s.original || '');
-            const improvedText = Array.isArray(s.corrected_spans) ? s.corrected_spans.map((x: any) => x?.text || '').join('').trim() : (s.improved || '');
-            const needRepair = !spanHasImprovement(s.corrected_spans) || !Array.isArray(s.original_spans) || !Array.isArray(s.corrected_spans);
-            if (needRepair && originalText && improvedText) {
-              const d = buildDiffSpans(originalText, improvedText);
-              s.original_spans = d.original_spans;
-              s.corrected_spans = d.corrected_spans;
-            }
-            return s;
-          });
-        }
-
-        // Generate original_spans and corrected_spans for whole text view
-        if (!structured.task2.original_spans || !structured.task2.corrected_spans) {
-          const fullOriginal = task2Answer || '';
-          const fullImproved = structured.task2.sentence_comparisons
-            .map((sc: any) => (sc.corrected_spans || []).map((s: any) => s.text || '').join(''))
-            .join(' ')
-            .trim() || fullOriginal;
-          const d = buildDiffSpans(fullOriginal, fullImproved);
-          structured.task2.original_spans = d.original_spans;
-          structured.task2.corrected_spans = d.corrected_spans;
-        }
+      if (hasTask2 && structured.task2) {
+        processSentenceComparisons(structured.task2, task2Answer, 'task2');
       }
 
       // Validate improvements array quality
@@ -1655,37 +1510,7 @@ Use official IELTS band descriptors. Be strict and accurate. Return ONLY the JSO
       
       console.log('✅ Response structure validated and enhanced');
       
-      // ENHANCED: Validate that scores match band descriptors
-      const validateBandDescriptorAlignment = (task: any, taskType: 'task1' | 'task2') => {
-        if (!task?.criteria) return;
-        
-        const criteria = task.criteria;
-        const bandLevelGuide = {
-          9: { keywords: ['fully and appropriately satisfied', 'all the requirements', 'expert', 'sophisticated'], min: 'perfect' },
-          8: { keywords: ['all the requirements', 'well-developed', 'strong', 'skilfully'], min: 'very good' },
-          7: { keywords: ['covers the requirements', 'clear', 'developed'], min: 'good' },
-          6: { keywords: ['focuses on', 'generally', 'adequately', 'satisfactory'], min: 'competent' },
-          5: { keywords: ['generally addresses', 'limited', 'basic', 'some'], min: 'modest' },
-          4: { keywords: ['attempt', 'minimal', 'few', 'little'], min: 'very limited' },
-        };
-        
-        for (const [criterion, data] of Object.entries(criteria)) {
-          if (data && typeof data.band === 'number' && data.justification) {
-            const band = Math.round(data.band);
-            const just = data.justification.toLowerCase();
-            
-            // Check if justification mentions band-appropriate keywords
-            const expectedKeywords = bandLevelGuide[band as keyof typeof bandLevelGuide]?.keywords || [];
-            const hasKeywords = expectedKeywords.some(kw => just.includes(kw.toLowerCase()));
-            
-            if (band >= 5 && band <= 9 && !hasKeywords) {
-              console.warn(`⚠️ Band ${band} alignment warning for ${criterion}: justification doesn't reference Band ${band} descriptors`);
-              console.log(`   Suggestion: Reference the Band ${band} descriptor in justification`);
-            }
-          }
-        }
-      };
-      
+      // Use helper function to validate band descriptor alignment
       if (structured.task1) validateBandDescriptorAlignment(structured.task1, 'task1');
       if (structured.task2) validateBandDescriptorAlignment(structured.task2, 'task2');
       console.log('✅ Band descriptor alignment validated');

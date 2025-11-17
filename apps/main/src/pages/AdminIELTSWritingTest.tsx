@@ -13,6 +13,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { useAdminContent } from "@/hooks/useAdminContent";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AudioR2, deleteFromR2 } from "@/lib/cloudflare-r2";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cuumxmfzhwljylbdlflj.supabase.co';
 
@@ -176,28 +177,30 @@ const AdminIELTSWritingTest = () => {
   };
 
   const handleFileUpload = async (file: File) => {
+    if (!testId) {
+      toast({
+        title: "Error",
+        description: "Test ID is required for image upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `ielts-writing/${fileName}`;
+      // Upload to Cloudflare R2 instead of Supabase Storage
+      const result = await AudioR2.uploadWritingImage(file, testId);
 
-      const { error: uploadError } = await supabase.storage
-        .from('audio-files')
-        .upload(filePath, file);
+      if (!result.success || !result.url) {
+        throw new Error(result.error || "Upload failed");
+      }
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('audio-files')
-        .getPublicUrl(filePath);
-
-      setTask1(prev => ({ ...prev, imageUrl: publicUrl }));
+      setTask1(prev => ({ ...prev, imageUrl: result.url }));
       setSelectedFile(null);
       
       toast({
         title: "Success",
-        description: "Image uploaded successfully"
+        description: "Image uploaded successfully to Cloudflare R2"
       });
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -214,17 +217,31 @@ const AdminIELTSWritingTest = () => {
   const handleDeleteImage = async () => {
     try {
       if (task1.imageUrl) {
-        // Extract file path from URL for deletion
-        const urlParts = task1.imageUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        const filePath = `ielts-writing/${fileName}`;
+        // Extract R2 key from URL for deletion
+        // R2 URLs format: https://[bucket].[account].r2.dev/[path] or custom domain/[path]
+        let r2Key = '';
+        
+        // Try to extract key from R2 URL
+        if (task1.imageUrl.includes('r2.dev') || task1.imageUrl.includes('cloudflarestorage.com')) {
+          // Extract path after domain
+          const urlObj = new URL(task1.imageUrl);
+          r2Key = urlObj.pathname.startsWith('/') ? urlObj.pathname.slice(1) : urlObj.pathname;
+        } else if (task1.imageUrl.includes('ielts-writing/')) {
+          // Fallback: extract from path if it's still in old format
+          const match = task1.imageUrl.match(/ielts-writing\/[^/]+\/(.+)$/);
+          if (match && testId) {
+            r2Key = `ielts-writing/${testId}/${match[1]}`;
+          }
+        }
 
-        const { error: deleteError } = await supabase.storage
-          .from('audio-files')
-          .remove([filePath]);
-
-        if (deleteError) {
-          console.warn('Error deleting file from storage:', deleteError);
+        // Delete from R2 if we have a valid key
+        if (r2Key) {
+          const deleted = await deleteFromR2(r2Key);
+          if (!deleted) {
+            console.warn('Failed to delete file from R2, but continuing...');
+          }
+        } else {
+          console.warn('Could not extract R2 key from URL, skipping deletion');
         }
 
         // Clear the image URL from state regardless of storage deletion result

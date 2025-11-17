@@ -87,6 +87,7 @@ const IELTSWritingTestInterface = () => {
   const [showAIAssistantVisible, setShowAIAssistantVisible] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
+  const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
   const [searchParams] = useSearchParams();
   const selectedTrainingType = searchParams.get('training') as 'Academic' | 'General' | null;
   const [filteredTests, setFilteredTests] = useState<any[]>([]);
@@ -646,7 +647,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             task2Answer: (!task2Skipped && task2Answer.trim()) ? task2Answer.trim() : null,
             task1Data: (!task1Skipped && task1Answer.trim()) ? task1 : null,
             task2Data: (!task2Skipped && task2Answer.trim()) ? task2 : null,
-            targetLanguage: feedbackLanguage !== "en" ? feedbackLanguage : undefined
+            targetLanguage: feedbackLanguage !== "en" ? feedbackLanguage : undefined,
+            model: selectedModel
           }
         })
       ]);
@@ -1804,95 +1806,117 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </Button>
                   </div>
                   <div className="flex items-center gap-3">
-                  <Label htmlFor="feedback-language-task2" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
-                    Feedback:
-                  </Label>
-                  <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                    <SelectTrigger 
-                      id="feedback-language-task2"
-                      className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
-                      style={{
-                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                        borderColor: themeStyles.border,
-                        color: themeStyles.textPrimary,
-                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
-                      }}
-                    >
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="zh">中文 (Chinese)</SelectItem>
-                      <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
-                      <SelectItem value="es">Español (Spanish)</SelectItem>
-                      <SelectItem value="fr">Français (French)</SelectItem>
-                      <SelectItem value="ar">العربية (Arabic)</SelectItem>
-                      <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
-                      <SelectItem value="pt">Português (Portuguese)</SelectItem>
-                      <SelectItem value="ru">Русский (Russian)</SelectItem>
-                      <SelectItem value="ja">日本語 (Japanese)</SelectItem>
-                      <SelectItem value="ur">اردو (Urdu)</SelectItem>
-                      <SelectItem value="id">Bahasa Indonesia</SelectItem>
-                      <SelectItem value="de">Deutsch (German)</SelectItem>
-                      <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
-                      <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
-                      <SelectItem value="it">Italiano (Italian)</SelectItem>
-                      <SelectItem value="ko">한국어 (Korean)</SelectItem>
-                      <SelectItem value="fa">فارسی (Persian)</SelectItem>
-                      <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
-                      <SelectItem value="th">ไทย (Thai)</SelectItem>
-                      <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
-                      <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
-                      <SelectItem value="te">తెలుగు (Telugu)</SelectItem>
-                      <SelectItem value="mr">मराठी (Marathi)</SelectItem>
-                      <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
-                      <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
-                      <SelectItem value="ml">മലയാളം (Malayalam)</SelectItem>
-                      <SelectItem value="pa">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
-                      <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
-                      <SelectItem value="as">অসমীয়া (Assamese)</SelectItem>
-                      <SelectItem value="sw">Kiswahili (Swahili)</SelectItem>
-                      <SelectItem value="ha">Hausa</SelectItem>
-                      <SelectItem value="yo">Yorùbá (Yoruba)</SelectItem>
-                      <SelectItem value="ig">Ásụ̀sụ́ Ìgbò (Igbo)</SelectItem>
-                      <SelectItem value="am">አማርኛ (Amharic)</SelectItem>
-                      <SelectItem value="zu">isiZulu (Zulu)</SelectItem>
-                      <SelectItem value="af">Afrikaans</SelectItem>
-                      <SelectItem value="pl">Polski (Polish)</SelectItem>
-                      <SelectItem value="uk">Українська (Ukrainian)</SelectItem>
-                      <SelectItem value="ro">Română (Romanian)</SelectItem>
-                      <SelectItem value="nl">Nederlands (Dutch)</SelectItem>
-                      <SelectItem value="el">Ελληνικά (Greek)</SelectItem>
-                      <SelectItem value="cs">Čeština (Czech)</SelectItem>
-                      <SelectItem value="hu">Magyar (Hungarian)</SelectItem>
-                      <SelectItem value="sv">Svenska (Swedish)</SelectItem>
-                      <SelectItem value="bg">Български (Bulgarian)</SelectItem>
-                      <SelectItem value="sr">Српски (Serbian)</SelectItem>
-                      <SelectItem value="hr">Hrvatski (Croatian)</SelectItem>
-                      <SelectItem value="sk">Slovenčina (Slovak)</SelectItem>
-                      <SelectItem value="no">Norsk (Norwegian)</SelectItem>
-                      <SelectItem value="da">Dansk (Danish)</SelectItem>
-                      <SelectItem value="fi">Suomi (Finnish)</SelectItem>
-                      <SelectItem value="sq">Shqip (Albanian)</SelectItem>
-                      <SelectItem value="sl">Slovenščina (Slovenian)</SelectItem>
-                      <SelectItem value="et">Eesti (Estonian)</SelectItem>
-                      <SelectItem value="lv">Latviešu (Latvian)</SelectItem>
-                      <SelectItem value="lt">Lietuvių (Lithuanian)</SelectItem>
-                      <SelectItem value="uz">Oʻzbek (Uzbek)</SelectItem>
-                      <SelectItem value="kk">Қазақша (Kazakh)</SelectItem>
-                      <SelectItem value="az">Azərbaycan (Azerbaijani)</SelectItem>
-                      <SelectItem value="mn">Монгол (Mongolian)</SelectItem>
-                      <SelectItem value="he">עברית (Hebrew)</SelectItem>
-                      <SelectItem value="ps">پښتو (Pashto)</SelectItem>
-                      <SelectItem value="ka">ქართული (Georgian)</SelectItem>
-                      <SelectItem value="hy">Հայերեն (Armenian)</SelectItem>
-                      <SelectItem value="tl">Tagalog</SelectItem>
-                      <SelectItem value="my">မြန်မာ (Burmese)</SelectItem>
-                      <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
-                      <SelectItem value="si">සිංහල (Sinhala)</SelectItem>
-                      <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Label htmlFor="ai-model-selector" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                      AI Model:
+                    </Label>
+                    <Select value={selectedModel} onValueChange={setSelectedModel}>
+                      <SelectTrigger
+                        id="ai-model-selector"
+                        className="w-[200px] h-9 text-sm border transition-colors rounded-xl"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary,
+                          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                        }}
+                      >
+                        <SelectValue placeholder="Select AI Model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                        <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
+                        <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Label htmlFor="feedback-language-task2" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                      Feedback:
+                    </Label>
+                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                      <SelectTrigger
+                        id="feedback-language-task2"
+                        className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                          borderColor: themeStyles.border,
+                          color: themeStyles.textPrimary,
+                          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                        }}
+                      >
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="zh">中文 (Chinese)</SelectItem>
+                        <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+                        <SelectItem value="es">Español (Spanish)</SelectItem>
+                        <SelectItem value="fr">Français (French)</SelectItem>
+                        <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                        <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                        <SelectItem value="pt">Português (Portuguese)</SelectItem>
+                        <SelectItem value="ru">Русский (Russian)</SelectItem>
+                        <SelectItem value="ja">日本語 (Japanese)</SelectItem>
+                        <SelectItem value="ur">اردو (Urdu)</SelectItem>
+                        <SelectItem value="id">Bahasa Indonesia</SelectItem>
+                        <SelectItem value="de">Deutsch (German)</SelectItem>
+                        <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
+                        <SelectItem value="tr">Türkçe (Turkish)</SelectItem>
+                        <SelectItem value="it">Italiano (Italian)</SelectItem>
+                        <SelectItem value="ko">한국어 (Korean)</SelectItem>
+                        <SelectItem value="fa">فارسی (Persian)</SelectItem>
+                        <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+                        <SelectItem value="th">ไทย (Thai)</SelectItem>
+                        <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
+                        <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
+                        <SelectItem value="te">తెలుగు (Telugu)</SelectItem>
+                        <SelectItem value="mr">मराठी (Marathi)</SelectItem>
+                        <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                        <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
+                        <SelectItem value="ml">മലയാളം (Malayalam)</SelectItem>
+                        <SelectItem value="pa">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
+                        <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
+                        <SelectItem value="as">অসমীয়া (Assamese)</SelectItem>
+                        <SelectItem value="sw">Kiswahili (Swahili)</SelectItem>
+                        <SelectItem value="ha">Hausa</SelectItem>
+                        <SelectItem value="yo">Yorùbá (Yoruba)</SelectItem>
+                        <SelectItem value="ig">Ásụ̀sụ́ Ìgbò (Igbo)</SelectItem>
+                        <SelectItem value="am">አማርኛ (Amharic)</SelectItem>
+                        <SelectItem value="zu">isiZulu (Zulu)</SelectItem>
+                        <SelectItem value="af">Afrikaans</SelectItem>
+                        <SelectItem value="pl">Polski (Polish)</SelectItem>
+                        <SelectItem value="uk">Українська (Ukrainian)</SelectItem>
+                        <SelectItem value="ro">Română (Romanian)</SelectItem>
+                        <SelectItem value="nl">Nederlands (Dutch)</SelectItem>
+                        <SelectItem value="el">Ελληνικά (Greek)</SelectItem>
+                        <SelectItem value="cs">Čeština (Czech)</SelectItem>
+                        <SelectItem value="hu">Magyar (Hungarian)</SelectItem>
+                        <SelectItem value="sv">Svenska (Swedish)</SelectItem>
+                        <SelectItem value="bg">Български (Bulgarian)</SelectItem>
+                        <SelectItem value="sr">Српски (Serbian)</SelectItem>
+                        <SelectItem value="hr">Hrvatski (Croatian)</SelectItem>
+                        <SelectItem value="sk">Slovenčina (Slovak)</SelectItem>
+                        <SelectItem value="no">Norsk (Norwegian)</SelectItem>
+                        <SelectItem value="da">Dansk (Danish)</SelectItem>
+                        <SelectItem value="fi">Suomi (Finnish)</SelectItem>
+                        <SelectItem value="sq">Shqip (Albanian)</SelectItem>
+                        <SelectItem value="sl">Slovenščina (Slovenian)</SelectItem>
+                        <SelectItem value="et">Eesti (Estonian)</SelectItem>
+                        <SelectItem value="lv">Latviešu (Latvian)</SelectItem>
+                        <SelectItem value="lt">Lietuvių (Lithuanian)</SelectItem>
+                        <SelectItem value="uz">Oʻzbek (Uzbek)</SelectItem>
+                        <SelectItem value="kk">Қазақша (Kazakh)</SelectItem>
+                        <SelectItem value="az">Azərbaycan (Azerbaijani)</SelectItem>
+                        <SelectItem value="mn">Монгол (Mongolian)</SelectItem>
+                        <SelectItem value="he">עברית (Hebrew)</SelectItem>
+                        <SelectItem value="ps">پښتو (Pashto)</SelectItem>
+                        <SelectItem value="ka">ქართული (Georgian)</SelectItem>
+                        <SelectItem value="hy">Հայերեն (Armenian)</SelectItem>
+                        <SelectItem value="tl">Tagalog</SelectItem>
+                        <SelectItem value="my">မြန်မာ (Burmese)</SelectItem>
+                        <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
+                        <SelectItem value="si">සිංහල (Sinhala)</SelectItem>
+                        <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <div className="flex items-center gap-2">
                       <TooltipProvider>
                         <Tooltip>
@@ -1904,16 +1928,16 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                  <Button 
-                    onClick={submitTest} 
+                  <Button
+                    onClick={submitTest}
                     disabled={
-                      isSubmitting || 
+                      isSubmitting ||
                       ((task1Skipped || !task1Answer.trim()) && (task2Skipped || !task2Answer.trim())) ||
                       (!task1Skipped && task1Answer.trim() && getWordCount(task1Answer) < 150) ||
                       (!task2Skipped && task2Answer.trim() && getWordCount(task2Answer) < 250) ||
                       (!task1Skipped && !task1Answer.trim()) ||
                       (!task2Skipped && !task2Answer.trim())
-                    } 
+                    }
                     variant="default"
                     className="min-w-[120px]"
                     style={{

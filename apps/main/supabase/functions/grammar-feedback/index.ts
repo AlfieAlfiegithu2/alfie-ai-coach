@@ -1,4 +1,6 @@
+// @ts-nocheck - Deno runtime file, TypeScript errors for Deno imports are expected
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-expect-error - Deno std library import
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -65,6 +67,7 @@ serve(async (req) => {
 
   try {
     // Check for OpenRouter API key
+    // @ts-expect-error - Deno global is available at runtime
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     
     if (!openRouterApiKey) {

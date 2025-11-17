@@ -132,57 +132,32 @@ export function getR2PublicUrl(key: string): string {
   return `${R2_CONFIG.publicUrl}/${key}`;
 }
 
-// Delete file from R2
+// Delete file from R2 via Supabase Edge Function (secure server-side deletion)
 export async function deleteFromR2(key: string): Promise<boolean> {
   try {
-    // Direct R2 delete using AWS SDK approach
-    const endpoint = `https://${R2_CONFIG.accountId}.r2.cloudflarestorage.com`;
-    const canonicalPath = `/${R2_CONFIG.bucketName}/${key.split('/').map(encodeURIComponent).join('/')}`;
-    const url = `${endpoint}${canonicalPath}`;
+    // Use Supabase Edge Function for secure R2 deletion (credentials stored server-side)
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cuumxmfzhwljylbdlflj.supabase.co';
+    const functionUrl = `${supabaseUrl}/functions/v1/r2-delete`;
 
-    // Create AWS Signature V4
-    const now = new Date();
-    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-    const dateStamp = amzDate.slice(0, 8);
+    // Get Supabase session for authentication
+    const { data: { session } } = await supabase.auth.getSession();
 
-    const payloadHash = await sha256('');
-
-    const canonicalRequest = [
-      'DELETE',
-      canonicalPath,
-      '',
-      `host:${R2_CONFIG.accountId}.r2.cloudflarestorage.com`,
-      `x-amz-content-sha256:${payloadHash}`,
-      `x-amz-date:${amzDate}`,
-      '',
-      'host;x-amz-content-sha256;x-amz-date',
-      payloadHash
-    ].join('\n');
-
-    const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
-    const stringToSign = [
-      'AWS4-HMAC-SHA256',
-      amzDate,
-      credentialScope,
-      await sha256(canonicalRequest)
-    ].join('\n');
-
-    const signingKey = await getSignatureKey(R2_CONFIG.secretAccessKey, dateStamp, 'auto', 's3');
-    const signatureBytes = await hmac(signingKey, stringToSign);
-    const signature = Array.from(signatureBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-
-    const authorizationHeader = `AWS4-HMAC-SHA256 Credential=${R2_CONFIG.accessKeyId}/${credentialScope}, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=${signature}`;
-
-    const response = await fetch(url, {
-      method: 'DELETE',
+    const response = await fetch(functionUrl, {
+      method: 'POST',
       headers: {
-        'x-amz-content-sha256': payloadHash,
-        'x-amz-date': amzDate,
-        'Authorization': authorizationHeader,
+        'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ key }),
     });
 
-    return response.ok;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data?.success === true;
   } catch (error) {
     console.error('R2 delete error:', error);
     return false;
@@ -292,6 +267,17 @@ export const AudioR2 = {
     const ext = file.name.split('.').pop() || 'jpg';
     const path = `avatars/${userId}/avatar.${ext}`;
     return uploadToR2(file, path, { contentType: file.type });
+  },
+
+  // Upload IELTS Writing Task 1 image
+  uploadWritingImage: async (file: File, testId: string): Promise<R2UploadResult> => {
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${Date.now()}.${fileExt}`;
+    const path = `ielts-writing/${testId}/${fileName}`;
+    return uploadToR2(file, path, { 
+      contentType: file.type || 'image/jpeg',
+      cacheControl: 'public, max-age=31536000' // Cache for 1 year
+    });
   },
 
   // Get audio URL

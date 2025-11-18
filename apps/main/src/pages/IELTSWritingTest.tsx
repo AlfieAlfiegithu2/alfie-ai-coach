@@ -975,83 +975,98 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
           ...themeStyles.cardStyle
         }}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-center gap-4">
-          {/* Timer */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
-            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-            borderColor: themeStyles.border,
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none',
-            boxShadow: themeStyles.theme.name === 'dark'
-              ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-              : themeStyles.theme.name === 'note'
-              ? themeStyles.theme.styles.cardStyle?.boxShadow
-              : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)'
-          }}>
-            <Clock className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
-            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
-              {formatTime(timeRemaining)}
-            </span>
-          </div>
-
-          {/* Theme Selector */}
-          <div className="flex items-center gap-2">
-            <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />
-            <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
-              <SelectTrigger
-                className="w-[140px] h-8 text-sm border transition-colors rounded-xl"
-                style={{
-                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                  borderColor: themeStyles.border,
-                  color: themeStyles.textPrimary,
-                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
-                }}
-              >
-                <SelectValue placeholder="Theme" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(themes).map((theme) => (
-                  <SelectItem key={theme.name} value={theme.name}>
-                    {theme.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Task Selection Buttons */}
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => switchToTask(1)}
-              className="rounded-xl"
-              style={{
-                backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
-                color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
+          <CardContent className="p-2">
+            <div className="flex items-center justify-center gap-3">
+              {/* Timer */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                 borderColor: themeStyles.border,
                 borderWidth: '1px',
-                borderStyle: 'solid'
-              }}
-            >
-              Task 1
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => switchToTask(2)}
-              className="rounded-xl"
-              style={{
-                backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
-                color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
+                borderStyle: 'solid',
+                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none',
+                boxShadow: themeStyles.theme.name === 'dark'
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : themeStyles.theme.name === 'note'
+                  ? themeStyles.theme.styles.cardStyle?.boxShadow
+                  : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)'
+              }}>
+                <Clock className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
+                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
+                  {formatTime(timeRemaining)}
+                </span>
+              </div>
+
+              {/* Theme Selector */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                 borderColor: themeStyles.border,
                 borderWidth: '1px',
-                borderStyle: 'solid'
-              }}
-            >
-              Task 2
-            </Button>
-          </div>
+                borderStyle: 'solid',
+                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none',
+                boxShadow: themeStyles.theme.name === 'dark'
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : themeStyles.theme.name === 'note'
+                  ? themeStyles.theme.styles.cardStyle?.boxShadow
+                  : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)'
+              }}>
+                <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />
+                <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
+                  <SelectTrigger
+                    className="w-[120px] h-7 text-sm border-0 bg-transparent shadow-none p-0"
+                    style={{
+                      color: themeStyles.textPrimary
+                    }}
+                  >
+                    <SelectValue placeholder="Theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(themes).map((theme) => (
+                      <SelectItem key={theme.name} value={theme.name}>
+                        {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Task Selection Buttons */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                borderColor: themeStyles.border,
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none',
+                boxShadow: themeStyles.theme.name === 'dark'
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : themeStyles.theme.name === 'note'
+                  ? themeStyles.theme.styles.cardStyle?.boxShadow
+                  : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)'
+              }}>
+                <Button
+                  size="sm"
+                  onClick={() => switchToTask(1)}
+                  className="rounded-lg h-7 px-3 text-xs"
+                  style={{
+                    backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
+                    color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
+                    border: 'none'
+                  }}
+                >
+                  Task 1
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => switchToTask(2)}
+                  className="rounded-lg h-7 px-3 text-xs"
+                  style={{
+                    backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
+                    color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
+                    border: 'none'
+                  }}
+                >
+                  Task 2
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

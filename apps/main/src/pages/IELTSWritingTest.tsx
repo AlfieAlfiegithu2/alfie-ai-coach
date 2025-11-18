@@ -963,8 +963,20 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         <StudentLayout title="IELTS Writing Test" showBackButton>
           <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
             <div className="w-full max-w-6xl mx-auto space-y-8 px-4 flex flex-col">
-        {/* Floating Controls - Timer, Theme, Task Selection */}
-        <div className="flex items-center justify-center gap-4 mb-6">
+        {/* Control Panel - Docker Style */}
+        <Card className="rounded-3xl mb-6" style={{
+          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+          borderColor: themeStyles.border,
+          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+          boxShadow: themeStyles.theme.name === 'dark'
+            ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+            : themeStyles.theme.name === 'note'
+            ? themeStyles.theme.styles.cardStyle?.boxShadow
+            : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+          ...themeStyles.cardStyle
+        }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-center gap-4">
           {/* Timer */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -1040,7 +1052,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               Task 2
             </Button>
           </div>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Main Content Layout */}
         {currentTask === 1 ? (
@@ -1065,7 +1079,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     <div className="mb-4">
                       {currentTaskData?.instructions && (
                         <div>
-                          <h4 className="font-medium mb-2 text-sm" style={{ color: themeStyles.textPrimary }}>Task Instructions</h4>
                           <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                             borderColor: themeStyles.border,
@@ -1171,34 +1184,25 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         </div>
 
                         {/* Grammar Button */}
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleGrammarFeedback(0)}
-                                disabled={isGrammarLoading || !task1Answer.trim() || task1Skipped}
-                                className="h-8 w-8 p-0 rounded-xl"
-                                style={{
-                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                  borderColor: themeStyles.border,
-                                  color: themeStyles.textPrimary,
-                                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
-                                }}
-                              >
-                                {isGrammarLoading ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <CheckCircle2 className="w-3 h-3" />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs">
-                              <p>Get AI-powered grammar feedback on your writing. Identifies errors and provides an improved version.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleGrammarFeedback(0)}
+                          disabled={isGrammarLoading || !task1Answer.trim() || task1Skipped}
+                          className="h-8 w-8 p-0 rounded-xl"
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                            borderColor: themeStyles.border,
+                            color: themeStyles.textPrimary,
+                            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                          }}
+                        >
+                          {isGrammarLoading ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3 h-3" />
+                          )}
+                        </Button>
 
                         {/* Language Selector */}
                         <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>

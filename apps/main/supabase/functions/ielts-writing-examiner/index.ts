@@ -25,7 +25,7 @@ async function callGemini(prompt: string, apiKey: string, retryCount = 0) {
           }]
         }],
         generationConfig: {
-          temperature: 0.1,
+          temperature: 0.4,
           maxOutputTokens: 8000, // Increased for comprehensive IELTS analysis
           topP: 0.9,
           topK: 50
@@ -83,7 +83,7 @@ async function callGeminiViaOpenRouter(prompt: string, apiKey: string, retryCoun
               content: prompt
             }
           ],
-          temperature: 0.1,
+          temperature: 0.4,
           max_tokens: 8000
         }),
         signal: controller.signal
@@ -159,7 +159,7 @@ async function callKimiK2Thinking(prompt: string, apiKey: string, retryCount = 0
               content: prompt
             }
           ],
-          temperature: 0.1,
+          temperature: 0.4,
           max_tokens: 8000
         }),
         signal: controller.signal
@@ -235,7 +235,7 @@ async function callGPT51ViaOpenRouter(prompt: string, apiKey: string, retryCount
               content: prompt
             }
           ],
-          temperature: 0.1,
+          temperature: 0.4,
           max_tokens: 8000
         }),
         signal: controller.signal
@@ -700,17 +700,17 @@ ${trainingType === 'General' || trainingType === 'Academic' ? `**For Task 1:**
 0: No attempt made, wrong language used, or answer is memorized.
 
 **For Task 2 (Essay) - Applies to both Academic and General Training:**
-` : ''}9: The prompt is fully addressed in ALL parts with complete depth and thoroughness. A clear, fully developed position directly answers the question throughout. Ideas are relevant, fully extended with specific and detailed examples that strongly support the argument (e.g., "a recent Cambridge study showed that soccer players can – within the span of seconds – calculate over a dozen different permutations", "a study by The British Institute for Learning found that...", "in the UK, many boys are reluctant readers", "In Finland, early years' education focuses on playing", "Finland was ranked the sixth best in the world in terms of reading", "a study by the New York Child Learning Association found that children who read from picture books were 50% less likely to get distracted", "over 70% of young office workers admitted that they had spent long hours on computers"). Coverage is complete with no gaps or omissions. The conclusion effectively ties all ideas together. Any lapses in content or support are extremely rare.
+` : ''}9: The prompt is fully addressed in all parts with complete depth and thoroughness. A clear, fully developed position directly answers the question throughout. Ideas are relevant and fully extended with specific and detailed examples that strongly support the argument. Coverage is complete with no gaps or omissions. The conclusion effectively ties all ideas together. Any lapses in content or support are extremely rare.
 
-8: The prompt is appropriately and sufficiently addressed in all parts. A clear, well-developed position is presented that directly answers the question. Ideas are relevant, well extended with good examples that support the argument (e.g., specific examples like "vegetarians will prefer beans rich in protein", "many European countries where advertising of fast food is prohibited"). Coverage is good but may have occasional minor omissions or lapses. Development is thorough but may not be as complete or detailed as Band 9. The conclusion ties ideas together well.
+8: The prompt is appropriately and sufficiently addressed in all parts. A clear, well-developed position is presented that directly answers the question. Ideas are relevant and well extended with good examples that support the argument. Coverage is good but may have occasional minor omissions or lapses. Development is thorough but may not be as complete or detailed as Band 9. The conclusion ties ideas together well.
 
-7: The main parts of the prompt are appropriately addressed. A clear and developed position is presented. Main ideas are extended and supported with examples, though they may lack detail or precision. There may be a tendency to over-generalise or a lack of focus in supporting material. Some parts may be less fully developed than others (e.g., one part of a two-part question may be adequately addressed while the other part is brief or underdeveloped). The conclusion is present but may be less effective or very brief.
+7: The main parts of the prompt are appropriately addressed. A clear and developed position is presented. Main ideas are extended and supported with examples, though they may lack detail or precision. There may be a tendency to over-generalise or a lack of focus in supporting material. Some parts may be less fully developed than others. The conclusion is present but may be less effective.
 
-6: The main parts are addressed, though some may be more fully covered than others. A position is presented that is relevant to the prompt, though conclusions may be unclear or repetitive. Main ideas are relevant but some may be insufficiently developed or lack clarity. Examples are present but may be less detailed or less effectively integrated. Supporting arguments may be less relevant or inadequate.
+6: The main parts are addressed, though some may be more fully covered than others. A position is presented that is relevant to the prompt, though conclusions may be unclear or repetitive. Main ideas are relevant but some may be insufficiently developed or lack clarity. Examples are present but may be less detailed or less effectively integrated.
 
-5: The main parts are incompletely addressed. A position is expressed but development is not always clear. Some main ideas are limited and not sufficiently developed. Examples may be present but are basic and lack detail. There may be irrelevant detail or repetition. The conclusion may be present but is weak or repetitive.
+5: The main parts are incompletely addressed. A position is expressed but development is not always clear. Some main ideas are limited and not sufficiently developed. Examples may be present but are basic and lack detail. There may be irrelevant detail or repetition. The conclusion may be present but is weak.
 
-4: The prompt is tackled minimally or tangentially. A position is discernible but the reader must search for it. Main ideas are difficult to identify and may lack relevance, clarity, or support. Examples may be present but are very basic, unclear, or irrelevant. Large parts may be repetitive. The response may address the prompt but in a confused or unclear way.
+4: The prompt is tackled minimally or tangentially. A position is discernible but the reader must search for it. Main ideas are difficult to identify and may lack relevance, clarity, or support. Examples may be present but are very basic, unclear, or irrelevant. Large parts may be repetitive.
 
 3: No part is adequately addressed or the prompt is misunderstood. No relevant position can be identified. Few ideas, possibly irrelevant or insufficiently developed.
 
@@ -742,17 +742,17 @@ Coherence & Cohesion (Applies to both Academic and General Training, Task 1 and 
 0: No attempt made.
 
 Lexical Resource (Applies to both Academic and General Training, Task 1 and Task 2):
-9: Vocabulary is used with FULL PRECISION - the right word in the right place every time. Word choice is VERY NATURAL and fits context perfectly, never forced or awkward. A wide range of vocabulary is used accurately with NO errors in word choice or collocation. Less common and sophisticated words (e.g., "accentuate", "pervades", "plethora", "deleterious", "exigencies", "engender", "mitigated", "group-level cognition", "convincing evidence", "diverse range", "rapid mental calculations", "tight time constraints", "permutations", "predictive powers", "offspring", "detrimental", "repercussions", "self-directed approach", "counterparts", "vehemently opposed", "domestically trained specialists", "subsidised", "alumni", "debt of gratitude", "utmost importance", "increasingly exposed", "overwhelmingly detrimental", "cognitive science", "industrial psychology", "attention spans", "heavily reliant") are used appropriately and naturally. Spelling and word formation are error-free. Vocabulary demonstrates sophisticated control without being showy.
+9: Vocabulary demonstrates sophisticated control with precise, natural word choice. Wide range of uncommon items used accurately with full flexibility and precision. No errors in word choice, collocation, or spelling. Sophisticated vocabulary used appropriately without being showy.
 
-8: Vocabulary is used FLUENTLY and FLEXIBLY to convey precise meanings. There is SKILFUL use of uncommon and/or idiomatic items when appropriate (e.g., "diametrically opposed", "vast variety", "considerably vary", "tailored approach", "pernicious effect", "impressionable", "exert", "impart", "formative years", "remarkably prevalent", "diminished", "utilising", "augmenting"). Word choice is good and mostly natural, though occasional minor inaccuracies in word choice or collocation may occur (e.g., "retain stuff" instead of "retain staff"). Vocabulary is varied and appropriate. Occasional minor errors in spelling or word formation may occur but have minimal impact.
+8: Skilful use of uncommon and idiomatic items with fluent, flexible vocabulary control. Word choice is natural and appropriate with occasional minor inaccuracies. Vocabulary is varied and demonstrates good control. Occasional minor errors in spelling or word formation may occur but have minimal impact.
 
-7: Vocabulary is SUFFICIENT to allow some flexibility and precision. There is SOME ability to use less common items (e.g., "imperative", "rudimentary", "foster"). An awareness of style and collocation is evident, though inappropriacies occur. Word choice is adequate but may lack precision (e.g., "many powers" instead of "extensive authority", "very poor conditions" instead of "precarious circumstances", "good money" instead of "substantial earnings"). There are a few errors in spelling or word formation (e.g., "know" instead of "known", "fundings" instead of "funding"), but they don't detract from overall clarity. Vocabulary may feel FORMULAIC at times (e.g., "It is clearly seen that", "There is no doubt that", "One possible reason").
+7: Sufficient vocabulary for flexibility and precision with some use of less common items. Adequate word choice with occasional inappropriacies. An awareness of style and collocation is evident though errors occur. Few errors in spelling or word formation that don't detract from overall clarity.
 
-6: Vocabulary is generally adequate and appropriate. Meaning is generally clear but range may be restricted or lack precision. Word choice may be imprecise or awkward (e.g., "all around the world" instead of "around the world", "Regardless than" instead of "Regardless of"). There are some errors in spelling or word formation (e.g., "unknow words" instead of "unknown words", "Even tought" instead of "Even though", "investimento" instead of "investment", "politice" instead of "policy"), but these don't impede communication. Vocabulary is basic but functional.
+6: Generally adequate vocabulary with clear meaning but restricted range. Some imprecise word choice and occasional errors in spelling or word formation. Errors don't impede communication but may reduce sophistication.
 
-5: Vocabulary is limited but minimally adequate. Simple vocabulary used accurately but range doesn't permit much variation. Frequent lapses in appropriacy and word choice errors (e.g., "regardless to" instead of "regardless of", "there skills" instead of "their skills", "home wife" instead of "housewife", "fitness body" instead of "fit body", "charming sentences" instead of "charming sentence", "In nutshell" instead of "In a nutshell"). There are frequent spelling errors (e.g., "satify" instead of "satisfy", "indivuduals" instead of "individuals", "recieve" instead of "receive", "agreeded" instead of "agreed", "recente" instead of "recent", "assecure" instead of "ensure"). Errors may be noticeable and cause difficulty for the reader.
+5: Limited vocabulary with noticeable errors in appropriacy, word choice, and spelling. Range doesn't permit much variation. Frequent lapses that cause difficulty for the reader.
 
-4: Vocabulary is limited and inadequate. Basic vocabulary used repetitively. There are frequent spelling errors that impede meaning (e.g., "exstremist" instead of "extremist", "vegeterian" instead of "vegetarian", "walfare" instead of "welfare", "animalist" instead of "animal rights activists", "demaging" instead of "damaging", "exetremist" instead of "extremist", "compherensive" instead of "comprehensive", "ectetera" instead of "etc.", "journela" instead of "journal", "revels" instead of "reveals", "nontheless" instead of "nonetheless", "uneffordable" instead of "unaffordable", "childrens" instead of "children", "psycologists" instead of "psychologists", "coursers" instead of "courses", "heiring" instead of "hiring"). Inappropriate word choice or awkward phrasing (e.g., "what concerne animals rights", "restyle" instead of "restructure", "toll of people" instead of "number of people") may impede meaning.
+4: Very limited vocabulary with frequent errors that impede meaning. Basic vocabulary used repetitively with inappropriate word choice and awkward phrasing.
 
 3: Vocabulary is inadequate. Over-dependence on memorised language. Errors predominate and may severely impede meaning.
 
@@ -763,17 +763,17 @@ Lexical Resource (Applies to both Academic and General Training, Task 1 and Task
 0: No attempt made.
 
 Grammatical Range and Accuracy (Applies to both Academic and General Training, Task 1 and Task 2):
-9: A wide range of grammatical structures is used with FULL FLEXIBILITY and CONTROL. Complex structures are used ACCURATELY and NATURALLY. Grammar is ERROR-FREE throughout. Punctuation is appropriate and accurate. Sentence variety prevents repetition. Structures flow effortlessly. Minor errors are extremely rare and have no impact.
+9: A wide range of grammatical structures is used with full flexibility and control. Complex structures are used accurately and naturally. Grammar is error-free throughout with appropriate punctuation. Sentence variety prevents repetition and structures flow effortlessly. Minor errors are extremely rare.
 
-8: A wide range of structures is used FLEXIBLY and ACCURATELY. Complex structures are used correctly. The MAJORITY of sentences are error-free. Punctuation is well managed. Occasional, non-systematic errors may occur (e.g., "These measure" instead of "These measures", "retain stuff" instead of "retain staff") but have minimal impact. Structures are varied and natural.
+8: A wide range of structures is used flexibly and accurately. Complex structures are used correctly with the majority of sentences error-free. Punctuation is well managed. Occasional non-systematic errors may occur but have minimal impact. Structures are varied and natural.
 
-7: A VARIETY of complex structures is used with SOME flexibility and accuracy. Grammar and punctuation are GENERALLY well controlled, and error-free sentences are FREQUENT. However, there are A FEW ERRORS in grammar that persist (e.g., subject-verb agreement errors like "Government have", spelling errors like "know" instead of "known", "fundings" instead of "funding", awkward structures like "It is worth to mention", "Despite of these facts", "he/she deemed hundred per cent competence", incomplete sentences). These errors do not impede communication but are noticeable. Sentence variety is present but may be less sophisticated.
+7: A variety of complex structures is used with some flexibility and accuracy. Grammar and punctuation are generally well controlled with error-free sentences being frequent. A few errors may occur but do not impede communication. Sentence variety is present but may be less sophisticated.
 
-6: A mix of simple and complex sentence forms is used but flexibility is limited. Complex structures may not be as accurate as simple ones. Errors in grammar and punctuation occur (e.g., subject-verb agreement errors like "School age children is" instead of "are", "exercises reduces" instead of "reduce", "may provides" instead of "may provide", "may leads" instead of "may lead", "a person came" instead of "comes", missing articles like "From young age" instead of "From a young age"), but these rarely impede communication. Sentence variety is present but less sophisticated than Band 7.
+6: A mix of simple and complex sentence forms is used but flexibility is limited. Complex structures may not be as accurate as simple ones. Some errors in grammar and punctuation occur but rarely impede communication. Sentence variety is present but less sophisticated.
 
-5: Range is limited and repetitive. Complex sentences attempted but tend to be faulty. Greatest accuracy on simple sentences. Grammatical errors are frequent (e.g., "they intent" instead of "intend", "Computer become" instead of "becomes", "a integral" instead of "an integral", "it would helps" instead of "it would help", "it invite" instead of "it invites", "they spent" instead of "spend", "it increase" instead of "it increases", "will made them" instead of "make them", "employ" instead of "employed", subject-verb agreement errors, tense errors). Errors may cause difficulty for the reader and impede understanding at times.
+5: Range is limited and repetitive with complex sentences attempted but often faulty. Greatest accuracy on simple sentences. Grammatical errors are frequent and may cause difficulty for the reader, impeding understanding at times.
 
-4: Very limited range. Subordinate clauses rare. Simple sentences predominate. Grammatical errors are frequent and impede meaning (e.g., "what concerne animals rights" instead of "what concerns animal rights", "Many school of thought" instead of "Many schools of thought", "Though it have" instead of "Though it has", "have prove" instead of "has proven", "every people" instead of "every person" or "all people", "deteriorated over times" instead of "deteriorates over time", "entire of our life" instead of "our entire life", "savings cash" instead of "saving cash", "acquire of" instead of "acquiring", "put money into on buying" instead of "put money into buying", "saving money it's" instead of "saving money is", "if he start" instead of "if he starts", "Spending money with close eyes" instead of "Spending money with closed eyes", "make life hard" instead of "makes life hard", "apply for the adolescent" instead of "applies to adolescents", "thing about" instead of "think about", "demonstrate" instead of "demonstrates", "this is happens" instead of "this happens", "jais" instead of "jails", "im similar" instead of "in similar", "measurements" instead of "measures", "old age" instead of "elderly people", "Childrens" instead of "Children"). Errors significantly impede understanding.
+4: Very limited range with subordinate clauses rare and simple sentences predominating. Grammatical errors are frequent and impede meaning significantly.
 
 3: Sentence forms attempted but errors predominate. Prevents most meaning from coming through.
 
@@ -787,7 +787,9 @@ Your Required Tasks & Output Format
 
 ${hasTask1 && hasTask2 ? 'After analyzing the provided Task 1 and Task 2 essays, you must return a single, valid JSON object.' : hasTask1 ? 'After analyzing the provided Task 1 essay, you must return a single, valid JSON object. ONLY analyze Task 1 - Task 2 was skipped by the student.' : 'After analyzing the provided Task 2 essay, you must return a single, valid JSON object. ONLY analyze Task 2 - Task 1 was skipped by the student.'}
 
-Score Each Criterion: ${hasTask1 && hasTask2 ? 'For both Task 1 and Task 2' : hasTask1 ? 'For Task 1 only' : 'For Task 2 only'}, provide a band score (from 0.0 to 9.0, in 0.5 increments) for each of the four criteria based on the descriptors above.
+Score Each Criterion: ${hasTask1 && hasTask2 ? 'For both Task 1 and Task 2' : hasTask1 ? 'For Task 1 only' : 'For Task 2 only'}, provide a band score for each of the four criteria based on the descriptors above.
+
+Band scores should be realistic and reflect the quality of the writing. Use your expert judgment to assign scores that best match the descriptors provided.
 
 CRITICAL: YOU MUST ASSESS EACH CRITERION COMPLETELY INDEPENDENTLY. Do NOT let one criterion's score influence another. Score each criterion separately based ONLY on its own specific evidence:
 
@@ -1154,10 +1156,16 @@ ${hasTask2 ? `  "task2": {
 
     // Helper: round to IELTS 0.5 steps and clamp 0..9
     // IELTS rounding rules:
-    // - 0.0-0.25 → rounds down to .0
-    // - 0.25-0.75 → rounds to .5
-    // - 0.75-1.0 → rounds up to next .0
+    // - 0.0 to < 0.25 → rounds down to .0
+    // - 0.25 to < 0.75 → rounds to .5
+    // - 0.75 to 1.0 → rounds up to next .0
     const roundIELTS = (n: number) => {
+      // Handle invalid inputs (NaN, Infinity, null, undefined)
+      if (typeof n !== 'number' || !isFinite(n) || isNaN(n)) {
+        console.warn(`⚠️ Invalid number passed to roundIELTS: ${n}, defaulting to 0`);
+        return 0;
+      }
+      
       const clamped = Math.min(9, Math.max(0, n));
       const floor = Math.floor(clamped);
       const decimal = clamped - floor;
@@ -1178,7 +1186,8 @@ ${hasTask2 ? `  "task2": {
       ensureCriteria(structured.task1 || (structured.task1 = {}), 'task1', overall);
       ensureCriteria(structured.task2 || (structured.task2 = {}), 'task2', overall);
 
-      const isValidBand = (n: any) => typeof n === 'number' && n >= 0 && n <= 9 && (n * 2) % 1 === 0;
+      const isValidBand = (n: any) => typeof n === 'number' && isFinite(n) && !isNaN(n) && n >= 0 && n <= 9 && (n * 2) % 1 === 0;
+      const isValidBandValue = (n: any) => typeof n === 'number' && isFinite(n) && !isNaN(n) && n >= 0 && n <= 9;
       const getTaskBands = (task: any, type: 'task1' | 'task2') => {
         const c = task?.criteria || {};
         const b1 = type === 'task1' ? c?.task_achievement?.band : c?.task_response?.band;
@@ -1187,6 +1196,117 @@ ${hasTask2 ? `  "task2": {
         const b4 = c?.grammatical_range_and_accuracy?.band;
         return [b1, b2, b3, b4];
       };
+
+      // CRITICAL FIX: Round and validate all criterion scores
+      const roundAndValidateScores = (task: any, type: 'task1' | 'task2') => {
+        if (!task?.criteria) return;
+        
+        const criteriaNames = type === 'task1' 
+          ? ['task_achievement', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy']
+          : ['task_response', 'coherence_and_cohesion', 'lexical_resource', 'grammatical_range_and_accuracy'];
+        
+        for (const criterionName of criteriaNames) {
+          const criterion = task.criteria[criterionName];
+          if (criterion && typeof criterion.band === 'number') {
+            const originalBand = criterion.band;
+            // Round to valid IELTS increment
+            const rounded = roundIELTS(originalBand);
+            
+            // Validate the rounded score
+            if (!isValidBand(rounded)) {
+              console.warn(`⚠️ Invalid band score for ${type}.${criterionName}: ${rounded}, clamping to valid range`);
+              criterion.band = Math.max(0, Math.min(9, Math.round(rounded * 2) / 2));
+            } else {
+              criterion.band = rounded;
+            }
+            
+            // Log if score was changed
+            if (Math.abs(originalBand - rounded) > 0.01) {
+              console.log(`📊 Rounded ${type}.${criterionName} from ${originalBand} to ${rounded}`);
+            }
+          }
+        }
+      };
+
+      // Round and validate scores for both tasks
+      if (hasTask1 && structured.task1) {
+        roundAndValidateScores(structured.task1, 'task1');
+      }
+      if (hasTask2 && structured.task2) {
+        roundAndValidateScores(structured.task2, 'task2');
+      }
+
+      // CRITICAL FIX: Calculate task-level overall_band scores
+      if (hasTask1 && structured.task1) {
+        const t1Bands = getTaskBands(structured.task1, 'task1').filter((b) => isValidBandValue(b)) as number[];
+        if (t1Bands.length === 4) {
+          structured.task1.overall_band = roundIELTS((t1Bands[0] + t1Bands[1] + t1Bands[2] + t1Bands[3]) / 4);
+          console.log(`📊 Task 1 overall_band calculated: ${structured.task1.overall_band} (from ${t1Bands.join(', ')})`);
+        } else if (t1Bands.length > 0) {
+          console.warn(`⚠️ Task 1 has only ${t1Bands.length} valid band scores, cannot calculate overall_band`);
+        }
+      }
+      
+      if (hasTask2 && structured.task2) {
+        const t2Bands = getTaskBands(structured.task2, 'task2').filter((b) => isValidBandValue(b)) as number[];
+        if (t2Bands.length === 4) {
+          structured.task2.overall_band = roundIELTS((t2Bands[0] + t2Bands[1] + t2Bands[2] + t2Bands[3]) / 4);
+          console.log(`📊 Task 2 overall_band calculated: ${structured.task2.overall_band} (from ${t2Bands.join(', ')})`);
+        } else if (t2Bands.length > 0) {
+          console.warn(`⚠️ Task 2 has only ${t2Bands.length} valid band scores, cannot calculate overall_band`);
+        }
+      }
+
+      // CRITICAL FIX: Calculate overall band score (Task 1 = 1/3, Task 2 = 2/3 weighting)
+      const hasTask1Band = isValidBandValue(structured.task1?.overall_band);
+      const hasTask2Band = isValidBandValue(structured.task2?.overall_band);
+      
+      if (hasTask1Band && hasTask2Band) {
+        // Both tasks completed - use standard IELTS weighting (Task 1 = 1/3, Task 2 = 2/3)
+        structured.overall = structured.overall || {};
+        structured.overall.band = roundIELTS((structured.task1.overall_band + 2 * structured.task2.overall_band) / 3);
+        structured.overall.calculation = `Weighted average: (${structured.task1.overall_band} + 2 × ${structured.task2.overall_band}) / 3 = ${structured.overall.band}`;
+        console.log(`📊 Overall band calculated: ${structured.overall.band} (Task 1: ${structured.task1.overall_band}, Task 2: ${structured.task2.overall_band})`);
+      } else if (hasTask1Band) {
+        // Only Task 1 completed
+        structured.overall = structured.overall || {};
+        structured.overall.band = structured.task1.overall_band;
+        structured.overall.calculation = 'Task 1 only (Task 2 was skipped)';
+        console.log(`📊 Overall band (Task 1 only): ${structured.overall.band}`);
+      } else if (hasTask2Band) {
+        // Only Task 2 completed
+        structured.overall = structured.overall || {};
+        structured.overall.band = structured.task2.overall_band;
+        structured.overall.calculation = 'Task 2 only (Task 1 was skipped)';
+        console.log(`📊 Overall band (Task 2 only): ${structured.overall.band}`);
+      } else {
+        // Fallback: calculate from individual criteria if overall_band not available
+        console.warn('⚠️ No task-level overall_band available, attempting to calculate from criteria...');
+        const t1Bands = hasTask1 && structured.task1 ? getTaskBands(structured.task1, 'task1').filter((b) => isValidBandValue(b)) as number[] : [];
+        const t2Bands = hasTask2 && structured.task2 ? getTaskBands(structured.task2, 'task2').filter((b) => isValidBandValue(b)) as number[] : [];
+        
+        if (t1Bands.length === 4 && t2Bands.length === 4) {
+          const t1Avg = roundIELTS((t1Bands[0] + t1Bands[1] + t1Bands[2] + t1Bands[3]) / 4);
+          const t2Avg = roundIELTS((t2Bands[0] + t2Bands[1] + t2Bands[2] + t2Bands[3]) / 4);
+          structured.overall = structured.overall || {};
+          structured.overall.band = roundIELTS((t1Avg + 2 * t2Avg) / 3);
+          structured.overall.calculation = `Calculated from criteria (Task 1: ${t1Avg}, Task 2: ${t2Avg})`;
+        } else if (t1Bands.length === 4) {
+          structured.overall = structured.overall || {};
+          structured.overall.band = roundIELTS((t1Bands[0] + t1Bands[1] + t1Bands[2] + t1Bands[3]) / 4);
+          structured.overall.calculation = 'Task 1 only (calculated from criteria)';
+        } else if (t2Bands.length === 4) {
+          structured.overall = structured.overall || {};
+          structured.overall.band = roundIELTS((t2Bands[0] + t2Bands[1] + t2Bands[2] + t2Bands[3]) / 4);
+          structured.overall.calculation = 'Task 2 only (calculated from criteria)';
+        } else {
+          // Last resort fallback
+          structured.overall = structured.overall || {};
+          structured.overall.band = 6.0;
+          structured.overall.calculation = 'Fallback default (insufficient data)';
+          console.warn(`⚠️ Using fallback overall band score of 6.0 (Task 1: ${t1Bands.length} valid scores, Task 2: ${t2Bands.length} valid scores)`);
+        }
+      }
 
       // Use helper function to validate score-justification consistency
 

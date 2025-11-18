@@ -963,20 +963,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         <StudentLayout title="IELTS Writing Test" showBackButton>
           <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
             <div className="w-full max-w-6xl mx-auto space-y-8 px-4 flex flex-col">
-        {/* Task Description Section */}
-        <Card className="rounded-3xl relative mt-6" style={{
-          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-          borderColor: themeStyles.border,
-          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-          boxShadow: themeStyles.theme.name === 'dark'
-            ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-            : themeStyles.theme.name === 'note'
-            ? themeStyles.theme.styles.cardStyle?.boxShadow
-            : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-          ...themeStyles.cardStyle
-        }}>
-          {/* Floating Controls - Timer, Theme, Task Selection - Positioned at top-right of this card */}
-          <div className="absolute -top-12 right-0 z-40 flex items-center gap-4">
+        {/* Floating Controls - Timer, Theme, Task Selection */}
+        <div className="flex items-center justify-center gap-4 mb-6">
           {/* Timer */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{
             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -1052,26 +1040,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               Task 2
             </Button>
           </div>
-          </div>
-          <CardContent>
-            <div className="space-y-4">
-              {currentTaskData?.instructions && (
-                <div>
-                  <h4 className="font-medium mb-2" style={{ color: themeStyles.textPrimary }}>Task Instructions</h4>
-                  <div className="whitespace-pre-wrap leading-relaxed p-4 rounded-lg" style={{
-                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                    borderColor: themeStyles.border,
-                    borderWidth: '1px',
-                    borderStyle: 'solid',
-                    color: themeStyles.textPrimary
-                  }}>
-                    {currentTaskData.instructions}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        </div>
 
         {/* Main Content Layout */}
         {currentTask === 1 ? (
@@ -1080,30 +1049,61 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
             }}>
               <ResizablePanel defaultSize={45} minSize={40}>
-                <div className="h-full">
-                  <img
-                    src={currentTaskData.imageUrl}
-                    alt="Task 1 visual data"
-                    className="w-full h-full object-contain cursor-pointer"
-                    loading="eager"
-                    decoding="async"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = ((e.clientX - rect.left) / rect.width) * 100;
-                      const y = ((e.clientY - rect.top) / rect.height) * 100;
-                      setZoomOrigin(`${x}% ${y}%`);
-                      setZoomScale(zoomScale === 1 ? 1.5 : 1);
-                    }}
-                    style={{
-                      transform: `scale(${zoomScale})`,
-                      transformOrigin: zoomOrigin,
-                      transition: 'transform 0.2s ease-out'
-                    }}
-                  />
-                </div>
-              </ResizablePanel>
+                <Card className="rounded-3xl h-full" style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                  borderColor: themeStyles.border,
+                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                  boxShadow: themeStyles.theme.name === 'dark'
+                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                    : themeStyles.theme.name === 'note'
+                    ? themeStyles.theme.styles.cardStyle?.boxShadow
+                    : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                  ...themeStyles.cardStyle
+                }}>
+                  <CardContent className="p-4 h-full flex flex-col">
+                    {/* Task Instructions */}
+                    <div className="mb-4">
+                      {currentTaskData?.instructions && (
+                        <div>
+                          <h4 className="font-medium mb-2 text-sm" style={{ color: themeStyles.textPrimary }}>Task Instructions</h4>
+                          <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                            borderColor: themeStyles.border,
+                            borderWidth: '1px',
+                            borderStyle: 'solid',
+                            color: themeStyles.textPrimary
+                          }}>
+                            {currentTaskData.instructions}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
-              <ResizableHandle withHandle />
+                    {/* Photo */}
+                    <div className="flex-1 overflow-hidden">
+                      <img
+                        src={currentTaskData.imageUrl}
+                        alt="Task 1 visual data"
+                        className="w-full h-full object-contain cursor-pointer"
+                        loading="eager"
+                        decoding="async"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const x = ((e.clientX - rect.left) / rect.width) * 100;
+                          const y = ((e.clientY - rect.top) / rect.height) * 100;
+                          setZoomOrigin(`${x}% ${y}%`);
+                          setZoomScale(zoomScale === 1 ? 1.5 : 1);
+                        }}
+                        style={{
+                          transform: `scale(${zoomScale})`,
+                          transformOrigin: zoomOrigin,
+                          transition: 'transform 0.2s ease-out'
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </ResizablePanel>
 
               <ResizablePanel defaultSize={55} minSize={35}>
                 <Card className="rounded-3xl h-full" style={{
@@ -1121,8 +1121,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     {/* Unified Controls Row */}
                     <div className="flex items-center justify-between gap-4">
                       {/* Left side: Word count and Skip */}
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs font-medium" style={{ color: themeStyles.textSecondary }}>
                           <span className={getWordCount(task1Answer) < 150 ? "text-red-500" : "text-green-600"}>{getWordCount(task1Answer)}</span> / {getMinWordCount()}
                         </div>
                         <Button
@@ -1134,7 +1134,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                               setTask1Answer('');
                             }
                           }}
-                          className="text-sm h-9 px-3 font-medium"
+                          className="text-xs h-8 px-2 font-medium"
                           style={{
                             backgroundColor: task1Skipped
                               ? themeStyles.buttonPrimary
@@ -1142,7 +1142,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
                             border: 'none',
                             boxShadow: 'none',
-                            padding: '0 12px'
+                            padding: '0 8px'
                           }}
                         >
                           {task1Skipped ? 'Unskip' : 'Skip'}
@@ -1150,7 +1150,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       </div>
 
                       {/* Right side: Spell check, Grammar, Language */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         {/* Spell Check */}
                         <div className="flex items-center gap-2">
                           <Switch
@@ -1166,7 +1166,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                   ? 'rgba(255,255,255,0.2)'
                                   : 'rgba(0,0,0,0.1)'
                             }}
-                            className="data-[state=checked]:bg-primary"
+                            className="data-[state=checked]:bg-primary scale-75"
                           />
                         </div>
 
@@ -1179,7 +1179,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                 variant="outline"
                                 onClick={() => handleGrammarFeedback(0)}
                                 disabled={isGrammarLoading || !task1Answer.trim() || task1Skipped}
-                                className="h-9 w-9 p-0 rounded-xl"
+                                className="h-8 w-8 p-0 rounded-xl"
                                 style={{
                                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                                   borderColor: themeStyles.border,
@@ -1188,9 +1188,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                                 }}
                               >
                                 {isGrammarLoading ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <Loader2 className="w-3 h-3 animate-spin" />
                                 ) : (
-                                  <CheckCircle2 className="w-4 h-4" />
+                                  <CheckCircle2 className="w-3 h-3" />
                                 )}
                               </Button>
                             </TooltipTrigger>
@@ -1204,7 +1204,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
                           <SelectTrigger
                             id="feedback-language-task1"
-                            className="w-[140px] h-9 text-sm border transition-colors rounded-xl"
+                            className="w-[120px] h-8 text-xs border transition-colors rounded-xl"
                             style={{
                               backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                               borderColor: themeStyles.border,
@@ -1292,11 +1292,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   </CardHeader>
                   <CardContent className="h-full p-4 flex flex-col">
-                    <Textarea 
-                      value={task1Answer} 
-                      onChange={e => setTask1Answer(e.target.value)} 
-                      placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")} 
-                      className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                    <Textarea
+                      value={task1Answer}
+                      onChange={e => setTask1Answer(e.target.value)}
+                      placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")}
+                      className="-mt-2 h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                       spellCheck={spellCheckEnabled}
                       disabled={task1Skipped}
                       style={{

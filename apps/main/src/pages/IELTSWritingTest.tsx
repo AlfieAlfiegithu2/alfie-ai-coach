@@ -1103,6 +1103,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
               </ResizablePanel>
 
+              <ResizableHandle withHandle />
+
               <ResizablePanel defaultSize={55} minSize={35}>
                 <Card className="rounded-3xl h-full" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,

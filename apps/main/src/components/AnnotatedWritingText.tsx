@@ -111,10 +111,10 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
             </TabsList>
             
             <TabsContent value="original">
-              <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
-                <div 
-                  dangerouslySetInnerHTML={{ 
-                    __html: displayOriginal.replace(/\n/g, '<br>') 
+              <div className="bg-surface-3 p-4 rounded-2xl text-base max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: displayOriginal.replace(/\n/g, '<br>')
                   }}
                   className="annotated-text"
                 />
@@ -148,10 +148,10 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
             </TabsContent>
             
             <TabsContent value="corrected">
-              <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
-                <div 
-                  dangerouslySetInnerHTML={{ 
-                    __html: displayCorrected.replace(/\n/g, '<br>') 
+              <div className="bg-surface-3 p-4 rounded-2xl text-base max-h-80 overflow-y-auto text-text-secondary leading-relaxed">
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: displayCorrected.replace(/\n/g, '<br>')
                   }}
                   className="annotated-text"
                 />
@@ -159,7 +159,7 @@ const AnnotatedWritingText: React.FC<AnnotatedWritingTextProps> = ({
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="bg-surface-3 p-4 rounded-2xl text-sm max-h-60 overflow-y-auto text-text-secondary leading-relaxed">
+          <div className="bg-surface-3 p-4 rounded-2xl text-base max-h-60 overflow-y-auto text-text-secondary leading-relaxed">
             {originalText}
           </div>
         )}

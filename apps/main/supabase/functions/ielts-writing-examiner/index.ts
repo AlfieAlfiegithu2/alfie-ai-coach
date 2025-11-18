@@ -477,27 +477,207 @@ function validateBandDescriptorAlignment(task: any, taskType: 'task1' | 'task2')
 }
 
 /**
- * Build diff spans for sentence comparison using LCS algorithm
+ * Build diff spans for sentence comparison using enhanced LCS algorithm
+ * Ensures symmetric highlighting and complete coverage
  * @param orig Original sentence
  * @param imp Improved sentence
  * @returns Object with original_spans and corrected_spans arrays
  */
 function buildDiffSpans(orig: string, imp: string): { original_spans: any[]; corrected_spans: any[] } {
-  const o = orig.split(/\s+/);
-  const p = imp.split(/\s+/);
+  const o = orig.split(/\s+/).filter(w => w.length > 0);
+  const p = imp.split(/\s+/).filter(w => w.length > 0);
   const n = o.length, m = p.length;
+
+  if (n === 0 && m === 0) return { original_spans: [], corrected_spans: [] };
+  if (n === 0) return { original_spans: [], corrected_spans: [{ text: p.join(' ') + ' ', status: 'improvement' }] };
+  if (m === 0) return { original_spans: [{ text: o.join(' ') + ' ', status: 'error' }], corrected_spans: [] };
+
+  // Enhanced LCS with better backtracking
   const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-  const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
-  let i = 0, j = 0; while (i < n && j < m) { if (o[i] === p[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
-  const push = (arr: any[], text: string, status: string) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
-  const original_spans: any[] = []; const corrected_spans: any[] = [];
+  const choices: string[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(''));
+
+  // Fill DP table
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      if (o[i].toLowerCase() === p[j].toLowerCase()) {
+        dp[i][j] = dp[i + 1][j + 1] + 1;
+        choices[i][j] = 'match';
+      } else {
+        const down = dp[i + 1][j];
+        const right = dp[i][j + 1];
+        if (down >= right) {
+          dp[i][j] = down;
+          choices[i][j] = 'down';
+        } else {
+          dp[i][j] = right;
+          choices[i][j] = 'right';
+        }
+      }
+    }
+  }
+
+  // Enhanced backtracking for symmetric highlighting
+  const keepO = Array(n).fill(false);
+  const keepP = Array(m).fill(false);
+  let i = 0, j = 0;
+  const visited = new Set<string>();
+
+  while (i < n || j < m) {
+    const key = `${i},${j}`;
+    if (visited.has(key)) break; // Prevent infinite loops
+    visited.add(key);
+
+    if (i < n && j < m && o[i].toLowerCase() === p[j].toLowerCase()) {
+      // Exact match - keep both
+      keepO[i] = true;
+      keepP[j] = true;
+      i++;
+      j++;
+    } else {
+      // Find best path forward
+      const paths = [];
+
+      // Option 1: Skip original word (deletion)
+      if (i < n) {
+        const remainingLCS = dp[i + 1][j];
+        paths.push({ action: 'skip_orig', lcs: remainingLCS, i: i + 1, j: j });
+      }
+
+      // Option 2: Skip improved word (insertion)
+      if (j < m) {
+        const remainingLCS = dp[i][j + 1];
+        paths.push({ action: 'skip_imp', lcs: remainingLCS, i: i, j: j + 1 });
+      }
+
+      // Option 3: Try fuzzy matching for similar words
+      if (i < n && j < m) {
+        const similarity = calculateSimilarity(o[i], p[j]);
+        if (similarity > 0.8) { // High similarity threshold
+          keepO[i] = true;
+          keepP[j] = true;
+          i++;
+          j++;
+          continue;
+        }
+      }
+
+      if (paths.length === 0) break;
+
+      // Choose path with highest remaining LCS
+      paths.sort((a, b) => b.lcs - a.lcs);
+      const bestPath = paths[0];
+
+      if (bestPath.action === 'skip_orig') {
+        i = bestPath.i;
+      } else if (bestPath.action === 'skip_imp') {
+        j = bestPath.j;
+      }
+    }
+
+    // Prevent infinite loops
+    if (visited.size > n + m + 10) break;
+  }
+
+  // Helper function for similarity calculation
+  function calculateSimilarity(word1: string, word2: string): number {
+    const w1 = word1.toLowerCase();
+    const w2 = word2.toLowerCase();
+
+    if (w1 === w2) return 1.0;
+
+    // Simple Levenshtein distance ratio
+    const longer = w1.length > w2.length ? w1 : w2;
+    const shorter = w1.length > w2.length ? w2 : w1;
+
+    if (longer.length === 0) return 1.0;
+
+    const distance = levenshteinDistance(longer, shorter);
+    return (longer.length - distance) / longer.length;
+  }
+
+  function levenshteinDistance(str1: string, str2: string): number {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,     // deletion
+          matrix[j - 1][i] + 1,     // insertion
+          matrix[j - 1][i - 1] + indicator // substitution
+        );
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  }
+
+  // Enhanced span building with complete coverage
+  const push = (arr: any[], text: string, status: string) => {
+    const t = text.replace(/\s+/g,' ').trim();
+    if (t.length) arr.push({ text: t + ' ', status });
+  };
+
+  const original_spans: any[] = [];
+  const corrected_spans: any[] = [];
+
+  // Build original spans
   let buf = '', cur = 'neutral';
-  for (let t = 0; t < n; t++) { const ns = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(original_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + o[t]; }
-  push(original_spans, buf, cur);
-  buf = ''; cur = 'neutral';
-  for (let t = 0; t < m; t++) { const ns = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(corrected_spans, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + p[t]; }
-  push(corrected_spans, buf, cur);
+  for (let t = 0; t < n; t++) {
+    const ns = keepO[t] ? 'neutral' : 'error';
+    if (t === 0) cur = ns;
+    if (ns !== cur && buf.length > 0) {
+      push(original_spans, buf, cur);
+      buf = '';
+      cur = ns;
+    }
+    buf += (buf ? ' ' : '') + o[t];
+  }
+  if (buf.length > 0) push(original_spans, buf, cur);
+
+  // Build corrected spans
+  buf = '', cur = 'neutral';
+  for (let t = 0; t < m; t++) {
+    const ns = keepP[t] ? 'neutral' : 'improvement';
+    if (t === 0) cur = ns;
+    if (ns !== cur && buf.length > 0) {
+      push(corrected_spans, buf, cur);
+      buf = '';
+      cur = ns;
+    }
+    buf += (buf ? ' ' : '') + p[t];
+  }
+  if (buf.length > 0) push(corrected_spans, buf, cur);
+
+  // Ensure complete coverage - add neutral spans if needed
+  if (original_spans.length === 0 && n > 0) {
+    original_spans.push({ text: o.join(' ') + ' ', status: 'error' });
+  }
+  if (corrected_spans.length === 0 && m > 0) {
+    corrected_spans.push({ text: p.join(' ') + ' ', status: 'improvement' });
+  }
+
+  // Validation: Ensure both sides have some highlighting
+  const hasOriginalHighlight = original_spans.some(span => span.status === 'error');
+  const hasCorrectedHighlight = corrected_spans.some(span => span.status === 'improvement');
+
+  if (!hasOriginalHighlight && original_spans.length > 0) {
+    // Force highlight first difference if none found
+    if (original_spans.length > 0) {
+      original_spans[0].status = 'error';
+    }
+  }
+
+  if (!hasCorrectedHighlight && corrected_spans.length > 0) {
+    // Force highlight first difference if none found
+    if (corrected_spans.length > 0) {
+      corrected_spans[0].status = 'improvement';
+    }
+  }
+
   return { original_spans, corrected_spans };
 }
 

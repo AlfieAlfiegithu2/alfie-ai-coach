@@ -86,6 +86,7 @@ const IELTSWritingTestInterface = () => {
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAIAssistantVisible, setShowAIAssistantVisible] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [zoomOrigin, setZoomOrigin] = useState('center');
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
   const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
   const [searchParams] = useSearchParams();
@@ -967,7 +968,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
           borderColor: themeStyles.border,
           backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-          boxShadow: themeStyles.theme.name === 'dark' 
+          boxShadow: themeStyles.theme.name === 'dark'
             ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
             : themeStyles.theme.name === 'note'
             ? themeStyles.theme.styles.cardStyle?.boxShadow
@@ -983,7 +984,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             borderWidth: '1px',
             borderStyle: 'solid',
             backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none',
-            boxShadow: themeStyles.theme.name === 'dark' 
+            boxShadow: themeStyles.theme.name === 'dark'
               ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
               : themeStyles.theme.name === 'note'
               ? themeStyles.theme.styles.cardStyle?.boxShadow
@@ -994,12 +995,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               {formatTime(timeRemaining)}
             </span>
           </div>
-          
+
           {/* Theme Selector */}
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4" style={{ color: themeStyles.textSecondary }} />
             <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
-              <SelectTrigger 
+              <SelectTrigger
                 className="w-[140px] h-8 text-sm border transition-colors rounded-xl"
                 style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -1019,12 +1020,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Task Selection Buttons */}
           <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              onClick={() => switchToTask(1)} 
+            <Button
+              size="sm"
+              onClick={() => switchToTask(1)}
               className="rounded-xl"
               style={{
                 backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
@@ -1036,9 +1037,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             >
               Task 1
             </Button>
-            <Button 
-              size="sm" 
-              onClick={() => switchToTask(2)} 
+            <Button
+              size="sm"
+              onClick={() => switchToTask(2)}
               className="rounded-xl"
               style={{
                 backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
@@ -1052,11 +1053,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </Button>
           </div>
           </div>
-          <CardHeader>
-            <CardTitle style={{ color: themeStyles.textPrimary }}>
-              {currentTaskData?.title || (currentTask === 1 ? 'Letter Writing' : 'Essay Writing')}
-            </CardTitle>
-          </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {currentTaskData?.instructions && (
@@ -1083,77 +1079,31 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             <ResizablePanelGroup direction="horizontal" className="gap-8" style={{
               minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
             }}>
-              <ResizablePanel defaultSize={55} minSize={40}>
-                <Card className="rounded-3xl h-full" style={{
-                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                  borderColor: themeStyles.border,
-                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-                  boxShadow: themeStyles.theme.name === 'dark' 
-                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-                    : themeStyles.theme.name === 'note'
-                    ? themeStyles.theme.styles.cardStyle?.boxShadow
-                    : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-                  ...themeStyles.cardStyle
-                }}>
-                  <CardContent className="p-4 h-full flex flex-col">
-                    {/* Zoom Controls */}
-                    <div className="flex items-center justify-end gap-2 mb-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setZoomScale(s => Math.max(0.5, Number((s - 0.25).toFixed(2))))}
-                        className="w-8 h-8 p-0"
-                        style={{
-                          borderColor: themeStyles.border,
-                          color: themeStyles.textPrimary
-                        }}
-                      >
-                        -
-                      </Button>
-                      <span className="text-sm min-w-12 text-center" style={{ color: themeStyles.textSecondary }}>{Math.round(zoomScale * 100)}%</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setZoomScale(s => Math.min(3, Number((s + 0.25).toFixed(2))))}
-                        className="w-8 h-8 p-0"
-                        style={{
-                          borderColor: themeStyles.border,
-                          color: themeStyles.textPrimary
-                        }}
-                      >
-                        +
-                      </Button>
-                    </div>
-                    
-                    {/* Image Container - Minimal padding, tight fit */}
-                    <div className="flex-1 overflow-auto rounded-xl p-2" style={{
-                      backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : '#ffffff',
-                      borderColor: themeStyles.border,
-                      borderWidth: '1px',
-                      borderStyle: 'solid'
-                    }}>
-                      <div className="flex items-center justify-center min-h-full">
-                        <img 
-                          src={currentTaskData.imageUrl} 
-                          alt="Task 1 visual data" 
-                          className="max-w-full h-auto object-contain"
-                          loading="eager"
-                          decoding="async"
-                          style={{
-                            transform: `scale(${zoomScale})`,
-                            transformOrigin: 'center',
-                            transition: 'transform 0.2s ease-out'
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              <ResizablePanel defaultSize={45} minSize={40}>
+                <div className="h-full">
+                  <img
+                    src={currentTaskData.imageUrl}
+                    alt="Task 1 visual data"
+                    className="w-full h-full object-contain cursor-pointer"
+                    loading="eager"
+                    decoding="async"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 100;
+                      const y = ((e.clientY - rect.top) / rect.height) * 100;
+                      setZoomOrigin(`${x}% ${y}%`);
+                      setZoomScale(zoomScale === 1 ? 1.5 : 1);
+                    }}
+                    style={{
+                      transform: `scale(${zoomScale})`,
+                      transformOrigin: zoomOrigin,
+                      transition: 'transform 0.2s ease-out'
+                    }}
+                  />
+                </div>
               </ResizablePanel>
 
-              <ResizableHandle withHandle />
-
-              <ResizablePanel defaultSize={45} minSize={35}>
+              <ResizablePanel defaultSize={55} minSize={35}>
                 <Card className="rounded-3xl h-full" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                   borderColor: themeStyles.border,
@@ -1166,110 +1116,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   ...themeStyles.cardStyle
                 }}>
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-end gap-4 flex-wrap">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="spellcheck-task1" className="text-sm" style={{ color: themeStyles.textSecondary }}>
-                            Spell Check
-                          </Label>
-                          <Switch
-                            id="spellcheck-task1"
-                            checked={spellCheckEnabled}
-                            onCheckedChange={setSpellCheckEnabled}
-                            style={{
-                              backgroundColor: spellCheckEnabled 
-                                ? themeStyles.buttonPrimary 
-                                : themeStyles.theme.name === 'dark' 
-                                  ? 'rgba(255,255,255,0.1)' 
-                                  : themeStyles.theme.name === 'glassmorphism'
-                                  ? 'rgba(255,255,255,0.2)'
-                                  : 'rgba(0,0,0,0.1)'
-                            }}
-                            className="data-[state=checked]:bg-primary"
-                          />
-                        </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleGrammarFeedback(0)}
-                                disabled={isGrammarLoading || !task1Answer.trim() || task1Skipped}
-                                className="text-xs rounded-xl"
-                                style={{
-                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                  borderColor: themeStyles.border,
-                                  color: themeStyles.textPrimary,
-                                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
-                                }}
-                              >
-                                {isGrammarLoading ? (
-                                  <>
-                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                    Analyzing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                                    Grammar
-                                  </>
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs">
-                              <p>Get AI-powered grammar feedback on your writing. Identifies errors and provides an improved version.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="h-full p-4 flex flex-col">
-                    <Textarea 
-                      value={task1Answer} 
-                      onChange={e => setTask1Answer(e.target.value)} 
-                      placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")} 
-                      className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                      spellCheck={spellCheckEnabled}
-                      disabled={task1Skipped}
-                      style={{
-                        backgroundColor: task1Skipped 
-                          ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                          : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                        borderColor: themeStyles.border,
-                        color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                        outline: 'none',
-                        boxShadow: 'none',
-                        cursor: task1Skipped ? 'not-allowed' : 'text',
-                        opacity: task1Skipped ? 0.6 : 1
-                      }} 
-                    />
-                    {task1GrammarFeedback && currentTask === 1 && (
-                      <div className="mt-4 space-y-4">
-                        <div className="p-4 rounded-lg border" style={{
-                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                          borderColor: themeStyles.border
-                        }}>
-                          <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Grammar Feedback:</h4>
-                          <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
-                            {task1GrammarFeedback}
-                          </div>
-                        </div>
-                        {task1GrammarImproved && (
-                          <div className="p-4 rounded-lg border" style={{
-                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                            borderColor: themeStyles.border
-                          }}>
-                            <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Improved Version:</h4>
-                            <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
-                              {task1GrammarImproved}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center mt-4 gap-3">
+                    {/* Unified Controls Row */}
+                    <div className="flex items-center justify-between gap-4">
+                      {/* Left side: Word count and Skip */}
                       <div className="flex items-center gap-3">
                         <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                           <span className={getWordCount(task1Answer) < 150 ? "text-red-500" : "text-green-600"}>{getWordCount(task1Answer)}</span> / {getMinWordCount()}
@@ -1285,8 +1134,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           }}
                           className="text-sm h-9 px-3 font-medium"
                           style={{
-                            backgroundColor: task1Skipped 
-                              ? themeStyles.buttonPrimary 
+                            backgroundColor: task1Skipped
+                              ? themeStyles.buttonPrimary
                               : 'transparent',
                             color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
                             border: 'none',
@@ -1297,14 +1146,63 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           {task1Skipped ? 'Unskip' : 'Skip'}
                         </Button>
                       </div>
+
+                      {/* Right side: Spell check, Grammar, Language */}
                       <div className="flex items-center gap-3">
-                        <Label htmlFor="feedback-language-task1" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
-                          Feedback:
-                        </Label>
+                        {/* Spell Check */}
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id="spellcheck-task1"
+                            checked={spellCheckEnabled}
+                            onCheckedChange={setSpellCheckEnabled}
+                            style={{
+                              backgroundColor: spellCheckEnabled
+                                ? themeStyles.buttonPrimary
+                                : themeStyles.theme.name === 'dark'
+                                  ? 'rgba(255,255,255,0.1)'
+                                  : themeStyles.theme.name === 'glassmorphism'
+                                  ? 'rgba(255,255,255,0.2)'
+                                  : 'rgba(0,0,0,0.1)'
+                            }}
+                            className="data-[state=checked]:bg-primary"
+                          />
+                        </div>
+
+                        {/* Grammar Button */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleGrammarFeedback(0)}
+                                disabled={isGrammarLoading || !task1Answer.trim() || task1Skipped}
+                                className="h-9 w-9 p-0 rounded-xl"
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                  borderColor: themeStyles.border,
+                                  color: themeStyles.textPrimary,
+                                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                                }}
+                              >
+                                {isGrammarLoading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="max-w-xs">
+                              <p>Get AI-powered grammar feedback on your writing. Identifies errors and provides an improved version.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        {/* Language Selector */}
                         <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                          <SelectTrigger 
+                          <SelectTrigger
                             id="feedback-language-task1"
-                            className="w-[180px] h-9 text-sm border transition-colors rounded-xl"
+                            className="w-[140px] h-9 text-sm border transition-colors rounded-xl"
                             style={{
                               backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                               borderColor: themeStyles.border,
@@ -1312,7 +1210,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                               backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
                             }}
                           >
-                            <SelectValue placeholder="Select language" />
+                            <SelectValue placeholder="Language" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="en">English</SelectItem>
@@ -1334,7 +1232,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             <SelectItem value="ko">한국어 (Korean)</SelectItem>
                             <SelectItem value="fa">فارسی (Persian)</SelectItem>
                             <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
-                            <SelectItem value="ne">नेपালी (Nepali)</SelectItem>
+                            <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
                             <SelectItem value="th">ไทย (Thai)</SelectItem>
                             <SelectItem value="yue">粵語 (Cantonese)</SelectItem>
                             <SelectItem value="ms">Bahasa Melayu (Malay)</SelectItem>
@@ -1388,19 +1286,53 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button 
-                          onClick={proceedToTask2} 
-                          disabled={!task1Answer.trim()} 
-                          variant="default"
-                          style={{
-                            backgroundColor: themeStyles.buttonPrimary,
-                            color: '#ffffff'
-                          }}
-                        >
-                          Continue to Task 2
-                        </Button>
                       </div>
                     </div>
+                  </CardHeader>
+                  <CardContent className="h-full p-4 flex flex-col">
+                    <Textarea 
+                      value={task1Answer} 
+                      onChange={e => setTask1Answer(e.target.value)} 
+                      placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")} 
+                      className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                      spellCheck={spellCheckEnabled}
+                      disabled={task1Skipped}
+                      style={{
+                        backgroundColor: task1Skipped 
+                          ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                          : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                        borderColor: themeStyles.border,
+                        color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                        outline: 'none',
+                        boxShadow: 'none',
+                        cursor: task1Skipped ? 'not-allowed' : 'text',
+                        opacity: task1Skipped ? 0.6 : 1
+                      }} 
+                    />
+                    {task1GrammarFeedback && currentTask === 1 && (
+                      <div className="mt-4 space-y-4">
+                        <div className="p-4 rounded-lg border" style={{
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border
+                        }}>
+                          <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Grammar Feedback:</h4>
+                          <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                            {task1GrammarFeedback}
+                          </div>
+                        </div>
+                        {task1GrammarImproved && (
+                          <div className="p-4 rounded-lg border" style={{
+                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                            borderColor: themeStyles.border
+                          }}>
+                            <h4 className="font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Improved Version:</h4>
+                            <div className="text-sm whitespace-pre-wrap" style={{ color: themeStyles.textPrimary }}>
+                              {task1GrammarImproved}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </ResizablePanel>
@@ -1423,9 +1355,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <div className="flex items-center justify-end gap-4 flex-wrap">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="spellcheck-task1-noimg" className="text-sm" style={{ color: themeStyles.textSecondary }}>
-                        Spell Check
-                      </Label>
                       <Switch
                         id="spellcheck-task1-noimg"
                         checked={spellCheckEnabled}
@@ -1641,17 +1570,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button 
-                      onClick={proceedToTask2} 
-                      disabled={!task1Answer.trim()} 
-                      variant="default"
-                      style={{
-                        backgroundColor: themeStyles.buttonPrimary,
-                        color: '#ffffff'
-                      }}
-                    >
-                      Continue to Task 2
-                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -1675,9 +1593,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               <div className="flex items-center justify-end gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="spellcheck-task2" className="text-sm" style={{ color: themeStyles.textSecondary }}>
-                      Spell Check
-                    </Label>
                     <Switch
                       id="spellcheck-task2"
                       checked={spellCheckEnabled}

@@ -349,13 +349,13 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All combines all sections with labels and separators
+            // View All combines all sections with simple dash separators
             const sectionsTask1 = [];
-            if (task1IntroAnswer.trim()) sectionsTask1.push(`📝 Introduction:\n${task1IntroAnswer}`);
-            if (task1Body1Answer.trim()) sectionsTask1.push(`📊 Body Paragraph 1:\n${task1Body1Answer}`);
-            if (task1Body2Answer.trim()) sectionsTask1.push(`📈 Body Paragraph 2:\n${task1Body2Answer}`);
+            if (task1IntroAnswer.trim()) sectionsTask1.push(task1IntroAnswer);
+            if (task1Body1Answer.trim()) sectionsTask1.push(task1Body1Answer);
+            if (task1Body2Answer.trim()) sectionsTask1.push(task1Body2Answer);
 
-            const combinedTask1 = sectionsTask1.join('\n\n────────────\n\n');
+            const combinedTask1 = sectionsTask1.join('\n\n------\n\n');
             return combinedTask1 || task1Answer; // Fall back to main answer if no sections written
           default: return task1Answer;
         }
@@ -370,14 +370,14 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All combines all sections with labels and separators
+            // View All combines all sections with simple dash separators
             const sectionsTask2 = [];
-            if (task2IntroAnswer.trim()) sectionsTask2.push(`📝 Introduction:\n${task2IntroAnswer}`);
-            if (task2Body1Answer.trim()) sectionsTask2.push(`📊 Body Paragraph 1:\n${task2Body1Answer}`);
-            if (task2Body2Answer.trim()) sectionsTask2.push(`📈 Body Paragraph 2:\n${task2Body2Answer}`);
-            if (task2ConclusionAnswer.trim()) sectionsTask2.push(`🎯 Conclusion:\n${task2ConclusionAnswer}`);
+            if (task2IntroAnswer.trim()) sectionsTask2.push(task2IntroAnswer);
+            if (task2Body1Answer.trim()) sectionsTask2.push(task2Body1Answer);
+            if (task2Body2Answer.trim()) sectionsTask2.push(task2Body2Answer);
+            if (task2ConclusionAnswer.trim()) sectionsTask2.push(task2ConclusionAnswer);
 
-            const combinedTask2 = sectionsTask2.join('\n\n────────────\n\n');
+            const combinedTask2 = sectionsTask2.join('\n\n------\n\n');
             return combinedTask2 || task2Answer; // Fall back to main answer if no sections written
           default: return task2Answer;
         }
@@ -387,34 +387,20 @@ const IELTSWritingTestInterface = () => {
   };
   // Helper function to distribute View All text back to individual sections
   const distributeViewAllText = (fullText: string, taskNumber: 1 | 2) => {
-    const sections = fullText.split('\n\n────────────\n\n');
-    const sectionData: { [key: string]: string } = {};
+    const sections = fullText.split('\n\n------\n\n');
 
-    sections.forEach(section => {
-      const lines = section.trim().split('\n');
-      const firstLine = lines[0];
-
-      if (firstLine.includes('📝 Introduction:')) {
-        sectionData.intro = lines.slice(1).join('\n').trim();
-      } else if (firstLine.includes('📊 Body Paragraph 1:')) {
-        sectionData.body1 = lines.slice(1).join('\n').trim();
-      } else if (firstLine.includes('📈 Body Paragraph 2:')) {
-        sectionData.body2 = lines.slice(1).join('\n').trim();
-      } else if (firstLine.includes('🎯 Conclusion:')) {
-        sectionData.conclusion = lines.slice(1).join('\n').trim();
-      }
-    });
-
-    // Update the section variables
+    // Update the section variables based on the number of sections
     if (taskNumber === 1) {
-      setTask1IntroAnswer(sectionData.intro || '');
-      setTask1Body1Answer(sectionData.body1 || '');
-      setTask1Body2Answer(sectionData.body2 || '');
+      // Task 1 has up to 3 sections: intro, body1, body2
+      setTask1IntroAnswer(sections[0]?.trim() || '');
+      setTask1Body1Answer(sections[1]?.trim() || '');
+      setTask1Body2Answer(sections[2]?.trim() || '');
     } else {
-      setTask2IntroAnswer(sectionData.intro || '');
-      setTask2Body1Answer(sectionData.body1 || '');
-      setTask2Body2Answer(sectionData.body2 || '');
-      setTask2ConclusionAnswer(sectionData.conclusion || '');
+      // Task 2 has up to 4 sections: intro, body1, body2, conclusion
+      setTask2IntroAnswer(sections[0]?.trim() || '');
+      setTask2Body1Answer(sections[1]?.trim() || '');
+      setTask2Body2Answer(sections[2]?.trim() || '');
+      setTask2ConclusionAnswer(sections[3]?.trim() || '');
     }
   };
 

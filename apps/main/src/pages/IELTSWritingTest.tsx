@@ -349,15 +349,14 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All combines all sections with placeholders for guidance
+            // View All combines all sections without separators or placeholders
             const sectionsTask1 = [
-              task1IntroAnswer.trim() || '✎ Introduction - Click here to start writing...',
-              task1Body1Answer.trim() || '📝 Body Paragraph 1 - Click here to start writing...',
-              task1Body2Answer.trim() || '📝 Body Paragraph 2 - Click here to start writing...'
-            ];
+              task1IntroAnswer.trim(),
+              task1Body1Answer.trim(),
+              task1Body2Answer.trim()
+            ].filter(text => text); // Only include non-empty sections
 
-            const combinedTask1 = sectionsTask1.join('\n\n❖ ❖ ❖\n');
-            return combinedTask1;
+            return sectionsTask1.join('\n\n') || task1Answer;
           default: return task1Answer;
         }
       }
@@ -371,16 +370,15 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All combines all sections with placeholders for guidance
+            // View All combines all sections without separators or placeholders
             const sectionsTask2 = [
-              task2IntroAnswer.trim() || '✎ Introduction - Click here to start writing...',
-              task2Body1Answer.trim() || '📝 Body Paragraph 1 - Click here to start writing...',
-              task2Body2Answer.trim() || '📝 Body Paragraph 2 - Click here to start writing...',
-              task2ConclusionAnswer.trim() || '🎯 Conclusion - Click here to start writing...'
-            ];
+              task2IntroAnswer.trim(),
+              task2Body1Answer.trim(),
+              task2Body2Answer.trim(),
+              task2ConclusionAnswer.trim()
+            ].filter(text => text); // Only include non-empty sections
 
-            const combinedTask2 = sectionsTask2.join('\n\n❖ ❖ ❖\n');
-            return combinedTask2;
+            return sectionsTask2.join('\n\n') || task2Answer;
           default: return task2Answer;
         }
       }
@@ -389,39 +387,20 @@ const IELTSWritingTestInterface = () => {
   };
   // Helper function to distribute View All text back to individual sections
   const distributeViewAllText = (fullText: string, taskNumber: 1 | 2) => {
-    const sections = fullText.split('\n\n❖ ❖ ❖\n');
-
-    // Placeholder texts to identify when content is just placeholder
-    const placeholders = [
-      '✎ Introduction - Click here to start writing...',
-      '📝 Body Paragraph 1 - Click here to start writing...',
-      '📝 Body Paragraph 2 - Click here to start writing...',
-      '🎯 Conclusion - Click here to start writing...'
-    ];
+    const sections = fullText.split('\n\n');
 
     // Update the section variables based on the number of sections
     if (taskNumber === 1) {
       // Task 1 has up to 3 sections: intro, body1, body2
-      const introText = sections[0]?.trim() || '';
-      const body1Text = sections[1]?.trim() || '';
-      const body2Text = sections[2]?.trim() || '';
-
-      // Only update if it's not just a placeholder
-      setTask1IntroAnswer(placeholders.includes(introText) ? '' : introText);
-      setTask1Body1Answer(placeholders.includes(body1Text) ? '' : body1Text);
-      setTask1Body2Answer(placeholders.includes(body2Text) ? '' : body2Text);
+      setTask1IntroAnswer(sections[0]?.trim() || '');
+      setTask1Body1Answer(sections[1]?.trim() || '');
+      setTask1Body2Answer(sections[2]?.trim() || '');
     } else {
       // Task 2 has up to 4 sections: intro, body1, body2, conclusion
-      const introText = sections[0]?.trim() || '';
-      const body1Text = sections[1]?.trim() || '';
-      const body2Text = sections[2]?.trim() || '';
-      const conclusionText = sections[3]?.trim() || '';
-
-      // Only update if it's not just a placeholder
-      setTask2IntroAnswer(placeholders.includes(introText) ? '' : introText);
-      setTask2Body1Answer(placeholders.includes(body1Text) ? '' : body1Text);
-      setTask2Body2Answer(placeholders.includes(body2Text) ? '' : body2Text);
-      setTask2ConclusionAnswer(placeholders.includes(conclusionText) ? '' : conclusionText);
+      setTask2IntroAnswer(sections[0]?.trim() || '');
+      setTask2Body1Answer(sections[1]?.trim() || '');
+      setTask2Body2Answer(sections[2]?.trim() || '');
+      setTask2ConclusionAnswer(sections[3]?.trim() || '');
     }
   };
 
@@ -1392,14 +1371,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                             borderColor: themeStyles.border,
-                            color: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
-                              ? themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
-                              : themeStyles.textPrimary,
+                            color: themeStyles.textPrimary,
                             outline: 'none',
-                            boxShadow: 'none',
-                            fontStyle: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
-                              ? 'italic'
-                              : 'normal'
+                            boxShadow: 'none'
                           }}
                         />
                       </div>
@@ -1809,14 +1783,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     style={{
                       backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                       borderColor: themeStyles.border,
-                      color: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
-                        ? themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
-                        : themeStyles.textPrimary,
+                      color: themeStyles.textPrimary,
                       outline: 'none',
-                      boxShadow: 'none',
-                      fontStyle: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
-                        ? 'italic'
-                        : 'normal'
+                      boxShadow: 'none'
                     }}
                   />
                 </div>

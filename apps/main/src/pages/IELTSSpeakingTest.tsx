@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -1970,28 +1971,24 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             {showLanguagePreference && (
               <div className="flex justify-center mt-4">
                 <div className="flex items-center gap-3">
-                  <select
-                    value={feedbackLanguage}
-                    onChange={(e) => setFeedbackLanguage(e.target.value)}
-                    className="px-3 py-2 rounded-lg border transition-all text-sm font-medium focus:outline-none focus:ring-2"
-                    style={{
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism'
-                        ? 'rgba(255,255,255,0.1)'
-                        : themeStyles.theme.name === 'dark'
-                        ? 'rgba(255,255,255,0.1)'
-                        : themeStyles.theme.name === 'minimalist'
-                        ? '#ffffff'
-                        : 'rgba(255,255,255,0.5)',
-                      borderColor: themeStyles.border,
-                      color: themeStyles.textPrimary,
-                    }}
-                  >
-                    {FEEDBACK_LANGUAGES.map((lang) => (
-                      <option key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                    <SelectTrigger
+                      className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                      style={{
+                        color: themeStyles.textPrimary,
+                        '--tw-ring-color': themeStyles.buttonPrimary
+                      } as React.CSSProperties}
+                    >
+                      <SelectValue placeholder="Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FEEDBACK_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          {lang.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
                   <Button
                     type="button"

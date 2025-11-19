@@ -1436,13 +1436,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           variant="ghost"
                           onClick={() => {
                             setTask1Skipped(!task1Skipped);
+                            // When skipping Task 1, switch to Task 2 but keep all written text
                             if (!task1Skipped) {
-                              setTask1Answer('');
-                              if (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') {
-                                setTask1IntroAnswer('');
-                                setTask1Body1Answer('');
-                                setTask1Body2Answer('');
-                              }
+                              switchToTask(2);
                             }
                           }}
                           className="h-8 px-3 text-sm font-medium hover:bg-transparent"
@@ -1635,13 +1631,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       variant="ghost"
                       onClick={() => {
                         setTask1Skipped(!task1Skipped);
+                        // When skipping Task 1, switch to Task 2 but keep all written text
                         if (!task1Skipped) {
-                          setTask1Answer('');
-                          if (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') {
-                            setTask1IntroAnswer('');
-                            setTask1Body1Answer('');
-                            setTask1Body2Answer('');
-                          }
+                          switchToTask(2);
                         }
                       }}
                       className="h-8 px-3 text-sm font-medium hover:bg-transparent"
@@ -1846,16 +1838,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       variant="ghost"
                       onClick={() => {
                         setTask2Skipped(!task2Skipped);
-                        if (!task2Skipped) {
-                          setTask2Answer('');
-                        if (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') {
-                          setTask2IntroAnswer('');
-                          setTask2Body1Answer('');
-                          setTask2Body2Answer('');
-                          setTask2ConclusionAnswer('');
-                        }
-                      }
-                    }}
+                        // When skipping Task 2, just mark as skipped but keep all written text
+                      }}
                     className="h-8 px-3 text-sm font-medium hover:bg-transparent"
                       style={{
                         backgroundColor: task2Skipped 

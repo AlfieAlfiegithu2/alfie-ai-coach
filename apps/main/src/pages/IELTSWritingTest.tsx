@@ -423,28 +423,35 @@ const IELTSWritingTestInterface = () => {
 
     // Check if someone is trying to delete a dash
     if (newValue.length < previousValue.length) {
-      // Check if a dash was deleted by comparing the differences
-      const diffIndex = findFirstDifference(previousValue, newValue);
+      const deletedChars = previousValue.length - newValue.length;
 
-      if (diffIndex !== -1) {
-        // Check if the deleted character was part of a dash pattern
-        const charBeforeDeletion = previousValue[diffIndex];
-        const contextBefore = previousValue.substring(Math.max(0, diffIndex - 2), diffIndex + 1);
+      // Allow large deletions (like select all + delete) - likely intentional clearing
+      if (deletedChars > 10 || newValue.length < 5) {
+        // Allow the deletion for large content removal or nearly empty content
+      } else {
+        // For small deletions, check if a dash was deleted
+        const diffIndex = findFirstDifference(previousValue, newValue);
 
-        // If trying to delete "- " or just "-", prevent it
-        if (charBeforeDeletion === '-' ||
-            contextBefore.endsWith('- ') ||
-            (charBeforeDeletion === ' ' && previousValue[diffIndex - 1] === '-')) {
+        if (diffIndex !== -1) {
+          // Check if the deleted character was part of a dash pattern
+          const charBeforeDeletion = previousValue[diffIndex];
+          const contextBefore = previousValue.substring(Math.max(0, diffIndex - 2), diffIndex + 1);
 
-          // Restore the original value and prevent the change
-          setTimeout(() => {
-            if (viewAllTextareaRef.current) {
-              viewAllTextareaRef.current.value = previousValue;
-              viewAllTextareaRef.current.focus();
-              viewAllTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
-            }
-          }, 0);
-          return; // Don't process this change
+          // If trying to delete "- " or just "-", prevent it
+          if (charBeforeDeletion === '-' ||
+              contextBefore.endsWith('- ') ||
+              (charBeforeDeletion === ' ' && previousValue[diffIndex - 1] === '-')) {
+
+            // Restore the original value and prevent the change
+            setTimeout(() => {
+              if (viewAllTextareaRef.current) {
+                viewAllTextareaRef.current.value = previousValue;
+                viewAllTextareaRef.current.focus();
+                viewAllTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+              }
+            }, 0);
+            return; // Don't process this change
+          }
         }
       }
     }

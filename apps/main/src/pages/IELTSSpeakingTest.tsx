@@ -30,6 +30,7 @@ import { Response } from "@/components/ui/response";
 import { Orb } from "@/components/ui/orb";
 import { ShimmeringText } from "@/components/ui/shimmering-text";
 import { useThemeStyles } from "@/hooks/useThemeStyles";
+import { FEEDBACK_LANGUAGES } from '@/lib/constants/languages';
 import { useAuth } from "@/hooks/useAuth";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 
@@ -201,6 +202,31 @@ const IELTSSpeakingTest = () => {
   // Feedback language preference shown at end of Part 3
   const [showLanguagePreference, setShowLanguagePreference] = useState(false);
   const [feedbackLanguage, setFeedbackLanguage] = useState<string>("en");
+
+  // Load user's preferred feedback language
+  useEffect(() => {
+    const loadUserPreferredLanguage = async () => {
+      if (!profile?.id) return;
+
+      try {
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('preferred_feedback_language, native_language')
+          .eq('user_id', profile.id)
+          .maybeSingle();
+
+        const dataWithFeedback = data as any;
+        const languageCode = dataWithFeedback?.preferred_feedback_language || dataWithFeedback?.native_language;
+        if (languageCode && FEEDBACK_LANGUAGES.find(l => l.value === languageCode)) {
+          setFeedbackLanguage(languageCode);
+        }
+      } catch (error) {
+        console.warn('Error loading user preferred language:', error);
+      }
+    };
+
+    loadUserPreferredLanguage();
+  }, [profile?.id]);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAIAssistantVisible, setShowAIAssistantVisible] = useState(false); // for dock-style animation
   const [showQuestion, setShowQuestion] = useState(false);
@@ -1558,7 +1584,7 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
             {/* Main Content Card - stays upper; Catie dock is anchored separately at bottom */}
             <Card
               ref={mainCardRef}
-              className="backdrop-blur-sm shadow-lg rounded-2xl flex flex-col"
+              className="backdrop-blur-sm shadow-lg rounded-2xl flex flex-col relative"
               style={{
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                 borderColor: themeStyles.border,
@@ -1940,6 +1966,59 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
               </div>
             )}
 
+            {/* Language Selection and Submit - Centered Underneath Recording Button */}
+            {showLanguagePreference && (
+              <div className="flex justify-center mt-4">
+                <div className="flex items-center gap-3">
+                  <select
+                    value={feedbackLanguage}
+                    onChange={(e) => setFeedbackLanguage(e.target.value)}
+                    className="px-3 py-2 rounded-lg border transition-all text-sm font-medium focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism'
+                        ? 'rgba(255,255,255,0.1)'
+                        : themeStyles.theme.name === 'dark'
+                        ? 'rgba(255,255,255,0.1)'
+                        : themeStyles.theme.name === 'minimalist'
+                        ? '#ffffff'
+                        : 'rgba(255,255,255,0.5)',
+                      borderColor: themeStyles.border,
+                      color: themeStyles.textPrimary,
+                    }}
+                  >
+                    {FEEDBACK_LANGUAGES.map((lang) => (
+                      <option key={lang.value} value={lang.value}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      // Persist preference so backend / results page can localize feedback
+                      try {
+                        localStorage.setItem(
+                          "ielts_speaking_feedback_language",
+                          feedbackLanguage || "en"
+                        );
+                      } catch (e) {
+                        console.warn("Unable to persist feedback language preference", e);
+                      }
+                      submitTest();
+                    }}
+                    className="font-medium"
+                    style={{
+                      backgroundColor: themeStyles.buttonPrimary,
+                      color: '#ffffff'
+                    }}
+                  >
+                    Submit
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Question Navigation Buttons - Bottom Corners */}
             {(currentPart === 1 || currentPart === 3) && !showLanguagePreference && (
               <TooltipProvider>
@@ -2047,78 +2126,6 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           </CardContent>
         </Card>
 
-        {/* Final feedback language + submit prompt when last question completed */}
-        {showLanguagePreference && (
-          <div className="mt-4 p-4 rounded-2xl bg-primary/5 border border-primary/20 flex flex-col gap-3">
-            <p className="text-sm font-medium text-foreground">
-              Would you like your IELTS Speaking feedback in your native language?
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { code: "en", label: "English" },
-                { code: "zh", label: "Chinese" },
-                { code: "ja", label: "Japanese" },
-                { code: "ko", label: "Korean" },
-                { code: "vi", label: "Vietnamese" },
-                { code: "th", label: "Thai" },
-                { code: "ar", label: "Arabic" },
-                { code: "es", label: "Spanish" },
-                { code: "pt", label: "Portuguese" },
-              ].map((lang) => (
-                <Button
-                  key={lang.code}
-                  type="button"
-                  variant={feedbackLanguage === lang.code ? "default" : "outline"}
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setFeedbackLanguage(lang.code)}
-                >
-                  {lang.label}
-                </Button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <Button
-                type="button"
-                onClick={() => {
-                  // Persist preference so backend / results page can localize feedback
-                  try {
-                    localStorage.setItem(
-                      "ielts_speaking_feedback_language",
-                      feedbackLanguage || "en"
-                    );
-                  } catch (e) {
-                    console.warn("Unable to persist feedback language preference", e);
-                  }
-                  submitTest();
-                }}
-                className="mt-1"
-              >
-                Submit test with this feedback language
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="mt-1 text-xs"
-                onClick={() => {
-                  setFeedbackLanguage("en");
-                  try {
-                    localStorage.setItem(
-                      "ielts_speaking_feedback_language",
-                      "en"
-                    );
-                  } catch (e) {
-                    console.warn("Unable to persist feedback language preference", e);
-                  }
-                  submitTest();
-                }}
-              >
-                Skip – English feedback is fine
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Exit Test - fixed but kept subtle in corner */}
         <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">
@@ -2509,8 +2516,10 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         </div>
 
             </div>
+
           </div>
         </StudentLayout>
+
       </div>
     </div>
   );

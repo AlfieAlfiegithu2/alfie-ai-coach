@@ -6,3 +6,4 @@ ADD COLUMN IF NOT EXISTS dashboard_theme TEXT DEFAULT 'note';
 COMMENT ON COLUMN public.user_preferences.dashboard_theme IS 'Dashboard theme preference: note, glassmorphism, dark, or minimalist';
 
 
+

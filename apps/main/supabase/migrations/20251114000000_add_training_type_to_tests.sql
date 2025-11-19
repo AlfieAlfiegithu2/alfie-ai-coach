@@ -11,3 +11,4 @@ WHERE test_type = 'IELTS'
   AND (module = 'Writing' OR skill_category = 'Writing')
   AND training_type IS NULL;
 
+

@@ -2267,24 +2267,17 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         </StudentLayout>
       </div>
       
-      {/* Enhanced Spell Check Styling */}
+      {/* Spell Check Styling */}
       {spellCheckEnabled && (
         <style>{`
-          /* Very subtle underline only for spell check errors - delayed appearance */
+          /* Prominent underline for spell check errors */
           textarea[spellcheck="true"]::spelling-error {
-            text-decoration: wavy underline rgba(239, 68, 68, 0.4) 1px !important;
+            text-decoration: wavy underline rgba(239, 68, 68, 0.8) 2px !important;
             text-decoration-skip-ink: none !important;
-            animation: fadeInSpellError 0.5s ease-in-out;
           }
 
           textarea[spellcheck="true"]:focus::spelling-error {
-            text-decoration: wavy underline rgba(239, 68, 68, 0.5) 1px !important;
-          }
-
-          @keyframes fadeInSpellError {
-            0% { text-decoration-color: transparent; }
-            50% { text-decoration-color: transparent; }
-            100% { text-decoration-color: rgba(239, 68, 68, 0.4); }
+            text-decoration: wavy underline rgba(239, 68, 68, 0.9) 2px !important;
           }
         `}</style>
       )}

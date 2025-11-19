@@ -1009,37 +1009,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </SelectContent>
               </Select>
 
-              {/* Skip Button */}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  if (currentTask === 1) {
-                    setTask1Skipped(!task1Skipped);
-                    if (!task1Skipped) setTask1Answer('');
-                  } else {
-                    setTask2Skipped(!task2Skipped);
-                    if (!task2Skipped) setTask2Answer('');
-                  }
-                }}
-                className="h-8 px-3 text-sm font-medium hover:bg-transparent"
-                style={{
-                  backgroundColor: (currentTask === 1 ? task1Skipped : task2Skipped)
-                    ? themeStyles.buttonPrimary
-                    : 'transparent',
-                  color: (currentTask === 1 ? task1Skipped : task2Skipped) ? '#ffffff' : themeStyles.textPrimary,
-                  border: 'none',
-                  boxShadow: 'none'
-                }}
-              >
-                {(currentTask === 1 ? task1Skipped : task2Skipped) ? 'Unskip' : 'Skip'}
-              </Button>
-
-              {/* Word Count */}
-              <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
-                <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
-              </div>
-
               {/* Timer */}
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{
                 backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
@@ -1064,43 +1033,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 }}
                 className="data-[state=checked]:bg-primary"
               />
-
-              {/* Grammar Button */}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleGrammarFeedback(0)}
-                disabled={isGrammarLoading || !getCurrentAnswer().trim() || (currentTask === 1 ? task1Skipped : task2Skipped)}
-                className="h-8 w-8 p-0 hover:bg-transparent"
-                style={{
-                  color: themeStyles.textPrimary
-                }}
-              >
-                {isGrammarLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4" />
-                )}
-              </Button>
-
-              {/* Language Selector */}
-              <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                <SelectTrigger
-                  className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
-                  style={{
-                    color: themeStyles.textPrimary
-                  }}
-                >
-                  <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FEEDBACK_LANGUAGES.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
 
               {/* Task Selection Buttons */}
               <Button
@@ -1233,6 +1165,74 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         improved={task1GrammarImproved} 
                       />
                     )}
+                    
+                    {/* Bottom Controls */}
+                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                      {/* Word Count */}
+                      <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                        <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {/* Skip Button */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setTask1Skipped(!task1Skipped);
+                            if (!task1Skipped) setTask1Answer('');
+                          }}
+                          className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                          style={{
+                            backgroundColor: task1Skipped
+                              ? themeStyles.buttonPrimary
+                              : 'transparent',
+                            color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
+                            border: 'none',
+                            boxShadow: 'none'
+                          }}
+                        >
+                          {task1Skipped ? 'Unskip' : 'Skip'}
+                        </Button>
+
+                        {/* Grammar Button */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleGrammarFeedback(0)}
+                          disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
+                          className="h-8 w-8 p-0 hover:bg-transparent"
+                          style={{
+                            color: themeStyles.textPrimary
+                          }}
+                        >
+                          {isGrammarLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4" />
+                          )}
+                        </Button>
+
+                        {/* Language Selector */}
+                        <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                          <SelectTrigger
+                            className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                            style={{
+                              color: themeStyles.textPrimary
+                            }}
+                          >
+                            <SelectValue placeholder="Language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FEEDBACK_LANGUAGES.map((lang) => (
+                              <SelectItem key={lang.value} value={lang.value}>
+                                {lang.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </ResizablePanel>
@@ -1290,6 +1290,75 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     improved={task1GrammarImproved} 
                   />
                 )}
+                
+                {/* Bottom Controls */}
+                <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                  {/* Word Count */}
+                  <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                    <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {/* Skip Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setTask1Skipped(!task1Skipped);
+                        if (!task1Skipped) setTask1Answer('');
+                      }}
+                      className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                      style={{
+                        backgroundColor: task1Skipped
+                          ? themeStyles.buttonPrimary
+                          : 'transparent',
+                        color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
+                        border: 'none',
+                        boxShadow: 'none'
+                      }}
+                    >
+                      {task1Skipped ? 'Unskip' : 'Skip'}
+                    </Button>
+
+                    {/* Grammar Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleGrammarFeedback(0)}
+                      disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
+                      className="h-8 w-8 p-0 hover:bg-transparent"
+                      style={{
+                        color: themeStyles.textPrimary
+                      }}
+                    >
+                      {isGrammarLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
+                    </Button>
+
+                    {/* Language Selector */}
+                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                      <SelectTrigger
+                        className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                        style={{
+                          color: themeStyles.textPrimary
+                        }}
+                      >
+                        <SelectValue placeholder="Language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FEEDBACK_LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.value} value={lang.value}>
+                            {lang.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
                 <div className="flex justify-end items-center mt-4 gap-3">
                   <div className="flex items-center gap-2">
                     <TooltipProvider>
@@ -1372,6 +1441,75 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   improved={task2GrammarImproved} 
                 />
               )}
+              
+              {/* Bottom Controls */}
+              <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                {/* Word Count */}
+                <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                  <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {/* Skip Button */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setTask2Skipped(!task2Skipped);
+                      if (!task2Skipped) setTask2Answer('');
+                    }}
+                    className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                    style={{
+                      backgroundColor: task2Skipped
+                        ? themeStyles.buttonPrimary
+                        : 'transparent',
+                      color: task2Skipped ? '#ffffff' : themeStyles.textPrimary,
+                      border: 'none',
+                      boxShadow: 'none'
+                    }}
+                  >
+                    {task2Skipped ? 'Unskip' : 'Skip'}
+                  </Button>
+
+                  {/* Grammar Button */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleGrammarFeedback(0)}
+                    disabled={isGrammarLoading || !getCurrentAnswer().trim() || task2Skipped}
+                    className="h-8 w-8 p-0 hover:bg-transparent"
+                    style={{
+                      color: themeStyles.textPrimary
+                    }}
+                  >
+                    {isGrammarLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
+                  </Button>
+
+                  {/* Language Selector */}
+                  <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                    <SelectTrigger
+                      className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                      style={{
+                        color: themeStyles.textPrimary
+                      }}
+                    >
+                      <SelectValue placeholder="Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FEEDBACK_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          {lang.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
               <div className="mt-4">
                 {/* Feedback Language and Submit Button */}
                 <div className="flex justify-end items-center gap-3">

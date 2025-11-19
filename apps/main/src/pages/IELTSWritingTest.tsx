@@ -1766,7 +1766,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           )
         ) : (
           // Task 2 - Essay Writing
-          <Card className="rounded-3xl max-w-4xl mx-auto" style={{
+          <Card className="rounded-3xl h-full max-w-4xl mx-auto" style={{
             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
             borderColor: themeStyles.border,
             backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',

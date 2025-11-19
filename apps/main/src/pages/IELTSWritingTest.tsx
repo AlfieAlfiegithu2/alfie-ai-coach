@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -1167,8 +1166,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
              backgroundColor: themeStyles.backgroundImageColor
            }} />
-      <div 
-        className="relative z-10 flex flex-col"
+      <div
+        className="relative z-10 flex flex-col pb-24 sm:pb-6"
         style={{
           backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent',
           minHeight: 'calc(100vh - 80px)'
@@ -1176,7 +1175,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       >
         <StudentLayout title="IELTS Writing Test" showBackButton>
           <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
-            <div className="w-full max-w-6xl mx-auto space-y-4 px-4 flex flex-col">
+            <div className="w-full max-w-6xl mx-auto space-y-4 px-4 sm:px-6 flex flex-col">
         {/* Control Panel - Docker Style */}
         <Card className="rounded-3xl mb-4 max-w-fit mx-auto px-4" style={{
           backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -1189,8 +1188,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
           ...themeStyles.cardStyle
         }}>
-          <CardContent className="p-2">
-            <div className="flex items-center justify-center gap-3">
+          <CardContent className="p-2 sm:p-3">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
           {/* Timer */}
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" style={{ color: themeStyles.textPrimary }} />
@@ -1200,10 +1199,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           </div>
           
           {/* Task Selection Buttons */}
-            <Button 
-              size="sm" 
-              onClick={() => switchToTask(1)} 
-                className="h-8 px-3 text-sm font-medium"
+            <Button
+              size="sm"
+              onClick={() => switchToTask(1)}
+                className="h-9 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium min-w-[70px]"
               style={{
                 backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
                 color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
@@ -1212,10 +1211,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             >
               Task 1
             </Button>
-            <Button 
-              size="sm" 
-              onClick={() => switchToTask(2)} 
-                className="h-8 px-3 text-sm font-medium"
+            <Button
+              size="sm"
+              onClick={() => switchToTask(2)}
+                className="h-9 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium min-w-[70px]"
               style={{
                 backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
                 color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
@@ -1229,14 +1228,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             {/* Academic Task Section Buttons */}
             {((currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) ||
               (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))) && (
-              <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t" style={{ borderColor: themeStyles.border }}>
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-2 pt-2 border-t flex-wrap" style={{ borderColor: themeStyles.border }}>
                 <Button
                   size="sm"
                   onClick={() => {
                     if (currentTask === 1) setTask1Section('intro');
                     else setTask2Section('intro');
                   }}
-                  className="h-7 px-2 text-xs font-medium"
+                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[60px]"
                   style={{
                     backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? themeStyles.buttonPrimary : 'transparent',
                     color: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? '#ffffff' : themeStyles.textPrimary,
@@ -1251,7 +1250,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     if (currentTask === 1) setTask1Section('body1');
                     else setTask2Section('body1');
                   }}
-                  className="h-7 px-2 text-xs font-medium"
+                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
                   style={{
                     backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? themeStyles.buttonPrimary : 'transparent',
                     color: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? '#ffffff' : themeStyles.textPrimary,
@@ -1266,7 +1265,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     if (currentTask === 1) setTask1Section('body2');
                     else setTask2Section('body2');
                   }}
-                  className="h-7 px-2 text-xs font-medium"
+                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
                   style={{
                     backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? themeStyles.buttonPrimary : 'transparent',
                     color: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? '#ffffff' : themeStyles.textPrimary,
@@ -1281,7 +1280,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     onClick={() => {
                       setTask2Section('conclusion');
                     }}
-                    className="h-7 px-2 text-xs font-medium"
+                    className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[75px]"
                     style={{
                       backgroundColor: task2Section === 'conclusion' ? themeStyles.buttonPrimary : 'transparent',
                       color: task2Section === 'conclusion' ? '#ffffff' : themeStyles.textPrimary,
@@ -1297,7 +1296,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     if (currentTask === 1) setTask1Section('viewAll');
                     else setTask2Section('viewAll');
                   }}
-                  className="h-7 px-2 text-xs font-medium"
+                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[70px]"
                   style={{
                     backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? themeStyles.buttonPrimary : 'transparent',
                     color: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? '#ffffff' : themeStyles.textPrimary,
@@ -1314,8 +1313,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {/* Main Content Layout */}
         {currentTask === 1 ? (
           currentTaskData?.imageUrl ? (
-            <ResizablePanelGroup direction="horizontal" className="gap-4 flex-1" style={{ minHeight: '600px' }}>
-              <ResizablePanel defaultSize={50} minSize={40}>
+            <div className="flex flex-col lg:flex-row gap-4 flex-1" style={{ minHeight: '400px' }}>
+              <div className="flex-1 lg:flex-[0_0_50%] min-h-0">
                 <Card className="rounded-3xl h-full" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                   borderColor: themeStyles.border,
@@ -1334,7 +1333,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     <div className="mb-4">
                       {currentTaskData?.instructions && (
                         <div>
-                          <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
+                          <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm sm:text-base" style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                           borderColor: themeStyles.border,
                             borderWidth: '1px',
@@ -1371,9 +1370,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   </CardContent>
                 </Card>
-              </ResizablePanel>
+              </div>
 
-              <ResizablePanel defaultSize={50} minSize={35}>
+              <div className="flex-1 lg:flex-[0_0_50%] min-h-0">
                 <Card className="rounded-3xl h-full" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                   borderColor: themeStyles.border,
@@ -1541,8 +1540,8 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   </CardContent>
                 </Card>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+              </div>
+            </div>
           ) : (
             // Task 1 without image
             <Card className="rounded-3xl max-w-4xl mx-auto" style={{
@@ -1647,7 +1646,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 )}
 
                 {/* Bottom Controls */}
-                <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                   {/* Word Count */}
                     <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                     <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
@@ -1665,7 +1664,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           switchToTask(2);
                         }
                       }}
-                      className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                      className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
                       style={{
                         backgroundColor: task1Skipped 
                           ? themeStyles.buttonPrimary 
@@ -1861,7 +1860,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 </div>
 
                 {/* All Controls in One Row */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   {/* Skip Button */}
                   <Button
                     size="sm"
@@ -1870,7 +1869,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       setTask2Skipped(!task2Skipped);
                       // When skipping Task 2, just mark as skipped but keep all written text
                     }}
-                    className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                    className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
                     style={{
                       backgroundColor: task2Skipped
                         ? themeStyles.buttonPrimary

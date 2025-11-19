@@ -1853,34 +1853,35 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               />
               )}
 
-              {/* Bottom Controls */}
+              {/* Controls Row */}
               <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                 {/* Word Count */}
-                    <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                   <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
-                    </div>
-                
+                </div>
+
+                {/* All Controls in One Row */}
                 <div className="flex items-center gap-3">
                   {/* Skip Button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setTask2Skipped(!task2Skipped);
-                        // When skipping Task 2, just mark as skipped but keep all written text
-                      }}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setTask2Skipped(!task2Skipped);
+                      // When skipping Task 2, just mark as skipped but keep all written text
+                    }}
                     className="h-8 px-3 text-sm font-medium hover:bg-transparent"
-                      style={{
-                        backgroundColor: task2Skipped 
-                          ? themeStyles.buttonPrimary 
-                          : 'transparent',
-                        color: task2Skipped ? '#ffffff' : themeStyles.textPrimary,
-                        border: 'none',
+                    style={{
+                      backgroundColor: task2Skipped
+                        ? themeStyles.buttonPrimary
+                        : 'transparent',
+                      color: task2Skipped ? '#ffffff' : themeStyles.textPrimary,
+                      border: 'none',
                       boxShadow: 'none'
-                      }}
-                    >
-                      {task2Skipped ? 'Unskip' : 'Skip'}
-                    </Button>
+                    }}
+                  >
+                    {task2Skipped ? 'Unskip' : 'Skip'}
+                  </Button>
 
                   {/* Spell Check */}
                   <div className="flex items-center gap-2">
@@ -1920,10 +1921,21 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   {/* Language Selector */}
                   <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
                     <SelectTrigger
-                      className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                      className={`w-[90px] h-8 text-sm border-0 shadow-none p-0 focus:ring-0 rounded-lg ${
+                        themeStyles.theme.name === 'glassmorphism'
+                          ? 'bg-white/10'
+                          : themeStyles.theme.name === 'dark'
+                          ? 'bg-white/5'
+                          : themeStyles.theme.name === 'minimalist'
+                          ? 'bg-gray-50'
+                          : themeStyles.theme.name === 'note'
+                          ? 'bg-amber-50'
+                          : 'bg-white/5'
+                      }`}
                       style={{
                         color: themeStyles.textPrimary,
-                        '--tw-ring-color': themeStyles.buttonPrimary
+                        '--tw-ring-color': themeStyles.buttonPrimary,
+                        borderColor: themeStyles.border
                       } as React.CSSProperties}
                     >
                       <SelectValue placeholder="Language" />
@@ -1936,59 +1948,55 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                {/* Feedback Language and Submit Button */}
-                <div className="flex justify-end items-center gap-3">
-                  <div className="flex items-center gap-3">
-                    <Label htmlFor="ai-model-selector" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
-                      AI Model:
-                    </Label>
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                      <SelectTrigger
-                        id="ai-model-selector"
-                        className="w-[200px] h-9 text-sm border transition-colors rounded-xl"
-                        style={{
-                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                          borderColor: themeStyles.border,
-                          color: themeStyles.textPrimary,
-                          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
-                        }}
-                      >
-                        <SelectValue placeholder="Select AI Model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                        <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
-                        <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                  <Button
-                    onClick={submitTest}
-                    disabled={isSubmitDisabled()}
-                    variant="default"
-                    className="min-w-[120px]"
-                    style={{
-                      backgroundColor: themeStyles.buttonPrimary,
-                      color: '#ffffff'
-                    }}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Test"}
-                  </Button>
-                    </div>
+
+                  {/* AI Model */}
+                  <Label htmlFor="ai-model-selector" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                    AI Model:
+                  </Label>
+                  <Select value={selectedModel} onValueChange={setSelectedModel}>
+                    <SelectTrigger
+                      id="ai-model-selector"
+                      className="w-[180px] h-8 text-sm border transition-colors rounded-lg"
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                      }}
+                    >
+                      <SelectValue placeholder="Select AI Model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                      <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
+                      <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Submit Test */}
+                  <div className="flex items-center gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button
+                      onClick={submitTest}
+                      disabled={isSubmitDisabled()}
+                      variant="default"
+                      className="min-w-[120px] h-8"
+                      style={{
+                        backgroundColor: themeStyles.buttonPrimary,
+                        color: '#ffffff'
+                      }}
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit Test"}
+                    </Button>
                   </div>
                 </div>
               </div>

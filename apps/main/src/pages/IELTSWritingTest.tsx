@@ -355,7 +355,7 @@ const IELTSWritingTestInterface = () => {
             if (task1Body1Answer.trim()) sectionsTask1.push(task1Body1Answer);
             if (task1Body2Answer.trim()) sectionsTask1.push(task1Body2Answer);
 
-            const combinedTask1 = sectionsTask1.join('\n\n------\n\n');
+            const combinedTask1 = sectionsTask1.join('\n\n━━━\n');
             return combinedTask1 || task1Answer; // Fall back to main answer if no sections written
           default: return task1Answer;
         }
@@ -377,7 +377,7 @@ const IELTSWritingTestInterface = () => {
             if (task2Body2Answer.trim()) sectionsTask2.push(task2Body2Answer);
             if (task2ConclusionAnswer.trim()) sectionsTask2.push(task2ConclusionAnswer);
 
-            const combinedTask2 = sectionsTask2.join('\n\n------\n\n');
+            const combinedTask2 = sectionsTask2.join('\n\n━━━\n');
             return combinedTask2 || task2Answer; // Fall back to main answer if no sections written
           default: return task2Answer;
         }
@@ -387,7 +387,7 @@ const IELTSWritingTestInterface = () => {
   };
   // Helper function to distribute View All text back to individual sections
   const distributeViewAllText = (fullText: string, taskNumber: 1 | 2) => {
-    const sections = fullText.split('\n\n------\n\n');
+    const sections = fullText.split('\n\n━━━\n');
 
     // Update the section variables based on the number of sections
     if (taskNumber === 1) {

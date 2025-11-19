@@ -415,41 +415,39 @@ const IELTSWritingTestInterface = () => {
   // Handle View All text changes with cursor position preservation
   const handleViewAllChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
-    let newValue = e.target.value;
+    const newValue = e.target.value;
     const cursorPosition = textarea.selectionStart;
 
-    // Ensure dashes are preserved for paragraph starts
-    const lines = newValue.split('\n');
-    const processedLines = [];
-    let paragraphCount = 0;
+    // Get the previous value to compare
+    const previousValue = getCurrentAnswer();
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmedLine = line.trim();
+    // Check if someone is trying to delete a dash
+    if (newValue.length < previousValue.length) {
+      // Check if a dash was deleted by comparing the differences
+      const diffIndex = findFirstDifference(previousValue, newValue);
 
-      // If this is an empty line or just whitespace, keep it as is
-      if (!trimmedLine) {
-        processedLines.push(line);
-        continue;
-      }
+      if (diffIndex !== -1) {
+        // Check if the deleted character was part of a dash pattern
+        const charBeforeDeletion = previousValue[diffIndex];
+        const contextBefore = previousValue.substring(Math.max(0, diffIndex - 2), diffIndex + 1);
 
-      // If this line already starts with a dash, keep it
-      if (line.startsWith('- ')) {
-        processedLines.push(line);
-        paragraphCount++;
-        continue;
-      }
+        // If trying to delete "- " or just "-", prevent it
+        if (charBeforeDeletion === '-' ||
+            contextBefore.endsWith('- ') ||
+            (charBeforeDeletion === ' ' && previousValue[diffIndex - 1] === '-')) {
 
-      // If this looks like paragraph content (has substantial text and we're in paragraph area), add dash
-      if (paragraphCount < 4 && trimmedLine.length > 3) { // Reasonable paragraph content
-        processedLines.push('- ' + trimmedLine);
-        paragraphCount++;
-      } else {
-        processedLines.push(line);
+          // Restore the original value and prevent the change
+          setTimeout(() => {
+            if (viewAllTextareaRef.current) {
+              viewAllTextareaRef.current.value = previousValue;
+              viewAllTextareaRef.current.focus();
+              viewAllTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+            }
+          }, 0);
+          return; // Don't process this change
+        }
       }
     }
-
-    newValue = processedLines.join('\n');
 
     // Update the answer and distribute to sections
     setCurrentAnswer(newValue);
@@ -464,6 +462,17 @@ const IELTSWritingTestInterface = () => {
         viewAllTextareaRef.current.setSelectionRange(adjustedPosition, adjustedPosition);
       }
     }, 0);
+  };
+
+  // Helper function to find the first difference between two strings
+  const findFirstDifference = (str1: string, str2: string): number => {
+    const minLength = Math.min(str1.length, str2.length);
+    for (let i = 0; i < minLength; i++) {
+      if (str1[i] !== str2[i]) {
+        return i;
+      }
+    }
+    return str1.length > str2.length ? minLength : -1;
   };
 
   const setCurrentAnswer = (value: string) => {

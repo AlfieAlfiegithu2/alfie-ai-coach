@@ -447,15 +447,9 @@ const IELTSWritingTestInterface = () => {
               contextBefore.endsWith('- ') ||
               (charBeforeDeletion === ' ' && previousValue[diffIndex - 1] === '-')) {
 
-            // Restore the original value and prevent the change
-            setTimeout(() => {
-              if (viewAllTextareaRef.current) {
-                viewAllTextareaRef.current.value = previousValue;
-                viewAllTextareaRef.current.focus();
-                viewAllTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
-              }
-            }, 0);
-            return; // Don't process this change
+            // Prevent the change entirely - don't update the state
+            // The textarea value will remain as it was
+            return; // Don't process this change at all
           }
         }
       }

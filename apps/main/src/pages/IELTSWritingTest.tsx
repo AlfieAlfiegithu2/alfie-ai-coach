@@ -349,14 +349,15 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All combines all sections with simple dash separators
-            const sectionsTask1 = [];
-            if (task1IntroAnswer.trim()) sectionsTask1.push(task1IntroAnswer);
-            if (task1Body1Answer.trim()) sectionsTask1.push(task1Body1Answer);
-            if (task1Body2Answer.trim()) sectionsTask1.push(task1Body2Answer);
+            // View All combines all sections with placeholders for guidance
+            const sectionsTask1 = [
+              task1IntroAnswer.trim() || 'Write your introduction here...',
+              task1Body1Answer.trim() || 'Write your first body paragraph here...',
+              task1Body2Answer.trim() || 'Write your second body paragraph here...'
+            ];
 
             const combinedTask1 = sectionsTask1.join('\n\n━━━\n');
-            return combinedTask1 || task1Answer; // Fall back to main answer if no sections written
+            return combinedTask1;
           default: return task1Answer;
         }
       }
@@ -370,15 +371,16 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All combines all sections with simple dash separators
-            const sectionsTask2 = [];
-            if (task2IntroAnswer.trim()) sectionsTask2.push(task2IntroAnswer);
-            if (task2Body1Answer.trim()) sectionsTask2.push(task2Body1Answer);
-            if (task2Body2Answer.trim()) sectionsTask2.push(task2Body2Answer);
-            if (task2ConclusionAnswer.trim()) sectionsTask2.push(task2ConclusionAnswer);
+            // View All combines all sections with placeholders for guidance
+            const sectionsTask2 = [
+              task2IntroAnswer.trim() || 'Write your introduction here...',
+              task2Body1Answer.trim() || 'Write your first body paragraph here...',
+              task2Body2Answer.trim() || 'Write your second body paragraph here...',
+              task2ConclusionAnswer.trim() || 'Write your conclusion here...'
+            ];
 
             const combinedTask2 = sectionsTask2.join('\n\n━━━\n');
-            return combinedTask2 || task2Answer; // Fall back to main answer if no sections written
+            return combinedTask2;
           default: return task2Answer;
         }
       }
@@ -389,18 +391,37 @@ const IELTSWritingTestInterface = () => {
   const distributeViewAllText = (fullText: string, taskNumber: 1 | 2) => {
     const sections = fullText.split('\n\n━━━\n');
 
+    // Placeholder texts to identify when content is just placeholder
+    const placeholders = [
+      'Write your introduction here...',
+      'Write your first body paragraph here...',
+      'Write your second body paragraph here...',
+      'Write your conclusion here...'
+    ];
+
     // Update the section variables based on the number of sections
     if (taskNumber === 1) {
       // Task 1 has up to 3 sections: intro, body1, body2
-      setTask1IntroAnswer(sections[0]?.trim() || '');
-      setTask1Body1Answer(sections[1]?.trim() || '');
-      setTask1Body2Answer(sections[2]?.trim() || '');
+      const introText = sections[0]?.trim() || '';
+      const body1Text = sections[1]?.trim() || '';
+      const body2Text = sections[2]?.trim() || '';
+
+      // Only update if it's not just a placeholder
+      setTask1IntroAnswer(placeholders.includes(introText) ? '' : introText);
+      setTask1Body1Answer(placeholders.includes(body1Text) ? '' : body1Text);
+      setTask1Body2Answer(placeholders.includes(body2Text) ? '' : body2Text);
     } else {
       // Task 2 has up to 4 sections: intro, body1, body2, conclusion
-      setTask2IntroAnswer(sections[0]?.trim() || '');
-      setTask2Body1Answer(sections[1]?.trim() || '');
-      setTask2Body2Answer(sections[2]?.trim() || '');
-      setTask2ConclusionAnswer(sections[3]?.trim() || '');
+      const introText = sections[0]?.trim() || '';
+      const body1Text = sections[1]?.trim() || '';
+      const body2Text = sections[2]?.trim() || '';
+      const conclusionText = sections[3]?.trim() || '';
+
+      // Only update if it's not just a placeholder
+      setTask2IntroAnswer(placeholders.includes(introText) ? '' : introText);
+      setTask2Body1Answer(placeholders.includes(body1Text) ? '' : body1Text);
+      setTask2Body2Answer(placeholders.includes(body2Text) ? '' : body2Text);
+      setTask2ConclusionAnswer(placeholders.includes(conclusionText) ? '' : conclusionText);
     }
   };
 

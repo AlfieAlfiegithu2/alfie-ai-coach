@@ -415,7 +415,7 @@ const IELTSWritingTestInterface = () => {
   // Handle View All text changes with cursor position preservation
   const handleViewAllChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
-    const newValue = e.target.value;
+    let newValue = e.target.value;
     const cursorPosition = textarea.selectionStart;
 
     // Get the previous value to compare
@@ -449,6 +449,24 @@ const IELTSWritingTestInterface = () => {
       }
     }
 
+    // Prevent accidental addition of extra dashes during editing
+    // Only allow dashes that are already properly positioned
+    const lines = newValue.split('\n');
+    const cleanedLines = lines.map(line => {
+      // Remove any dashes that appear in the middle of text (not at the start)
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('- ')) {
+        // This is a proper paragraph start, keep it
+        return line;
+      } else if (trimmedLine.includes(' - ') || trimmedLine.includes('- ') && !trimmedLine.startsWith('- ')) {
+        // Remove improperly placed dashes
+        return line.replace(/\s*-\s*/g, ' ').trim();
+      }
+      return line;
+    });
+
+    newValue = cleanedLines.join('\n');
+
     // Update the answer and distribute to sections
     setCurrentAnswer(newValue);
 
@@ -456,7 +474,7 @@ const IELTSWritingTestInterface = () => {
     setTimeout(() => {
       if (viewAllTextareaRef.current) {
         viewAllTextareaRef.current.focus();
-        // Adjust cursor position if we added a dash
+        // Adjust cursor position
         const currentValue = viewAllTextareaRef.current.value;
         const adjustedPosition = Math.min(cursorPosition, currentValue.length);
         viewAllTextareaRef.current.setSelectionRange(adjustedPosition, adjustedPosition);

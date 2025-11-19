@@ -76,8 +76,6 @@ const IELTSWritingTestInterface = () => {
   const [task2Body2Answer, setTask2Body2Answer] = useState("");
   const [task2ConclusionAnswer, setTask2ConclusionAnswer] = useState("");
 
-  // Cursor position preservation for View All mode
-  const viewAllTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -129,6 +127,56 @@ const IELTSWritingTestInterface = () => {
   // Skip task states
   const [task1Skipped, setTask1Skipped] = useState(false);
   const [task2Skipped, setTask2Skipped] = useState(false);
+
+  // Sync content from sections to View All when sections change
+  useEffect(() => {
+    if (currentTask === 1 && task1Section !== 'viewAll') {
+      const sections = [
+        task1IntroAnswer.trim(),
+        task1Body1Answer.trim(),
+        task1Body2Answer.trim()
+      ].filter(section => section);
+      const combined = sections.join('\n\n');
+      if (combined && combined !== task1Answer) {
+        setTask1Answer(combined);
+      }
+    }
+  }, [task1IntroAnswer, task1Body1Answer, task1Body2Answer, currentTask, task1Section]);
+
+  useEffect(() => {
+    if (currentTask === 2 && task2Section !== 'viewAll') {
+      const sections = [
+        task2IntroAnswer.trim(),
+        task2Body1Answer.trim(),
+        task2Body2Answer.trim(),
+        task2ConclusionAnswer.trim()
+      ].filter(section => section);
+      const combined = sections.join('\n\n');
+      if (combined && combined !== task2Answer) {
+        setTask2Answer(combined);
+      }
+    }
+  }, [task2IntroAnswer, task2Body1Answer, task2Body2Answer, task2ConclusionAnswer, currentTask, task2Section]);
+
+  // Sync content from View All to sections when View All content changes and we're in View All mode
+  useEffect(() => {
+    if (currentTask === 1 && task1Section === 'viewAll' && task1Answer) {
+      const sections = task1Answer.split('\n\n');
+      setTask1IntroAnswer(sections[0]?.trim() || '');
+      setTask1Body1Answer(sections[1]?.trim() || '');
+      setTask1Body2Answer(sections[2]?.trim() || '');
+    }
+  }, [task1Answer, currentTask, task1Section]);
+
+  useEffect(() => {
+    if (currentTask === 2 && task2Section === 'viewAll' && task2Answer) {
+      const sections = task2Answer.split('\n\n');
+      setTask2IntroAnswer(sections[0]?.trim() || '');
+      setTask2Body1Answer(sections[1]?.trim() || '');
+      setTask2Body2Answer(sections[2]?.trim() || '');
+      setTask2ConclusionAnswer(sections[3]?.trim() || '');
+    }
+  }, [task2Answer, currentTask, task2Section]);
 
   // Autosave drafts to localStorage and restore on load
   useEffect(() => {
@@ -352,8 +400,8 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All shows user content, defaulting to dashes if empty
-            return task1Answer || '- \n\n- \n\n- ';
+            // View All shows the combined content from main answer
+            return task1Answer;
           default: return task1Answer;
         }
       }
@@ -367,8 +415,8 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All shows user content, defaulting to dashes if empty
-            return task2Answer || '- \n\n- \n\n- \n\n- ';
+            // View All shows the combined content from main answer
+            return task2Answer;
           default: return task2Answer;
         }
       }
@@ -377,42 +425,16 @@ const IELTSWritingTestInterface = () => {
   };
 
   // Handle View All text changes with cursor position preservation
-  // Handle View All text changes - prevent dash deletion
+
+  // Handle View All changes - only update main answer, sync happens in useEffect
   const handleViewAllChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    const previousValue = getCurrentAnswer();
+    const value = e.target.value;
 
-    // Check if someone is trying to delete a dash
-    if (newValue.length < previousValue.length) {
-      const diffIndex = findFirstDifference(previousValue, newValue);
-
-      if (diffIndex !== -1) {
-        const charBeforeDeletion = previousValue[diffIndex];
-        const contextBefore = previousValue.substring(Math.max(0, diffIndex - 2), diffIndex + 1);
-
-        // If trying to delete "- " or just "-", prevent it
-        if (charBeforeDeletion === '-' ||
-            contextBefore.endsWith('- ') ||
-            (charBeforeDeletion === ' ' && previousValue[diffIndex - 1] === '-')) {
-          // Don't update the state - dash deletion is blocked
-          return;
-        }
-      }
+    if (currentTask === 1) {
+      setTask1Answer(value);
+    } else {
+      setTask2Answer(value);
     }
-
-    // Update the answer for allowed changes
-    setCurrentAnswer(newValue);
-  };
-
-  // Helper function to find the first difference between two strings
-  const findFirstDifference = (str1: string, str2: string): number => {
-    const minLength = Math.min(str1.length, str2.length);
-    for (let i = 0; i < minLength; i++) {
-      if (str1[i] !== str2[i]) {
-        return i;
-      }
-    }
-    return str1.length > str2.length ? minLength : -1;
   };
 
   const setCurrentAnswer = (value: string) => {
@@ -424,7 +446,7 @@ const IELTSWritingTestInterface = () => {
           case 'body1': setTask1Body1Answer(value); break;
           case 'body2': setTask1Body2Answer(value); break;
           case 'viewAll':
-            setTask1Answer(value);
+            // View All changes are handled by handleViewAllChange
             break;
           default: setTask1Answer(value);
         }
@@ -440,7 +462,7 @@ const IELTSWritingTestInterface = () => {
           case 'body2': setTask2Body2Answer(value); break;
           case 'conclusion': setTask2ConclusionAnswer(value); break;
           case 'viewAll':
-            setTask2Answer(value);
+            // View All changes are handled by handleViewAllChange
             break;
           default: setTask2Answer(value);
         }
@@ -1370,7 +1392,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
                       <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
                         <Textarea
-                          ref={viewAllTextareaRef}
                           value={getCurrentAnswer()}
                           onChange={handleViewAllChange}
                           placeholder="Write your complete Task 1 essay here..."
@@ -1775,7 +1796,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               {currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task2Section === 'viewAll' && !task2Skipped ? (
                 <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
                   <Textarea
-                    ref={viewAllTextareaRef}
                     value={getCurrentAnswer()}
                     onChange={handleViewAllChange}
                     placeholder="Write your complete Task 2 essay here..."

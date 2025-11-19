@@ -1395,7 +1395,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           value={getCurrentAnswer()}
                           onChange={handleViewAllChange}
                           placeholder="Write your complete Task 1 essay here..."
-                          className="min-h-[800px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                          className="min-h-[700px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                           spellCheck={spellCheckEnabled}
                           style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',

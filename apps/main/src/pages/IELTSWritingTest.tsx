@@ -352,14 +352,15 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All combines all sections with dash prefixes
+            // View All always shows three dashes representing intro, body1, body2 sections
             const sectionsTask1 = [
-              task1IntroAnswer.trim(),
-              task1Body1Answer.trim(),
-              task1Body2Answer.trim()
-            ].filter(text => text); // Only include non-empty sections
+              task1IntroAnswer.trim() || '',
+              task1Body1Answer.trim() || '',
+              task1Body2Answer.trim() || ''
+            ];
 
-            return sectionsTask1.map(section => '- ' + section).join('\n\n') || task1Answer;
+            // Always show three dashes, even if sections are empty
+            return sectionsTask1.map(section => '- ' + section).join('\n\n');
           default: return task1Answer;
         }
       }
@@ -373,15 +374,16 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All combines all sections with dash prefixes
+            // View All always shows four dashes representing intro, body1, body2, conclusion sections
             const sectionsTask2 = [
-              task2IntroAnswer.trim(),
-              task2Body1Answer.trim(),
-              task2Body2Answer.trim(),
-              task2ConclusionAnswer.trim()
-            ].filter(text => text); // Only include non-empty sections
+              task2IntroAnswer.trim() || '',
+              task2Body1Answer.trim() || '',
+              task2Body2Answer.trim() || '',
+              task2ConclusionAnswer.trim() || ''
+            ];
 
-            return sectionsTask2.map(section => '- ' + section).join('\n\n') || task2Answer;
+            // Always show four dashes, even if sections are empty
+            return sectionsTask2.map(section => '- ' + section).join('\n\n');
           default: return task2Answer;
         }
       }
@@ -397,14 +399,14 @@ const IELTSWritingTestInterface = () => {
       section.trim().startsWith('- ') ? section.trim().substring(2) : section.trim()
     );
 
-    // Update the section variables based on the number of sections
+    // Update the section variables - View All always has fixed number of sections
     if (taskNumber === 1) {
-      // Task 1 has up to 3 sections: intro, body1, body2
+      // Task 1 always has exactly 3 sections: intro, body1, body2
       setTask1IntroAnswer(cleanSections[0] || '');
       setTask1Body1Answer(cleanSections[1] || '');
       setTask1Body2Answer(cleanSections[2] || '');
     } else {
-      // Task 2 has up to 4 sections: intro, body1, body2, conclusion
+      // Task 2 always has exactly 4 sections: intro, body1, body2, conclusion
       setTask2IntroAnswer(cleanSections[0] || '');
       setTask2Body1Answer(cleanSections[1] || '');
       setTask2Body2Answer(cleanSections[2] || '');

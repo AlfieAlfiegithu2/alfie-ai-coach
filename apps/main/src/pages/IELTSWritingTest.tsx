@@ -352,8 +352,8 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All shows three dashes with gaps - intro, body1, body2
-            return '- \n\n- \n\n- ';
+            // View All shows user content, defaulting to dashes if empty
+            return task1Answer || '- \n\n- \n\n- ';
           default: return task1Answer;
         }
       }
@@ -367,8 +367,8 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All shows four dashes with gaps - intro, body1, body2, conclusion
-            return '- \n\n- \n\n- \n\n- ';
+            // View All shows user content, defaulting to dashes if empty
+            return task2Answer || '- \n\n- \n\n- \n\n- ';
           default: return task2Answer;
         }
       }

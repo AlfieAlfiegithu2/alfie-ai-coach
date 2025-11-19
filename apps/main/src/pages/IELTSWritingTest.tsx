@@ -418,6 +418,9 @@ const IELTSWritingTestInterface = () => {
     let newValue = e.target.value;
     const cursorPosition = textarea.selectionStart;
 
+    // Allow normal text editing including Enter key presses
+    // The dash protection will handle structure preservation
+
     // Get the previous value to compare
     const previousValue = getCurrentAnswer();
 
@@ -456,19 +459,26 @@ const IELTSWritingTestInterface = () => {
       }
     }
 
-    // Prevent accidental addition of extra dashes during editing
-    // Only allow dashes that are already properly positioned
+    // Minimal dash cleanup - only remove obviously wrong patterns
+    // Allow normal editing including Enter key presses
     const lines = newValue.split('\n');
     const cleanedLines = lines.map(line => {
-      // Remove any dashes that appear in the middle of text (not at the start)
+      // Only clean up dashes that are clearly in the middle of sentences
+      // and not at the beginning of paragraphs
       const trimmedLine = line.trim();
+
+      // If line starts with "- ", it's a proper paragraph start - keep it
       if (trimmedLine.startsWith('- ')) {
-        // This is a proper paragraph start, keep it
         return line;
-      } else if (trimmedLine.includes(' - ') || trimmedLine.includes('- ') && !trimmedLine.startsWith('- ')) {
-        // Remove improperly placed dashes
-        return line.replace(/\s*-\s*/g, ' ').trim();
       }
+
+      // Only clean dashes that appear to be accidentally inserted in text
+      // Look for patterns like "word - word" or "- word" in the middle
+      if (trimmedLine.match(/\w\s*-\s*\w/) && !trimmedLine.startsWith('-')) {
+        // This looks like an accidental dash in text - remove it
+        return line.replace(/\s*-\s*/g, ' ');
+      }
+
       return line;
     });
 

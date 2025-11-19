@@ -1573,7 +1573,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 )}
                 {/* Academic Task 1 View All Display */}
                 {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
-                  <div className="min-h-[500px] overflow-y-auto text-base leading-relaxed whitespace-pre-wrap p-4" style={{ color: themeStyles.textPrimary }}>
+                  <div className="h-full overflow-y-auto text-base leading-relaxed whitespace-pre-wrap p-4" style={{ color: themeStyles.textPrimary }}>
                     {task1IntroAnswer && (
                       <div className="mb-6">
                         <strong>Introduction:</strong>
@@ -1766,7 +1766,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           )
         ) : (
           // Task 2 - Essay Writing
-          <Card className="rounded-3xl max-w-5xl mx-auto" style={{
+          <Card className="rounded-3xl max-w-[950px] mx-auto" style={{
             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
             borderColor: themeStyles.border,
             backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',

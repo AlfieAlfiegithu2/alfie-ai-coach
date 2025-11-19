@@ -352,15 +352,8 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All always shows three dashes representing intro, body1, body2 sections
-            const sectionsTask1 = [
-              task1IntroAnswer.trim() || '',
-              task1Body1Answer.trim() || '',
-              task1Body2Answer.trim() || ''
-            ];
-
-            // Always show three dashes, even if sections are empty
-            return sectionsTask1.map(section => '- ' + section).join('\n\n');
+            // View All shows three dashes with gaps - intro, body1, body2
+            return '- \n\n- \n\n- ';
           default: return task1Answer;
         }
       }
@@ -374,125 +367,41 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All always shows four dashes representing intro, body1, body2, conclusion sections
-            const sectionsTask2 = [
-              task2IntroAnswer.trim() || '',
-              task2Body1Answer.trim() || '',
-              task2Body2Answer.trim() || '',
-              task2ConclusionAnswer.trim() || ''
-            ];
-
-            // Always show four dashes, even if sections are empty
-            return sectionsTask2.map(section => '- ' + section).join('\n\n');
+            // View All shows four dashes with gaps - intro, body1, body2, conclusion
+            return '- \n\n- \n\n- \n\n- ';
           default: return task2Answer;
         }
       }
       return task2Answer;
     }
   };
-  // Helper function to distribute View All text back to individual sections
-  const distributeViewAllText = (fullText: string, taskNumber: 1 | 2) => {
-    const sections = fullText.split('\n\n');
-
-    // Remove the "- " prefix from each section if it exists
-    const cleanSections = sections.map(section =>
-      section.trim().startsWith('- ') ? section.trim().substring(2) : section.trim()
-    );
-
-    // Update the section variables - View All always has fixed number of sections
-    if (taskNumber === 1) {
-      // Task 1 always has exactly 3 sections: intro, body1, body2
-      setTask1IntroAnswer(cleanSections[0] || '');
-      setTask1Body1Answer(cleanSections[1] || '');
-      setTask1Body2Answer(cleanSections[2] || '');
-    } else {
-      // Task 2 always has exactly 4 sections: intro, body1, body2, conclusion
-      setTask2IntroAnswer(cleanSections[0] || '');
-      setTask2Body1Answer(cleanSections[1] || '');
-      setTask2Body2Answer(cleanSections[2] || '');
-      setTask2ConclusionAnswer(cleanSections[3] || '');
-    }
-  };
 
   // Handle View All text changes with cursor position preservation
+  // Handle View All text changes - prevent dash deletion
   const handleViewAllChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const textarea = e.target;
-    let newValue = e.target.value;
-    const cursorPosition = textarea.selectionStart;
-
-    // Allow normal text editing including Enter key presses
-    // The dash protection will handle structure preservation
-
-    // Get the previous value to compare
+    const newValue = e.target.value;
     const previousValue = getCurrentAnswer();
 
     // Check if someone is trying to delete a dash
     if (newValue.length < previousValue.length) {
-      const deletedChars = previousValue.length - newValue.length;
+      const diffIndex = findFirstDifference(previousValue, newValue);
 
-      // Allow large deletions (like select all + delete) - likely intentional clearing
-      if (deletedChars > 10 || newValue.length < 5) {
-        // Allow the deletion for large content removal or nearly empty content
-      } else {
-        // For small deletions, check if a dash was deleted
-        const diffIndex = findFirstDifference(previousValue, newValue);
+      if (diffIndex !== -1) {
+        const charBeforeDeletion = previousValue[diffIndex];
+        const contextBefore = previousValue.substring(Math.max(0, diffIndex - 2), diffIndex + 1);
 
-        if (diffIndex !== -1) {
-          // Check if the deleted character was part of a dash pattern
-          const charBeforeDeletion = previousValue[diffIndex];
-          const contextBefore = previousValue.substring(Math.max(0, diffIndex - 2), diffIndex + 1);
-
-          // If trying to delete "- " or just "-", prevent it
-          if (charBeforeDeletion === '-' ||
-              contextBefore.endsWith('- ') ||
-              (charBeforeDeletion === ' ' && previousValue[diffIndex - 1] === '-')) {
-
-            // Prevent the change entirely - don't update the state
-            // The textarea value will remain as it was
-            return; // Don't process this change at all
-          }
+        // If trying to delete "- " or just "-", prevent it
+        if (charBeforeDeletion === '-' ||
+            contextBefore.endsWith('- ') ||
+            (charBeforeDeletion === ' ' && previousValue[diffIndex - 1] === '-')) {
+          // Don't update the state - dash deletion is blocked
+          return;
         }
       }
     }
 
-    // Minimal dash cleanup - only remove obviously wrong patterns
-    // Allow normal editing including Enter key presses
-    const lines = newValue.split('\n');
-    const cleanedLines = lines.map(line => {
-      // Only clean up dashes that are clearly in the middle of sentences
-      // and not at the beginning of paragraphs
-      const trimmedLine = line.trim();
-
-      // If line starts with "- ", it's a proper paragraph start - keep it
-      if (trimmedLine.startsWith('- ')) {
-        return line;
-      }
-
-      // Only clean dashes that appear to be accidentally inserted in text
-      // Look for patterns like "word - word" or "- word" in the middle
-      if (trimmedLine.match(/\w\s*-\s*\w/) && !trimmedLine.startsWith('-')) {
-        // This looks like an accidental dash in text - remove it
-        return line.replace(/\s*-\s*/g, ' ');
-      }
-
-      return line;
-    });
-
-    newValue = cleanedLines.join('\n');
-
-    // Update the answer and distribute to sections
+    // Update the answer for allowed changes
     setCurrentAnswer(newValue);
-
-    // Restore cursor position after a brief delay to allow React to re-render
-    setTimeout(() => {
-      if (viewAllTextareaRef.current) {
-        viewAllTextareaRef.current.focus();
-        // Adjust cursor position
-        const currentValue = viewAllTextareaRef.current.value;
-        const adjustedPosition = Math.min(cursorPosition, currentValue.length);
-        viewAllTextareaRef.current.setSelectionRange(adjustedPosition, adjustedPosition);
-      }
-    }, 0);
   };
 
   // Helper function to find the first difference between two strings
@@ -515,8 +424,6 @@ const IELTSWritingTestInterface = () => {
           case 'body1': setTask1Body1Answer(value); break;
           case 'body2': setTask1Body2Answer(value); break;
           case 'viewAll':
-            // When editing in View All mode, distribute text to sections and save main answer
-            distributeViewAllText(value, 1);
             setTask1Answer(value);
             break;
           default: setTask1Answer(value);
@@ -533,8 +440,6 @@ const IELTSWritingTestInterface = () => {
           case 'body2': setTask2Body2Answer(value); break;
           case 'conclusion': setTask2ConclusionAnswer(value); break;
           case 'viewAll':
-            // When editing in View All mode, distribute text to sections and save main answer
-            distributeViewAllText(value, 2);
             setTask2Answer(value);
             break;
           default: setTask2Answer(value);

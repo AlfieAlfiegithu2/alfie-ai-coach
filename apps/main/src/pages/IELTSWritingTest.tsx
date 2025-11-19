@@ -1420,7 +1420,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                               else if (task1Section === 'body2') setTask1Section('viewAll');
                             }
                           }}
-                          className={`${task1Section === 'viewAll' ? 'min-h-[500px]' : 'min-h-[700px]'} w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0`}
+                          className="min-h-[700px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                           placeholder={
                             task1Skipped
                               ? "Task 1 is skipped"

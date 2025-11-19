@@ -351,12 +351,12 @@ const IELTSWritingTestInterface = () => {
           case 'viewAll':
             // View All combines all sections with placeholders for guidance
             const sectionsTask1 = [
-              task1IntroAnswer.trim() || 'Write your introduction here...',
-              task1Body1Answer.trim() || 'Write your first body paragraph here...',
-              task1Body2Answer.trim() || 'Write your second body paragraph here...'
+              task1IntroAnswer.trim() || '✎ Introduction - Click here to start writing...',
+              task1Body1Answer.trim() || '📝 Body Paragraph 1 - Click here to start writing...',
+              task1Body2Answer.trim() || '📝 Body Paragraph 2 - Click here to start writing...'
             ];
 
-            const combinedTask1 = sectionsTask1.join('\n\n━━━\n');
+            const combinedTask1 = sectionsTask1.join('\n\n❖ ❖ ❖\n');
             return combinedTask1;
           default: return task1Answer;
         }
@@ -373,13 +373,13 @@ const IELTSWritingTestInterface = () => {
           case 'viewAll':
             // View All combines all sections with placeholders for guidance
             const sectionsTask2 = [
-              task2IntroAnswer.trim() || 'Write your introduction here...',
-              task2Body1Answer.trim() || 'Write your first body paragraph here...',
-              task2Body2Answer.trim() || 'Write your second body paragraph here...',
-              task2ConclusionAnswer.trim() || 'Write your conclusion here...'
+              task2IntroAnswer.trim() || '✎ Introduction - Click here to start writing...',
+              task2Body1Answer.trim() || '📝 Body Paragraph 1 - Click here to start writing...',
+              task2Body2Answer.trim() || '📝 Body Paragraph 2 - Click here to start writing...',
+              task2ConclusionAnswer.trim() || '🎯 Conclusion - Click here to start writing...'
             ];
 
-            const combinedTask2 = sectionsTask2.join('\n\n━━━\n');
+            const combinedTask2 = sectionsTask2.join('\n\n❖ ❖ ❖\n');
             return combinedTask2;
           default: return task2Answer;
         }
@@ -389,14 +389,14 @@ const IELTSWritingTestInterface = () => {
   };
   // Helper function to distribute View All text back to individual sections
   const distributeViewAllText = (fullText: string, taskNumber: 1 | 2) => {
-    const sections = fullText.split('\n\n━━━\n');
+    const sections = fullText.split('\n\n❖ ❖ ❖\n');
 
     // Placeholder texts to identify when content is just placeholder
     const placeholders = [
-      'Write your introduction here...',
-      'Write your first body paragraph here...',
-      'Write your second body paragraph here...',
-      'Write your conclusion here...'
+      '✎ Introduction - Click here to start writing...',
+      '📝 Body Paragraph 1 - Click here to start writing...',
+      '📝 Body Paragraph 2 - Click here to start writing...',
+      '🎯 Conclusion - Click here to start writing...'
     ];
 
     // Update the section variables based on the number of sections
@@ -1392,9 +1392,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                             borderColor: themeStyles.border,
-                            color: themeStyles.textPrimary,
+                            color: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
+                              ? themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
+                              : themeStyles.textPrimary,
                             outline: 'none',
-                            boxShadow: 'none'
+                            boxShadow: 'none',
+                            fontStyle: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
+                              ? 'italic'
+                              : 'normal'
                           }}
                         />
                       </div>
@@ -1804,9 +1809,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     style={{
                       backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                       borderColor: themeStyles.border,
-                      color: themeStyles.textPrimary,
+                      color: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
+                        ? themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
+                        : themeStyles.textPrimary,
                       outline: 'none',
-                      boxShadow: 'none'
+                      boxShadow: 'none',
+                      fontStyle: getCurrentAnswer().includes('✎ Introduction') || getCurrentAnswer().includes('📝 Body Paragraph') || getCurrentAnswer().includes('🎯 Conclusion')
+                        ? 'italic'
+                        : 'normal'
                     }}
                   />
                 </div>

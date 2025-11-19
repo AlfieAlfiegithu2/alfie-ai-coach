@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,6 +75,9 @@ const IELTSWritingTestInterface = () => {
   const [task2Body1Answer, setTask2Body1Answer] = useState("");
   const [task2Body2Answer, setTask2Body2Answer] = useState("");
   const [task2ConclusionAnswer, setTask2ConclusionAnswer] = useState("");
+
+  // Cursor position preservation for View All mode
+  const viewAllTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -402,6 +405,26 @@ const IELTSWritingTestInterface = () => {
       setTask2Body2Answer(sections[2]?.trim() || '');
       setTask2ConclusionAnswer(sections[3]?.trim() || '');
     }
+  };
+
+  // Handle View All text changes with cursor position preservation
+  const handleViewAllChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target;
+    const cursorPosition = textarea.selectionStart;
+
+    // Store the current value
+    const newValue = e.target.value;
+
+    // Update the answer and distribute to sections
+    setCurrentAnswer(newValue);
+
+    // Restore cursor position after a brief delay to allow React to re-render
+    setTimeout(() => {
+      if (viewAllTextareaRef.current) {
+        viewAllTextareaRef.current.focus();
+        viewAllTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }, 0);
   };
 
   const setCurrentAnswer = (value: string) => {
@@ -1363,8 +1386,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
                       <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
                         <Textarea
+                          ref={viewAllTextareaRef}
                           value={getCurrentAnswer()}
-                          onChange={e => setCurrentAnswer(e.target.value)}
+                          onChange={handleViewAllChange}
                           placeholder="Write your complete Task 1 essay here..."
                           className="flex-1 w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                           spellCheck={spellCheckEnabled}
@@ -1767,8 +1791,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               {currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task2Section === 'viewAll' && !task2Skipped ? (
                 <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
                   <Textarea
+                    ref={viewAllTextareaRef}
                     value={getCurrentAnswer()}
-                    onChange={e => setCurrentAnswer(e.target.value)}
+                    onChange={handleViewAllChange}
                     placeholder="Write your complete Task 2 essay here..."
                     className="flex-1 w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                     spellCheck={spellCheckEnabled}
@@ -2245,14 +2270,21 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       {/* Enhanced Spell Check Styling */}
       {spellCheckEnabled && (
         <style>{`
-          /* Subtle underline only for spell check errors */
+          /* Very subtle underline only for spell check errors - delayed appearance */
           textarea[spellcheck="true"]::spelling-error {
-            text-decoration: wavy underline rgba(239, 68, 68, 0.6) 2px !important;
+            text-decoration: wavy underline rgba(239, 68, 68, 0.4) 1px !important;
             text-decoration-skip-ink: none !important;
+            animation: fadeInSpellError 0.5s ease-in-out;
           }
-          
+
           textarea[spellcheck="true"]:focus::spelling-error {
-            text-decoration: wavy underline rgba(239, 68, 68, 0.7) 2px !important;
+            text-decoration: wavy underline rgba(239, 68, 68, 0.5) 1px !important;
+          }
+
+          @keyframes fadeInSpellError {
+            0% { text-decoration-color: transparent; }
+            50% { text-decoration-color: transparent; }
+            100% { text-decoration-color: rgba(239, 68, 68, 0.4); }
           }
         `}</style>
       )}

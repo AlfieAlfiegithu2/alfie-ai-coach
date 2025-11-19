@@ -62,6 +62,22 @@ const IELTSWritingTestInterface = () => {
   const [currentTask, setCurrentTask] = useState<1 | 2>(1);
   const [task1Answer, setTask1Answer] = useState("");
   const [task2Answer, setTask2Answer] = useState("");
+  
+  // Academic Task 1 section states
+  const [task1Section, setTask1Section] = useState<'intro' | 'body1' | 'body2' | 'viewAll'>('intro');
+  const [task1IntroAnswer, setTask1IntroAnswer] = useState("");
+  const [task1Body1Answer, setTask1Body1Answer] = useState("");
+  const [task1Body2Answer, setTask1Body2Answer] = useState("");
+
+  // Academic Task 2 section states
+  const [task2Section, setTask2Section] = useState<'intro' | 'body1' | 'body2' | 'conclusion' | 'viewAll'>('intro');
+  const [task2IntroAnswer, setTask2IntroAnswer] = useState("");
+  const [task2Body1Answer, setTask2Body1Answer] = useState("");
+  const [task2Body2Answer, setTask2Body2Answer] = useState("");
+  const [task2ConclusionAnswer, setTask2ConclusionAnswer] = useState("");
+
+  // View All editing mode
+  const [isViewAllEditing, setIsViewAllEditing] = useState(false);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTest, setIsLoadingTest] = useState(false);
@@ -326,17 +342,131 @@ const IELTSWritingTestInterface = () => {
   };
 
   const getCurrentTask = () => currentTask === 1 ? task1 : task2;
-  const getCurrentAnswer = () => currentTask === 1 ? task1Answer : task2Answer;
+  const getCurrentAnswer = () => {
+    if (currentTask === 1) {
+      // For Academic Task 1, return section-specific answer
+      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task1Skipped) {
+        switch (task1Section) {
+          case 'intro': return task1IntroAnswer;
+          case 'body1': return task1Body1Answer;
+          case 'body2': return task1Body2Answer;
+          case 'viewAll': return task1Answer; // View All uses the main task1Answer
+          default: return task1Answer;
+        }
+      }
+      return task1Answer;
+    } else {
+      // For Academic Task 2, return section-specific answer
+      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task2Skipped) {
+        switch (task2Section) {
+          case 'intro': return task2IntroAnswer;
+          case 'body1': return task2Body1Answer;
+          case 'body2': return task2Body2Answer;
+          case 'conclusion': return task2ConclusionAnswer;
+          case 'viewAll': return task2Answer; // View All uses the main task2Answer
+          default: return task2Answer;
+        }
+      }
+      return task2Answer;
+    }
+  };
   const setCurrentAnswer = (value: string) => {
     if (currentTask === 1) {
+      // For Academic Task 1, update section-specific answer
+      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task1Skipped) {
+        switch (task1Section) {
+          case 'intro': setTask1IntroAnswer(value); break;
+          case 'body1': setTask1Body1Answer(value); break;
+          case 'body2': setTask1Body2Answer(value); break;
+          case 'viewAll': setTask1Answer(value); break; // View All is now editable
+          default: setTask1Answer(value);
+        }
+      } else {
       setTask1Answer(value);
+      }
+    } else {
+      // For Academic Task 2, update section-specific answer
+      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task2Skipped) {
+        switch (task2Section) {
+          case 'intro': setTask2IntroAnswer(value); break;
+          case 'body1': setTask2Body1Answer(value); break;
+          case 'body2': setTask2Body2Answer(value); break;
+          case 'conclusion': setTask2ConclusionAnswer(value); break;
+          case 'viewAll': setTask2Answer(value); break; // View All is now editable
+          default: setTask2Answer(value);
+        }
     } else {
       setTask2Answer(value);
+      }
+    }
+  };
+  
+  // Helper to get current section answer for Academic tasks
+  const getCurrentSectionAnswer = () => {
+    if (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+      switch (task1Section) {
+        case 'intro': return task1IntroAnswer;
+        case 'body1': return task1Body1Answer;
+        case 'body2': return task1Body2Answer;
+        case 'viewAll': return task1Answer;
+        default: return task1Answer;
+      }
+    } else if (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+      switch (task2Section) {
+        case 'intro': return task2IntroAnswer;
+        case 'body1': return task2Body1Answer;
+        case 'body2': return task2Body2Answer;
+        case 'conclusion': return task2ConclusionAnswer;
+        case 'viewAll': return task2Answer;
+        default: return task2Answer;
+      }
+    }
+    return currentTask === 1 ? task1Answer : task2Answer;
+  };
+  
+  const setCurrentSectionAnswer = (value: string) => {
+    if (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+      switch (task1Section) {
+        case 'intro': setTask1IntroAnswer(value); break;
+        case 'body1': setTask1Body1Answer(value); break;
+        case 'body2': setTask1Body2Answer(value); break;
+        case 'viewAll': setTask1Answer(value); break; // View All is now editable
+        default: setTask1Answer(value);
+      }
+    } else if (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+      switch (task2Section) {
+        case 'intro': setTask2IntroAnswer(value); break;
+        case 'body1': setTask2Body1Answer(value); break;
+        case 'body2': setTask2Body2Answer(value); break;
+        case 'conclusion': setTask2ConclusionAnswer(value); break;
+        case 'viewAll': setTask2Answer(value); break; // View All is now editable
+        default: setTask2Answer(value);
+      }
+    } else {
+      if (currentTask === 1) {
+        setTask1Answer(value);
+      } else {
+        setTask2Answer(value);
+      }
     }
   };
 
   const getWordCount = (text: string) => {
     return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
+
+  const getTotalWordCount = () => {
+    if (currentTask === 1) {
+      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task1Skipped) {
+        return getWordCount(task1IntroAnswer) + getWordCount(task1Body1Answer) + getWordCount(task1Body2Answer);
+      }
+      return getWordCount(task1Answer);
+    } else {
+      if ((test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && !task2Skipped) {
+        return getWordCount(task2IntroAnswer) + getWordCount(task2Body1Answer) + getWordCount(task2Body2Answer) + getWordCount(task2ConclusionAnswer);
+      }
+      return getWordCount(task2Answer);
+    }
   };
 
   const getMinWordCount = () => {
@@ -583,6 +713,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   // Handle task switching with proper context isolation
   const switchToTask = (taskNumber: 1 | 2) => {
     setCurrentTask(taskNumber);
+    setIsViewAllEditing(false);
     // Don't reset timer - it's shared between tasks
     // Grammar feedback is stored per task, so no need to clear
   };
@@ -981,7 +1112,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
           borderColor: themeStyles.border,
           backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-          boxShadow: themeStyles.theme.name === 'dark'
+          boxShadow: themeStyles.theme.name === 'dark' 
             ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
             : themeStyles.theme.name === 'note'
             ? themeStyles.theme.styles.cardStyle?.boxShadow
@@ -990,130 +1121,136 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         }}>
           <CardContent className="p-2">
             <div className="flex items-center justify-center gap-3">
-              {/* Theme Selector */}
-              <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
-                <SelectTrigger
-                  className="w-[70px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
-                  style={{
-                    color: themeStyles.textPrimary
-                  }}
-                >
-                  <SelectValue placeholder="Theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(themes).map((theme) => (
-                    <SelectItem key={theme.name} value={theme.name}>
-                      {theme.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Timer */}
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{
-                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                minWidth: 'fit-content'
-              }}>
+          {/* Timer */}
+              <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" style={{ color: themeStyles.textPrimary }} />
                 <span className="text-sm font-medium tabular-nums" style={{ color: themeStyles.textPrimary }}>
-                  {formatTime(timeRemaining)}
-                </span>
-              </div>
-
-              {/* Task Selection Buttons */}
-              <Button
-                size="sm"
-                onClick={() => switchToTask(1)}
+              {formatTime(timeRemaining)}
+            </span>
+          </div>
+          
+          {/* Task Selection Buttons */}
+            <Button 
+              size="sm" 
+              onClick={() => switchToTask(1)} 
                 className="h-8 px-3 text-sm font-medium"
-                style={{
-                  backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
-                  color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
+              style={{
+                backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
+                color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
                   border: 'none'
-                }}
-              >
-                Task 1
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => switchToTask(2)}
+              }}
+            >
+              Task 1
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={() => switchToTask(2)} 
                 className="h-8 px-3 text-sm font-medium"
-                style={{
-                  backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
-                  color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
+              style={{
+                backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
+                color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
                   border: 'none'
-                }}
-              >
-                Task 2
-              </Button>
+              }}
+            >
+              Task 2
+            </Button>
+          </div>
+            
+            {/* Academic Task Section Buttons */}
+            {((currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) ||
+              (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))) && (
+              <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t" style={{ borderColor: themeStyles.border }}>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (currentTask === 1) setTask1Section('intro');
+                    else setTask2Section('intro');
+                    setIsViewAllEditing(false);
+                  }}
+                  className="h-7 px-2 text-xs font-medium"
+                  style={{
+                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? themeStyles.buttonPrimary : 'transparent',
+                    color: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? '#ffffff' : themeStyles.textPrimary,
+                    border: 'none'
+                  }}
+                >
+                  Intro
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (currentTask === 1) setTask1Section('body1');
+                    else setTask2Section('body1');
+                    setIsViewAllEditing(false);
+                  }}
+                  className="h-7 px-2 text-xs font-medium"
+                  style={{
+                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? themeStyles.buttonPrimary : 'transparent',
+                    color: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? '#ffffff' : themeStyles.textPrimary,
+                    border: 'none'
+                  }}
+                >
+                  Body 1
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (currentTask === 1) setTask1Section('body2');
+                    else setTask2Section('body2');
+                    setIsViewAllEditing(false);
+                  }}
+                  className="h-7 px-2 text-xs font-medium"
+                  style={{
+                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? themeStyles.buttonPrimary : 'transparent',
+                    color: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? '#ffffff' : themeStyles.textPrimary,
+                    border: 'none'
+                  }}
+                >
+                  Body 2
+                </Button>
+                {currentTask === 2 && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setTask2Section('conclusion');
+                      setIsViewAllEditing(false);
+                    }}
+                    className="h-7 px-2 text-xs font-medium"
+                    style={{
+                      backgroundColor: task2Section === 'conclusion' ? themeStyles.buttonPrimary : 'transparent',
+                      color: task2Section === 'conclusion' ? '#ffffff' : themeStyles.textPrimary,
+                      border: 'none'
+                    }}
+                  >
+                    Conclusion
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (currentTask === 1) setTask1Section('viewAll');
+                    else setTask2Section('viewAll');
+                    setIsViewAllEditing(false);
+                  }}
+                  className="h-7 px-2 text-xs font-medium"
+                  style={{
+                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? themeStyles.buttonPrimary : 'transparent',
+                    color: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? '#ffffff' : themeStyles.textPrimary,
+                    border: 'none'
+                  }}
+                >
+                  View All
+                </Button>
             </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Main Content Layout */}
         {currentTask === 1 ? (
           currentTaskData?.imageUrl ? (
-            <ResizablePanelGroup direction="horizontal" className="gap-4" style={{
-              minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
-            }}>
-              <ResizablePanel defaultSize={45} minSize={40}>
-                <Card className="rounded-3xl h-full" style={{
-                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                  borderColor: themeStyles.border,
-                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-                  boxShadow: themeStyles.theme.name === 'dark'
-                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-                    : themeStyles.theme.name === 'note'
-                    ? themeStyles.theme.styles.cardStyle?.boxShadow
-                    : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-                  ...themeStyles.cardStyle
-                }}>
-                  <CardContent className="p-4 h-full flex flex-col">
-                    {/* Task Instructions */}
-                    <div className="mb-4">
-                      {currentTaskData?.instructions && (
-                        <div>
-                          <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                            borderColor: themeStyles.border,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                            color: themeStyles.textPrimary
-                          }}>
-                            {currentTaskData.instructions}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Photo */}
-                    <div className="flex-1 overflow-hidden">
-                      <img
-                        src={currentTaskData.imageUrl}
-                        alt="Task 1 visual data"
-                        className="w-full h-full object-contain cursor-pointer"
-                        loading="eager"
-                        decoding="async"
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const x = ((e.clientX - rect.left) / rect.width) * 100;
-                          const y = ((e.clientY - rect.top) / rect.height) * 100;
-                          setZoomOrigin(`${x}% ${y}%`);
-                          setZoomScale(zoomScale === 1 ? 1.5 : 1);
-                        }}
-                        style={{
-                          transform: `scale(${zoomScale})`,
-                          transformOrigin: zoomOrigin,
-                          transition: 'transform 0.2s ease-out'
-                        }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </ResizablePanel>
-
-              <ResizableHandle withHandle />
-
-              <ResizablePanel defaultSize={55} minSize={35}>
+            <ResizablePanelGroup direction="horizontal" className="gap-4 flex-1" style={{ minHeight: '600px' }}>
+              <ResizablePanel defaultSize={50} minSize={40}>
                 <Card className="rounded-3xl h-full" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                   borderColor: themeStyles.border,
@@ -1123,41 +1260,235 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     : themeStyles.theme.name === 'note'
                     ? themeStyles.theme.styles.cardStyle?.boxShadow
                     : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-                  ...themeStyles.cardStyle
+                  ...themeStyles.cardStyle,
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}>
-                  <CardContent className="h-full p-4 flex flex-col">
-                    <Textarea
-                      value={task1Answer}
-                      onChange={e => setTask1Answer(e.target.value)}
-                      placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")}
-                      className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                      spellCheck={spellCheckEnabled}
-                      disabled={task1Skipped}
-                      style={{
-                        backgroundColor: task1Skipped 
-                          ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                          : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                        borderColor: themeStyles.border,
-                        color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                        outline: 'none',
-                        boxShadow: 'none',
-                        cursor: task1Skipped ? 'not-allowed' : 'text',
-                        opacity: task1Skipped ? 0.6 : 1
-                      }} 
-                    />
-                    {currentTask === 1 && (
-                      <GrammarFeedbackDisplay 
-                        feedback={task1GrammarFeedback} 
-                        improved={task1GrammarImproved} 
-                      />
-                    )}
+                  <CardContent className="p-4 flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                    {/* Task Instructions */}
+                    <div className="mb-4">
+                      {currentTaskData?.instructions && (
+                        <div>
+                          <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border,
+                            borderWidth: '1px',
+                            borderStyle: 'solid',
+                          color: themeStyles.textPrimary
+                          }}>
+                            {currentTaskData.instructions}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     
-                    {/* Bottom Controls */}
-                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
-                      {/* Word Count */}
-                      <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
-                        <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
+                    {/* Photo */}
+                    <div className="flex-1 overflow-hidden">
+                        <img 
+                          src={currentTaskData.imageUrl} 
+                          alt="Task 1 visual data" 
+                        className="w-full h-full object-contain cursor-pointer"
+                          loading="eager"
+                          decoding="async"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const x = ((e.clientX - rect.left) / rect.width) * 100;
+                          const y = ((e.clientY - rect.top) / rect.height) * 100;
+                          setZoomOrigin(`${x}% ${y}%`);
+                          setZoomScale(zoomScale === 1 ? 1.5 : 1);
+                        }}
+                          style={{
+                            transform: `scale(${zoomScale})`,
+                          transformOrigin: zoomOrigin,
+                            transition: 'transform 0.2s ease-out'
+                          }}
+                        />
+                    </div>
+                  </CardContent>
+                </Card>
+              </ResizablePanel>
+
+              <ResizablePanel defaultSize={50} minSize={35}>
+                <Card className="rounded-3xl h-full" style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                  borderColor: themeStyles.border,
+                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                  boxShadow: themeStyles.theme.name === 'dark' 
+                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                    : themeStyles.theme.name === 'note'
+                    ? themeStyles.theme.styles.cardStyle?.boxShadow
+                    : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                  ...themeStyles.cardStyle,
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  <CardContent className="flex-1 p-4 flex flex-col" style={{ minHeight: 0 }}>
+                    {/* Academic Task 1 View All Display */}
+                    {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
+                      isViewAllEditing ? (
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>Edit Complete Essay</h3>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => setIsViewAllEditing(false)}
+                                className="h-8 px-3 text-sm font-medium"
+                                style={{
+                                  backgroundColor: 'transparent',
+                                  color: themeStyles.textPrimary,
+                                  border: `1px solid ${themeStyles.border}`
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => setIsViewAllEditing(false)}
+                                className="h-8 px-3 text-sm font-medium"
+                                style={{
+                                  backgroundColor: themeStyles.buttonPrimary,
+                                  color: '#ffffff',
+                                  border: 'none'
+                                }}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                          <Textarea
+                            value={getCurrentAnswer()}
+                            onChange={e => setCurrentAnswer(e.target.value)}
+                            placeholder="Write your complete Task 1 essay here..."
+                            className="flex-1 text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                            spellCheck={spellCheckEnabled}
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                              borderColor: themeStyles.border,
+                              color: themeStyles.textPrimary,
+                              outline: 'none',
+                              boxShadow: 'none'
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex-1 overflow-y-auto space-y-4 p-4">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>Complete Essay Structure</h3>
+                            <Button
+                              size="sm"
+                              onClick={() => setIsViewAllEditing(true)}
+                              className="h-8 px-3 text-sm font-medium"
+                              style={{
+                                backgroundColor: themeStyles.buttonPrimary,
+                                color: '#ffffff',
+                                border: 'none'
+                              }}
+                            >
+                              Modify
+                            </Button>
+                          </div>
+                          {task1IntroAnswer && (
+                            <div>
+                              <h4 className="text-sm font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Introduction:</h4>
+                              <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                                borderColor: themeStyles.border,
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                color: themeStyles.textPrimary,
+                                minHeight: '60px'
+                              }}>
+                                {task1IntroAnswer}
+                              </div>
+                            </div>
+                          )}
+                          {task1Body1Answer && (
+                            <div>
+                              <h4 className="text-sm font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Body Paragraph 1:</h4>
+                              <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                                borderColor: themeStyles.border,
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                color: themeStyles.textPrimary,
+                                minHeight: '60px'
+                              }}>
+                                {task1Body1Answer}
+                              </div>
+                            </div>
+                          )}
+                          {task1Body2Answer && (
+                            <div>
+                              <h4 className="text-sm font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Body Paragraph 2:</h4>
+                              <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                                borderColor: themeStyles.border,
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                color: themeStyles.textPrimary,
+                                minHeight: '60px'
+                              }}>
+                                {task1Body2Answer}
+                              </div>
+                            </div>
+                          )}
+                          {!task1IntroAnswer && !task1Body1Answer && !task1Body2Answer && (
+                            <div style={{ color: themeStyles.textSecondary }}>No content yet...</div>
+                          )}
+                        </div>
+                      )
+                    ) : (
+                      <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                        <Textarea
+                          value={getCurrentAnswer()}
+                          onChange={e => setCurrentAnswer(e.target.value)}
+                          onKeyDown={(e) => {
+                            // Tab navigation for Academic tasks
+                            if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+                              e.preventDefault();
+                              if (task1Section === 'intro') setTask1Section('body1');
+                              else if (task1Section === 'body1') setTask1Section('body2');
+                              else if (task1Section === 'body2') setTask1Section('viewAll');
+                            }
+                          }}
+                          className="flex-1 w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                          placeholder={
+                            task1Skipped
+                              ? "Task 1 is skipped"
+                              : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
+                                ? "Write your letter here..."
+                                : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
+                                  ? (task1Section === 'intro' ? "Write your introduction here..." :
+                                     task1Section === 'body1' ? "Write your first body paragraph here..." :
+                                     task1Section === 'body2' ? "Write your second body paragraph here..." :
+                                     task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
+                                     "Write your description here...")
+                                  : "Write your description here..."
+                          }
+                          spellCheck={spellCheckEnabled}
+                          disabled={task1Skipped}
+                          style={{
+                            backgroundColor: task1Skipped 
+                              ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                              : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                            borderColor: themeStyles.border,
+                            color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                            outline: 'none',
+                            boxShadow: 'none',
+                            cursor: task1Skipped ? 'not-allowed' : 'text',
+                            opacity: task1Skipped ? 0.6 : 1
+                          }} 
+                        />
                       </div>
+                    )}
+
+                    {/* Bottom Controls */}
+                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                      {/* Word Count */}
+                        <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                        <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
+                        </div>
                       
                       <div className="flex items-center gap-3">
                         {/* Skip Button */}
@@ -1166,12 +1497,19 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           variant="ghost"
                           onClick={() => {
                             setTask1Skipped(!task1Skipped);
-                            if (!task1Skipped) setTask1Answer('');
+                            if (!task1Skipped) {
+                              setTask1Answer('');
+                              if (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') {
+                                setTask1IntroAnswer('');
+                                setTask1Body1Answer('');
+                                setTask1Body2Answer('');
+                              }
+                            }
                           }}
                           className="h-8 px-3 text-sm font-medium hover:bg-transparent"
                           style={{
-                            backgroundColor: task1Skipped
-                              ? themeStyles.buttonPrimary
+                            backgroundColor: task1Skipped 
+                              ? themeStyles.buttonPrimary 
                               : 'transparent',
                             color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
                             border: 'none',
@@ -1196,7 +1534,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             }}
                             className="data-[state=checked]:bg-primary"
                           />
-                        </div>
+                      </div>
 
                         {/* Grammar Button */}
                         <Button
@@ -1221,8 +1559,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                           <SelectTrigger
                             className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
                             style={{
-                              color: themeStyles.textPrimary
-                            }}
+                              color: themeStyles.textPrimary,
+                              '--tw-ring-color': themeStyles.buttonPrimary
+                            } as React.CSSProperties}
                           >
                             <SelectValue placeholder="Language" />
                           </SelectTrigger>
@@ -1254,12 +1593,12 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               ...themeStyles.cardStyle,
               minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
             }}>
-              <CardContent className="p-4 flex flex-col h-full">
+              <CardContent className="p-4 flex flex-col flex-1">
                 {currentTaskData?.instructions && (
                   <div className="mb-4">
                     <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
                       backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                      borderColor: themeStyles.border,
+                              borderColor: themeStyles.border,
                       borderWidth: '1px',
                       borderStyle: 'solid',
                       color: themeStyles.textPrimary
@@ -1268,11 +1607,65 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     </div>
                   </div>
                 )}
+                {/* Academic Task 1 View All Display */}
+                {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
+                  <div className="min-h-[500px] overflow-y-auto text-base leading-relaxed whitespace-pre-wrap p-4" style={{ color: themeStyles.textPrimary }}>
+                    {task1IntroAnswer && (
+                      <div className="mb-6">
+                        <strong>Introduction:</strong>
+                        <div className="mt-2">{task1IntroAnswer}</div>
+                  </div>
+                    )}
+                    {task1Body1Answer && (
+                      <div className="mb-6">
+                        <strong>Body Paragraph 1:</strong>
+                        <div className="mt-2">{task1Body1Answer}</div>
+                </div>
+                    )}
+                    {task1Body2Answer && (
+                      <div className="mb-6">
+                        <strong>Body Paragraph 2:</strong>
+                        <div className="mt-2">{task1Body2Answer}</div>
+                      </div>
+                    )}
+                    {!task1IntroAnswer && !task1Body1Answer && !task1Body2Answer && (
+                      <div style={{ color: themeStyles.textSecondary }}>No content yet...</div>
+                    )}
+                  </div>
+                ) : (
                 <Textarea 
-                  value={task1Answer} 
-                  onChange={e => setTask1Answer(e.target.value)} 
-                  placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")} 
-                  className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                    value={getCurrentAnswer()}
+                    onChange={e => setCurrentAnswer(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Tab navigation for Academic tasks
+                      if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+                        e.preventDefault();
+                        if (currentTask === 1) {
+                          if (task1Section === 'intro') setTask1Section('body1');
+                          else if (task1Section === 'body1') setTask1Section('body2');
+                          else if (task1Section === 'body2') setTask1Section('viewAll');
+                        } else if (currentTask === 2) {
+                          if (task2Section === 'intro') setTask2Section('body1');
+                          else if (task2Section === 'body1') setTask2Section('body2');
+                          else if (task2Section === 'body2') setTask2Section('conclusion');
+                          else if (task2Section === 'conclusion') setTask2Section('viewAll');
+                        }
+                      }
+                    }}
+                    placeholder={
+                      task1Skipped
+                        ? "Task 1 is skipped"
+                        : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
+                          ? "Write your letter here..."
+                          : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
+                            ? (task1Section === 'intro' ? "Write your introduction here..." :
+                               task1Section === 'body1' ? "Write your first body paragraph here..." :
+                               task1Section === 'body2' ? "Write your second body paragraph here..." :
+                               task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
+                               "Write your description here...")
+                            : "Write your description here..."
+                    }
+                  className="flex-1 text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                   spellCheck={spellCheckEnabled}
                   disabled={task1Skipped}
                   style={{
@@ -1287,19 +1680,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     opacity: task1Skipped ? 0.6 : 1
                   }} 
                 />
-                {currentTask === 1 && (
-                  <GrammarFeedbackDisplay 
-                    feedback={task1GrammarFeedback} 
-                    improved={task1GrammarImproved} 
-                  />
                 )}
-                
+
                 {/* Bottom Controls */}
                 <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                   {/* Word Count */}
-                  <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
-                    <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
-                  </div>
+                    <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                    <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
+                    </div>
                   
                   <div className="flex items-center gap-3">
                     {/* Skip Button */}
@@ -1308,12 +1696,19 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       variant="ghost"
                       onClick={() => {
                         setTask1Skipped(!task1Skipped);
-                        if (!task1Skipped) setTask1Answer('');
+                        if (!task1Skipped) {
+                          setTask1Answer('');
+                          if (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') {
+                            setTask1IntroAnswer('');
+                            setTask1Body1Answer('');
+                            setTask1Body2Answer('');
+                          }
+                        }
                       }}
                       className="h-8 px-3 text-sm font-medium hover:bg-transparent"
                       style={{
-                        backgroundColor: task1Skipped
-                          ? themeStyles.buttonPrimary
+                        backgroundColor: task1Skipped 
+                          ? themeStyles.buttonPrimary 
                           : 'transparent',
                         color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
                         border: 'none',
@@ -1338,7 +1733,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         }}
                         className="data-[state=checked]:bg-primary"
                       />
-                    </div>
+                  </div>
 
                     {/* Grammar Button */}
                     <Button
@@ -1363,8 +1758,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       <SelectTrigger
                         className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
                         style={{
-                          color: themeStyles.textPrimary
-                        }}
+                          color: themeStyles.textPrimary,
+                          '--tw-ring-color': themeStyles.buttonPrimary
+                        } as React.CSSProperties}
                       >
                         <SelectValue placeholder="Language" />
                       </SelectTrigger>
@@ -1391,7 +1787,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    <Button
+                    <Button 
                       onClick={submitTest}
                       disabled={isSubmitDisabled()}
                       variant="default"
@@ -1427,7 +1823,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 <div className="mb-4">
                   <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
                     backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                    borderColor: themeStyles.border,
+                            borderColor: themeStyles.border,
                     borderWidth: '1px',
                     borderStyle: 'solid',
                     color: themeStyles.textPrimary
@@ -1436,10 +1832,162 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   </div>
                 </div>
               )}
+              {/* Academic Task 2 View All Display */}
+              {currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task2Section === 'viewAll' && !task2Skipped ? (
+                isViewAllEditing ? (
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>Edit Complete Essay</h3>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => setIsViewAllEditing(false)}
+                          className="h-8 px-3 text-sm font-medium"
+                          style={{
+                            backgroundColor: 'transparent',
+                            color: themeStyles.textPrimary,
+                            border: `1px solid ${themeStyles.border}`
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => setIsViewAllEditing(false)}
+                          className="h-8 px-3 text-sm font-medium"
+                          style={{
+                            backgroundColor: themeStyles.buttonPrimary,
+                            color: '#ffffff',
+                            border: 'none'
+                          }}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                    <Textarea
+                      value={getCurrentAnswer()}
+                      onChange={e => setCurrentAnswer(e.target.value)}
+                      placeholder="Write your complete Task 2 essay here..."
+                      className="flex-1 text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                      spellCheck={spellCheckEnabled}
+                      style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                        borderColor: themeStyles.border,
+                        color: themeStyles.textPrimary,
+                        outline: 'none',
+                        boxShadow: 'none'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto space-y-4 p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>Complete Essay Structure</h3>
+                      <Button
+                        size="sm"
+                        onClick={() => setIsViewAllEditing(true)}
+                        className="h-8 px-3 text-sm font-medium"
+                        style={{
+                          backgroundColor: themeStyles.buttonPrimary,
+                          color: '#ffffff',
+                          border: 'none'
+                        }}
+                      >
+                        Modify
+                      </Button>
+                    </div>
+                    {task2IntroAnswer && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Introduction:</h4>
+                        <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border,
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          color: themeStyles.textPrimary,
+                          minHeight: '60px'
+                        }}>
+                          {task2IntroAnswer}
+                        </div>
+                      </div>
+                    )}
+                    {task2Body1Answer && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Body Paragraph 1:</h4>
+                        <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border,
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          color: themeStyles.textPrimary,
+                          minHeight: '60px'
+                        }}>
+                          {task2Body1Answer}
+                        </div>
+                      </div>
+                    )}
+                    {task2Body2Answer && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Body Paragraph 2:</h4>
+                        <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border,
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          color: themeStyles.textPrimary,
+                          minHeight: '60px'
+                        }}>
+                          {task2Body2Answer}
+                        </div>
+                      </div>
+                    )}
+                    {task2ConclusionAnswer && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2" style={{ color: themeStyles.textPrimary }}>Conclusion:</h4>
+                        <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{
+                          backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border,
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          color: themeStyles.textPrimary,
+                          minHeight: '60px'
+                        }}>
+                          {task2ConclusionAnswer}
+                        </div>
+                      </div>
+                    )}
+                    {!task2IntroAnswer && !task2Body1Answer && !task2Body2Answer && !task2ConclusionAnswer && (
+                      <div style={{ color: themeStyles.textSecondary }}>No content yet...</div>
+                    )}
+                  </div>
+                )
+              ) : (
               <Textarea 
-                value={task2Answer} 
-                onChange={e => setTask2Answer(e.target.value)} 
-                placeholder={task2Skipped ? "Task 2 is skipped" : "Write your essay here..."} 
+                  value={getCurrentAnswer()}
+                  onChange={e => setCurrentAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Tab navigation for Academic tasks
+                    if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+                      e.preventDefault();
+                      if (task2Section === 'intro') setTask2Section('body1');
+                      else if (task2Section === 'body1') setTask2Section('body2');
+                      else if (task2Section === 'body2') setTask2Section('conclusion');
+                      else if (task2Section === 'conclusion') setTask2Section('viewAll');
+                    }
+                  }}
+                  placeholder={
+                    task2Skipped
+                      ? "Task 2 is skipped"
+                      : (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
+                        ? (task2Section === 'intro' ? "Write your introduction here..." :
+                           task2Section === 'body1' ? "Write your first body paragraph here..." :
+                           task2Section === 'body2' ? "Write your second body paragraph here..." :
+                           task2Section === 'conclusion' ? "Write your conclusion here..." :
+                           task2Section === 'viewAll' ? "Write your complete Task 2 essay here..." :
+                           "Write your essay here...")
+                        : "Write your essay here..."
+                  }
                 className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                 spellCheck={spellCheckEnabled}
                 disabled={task2Skipped}
@@ -1455,41 +2003,44 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   opacity: task2Skipped ? 0.6 : 1
                 }} 
               />
-              {currentTask === 2 && (
-                <GrammarFeedbackDisplay 
-                  feedback={task2GrammarFeedback} 
-                  improved={task2GrammarImproved} 
-                />
               )}
-              
+
               {/* Bottom Controls */}
               <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                 {/* Word Count */}
-                <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
-                  <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
-                </div>
+                    <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                  <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
+                    </div>
                 
                 <div className="flex items-center gap-3">
                   {/* Skip Button */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setTask2Skipped(!task2Skipped);
-                      if (!task2Skipped) setTask2Answer('');
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setTask2Skipped(!task2Skipped);
+                        if (!task2Skipped) {
+                          setTask2Answer('');
+                        if (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') {
+                          setTask2IntroAnswer('');
+                          setTask2Body1Answer('');
+                          setTask2Body2Answer('');
+                          setTask2ConclusionAnswer('');
+                        }
+                      }
                     }}
                     className="h-8 px-3 text-sm font-medium hover:bg-transparent"
-                    style={{
-                      backgroundColor: task2Skipped
-                        ? themeStyles.buttonPrimary
-                        : 'transparent',
-                      color: task2Skipped ? '#ffffff' : themeStyles.textPrimary,
-                      border: 'none',
+                      style={{
+                        backgroundColor: task2Skipped 
+                          ? themeStyles.buttonPrimary 
+                          : 'transparent',
+                        color: task2Skipped ? '#ffffff' : themeStyles.textPrimary,
+                        border: 'none',
                       boxShadow: 'none'
-                    }}
-                  >
-                    {task2Skipped ? 'Unskip' : 'Skip'}
-                  </Button>
+                      }}
+                    >
+                      {task2Skipped ? 'Unskip' : 'Skip'}
+                    </Button>
 
                   {/* Spell Check */}
                   <div className="flex items-center gap-2">
@@ -1531,8 +2082,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     <SelectTrigger
                       className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
                       style={{
-                        color: themeStyles.textPrimary
-                      }}
+                        color: themeStyles.textPrimary,
+                        '--tw-ring-color': themeStyles.buttonPrimary
+                      } as React.CSSProperties}
                     >
                       <SelectValue placeholder="Language" />
                     </SelectTrigger>
@@ -1603,6 +2155,16 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             </CardContent>
           </Card>
         )}
+
+        {/* Grammar Feedback Section */}
+        <div className="mt-6">
+          {((currentTask === 1 && task1GrammarFeedback) || (currentTask === 2 && task2GrammarFeedback)) && (
+            <GrammarFeedbackDisplay
+              feedback={currentTask === 1 ? task1GrammarFeedback : task2GrammarFeedback}
+              improved={currentTask === 1 ? task1GrammarImproved : task2GrammarImproved}
+            />
+          )}
+        </div>
 
         {/* Exit Button - Fixed Bottom Left */}
         <Button 

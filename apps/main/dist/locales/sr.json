@@ -1,0 +1,57 @@
+{
+  "header": {
+    "brand": "English AIdol",
+    "dashboard": "Контролна табла",
+    "signIn": "Пријави се",
+    "startFreeTrial": "Започни бесплатан пробни период",
+    "continueLearning": "Настави учење",
+    "language": "Језик"
+  },
+  "dashboard": {
+    "myWordBook": "Моја књига речи",
+    "tests": "Тестови",
+    "studyPlan": "План учења",
+    "home": "Почетна",
+    "resetResults": "Ресетуј резултате",
+    "greeting": "Добро јутро, {{name}}!",
+    "helloUser": "Здраво, {{name}}",
+    "overall": "Укупно",
+    "studyProgress": "Напредак у учењу",
+    "testsTaken": "Урађени тестови",
+    "wordsSaved": "Сачуване речи",
+    "dayStreak": "Низ дана",
+    "practiceAreas": "Области вежбања",
+    "resultsFeedback": "{{skill}} Резултати и повратне информације",
+    "viewHistory": "Погледај историју",
+    "viewDetailedResults": "Погледај детаљне резултате",
+    "averageScore": "Просечан резултат",
+    "latestScore": "Најновији резултат",
+    "noTestsYet": "Још увек нису урађени {{skill}} тестови",
+    "startFirstTest": "Започни први тест",
+    "deadline": "Рок",
+    "clickToOpenSettings": "Кликните да отворите подешавања"
+  },
+  "skills": {
+    "reading": "Читање",
+    "listening": "Слушање",
+    "writing": "Писање",
+    "speaking": "Говор",
+    "overall": "Укупно"
+  },
+  "navigation": {
+    "myWordBook": "Моја књига речи",
+    "tests": "Тестови",
+    "studyPlan": "План учења",
+    "home": "Почетна",
+    "settings": "Подешавања",
+    "resetResults": "Ресетуј резултате",
+    "community": "Заједница",
+    "practice": "Вежбање",
+    "sentenceMastery": "Мајсторство реченица",
+    "adminLogin": "Админ пријава",
+    "adminDashboard": "Админ контролна табла"
+  },
+  "community": {
+    "studyCommunity": "Студијска Заједница"
+  }
+}

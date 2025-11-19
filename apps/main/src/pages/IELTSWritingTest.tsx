@@ -415,10 +415,41 @@ const IELTSWritingTestInterface = () => {
   // Handle View All text changes with cursor position preservation
   const handleViewAllChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
+    let newValue = e.target.value;
     const cursorPosition = textarea.selectionStart;
 
-    // Store the current value
-    const newValue = e.target.value;
+    // Ensure dashes are preserved for paragraph starts
+    const lines = newValue.split('\n');
+    const processedLines = [];
+    let paragraphCount = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // If this is an empty line or just whitespace, keep it as is
+      if (!trimmedLine) {
+        processedLines.push(line);
+        continue;
+      }
+
+      // If this line already starts with a dash, keep it
+      if (line.startsWith('- ')) {
+        processedLines.push(line);
+        paragraphCount++;
+        continue;
+      }
+
+      // If this looks like paragraph content (has substantial text and we're in paragraph area), add dash
+      if (paragraphCount < 4 && trimmedLine.length > 3) { // Reasonable paragraph content
+        processedLines.push('- ' + trimmedLine);
+        paragraphCount++;
+      } else {
+        processedLines.push(line);
+      }
+    }
+
+    newValue = processedLines.join('\n');
 
     // Update the answer and distribute to sections
     setCurrentAnswer(newValue);
@@ -427,7 +458,10 @@ const IELTSWritingTestInterface = () => {
     setTimeout(() => {
       if (viewAllTextareaRef.current) {
         viewAllTextareaRef.current.focus();
-        viewAllTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+        // Adjust cursor position if we added a dash
+        const currentValue = viewAllTextareaRef.current.value;
+        const adjustedPosition = Math.min(cursorPosition, currentValue.length);
+        viewAllTextareaRef.current.setSelectionRange(adjustedPosition, adjustedPosition);
       }
     }, 0);
   };

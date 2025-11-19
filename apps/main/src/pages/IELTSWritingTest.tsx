@@ -1015,24 +1015,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 minWidth: 'fit-content'
               }}>
                 <Clock className="w-3.5 h-3.5" style={{ color: themeStyles.textPrimary }} />
-                <span className="text-sm font-semibold tabular-nums" style={{ color: themeStyles.textPrimary }}>
+                <span className="text-sm font-medium tabular-nums" style={{ color: themeStyles.textPrimary }}>
                   {formatTime(timeRemaining)}
                 </span>
               </div>
-
-              {/* Spell Check */}
-              <Switch
-                checked={spellCheckEnabled}
-                onCheckedChange={setSpellCheckEnabled}
-                style={{
-                  backgroundColor: spellCheckEnabled
-                    ? themeStyles.buttonPrimary
-                    : themeStyles.theme.name === 'dark'
-                      ? 'rgba(255,255,255,0.1)'
-                      : 'rgba(0,0,0,0.1)'
-                }}
-                className="data-[state=checked]:bg-primary"
-              />
 
               {/* Task Selection Buttons */}
               <Button
@@ -1144,7 +1130,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                       value={task1Answer}
                       onChange={e => setTask1Answer(e.target.value)}
                       placeholder={task1Skipped ? "Task 1 is skipped" : (test?.test_subtype === 'General' || selectedTrainingType === 'General' ? "Write your letter here..." : "Write your description here...")}
-                      className="-mt-2 h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                      className="h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                       spellCheck={spellCheckEnabled}
                       disabled={task1Skipped}
                       style={{
@@ -1194,6 +1180,23 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         >
                           {task1Skipped ? 'Unskip' : 'Skip'}
                         </Button>
+
+                        {/* Spell Check */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
+                          <Switch
+                            checked={spellCheckEnabled}
+                            onCheckedChange={setSpellCheckEnabled}
+                            style={{
+                              backgroundColor: spellCheckEnabled
+                                ? themeStyles.buttonPrimary
+                                : themeStyles.theme.name === 'dark'
+                                  ? 'rgba(255,255,255,0.1)'
+                                  : 'rgba(0,0,0,0.1)'
+                            }}
+                            className="data-[state=checked]:bg-primary"
+                          />
+                        </div>
 
                         {/* Grammar Button */}
                         <Button
@@ -1319,6 +1322,23 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                     >
                       {task1Skipped ? 'Unskip' : 'Skip'}
                     </Button>
+
+                    {/* Spell Check */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
+                      <Switch
+                        checked={spellCheckEnabled}
+                        onCheckedChange={setSpellCheckEnabled}
+                        style={{
+                          backgroundColor: spellCheckEnabled
+                            ? themeStyles.buttonPrimary
+                            : themeStyles.theme.name === 'dark'
+                              ? 'rgba(255,255,255,0.1)'
+                              : 'rgba(0,0,0,0.1)'
+                        }}
+                        className="data-[state=checked]:bg-primary"
+                      />
+                    </div>
 
                     {/* Grammar Button */}
                     <Button
@@ -1470,6 +1490,23 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   >
                     {task2Skipped ? 'Unskip' : 'Skip'}
                   </Button>
+
+                  {/* Spell Check */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
+                    <Switch
+                      checked={spellCheckEnabled}
+                      onCheckedChange={setSpellCheckEnabled}
+                      style={{
+                        backgroundColor: spellCheckEnabled
+                          ? themeStyles.buttonPrimary
+                          : themeStyles.theme.name === 'dark'
+                            ? 'rgba(255,255,255,0.1)'
+                            : 'rgba(0,0,0,0.1)'
+                      }}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                  </div>
 
                   {/* Grammar Button */}
                   <Button

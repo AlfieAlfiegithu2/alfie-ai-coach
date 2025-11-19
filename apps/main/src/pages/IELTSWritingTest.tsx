@@ -352,14 +352,14 @@ const IELTSWritingTestInterface = () => {
           case 'body1': return task1Body1Answer;
           case 'body2': return task1Body2Answer;
           case 'viewAll':
-            // View All combines all sections without separators or placeholders
+            // View All combines all sections with dash prefixes
             const sectionsTask1 = [
               task1IntroAnswer.trim(),
               task1Body1Answer.trim(),
               task1Body2Answer.trim()
             ].filter(text => text); // Only include non-empty sections
 
-            return sectionsTask1.join('\n\n') || task1Answer;
+            return sectionsTask1.map(section => '- ' + section).join('\n\n') || task1Answer;
           default: return task1Answer;
         }
       }
@@ -373,7 +373,7 @@ const IELTSWritingTestInterface = () => {
           case 'body2': return task2Body2Answer;
           case 'conclusion': return task2ConclusionAnswer;
           case 'viewAll':
-            // View All combines all sections without separators or placeholders
+            // View All combines all sections with dash prefixes
             const sectionsTask2 = [
               task2IntroAnswer.trim(),
               task2Body1Answer.trim(),
@@ -381,7 +381,7 @@ const IELTSWritingTestInterface = () => {
               task2ConclusionAnswer.trim()
             ].filter(text => text); // Only include non-empty sections
 
-            return sectionsTask2.join('\n\n') || task2Answer;
+            return sectionsTask2.map(section => '- ' + section).join('\n\n') || task2Answer;
           default: return task2Answer;
         }
       }
@@ -392,18 +392,23 @@ const IELTSWritingTestInterface = () => {
   const distributeViewAllText = (fullText: string, taskNumber: 1 | 2) => {
     const sections = fullText.split('\n\n');
 
+    // Remove the "- " prefix from each section if it exists
+    const cleanSections = sections.map(section =>
+      section.trim().startsWith('- ') ? section.trim().substring(2) : section.trim()
+    );
+
     // Update the section variables based on the number of sections
     if (taskNumber === 1) {
       // Task 1 has up to 3 sections: intro, body1, body2
-      setTask1IntroAnswer(sections[0]?.trim() || '');
-      setTask1Body1Answer(sections[1]?.trim() || '');
-      setTask1Body2Answer(sections[2]?.trim() || '');
+      setTask1IntroAnswer(cleanSections[0] || '');
+      setTask1Body1Answer(cleanSections[1] || '');
+      setTask1Body2Answer(cleanSections[2] || '');
     } else {
       // Task 2 has up to 4 sections: intro, body1, body2, conclusion
-      setTask2IntroAnswer(sections[0]?.trim() || '');
-      setTask2Body1Answer(sections[1]?.trim() || '');
-      setTask2Body2Answer(sections[2]?.trim() || '');
-      setTask2ConclusionAnswer(sections[3]?.trim() || '');
+      setTask2IntroAnswer(cleanSections[0] || '');
+      setTask2Body1Answer(cleanSections[1] || '');
+      setTask2Body2Answer(cleanSections[2] || '');
+      setTask2ConclusionAnswer(cleanSections[3] || '');
     }
   };
 

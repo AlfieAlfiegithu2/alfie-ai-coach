@@ -962,9 +962,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       >
         <StudentLayout title="IELTS Writing Test" showBackButton>
           <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
-            <div className="w-full max-w-6xl mx-auto space-y-8 px-4 flex flex-col">
+            <div className="w-full max-w-6xl mx-auto space-y-4 px-4 flex flex-col">
         {/* Control Panel - Docker Style */}
-        <Card className="rounded-3xl mb-6 max-w-fit mx-auto px-4" style={{
+        <Card className="rounded-3xl mb-4 max-w-fit mx-auto px-4" style={{
           backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
           borderColor: themeStyles.border,
           backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
@@ -977,15 +977,10 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         }}>
           <CardContent className="p-2">
             <div className="flex items-center justify-center gap-3">
-              {/* Timer */}
-              <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>
-                {formatTime(timeRemaining)}
-              </span>
-
               {/* Theme Selector */}
               <Select value={themeName} onValueChange={(value) => setTheme(value as ThemeName)}>
                 <SelectTrigger
-                  className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                  className="w-[70px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
                   style={{
                     color: themeStyles.textPrimary
                   }}
@@ -1000,37 +995,6 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   ))}
                 </SelectContent>
               </Select>
-
-              {/* Task Selection Buttons */}
-              <Button
-                size="sm"
-                onClick={() => switchToTask(1)}
-                className="h-8 px-3 text-sm font-medium"
-                style={{
-                  backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
-                  color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
-                  border: 'none'
-                }}
-              >
-                Task 1
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => switchToTask(2)}
-                className="h-8 px-3 text-sm font-medium"
-                style={{
-                  backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
-                  color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
-                  border: 'none'
-                }}
-              >
-                Task 2
-              </Button>
-
-              {/* Word Count */}
-              <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
-                <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
-              </div>
 
               {/* Skip Button */}
               <Button
@@ -1058,22 +1022,35 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                 {(currentTask === 1 ? task1Skipped : task2Skipped) ? 'Unskip' : 'Skip'}
               </Button>
 
-              {/* Spell Check */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
-                <Switch
-                  checked={spellCheckEnabled}
-                  onCheckedChange={setSpellCheckEnabled}
-                  style={{
-                    backgroundColor: spellCheckEnabled
-                      ? themeStyles.buttonPrimary
-                      : themeStyles.theme.name === 'dark'
-                        ? 'rgba(255,255,255,0.1)'
-                        : 'rgba(0,0,0,0.1)'
-                  }}
-                  className="data-[state=checked]:bg-primary"
-                />
+              {/* Word Count */}
+              <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                <span className={getWordCount(getCurrentAnswer()) < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getWordCount(getCurrentAnswer())}</span> / {getMinWordCount()}
               </div>
+
+              {/* Timer */}
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{
+                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                minWidth: 'fit-content'
+              }}>
+                <Clock className="w-3.5 h-3.5" style={{ color: themeStyles.textPrimary }} />
+                <span className="text-sm font-semibold tabular-nums" style={{ color: themeStyles.textPrimary }}>
+                  {formatTime(timeRemaining)}
+                </span>
+              </div>
+
+              {/* Spell Check */}
+              <Switch
+                checked={spellCheckEnabled}
+                onCheckedChange={setSpellCheckEnabled}
+                style={{
+                  backgroundColor: spellCheckEnabled
+                    ? themeStyles.buttonPrimary
+                    : themeStyles.theme.name === 'dark'
+                      ? 'rgba(255,255,255,0.1)'
+                      : 'rgba(0,0,0,0.1)'
+                }}
+                className="data-[state=checked]:bg-primary"
+              />
 
               {/* Grammar Button */}
               <Button
@@ -1096,7 +1073,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
               {/* Language Selector */}
               <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
                 <SelectTrigger
-                  className="w-[120px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                  className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
                   style={{
                     color: themeStyles.textPrimary
                   }}
@@ -1177,6 +1154,32 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                   <SelectItem value="ne">नेपाली (Nepali)</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Task Selection Buttons */}
+              <Button
+                size="sm"
+                onClick={() => switchToTask(1)}
+                className="h-8 px-3 text-sm font-medium"
+                style={{
+                  backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
+                  color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
+                  border: 'none'
+                }}
+              >
+                Task 1
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => switchToTask(2)}
+                className="h-8 px-3 text-sm font-medium"
+                style={{
+                  backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
+                  color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
+                  border: 'none'
+                }}
+              >
+                Task 2
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1184,7 +1187,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         {/* Main Content Layout */}
         {currentTask === 1 ? (
           currentTaskData?.imageUrl ? (
-            <ResizablePanelGroup direction="horizontal" className="gap-8" style={{
+            <ResizablePanelGroup direction="horizontal" className="gap-4" style={{
               minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
             }}>
               <ResizablePanel defaultSize={45} minSize={40}>

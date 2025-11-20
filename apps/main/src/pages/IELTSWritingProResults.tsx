@@ -564,10 +564,10 @@ export default function IELTSWritingProResults() {
             <CardTitle className="text-heading-3 text-destructive">Results Not Available</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <p className="text-text-secondary">
+            <p style={{ color: '#8B6914' }}>
               We couldn't find your test results. This usually happens when:
             </p>
-            <ul className="text-sm text-text-secondary text-left space-y-1">
+            <ul className="text-sm text-left space-y-1" style={{ color: '#8B6914' }}>
               <li>• You navigated directly to this page</li>
               <li>• You refreshed the page</li>
               <li>• The test session expired</li>
@@ -654,7 +654,7 @@ export default function IELTSWritingProResults() {
             <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 rounded-full px-4 py-2 mb-2">
               This task was skipped
             </Badge>
-            <p className="text-sm text-text-secondary mt-2">No assessment available for this task</p>
+            <p className="text-sm mt-2" style={{ color: '#8B6914' }}>No assessment available for this task</p>
           </CardContent>
         </Card>
       );
@@ -708,7 +708,7 @@ export default function IELTSWritingProResults() {
           backgroundColor: currentTheme.colors.cardBackground,
           borderBottom: `1px solid ${currentTheme.colors.border}`
         }}>
-          <CardTitle className="text-heading-3 flex items-center justify-between">
+          <CardTitle className="text-heading-3 flex items-center justify-between" style={{ color: '#5D4E37' }}>
             <span>{title}</span>
             {!Number.isNaN(overallForTask) && (
               <Badge variant="outline" className="rounded-2xl text-sm">
@@ -751,7 +751,7 @@ export default function IELTSWritingProResults() {
             <div className="mt-6 space-y-6">
               {task.feedback?.strengths?.length ? (
                 <div>
-                  <h4 className="text-heading-4 mb-2" style={{ color: currentTheme.colors.textPrimary }}>Key strengths</h4>
+                  <h4 className="text-heading-4 mb-2" style={{ color: '#5D4E37' }}>Key strengths</h4>
                   <ul className="list-disc pl-5 space-y-1 text-sm" style={{ color: currentTheme.colors.textSecondary }}>
                     {task.feedback.strengths.map((s, i) => (
                       <li key={i}>{s}</li>
@@ -805,8 +805,19 @@ export default function IELTSWritingProResults() {
   };
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-br from-background to-primary/5">
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundColor: 'transparent'
+      }}
+    >
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+           style={{
+             backgroundImage: 'none',
+             backgroundColor: '#F5E6D3'
+           }} />
       <LightRays raysOrigin="top-center" raysColor="#4F46E5" raysSpeed={0.5} lightSpread={2} rayLength={1.5} pulsating={false} fadeDistance={1.2} saturation={0.8} followMouse={true} mouseInfluence={0.05} noiseAmount={0.1} distortion={0.2} />
+      <div className="relative z-10">
 
       <div className="border-b sticky top-0 z-10" style={{
         backgroundColor: currentTheme.colors.cardBackground,
@@ -819,13 +830,13 @@ export default function IELTSWritingProResults() {
               Back to Dashboard
             </Button>
             <div>
-              <h1 className="text-heading-2">IELTS Writing Results</h1>
+              <h1 className="text-heading-2" style={{ color: '#5D4E37' }}>IELTS Writing Results</h1>
             </div>
           </div>
 
           {/* Theme Selector */}
           <div className="flex items-center gap-2">
-            <Palette className="w-4 h-4 text-text-secondary" />
+            <Palette className="w-4 h-4" style={{ color: '#8B6914' }} />
             <Select value={selectedTheme} onValueChange={setSelectedTheme}>
               <SelectTrigger className="w-[140px] h-9">
                 <SelectValue placeholder="Theme" />
@@ -852,13 +863,13 @@ export default function IELTSWritingProResults() {
             backgroundColor: currentTheme.colors.cardBackground,
             borderBottom: `1px solid ${currentTheme.colors.border}`
           }}>
-            <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
+            <CardTitle className="text-heading-3" style={{ color: '#5D4E37' }}>Overall Writing Band Score</CardTitle>
           </CardHeader>
           <CardContent className="py-6">
             <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8">
               <PenguinClapAnimation size="md" className="shrink-0" />
               <div className="text-center lg:text-left">
-                <p className="text-caption uppercase tracking-wide text-text-secondary mb-1">Overall Band</p>
+                <p className="text-caption uppercase tracking-wide mb-1" style={{ color: '#8B6914' }}>Overall Band</p>
                 <div className="text-6xl font-bold mb-3" style={{
                   background: `linear-gradient(to right, ${currentTheme.colors.buttonPrimary}, ${currentTheme.colors.buttonPrimaryHover})`,
                   WebkitBackgroundClip: 'text',
@@ -912,7 +923,7 @@ export default function IELTSWritingProResults() {
             ...currentTheme.styles.cardStyle
           }}>
             <CardHeader>
-              <CardTitle className="text-heading-4">Task 1 Instruction</CardTitle>
+              <CardTitle className="text-heading-4" style={{ color: '#5D4E37' }}>Task 1 Instruction</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -943,7 +954,7 @@ export default function IELTSWritingProResults() {
             ...currentTheme.styles.cardStyle
           }}>
             <CardHeader>
-              <CardTitle className="text-heading-4">Task 2 Instruction</CardTitle>
+              <CardTitle className="text-heading-4" style={{ color: '#5D4E37' }}>Task 2 Instruction</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-sm p-4 rounded-lg whitespace-pre-wrap" style={{
@@ -978,6 +989,7 @@ export default function IELTSWritingProResults() {
             color: currentTheme.colors.buttonPrimary
           }}>Return to Dashboard</Button>
         </div>
+      </div>
       </div>
     </div>
   );

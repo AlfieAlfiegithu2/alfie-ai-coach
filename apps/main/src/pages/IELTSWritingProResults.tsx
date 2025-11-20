@@ -805,10 +805,7 @@ export default function IELTSWritingProResults() {
   };
 
   return (
-    <div className="min-h-screen relative" style={{
-      backgroundColor: currentTheme.colors.background,
-      background: currentTheme.colors.backgroundGradient || currentTheme.colors.background
-    }}>
+    <div className="min-h-screen relative bg-gradient-to-br from-background to-primary/5">
       <LightRays raysOrigin="top-center" raysColor="#4F46E5" raysSpeed={0.5} lightSpread={2} rayLength={1.5} pulsating={false} fadeDistance={1.2} saturation={0.8} followMouse={true} mouseInfluence={0.05} noiseAmount={0.1} distortion={0.2} />
 
       <div className="border-b sticky top-0 z-10" style={{

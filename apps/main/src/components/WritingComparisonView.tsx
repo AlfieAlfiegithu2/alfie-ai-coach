@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eye, List } from "lucide-react";
+import WritingVocabularyDisplay from "./WritingVocabularyDisplay";
 
 export type ComparisonSpan = {
   text: string;
@@ -29,6 +30,7 @@ interface WritingComparisonViewProps {
   }>;
   title: string;
   loading?: boolean;
+  currentTheme?: any;
 }
 
 const spanClass = (status: ComparisonSpan["status"], side: "original" | "improved") => {
@@ -85,52 +87,107 @@ const processTextForComparison = (
     explanation?: string;
   }>
 ) => {
-  // Helper: very simple word-diff to highlight only changed words
+  // Helper: improved word-diff to highlight only changed words with better alignment
   const diffToSpans = (orig: string, imp: string): { origSpans: ComparisonSpan[]; impSpans: ComparisonSpan[] } => {
     const o = orig.split(/\s+/);
     const p = imp.split(/\s+/);
-    const n = o.length; const m = p.length;
-    const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
-    for (let i = n - 1; i >= 0; i--) {
-      for (let j = m - 1; j >= 0; j--) {
-        dp[i][j] = o[i] === p[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const n = o.length, m = p.length;
+
+    // Find matching words and their positions
+    const matches: { origIndex: number; impIndex: number; word: string }[] = [];
+    const usedOrig = new Set<number>();
+    const usedImp = new Set<number>();
+
+    // First pass: find exact matches
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < m; j++) {
+        if (!usedOrig.has(i) && !usedImp.has(j) && o[i] === p[j]) {
+          matches.push({ origIndex: i, impIndex: j, word: o[i] });
+          usedOrig.add(i);
+          usedImp.add(j);
+          break;
+        }
       }
     }
-    // Reconstruct LCS path
-    const keepO: boolean[] = Array(n).fill(false);
-    const keepP: boolean[] = Array(m).fill(false);
-    let i = 0, j = 0;
-    while (i < n && j < m) {
-      if (o[i] === p[j]) { keepO[i] = true; keepP[j] = true; i++; j++; }
-      else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++;
-    }
+
+    // Sort matches by original position
+    matches.sort((a, b) => a.origIndex - b.origIndex);
+
     const origSpans: ComparisonSpan[] = [];
     const impSpans: ComparisonSpan[] = [];
+
     const pushChunk = (arr: ComparisonSpan[], text: string, status: ComparisonSpan["status"]) => {
       if (text.length === 0) return;
       const t = text.replace(/\s+/g, ' ').trim();
       if (!t) return;
       arr.push({ text: t + ' ', status });
     };
-    // Build spans for original
-    let buf = ''; let cur: ComparisonSpan["status"] = 'neutral';
-    for (let k = 0; k < n; k++) {
-      const nextStatus: ComparisonSpan["status"] = keepO[k] ? 'neutral' : 'error';
-      if (k === 0) { cur = nextStatus; }
-      if (nextStatus !== cur) { pushChunk(origSpans, buf, cur); buf = ''; cur = nextStatus; }
-      buf += (buf ? ' ' : '') + o[k];
+
+    // Build spans for original text
+    let lastOrigIndex = 0;
+    for (const match of matches) {
+      // Add any words before this match as errors (if not neutral)
+      if (match.origIndex > lastOrigIndex) {
+        const errorWords = o.slice(lastOrigIndex, match.origIndex);
+        if (errorWords.length > 0) {
+          const errorText = errorWords.join(' ');
+          if (errorText.trim()) {
+            pushChunk(origSpans, errorText, 'error');
+          }
+        }
+      }
+      // Add the matching word as neutral
+      pushChunk(origSpans, match.word, 'neutral');
+      lastOrigIndex = match.origIndex + 1;
     }
-    pushChunk(origSpans, buf, cur);
-    // Build spans for improved
-    buf = ''; cur = 'neutral';
-    for (let k = 0; k < m; k++) {
-      const nextStatus: ComparisonSpan["status"] = keepP[k] ? 'neutral' : 'improvement';
-      if (k === 0) { cur = nextStatus; }
-      if (nextStatus !== cur) { pushChunk(impSpans, buf, cur); buf = ''; cur = nextStatus; }
-      buf += (buf ? ' ' : '') + p[k];
+    // Add remaining words at the end as errors
+    if (lastOrigIndex < n) {
+      const errorWords = o.slice(lastOrigIndex);
+      if (errorWords.length > 0) {
+        const errorText = errorWords.join(' ');
+        if (errorText.trim()) {
+          pushChunk(origSpans, errorText, 'error');
+        }
+      }
     }
-    pushChunk(impSpans, buf, cur);
-    return { origSpans: origSpans.length ? origSpans : [{ text: orig, status: 'neutral' }], impSpans: impSpans.length ? impSpans : [{ text: imp, status: 'neutral' }] };
+
+    // Build spans for improved text
+    let lastImpIndex = 0;
+    for (const match of matches) {
+      // Add any words before this match as improvements
+      if (match.impIndex > lastImpIndex) {
+        const improvementWords = p.slice(lastImpIndex, match.impIndex);
+        if (improvementWords.length > 0) {
+          const improvementText = improvementWords.join(' ');
+          if (improvementText.trim()) {
+            pushChunk(impSpans, improvementText, 'improvement');
+          }
+        }
+      }
+      // Add the matching word as neutral
+      pushChunk(impSpans, match.word, 'neutral');
+      lastImpIndex = match.impIndex + 1;
+    }
+    // Add remaining words at the end as improvements
+    if (lastImpIndex < m) {
+      const improvementWords = p.slice(lastImpIndex);
+      if (improvementWords.length > 0) {
+        const improvementText = improvementWords.join(' ');
+        if (improvementText.trim()) {
+          pushChunk(impSpans, improvementText, 'improvement');
+        }
+      }
+    }
+
+    // Ensure we have at least one span for each
+    if (origSpans.length === 0) {
+      origSpans.push({ text: orig, status: 'neutral' });
+    }
+    if (impSpans.length === 0) {
+      impSpans.push({ text: imp, status: 'neutral' });
+    }
+
+    return { origSpans, impSpans };
   };
   // Split text into sentences for processing
   const sentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0);
@@ -264,20 +321,29 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
   correctedSpans: providedCorrectedSpans,
   sentenceComparisons: providedSentenceComparisons,
   title,
-  loading
+  loading,
+  currentTheme
 }) => {
   const [viewMode, setViewMode] = useState<"whole" | "sentence">("whole");
   
   // Memoize spans processing to prevent recalculation on every render
   const { originalSpans, improvedSpans, sentences } = useMemo(() => {
     // If we have AI-provided spans, use them but validate they contain the full text
-    if (providedOriginalSpans && providedCorrectedSpans) {
-      const originalSpansText = providedOriginalSpans.map(span => span.text).join('');
-      const correctedSpansText = providedCorrectedSpans.map(span => span.text).join('');
-      
+    if (providedOriginalSpans && providedCorrectedSpans && providedOriginalSpans.length > 0 && providedCorrectedSpans.length > 0) {
+      const originalSpansText = providedOriginalSpans.map(span => span.text).join('').replace(/\s+/g, ' ').trim();
+      const correctedSpansText = providedCorrectedSpans.map(span => span.text).join('').replace(/\s+/g, ' ').trim();
+      const normalizedOriginalText = originalText.replace(/\s+/g, ' ').trim();
+
+      // Check if spans contain substantial content (at least 50% of original text length)
+      const spansCoverage = originalSpansText.length / normalizedOriginalText.length;
+
       // If the spans don't contain the full original text, fall back to processing
-      if (originalSpansText.trim() !== originalText.trim()) {
-        console.warn('⚠️ AI-provided spans incomplete, falling back to full text processing');
+      if (originalSpansText.trim() !== normalizedOriginalText || spansCoverage < 0.5) {
+        console.warn('⚠️ AI-provided spans incomplete, falling back to full text processing', {
+          spansLength: originalSpansText.length,
+          originalLength: normalizedOriginalText.length,
+          coverage: spansCoverage
+        });
         return processTextForComparison(originalText, improvementSuggestions);
       }
       
@@ -303,6 +369,16 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
 
   // Memoize sentence building to prevent recalculation
   const buildSentencesFromWhole = useMemo((): any[] => {
+    // If we have sentence_comparisons from AI, use those directly
+    if (providedSentenceComparisons && providedSentenceComparisons.length > 0) {
+      return providedSentenceComparisons.map((s: any) => ({
+        ...s,
+        original_spans: s.original_spans ? refineSpansForKeywords(s.original_spans, 'original') : s.original_spans,
+        corrected_spans: s.corrected_spans ? refineSpansForKeywords(s.corrected_spans, 'improved') : s.corrected_spans,
+      }));
+    }
+
+    // Fallback: build from whole text comparison
     const improvedWhole = improvedSpans.map(s => s.text).join("").trim();
     const origSentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => s.trim() + ".");
     const impSentences = improvedWhole.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => s.trim() + ".");
@@ -311,25 +387,17 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
     for (let k = 0; k < pairs; k++) {
       const a = origSentences[k];
       const b = impSentences[k];
-      // quick diff (same logic as in processTextForComparison, inlined)
-      const oa = a.split(/\s+/), pb = b.split(/\s+/);
-      const n = oa.length, m = pb.length;
-      const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
-      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = oa[i] === pb[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-      const keepO = Array(n).fill(false), keepP = Array(m).fill(false);
-      let i = 0, j = 0; while (i < n && j < m) { if (oa[i] === pb[j]) { keepO[i] = keepP[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
-      const orig: ComparisonSpan[] = [], imp: ComparisonSpan[] = [];
-      const push = (arr: ComparisonSpan[], text: string, status: ComparisonSpan["status"]) => { const t = text.replace(/\s+/g,' ').trim(); if (t.length) arr.push({ text: t + ' ', status }); };
-      let buf = '', cur: ComparisonSpan["status"] = 'neutral';
-      for (let t = 0; t < n; t++) { const ns: ComparisonSpan["status"] = keepO[t] ? 'neutral' : 'error'; if (t === 0) cur = ns; if (ns !== cur) { push(orig, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + oa[t]; }
-      push(orig, buf, cur);
-      buf = ''; cur = 'neutral';
-      for (let t = 0; t < m; t++) { const ns: ComparisonSpan["status"] = keepP[t] ? 'neutral' : 'improvement'; if (t === 0) cur = ns; if (ns !== cur) { push(imp, buf, cur); buf=''; cur=ns; } buf += (buf?' ':'') + pb[t]; }
-      push(imp, buf, cur);
-      built.push({ original: a, improved: b, original_spans: orig, corrected_spans: imp });
+      // Use the diffToSpans function for consistent span creation
+      const d = diffToSpans(a, b);
+      built.push({
+        original: a,
+        improved: b,
+        original_spans: d.origSpans,
+        corrected_spans: d.impSpans
+      });
     }
     return built;
-  }, [improvedSpans, originalText]);
+  }, [improvedSpans, originalText, providedSentenceComparisons]);
 
   const effectiveSentences = useMemo(() => {
     if (providedSentenceComparisons && providedSentenceComparisons.length > 0) {
@@ -379,19 +447,27 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
         <h4 className="text-heading-4">Writing Analysis - {title}</h4>
         <div className="flex gap-2">
           <Button
-            variant={viewMode === "whole" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("whole")}
             className="flex items-center gap-2"
+            style={{
+              backgroundColor: viewMode === "whole" ? currentTheme?.colors?.buttonPrimary : 'transparent',
+              color: viewMode === "whole" ? '#ffffff' : currentTheme?.colors?.buttonPrimary,
+              borderColor: currentTheme?.colors?.buttonPrimary
+            }}
           >
             <Eye className="w-4 h-4" />
             Whole View
           </Button>
           <Button
-            variant={viewMode === "sentence" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("sentence")}
             className="flex items-center gap-2"
+            style={{
+              backgroundColor: viewMode === "sentence" ? currentTheme?.colors?.buttonPrimary : 'transparent',
+              color: viewMode === "sentence" ? '#ffffff' : currentTheme?.colors?.buttonPrimary,
+              borderColor: currentTheme?.colors?.buttonPrimary
+            }}
           >
             <List className="w-4 h-4" />
             Sentence by Sentence
@@ -530,6 +606,17 @@ export const WritingComparisonView: React.FC<WritingComparisonViewProps> = ({
           )}
         </div>
       )}
+
+      {/* Vocabulary Display */}
+      <WritingVocabularyDisplay
+        improvementSpans={useMemo(() =>
+          effectiveSentences.flatMap(sentence =>
+            (sentence.corrected_spans || []).filter(span => span.status === 'improvement')
+          ), [effectiveSentences]
+        )}
+        title="Useful Vocabulary from Improvements"
+        currentTheme={currentTheme}
+      />
     </div>
   );
 };

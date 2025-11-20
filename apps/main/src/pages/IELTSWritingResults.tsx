@@ -534,7 +534,6 @@ const IELTSWritingResults = () => {
                       </div>
                       {justification && (
                         <div className="mt-2">
-                          <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Assessment Reasoning</p>
                           <div className="text-sm text-text-secondary bg-surface-2/50 rounded-lg p-3 border border-border/50">
                             {justification}
                           </div>
@@ -620,7 +619,6 @@ const IELTSWritingResults = () => {
                       </div>
                       {justification && (
                         <div className="mt-2">
-                          <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Assessment Reasoning</p>
                           <div className="text-sm text-text-secondary bg-surface-2/50 rounded-lg p-3 border border-border/50">
                             {justification}
                           </div>

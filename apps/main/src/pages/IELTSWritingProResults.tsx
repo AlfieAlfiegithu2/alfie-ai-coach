@@ -3,12 +3,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LightRays from "@/components/animations/LightRays";
-import { ArrowLeft, CheckCircle, Target, Edit3 } from "lucide-react";
+import { ArrowLeft, CheckCircle, Target, Edit3, Palette } from "lucide-react";
 import PenguinClapAnimation from "@/components/animations/PenguinClapAnimation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useThemeStyles } from "@/hooks/useThemeStyles";
+import { themes, ThemeName } from "@/lib/themes";
 import ScoreSpiderChart from "@/components/ScoreSpiderChart";
 import WritingComparisonView from "@/components/WritingComparisonView";
 
@@ -84,24 +87,10 @@ interface StructuredResult {
   full_report_markdown?: string;
 }
 
-const bandToDesc = (score: number) => {
-  if (score >= 8.5) return {
-    label: "Excellent",
-    color: "text-brand-green bg-brand-green/10 border-brand-green/30"
-  };
-  if (score >= 7.0) return {
-    label: "Good",
-    color: "text-brand-blue bg-brand-blue/10 border-brand-blue/30"
-  };
-  if (score >= 6.0) return {
-    label: "Competent",
-    color: "text-brand-orange bg-brand-orange/10 border-brand-orange/30"
-  };
-  return {
-    label: "Limited",
-    color: "text-destructive bg-destructive/10 border-destructive/30"
-  };
-};
+// Theme selection for IELTS writing results
+const getThemeOptions = () => [
+  { value: "note", label: "Note", description: "Warm paper-like appearance" }
+];
 
 // IELTS rounding helpers
 const roundIELTS = (n: number): number => {
@@ -132,8 +121,10 @@ export default function IELTSWritingProResults() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+  const themeStyles = useThemeStyles();
+
   const [loading, setLoading] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<string>("note");
   const [resultsData, setResultsData] = useState<{
     structured?: StructuredResult;
     testName?: string;
@@ -624,7 +615,9 @@ export default function IELTSWritingProResults() {
   const overallBand = denom > 0
     ? roundIELTS((t1Valid + 2 * t2Valid) / denom)
     : (hasTask1 ? roundIELTS(t1Valid) : (hasTask2 ? roundIELTS(t2Valid) : 0));
-  const overallMeta = bandToDesc(overallBand);
+
+  // Use selected theme or default to 'note'
+  const currentTheme = themes[selectedTheme as ThemeName] || themes.note;
 
   const TaskSection = ({
     title,
@@ -644,11 +637,15 @@ export default function IELTSWritingProResults() {
     // Show skipped message if task is skipped or has no answer
     if (isSkipped || !userAnswer || !userAnswer.trim()) {
       return (
-        <Card className="bg-surface-1 border-2 border-amber-200 rounded-3xl shadow-lg mb-8">
+        <Card className="rounded-3xl shadow-lg mb-8" style={{
+          backgroundColor: currentTheme.colors.cardBackground,
+          borderColor: currentTheme.colors.cardBorder,
+          ...currentTheme.styles.cardStyle
+        }}>
           <CardHeader className="bg-gradient-to-r from-amber-50 to-amber-100">
             <CardTitle className="flex items-center gap-2 text-amber-700">
               <div className="p-2 rounded-xl bg-amber-200">
-                {type === "task1" ? "📊" : "✍️"}
+                {type === "task1" ? "Task 1" : "Task 2"}
               </div>
               {title} - Skipped
             </CardTitle>
@@ -702,8 +699,15 @@ export default function IELTSWritingProResults() {
         : (NaN as unknown as number);
 
     return (
-      <Card className="bg-surface-1 border-2 border-brand-blue/20 rounded-3xl shadow-lg mb-8">
-        <CardHeader className="bg-gradient-to-r from-brand-blue/10 to-brand-purple/10">
+      <Card className="rounded-3xl shadow-lg mb-8" style={{
+        backgroundColor: currentTheme.colors.cardBackground,
+        borderColor: currentTheme.colors.cardBorder,
+        ...currentTheme.styles.cardStyle
+      }}>
+        <CardHeader style={{
+          backgroundColor: currentTheme.colors.cardBackground,
+          borderBottom: `1px solid ${currentTheme.colors.border}`
+        }}>
           <CardTitle className="text-heading-3 flex items-center justify-between">
             <span>{title}</span>
             {!Number.isNaN(overallForTask) && (
@@ -716,19 +720,25 @@ export default function IELTSWritingProResults() {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((it) => (
-              <div key={it.label} className="rounded-2xl p-4 bg-surface-3 border border-border">
+              <div key={it.label} className="rounded-2xl p-4 border" style={{
+                backgroundColor: currentTheme.colors.hoverBackground,
+                borderColor: currentTheme.colors.border,
+                color: currentTheme.colors.textPrimary
+              }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium text-text-primary">{it.label}</p>
-                  <Badge variant="outline" className="rounded-xl">
+                  <p className="text-sm font-medium" style={{ color: currentTheme.colors.textPrimary }}>{it.label}</p>
+                  <Badge variant="outline" className="rounded-xl" style={{
+                    borderColor: currentTheme.colors.buttonPrimary,
+                    color: currentTheme.colors.buttonPrimary
+                  }}>
                     {typeof it.value === "number" ? roundIELTS(it.value).toFixed(1) : "-"}
                   </Badge>
                 </div>
                 {it.just ? (
-                  <div className="mt-2">
-                    <p className="text-[11px] uppercase tracking-wide text-text-tertiary mb-1">Assessment Reasoning</p>
-                    <div className="text-sm text-text-secondary bg-surface-2/50 rounded-lg p-3 border border-border/50">
-                      {it.just}
-                    </div>
+                  <div className="mt-2 text-sm" style={{
+                    color: currentTheme.colors.textSecondary
+                  }}>
+                    {it.just}
                   </div>
                 ) : null}
               </div>
@@ -741,8 +751,8 @@ export default function IELTSWritingProResults() {
             <div className="mt-6 space-y-6">
               {task.feedback?.strengths?.length ? (
                 <div>
-                  <h4 className="text-heading-4 mb-2">Key strengths</h4>
-                  <ul className="list-disc pl-5 space-y-1 text-text-secondary">
+                  <h4 className="text-heading-4 mb-2" style={{ color: currentTheme.colors.textPrimary }}>Key strengths</h4>
+                  <ul className="list-disc pl-5 space-y-1 text-sm" style={{ color: currentTheme.colors.textSecondary }}>
                     {task.feedback.strengths.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}
@@ -786,6 +796,7 @@ export default function IELTSWritingProResults() {
                correctedSpans={task.corrected_spans}
                sentenceComparisons={task.sentence_comparisons}
                title={title}
+               currentTheme={currentTheme}
              />
            )}
         </CardContent>
@@ -794,10 +805,16 @@ export default function IELTSWritingProResults() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-2 relative">
+    <div className="min-h-screen relative" style={{
+      backgroundColor: currentTheme.colors.background,
+      background: currentTheme.colors.backgroundGradient || currentTheme.colors.background
+    }}>
       <LightRays raysOrigin="top-center" raysColor="#4F46E5" raysSpeed={0.5} lightSpread={2} rayLength={1.5} pulsating={false} fadeDistance={1.2} saturation={0.8} followMouse={true} mouseInfluence={0.05} noiseAmount={0.1} distortion={0.2} />
 
-      <div className="bg-surface-1 border-b border-border sticky top-0 z-10">
+      <div className="border-b sticky top-0 z-10" style={{
+        backgroundColor: currentTheme.colors.cardBackground,
+        borderColor: currentTheme.colors.border
+      }}>
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard')} className="hover:bg-surface-3 rounded-xl">
@@ -808,12 +825,36 @@ export default function IELTSWritingProResults() {
               <h1 className="text-heading-2">IELTS Writing Results</h1>
             </div>
           </div>
+
+          {/* Theme Selector */}
+          <div className="flex items-center gap-2">
+            <Palette className="w-4 h-4 text-text-secondary" />
+            <Select value={selectedTheme} onValueChange={setSelectedTheme}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Theme" />
+              </SelectTrigger>
+              <SelectContent>
+                {getThemeOptions().map((theme) => (
+                  <SelectItem key={theme.value} value={theme.value}>
+                    {theme.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       <div className="container mx-auto px-6 space-section">
-        <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8 overflow-hidden">
-          <CardHeader className="text-center py-6">
+        <Card className="rounded-3xl mb-8 overflow-hidden" style={{
+          backgroundColor: currentTheme.colors.cardBackground,
+          borderColor: currentTheme.colors.cardBorder,
+          ...currentTheme.styles.cardStyle
+        }}>
+          <CardHeader className="text-center py-6" style={{
+            backgroundColor: currentTheme.colors.cardBackground,
+            borderBottom: `1px solid ${currentTheme.colors.border}`
+          }}>
             <CardTitle className="text-heading-3">Overall Writing Band Score</CardTitle>
           </CardHeader>
           <CardContent className="py-6">
@@ -821,12 +862,21 @@ export default function IELTSWritingProResults() {
               <PenguinClapAnimation size="md" className="shrink-0" />
               <div className="text-center lg:text-left">
                 <p className="text-caption uppercase tracking-wide text-text-secondary mb-1">Overall Band</p>
-                <div className="text-6xl font-bold mb-3 bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+                <div className="text-6xl font-bold mb-3" style={{
+                  background: `linear-gradient(to right, ${currentTheme.colors.buttonPrimary}, ${currentTheme.colors.buttonPrimaryHover})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
                   {overallBand.toFixed(1)}
                 </div>
                 <div className="flex items-center gap-3 justify-center lg:justify-start">
-                  <Badge variant="outline" className={`text-base px-3 py-1.5 rounded-2xl ${overallMeta.color}`}>
-                    {overallMeta.label} Performance
+                  <Badge variant="outline" className="text-base px-3 py-1.5 rounded-2xl" style={{
+                    color: currentTheme.colors.buttonPrimary,
+                    borderColor: currentTheme.colors.buttonPrimary,
+                    backgroundColor: currentTheme.colors.hoverBackground
+                  }}>
+                    Performance
                   </Badge>
                 </div>
               </div>
@@ -859,9 +909,13 @@ export default function IELTSWritingProResults() {
           isSkipped={resultsData.task1Skipped || !resultsData.task1Answer || !resultsData.task1Answer.trim()}
         />
         {(task1Data?.instructions || task1Data?.imageUrl) && (
-          <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8">
+          <Card className="rounded-3xl shadow-lg mb-8" style={{
+            backgroundColor: currentTheme.colors.cardBackground,
+            borderColor: currentTheme.colors.cardBorder,
+            ...currentTheme.styles.cardStyle
+          }}>
             <CardHeader>
-              <CardTitle className="text-heading-4">Task 1 Prompt</CardTitle>
+              <CardTitle className="text-heading-4">Task 1 Instruction</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -871,7 +925,11 @@ export default function IELTSWritingProResults() {
                   </div>
                 )}
                 {task1Data?.instructions && (
-                  <div className="text-sm text-text-secondary bg-surface-3 p-4 rounded-lg border border-border whitespace-pre-wrap">
+                  <div className="text-sm p-4 rounded-lg whitespace-pre-wrap" style={{
+                    color: currentTheme.colors.textSecondary,
+                    backgroundColor: currentTheme.colors.cardBackground,
+                    border: `1px solid ${currentTheme.colors.border}`
+                  }}>
                     {task1Data.instructions}
                   </div>
                 )}
@@ -880,31 +938,48 @@ export default function IELTSWritingProResults() {
           </Card>
         )}
         
-        {/* Task 2 Section */}
-        <TaskSection 
-          title="Task 2 Assessment" 
-          task={structured?.task2} 
-          type="task2" 
-          computedOverall={t2OverallComputed}
-          userAnswer={resultsData.task2Answer}
-          isSkipped={resultsData.task2Skipped || !resultsData.task2Answer || !resultsData.task2Answer.trim()}
-        />
+        {/* Task 2 Instruction - moved to top */}
         {task2Data?.instructions && (
-          <Card className="bg-surface-1 rounded-3xl shadow-lg mb-8">
+          <Card className="rounded-3xl shadow-lg mb-8" style={{
+            backgroundColor: currentTheme.colors.cardBackground,
+            borderColor: currentTheme.colors.cardBorder,
+            ...currentTheme.styles.cardStyle
+          }}>
             <CardHeader>
-              <CardTitle className="text-heading-4">Task 2 Prompt</CardTitle>
+              <CardTitle className="text-heading-4">Task 2 Instruction</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-text-secondary bg-surface-3 p-4 rounded-lg border border-border whitespace-pre-wrap">
+              <div className="text-sm p-4 rounded-lg whitespace-pre-wrap" style={{
+                color: currentTheme.colors.textSecondary,
+                backgroundColor: currentTheme.colors.cardBackground,
+                border: `1px solid ${currentTheme.colors.border}`
+              }}>
                 {task2Data.instructions}
               </div>
             </CardContent>
           </Card>
         )}
 
+        {/* Task 2 Assessment - moved below instruction */}
+        <TaskSection
+          title="Task 2 Assessment"
+          task={structured?.task2}
+          type="task2"
+          computedOverall={t2OverallComputed}
+          userAnswer={resultsData.task2Answer}
+          isSkipped={resultsData.task2Skipped || !resultsData.task2Answer || !resultsData.task2Answer.trim()}
+        />
+
         <div className="flex justify-center gap-4">
-          <Button onClick={() => navigate("/ielts-portal")} className="btn-primary rounded-xl">Take Another Test</Button>
-          <Button variant="outline" onClick={() => navigate("/dashboard")} className="rounded-xl">Return to Dashboard</Button>
+          <Button onClick={() => navigate("/ielts-portal")} className="rounded-xl" style={{
+            backgroundColor: currentTheme.colors.buttonPrimary,
+            color: '#ffffff',
+            borderColor: currentTheme.colors.buttonPrimary
+          }}>Take Another Test</Button>
+          <Button onClick={() => navigate("/dashboard")} variant="outline" className="rounded-xl" style={{
+            borderColor: currentTheme.colors.buttonPrimary,
+            color: currentTheme.colors.buttonPrimary
+          }}>Return to Dashboard</Button>
         </div>
       </div>
     </div>

@@ -907,15 +907,7 @@ export default function IELTSWritingProResults() {
           </CardContent>
         </Card>
 
-        {/* Task 1 Section */}
-        <TaskSection 
-          title="Task 1 Assessment" 
-          task={structured?.task1} 
-          type="task1" 
-          computedOverall={t1OverallComputed}
-          userAnswer={resultsData.task1Answer}
-          isSkipped={resultsData.task1Skipped || !resultsData.task1Answer || !resultsData.task1Answer.trim()}
-        />
+        {/* Task 1 Instruction - moved to top */}
         {(task1Data?.instructions || task1Data?.imageUrl) && (
           <Card className="rounded-3xl shadow-lg mb-8" style={{
             backgroundColor: currentTheme.colors.cardBackground,
@@ -945,6 +937,16 @@ export default function IELTSWritingProResults() {
             </CardContent>
           </Card>
         )}
+
+        {/* Task 1 Section */}
+        <TaskSection
+          title="Task 1 Assessment"
+          task={structured?.task1}
+          type="task1"
+          computedOverall={t1OverallComputed}
+          userAnswer={resultsData.task1Answer}
+          isSkipped={resultsData.task1Skipped || !resultsData.task1Answer || !resultsData.task1Answer.trim()}
+        />
         
         {/* Task 2 Instruction - moved to top */}
         {task2Data?.instructions && (

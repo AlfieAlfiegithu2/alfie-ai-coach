@@ -53,6 +53,7 @@ const WritingVocabularyDisplay: React.FC<WritingVocabularyDisplayProps> = ({
           const normalizedLang = profile.native_language.length > 2 ?
             profile.native_language.substring(0, 2).toLowerCase() :
             profile.native_language.toLowerCase();
+          console.log('👤 User language from profile:', profile.native_language, '→ normalized:', normalizedLang);
           setUserLanguage(normalizedLang);
         }
 
@@ -68,6 +69,7 @@ const WritingVocabularyDisplay: React.FC<WritingVocabularyDisplayProps> = ({
           const normalizedLang = preferences.preferred_feedback_language.length > 2 ?
             preferences.preferred_feedback_language.substring(0, 2).toLowerCase() :
             preferences.preferred_feedback_language.toLowerCase();
+          console.log('👤 User language from preferences:', preferences.preferred_feedback_language, '→ normalized:', normalizedLang);
           setUserLanguage(normalizedLang);
         }
       } catch (error) {
@@ -140,26 +142,94 @@ const WritingVocabularyDisplay: React.FC<WritingVocabularyDisplayProps> = ({
 
       setLoading(true);
       try {
-        // Try to get translations from vocab_translations table first
-        const { data: translationData } = await supabase
-          .from('vocab_translations')
-          .select('card_id, lang, translations')
-          .in('lang', [userLanguage]);
-
         const translationMap: Record<string, string> = {};
 
-        // Also try to get translations from vocab_cards directly
-        const { data: cardData } = await supabase
+        // Try to get translations by joining vocab_translations with vocab_cards
+        console.log('🔍 Checking vocab_translations + vocab_cards join for language:', userLanguage);
+        const { data: joinedTranslationData, error: joinedError } = await supabase
+          .from('vocab_translations')
+          .select(`
+            translations,
+            lang,
+            vocab_cards!inner(term)
+          `)
+          .eq('lang', userLanguage)
+          .in('vocab_cards.term', vocabularyWords);
+
+        if (joinedError) {
+          console.error('❌ Error querying joined vocab tables:', joinedError);
+        } else {
+          console.log('📖 Found', joinedTranslationData?.length || 0, 'joined translation entries');
+          joinedTranslationData?.forEach(entry => {
+            if (entry.vocab_cards?.term && entry.translations && Array.isArray(entry.translations) && entry.translations.length > 0) {
+              const term = entry.vocab_cards.term;
+              const translation = entry.translations[0]; // Take first translation
+              translationMap[term.toLowerCase()] = translation;
+              console.log(`📖 vocab_translations join: "${term}" → "${translation}"`);
+            }
+          });
+        }
+
+        // Also try to get translations from vocab_cards directly (for cases where translation is stored directly)
+        console.log('🔍 Checking vocab_cards for', vocabularyWords.length, 'words:', vocabularyWords);
+        const { data: cardData, error: cardError } = await supabase
           .from('vocab_cards')
           .select('term, translation')
           .in('term', vocabularyWords);
 
-        // Build translation map
+        if (cardError) {
+          console.error('❌ Error querying vocab_cards:', cardError);
+        } else {
+          console.log('📚 Found', cardData?.length || 0, 'translations in vocab_cards');
+          console.log('📚 Card data sample:', cardData?.slice(0, 3));
+        }
+
+        // Build translation map from direct vocab_cards query
         cardData?.forEach(card => {
           if (card.term && card.translation) {
-            translationMap[card.term.toLowerCase()] = card.translation;
+            // Only use if we don't already have a translation from vocab_translations
+            if (!translationMap[card.term.toLowerCase()]) {
+              translationMap[card.term.toLowerCase()] = card.translation;
+              console.log(`📚 vocab_cards: "${card.term}" → "${card.translation}"`);
+            }
           }
         });
+
+        // If join failed, try a simpler approach - get all vocab_translations for the language and manually match
+        if (joinedError || !joinedTranslationData || joinedTranslationData.length === 0) {
+          console.log('🔄 Fallback: querying vocab_translations separately');
+          const { data: fallbackTransData, error: fallbackError } = await supabase
+            .from('vocab_translations')
+            .select('card_id, translations')
+            .eq('lang', userLanguage);
+
+          if (!fallbackError && fallbackTransData && fallbackTransData.length > 0) {
+            // Get the card IDs and terms
+            const cardIds = fallbackTransData.map(t => t.card_id).filter(Boolean);
+            const { data: cardsData } = await supabase
+              .from('vocab_cards')
+              .select('id, term')
+              .in('id', cardIds)
+              .in('term', vocabularyWords); // Only get cards that match our vocabulary words
+
+            // Create term -> card_id map
+            const termToCardId: Record<string, string> = {};
+            cardsData?.forEach(card => {
+              termToCardId[card.term.toLowerCase()] = card.id;
+            });
+
+            // Now map translations using the term -> card_id -> translation lookup
+            fallbackTransData.forEach(transEntry => {
+              const term = Object.keys(termToCardId).find(t => termToCardId[t] === transEntry.card_id);
+              if (term && transEntry.translations && Array.isArray(transEntry.translations) && transEntry.translations.length > 0) {
+                if (!translationMap[term]) { // Don't overwrite existing translations
+                  translationMap[term] = transEntry.translations[0];
+                  console.log(`📖 vocab_translations fallback: "${term}" → "${transEntry.translations[0]}"`);
+                }
+              }
+            });
+          }
+        }
 
         // For words not found in database, call translation service automatically
         const untranslatedWords = wordsToTranslate.filter(word =>
@@ -167,10 +237,11 @@ const WritingVocabularyDisplay: React.FC<WritingVocabularyDisplayProps> = ({
         );
 
         if (untranslatedWords.length > 0 && userLanguage && userLanguage !== 'en') {
-          console.log('🌐 Translating', untranslatedWords.length, 'words to', userLanguage);
+          console.log('🌐 Translating', untranslatedWords.length, 'words to', userLanguage, '- Words:', untranslatedWords);
 
           try {
-            // Call translation service for untranslated words
+            // First try batch translation
+            console.log('🌐 Attempting batch translation...');
             const { data: translationData, error } = await supabase.functions.invoke('translation-service', {
               body: {
                 texts: untranslatedWords,
@@ -180,30 +251,90 @@ const WritingVocabularyDisplay: React.FC<WritingVocabularyDisplayProps> = ({
               }
             });
 
+            console.log('🌐 Batch translation response:', {
+              success: translationData?.success,
+              error,
+              resultsCount: translationData?.results?.length
+            });
+
+            let batchSuccess = false;
             if (!error && translationData?.success && translationData?.results) {
-              // Apply translations from API response and update cache
-              translationData.results.forEach((result: any, index: number) => {
+              // Validate that we got translations for all words
+              const validTranslations = translationData.results.filter((result: any, index: number) => {
                 const word = untranslatedWords[index];
-                if (result && result.translation) {
-                  const translation = result.translation;
-                  translationMap[word.toLowerCase()] = translation;
+                return result && result.translation && result.translation !== word;
+              });
 
-                  // Update component cache
-                  const cacheKey = `${word}_${userLanguage}`;
-                  setTranslationCache(prev => ({
-                    ...prev,
-                    [cacheKey]: translation
-                  }));
+              if (validTranslations.length > 0) {
+                console.log('✅ Batch translation successful for', validTranslations.length, 'words');
+                batchSuccess = true;
 
-                  console.log(`✅ Translated "${word}" → "${translation}"`);
+                // Apply translations from API response and update cache
+                translationData.results.forEach((result: any, index: number) => {
+                  const word = untranslatedWords[index];
+                  if (result && result.translation) {
+                    const translation = result.translation;
+                    translationMap[word.toLowerCase()] = translation;
+
+                    // Update component cache
+                    const cacheKey = `${word}_${userLanguage}`;
+                    setTranslationCache(prev => ({
+                      ...prev,
+                      [cacheKey]: translation
+                    }));
+
+                    console.log(`✅ Batch: "${word}" → "${translation}"`);
+                  } else {
+                    // Fallback to original word for failed translations
+                    translationMap[word.toLowerCase()] = word;
+                    console.log(`⚠️ Batch fallback: "${word}" → "${word}"`);
+                  }
+                });
+              } else {
+                console.warn('⚠️ Batch translation returned no valid translations');
+              }
+            }
+
+            // If batch failed or returned no valid translations, try individual translations
+            if (!batchSuccess) {
+              console.log('🔄 Falling back to individual translations...');
+
+              for (const word of untranslatedWords) {
+                try {
+                  console.log(`🌐 Translating individual word: "${word}"`);
+                  const { data: singleData, error: singleError } = await supabase.functions.invoke('translation-service', {
+                    body: {
+                      text: word,
+                      sourceLang: 'en',
+                      targetLang: userLanguage,
+                      bypassCache: false
+                    }
+                  });
+
+                  if (!singleError && singleData?.success && singleData?.result?.translation) {
+                    const translation = singleData.result.translation;
+                    translationMap[word.toLowerCase()] = translation;
+
+                    // Update component cache
+                    const cacheKey = `${word}_${userLanguage}`;
+                    setTranslationCache(prev => ({
+                      ...prev,
+                      [cacheKey]: translation
+                    }));
+
+                    console.log(`✅ Individual: "${word}" → "${translation}"`);
+                  } else {
+                    console.warn(`⚠️ Individual translation failed for "${word}":`, singleError, singleData);
+                    translationMap[word.toLowerCase()] = word;
+                  }
+                } catch (singleTranslationError) {
+                  console.error(`❌ Individual translation error for "${word}":`, singleTranslationError);
+                  translationMap[word.toLowerCase()] = word;
                 }
-              });
-            } else {
-              console.warn('⚠️ Translation service failed, using fallback');
-              // Fallback to original words if translation fails
-              untranslatedWords.forEach(word => {
-                translationMap[word.toLowerCase()] = word;
-              });
+
+                // Small delay between requests to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
             }
           } catch (translationError) {
             console.error('❌ Translation service error:', translationError);
@@ -213,6 +344,7 @@ const WritingVocabularyDisplay: React.FC<WritingVocabularyDisplayProps> = ({
             });
           }
         } else if (untranslatedWords.length > 0) {
+          console.log('🌐 Using English fallback for', untranslatedWords.length, 'words');
           // For English or if no language set, use original words
           untranslatedWords.forEach(word => {
             translationMap[word.toLowerCase()] = word;
@@ -222,7 +354,16 @@ const WritingVocabularyDisplay: React.FC<WritingVocabularyDisplayProps> = ({
         // Apply translations (combine cached + newly translated)
         const finalTranslations: Record<string, string> = {};
         vocabularyWords.forEach(word => {
-          finalTranslations[word] = translationMap[word.toLowerCase()] || cachedTranslations[word] || word;
+          const translation = translationMap[word.toLowerCase()] || cachedTranslations[word] || word;
+          finalTranslations[word] = translation;
+          console.log(`🎯 Final: "${word}" → "${translation}"`);
+        });
+
+        console.log('🎯 Final translations summary:', {
+          totalWords: vocabularyWords.length,
+          translatedFromDB: Object.keys(translationMap).length,
+          cached: Object.keys(cachedTranslations).length,
+          finalTranslations: finalTranslations
         });
 
         setTranslations(finalTranslations);

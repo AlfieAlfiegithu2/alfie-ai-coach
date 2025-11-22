@@ -12,3 +12,4 @@ WHERE test_type = 'IELTS'
   AND training_type IS NULL;
 
 
+

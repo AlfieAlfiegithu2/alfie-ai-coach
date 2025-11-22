@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
 import { HelmetProvider } from 'react-helmet-async';
+// @ts-ignore - Types might be missing for this package
 import { Analytics } from "@vercel/analytics/react";
 import i18n from './lib/i18n';
 import { Suspense, lazy, useEffect } from 'react';
@@ -126,7 +127,16 @@ const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const AdminBlogManagement = lazy(() => import("./pages/AdminBlogManagement"));
 import { useAdminAuth } from './hooks/useAdminAuth';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false, // Disable refetch on window focus for mobile performance
+    },
+  },
+});
 
 // Protected Admin Route Component
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {

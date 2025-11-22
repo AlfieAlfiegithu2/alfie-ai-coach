@@ -4,6 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import i18n from '@/lib/i18n';
 import { normalizeLanguageCode } from '@/lib/languageUtils';
+import config from '@/config/runtime';
 
 interface Profile {
   id: string;
@@ -23,7 +24,7 @@ interface UseAuthReturn {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<{ success: boolean }>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   refreshProfile: () => Promise<void>;
   updateProfileAvatar: (avatarUrl: string) => void;
@@ -295,9 +296,8 @@ export function useAuth(): UseAuthReturn {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
-      const redirectUrl = `${siteUrl}/`;
-      
+      const redirectUrl = `${config.siteUrl}/`;
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -326,15 +326,11 @@ export function useAuth(): UseAuthReturn {
 
   const signInWithGoogle = async () => {
     try {
-      // Get the site URL - prefer configured, fallback to current origin
-      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
-      
-      // Supabase OAuth requires redirect to a callback route
-      // The callback route will handle the OAuth response and redirect to dashboard
-      const redirectTo = `${siteUrl}/auth/callback`;
-      
+      // Use configured site URL for consistent OAuth branding
+      const redirectTo = config.oauth.google.redirectTo;
+
       console.log('🔐 Initiating Google OAuth sign-in, redirectTo:', redirectTo);
-      
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -395,9 +391,8 @@ export function useAuth(): UseAuthReturn {
 
       // Continue with password reset - Supabase will handle email validation
 
-      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/reset-password`
+        redirectTo: `${config.siteUrl}/reset-password`
       });
 
       if (error) {

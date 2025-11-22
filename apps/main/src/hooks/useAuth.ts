@@ -24,7 +24,7 @@ interface UseAuthReturn {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
-  signOut: () => Promise<{ success: boolean }>;
+  signOut: () => Promise<{ success?: boolean; error?: any }>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   refreshProfile: () => Promise<void>;
   updateProfileAvatar: (avatarUrl: string) => void;
@@ -71,15 +71,15 @@ export function useAuth(): UseAuthReturn {
 
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (!isMounted) return;
 
         if (error) {
           // Check if it's a network error that we should retry
           const isNetworkError = error.message?.includes('Failed to fetch') ||
-                                error.message?.includes('ERR_CONNECTION_CLOSED') ||
-                                error.message?.includes('NetworkError') ||
-                                error.message?.includes('fetch');
+            error.message?.includes('ERR_CONNECTION_CLOSED') ||
+            error.message?.includes('NetworkError') ||
+            error.message?.includes('fetch');
 
           if (isNetworkError && retryCount < maxRetries) {
             console.warn(`Network error getting session (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
@@ -94,16 +94,16 @@ export function useAuth(): UseAuthReturn {
             console.error('Error getting session:', error);
           }
         }
-        
+
         // The auth state change listener will handle setting all state
       } catch (error: any) {
         if (!isMounted) return;
 
         // Check if it's a network error that we should retry
         const isNetworkError = error.message?.includes('Failed to fetch') ||
-                              error.message?.includes('ERR_CONNECTION_CLOSED') ||
-                              error.message?.includes('NetworkError') ||
-                              error.message?.includes('fetch');
+          error.message?.includes('ERR_CONNECTION_CLOSED') ||
+          error.message?.includes('NetworkError') ||
+          error.message?.includes('fetch');
 
         if (isNetworkError && retryCount < maxRetries) {
           console.warn(`Network error getting session (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`);
@@ -146,8 +146,8 @@ export function useAuth(): UseAuthReturn {
       if (error) {
         // Check if it's a network error that we should retry
         const isNetworkError = error.message?.includes('Failed to fetch') ||
-                              error.message?.includes('ERR_CONNECTION_CLOSED') ||
-                              error.message?.includes('NetworkError');
+          error.message?.includes('ERR_CONNECTION_CLOSED') ||
+          error.message?.includes('NetworkError');
 
         if (isNetworkError && retryCount < maxRetries) {
           // Only log in dev mode to reduce console noise
@@ -198,8 +198,8 @@ export function useAuth(): UseAuthReturn {
     } catch (error: any) {
       // Check if it's a network error that we should retry
       const isNetworkError = error.message?.includes('Failed to fetch') ||
-                            error.message?.includes('ERR_CONNECTION_CLOSED') ||
-                            error.message?.includes('NetworkError');
+        error.message?.includes('ERR_CONNECTION_CLOSED') ||
+        error.message?.includes('NetworkError');
 
       if (isNetworkError && retryCount < maxRetries) {
         // Only log in dev mode
@@ -268,14 +268,14 @@ export function useAuth(): UseAuthReturn {
         console.log('✅ Sign in successful, session received:', data.session.user.email);
         setSession(data.session);
         setUser(data.session.user);
-        
+
         // Fetch profile
         try {
           await fetchProfile(data.session.user.id);
         } catch (error) {
           console.error('Error fetching profile:', error);
         }
-        
+
         setLoading(false);
       }
 
@@ -296,7 +296,8 @@ export function useAuth(): UseAuthReturn {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const redirectUrl = `${config.siteUrl}/`;
+      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
+      const redirectUrl = `${siteUrl}/auth/callback`;
 
       const { error } = await supabase.auth.signUp({
         email,
@@ -326,11 +327,10 @@ export function useAuth(): UseAuthReturn {
 
   const signInWithGoogle = async () => {
     try {
-      // Use configured site URL for consistent OAuth branding
-      const redirectTo = config.oauth.google.redirectTo;
+      const siteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
+      const redirectTo = `${siteUrl}/auth/callback`;
 
       console.log('🔐 Initiating Google OAuth sign-in, redirectTo:', redirectTo);
-
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

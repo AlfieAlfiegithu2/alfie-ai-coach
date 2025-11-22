@@ -1,33 +1,24 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Handle the OAuth callback
     const handleAuthCallback = async () => {
-      try {
-        // Handle the OAuth callback
-        const { data, error } = await supabase.auth.getSession();
+      const { error } = await supabase.auth.getSession();
 
-        if (error) {
-          console.error('Auth callback error:', error);
-          navigate('/auth?error=auth_callback_error');
-          return;
-        }
-
-        if (data.session) {
-          console.log('Auth successful:', data.session.user);
-          // Redirect to dashboard or main app page after successful login
-          navigate('/dashboard');
-        } else {
-          // No session, redirect back to auth page
-          navigate('/auth');
-        }
-      } catch (err) {
-        console.error('Callback handling error:', err);
-        navigate('/auth?error=callback_failed');
+      if (error) {
+        console.error('Error during auth callback:', error);
+        // Redirect to login on error
+        navigate('/auth');
+      } else {
+        // Redirect to dashboard on success
+        // We use replace to prevent going back to the callback url
+        navigate('/dashboard', { replace: true });
       }
     };
 
@@ -35,12 +26,10 @@ const AuthCallback = () => {
   }, [navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-        <p className="text-lg text-gray-600">Completing sign in...</p>
-        <p className="text-sm text-gray-500 mt-2">Please wait while we verify your account</p>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+      <h2 className="text-xl font-semibold text-foreground">Completing sign in...</h2>
+      <p className="text-muted-foreground mt-2">Please wait while we redirect you.</p>
     </div>
   );
 };

@@ -6,7 +6,12 @@ const getSiteUrl = (): string => {
   // In browser runtime, always use the current origin for OAuth redirects
   // This ensures development servers work correctly
   if (typeof window !== 'undefined') {
-    return window.location.origin;
+    // Normalize to https://englishaidol.com (without www) for consistency
+    const origin = window.location.origin;
+    if (origin.includes('englishaidol.com')) {
+      return 'https://englishaidol.com';
+    }
+    return origin;
   }
 
   // For server-side rendering or build time, check environment variables

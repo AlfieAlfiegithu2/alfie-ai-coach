@@ -3,15 +3,16 @@
 
 // Helper function to get site URL with proper fallbacks for development
 const getSiteUrl = (): string => {
-  // First check for VITE_PUBLIC_SITE_URL environment variable (for development)
+  // In browser runtime, always use the current origin for OAuth redirects
+  // This ensures development servers work correctly
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  // For server-side rendering or build time, check environment variables
   const viteSiteUrl = (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL;
   if (viteSiteUrl) {
     return viteSiteUrl;
-  }
-
-  // Fallback to current origin (for development servers)
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
   }
 
   // Production fallback

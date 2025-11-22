@@ -50,7 +50,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
       // Optimistically update profile state IMMEDIATELY for instant UI feedback
       // This ensures the photo displays right away in SettingsModal before DB update completes
       updateProfileAvatar(photoSrc);
-      
+
       // Update profile with selected animal photo in database
       const { error } = await supabase
         .from('profiles')
@@ -64,7 +64,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
       }
 
       console.log('✅ Animal photo selected successfully');
-      
+
       // Refresh profile to sync with database (with retry on network errors)
       // This ensures we have the latest data, but UI already shows the new photo
       try {
@@ -73,29 +73,29 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
         // If refresh fails due to network, the optimistic update already shows the photo
         console.warn('Profile refresh failed, but photo was updated:', refreshError);
       }
-      
+
       toast({
         title: "Success!",
         description: "Profile photo updated successfully!"
       });
-      
+
       setOpen(false);
       onPhotoUpdate?.();
     } catch (error: any) {
       console.error('Error updating photo:', error);
-      
+
       // Revert optimistic update on error
       try {
         await refreshProfile();
       } catch (e) {
         console.warn('Error reverting profile:', e);
       }
-      
+
       // Check if it's a network error
       const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
-                            error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError');
-      
+        error?.message?.includes('Failed to fetch') ||
+        error?.message?.includes('NetworkError');
+
       if (isNetworkError) {
         // For network errors, try to refresh profile after a delay
         setTimeout(async () => {
@@ -105,7 +105,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
             console.warn('Retry refresh failed:', e);
           }
         }, 2000);
-        
+
         toast({
           title: "Photo Updated",
           description: "Your photo is being saved. It may take a moment to appear.",
@@ -137,7 +137,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
             Select one of the animal avatars to use as your profile photo.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Animal Photos Grid */}
           <div>
@@ -148,7 +148,7 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
                   key={animal.name}
                   onClick={() => selectAnimalPhoto(animal.src)}
                   disabled={uploading}
-                  className="aspect-square rounded-lg overflow-hidden bg-slate-100 hover:bg-slate-200 transition-colors border-2 border-transparent hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="aspect-square rounded-lg overflow-hidden bg-slate-100 hover:bg-slate-200 transition-colors border-2 border-transparent hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed relative"
                   title={animal.name}
                 >
                   <img
@@ -156,6 +156,11 @@ const ProfilePhotoSelector = ({ children, onPhotoUpdate }: ProfilePhotoSelectorP
                     alt={animal.name}
                     className="w-full h-full object-cover"
                   />
+                  {uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>

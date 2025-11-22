@@ -18,11 +18,16 @@ serve(async (req) => {
       throw new Error('OpenRouter API key not configured');
     }
 
+<<<<<<< HEAD
     const { allRecordings, testData, analysisType = "comprehensive" } = await req.json();
+=======
+    const { allRecordings, testData, targetLanguage = "English", analysisType = "comprehensive" } = await req.json();
+>>>>>>> 5a7bbb9 (fix: update supabase functions)
 
     console.log('📊 Received data:', {
       recordingsCount: allRecordings?.length || 0,
       hasTestData: !!testData,
+      targetLanguage,
       analysisType
     });
 
@@ -30,6 +35,7 @@ serve(async (req) => {
       throw new Error('No recording data provided');
     }
 
+<<<<<<< HEAD
     // Normalize recordings: trust upstream (IELTSSpeakingResults) to send:
     // - part (e.g. "part1_q0")
     // - partNumber / partNum
@@ -411,18 +417,256 @@ Return ONLY valid JSON, no markdown, no commentary.`;
         })),
         individualAnalyses,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  } catch (error) {
-    console.error('❌ Error in enhanced speech analysis:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+=======
+    // Prepare messages for the multimodal request
+    const contentParts = [];
+
+    // Add system instruction as the first text part
+    contentParts.push({
+      type: "text",
+      text: `You are a senior IELTS Speaking examiner. Analyze the student's speaking test performance based on the provided audio recordings and question context.
+
+      TARGET LANGUAGE: ${targetLanguage}
+      
+      CRITICAL INSTRUCTION: 
+      - Provide ALL feedback, explanations, advice, and actionable steps in ${targetLanguage}.
+      - Keep the "transcription" and "better" (improved version) in English (as it's an English test).
+      - For "vocabulary_enhancements" and "grammar_corrections", the explanations should be in ${targetLanguage}.
+      
+      For EACH recording, you must provide:
+      1. A verbatim transcription of what the student said.
+      2. Detailed feedback on their performance for that specific part (in ${targetLanguage}).
+      3. Specific improvements (better vocabulary, grammar corrections).
+
+For EACH recording, you must provide:
+1. A verbatim transcription of what the student said.
+2. Detailed feedback on their performance for that specific part.
+3. Specific improvements (better vocabulary, grammar corrections).
+
+Then provide an OVERALL analysis of the entire test.
+
+Return the analysis in this STRICT JSON format:
+{
+  "individualAnalyses": [
+    {
+      "part": "Part 1",
+      "questionIndex": 0,
+      "transcription": "Verbatim transcription of the student's answer...",
+      "feedback": "Specific feedback for this answer...",
+      "original_spans": [{"text": "bad phrase", "type": "error"}],
+      "suggested_spans": [{"text": "better phrase", "type": "correction"}]
+    }
+  ],
+  "overallAnalysis": {
+    "fluency_coherence": { "score": 6.5, "feedback": "..." },
+    "lexical_resource": { "score": 6.0, "feedback": "..." },
+    "grammatical_range": { "score": 7.0, "feedback": "..." },
+    "pronunciation": { "score": 6.5, "feedback": "..." },
+    "overall_band_score": 6.5,
+    "comprehensive_feedback": "..."
   }
+}
+`
+    });
+
+    // Add context about the questions
+    const questionContext = allRecordings.map((r: any, i: number) =>
+      `Recording ${i + 1} (${r.part}): Question: "${r.questionTranscription || r.questionText || 'Unknown'}"`
+    ).join('\n');
+
+    contentParts.push({
+      type: "text",
+      text: `Here are the questions the student is answering:\n${questionContext}\n\nNow, analyze the following audio files:`
+    });
+
+    // Add audio parts
+    // Note: OpenRouter/Gemini expects audio as a URL in the content array
+    for (const recording of allRecordings) {
+      if (recording.audio_url) {
+        contentParts.push({
+          type: "text",
+          text: `[Audio for ${recording.part}]`
+        });
+        contentParts.push({
+          type: "image_url", // OpenRouter/Gemini often uses image_url struct for multimodal inputs, or specific audio struct depending on provider. 
+          // Checking standard OpenRouter Gemini docs, they support standard OpenAI content parts.
+          // For audio, it's often passed as a URL in a specific way or just treated as a multimodal input.
+          // Let's try the standard OpenAI 'image_url' format which is often overloaded, OR check if we need 'audio_url'.
+          // Actually, for Gemini via OpenRouter, it's best to use the 'http' url if supported, or base64.
+          // Since we have public R2 URLs, we'll try to pass them.
+          // However, standard OpenAI API doesn't strictly support audio URLs in chat completions yet universally.
+          // Gemini 1.5 Pro/Flash DOES support audio.
+          // Let's try the standard message format for Gemini.
+          url: recording.audio_url
+        } as any);
+      }
+    }
+
+    // REVISION: OpenRouter/Gemini specific format for audio usually involves:
+    // { type: "text", text: "..." }, { type: "image_url", url: "..." } is for images.
+    // For audio, it might be { type: "audio_url", audio_url: { url: "..." } } or similar.
+    // Let's try the most robust way: passing the audio URL in the text if the model supports fetching, 
+    // OR using the specific 'input' format if we were using Vertex AI directly.
+    // BUT, since we are using OpenRouter, we should check their docs or assume standard multimodal.
+    // A common pattern for OpenRouter Gemini is to just pass the URL in the content list if it's a supported file type.
+    // Let's try to construct the body specifically for Gemini 2.5 Flash.
+
+    // Actually, to be safe and ensure it works, let's use the 'text' to explicitly point to the URL 
+    // and hope the model can access it (Gemini often can access public URLs).
+    // IF NOT, we might need to fetch and base64 encode it.
+    // Given the previous code had `audio_base64`, let's see if we can use that.
+    // The previous code prepared `audio_base64` in the frontend/backend boundary but didn't use it.
+    // Let's use the `audio_base64` if available, as that's safer for the model to "hear".
+
+    const messages = [
+>>>>>>> 5a7bbb9 (fix: update supabase functions)
+      {
+        role: "system",
+        content: `You are a senior IELTS Speaking examiner. Analyze the student's speaking test performance based on the provided audio recordings and question context.
+        
+        CRITICAL: You must return valid JSON only. No markdown formatting.`
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Analyze these IELTS speaking responses.
+            
+            CONTEXT:
+            ${questionContext}
+            
+            OUTPUT FORMAT (JSON ONLY):
+            {
+              "individualAnalyses": [
+                {
+                  "part": "Part 1",
+                  "questionIndex": 0,
+                  "transcription": "Verbatim transcription...",
+                  "feedback": "Specific feedback...",
+                  "original_spans": [],
+                  "suggested_spans": []
+                }
+              ],
+  "overallAnalysis": {
+    "fluency_coherence": { "score": 6.5, "feedback": "..." },
+    "lexical_resource": { "score": 6.0, "feedback": "..." },
+    "grammatical_range": { "score": 7.0, "feedback": "..." },
+    "pronunciation": { "score": 6.5, "feedback": "..." },
+    "overall_band_score": 6.5,
+    "examiner_comments": "...",
+    "actionable_next_steps": [
+      "Practice using...",
+      "Focus on..."
+    ]
+  }
+}`
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Here is the test context:\n${questionContext}\n\nPlease analyze the following audio files:`
+              },
+              ...allRecordings.map((r: any) => {
+                if (r.audio_base64) {
+                  return {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:audio/webm;base64,${r.audio_base64}`
+                    }
+                  };
+                } else if (r.audio_url) {
+                  return {
+                    type: "image_url",
+                    image_url: {
+                      url: r.audio_url
+                    }
+                  };
+                }
+                return null;
+              }).filter(Boolean)
+            ]
+          }
+        ];
+
+        console.log('📝 Sending request to OpenRouter...');
+
+        const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openrouterKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://englishaidol.com',
+            'X-Title': 'English Aidol IELTS Speaking Analysis'
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-preview-09-2025',
+            messages: messages,
+            temperature: 0.2, // Lower temperature for more consistent JSON
+            response_format: { type: "json_object" }
+          }),
+        });
+
+        if(!analysisResponse.ok) {
+  const errorText = await analysisResponse.text();
+  throw new Error(`Analysis failed: ${errorText}`);
+}
+
+const analysisResult = await analysisResponse.json();
+const rawContent = analysisResult.choices?.[0]?.message?.content;
+
+if (!rawContent) {
+  throw new Error('No content received from AI');
+}
+
+let parsedResult;
+try {
+  parsedResult = JSON.parse(rawContent);
+} catch (e) {
+  console.error('Failed to parse JSON:', rawContent);
+  throw new Error('Invalid JSON response from AI');
+}
+
+// Merge with original metadata
+const individualAnalyses = allRecordings.map((recording: any, index: number) => {
+  const aiAnalysis = parsedResult.individualAnalyses?.[index] || {};
+  return {
+    ...recording,
+    ...aiAnalysis, // Merge AI fields (transcription, improved_version, etc.)
+    // Ensure fallbacks
+    transcription: aiAnalysis.transcription || "Transcription unavailable",
+    improved_version: aiAnalysis.improved_version || "Improvement unavailable",
+    feedback: aiAnalysis.feedback || "No feedback available",
+    vocabulary_enhancements: aiAnalysis.vocabulary_enhancements || [],
+    grammar_corrections: aiAnalysis.grammar_corrections || []
+  };
+});
+
+console.log('✅ Analysis complete. Returning rich results.');
+
+return new Response(
+  JSON.stringify({
+    success: true,
+    data: {
+      overallAnalysis: parsedResult.overallAnalysis,
+      individualAnalyses: individualAnalyses
+    }
+  }),
+  {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  }
+);
+
+  } catch (error) {
+  console.error('❌ Error in enhanced speech analysis:', error);
+  return new Response(JSON.stringify({
+    success: false,
+    error: error.message
+  }), {
+    status: 500,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
 });

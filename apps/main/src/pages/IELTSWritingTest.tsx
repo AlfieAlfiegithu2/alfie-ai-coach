@@ -339,42 +339,24 @@ const IELTSWritingTestInterface = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
-      // Optimized query - only select needed fields
+      // Optimized query - only select needed fields and use pagination
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
         .eq('test_type', 'IELTS')
-        .or('module.eq.Writing,skill_category.eq.Writing')
-        .order('created_at', { ascending: false });
+        // Use ILIKE for case-insensitive matching to avoid needing a fallback query
+        .or('module.ilike.Writing,skill_category.ilike.Writing,test_name.ilike.%Writing%')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (testsError) {
         throw testsError;
       }
 
       // Filter out any null or invalid tests
-      let finalTests = (tests || []).filter((test: any) => {
+      const finalTests = (tests || []).filter((test: any) => {
         return test && test.id && (test.test_name || test.module || test.skill_category);
       });
-
-      // Fallback: if no tests found with exact match, try broader search
-      if (finalTests.length === 0) {
-        const { data: allIeltsTests, error: allTestsError } = await supabase
-          .from('tests')
-          .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
-          .eq('test_type', 'IELTS')
-          .order('created_at', { ascending: false });
-
-        if (!allTestsError && allIeltsTests) {
-          // Filter client-side exactly like admin does
-          finalTests = allIeltsTests.filter((test: any) => {
-            return test && test.id && (
-              test.module === 'Writing' ||
-              test.skill_category === 'Writing' ||
-              test.test_name?.toLowerCase().includes('writing')
-            );
-          });
-        }
-      }
 
       setAvailableTests(finalTests);
     } catch (error) {
@@ -1038,11 +1020,11 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
             style={{
               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
                 ? 'none'
-                : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+                : `url('/1000031207.png')`,
               backgroundColor: themeStyles.backgroundImageColor
             }} />
           <div className="relative z-10">
-            <StudentLayout title="Available Writing Tests">
+            <StudentLayout title="Available Writing Tests" transparentBackground={true}>
               <div className="min-h-screen py-12">
                 <div className="container mx-auto px-4">
                   <div className="max-w-4xl mx-auto">
@@ -1163,7 +1145,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         style={{
           backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
             ? 'none'
-            : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+            : `url('/1000031207.png')`,
           backgroundColor: themeStyles.backgroundImageColor
         }} />
       <div
@@ -1173,7 +1155,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           minHeight: 'calc(100vh - 80px)'
         }}
       >
-        <StudentLayout title="IELTS Writing Test" showBackButton>
+        <StudentLayout title="IELTS Writing Test" showBackButton transparentBackground={true}>
           <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
             <div className="w-full max-w-[1800px] mx-auto space-y-4 px-4 sm:px-6 flex flex-col">
               {/* Control Panel - Docker Style */}

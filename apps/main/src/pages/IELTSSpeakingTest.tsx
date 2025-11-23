@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square, Send, Sparkles, FileText } from "lucide-react";
+import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square, Send, Sparkles, FileText, X, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
@@ -70,7 +70,7 @@ const AudioPlayerWithTracks = ({ tracks, currentQuestionIndex }: { tracks: Track
 
 const AudioPlayerDemoWithTracks = ({ tracks, currentQuestionIndex }: { tracks: Track[], currentQuestionIndex: number }) => {
   const player = useAudioPlayer()
-  
+
   // Note: Auto-play removed - browsers require user interaction before playing audio
   // Audio will only play when user clicks on a track in the list
 
@@ -97,7 +97,7 @@ const AudioPlayerDemoWithTracks = ({ tracks, currentQuestionIndex }: { tracks: T
 
 const Player = ({ currentQuestionIndex, tracks }: { currentQuestionIndex: number, tracks: Track[] }) => {
   const player = useAudioPlayer()
-  
+
   // Get current question track
   const currentTrack = tracks[currentQuestionIndex]
   const canPlay = currentTrack !== undefined
@@ -183,7 +183,7 @@ const IELTSSpeakingTest = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const themeStyles = useThemeStyles();
-  
+
   const [testData, setTestData] = useState<TestData | null>(null);
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [currentPart, setCurrentPart] = useState(1);
@@ -196,7 +196,7 @@ const IELTSSpeakingTest = () => {
   const [currentAudioElement, setCurrentAudioElement] = useState<HTMLAudioElement | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [preparationTime, setPreparationTime] = useState(60);
-  const [recordings, setRecordings] = useState<{[key: string]: Blob}>({});
+  const [recordings, setRecordings] = useState<{ [key: string]: Blob }>({});
   const [part2Notes, setPart2Notes] = useState("");
   const [showNoteTips, setShowNoteTips] = useState(false);
   const [noteTips, setNoteTips] = useState("");
@@ -245,7 +245,9 @@ const IELTSSpeakingTest = () => {
   ]);
   const [newMessage, setNewMessage] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
-  
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluationResult, setEvaluationResult] = useState<any>(null);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -330,21 +332,21 @@ const IELTSSpeakingTest = () => {
   useEffect(() => {
     if (mainCardRef.current) {
       const card = mainCardRef.current;
-      
+
       // Set initial styles
       card.style.setProperty('transform', 'scale(1)', 'important');
       card.style.setProperty('transition', 'none', 'important');
-      
+
       // Prevent hover effects
       const preventHover = (e: MouseEvent) => {
         card.style.setProperty('transform', 'scale(1)', 'important');
         card.style.setProperty('box-shadow', '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.1)', 'important');
         card.style.setProperty('transition', 'none', 'important');
       };
-      
+
       card.addEventListener('mouseenter', preventHover);
       card.addEventListener('mouseleave', preventHover);
-      
+
       return () => {
         card.removeEventListener('mouseenter', preventHover);
         card.removeEventListener('mouseleave', preventHover);
@@ -418,29 +420,29 @@ const IELTSSpeakingTest = () => {
 
   const loadTestData = async () => {
     if (!testId) return;
-    
+
     setIsLoading(true);
     try {
       console.log(`🔍 Loading speaking test data for test ID: ${testId}`);
 
       // OPTIMIZATION: Determine query type first, then use parallel queries
       const isUUID = testId.includes('-') && testId.length === 36;
-      
+
       // OPTIMIZATION: Load test and prompts in parallel
       const [testResult, promptsResult] = await Promise.all([
         isUUID
           ? supabase
-              .from('tests')
-              .select('id, test_name')
-              .eq('id', testId)
-              .single()
+            .from('tests')
+            .select('id, test_name')
+            .eq('id', testId)
+            .single()
           : supabase
-              .from('tests')
-              .select('id, test_name')
-              .eq('test_name', testId)
-              .eq('test_type', 'IELTS')
-              .eq('module', 'Speaking')
-              .maybeSingle(),
+            .from('tests')
+            .select('id, test_name')
+            .eq('test_name', testId)
+            .eq('test_type', 'IELTS')
+            .eq('module', 'Speaking')
+            .maybeSingle(),
         // Start loading prompts immediately (we'll use test ID from result)
         supabase
           .from('speaking_prompts')
@@ -450,7 +452,7 @@ const IELTSSpeakingTest = () => {
       ]);
 
       if (testResult.error) throw testResult.error;
-      
+
       const testData = testResult.data;
       if (!testData) {
         toast({
@@ -461,7 +463,7 @@ const IELTSSpeakingTest = () => {
         navigate(-1);
         return;
       }
-      
+
       console.log('✅ Test loaded:', testData.test_name);
 
       // OPTIMIZATION: If prompts weren't loaded with testId, load with actual test ID
@@ -481,7 +483,7 @@ const IELTSSpeakingTest = () => {
       const part1: any[] = [];
       let part2: any = null;
       const part3: any[] = [];
-      
+
       prompts.forEach((p: any) => {
         if (p.part_number === 1) part1.push(p);
         else if (p.part_number === 2) part2 = p;
@@ -495,7 +497,7 @@ const IELTSSpeakingTest = () => {
         part2_prompt: part2,
         part3_prompts: part3
       });
-        
+
       console.log(`✅ Test ready: Part 1 (${part1.length}), Part 2 (${part2 ? 1 : 0}), Part 3 (${part3.length})`);
     } catch (error) {
       console.error('❌ Error:', error);
@@ -519,56 +521,27 @@ const IELTSSpeakingTest = () => {
     setIsLoading(true);
     try {
       console.log('📋 Loading available speaking tests...');
-      
-      // OPTIMIZATION: Use parallel queries and single optimized query
-      // Query 1: Get tests with speaking module/category (case-insensitive using ilike)
-      // Query 2: Get all test_ids that have speaking prompts
-      const [testsResult, promptsResult] = await Promise.all([
-        supabase
-          .from('tests')
-          .select('id, test_name, module, skill_category, created_at')
-          .eq('test_type', 'IELTS')
-          .or('module.ilike.Speaking,skill_category.ilike.Speaking')
-          .order('created_at', { ascending: false })
-          .limit(100), // Limit to prevent loading too many
-        supabase
-          .from('speaking_prompts')
-          .select('test_id')
-          .limit(1000) // Get all prompts efficiently
-      ]);
 
-      if (testsResult.error) {
-        console.error('❌ Error loading tests:', testsResult.error);
-        throw testsResult.error;
+      // OPTIMIZATION: Use server-side filtering with !inner join
+      // This only returns tests that have at least one speaking prompt
+      const { data: tests, error } = await supabase
+        .from('tests')
+        .select('id, test_name, module, skill_category, created_at, speaking_prompts!inner(id)')
+        .eq('test_type', 'IELTS')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('❌ Error loading tests:', error);
+        throw error;
       }
 
-      const tests = testsResult.data || [];
-      const promptsData = promptsResult.data || [];
-      
-      // Create set of test IDs that have prompts (fast lookup)
-      const testsWithPromptsSet = new Set(promptsData.map((p: any) => p.test_id));
-      
-      // OPTIMIZATION: Single pass filtering with early returns
-      const seenIds = new Set<string>();
-      const seenNames = new Set<string>();
-      const invalidNames = new Set(['test ?', 'another test?', '']);
-      
-      const validTests = tests.filter((test: any) => {
-        // Early return checks (fastest first)
-        if (!test.id || seenIds.has(test.id)) return false;
-        if (!testsWithPromptsSet.has(test.id)) return false; // Skip tests without prompts early
-        
+      const validTests = (tests || []).filter(test => {
         const testName = (test.test_name || '').trim();
-        if (!testName || testName.length < 2) return false;
-        if (invalidNames.has(testName)) return false;
-        if (testName.toLowerCase().includes('quick test')) return false;
-        
-        const normalizedName = testName.toLowerCase();
-        if (seenNames.has(normalizedName)) return false;
-        
-        seenIds.add(test.id);
-        seenNames.add(normalizedName);
-        return true;
+        return testName &&
+          testName.length >= 2 &&
+          !testName.toLowerCase().includes('quick test') &&
+          !['test ?', 'another test?', ''].includes(testName.toLowerCase());
       });
 
       console.log(`✅ Found ${validTests.length} valid speaking tests`);
@@ -588,35 +561,35 @@ const IELTSSpeakingTest = () => {
 
   const playAudio = async (audioUrl: string) => {
     if (!audioUrl) return;
-    
+
     // Mark user as interacted when they manually trigger audio
     if (!userHasInteracted) {
       setUserHasInteracted(true);
       setNeedsInteractionPrompt(false);
     }
-    
+
     try {
       setIsPlaying(true);
-      
+
       // Stop any currently playing audio
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
         audioRef.current = null;
       }
-      
+
       // Create new audio element
       const audio = new Audio(audioUrl);
       audio.preload = 'auto';
       audio.volume = globalVolumeRef.current;
-      
+
       // Set up event handlers before playing
       audio.onended = () => {
         setIsPlaying(false);
         console.log(`✅ Audio playback completed`);
         audioRef.current = null;
       };
-      
+
       audio.onerror = (e) => {
         setIsPlaying(false);
         console.error('Audio playback error:', e);
@@ -627,33 +600,33 @@ const IELTSSpeakingTest = () => {
           variant: "destructive"
         });
       };
-      
+
       audio.onloadstart = () => {
         console.log('Audio loading started');
       };
-      
+
       audio.oncanplay = () => {
         console.log('Audio can play');
       };
-      
+
       audio.oncanplaythrough = () => {
         console.log('Audio can play through');
       };
-      
+
       // Store reference
       audioRef.current = audio;
-      
+
       console.log(`▶️ Playing audio: ${audioUrl}`);
-      
+
       // Load the audio first
       audio.load();
-      
+
       // Wait a bit for audio to load, then play
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Try to play - this will fail if user hasn't interacted
       const playPromise = audio.play();
-      
+
       if (playPromise !== undefined) {
         await playPromise;
         console.log('Audio started playing successfully');
@@ -661,7 +634,7 @@ const IELTSSpeakingTest = () => {
     } catch (error: any) {
       console.error('Error playing audio:', error);
       setIsPlaying(false);
-      
+
       // Handle specific browser autoplay restrictions
       if (error.name === 'NotAllowedError' || error.message?.includes('user didn\'t interact')) {
         // Only show prompt if user hasn't interacted yet
@@ -672,12 +645,12 @@ const IELTSSpeakingTest = () => {
         console.log('Autoplay blocked - user needs to interact first');
       } else {
         toast({
-          title: "Audio Error", 
+          title: "Audio Error",
           description: "Failed to play audio prompt. The audio may be inaudible or unavailable. Please try again.",
           variant: "destructive"
         });
       }
-      
+
       // Clean up
       if (audioRef.current) {
         audioRef.current = null;
@@ -726,7 +699,7 @@ const IELTSSpeakingTest = () => {
           ctx.close();
         }, 200);
       }, 120);
-    } catch {}
+    } catch { }
   };
 
   const playRecordingStopSound = () => {
@@ -760,14 +733,17 @@ const IELTSSpeakingTest = () => {
           console.log(`📱 Recordings updated:`, Object.keys(updated));
           return updated;
         });
-        
+
+        // Force re-render by updating isRecording state
+        setIsRecording(false);
+
         stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
       recordingStartTimeRef.current = Date.now(); // Track when recording started
-      
+
       // Set timer based on current part
       if (currentPart === 1 || currentPart === 3) {
         setTimeLeft(120); // 2 minutes
@@ -790,7 +766,7 @@ const IELTSSpeakingTest = () => {
     if (currentPart === 2 && recordingStartTimeRef.current) {
       const elapsedSeconds = Math.floor((Date.now() - recordingStartTimeRef.current) / 1000);
       const minimumSeconds = 60; // 1 minute minimum
-      
+
       if (elapsedSeconds < minimumSeconds) {
         const remainingSeconds = minimumSeconds - elapsedSeconds;
         toast({
@@ -806,7 +782,7 @@ const IELTSSpeakingTest = () => {
     playRecordingStopSound();
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      // REMOVED: setIsRecording(false); - now handled in onstop handler
       setTimeLeft(0);
       recordingStartTimeRef.current = null; // Reset start time
     }
@@ -867,6 +843,62 @@ const IELTSSpeakingTest = () => {
     }
   };
 
+  const evaluateRecording = async () => {
+    const recordingKey = `part${currentPart}_q${currentQuestion}`;
+    const recording = recordings[recordingKey];
+
+    console.log('🎯 EVALUATE: Current part:', currentPart);
+    console.log('🎯 EVALUATE: Current question:', currentQuestion);
+    console.log('🎯 EVALUATE: Recording key:', recordingKey);
+    console.log('🎯 EVALUATE: Recording exists:', !!recording);
+    console.log('🎯 EVALUATE: Recording size:', recording?.size);
+    console.log('🎯 EVALUATE: All recording keys:', Object.keys(recordings));
+
+    if (!recording) {
+      console.error('❌ No recording found for', recordingKey);
+      return;
+    }
+
+    setIsEvaluating(true);
+    setEvaluationResult(null);
+
+    try {
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(recording);
+      reader.onloadend = async () => {
+        const base64Audio = (reader.result as string).split(',')[1];
+        const promptText = getCurrentQuestionText();
+
+        console.log('📤 Sending to Edge Function:', {
+          audioLength: base64Audio.length,
+          prompt: promptText,
+          recordingKey
+        });
+
+        const { data, error } = await supabase.functions.invoke('ielts-speaking-evaluator', {
+          body: {
+            audio: base64Audio,
+            prompt: promptText
+          }
+        });
+
+        if (error) throw error;
+        console.log('✅ Evaluation received:', data);
+        setEvaluationResult(data);
+      };
+    } catch (error: any) {
+      console.error('Evaluation error:', error);
+      toast({
+        title: "Evaluation Failed",
+        description: error?.message || "Could not evaluate the recording. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
   const stopRecordingPlayback = () => {
     if (currentAudioElement) {
       try {
@@ -885,7 +917,7 @@ const IELTSSpeakingTest = () => {
 
   const getNoteTakingTips = async () => {
     if (!testData?.part2_prompt) return;
-    
+
     setShowNoteTips(true);
     try {
       const { data, error } = await supabase.functions.invoke('openai-chat', {
@@ -897,13 +929,13 @@ const IELTSSpeakingTest = () => {
               content: "You are an IELTS Speaking expert. Provide 2-3 specific, actionable note-taking tips for the given Part 2 cue card. Be concise and practical."
             },
             {
-              role: "user", 
+              role: "user",
               content: `Give me specific note-taking tips for this IELTS Part 2 cue card: "${testData.part2_prompt.prompt_text}"`
             }
           ]
         }
       });
-      
+
       if (error) throw error;
       setNoteTips(data.response || "Focus on the key points: what, when, where, why, and how you felt about it.");
     } catch (error) {
@@ -1060,17 +1092,17 @@ const IELTSSpeakingTest = () => {
             const partNum = parseInt(partMatch[1], 10);
             const qIndex = parseInt(partMatch[2], 10);
             if (partNum === 1 && testData?.part1_prompts?.[qIndex]) {
-              questionText = testData.part1_prompts[qIndex]?.prompt_text || 
-                            testData.part1_prompts[qIndex]?.transcription || 
-                            testData.part1_prompts[qIndex]?.title || '';
+              questionText = testData.part1_prompts[qIndex]?.prompt_text ||
+                testData.part1_prompts[qIndex]?.transcription ||
+                testData.part1_prompts[qIndex]?.title || '';
             } else if (partNum === 2 && testData?.part2_prompt) {
-              questionText = testData.part2_prompt.prompt_text || 
-                            testData.part2_prompt.transcription || 
-                            testData.part2_prompt.title || '';
+              questionText = testData.part2_prompt.prompt_text ||
+                testData.part2_prompt.transcription ||
+                testData.part2_prompt.title || '';
             } else if (partNum === 3 && testData?.part3_prompts?.[qIndex]) {
-              questionText = testData.part3_prompts[qIndex]?.prompt_text || 
-                            testData.part3_prompts[qIndex]?.transcription || 
-                            testData.part3_prompts[qIndex]?.title || '';
+              questionText = testData.part3_prompts[qIndex]?.prompt_text ||
+                testData.part3_prompts[qIndex]?.transcription ||
+                testData.part3_prompts[qIndex]?.title || '';
             }
           }
 
@@ -1107,17 +1139,17 @@ const IELTSSpeakingTest = () => {
             const partNum = parseInt(partMatch[1], 10);
             const qIndex = parseInt(partMatch[2], 10);
             if (partNum === 1 && testData?.part1_prompts?.[qIndex]) {
-              questionText = testData.part1_prompts[qIndex]?.prompt_text || 
-                            testData.part1_prompts[qIndex]?.transcription || 
-                            testData.part1_prompts[qIndex]?.title || '';
+              questionText = testData.part1_prompts[qIndex]?.prompt_text ||
+                testData.part1_prompts[qIndex]?.transcription ||
+                testData.part1_prompts[qIndex]?.title || '';
             } else if (partNum === 2 && testData?.part2_prompt) {
-              questionText = testData.part2_prompt.prompt_text || 
-                            testData.part2_prompt.transcription || 
-                            testData.part2_prompt.title || '';
+              questionText = testData.part2_prompt.prompt_text ||
+                testData.part2_prompt.transcription ||
+                testData.part2_prompt.title || '';
             } else if (partNum === 3 && testData?.part3_prompts?.[qIndex]) {
-              questionText = testData.part3_prompts[qIndex]?.prompt_text || 
-                            testData.part3_prompts[qIndex]?.transcription || 
-                            testData.part3_prompts[qIndex]?.title || '';
+              questionText = testData.part3_prompts[qIndex]?.prompt_text ||
+                testData.part3_prompts[qIndex]?.transcription ||
+                testData.part3_prompts[qIndex]?.title || '';
             }
           }
 
@@ -1213,7 +1245,7 @@ const IELTSSpeakingTest = () => {
           // Safely parse part number with validation
           const partMatch = recording.part.match(/^part(\d+)/);
           const partNumber = partMatch ? parseInt(partMatch[1], 10) : NaN;
-          
+
           if (isNaN(partNumber) || partNumber < 1 || partNumber > 3) {
             console.error(`Invalid part number for recording: ${recording.part}`);
             continue; // Skip invalid recordings
@@ -1326,19 +1358,19 @@ const IELTSSpeakingTest = () => {
   // Show test selection if no testId provided (regardless of whether tests are found)
   if (!testId) {
     return (
-      <div 
+      <div
         className="min-h-screen relative"
         style={{
           backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
         }}
       >
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-             style={{
-               backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-                 ? 'none'
-                 : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-               backgroundColor: themeStyles.backgroundImageColor
-             }} />
+          style={{
+            backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+              ? 'none'
+              : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+            backgroundColor: themeStyles.backgroundImageColor
+          }} />
         <div className="relative z-10">
           <StudentLayout title="Available Speaking Tests">
             <div className="min-h-screen py-12">
@@ -1351,9 +1383,9 @@ const IELTSSpeakingTest = () => {
                   {availableTests.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {availableTests.map((test) => (
-                        <SpotlightCard 
-                          key={test.id} 
-                          className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center" 
+                        <SpotlightCard
+                          key={test.id}
+                          className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
                           onClick={() => navigate(`/ielts-speaking-test/${test.id}`)}
                           style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
@@ -1370,8 +1402,8 @@ const IELTSSpeakingTest = () => {
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-lg mb-4" style={{ color: themeStyles.textSecondary }}>No speaking tests available yet</p>
-                      <Button 
-                        onClick={() => navigate('/ielts-portal')} 
+                      <Button
+                        onClick={() => navigate('/ielts-portal')}
                         variant="outline"
                         style={{
                           borderColor: themeStyles.border,
@@ -1419,7 +1451,7 @@ const IELTSSpeakingTest = () => {
             </Badge>
             <h1 className="text-heading-2 mb-2">{testData.test_name}</h1>
           </div>
-          
+
           <Card className="card-modern">
             <CardContent className="p-8 text-center">
               <Mic className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
@@ -1452,19 +1484,19 @@ const IELTSSpeakingTest = () => {
   const getCurrentQuestionText = (): string => {
     const prompt = getCurrentPrompt();
     if (!prompt) return "";
-    
+
     // For Part 2, use the prompt_text (cue card content)
     if (currentPart === 2) {
       return prompt.prompt_text || "";
     }
-    
+
     // For Parts 1 & 3, use transcription if available, otherwise fall back to title
     return prompt.transcription || prompt.title || "";
   };
 
   const getQuestionType = (): string => {
     if (currentPart === 1) return "Part 1";
-    if (currentPart === 2) return "Part 2"; 
+    if (currentPart === 2) return "Part 2";
     if (currentPart === 3) return "Part 3";
     return "Unknown Part";
   };
@@ -1480,7 +1512,7 @@ const IELTSSpeakingTest = () => {
       content: message,
       timestamp: new Date(),
     };
-    
+
     // Add user message to UI immediately
     setChatMessages((prev) => [...prev, userMessage]);
     if (!messageText) setNewMessage("");
@@ -1488,7 +1520,7 @@ const IELTSSpeakingTest = () => {
 
     try {
       const questionText = getCurrentQuestionText();
-      
+
       // Build conversation history with context
       // Include system prompt with context, then all previous messages
       const questionContext = `CONTEXT: The student is practicing IELTS Speaking Part ${currentPart}.
@@ -1552,20 +1584,20 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
   const questionType = getQuestionType();
 
   return (
-    <div 
+    <div
       className="min-h-screen relative"
       style={{
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-           style={{
-             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-               ? 'none'
-               : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-             backgroundColor: themeStyles.backgroundImageColor
-           }} />
-      <div 
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
+      <div
         className="relative z-10 min-h-screen flex flex-col"
         style={{
           backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
@@ -1575,942 +1607,1150 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
           {/* Desktop: keep original centered layout; Mobile: move content higher */}
           <div className="flex-1 flex justify-center min-h-[calc(100vh-120px)] py-8 sm:items-center sm:py-8">
             <div className="w-full max-w-4xl mx-auto space-y-4 px-4 flex flex-col">
-            {/* Current Part Indicator */}
-            <div className="text-center py-2 sm:py-2 sm:mb-0 mb-0">
-              <span className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>
-                Part {currentPart}
-              </span>
-            </div>
+              {/* Current Part Indicator */}
+              <div className="text-center py-2 sm:py-2 sm:mb-0 mb-0">
+                <span className="text-lg font-semibold" style={{ color: themeStyles.textPrimary }}>
+                  Part {currentPart}
+                </span>
+              </div>
 
-            {/* Main Content Card - stays upper; Catie dock is anchored separately at bottom */}
-            <Card
-              ref={mainCardRef}
-              className="backdrop-blur-sm shadow-lg rounded-2xl flex flex-col relative"
-              style={{
-                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                borderColor: themeStyles.border,
-                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-                boxShadow: themeStyles.theme.name === 'dark' 
-                  ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-                  : themeStyles.theme.name === 'note'
-                  ? themeStyles.theme.styles.cardStyle?.boxShadow
-                  : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-                ...themeStyles.cardStyle
-              }}
-            >
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>
-              </span>
-              <div className="flex items-center gap-3">
-                {/* Unveil Toggle Switch */}
-                {(currentPart === 1 || currentPart === 3) && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          onClick={() => setShowQuestion(!showQuestion)}
-                          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              {/* Main Content Card - stays upper; Catie dock is anchored separately at bottom */}
+              <Card
+                ref={mainCardRef}
+                className="backdrop-blur-sm shadow-lg rounded-2xl flex flex-col relative"
+                style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                  borderColor: themeStyles.border,
+                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                  boxShadow: themeStyles.theme.name === 'dark'
+                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                    : themeStyles.theme.name === 'note'
+                      ? themeStyles.theme.styles.cardStyle?.boxShadow
+                      : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                  ...themeStyles.cardStyle
+                }}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>
+                    </span>
+                    <div className="flex items-center gap-3">
+                      {/* Unveil Toggle Switch */}
+                      {(currentPart === 1 || currentPart === 3) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                onClick={() => setShowQuestion(!showQuestion)}
+                                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                style={{
+                                  backgroundColor: showQuestion
+                                    ? themeStyles.buttonPrimary
+                                    : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                                }}
+                                data-state={showQuestion ? "checked" : "unchecked"}
+                              >
+                                <div
+                                  className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 items-center justify-center"
+                                  style={{
+                                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
+                                  }}
+                                  data-state={showQuestion ? "checked" : "unchecked"}
+                                >
+                                  {showQuestion ? (
+                                    <Eye className="w-3 h-3" style={{ color: 'white' }} />
+                                  ) : (
+                                    <EyeOff className="w-3 h-3" style={{ color: themeStyles.textSecondary }} />
+                                  )}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{showQuestion ? "Hide question" : "Show question"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+
+                      {/* AI Assistant moved to floating bottom-right */}
+
+                      {timeLeft > 0 && (
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-2"
                           style={{
-                            backgroundColor: showQuestion 
-                              ? themeStyles.buttonPrimary 
-                              : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.2)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#e5e7eb' : themeStyles.border)
+                            borderColor: themeStyles.border,
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                            color: themeStyles.textPrimary
                           }}
-                          data-state={showQuestion ? "checked" : "unchecked"}
                         >
-                          <div
-                            className="pointer-events-none flex h-5 w-5 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 items-center justify-center"
-                            style={{
-                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground
-                            }}
-                            data-state={showQuestion ? "checked" : "unchecked"}
-                          >
-                            {showQuestion ? (
-                              <Eye className="w-3 h-3" style={{ color: 'white' }} />
-                            ) : (
-                              <EyeOff className="w-3 h-3" style={{ color: themeStyles.textSecondary }} />
-                            )}
+                          <Clock className="w-4 h-4" style={{ color: themeStyles.textPrimary }} />
+                          {formatTime(timeLeft)}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 flex flex-col relative">
+                  {/* Part 2 Simple Timer */}
+                  {currentPart === 2 && preparationTime > 0 && (
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Clock className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
+                        <p className="text-xl font-bold" style={{ color: themeStyles.buttonPrimary }}>{formatTime(preparationTime)}</p>
+                      </div>
+                    </div>
+                  )}
+
+
+                  {/* Part 1 - Structured Questions Display */}
+                  {currentPart === 1 && testData.part1_prompts.length > 0 && (
+                    <div className="space-y-6 relative flex flex-col min-h-[200px]">
+                      {/* Question Text - Fixed Height Container */}
+                      <div className="min-h-[200px] flex items-center justify-center flex-1">
+                        {showQuestion && (
+                          <div className="text-lg font-medium text-center select-none" style={{ color: themeStyles.textPrimary }}>
+                            {getCurrentQuestionText()}
                           </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{showQuestion ? "Hide question" : "Show question"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-
-                {/* AI Assistant moved to floating bottom-right */}
-
-                {timeLeft > 0 && (
-                  <Badge 
-                    variant="outline" 
-                    className="flex items-center gap-2"
-                    style={{
-                      borderColor: themeStyles.border,
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                      color: themeStyles.textPrimary
-                    }}
-                  >
-                    <Clock className="w-4 h-4" style={{ color: themeStyles.textPrimary }} />
-                    {formatTime(timeLeft)}
-                  </Badge>
-                )}
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 flex flex-col relative">
-            {/* Part 2 Simple Timer */}
-            {currentPart === 2 && preparationTime > 0 && (
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <Clock className="w-5 h-5" style={{ color: themeStyles.buttonPrimary }} />
-                  <p className="text-xl font-bold" style={{ color: themeStyles.buttonPrimary }}>{formatTime(preparationTime)}</p>
-                </div>
-              </div>
-            )}
-
-
-            {/* Part 1 - Structured Questions Display */}
-            {currentPart === 1 && testData.part1_prompts.length > 0 && (
-              <div className="space-y-6 relative flex flex-col min-h-[200px]">
-                {/* Question Text - Fixed Height Container */}
-                <div className="min-h-[200px] flex items-center justify-center flex-1">
-                  {showQuestion && (
-                    <div className="text-lg font-medium text-center select-none" style={{ color: themeStyles.textPrimary }}>
-                      {getCurrentQuestionText()}
+                        )}
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
 
-            {/* Part 3 - Structured Questions Display */}
-            {currentPart === 3 && testData.part3_prompts.length > 0 && (
-              <div className="space-y-6 relative flex flex-col min-h-[200px]">
-                {/* Question Text - Fixed Height Container */}
-                <div className="min-h-[200px] flex items-center justify-center flex-1">
-                  {showQuestion && (
-                    <div className="text-lg font-medium text-center select-none" style={{ color: themeStyles.textPrimary }}>
-                      {getCurrentQuestionText()}
+                  {/* Part 3 - Structured Questions Display */}
+                  {currentPart === 3 && testData.part3_prompts.length > 0 && (
+                    <div className="space-y-6 relative flex flex-col min-h-[200px]">
+                      {/* Question Text - Fixed Height Container */}
+                      <div className="min-h-[200px] flex items-center justify-center flex-1">
+                        {showQuestion && (
+                          <div className="text-lg font-medium text-center select-none" style={{ color: themeStyles.textPrimary }}>
+                            {getCurrentQuestionText()}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
 
-            {/* Cue Card Display */}
-            {currentPart === 2 && currentPrompt && (
-               <div 
-                 className="p-6 rounded-lg"
-                 style={{
-                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                   borderColor: themeStyles.border,
-                   borderWidth: '1px',
-                   borderStyle: 'solid'
-                 }}
-               >
-                <h3 className="font-semibold mb-3" style={{ color: themeStyles.textPrimary }}>Cue Card</h3>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: themeStyles.textSecondary }}>
-                  {currentPrompt.prompt_text}
-                </div>
-              </div>
-            )}
-
-            {/* Part 2 Notes Container */}
-            {currentPart === 2 && (
-              <>
-                {/* Note-taking area during preparation */}
-                {preparationTime > 0 && (
-                  <div 
-                    className="relative rounded-lg p-4"
-                    style={{
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
-                      borderColor: themeStyles.border,
-                      borderWidth: '1px',
-                      borderStyle: 'solid'
-                    }}
-                  >
-                    {/* +1 Minute Icon Button - Top Right */}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setPreparationTime(prev => prev + 60);
-                            }}
-                            className="absolute top-2 right-2 h-8 w-8"
-                            style={{ color: themeStyles.buttonPrimary }}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Add 1 minute for notes</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <textarea
-                      placeholder="Write your preparation notes here..."
-                      value={part2Notes}
-                      onChange={(e) => setPart2Notes(e.target.value)}
-                      className="w-full h-32 p-3 bg-transparent resize-none focus:outline-none"
-                      style={{ color: themeStyles.textPrimary }}
-                    />
-                    <style dangerouslySetInnerHTML={{ __html: `
-                      textarea[placeholder="Write your preparation notes here..."]::placeholder {
-                        color: ${themeStyles.textSecondary};
-                      }
-                    ` }} />
-                  </div>
-                )}
-
-                {/* Notes Display During/After Recording */}
-                {preparationTime === 0 && part2Notes && (
-                  <div 
-                    className="relative rounded-lg p-4"
-                    style={{
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
-                      borderColor: themeStyles.border,
-                      borderWidth: '1px',
-                      borderStyle: 'solid'
-                    }}
-                  >
-                    {/* +1 Minute Icon Button - Top Right */}
-                    {!isRecording && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setPreparationTime(60);
-                                startPreparationTimer();
-                              }}
-                              className="absolute top-2 right-2 h-8 w-8 text-primary"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Add 1 minute for notes</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    <div className="p-3 text-sm whitespace-pre-wrap">
-                      {part2Notes}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Recording Interface */}
-            {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
-              <div className="text-center h-[80px] flex items-center justify-center relative">
-                {isRecording ? (
-                  <>
-                    {/* Live Audio Waveform - 50% narrower than previous, centered above stop button */}
-                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[130px] sm:w-[180px]">
-                      <LiveWaveform
-                        active={true}
-                        height={55}
-                        barWidth={6}
-                        barGap={2}
-                        barRadius={3}
-                        mode="static"
-                        fadeEdges={false}
-                        barColor="#2563eb"
-                        sensitivity={1.2}
-                        fftSize={256}
-                        historySize={60}
-                        updateRate={30}
-                      />
-                    </div>
-
-                    {/* Stop Recording Button - Positioned at bottom */}
-                    <Button
-                      onClick={stopRecording}
-                      variant="outline"
-                      size="icon"
-                      className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                  {/* Cue Card Display */}
+                  {currentPart === 2 && currentPrompt && (
+                    <div
+                      className="p-6 rounded-lg"
                       style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                         borderColor: themeStyles.border,
-                        color: themeStyles.buttonPrimary,
-                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
+                        borderWidth: '1px',
+                        borderStyle: 'solid'
                       }}
                     >
-                      <Square className="w-4 h-4" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
-                    </Button>
-                  </>
-                ) : (
-                  <TooltipProvider>
-                    <div className="flex items-center justify-center gap-3">
-                      {/* Record Button */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={startRecording}
-                            variant="outline"
-                              className="rounded-xl shadow-sm h-12 w-12"
-                              size="icon"
-                              style={{
-                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                                borderColor: themeStyles.border,
-                                color: themeStyles.textPrimary
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                                e.currentTarget.style.color = themeStyles.buttonPrimary;
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
-                                e.currentTarget.style.color = themeStyles.textPrimary;
-                              }}
-                            >
-                            <Mic className="w-5 h-5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Start recording your answer</p>
-                        </TooltipContent>
-                      </Tooltip>
-
-                      {/* Replay Audio Button */}
-                      {currentPrompt?.audio_url && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={repeatAudio}
-                              disabled={isPlaying}
-                              variant="outline"
-                              size="icon"
-                              className="h-12 w-12 rounded-xl"
-                              style={{
-                                borderColor: themeStyles.border,
-                                color: themeStyles.buttonPrimary,
-                                backgroundColor: 'transparent'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                              }}
-                            >
-                              {isPlaying ? (
-                                <Pause className="w-5 h-5" />
-                              ) : (
-                                <Play className="w-5 h-5" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{isPlaying ? "Pause question audio" : "Play question audio"}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-
-                      {/* Listen to Your Recording Button */}
-                      {recordings[`part${currentPart}_q${currentQuestion}`] && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={() => {
-                                // If currently playing this recording, stop it. Otherwise, start playing.
-                                if (isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}`) {
-                                  stopRecordingPlayback();
-                                } else {
-                                  playRecording(`part${currentPart}_q${currentQuestion}`);
-                                }
-                              }}
-                              variant="outline"
-                              size="icon"
-                              className="h-12 w-12 rounded-xl"
-                              style={{
-                                borderColor: themeStyles.border,
-                                color: themeStyles.buttonPrimary,
-                                backgroundColor: 'transparent'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                              }}
-                            >
-                              {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
-                                <Pause className="w-5 h-5" />
-                              ) : (
-                                <Volume2 className="w-5 h-5" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? "Stop listening to your recording" : "Listen to your recorded answer"}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
+                      <h3 className="font-semibold mb-3" style={{ color: themeStyles.textPrimary }}>Cue Card</h3>
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                        {currentPrompt.prompt_text}
+                      </div>
                     </div>
-                  </TooltipProvider>
-                )}
-              </div>
-            )}
+                  )}
 
-            {/* Language Selection and Submit - Centered Underneath Recording Button */}
-            {showLanguagePreference && (
-              <div className="flex justify-center mt-4">
-                <div className="flex items-center gap-3">
-                  <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                    <SelectTrigger
-                      className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
-                      style={{
-                        color: themeStyles.textPrimary,
-                        '--tw-ring-color': themeStyles.buttonPrimary
-                      } as React.CSSProperties}
-                    >
-                      <SelectValue placeholder="Language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FEEDBACK_LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.value} value={lang.value}>
-                          {lang.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      // Persist preference so backend / results page can localize feedback
-                      try {
-                        localStorage.setItem(
-                          "ielts_speaking_feedback_language",
-                          feedbackLanguage || "en"
-                        );
-                      } catch (e) {
-                        console.warn("Unable to persist feedback language preference", e);
-                      }
-                      submitTest();
-                    }}
-                    className="font-medium"
-                    style={{
-                      backgroundColor: themeStyles.buttonPrimary,
-                      color: '#ffffff'
-                    }}
-                  >
-                    Submit
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Question Navigation Buttons - Bottom Corners */}
-            {(currentPart === 1 || currentPart === 3) && !showLanguagePreference && (
-              <TooltipProvider>
-                <>
-                  {/* Previous Question Button - Bottom Left */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          if (currentQuestion > 0) {
-                            setCurrentQuestion(currentQuestion - 1);
-                            setShowQuestion(false);
-                          }
-                        }}
-                        disabled={currentQuestion === 0}
-                        size="icon"
-                        className="absolute bottom-0 left-0 h-12 w-12"
-                        style={{ color: themeStyles.textSecondary }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = themeStyles.buttonPrimary;
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = themeStyles.textSecondary;
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                      >
-                        <ArrowLeft className="w-5 h-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Previous question</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {/* Next Question Button - Bottom Right */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setShowQuestion(false);
-                          nextQuestion();
-                        }}
-                        disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
-                        size="icon"
-                        className="absolute bottom-0 right-0 h-12 w-12"
-                        style={{ color: themeStyles.textSecondary }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = themeStyles.buttonPrimary;
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = themeStyles.textSecondary;
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                      >
-                        <ArrowRight className="w-5 h-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        {recordings[`part${currentPart}_q${currentQuestion}`] === undefined 
-                          ? "Please record your answer first" 
-                          : (currentQuestion === (testData?.part1_prompts.length || 0) - 1 && currentPart === 1 && !testData?.part2_prompt && (!testData?.part3_prompts || testData.part3_prompts.length === 0))
-                            ? "Complete test"
-                            : "Next question"}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </>
-              </TooltipProvider>
-            )}
-
-            {/* Part 2 Navigation Button - Go to Part 3 */}
-            {currentPart === 2 && !showLanguagePreference && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        nextQuestion();
-                      }}
-                      disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
-                      size="icon"
-                      className="absolute bottom-0 right-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
-                    >
-                      <ArrowRight className="w-5 h-5" />
-                    </Button>
-                  </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        {recordings[`part${currentPart}_q${currentQuestion}`] === undefined 
-                          ? "Please record your answer first" 
-                          : (testData?.part3_prompts && testData.part3_prompts.length > 0)
-                            ? "Go to Part 3"
-                            : "Complete test"}
-                      </p>
-                    </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </CardContent>
-        </Card>
-
-
-        {/* Exit Test - fixed but kept subtle in corner */}
-        <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">
-          <button
-            onClick={() => navigate('/ielts-portal')}
-            className="text-lg cursor-pointer transition-colors"
-            style={{ color: themeStyles.textSecondary }}
-            onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
-            onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-          >
-            Exit Test
-          </button>
-        </div>
-
-        {/* Quick suggestion buttons next to Catie bot:
-            - Structure
-            - Vocabulary
-            - Example answers
-            - Grammar
-        */}
-        {showAIAssistant && (
-          <div className="fixed bottom-12 right-4 sm:bottom-20 sm:right-[420px] z-50 flex flex-col gap-2 sm:gap-3">
-            {/* Structure helper */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleSuggestionClick('Help with Speaking Structure')}
-                    disabled={isChatLoading}
-                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
-                    style={{
-                      borderColor: themeStyles.border || '#e5e7eb',
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
-                      color: themeStyles.buttonPrimary || '#2563eb'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
-                    }}
-                  >
-                    <ListTree className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Get help with speaking structure</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {/* Vocabulary helper */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
-                    disabled={isChatLoading}
-                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
-                    style={{
-                      borderColor: themeStyles.border || '#e5e7eb',
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
-                      color: themeStyles.buttonPrimary || '#2563eb'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
-                    }}
-                  >
-                    <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Get vocabulary suggestions</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {/* Example answers helper */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      handleSuggestionClick(
-                        'Give me 2-3 straightforward band 7+ example answers for this exact IELTS Speaking question. Just show the actual answers, no explanations.'
-                      )
-                    }
-                    disabled={isChatLoading}
-                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
-                    style={{
-                      borderColor: themeStyles.border || '#e5e7eb',
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
-                      color: themeStyles.buttonPrimary || '#2563eb'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
-                    }}
-                  >
-                    <Sparkles className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>View band 7+ example answers</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {/* Grammar helper */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleSuggestionClick('Help me with grammar for this speaking question')}
-                    disabled={isChatLoading}
-                    className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
-                    style={{
-                      borderColor: themeStyles.border || '#e5e7eb',
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
-                      color: themeStyles.buttonPrimary || '#2563eb'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
-                    }}
-                  >
-                    <FileText className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Get grammar help</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        )}
-
-        {/* AI Assistant - Floating Bottom Right (Mac-style "suck into dock" animation)
-            Desktop unchanged; Mobile sits slightly lower to stay below main container */}
-        <div className="fixed bottom-6 right-3 sm:bottom-6 sm:right-6 z-50">
-          {/* Chat card */}
-          {showAIAssistant && (
-            <Card
-              className={`backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${
-                showAIAssistantVisible
-                  ? 'opacity-100 scale-100 translate-y-0'
-                  : 'opacity-0 scale-75 translate-y-8'
-              }`}
-              style={{
-                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                borderColor: themeStyles.border,
-                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-                ...themeStyles.cardStyle
-              }}
-            >
-              <CardHeader className="pb-1 sm:pb-2 rounded-t-3xl relative">
-                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={closeAIAssistant}
-                    className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                    style={{ color: themeStyles.textPrimary }}
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col px-2.5 py-2 sm:p-4 overflow-hidden">
-                <Conversation className="flex-1 min-h-0">
-                  <ConversationContent className="flex-1 min-h-0">
-                    {chatMessages.length === 0 && !isChatLoading ? (
-                      <ConversationEmptyState
-                        icon={<Orb className="size-9 sm:size-12" style={{ color: themeStyles.textSecondary }} />}
-                        title="Start a conversation"
-                        description="Ask for help with your IELTS speaking practice"
-                      />
-                    ) : (
-                      <>
-                        {/* Current question displayed at the top of chat */}
-                        <div 
-                          className="rounded-lg p-3 mb-4"
+                  {/* Part 2 Notes Container */}
+                  {currentPart === 2 && (
+                    <>
+                      {/* Note-taking area during preparation */}
+                      {preparationTime > 0 && (
+                        <div
+                          className="relative rounded-lg p-4"
                           style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
                             borderColor: themeStyles.border,
                             borderWidth: '1px',
                             borderStyle: 'solid'
                           }}
                         >
-                          <div className="text-xs uppercase tracking-wide mb-1" style={{ color: themeStyles.textSecondary }}>Question</div>
-                          <div className="text-xs sm:text-sm font-medium" style={{ color: themeStyles.textPrimary }}>{questionType}</div>
-                          <div className="text-[10px] sm:text-sm whitespace-pre-wrap mt-1" style={{ color: themeStyles.textSecondary }}>
-                            {currentQuestionText || 'No question available.'}
+                          {/* +1 Minute Icon Button - Top Right */}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setPreparationTime(prev => prev + 60);
+                                  }}
+                                  className="absolute top-2 right-2 h-8 w-8"
+                                  style={{ color: themeStyles.buttonPrimary }}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Add 1 minute for notes</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <textarea
+                            placeholder="Write your preparation notes here..."
+                            value={part2Notes}
+                            onChange={(e) => setPart2Notes(e.target.value)}
+                            className="w-full h-32 p-3 bg-transparent resize-none focus:outline-none"
+                            style={{ color: themeStyles.textPrimary }}
+                          />
+                          <style dangerouslySetInnerHTML={{
+                            __html: `
+                      textarea[placeholder="Write your preparation notes here..."]::placeholder {
+                        color: ${themeStyles.textSecondary};
+                      }
+                    ` }} />
+                        </div>
+                      )}
+
+                      {/* Notes Display During/After Recording */}
+                      {preparationTime === 0 && part2Notes && (
+                        <div
+                          className="relative rounded-lg p-4"
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#fef3c7' : '#FEF9E7',
+                            borderColor: themeStyles.border,
+                            borderWidth: '1px',
+                            borderStyle: 'solid'
+                          }}
+                        >
+                          {/* +1 Minute Icon Button - Top Right */}
+                          {!isRecording && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setPreparationTime(60);
+                                      startPreparationTimer();
+                                    }}
+                                    className="absolute top-2 right-2 h-8 w-8 text-primary"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Add 1 minute for notes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          <div className="p-3 text-sm whitespace-pre-wrap">
+                            {part2Notes}
                           </div>
                         </div>
+                      )}
+                    </>
+                  )}
 
-                        {chatMessages.map((message) => (
-                          <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
-                            {message.type === 'bot' && (
-                              <div
-                                style={{
-                                  borderRadius: '50%',
-                                  overflow: 'hidden',
-                                  width: '52px',
-                                  height: '52px',
-                                  flexShrink: 0
-                                }}
-                              >
-                                <img
-                                  src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
-                                  alt="Catie"
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              </div>
-                            )}
-                            <MessageContent>
-                              <div
-                                className="px-3 py-2 rounded-xl text-sm"
-                                style={{
-                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
-                                  borderColor: themeStyles.border,
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid',
-                                  color: themeStyles.textPrimary
-                                }}
-                              >
-                                <Response
-                                  dangerouslySetInnerHTML={{
-                                    __html: message.content
-                                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                      .replace(/^• (.*)$/gm, '<li>$1</li>')
-                                      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-                                      .replace(/\n/g, '<br>'),
+                  {/* Recording Interface */}
+                  {((currentPart === 2 && preparationTime === 0) || currentPart !== 2) && (
+                    <div className="text-center min-h-[80px] flex items-center justify-center relative">
+                      {isRecording ? (
+                        <>
+                          {/* Live Audio Waveform - 50% narrower than previous, centered above stop button */}
+                          <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-[130px] sm:w-[180px]">
+                            <LiveWaveform
+                              active={true}
+                              height={55}
+                              barWidth={6}
+                              barGap={2}
+                              barRadius={3}
+                              mode="static"
+                              fadeEdges={false}
+                              barColor="#2563eb"
+                              sensitivity={1.2}
+                              fftSize={256}
+                              historySize={60}
+                              updateRate={30}
+                            />
+                          </div>
+
+                          {/* Stop Recording Button - Positioned at bottom */}
+                          <Button
+                            onClick={stopRecording}
+                            variant="outline"
+                            size="icon"
+                            className="rounded-xl h-8 w-8 absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                            style={{
+                              borderColor: themeStyles.border,
+                              color: themeStyles.buttonPrimary,
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
+                            }}
+                          >
+                            <Square className="w-4 h-4" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
+                          </Button>
+                        </>
+                      ) : (
+                        <TooltipProvider>
+                          <div className="flex items-center justify-center gap-3">
+                            {/* Record Button */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={startRecording}
+                                  variant="outline"
+                                  className="rounded-xl shadow-sm h-12 w-12"
+                                  size="icon"
+                                  style={{
+                                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                                    borderColor: themeStyles.border,
+                                    color: themeStyles.textPrimary
                                   }}
-                                />
-                              </div>
-                            </MessageContent>
-                            {message.type === 'user' && profile?.avatar_url && (
-                              <div
-                                style={{
-                                  borderRadius: '50%',
-                                  overflow: 'hidden',
-                                  width: '52px',
-                                  height: '52px',
-                                  flexShrink: 0
-                                }}
-                              >
-                                <img
-                                  src={profile.avatar_url}
-                                  alt="Your avatar"
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              </div>
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                    e.currentTarget.style.color = themeStyles.buttonPrimary;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.8)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground;
+                                    e.currentTarget.style.color = themeStyles.textPrimary;
+                                  }}
+                                >
+                                  <Mic className="w-5 h-5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Start recording your answer</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            {/* Replay Audio Button */}
+                            {currentPrompt?.audio_url && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    onClick={repeatAudio}
+                                    disabled={isPlaying}
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-12 w-12 rounded-xl"
+                                    style={{
+                                      borderColor: themeStyles.border,
+                                      color: themeStyles.buttonPrimary,
+                                      backgroundColor: 'transparent'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                  >
+                                    {isPlaying ? (
+                                      <Pause className="w-5 h-5" />
+                                    ) : (
+                                      <Play className="w-5 h-5" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{isPlaying ? "Pause question audio" : "Play question audio"}</p>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
-                          </Message>
+
+                            {/* Listen to Your Recording Button */}
+                            {recordings[`part${currentPart}_q${currentQuestion}`] && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    onClick={() => {
+                                      // If currently playing this recording, stop it. Otherwise, start playing.
+                                      if (isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}`) {
+                                        stopRecordingPlayback();
+                                      } else {
+                                        playRecording(`part${currentPart}_q${currentQuestion}`);
+                                      }
+                                    }}
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-12 w-12 rounded-xl"
+                                    style={{
+                                      borderColor: themeStyles.border,
+                                      color: themeStyles.buttonPrimary,
+                                      backgroundColor: 'transparent'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                  >
+                                    {isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? (
+                                      <Pause className="w-5 h-5" />
+                                    ) : (
+                                      <Volume2 className="w-5 h-5" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{isPlayingRecording && currentPlayingRecording === `part${currentPart}_q${currentQuestion}` ? "Stop listening to your recording" : "Listen to your recorded answer"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+
+                            {/* Evaluation Button */}
+                            {(() => {
+                              console.log("🔍 DEBUG: Checking evaluate button condition", {
+                                currentPart,
+                                currentQuestion,
+                                key: `part${currentPart}_q${currentQuestion}`,
+                                hasRecording: !!recordings[`part${currentPart}_q${currentQuestion}`],
+                                allRecordingKeys: Object.keys(recordings),
+                                recordingValue: recordings[`part${currentPart}_q${currentQuestion}`]
+                              });
+                              return null;
+                            })()}
+                            {recordings[`part${currentPart}_q${currentQuestion}`] && (
+                              <>
+                                {(() => {
+                                  console.log("✅ Rendering Evaluate Button", {
+                                    key: `part${currentPart}_q${currentQuestion}`,
+                                    recording: recordings[`part${currentPart}_q${currentQuestion}`]
+                                  });
+                                  return null;
+                                })()}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      onClick={evaluateRecording}
+                                      disabled={isEvaluating}
+                                      variant="outline"
+                                      className="h-12 px-4 rounded-xl gap-2"
+                                      style={{
+                                        borderColor: themeStyles.border,
+                                        color: themeStyles.buttonPrimary,
+                                        backgroundColor: 'transparent'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                      }}
+                                    >
+                                      {isEvaluating ? (
+                                        <Sparkles className="w-5 h-5 animate-spin" />
+                                      ) : (
+                                        <Sparkles className="w-5 h-5" />
+                                      )}
+                                      <span className="font-medium">Evaluate AI</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isEvaluating ? "Evaluating your answer..." : "Get AI feedback on this answer"}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
+                          </div>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  )}
+
+
+
+                  {/* Inline Evaluation Result */}
+                  {evaluationResult && (
+                    <div className="mt-8 p-6 rounded-2xl border-2 animate-in fade-in slide-in-from-top-4 duration-500 max-w-3xl mx-auto text-left shadow-lg"
+                      style={{
+                        borderColor: themeStyles.border,
+                        backgroundColor: themeStyles.theme.colors.cardBackground || '#ffffff',
+                        color: themeStyles.textPrimary
+                      }}
+                    >
+                      {/* Header with Catie's Avatar */}
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <img
+                              src="/cat.png"
+                              alt="Catie AI"
+                              className="w-12 h-12 rounded-full shadow-md"
+                              style={{ border: `2px solid ${themeStyles.buttonPrimary}` }}
+                            />
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-sm"
+                              style={{ backgroundColor: themeStyles.buttonPrimary }}
+                            >
+                              <Sparkles className="w-3 h-3 text-white" />
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg" style={{ color: themeStyles.textPrimary }}>
+                              Catie's Feedback
+                            </h3>
+                            <p className="text-xs opacity-60">AI Speaking Coach</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEvaluationResult(null)}
+                          className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {/* Transcription Verification */}
+                      <div className="mb-6 p-4 rounded-xl border-2"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'dark'
+                            ? 'rgba(255,255,255,0.05)'
+                            : themeStyles.theme.name === 'glassmorphism'
+                              ? 'rgba(255,255,255,0.6)'
+                              : '#f8fafc',
+                          borderColor: themeStyles.border
+                        }}
+                      >
+                        <p className="text-xs font-bold uppercase mb-2 flex items-center gap-2" style={{ color: themeStyles.buttonPrimary }}>
+                          <Volume2 className="w-3 h-3" />
+                          What I Heard
+                        </p>
+                        <p className="text-sm italic leading-relaxed" style={{ color: themeStyles.textPrimary }}>
+                          "{evaluationResult.transcription}"
+                        </p>
+                      </div>
+
+                      {/* Metrics with Theme Colors */}
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        {Object.entries(evaluationResult.metrics || {}).map(([key, value]: [string, any]) => (
+                          <div key={key} className="space-y-2 p-3 rounded-lg"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'dark'
+                                ? 'rgba(255,255,255,0.05)'
+                                : themeStyles.theme.name === 'glassmorphism'
+                                  ? 'rgba(255,255,255,0.5)'
+                                  : '#f8fafc'
+                            }}
+                          >
+                            <div className="flex justify-between text-sm font-semibold">
+                              <span className="capitalize" style={{ color: themeStyles.textPrimary }}>{key}</span>
+                              <span className="font-bold" style={{ color: themeStyles.buttonPrimary }}>{value}%</span>
+                            </div>
+                            <Progress
+                              value={value}
+                              className="h-2"
+                              style={{
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : '#e2e8f0'
+                              }}
+                            />
+                          </div>
                         ))}
-                        {isChatLoading && (
-                          <Message from="assistant">
-                            <MessageContent>
-                              <div 
-                                className="px-3 py-2 rounded-xl text-sm"
+                      </div>
+
+                      <Separator className="my-6" style={{ backgroundColor: themeStyles.border }} />
+
+                      {/* Feedback */}
+                      <div className="space-y-2 mb-6">
+                        <h3 className="font-semibold text-base flex items-center gap-2" style={{ color: themeStyles.textPrimary }}>
+                          <MessageSquare className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
+                          Feedback
+                        </h3>
+                        <p className="text-sm leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                          {evaluationResult.feedback}
+                        </p>
+                      </div>
+
+                      {/* Enhanced Sentence */}
+                      <div className="p-4 rounded-xl space-y-2 mb-6 border-2"
+                        style={{
+                          backgroundColor: themeStyles.theme.name === 'dark'
+                            ? 'rgba(255,255,255,0.05)'
+                            : themeStyles.theme.name === 'glassmorphism'
+                              ? 'rgba(255,255,255,0.7)'
+                              : '#f0f9ff',
+                          borderColor: `${themeStyles.buttonPrimary}40`
+                        }}
+                      >
+                        <h3 className="font-semibold flex items-center gap-2 text-xs uppercase tracking-wide" style={{ color: themeStyles.buttonPrimary }}>
+                          <Sparkles className="w-3 h-3" />
+                          Band 8-9 Enhanced Version
+                        </h3>
+                        <p className="text-base italic font-medium" style={{ color: themeStyles.textPrimary }}>
+                          "{evaluationResult.enhancedSentence}"
+                        </p>
+                      </div>
+
+                      {/* Detailed Analysis */}
+                      <div className="space-y-4">
+                        <h3 className="font-semibold text-base" style={{ color: themeStyles.textPrimary }}>Detailed Analysis</h3>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {Object.entries(evaluationResult.detailedAnalysis || {}).map(([key, value]: [string, any]) => (
+                            <div key={key} className="border-2 p-3 rounded-xl"
+                              style={{
+                                borderColor: themeStyles.border,
+                                backgroundColor: themeStyles.theme.name === 'dark'
+                                  ? 'rgba(255,255,255,0.03)'
+                                  : themeStyles.theme.name === 'glassmorphism'
+                                    ? 'rgba(255,255,255,0.4)'
+                                    : '#ffffff'
+                              }}
+                            >
+                              <span className="text-xs font-bold uppercase mb-1 block" style={{ color: themeStyles.buttonPrimary }}>
+                                {key}
+                              </span>
+                              <p className="text-xs leading-relaxed" style={{ color: themeStyles.textSecondary }}>
+                                {value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Language Selection and Submit - Centered Underneath Recording Button */}
+                  {showLanguagePreference && (
+                    <div className="flex justify-center mt-4">
+                      <div className="flex items-center gap-3">
+                        <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                          <SelectTrigger
+                            className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                            style={{
+                              color: themeStyles.textPrimary,
+                              '--tw-ring-color': themeStyles.buttonPrimary
+                            } as React.CSSProperties}
+                          >
+                            <SelectValue placeholder="Language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FEEDBACK_LANGUAGES.map((lang) => (
+                              <SelectItem key={lang.value} value={lang.value}>
+                                {lang.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            // Persist preference so backend / results page can localize feedback
+                            try {
+                              localStorage.setItem(
+                                "ielts_speaking_feedback_language",
+                                feedbackLanguage || "en"
+                              );
+                            } catch (e) {
+                              console.warn("Unable to persist feedback language preference", e);
+                            }
+                            submitTest();
+                          }}
+                          className="font-medium"
+                          style={{
+                            backgroundColor: themeStyles.buttonPrimary,
+                            color: '#ffffff'
+                          }}
+                        >
+                          Submit
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Question Navigation Buttons - Bottom Corners */}
+                  {(currentPart === 1 || currentPart === 3) && !showLanguagePreference && (
+                    <TooltipProvider>
+                      <>
+                        {/* Previous Question Button - Bottom Left */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              onClick={() => {
+                                if (currentQuestion > 0) {
+                                  setCurrentQuestion(currentQuestion - 1);
+                                  setShowQuestion(false);
+                                }
+                              }}
+                              disabled={currentQuestion === 0}
+                              size="icon"
+                              className="absolute bottom-0 left-0 h-12 w-12"
+                              style={{ color: themeStyles.textSecondary }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = themeStyles.buttonPrimary;
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = themeStyles.textSecondary;
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Previous question</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Next Question Button - Bottom Right */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              onClick={() => {
+                                setShowQuestion(false);
+                                nextQuestion();
+                              }}
+                              disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
+                              size="icon"
+                              className="absolute bottom-0 right-0 h-12 w-12"
+                              style={{ color: themeStyles.textSecondary }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = themeStyles.buttonPrimary;
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = themeStyles.textSecondary;
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <ArrowRight className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              {recordings[`part${currentPart}_q${currentQuestion}`] === undefined
+                                ? "Please record your answer first"
+                                : (currentQuestion === (testData?.part1_prompts.length || 0) - 1 && currentPart === 1 && !testData?.part2_prompt && (!testData?.part3_prompts || testData.part3_prompts.length === 0))
+                                  ? "Complete test"
+                                  : "Next question"}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
+                    </TooltipProvider>
+                  )}
+
+                  {/* Part 2 Navigation Button - Go to Part 3 */}
+                  {currentPart === 2 && !showLanguagePreference && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              nextQuestion();
+                            }}
+                            disabled={recordings[`part${currentPart}_q${currentQuestion}`] === undefined}
+                            size="icon"
+                            className="absolute bottom-0 right-0 h-12 w-12 hover:bg-transparent hover:text-foreground"
+                          >
+                            <ArrowRight className="w-5 h-5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {recordings[`part${currentPart}_q${currentQuestion}`] === undefined
+                              ? "Please record your answer first"
+                              : (testData?.part3_prompts && testData.part3_prompts.length > 0)
+                                ? "Go to Part 3"
+                                : "Complete test"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </CardContent>
+              </Card>
+
+
+              {/* Exit Test - fixed but kept subtle in corner */}
+              <div className="fixed bottom-6 left-6 z-40 flex items-center gap-4">
+                <button
+                  onClick={() => navigate('/ielts-portal')}
+                  className="text-lg cursor-pointer transition-colors"
+                  style={{ color: themeStyles.textSecondary }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.buttonPrimary}
+                  onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+                >
+                  Exit Test
+                </button>
+              </div>
+
+              {/* Quick suggestion buttons next to Catie bot:
+            - Structure
+            - Vocabulary
+            - Example answers
+            - Grammar
+        */}
+              {showAIAssistant && (
+                <div className="fixed bottom-12 right-4 sm:bottom-20 sm:right-[420px] z-50 flex flex-col gap-2 sm:gap-3">
+                  {/* Structure helper */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleSuggestionClick('Help with Speaking Structure')}
+                          disabled={isChatLoading}
+                          className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                          style={{
+                            borderColor: themeStyles.border || '#e5e7eb',
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                            color: themeStyles.buttonPrimary || '#2563eb'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
+                          }}
+                        >
+                          <ListTree className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>Get help with speaking structure</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  {/* Vocabulary helper */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleSuggestionClick('Suggest Some Speaking Vocabulary')}
+                          disabled={isChatLoading}
+                          className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                          style={{
+                            borderColor: themeStyles.border || '#e5e7eb',
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                            color: themeStyles.buttonPrimary || '#2563eb'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
+                          }}
+                        >
+                          <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>Get vocabulary suggestions</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  {/* Example answers helper */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() =>
+                            handleSuggestionClick(
+                              'Give me 2-3 straightforward band 7+ example answers for this exact IELTS Speaking question. Just show the actual answers, no explanations.'
+                            )
+                          }
+                          disabled={isChatLoading}
+                          className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                          style={{
+                            borderColor: themeStyles.border || '#e5e7eb',
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                            color: themeStyles.buttonPrimary || '#2563eb'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>View band 7+ example answers</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  {/* Grammar helper */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleSuggestionClick('Help me with grammar for this speaking question')}
+                          disabled={isChatLoading}
+                          className="h-9 w-9 sm:h-12 sm:w-12 p-0 backdrop-blur-sm shadow-lg"
+                          style={{
+                            borderColor: themeStyles.border || '#e5e7eb',
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff',
+                            color: themeStyles.buttonPrimary || '#2563eb'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.hoverBg || 'rgba(0,0,0,0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.15)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground || '#ffffff';
+                          }}
+                        >
+                          <FileText className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: themeStyles.buttonPrimary || '#2563eb' }} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>Get grammar help</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+
+              {/* AI Assistant - Floating Bottom Right (Mac-style "suck into dock" animation)
+            Desktop unchanged; Mobile sits slightly lower to stay below main container */}
+              <div className="fixed bottom-6 right-3 sm:bottom-6 sm:right-6 z-50">
+                {/* Chat card */}
+                {showAIAssistant && (
+                  <Card
+                    className={`backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${showAIAssistantVisible
+                      ? 'opacity-100 scale-100 translate-y-0'
+                      : 'opacity-0 scale-75 translate-y-8'
+                      }`}
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                      borderColor: themeStyles.border,
+                      backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                      ...themeStyles.cardStyle
+                    }}
+                  >
+                    <CardHeader className="pb-1 sm:pb-2 rounded-t-3xl relative">
+                      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={closeAIAssistant}
+                          className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                          style={{ color: themeStyles.textPrimary }}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col px-2.5 py-2 sm:p-4 overflow-hidden">
+                      <Conversation className="flex-1 min-h-0">
+                        <ConversationContent className="flex-1 min-h-0">
+                          {chatMessages.length === 0 && !isChatLoading ? (
+                            <ConversationEmptyState
+                              icon={<Orb className="size-9 sm:size-12" style={{ color: themeStyles.textSecondary }} />}
+                              title="Start a conversation"
+                              description="Ask for help with your IELTS speaking practice"
+                            />
+                          ) : (
+                            <>
+                              {/* Current question displayed at the top of chat */}
+                              <div
+                                className="rounded-lg p-3 mb-4"
                                 style={{
-                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                                   borderColor: themeStyles.border,
                                   borderWidth: '1px',
                                   borderStyle: 'solid'
                                 }}
                               >
-                                <ShimmeringText text="Thinking..." />
+                                <div className="text-xs uppercase tracking-wide mb-1" style={{ color: themeStyles.textSecondary }}>Question</div>
+                                <div className="text-xs sm:text-sm font-medium" style={{ color: themeStyles.textPrimary }}>{questionType}</div>
+                                <div className="text-[10px] sm:text-sm whitespace-pre-wrap mt-1" style={{ color: themeStyles.textSecondary }}>
+                                  {currentQuestionText || 'No question available.'}
+                                </div>
                               </div>
-                            </MessageContent>
-                            <div
-                              style={{
-                                borderRadius: '50%',
-                                overflow: 'hidden',
-                                width: '52px',
-                                height: '52px',
-                              }}
-                            >
-                              <img
-                                src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
-                                alt="Catie"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                            </div>
-                          </Message>
-                        )}
-                      </>
-                    )}
-                  </ConversationContent>
-                </Conversation>
 
-                <div className="flex-shrink-0 mt-2.5 sm:mt-4">
-                  <div className="flex gap-1.5 sm:gap-2">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) =>
-                        e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()
-                      }
-                      placeholder="Ask for speaking help..."
-                      className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:ring-0 resize-none"
-                      style={{
-                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                        borderColor: themeStyles.border,
-                        borderWidth: '1px',
-                        borderStyle: 'solid',
-                        color: themeStyles.textPrimary
-                      }}
-                      disabled={isChatLoading}
-                    />
-                    <style dangerouslySetInnerHTML={{ __html: `
+                              {chatMessages.map((message) => (
+                                <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
+                                  {message.type === 'bot' && (
+                                    <div
+                                      style={{
+                                        borderRadius: '50%',
+                                        overflow: 'hidden',
+                                        width: '52px',
+                                        height: '52px',
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      <img
+                                        src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                        alt="Catie"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      />
+                                    </div>
+                                  )}
+                                  <MessageContent>
+                                    <div
+                                      className="px-3 py-2 rounded-xl text-sm"
+                                      style={{
+                                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                        borderColor: themeStyles.border,
+                                        borderWidth: '1px',
+                                        borderStyle: 'solid',
+                                        color: themeStyles.textPrimary
+                                      }}
+                                    >
+                                      <Response
+                                        dangerouslySetInnerHTML={{
+                                          __html: message.content
+                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                            .replace(/^• (.*)$/gm, '<li>$1</li>')
+                                            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                                            .replace(/\n/g, '<br>'),
+                                        }}
+                                      />
+                                    </div>
+                                  </MessageContent>
+                                  {message.type === 'user' && profile?.avatar_url && (
+                                    <div
+                                      style={{
+                                        borderRadius: '50%',
+                                        overflow: 'hidden',
+                                        width: '52px',
+                                        height: '52px',
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      <img
+                                        src={profile.avatar_url}
+                                        alt="Your avatar"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      />
+                                    </div>
+                                  )}
+                                </Message>
+                              ))}
+                              {isChatLoading && (
+                                <Message from="assistant">
+                                  <MessageContent>
+                                    <div
+                                      className="px-3 py-2 rounded-xl text-sm"
+                                      style={{
+                                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                        borderColor: themeStyles.border,
+                                        borderWidth: '1px',
+                                        borderStyle: 'solid'
+                                      }}
+                                    >
+                                      <ShimmeringText text="Thinking..." />
+                                    </div>
+                                  </MessageContent>
+                                  <div
+                                    style={{
+                                      borderRadius: '50%',
+                                      overflow: 'hidden',
+                                      width: '52px',
+                                      height: '52px',
+                                    }}
+                                  >
+                                    <img
+                                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                      alt="Catie"
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                  </div>
+                                </Message>
+                              )}
+                            </>
+                          )}
+                        </ConversationContent>
+                      </Conversation>
+
+                      <div className="flex-shrink-0 mt-2.5 sm:mt-4">
+                        <div className="flex gap-1.5 sm:gap-2">
+                          <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) =>
+                              e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()
+                            }
+                            placeholder="Ask for speaking help..."
+                            className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:ring-0 resize-none"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              borderColor: themeStyles.border,
+                              borderWidth: '1px',
+                              borderStyle: 'solid',
+                              color: themeStyles.textPrimary
+                            }}
+                            disabled={isChatLoading}
+                          />
+                          <style dangerouslySetInnerHTML={{
+                            __html: `
                       input[placeholder="Ask for speaking help..."]::placeholder {
                         color: ${themeStyles.textSecondary};
                       }
                     ` }} />
-                    <Button
-                      onClick={() => sendChatMessage()}
-                      disabled={isChatLoading || !newMessage.trim()}
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                    style={{ color: themeStyles.textPrimary }}
-                    >
-                      {isChatLoading ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: themeStyles.textPrimary }} />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </Button>
+                          <Button
+                            onClick={() => sendChatMessage()}
+                            disabled={isChatLoading || !newMessage.trim()}
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                            style={{ color: themeStyles.textPrimary }}
+                          >
+                            {isChatLoading ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: themeStyles.textPrimary }} />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {/* Show Catie dock icon only when chat is fully closed for natural feel */}
+                {!showAIAssistant && (
+                  <div
+                    style={{
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      width: '64px',
+                      height: '64px',
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+                      transition: 'transform 0.22s ease-out, box-shadow 0.22s ease-out',
+                    }}
+                    onClick={() => {
+                      setShowAIAssistant(true);
+                      // ensure mount, then trigger pop-out animation from dock icon
+                      requestAnimationFrame(() => setShowAIAssistantVisible(true));
+                    }}
+                    onMouseEnter={(e) => {
+                      const el = e.currentTarget as HTMLDivElement;
+                      el.style.transform = 'scale(1.06) translateY(-2px)';
+                      el.style.boxShadow = '0 14px 30px rgba(0,0,0,0.24)';
+                    }}
+                    onMouseLeave={(e) => {
+                      const el = e.currentTarget as HTMLDivElement;
+                      el.style.transform = 'scale(1.0) translateY(0px)';
+                      el.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+                    }}
+                  >
+                    <img
+                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                      alt="Catie"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {/* Show Catie dock icon only when chat is fully closed for natural feel */}
-          {!showAIAssistant && (
-            <div
-              style={{
-                borderRadius: '50%',
-                overflow: 'hidden',
-                width: '64px',
-                height: '64px',
-                cursor: 'pointer',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
-                transition: 'transform 0.22s ease-out, box-shadow 0.22s ease-out',
-              }}
-              onClick={() => {
-                setShowAIAssistant(true);
-                // ensure mount, then trigger pop-out animation from dock icon
-                requestAnimationFrame(() => setShowAIAssistantVisible(true));
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = 'scale(1.06) translateY(-2px)';
-                el.style.boxShadow = '0 14px 30px rgba(0,0,0,0.24)';
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = 'scale(1.0) translateY(0px)';
-                el.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
-              }}
-            >
-              <img
-                src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
-                alt="Catie"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
-          )}
-        </div>
+                )}
+              </div>
 
             </div>
 
@@ -2518,6 +2758,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
         </StudentLayout>
 
       </div>
+      {/* Feedback Display Modal */}
+
     </div>
   );
 };

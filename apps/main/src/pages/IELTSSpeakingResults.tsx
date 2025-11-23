@@ -138,8 +138,8 @@ const IELTSSpeakingResults = () => {
         const rawAnalyses = Array.isArray(result.individualAnalyses)
           ? result.individualAnalyses
           : Array.isArray((result as any).per_question)
-          ? (result as any).per_question
-          : [];
+            ? (result as any).per_question
+            : [];
 
         const normalizedQuestions: QuestionAnalysis[] = rawAnalyses.map((a: any, idx: number) => {
           const base = allRecordings[idx] || allRecordings[0];
@@ -220,10 +220,10 @@ const IELTSSpeakingResults = () => {
         const pathToHigherScore = Array.isArray(overall.path_to_higher_score || result.path_to_higher_score)
           ? (overall.path_to_higher_score || result.path_to_higher_score)
           : [
-              "Speak for the full time and fully develop each answer.",
-              "Use a wider range of topic-specific vocabulary.",
-              "Reduce hesitations and self-corrections.",
-            ];
+            "Speak for the full time and fully develop each answer.",
+            "Use a wider range of topic-specific vocabulary.",
+            "Reduce hesitations and self-corrections.",
+          ];
 
         setOverallFeedback({
           overall_band_score: overallBand,
@@ -466,158 +466,169 @@ const IELTSSpeakingResults = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.06),_#f9fafb)]">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50">
       <StudentLayout title="IELTS Speaking Results" showBackButton>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-0 py-8 space-y-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
           {/* Header */}
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-4">
             <Badge
               variant="outline"
-              className="mb-2 px-4 py-1 text-[10px] tracking-[0.18em] uppercase text-blue-700 border-blue-200 bg-white/70 rounded-full"
+              className="mb-3 px-5 py-1.5 text-[11px] tracking-[0.2em] uppercase font-semibold text-blue-700 border-blue-200/60 bg-white/80 backdrop-blur-sm rounded-full shadow-sm"
             >
               IELTS SPEAKING • OFFICIAL-STYLE REPORT
             </Badge>
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
-              IELTS Speaking Practice Test
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 bg-clip-text text-transparent">
+              Speaking Test Results
             </h1>
-            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto">
-              AI examiner-style evaluation aligned with IELTS band descriptors
-              for Fluency & Coherence, Lexical Resource, Grammatical Range
-              & Accuracy, and Pronunciation.
+            <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              AI examiner-style evaluation aligned with official IELTS band descriptors
+              for Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, and Pronunciation.
             </p>
           </div>
 
-          {/* Overall Band Score */}
-          <Card className="border border-slate-200/80 rounded-3xl bg-white">
-            <CardContent className="px-6 sm:px-10 py-7 flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div
-                  className={`flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br ${getOverallBandColor(
-                    overallFeedback.overall_band_score
-                  )} text-white text-4xl font-semibold shadow-lg`}
-                >
-                  {overallFeedback.overall_band_score}
-                </div>
-                <div className="text-left space-y-1">
-                  <div className="text-xs font-semibold tracking-[0.16em] text-blue-600 uppercase">
-                    Overall Speaking Band
+          {/* Overall Band Score - Enhanced Design */}
+          <Card className="border-0 rounded-3xl bg-white shadow-xl shadow-blue-100/50">
+            <CardContent className="px-8 sm:px-12 py-10">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div
+                    className={`relative flex items-center justify-center w-32 h-32 rounded-3xl bg-gradient-to-br ${getOverallBandColor(
+                      overallFeedback.overall_band_score
+                    )} text-white shadow-2xl shadow-blue-500/30`}
+                  >
+                    <div className="text-5xl font-bold">
+                      {overallFeedback.overall_band_score}
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
+                      <Award className="w-5 h-5 text-blue-600" />
+                    </div>
                   </div>
-                  <div className="text-sm text-slate-600">
-                    {overallFeedback.overall_band_score >= 8
-                      ? "Excellent: ready for high-stakes academic/professional use."
-                      : overallFeedback.overall_band_score >= 6.5
-                      ? "Good: functional command with some gaps."
-                      : overallFeedback.overall_band_score >= 5
-                      ? "Modest: partial command; noticeable limitations."
-                      : "Needs improvement: below target; focus on fundamentals."}
+                  <div className="text-center sm:text-left space-y-2">
+                    <div className="text-sm font-bold tracking-[0.18em] text-blue-600 uppercase">
+                      Overall Speaking Band
+                    </div>
+                    <div className="text-base text-slate-700 max-w-md">
+                      {overallFeedback.overall_band_score >= 8
+                        ? "🌟 Excellent: Ready for high-stakes academic/professional use"
+                        : overallFeedback.overall_band_score >= 6.5
+                          ? "✅ Good: Functional command with some gaps"
+                          : overallFeedback.overall_band_score >= 5
+                            ? "📚 Modest: Partial command with noticeable limitations"
+                            : "⚠️ Needs improvement: Focus on fundamentals"}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col items-start sm:items-end gap-2 text-xs text-slate-500">
-                <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-blue-500" />
-                  <span>
-                    Analysis generated by enhanced-speech-analysis
-                    (AI examiner-style)
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-amber-500" />
-                  <span>Scores derived from four official IELTS criteria</span>
+                <div className="flex flex-col items-start sm:items-end gap-3 text-sm text-slate-500">
+                  <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium">AI-Powered Analysis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-500" />
+                    <span>Based on 4 official IELTS criteria</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Criteria Scores */}
-          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
-            <Card className="rounded-2xl border border-slate-200 bg-white">
-              <CardHeader className="pb-2">
+          {/* Criteria Scores - Enhanced Grid */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="rounded-2xl border-0 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    {getScoreIcon(overallFeedback.fluency_coherence.score)}
+                  <span className="flex items-center gap-3 text-base font-bold text-slate-900">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+                      {getScoreIcon(overallFeedback.fluency_coherence.score)}
+                    </div>
                     Fluency & Coherence
                   </span>
                   <Badge
                     className={`${getBandColor(
                       overallFeedback.fluency_coherence.score
-                    )} border text-[10px] px-2 py-0.5`}
+                    )} border-2 text-xs font-bold px-3 py-1 shadow-sm`}
                   >
                     Band {overallFeedback.fluency_coherence.score}
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-1">
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <CardContent className="pt-2">
+                <p className="text-sm text-slate-600 leading-relaxed">
                   {overallFeedback.fluency_coherence.feedback}
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border border-slate-200 bg-white">
-              <CardHeader className="pb-2">
+            <Card className="rounded-2xl border-0 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    {getScoreIcon(overallFeedback.lexical_resource.score)}
+                  <span className="flex items-center gap-3 text-base font-bold text-slate-900">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md">
+                      {getScoreIcon(overallFeedback.lexical_resource.score)}
+                    </div>
                     Lexical Resource
                   </span>
                   <Badge
                     className={`${getBandColor(
                       overallFeedback.lexical_resource.score
-                    )} border text-[10px] px-2 py-0.5`}
+                    )} border-2 text-xs font-bold px-3 py-1 shadow-sm`}
                   >
                     Band {overallFeedback.lexical_resource.score}
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-1">
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <CardContent className="pt-2">
+                <p className="text-sm text-slate-600 leading-relaxed">
                   {overallFeedback.lexical_resource.feedback}
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border border-slate-200 bg-white">
-              <CardHeader className="pb-2">
+            <Card className="rounded-2xl border-0 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    {getScoreIcon(overallFeedback.grammatical_range.score)}
-                    Grammatical Range & Accuracy
+                  <span className="flex items-center gap-3 text-base font-bold text-slate-900">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-md">
+                      {getScoreIcon(overallFeedback.grammatical_range.score)}
+                    </div>
+                    Grammar & Accuracy
                   </span>
                   <Badge
                     className={`${getBandColor(
                       overallFeedback.grammatical_range.score
-                    )} border text-[10px] px-2 py-0.5`}
+                    )} border-2 text-xs font-bold px-3 py-1 shadow-sm`}
                   >
                     Band {overallFeedback.grammatical_range.score}
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-1">
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <CardContent className="pt-2">
+                <p className="text-sm text-slate-600 leading-relaxed">
                   {overallFeedback.grammatical_range.feedback}
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border border-slate-200 bg-white">
-              <CardHeader className="pb-2">
+            <Card className="rounded-2xl border-0 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    {getScoreIcon(overallFeedback.pronunciation.score)}
+                  <span className="flex items-center gap-3 text-base font-bold text-slate-900">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-md">
+                      {getScoreIcon(overallFeedback.pronunciation.score)}
+                    </div>
                     Pronunciation
                   </span>
                   <Badge
                     className={`${getBandColor(
                       overallFeedback.pronunciation.score
-                    )} border text-[10px] px-2 py-0.5`}
+                    )} border-2 text-xs font-bold px-3 py-1 shadow-sm`}
                   >
                     Band {overallFeedback.pronunciation.score}
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-1">
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <CardContent className="pt-2">
+                <p className="text-sm text-slate-600 leading-relaxed">
                   {overallFeedback.pronunciation.feedback}
                 </p>
               </CardContent>
@@ -629,85 +640,85 @@ const IELTSSpeakingResults = () => {
             overallFeedback.intonation_recommendations?.length ||
             overallFeedback.phonetic_focus_areas?.length ||
             overallFeedback.word_stress_issues?.length) && (
-            <Card className="rounded-3xl border border-slate-200/80 bg-white">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-blue-50">
-                    <Volume2 className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Enhanced Pronunciation Analysis</h3>
-                    <p className="text-sm text-slate-600">Detailed feedback on speech patterns and sounds</p>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {overallFeedback.stress_patterns_to_improve?.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                      Word Stress Patterns to Improve
-                    </h4>
-                    <div className="grid gap-2">
-                      {overallFeedback.stress_patterns_to_improve.map((pattern, index) => (
-                        <div key={index} className="text-xs text-slate-600 bg-blue-50 rounded-lg px-3 py-2 font-mono">
-                          {pattern}
-                        </div>
-                      ))}
+              <Card className="rounded-3xl border border-slate-200/80 bg-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-blue-50">
+                      <Volume2 className="w-5 h-5 text-blue-600" />
                     </div>
-                  </div>
-                )}
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">Enhanced Pronunciation Analysis</h3>
+                      <p className="text-sm text-slate-600">Detailed feedback on speech patterns and sounds</p>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {overallFeedback.stress_patterns_to_improve?.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Word Stress Patterns to Improve
+                      </h4>
+                      <div className="grid gap-2">
+                        {overallFeedback.stress_patterns_to_improve.map((pattern, index) => (
+                          <div key={index} className="text-xs text-slate-600 bg-blue-50 rounded-lg px-3 py-2 font-mono">
+                            {pattern}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                {overallFeedback.intonation_recommendations?.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      Intonation Recommendations
-                    </h4>
-                    <div className="grid gap-2">
-                      {overallFeedback.intonation_recommendations.map((rec, index) => (
-                        <div key={index} className="text-xs text-slate-600 bg-green-50 rounded-lg px-3 py-2">
-                          {rec}
-                        </div>
-                      ))}
+                  {overallFeedback.intonation_recommendations?.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                        Intonation Recommendations
+                      </h4>
+                      <div className="grid gap-2">
+                        {overallFeedback.intonation_recommendations.map((rec, index) => (
+                          <div key={index} className="text-xs text-slate-600 bg-green-50 rounded-lg px-3 py-2">
+                            {rec}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {overallFeedback.phonetic_focus_areas?.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                      Phonetic Sounds to Focus On
-                    </h4>
-                    <div className="grid gap-2">
-                      {overallFeedback.phonetic_focus_areas.map((sound, index) => (
-                        <div key={index} className="text-xs text-slate-600 bg-orange-50 rounded-lg px-3 py-2 font-mono">
-                          {sound}
-                        </div>
-                      ))}
+                  {overallFeedback.phonetic_focus_areas?.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                        Phonetic Sounds to Focus On
+                      </h4>
+                      <div className="grid gap-2">
+                        {overallFeedback.phonetic_focus_areas.map((sound, index) => (
+                          <div key={index} className="text-xs text-slate-600 bg-orange-50 rounded-lg px-3 py-2 font-mono">
+                            {sound}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {overallFeedback.word_stress_issues?.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                      Word Stress Corrections
-                    </h4>
-                    <div className="grid gap-2">
-                      {overallFeedback.word_stress_issues.map((issue, index) => (
-                        <div key={index} className="text-xs text-slate-600 bg-purple-50 rounded-lg px-3 py-2">
-                          {issue}
-                        </div>
-                      ))}
+                  {overallFeedback.word_stress_issues?.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                        Word Stress Corrections
+                      </h4>
+                      <div className="grid gap-2">
+                        {overallFeedback.word_stress_issues.map((issue, index) => (
+                          <div key={index} className="text-xs text-slate-600 bg-purple-50 rounded-lg px-3 py-2">
+                            {issue}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
           {/* Part 1 */}
           {questionAnalyses.some((a) => a.part === "Part 1") && (

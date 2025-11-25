@@ -19,145 +19,158 @@ const Header = () => {
     admin
   } = useAdminAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
   return <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container px-4 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-          <h1 className="text-2xl font-bold text-primary">English AIdol</h1>
-        </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/tests')}>
-            {t('navigation.tests', { defaultValue: 'Tests' })}
-          </Button>
-          <Button variant="ghost" onClick={() => navigate('/practice')}>
-            {t('navigation.practice', { defaultValue: 'Practice' })}
-          </Button>
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            {t('header.dashboard', { defaultValue: 'Dashboard' })}
-          </Button>
-          <Button variant="ghost" onClick={() => navigate('/community')}>
-            {t('navigation.community', { defaultValue: 'Community' })}
-          </Button>
-          {/* Sentence Mastery Link */}
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/earthworm')}
-            className="gap-2"
-          >
-            <BookOpen className="w-4 h-4" />
-            {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
-          </Button>
-        </nav>
-
-        {/* Right side actions */}
-        <div className="flex items-center gap-2">
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline text-sm font-medium">
-                    {profile?.full_name ? profile.full_name.split(' ')[0] : 'Profile'}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled className="flex flex-col gap-1">
-                  <div className="font-semibold text-foreground">
-                    {profile?.full_name || 'User'}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {user.email}
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {admin && <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
-                    <Shield className="w-4 h-4 mr-2" />
-                    {t('navigation.adminDashboard', { defaultValue: 'Admin' })}
-                  </DropdownMenuItem>}
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  {t('navigation.settings', { defaultValue: 'Settings' })}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  {t('auth.signOut', { defaultValue: 'Sign Out' })}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <>
-              <Button variant="outline" onClick={() => navigate('/auth')} size="sm">
-                {t('auth.signIn', { defaultValue: 'Log In' })}
-              </Button>
-              <Button onClick={() => navigate('/auth')} size="sm">
-                {t('auth.signUp', { defaultValue: 'Sign Up' })}
-              </Button>
-            </>
-          )}
-          {!admin && <Button variant="ghost" onClick={() => navigate('/admin/login')} size="sm">
-              {t('navigation.adminLogin', { defaultValue: 'Admin' })}
-            </Button>}
-
-          {/* Mobile menu toggle */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
-        </div>
+    <div className="container px-4 py-4 flex items-center justify-between">
+      {/* Logo */}
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+        <h1 className="text-2xl font-bold text-primary">English AIdol</h1>
       </div>
 
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur">
-          <div className="container px-4 py-4 space-y-3">
-            <Button variant="ghost" onClick={() => navigate('/tests')} className="w-full justify-start">
-              {t('navigation.tests', { defaultValue: 'Tests' })}
+      {/* Desktop Navigation */}
+      <nav className="hidden md:flex items-center gap-4">
+        <Button variant="ghost" onClick={() => navigate('/tests')}>
+          {t('navigation.tests', { defaultValue: 'Tests' })}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/practice')}>
+          {t('navigation.practice', { defaultValue: 'Practice' })}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+          {t('header.dashboard', { defaultValue: 'Dashboard' })}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/community')}>
+          {t('navigation.community', { defaultValue: 'Community' })}
+        </Button>
+        {/* Sentence Mastery Link */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/earthworm')}
+          className="gap-2"
+        >
+          <BookOpen className="w-4 h-4" />
+          {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
+        </Button>
+      </nav>
+
+      {/* Right side actions */}
+      <div className="flex items-center gap-2">
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm font-medium">
+                  {profile?.full_name ? profile.full_name.split(' ')[0] : 'Profile'}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled className="flex flex-col gap-1">
+                <div className="font-semibold text-foreground">
+                  {profile?.full_name || 'User'}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {user.email}
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {admin && <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
+                <Shield className="w-4 h-4 mr-2" />
+                {t('navigation.adminDashboard', { defaultValue: 'Admin' })}
+              </DropdownMenuItem>}
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="w-4 h-4 mr-2" />
+                {t('navigation.settings', { defaultValue: 'Settings' })}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                {t('auth.signOut', { defaultValue: 'Sign Out' })}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => navigate('/auth')} size="sm">
+              {t('auth.signIn', { defaultValue: 'Log In' })}
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/practice')} className="w-full justify-start">
-              {t('navigation.practice', { defaultValue: 'Practice' })}
+            <Button onClick={() => navigate('/auth')} size="sm">
+              {t('auth.signUp', { defaultValue: 'Sign Up' })}
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/dashboard')} className="w-full justify-start">
-              {t('header.dashboard', { defaultValue: 'Dashboard' })}
+          </>
+        )}
+        {!admin && <Button variant="ghost" onClick={() => navigate('/admin/login')} size="sm">
+          {t('navigation.adminLogin', { defaultValue: 'Admin' })}
+        </Button>}
+
+        {/* Mobile menu toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="md:hidden"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </Button>
+      </div>
+    </div>
+
+    {/* Mobile Navigation */}
+    {mobileMenuOpen && <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur">
+      <div className="container px-4 py-4 space-y-3">
+        <Button variant="ghost" onClick={() => navigate('/tests')} className="w-full justify-start">
+          {t('navigation.tests', { defaultValue: 'Tests' })}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/practice')} className="w-full justify-start">
+          {t('navigation.practice', { defaultValue: 'Practice' })}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/dashboard')} className="w-full justify-start">
+          {t('header.dashboard', { defaultValue: 'Dashboard' })}
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/community')} className="w-full justify-start">
+          {t('navigation.community', { defaultValue: 'Community' })}
+        </Button>
+        {/* Sentence Mastery Link Mobile */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/earthworm')}
+          className="w-full justify-start gap-2"
+        >
+          <BookOpen className="w-4 h-4" />
+          {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
+        </Button>
+        {!user ? (
+          <>
+            <Button variant="outline" onClick={() => navigate('/auth')} className="w-full justify-start">
+              {t('auth.signIn', { defaultValue: 'Log In' })}
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/community')} className="w-full justify-start">
-              {t('navigation.community', { defaultValue: 'Community' })}
+            <Button onClick={() => navigate('/auth')} className="w-full justify-start bg-primary text-primary-foreground">
+              {t('auth.signUp', { defaultValue: 'Sign Up' })}
             </Button>
-            {/* Sentence Mastery Link Mobile */}
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/earthworm')}
-              className="w-full justify-start gap-2"
-            >
-              <BookOpen className="w-4 h-4" />
-              {t('navigation.sentenceMastery', { defaultValue: 'Sentence Mastery' })}
+          </>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={() => navigate('/settings')} className="w-full justify-start gap-2">
+              <Settings className="w-4 h-4" />
+              {t('navigation.settings', { defaultValue: 'Settings' })}
             </Button>
-            {!user && <>
-                <Button variant="outline" onClick={() => navigate('/auth')} className="w-full justify-start">
-                  {t('auth.signIn', { defaultValue: 'Log In' })}
-                </Button>
-                <Button onClick={() => navigate('/auth')} className="w-full justify-start bg-primary text-primary-foreground">
-                  {t('auth.signUp', { defaultValue: 'Sign Up' })}
-                </Button>
-              </>}
-            {!admin && <Button variant="outline" onClick={() => navigate('/admin/login')} className="w-full justify-start">
-                {t('navigation.adminLogin', { defaultValue: 'Admin Login' })}
-              </Button>}
-          </div>
-        </div>}
-    </header>;
+            <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start gap-2 text-destructive hover:text-destructive">
+              <LogOut className="w-4 h-4" />
+              {t('auth.signOut', { defaultValue: 'Sign Out' })}
+            </Button>
+          </>
+        )}
+        {!admin && <Button variant="outline" onClick={() => navigate('/admin/login')} className="w-full justify-start">
+          {t('navigation.adminLogin', { defaultValue: 'Admin Login' })}
+        </Button>}
+      </div>
+    </div>}
+  </header>;
 };
 
 export default Header;

@@ -61,7 +61,7 @@ const IELTSWritingTestInterface = () => {
   const [currentTask, setCurrentTask] = useState<1 | 2>(1);
   const [task1Answer, setTask1Answer] = useState("");
   const [task2Answer, setTask2Answer] = useState("");
-  
+
   // Academic Task 1 section states
   const [task1Section, setTask1Section] = useState<'intro' | 'body1' | 'body2' | 'viewAll'>('intro');
   const [task1IntroAnswer, setTask1IntroAnswer] = useState("");
@@ -87,7 +87,7 @@ const IELTSWritingTestInterface = () => {
     content: "Hello! I'm Catie, your expert IELTS Writing tutor. I'm here to help you with General Training Task 1 - Letter Writing. I'll guide you through writing formal, semi-formal, or informal letters with proper structure and tone. What would you like help with?",
     timestamp: new Date()
   }]);
-  
+
   const [task2ChatMessages, setTask2ChatMessages] = useState<ChatMessage[]>([{
     id: '1',
     type: 'bot',
@@ -122,7 +122,7 @@ const IELTSWritingTestInterface = () => {
   const [task1GrammarImproved, setTask1GrammarImproved] = useState<string | null>(null);
   const [task2GrammarFeedback, setTask2GrammarFeedback] = useState<string | null>(null);
   const [task2GrammarImproved, setTask2GrammarImproved] = useState<string | null>(null);
-  
+
   // Skip task states
   const [task1Skipped, setTask1Skipped] = useState(false);
   const [task2Skipped, setTask2Skipped] = useState(false);
@@ -272,12 +272,12 @@ const IELTSWritingTestInterface = () => {
       if (!testData) {
         throw new Error('Test not found');
       }
-      
+
       // Batch state updates to reduce re-renders
       setTest(testData);
 
       const questions = questionsResult.data || [];
-      
+
       // Find Task 1 and Task 2 questions
       const task1Question = questions.find(q => q.part_number === 1);
       const task2Question = questions.find(q => q.part_number === 2);
@@ -339,43 +339,25 @@ const IELTSWritingTestInterface = () => {
   const loadAvailableTests = async () => {
     setIsLoading(true);
     try {
-      // Optimized query - only select needed fields
+      // Optimized query - only select needed fields and use pagination
       const { data: tests, error: testsError } = await supabase
         .from('tests')
         .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
         .eq('test_type', 'IELTS')
-        .or('module.eq.Writing,skill_category.eq.Writing')
-        .order('created_at', { ascending: false });
+        // Use ILIKE for case-insensitive matching to avoid needing a fallback query
+        .or('module.ilike.Writing,skill_category.ilike.Writing,test_name.ilike.%Writing%')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (testsError) {
         throw testsError;
       }
 
       // Filter out any null or invalid tests
-      let finalTests = (tests || []).filter((test: any) => {
+      const finalTests = (tests || []).filter((test: any) => {
         return test && test.id && (test.test_name || test.module || test.skill_category);
       });
 
-      // Fallback: if no tests found with exact match, try broader search
-      if (finalTests.length === 0) {
-        const { data: allIeltsTests, error: allTestsError } = await supabase
-          .from('tests')
-          .select('id, test_name, test_type, module, skill_category, test_subtype, created_at')
-          .eq('test_type', 'IELTS')
-          .order('created_at', { ascending: false });
-        
-        if (!allTestsError && allIeltsTests) {
-          // Filter client-side exactly like admin does
-          finalTests = allIeltsTests.filter((test: any) => {
-            return test && test.id && (
-              test.module === 'Writing' || 
-              test.skill_category === 'Writing' || 
-              test.test_name?.toLowerCase().includes('writing')
-            );
-          });
-        }
-      }
-      
       setAvailableTests(finalTests);
     } catch (error) {
       toast({
@@ -450,7 +432,7 @@ const IELTSWritingTestInterface = () => {
           default: setTask1Answer(value);
         }
       } else {
-      setTask1Answer(value);
+        setTask1Answer(value);
       }
     } else {
       // For Academic Task 2, update section-specific answer
@@ -466,11 +448,11 @@ const IELTSWritingTestInterface = () => {
           default: setTask2Answer(value);
         }
       } else {
-      setTask2Answer(value);
+        setTask2Answer(value);
       }
     }
   };
-  
+
   // Helper to get current section answer for Academic tasks
   const getCurrentSectionAnswer = () => {
     if (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
@@ -493,7 +475,7 @@ const IELTSWritingTestInterface = () => {
     }
     return currentTask === 1 ? task1Answer : task2Answer;
   };
-  
+
   const setCurrentSectionAnswer = (value: string) => {
     if (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
       switch (task1Section) {
@@ -569,7 +551,7 @@ const IELTSWritingTestInterface = () => {
     try {
       const currentTaskData = getCurrentTask();
       console.log('📝 Requesting grammar feedback for Task', currentTask, retryCount > 0 ? `(retry ${retryCount})` : '');
-      
+
       // Create the function invocation promise with timeout handling
       const functionPromise = supabase.functions.invoke('grammar-feedback', {
         body: {
@@ -595,9 +577,9 @@ const IELTSWritingTestInterface = () => {
 
       if (error) {
         console.error('❌ Grammar feedback error:', error);
-        
+
         // Check if it's a connection error that might be retryable
-        const isConnectionError = 
+        const isConnectionError =
           error?.message?.includes('ERR_CONNECTION_CLOSED') ||
           error?.message?.includes('Failed to send a request') ||
           error?.message?.includes('network') ||
@@ -609,7 +591,7 @@ const IELTSWritingTestInterface = () => {
           await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
           return handleGrammarFeedback(retryCount + 1);
         }
-        
+
         throw error;
       }
 
@@ -640,10 +622,10 @@ const IELTSWritingTestInterface = () => {
       }
     } catch (error: any) {
       console.error('❌ Grammar feedback catch error:', error);
-      
+
       // Provide user-friendly error messages
       let errorMessage = "Failed to get grammar feedback. Please try again.";
-      
+
       if (error?.message?.includes('timeout')) {
         errorMessage = "The grammar check is taking too long. Please try again in a moment.";
       } else if (error?.message?.includes('ERR_CONNECTION_CLOSED') || error?.message?.includes('Failed to send a request')) {
@@ -653,7 +635,7 @@ const IELTSWritingTestInterface = () => {
       } else if (error?.error) {
         errorMessage = error.error;
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -709,7 +691,7 @@ const IELTSWritingTestInterface = () => {
 **Task ${currentTask} Details:**
 - Prompt: "${currentTaskData.title}"
 - Instructions: "${currentTaskData.instructions.substring(0, 300)}${currentTaskData.instructions.length > 300 ? '...' : ''}"`;
-      
+
       // Add task type context
       if (currentTask === 1) {
         contextPrompt += `\n- Task Type: Data Description (charts, graphs, tables, diagrams)`;
@@ -745,7 +727,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       // Handle different error types with better user messaging
       let errorTitle = "Connection Issue";
       let errorDescription = "Failed to get response from Catie. Please try again.";
-      
+
       if (error?.message?.includes('service temporarily unavailable') || error?.statusCode === 503) {
         errorTitle = "Service Update";
         errorDescription = "Catie is being updated! Please try again in a moment.";
@@ -753,7 +735,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         errorTitle = "High Traffic";
         errorDescription = "Lots of students are getting help! Please wait a moment and try again.";
       }
-      
+
       toast({
         title: errorTitle,
         description: errorDescription,
@@ -791,7 +773,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
     // Check if tasks are skipped or have content
     const task1HasContent = !task1Skipped && task1Answer.trim();
     const task2HasContent = !task2Skipped && task2Answer.trim();
-    
+
     // Allow submission if at least one task is completed (not skipped and has content)
     if (!task1HasContent && !task2HasContent) {
       toast({
@@ -919,51 +901,51 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
 
       // Save Task 1 results (only if task was not skipped and has content)
       if (!task1Skipped && task1Answer.trim()) {
-      const { error: task1Error } = await supabase
-        .from('writing_test_results')
-        .insert({
-          user_id: user?.id,
-          test_result_id: testResult.id,
-          task_number: 1,
-          prompt_text: task1?.instructions || task1?.title || '',
-          user_response: task1Answer,
+        const { error: task1Error } = await supabase
+          .from('writing_test_results')
+          .insert({
+            user_id: user?.id,
+            test_result_id: testResult.id,
+            task_number: 1,
+            prompt_text: task1?.instructions || task1?.title || '',
+            user_response: task1Answer,
             word_count: finalTask1WordCount,
-          // Store numeric bands for dashboard/history aggregation
-          band_scores: {
-            task_achievement: structured?.task1?.criteria?.task_achievement?.band ?? null,
-            coherence_and_cohesion: structured?.task1?.criteria?.coherence_and_cohesion?.band ?? null,
-            lexical_resource: structured?.task1?.criteria?.lexical_resource?.band ?? null,
-            grammatical_range_and_accuracy: structured?.task1?.criteria?.grammatical_range_and_accuracy?.band ?? null,
-          },
-          detailed_feedback: structured?.task1?.feedback_markdown || '',
-          improvement_suggestions: structured?.task1?.feedback?.improvements || []
-        });
+            // Store numeric bands for dashboard/history aggregation
+            band_scores: {
+              task_achievement: structured?.task1?.criteria?.task_achievement?.band ?? null,
+              coherence_and_cohesion: structured?.task1?.criteria?.coherence_and_cohesion?.band ?? null,
+              lexical_resource: structured?.task1?.criteria?.lexical_resource?.band ?? null,
+              grammatical_range_and_accuracy: structured?.task1?.criteria?.grammatical_range_and_accuracy?.band ?? null,
+            },
+            detailed_feedback: structured?.task1?.feedback_markdown || '',
+            improvement_suggestions: structured?.task1?.feedback?.improvements || []
+          });
 
-      if (task1Error) throw task1Error;
+        if (task1Error) throw task1Error;
       }
 
       // Save Task 2 results (only if task was not skipped and has content)
       if (!task2Skipped && task2Answer.trim()) {
-      const { error: task2Error } = await supabase
-        .from('writing_test_results')
-        .insert({
-          user_id: user?.id,
-          test_result_id: testResult.id,
-          task_number: 2,
-          prompt_text: task2?.instructions || task2?.title || '',
-          user_response: task2Answer,
+        const { error: task2Error } = await supabase
+          .from('writing_test_results')
+          .insert({
+            user_id: user?.id,
+            test_result_id: testResult.id,
+            task_number: 2,
+            prompt_text: task2?.instructions || task2?.title || '',
+            user_response: task2Answer,
             word_count: finalTask2WordCount,
-          band_scores: {
-            task_response: structured?.task2?.criteria?.task_response?.band ?? null,
-            coherence_and_cohesion: structured?.task2?.criteria?.coherence_and_cohesion?.band ?? null,
-            lexical_resource: structured?.task2?.criteria?.lexical_resource?.band ?? null,
-            grammatical_range_and_accuracy: structured?.task2?.criteria?.grammatical_range_and_accuracy?.band ?? null,
-          },
-          detailed_feedback: structured?.task2?.feedback_markdown || '',
-          improvement_suggestions: structured?.task2?.feedback?.improvements || []
-        });
+            band_scores: {
+              task_response: structured?.task2?.criteria?.task_response?.band ?? null,
+              coherence_and_cohesion: structured?.task2?.criteria?.coherence_and_cohesion?.band ?? null,
+              lexical_resource: structured?.task2?.criteria?.lexical_resource?.band ?? null,
+              grammatical_range_and_accuracy: structured?.task2?.criteria?.grammatical_range_and_accuracy?.band ?? null,
+            },
+            detailed_feedback: structured?.task2?.feedback_markdown || '',
+            improvement_suggestions: structured?.task2?.feedback?.improvements || []
+          });
 
-      if (task2Error) throw task2Error;
+        if (task2Error) throw task2Error;
       }
 
       // Navigate to the enhanced results page with both state and DB persistence
@@ -1018,7 +1000,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
         <StudentLayout title="Writing Tests">
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
-              <DotLottieLoadingAnimation 
+              <DotLottieLoadingAnimation
                 message="Loading available writing tests..."
                 subMessage="Please wait"
                 size={150}
@@ -1035,14 +1017,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       return (
         <div className="min-h-screen relative">
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-               style={{
-                 backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-                   ? 'none'
-                   : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-                 backgroundColor: themeStyles.backgroundImageColor
-               }} />
+            style={{
+              backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+                ? 'none'
+                : `url('/1000031207.png')`,
+              backgroundColor: themeStyles.backgroundImageColor
+            }} />
           <div className="relative z-10">
-            <StudentLayout title="Available Writing Tests">
+            <StudentLayout title="Available Writing Tests" transparentBackground={true}>
               <div className="min-h-screen py-12">
                 <div className="container mx-auto px-4">
                   <div className="max-w-4xl mx-auto">
@@ -1066,9 +1048,9 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         }
                         return (
                           <SpotlightCard key={test.id} className="cursor-pointer h-[140px] hover:scale-105 transition-all duration-300 hover:shadow-lg bg-white/80 flex items-center justify-center" onClick={() => navigate(`/ielts-writing-test/${test.id}`)}>
-                             <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
-                               <h3 className="font-semibold text-sm">{test.test_name || 'Untitled Test'}</h3>
-                             </CardContent>
+                            <CardContent className="p-3 md:p-4 text-center flex items-center justify-center h-full">
+                              <h3 className="font-semibold text-sm">{test.test_name || 'Untitled Test'}</h3>
+                            </CardContent>
                           </SpotlightCard>
                         );
                       })}
@@ -1104,7 +1086,7 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
       <StudentLayout title="IELTS Writing Test" showBackButton>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
-            <DotLottieLoadingAnimation 
+            <DotLottieLoadingAnimation
               message="Loading IELTS Writing test..."
               subMessage="Please wait while we fetch your test"
               size={150}
@@ -1153,19 +1135,19 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen relative"
       style={{
         backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
       }}
     >
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-           style={{
-             backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-               ? 'none'
-               : `url('https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031207.png')`,
-             backgroundColor: themeStyles.backgroundImageColor
-           }} />
+        style={{
+          backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+            ? 'none'
+            : `url('/1000031207.png')`,
+          backgroundColor: themeStyles.backgroundImageColor
+        }} />
       <div
         className="relative z-10 flex flex-col pb-24 sm:pb-6"
         style={{
@@ -1173,228 +1155,632 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
           minHeight: 'calc(100vh - 80px)'
         }}
       >
-        <StudentLayout title="IELTS Writing Test" showBackButton>
+        <StudentLayout title="IELTS Writing Test" showBackButton transparentBackground={true}>
           <div className="flex-1 flex justify-center py-6 sm:py-6 pb-4">
-            <div className="w-full max-w-6xl mx-auto space-y-4 px-4 sm:px-6 flex flex-col">
-        {/* Control Panel - Docker Style */}
-        <Card className="rounded-3xl mb-4 max-w-fit mx-auto px-4" style={{
-          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-          borderColor: themeStyles.border,
-          backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-          boxShadow: themeStyles.theme.name === 'dark' 
-            ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-            : themeStyles.theme.name === 'note'
-            ? themeStyles.theme.styles.cardStyle?.boxShadow
-            : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-          ...themeStyles.cardStyle
-        }}>
-          <CardContent className="p-2 sm:p-3">
-            <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
-          {/* Timer */}
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" style={{ color: themeStyles.textPrimary }} />
-                <span className="text-sm font-medium tabular-nums" style={{ color: themeStyles.textPrimary }}>
-              {formatTime(timeRemaining)}
-            </span>
-          </div>
-          
-          {/* Task Selection Buttons */}
-            <Button
-              size="sm"
-              onClick={() => switchToTask(1)}
-                className="h-9 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium min-w-[70px]"
-              style={{
-                backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
-                color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
-                  border: 'none'
-              }}
-            >
-              Task 1
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => switchToTask(2)}
-                className="h-9 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium min-w-[70px]"
-              style={{
-                backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
-                color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
-                  border: 'none'
-              }}
-            >
-              Task 2
-            </Button>
-          </div>
-            
-            {/* Academic Task Section Buttons */}
-            {((currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) ||
-              (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))) && (
-              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-2 pt-2 border-t flex-wrap" style={{ borderColor: themeStyles.border }}>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (currentTask === 1) setTask1Section('intro');
-                    else setTask2Section('intro');
-                  }}
-                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[60px]"
-                  style={{
-                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? themeStyles.buttonPrimary : 'transparent',
-                    color: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? '#ffffff' : themeStyles.textPrimary,
-                    border: 'none'
-                  }}
-                >
-                  Intro
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (currentTask === 1) setTask1Section('body1');
-                    else setTask2Section('body1');
-                  }}
-                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
-                  style={{
-                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? themeStyles.buttonPrimary : 'transparent',
-                    color: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? '#ffffff' : themeStyles.textPrimary,
-                    border: 'none'
-                  }}
-                >
-                  Body 1
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (currentTask === 1) setTask1Section('body2');
-                    else setTask2Section('body2');
-                  }}
-                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
-                  style={{
-                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? themeStyles.buttonPrimary : 'transparent',
-                    color: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? '#ffffff' : themeStyles.textPrimary,
-                    border: 'none'
-                  }}
-                >
-                  Body 2
-                </Button>
-                {currentTask === 2 && (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setTask2Section('conclusion');
-                    }}
-                    className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[75px]"
-                    style={{
-                      backgroundColor: task2Section === 'conclusion' ? themeStyles.buttonPrimary : 'transparent',
-                      color: task2Section === 'conclusion' ? '#ffffff' : themeStyles.textPrimary,
-                      border: 'none'
-                    }}
-                  >
-                    Conclusion
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (currentTask === 1) setTask1Section('viewAll');
-                    else setTask2Section('viewAll');
-                  }}
-                  className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[70px]"
-                  style={{
-                    backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? themeStyles.buttonPrimary : 'transparent',
-                    color: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? '#ffffff' : themeStyles.textPrimary,
-                    border: 'none'
-                  }}
-                >
-                  View All
-                </Button>
-            </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Main Content Layout */}
-        {currentTask === 1 ? (
-          currentTaskData?.imageUrl ? (
-            <div className="flex flex-col lg:flex-row gap-4 flex-1" style={{ minHeight: '400px' }}>
-              <div className="flex-1 lg:flex-[0_0_50%] min-h-0">
-                <Card className="rounded-3xl h-full" style={{
-                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                  borderColor: themeStyles.border,
-                  backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-                  boxShadow: themeStyles.theme.name === 'dark' 
-                    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-                    : themeStyles.theme.name === 'note'
+            <div className="w-full max-w-[1800px] mx-auto space-y-4 px-4 sm:px-6 flex flex-col">
+              {/* Control Panel - Docker Style */}
+              <Card className="rounded-3xl mb-4 max-w-fit mx-auto px-4" style={{
+                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                borderColor: themeStyles.border,
+                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                boxShadow: themeStyles.theme.name === 'dark'
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : themeStyles.theme.name === 'note'
                     ? themeStyles.theme.styles.cardStyle?.boxShadow
                     : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-                  ...themeStyles.cardStyle,
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  <CardContent className="p-4 flex-1 flex flex-col" style={{ minHeight: 0 }}>
-                    {/* Task Instructions */}
-                    <div className="mb-4">
+                ...themeStyles.cardStyle
+              }}>
+                <CardContent className="p-2 sm:p-3">
+                  <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+                    {/* Timer */}
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" style={{ color: themeStyles.textPrimary }} />
+                      <span className="text-sm font-medium tabular-nums" style={{ color: themeStyles.textPrimary }}>
+                        {formatTime(timeRemaining)}
+                      </span>
+                    </div>
+
+                    {/* Task Selection Buttons */}
+                    <Button
+                      size="sm"
+                      onClick={() => switchToTask(1)}
+                      className="h-9 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium min-w-[70px]"
+                      style={{
+                        backgroundColor: currentTask === 1 ? themeStyles.buttonPrimary : 'transparent',
+                        color: currentTask === 1 ? '#ffffff' : themeStyles.textPrimary,
+                        border: 'none'
+                      }}
+                    >
+                      Task 1
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => switchToTask(2)}
+                      className="h-9 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium min-w-[70px]"
+                      style={{
+                        backgroundColor: currentTask === 2 ? themeStyles.buttonPrimary : 'transparent',
+                        color: currentTask === 2 ? '#ffffff' : themeStyles.textPrimary,
+                        border: 'none'
+                      }}
+                    >
+                      Task 2
+                    </Button>
+                  </div>
+
+                  {/* Academic Task Section Buttons */}
+                  {((currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) ||
+                    (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))) && (
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-2 pt-2 border-t flex-wrap" style={{ borderColor: themeStyles.border }}>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (currentTask === 1) setTask1Section('intro');
+                            else setTask2Section('intro');
+                          }}
+                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[60px]"
+                          style={{
+                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? themeStyles.buttonPrimary : 'transparent',
+                            color: (currentTask === 1 ? task1Section : task2Section) === 'intro' ? '#ffffff' : themeStyles.textPrimary,
+                            border: 'none'
+                          }}
+                        >
+                          Intro
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (currentTask === 1) setTask1Section('body1');
+                            else setTask2Section('body1');
+                          }}
+                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
+                          style={{
+                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? themeStyles.buttonPrimary : 'transparent',
+                            color: (currentTask === 1 ? task1Section : task2Section) === 'body1' ? '#ffffff' : themeStyles.textPrimary,
+                            border: 'none'
+                          }}
+                        >
+                          Body 1
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (currentTask === 1) setTask1Section('body2');
+                            else setTask2Section('body2');
+                          }}
+                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[65px]"
+                          style={{
+                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? themeStyles.buttonPrimary : 'transparent',
+                            color: (currentTask === 1 ? task1Section : task2Section) === 'body2' ? '#ffffff' : themeStyles.textPrimary,
+                            border: 'none'
+                          }}
+                        >
+                          Body 2
+                        </Button>
+                        {currentTask === 2 && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setTask2Section('conclusion');
+                            }}
+                            className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[75px]"
+                            style={{
+                              backgroundColor: task2Section === 'conclusion' ? themeStyles.buttonPrimary : 'transparent',
+                              color: task2Section === 'conclusion' ? '#ffffff' : themeStyles.textPrimary,
+                              border: 'none'
+                            }}
+                          >
+                            Conclusion
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (currentTask === 1) setTask1Section('viewAll');
+                            else setTask2Section('viewAll');
+                          }}
+                          className="h-8 sm:h-7 px-3 sm:px-2 text-xs sm:text-xs font-medium min-w-[70px]"
+                          style={{
+                            backgroundColor: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? themeStyles.buttonPrimary : 'transparent',
+                            color: (currentTask === 1 ? task1Section : task2Section) === 'viewAll' ? '#ffffff' : themeStyles.textPrimary,
+                            border: 'none'
+                          }}
+                        >
+                          View All
+                        </Button>
+                      </div>
+                    )}
+                </CardContent>
+              </Card>
+
+              {/* Main Content Layout */}
+              {currentTask === 1 ? (
+                currentTaskData?.imageUrl ? (
+                  <div className="flex flex-col lg:flex-row gap-4 flex-1" style={{ minHeight: '400px' }}>
+                    <div className="flex-1 lg:flex-[0_0_50%] min-h-0">
+                      <Card className="rounded-3xl h-full" style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                        boxShadow: themeStyles.theme.name === 'dark'
+                          ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                          : themeStyles.theme.name === 'note'
+                            ? themeStyles.theme.styles.cardStyle?.boxShadow
+                            : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                        ...themeStyles.cardStyle,
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}>
+                        <CardContent className="p-4 flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                          {/* Task Instructions */}
+                          <div className="mb-4">
+                            {currentTaskData?.instructions && (
+                              <div>
+                                <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm sm:text-base" style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                                  borderColor: themeStyles.border,
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid',
+                                  color: themeStyles.textPrimary
+                                }}>
+                                  {currentTaskData.instructions}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Photo */}
+                          <div className="flex-1 overflow-hidden">
+                            <img
+                              src={currentTaskData.imageUrl}
+                              alt="Task 1 visual data"
+                              className="w-full h-full object-contain cursor-pointer"
+                              loading="eager"
+                              decoding="async"
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                                setZoomOrigin(`${x}% ${y}%`);
+                                setZoomScale(zoomScale === 1 ? 1.5 : 1);
+                              }}
+                              style={{
+                                transform: `scale(${zoomScale})`,
+                                transformOrigin: zoomOrigin,
+                                transition: 'transform 0.2s ease-out'
+                              }}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <div className="flex-1 lg:flex-[0_0_50%] min-h-0">
+                      <Card className="rounded-3xl h-full" style={{
+                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                        borderColor: themeStyles.border,
+                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                        boxShadow: themeStyles.theme.name === 'dark'
+                          ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                          : themeStyles.theme.name === 'note'
+                            ? themeStyles.theme.styles.cardStyle?.boxShadow
+                            : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                        ...themeStyles.cardStyle,
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}>
+                        <CardContent className="flex-1 p-4 flex flex-col" style={{ minHeight: 0 }}>
+                          {/* Academic Task 1 View All Display */}
+                          {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
+                            <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                              <Textarea
+                                value={getCurrentAnswer()}
+                                onChange={handleViewAllChange}
+                                placeholder="Write your complete Task 1 essay here..."
+                                className="h-[calc(100vh-280px)] min-h-[500px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                                spellCheck={spellCheckEnabled}
+                                style={{
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                                  borderColor: themeStyles.border,
+                                  color: themeStyles.textPrimary,
+                                  outline: 'none',
+                                  boxShadow: 'none'
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                              <Textarea
+                                value={getCurrentAnswer()}
+                                onChange={e => setCurrentAnswer(e.target.value)}
+                                onKeyDown={(e) => {
+                                  // Tab navigation for Academic tasks
+                                  if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+                                    e.preventDefault();
+                                    if (task1Section === 'intro') setTask1Section('body1');
+                                    else if (task1Section === 'body1') setTask1Section('body2');
+                                    else if (task1Section === 'body2') setTask1Section('viewAll');
+                                  }
+                                }}
+                                className="h-[calc(100vh-280px)] min-h-[500px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                                placeholder={
+                                  task1Skipped
+                                    ? "Task 1 is skipped"
+                                    : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
+                                      ? "Write your letter here..."
+                                      : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
+                                        ? (task1Section === 'intro' ? "Write your introduction here..." :
+                                          task1Section === 'body1' ? "Write your first body paragraph here..." :
+                                            task1Section === 'body2' ? "Write your second body paragraph here..." :
+                                              task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
+                                                "Write your description here...")
+                                        : "Write your description here..."
+                                }
+                                spellCheck={spellCheckEnabled}
+                                disabled={task1Skipped}
+                                style={{
+                                  backgroundColor: task1Skipped
+                                    ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                                    : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                                  borderColor: themeStyles.border,
+                                  color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                                  outline: 'none',
+                                  boxShadow: 'none',
+                                  cursor: task1Skipped ? 'not-allowed' : 'text',
+                                  opacity: task1Skipped ? 0.6 : 1
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Bottom Controls */}
+                          <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                            {/* Word Count */}
+                            <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                              <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              {/* Skip Button */}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setTask1Skipped(!task1Skipped);
+                                  // When skipping Task 1, switch to Task 2 but keep all written text
+                                  if (!task1Skipped) {
+                                    switchToTask(2);
+                                  }
+                                }}
+                                className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                                style={{
+                                  backgroundColor: task1Skipped
+                                    ? themeStyles.buttonPrimary
+                                    : 'transparent',
+                                  color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
+                                  border: 'none',
+                                  boxShadow: 'none'
+                                }}
+                              >
+                                {task1Skipped ? 'Unskip' : 'Skip'}
+                              </Button>
+
+                              {/* Spell Check */}
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
+                                <Switch
+                                  checked={spellCheckEnabled}
+                                  onCheckedChange={setSpellCheckEnabled}
+                                  style={{
+                                    backgroundColor: spellCheckEnabled
+                                      ? themeStyles.buttonPrimary
+                                      : themeStyles.theme.name === 'dark'
+                                        ? 'rgba(255,255,255,0.1)'
+                                        : 'rgba(0,0,0,0.1)'
+                                  }}
+                                  className="data-[state=checked]:bg-primary"
+                                />
+                              </div>
+
+                              {/* Grammar Button */}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleGrammarFeedback(0)}
+                                disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
+                                className="h-8 w-8 p-0 hover:bg-transparent"
+                                style={{
+                                  color: themeStyles.textPrimary
+                                }}
+                              >
+                                {isGrammarLoading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                )}
+                              </Button>
+
+                              {/* Language Selector */}
+                              <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                                <SelectTrigger
+                                  className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                                  style={{
+                                    color: themeStyles.textPrimary,
+                                    '--tw-ring-color': themeStyles.buttonPrimary
+                                  } as React.CSSProperties}
+                                >
+                                  <SelectValue placeholder="Language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {FEEDBACK_LANGUAGES.map((lang) => (
+                                    <SelectItem key={lang.value} value={lang.value}>
+                                      {lang.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                ) : (
+                  // Task 1 without image
+                  <Card className="rounded-3xl max-w-5xl mx-auto" style={{
+                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                    borderColor: themeStyles.border,
+                    backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                    boxShadow: themeStyles.theme.name === 'dark'
+                      ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                      : themeStyles.theme.name === 'note'
+                        ? themeStyles.theme.styles.cardStyle?.boxShadow
+                        : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                    ...themeStyles.cardStyle,
+                    minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
+                  }}>
+                    <CardContent className="p-4 flex flex-col flex-1">
                       {currentTaskData?.instructions && (
-                        <div>
-                          <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm sm:text-base" style={{
+                        <div className="mb-4">
+                          <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                          borderColor: themeStyles.border,
+                            borderColor: themeStyles.border,
                             borderWidth: '1px',
                             borderStyle: 'solid',
-                          color: themeStyles.textPrimary
+                            color: themeStyles.textPrimary
                           }}>
                             {currentTaskData.instructions}
                           </div>
                         </div>
                       )}
-                    </div>
-                    
-                    {/* Photo */}
-                    <div className="flex-1 overflow-hidden">
-                        <img 
-                          src={currentTaskData.imageUrl} 
-                          alt="Task 1 visual data" 
-                        className="w-full h-full object-contain cursor-pointer"
-                          loading="eager"
-                          decoding="async"
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const x = ((e.clientX - rect.left) / rect.width) * 100;
-                          const y = ((e.clientY - rect.top) / rect.height) * 100;
-                          setZoomOrigin(`${x}% ${y}%`);
-                          setZoomScale(zoomScale === 1 ? 1.5 : 1);
-                        }}
+                      {/* Academic Task 1 View All Display */}
+                      {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
+                        <div className="h-full overflow-y-auto text-base leading-relaxed whitespace-pre-wrap p-4" style={{ color: themeStyles.textPrimary }}>
+                          {task1IntroAnswer && (
+                            <div className="mb-6">
+                              <strong>Introduction:</strong>
+                              <div className="mt-2">{task1IntroAnswer}</div>
+                            </div>
+                          )}
+                          {task1Body1Answer && (
+                            <div className="mb-6">
+                              <strong>Body Paragraph 1:</strong>
+                              <div className="mt-2">{task1Body1Answer}</div>
+                            </div>
+                          )}
+                          {task1Body2Answer && (
+                            <div className="mb-6">
+                              <strong>Body Paragraph 2:</strong>
+                              <div className="mt-2">{task1Body2Answer}</div>
+                            </div>
+                          )}
+                          {!task1IntroAnswer && !task1Body1Answer && !task1Body2Answer && (
+                            <div style={{ color: themeStyles.textSecondary }}>No content yet...</div>
+                          )}
+                        </div>
+                      ) : (
+                        <Textarea
+                          value={getCurrentAnswer()}
+                          onChange={e => setCurrentAnswer(e.target.value)}
+                          onKeyDown={(e) => {
+                            // Tab navigation for Academic tasks
+                            if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+                              e.preventDefault();
+                              if (currentTask === 1) {
+                                if (task1Section === 'intro') setTask1Section('body1');
+                                else if (task1Section === 'body1') setTask1Section('body2');
+                                else if (task1Section === 'body2') setTask1Section('viewAll');
+                              } else if (currentTask === 2) {
+                                if (task2Section === 'intro') setTask2Section('body1');
+                                else if (task2Section === 'body1') setTask2Section('body2');
+                                else if (task2Section === 'body2') setTask2Section('conclusion');
+                                else if (task2Section === 'conclusion') setTask2Section('viewAll');
+                              }
+                            }
+                          }}
+                          placeholder={
+                            task1Skipped
+                              ? "Task 1 is skipped"
+                              : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
+                                ? "Write your letter here..."
+                                : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
+                                  ? (task1Section === 'intro' ? "Write your introduction here..." :
+                                    task1Section === 'body1' ? "Write your first body paragraph here..." :
+                                      task1Section === 'body2' ? "Write your second body paragraph here..." :
+                                        task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
+                                          "Write your description here...")
+                                  : "Write your description here..."
+                          }
+                          className="h-[calc(100vh-280px)] min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                          spellCheck={spellCheckEnabled}
+                          disabled={task1Skipped}
                           style={{
-                            transform: `scale(${zoomScale})`,
-                          transformOrigin: zoomOrigin,
-                            transition: 'transform 0.2s ease-out'
+                            backgroundColor: task1Skipped
+                              ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                              : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                            borderColor: themeStyles.border,
+                            color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                            outline: 'none',
+                            boxShadow: 'none',
+                            cursor: task1Skipped ? 'not-allowed' : 'text',
+                            opacity: task1Skipped ? 0.6 : 1
                           }}
                         />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                      )}
 
-              <div className="flex-1 lg:flex-[0_0_50%] min-h-0">
-                <Card className="rounded-3xl h-full" style={{
+                      {/* Bottom Controls */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
+                        {/* Word Count */}
+                        <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                          <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {/* Skip Button */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setTask1Skipped(!task1Skipped);
+                              // When skipping Task 1, switch to Task 2 but keep all written text
+                              if (!task1Skipped) {
+                                switchToTask(2);
+                              }
+                            }}
+                            className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
+                            style={{
+                              backgroundColor: task1Skipped
+                                ? themeStyles.buttonPrimary
+                                : 'transparent',
+                              color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
+                              border: 'none',
+                              boxShadow: 'none'
+                            }}
+                          >
+                            {task1Skipped ? 'Unskip' : 'Skip'}
+                          </Button>
+
+                          {/* Spell Check */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
+                            <Switch
+                              checked={spellCheckEnabled}
+                              onCheckedChange={setSpellCheckEnabled}
+                              style={{
+                                backgroundColor: spellCheckEnabled
+                                  ? themeStyles.buttonPrimary
+                                  : themeStyles.theme.name === 'dark'
+                                    ? 'rgba(255,255,255,0.1)'
+                                    : 'rgba(0,0,0,0.1)'
+                              }}
+                              className="data-[state=checked]:bg-primary"
+                            />
+                          </div>
+
+                          {/* Grammar Button */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleGrammarFeedback(0)}
+                            disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
+                            className="h-8 w-8 p-0 hover:bg-transparent"
+                            style={{
+                              color: themeStyles.textPrimary
+                            }}
+                          >
+                            {isGrammarLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-4 h-4" />
+                            )}
+                          </Button>
+
+                          {/* Language Selector */}
+                          <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
+                            <SelectTrigger
+                              className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                              style={{
+                                color: themeStyles.textPrimary,
+                                '--tw-ring-color': themeStyles.buttonPrimary
+                              } as React.CSSProperties}
+                            >
+                              <SelectValue placeholder="Language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {FEEDBACK_LANGUAGES.map((lang) => (
+                                <SelectItem key={lang.value} value={lang.value}>
+                                  {lang.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end items-center mt-4 gap-3">
+                        <div className="flex items-center gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            onClick={submitTest}
+                            disabled={isSubmitDisabled()}
+                            variant="default"
+                            className="min-w-[120px]"
+                            style={{
+                              backgroundColor: themeStyles.buttonPrimary,
+                              color: '#ffffff'
+                            }}
+                          >
+                            {isSubmitting ? "Submitting..." : "Submit Test"}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              ) : (
+                // Task 2 - Essay Writing
+                <Card className="rounded-3xl h-full max-w-5xl mx-auto" style={{
                   backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
                   borderColor: themeStyles.border,
                   backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-                  boxShadow: themeStyles.theme.name === 'dark' 
+                  boxShadow: themeStyles.theme.name === 'dark'
                     ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
                     : themeStyles.theme.name === 'note'
-                    ? themeStyles.theme.styles.cardStyle?.boxShadow
-                    : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
+                      ? themeStyles.theme.styles.cardStyle?.boxShadow
+                      : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
                   ...themeStyles.cardStyle,
-                  display: 'flex',
-                  flexDirection: 'column'
+                  minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
                 }}>
-                  <CardContent className="flex-1 p-4 flex flex-col" style={{ minHeight: 0 }}>
-                    {/* Academic Task 1 View All Display */}
-                    {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
+                  <CardContent className="p-4 flex flex-col h-full">
+                    {currentTaskData?.instructions && (
+                      <div className="mb-4">
+                        <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
+                          backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
+                          borderColor: themeStyles.border,
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          color: themeStyles.textPrimary
+                        }}>
+                          {currentTaskData.instructions}
+                        </div>
+                      </div>
+                    )}
+                    {/* Academic Task 2 View All Display */}
+                    {currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task2Section === 'viewAll' && !task2Skipped ? (
                       <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
                         <Textarea
                           value={getCurrentAnswer()}
                           onChange={handleViewAllChange}
-                          placeholder="Write your complete Task 1 essay here..."
-                          className="min-h-[700px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                          placeholder="Write your complete Task 2 essay here..."
+                          className="h-[calc(100vh-280px)] min-h-[500px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
                           spellCheck={spellCheckEnabled}
                           style={{
                             backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
@@ -1406,80 +1792,76 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         />
                       </div>
                     ) : (
-                      <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
-                        <Textarea
-                          value={getCurrentAnswer()}
-                          onChange={e => setCurrentAnswer(e.target.value)}
-                          onKeyDown={(e) => {
-                            // Tab navigation for Academic tasks
-                            if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-                              e.preventDefault();
-                              if (task1Section === 'intro') setTask1Section('body1');
-                              else if (task1Section === 'body1') setTask1Section('body2');
-                              else if (task1Section === 'body2') setTask1Section('viewAll');
-                            }
-                          }}
-                          className="min-h-[700px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                          placeholder={
-                            task1Skipped
-                              ? "Task 1 is skipped"
-                              : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
-                                ? "Write your letter here..."
-                                : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
-                                  ? (task1Section === 'intro' ? "Write your introduction here..." :
-                                     task1Section === 'body1' ? "Write your first body paragraph here..." :
-                                     task1Section === 'body2' ? "Write your second body paragraph here..." :
-                                     task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
-                                     "Write your description here...")
-                                  : "Write your description here..."
+                      <Textarea
+                        value={getCurrentAnswer()}
+                        onChange={e => setCurrentAnswer(e.target.value)}
+                        onKeyDown={(e) => {
+                          // Tab navigation for Academic tasks
+                          if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
+                            e.preventDefault();
+                            if (task2Section === 'intro') setTask2Section('body1');
+                            else if (task2Section === 'body1') setTask2Section('body2');
+                            else if (task2Section === 'body2') setTask2Section('conclusion');
+                            else if (task2Section === 'conclusion') setTask2Section('viewAll');
                           }
-                          spellCheck={spellCheckEnabled}
-                          disabled={task1Skipped}
-                          style={{
-                            backgroundColor: task1Skipped 
-                              ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                              : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                            borderColor: themeStyles.border,
-                            color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                            outline: 'none',
-                            boxShadow: 'none',
-                            cursor: task1Skipped ? 'not-allowed' : 'text',
-                            opacity: task1Skipped ? 0.6 : 1
-                          }} 
-                        />
-                      </div>
+                        }}
+                        placeholder={
+                          task2Skipped
+                            ? "Task 2 is skipped"
+                            : (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
+                              ? (task2Section === 'intro' ? "Write your introduction here..." :
+                                task2Section === 'body1' ? "Write your first body paragraph here..." :
+                                  task2Section === 'body2' ? "Write your second body paragraph here..." :
+                                    task2Section === 'conclusion' ? "Write your conclusion here..." :
+                                      task2Section === 'viewAll' ? "Write your complete Task 2 essay here..." :
+                                        "Write your essay here...")
+                              : "Write your essay here..."
+                        }
+                        className="h-[calc(100vh-280px)] min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
+                        spellCheck={spellCheckEnabled}
+                        disabled={task2Skipped}
+                        style={{
+                          backgroundColor: task2Skipped
+                            ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
+                            : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
+                          borderColor: themeStyles.border,
+                          color: task2Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
+                          outline: 'none',
+                          boxShadow: 'none',
+                          cursor: task2Skipped ? 'not-allowed' : 'text',
+                          opacity: task2Skipped ? 0.6 : 1
+                        }}
+                      />
                     )}
 
-                    {/* Bottom Controls */}
-                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t flex-shrink-0" style={{ borderColor: themeStyles.border }}>
+                    {/* Controls Row */}
+                    <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
                       {/* Word Count */}
-                        <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
+                      <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
                         <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
-                        </div>
-                      
-                      <div className="flex items-center gap-3">
+                      </div>
+
+                      {/* All Controls in One Row */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                         {/* Skip Button */}
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            setTask1Skipped(!task1Skipped);
-                            // When skipping Task 1, switch to Task 2 but keep all written text
-                            if (!task1Skipped) {
-                              switchToTask(2);
-                            }
+                            setTask2Skipped(!task2Skipped);
+                            // When skipping Task 2, just mark as skipped but keep all written text
                           }}
-                          className="h-8 px-3 text-sm font-medium hover:bg-transparent"
+                          className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
                           style={{
-                            backgroundColor: task1Skipped 
-                              ? themeStyles.buttonPrimary 
+                            backgroundColor: task2Skipped
+                              ? themeStyles.buttonPrimary
                               : 'transparent',
-                            color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
+                            color: task2Skipped ? '#ffffff' : themeStyles.textPrimary,
                             border: 'none',
                             boxShadow: 'none'
                           }}
                         >
-                          {task1Skipped ? 'Unskip' : 'Skip'}
+                          {task2Skipped ? 'Unskip' : 'Skip'}
                         </Button>
 
                         {/* Spell Check */}
@@ -1497,14 +1879,14 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             }}
                             className="data-[state=checked]:bg-primary"
                           />
-                      </div>
+                        </div>
 
                         {/* Grammar Button */}
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => handleGrammarFeedback(0)}
-                          disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
+                          disabled={isGrammarLoading || !getCurrentAnswer().trim() || task2Skipped}
                           className="h-8 w-8 p-0 hover:bg-transparent"
                           style={{
                             color: themeStyles.textPrimary
@@ -1520,10 +1902,20 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                         {/* Language Selector */}
                         <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
                           <SelectTrigger
-                            className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
+                            className={`w-[90px] h-8 text-sm border-0 shadow-none p-0 focus:ring-0 rounded-lg ${themeStyles.theme.name === 'glassmorphism'
+                              ? 'bg-white/10'
+                              : themeStyles.theme.name === 'dark'
+                                ? 'bg-white/5'
+                                : themeStyles.theme.name === 'minimalist'
+                                  ? 'bg-gray-50'
+                                  : themeStyles.theme.name === 'note'
+                                    ? 'bg-amber-50'
+                                    : 'bg-white/5'
+                              }`}
                             style={{
                               color: themeStyles.textPrimary,
-                              '--tw-ring-color': themeStyles.buttonPrimary
+                              '--tw-ring-color': themeStyles.buttonPrimary,
+                              borderColor: themeStyles.border
                             } as React.CSSProperties}
                           >
                             <SelectValue placeholder="Language" />
@@ -1536,748 +1928,337 @@ Please provide context-aware guidance. If they ask "How do I start?", guide them
                             ))}
                           </SelectContent>
                         </Select>
+
+                        {/* AI Model */}
+                        <Label htmlFor="ai-model-selector" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
+                          AI Model:
+                        </Label>
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                          <SelectTrigger
+                            id="ai-model-selector"
+                            className="w-[180px] h-8 text-sm border transition-colors rounded-lg"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              borderColor: themeStyles.border,
+                              color: themeStyles.textPrimary,
+                              backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
+                            }}
+                          >
+                            <SelectValue placeholder="Select AI Model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                            <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
+                            <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* Submit Test */}
+                        <div className="flex items-center gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            onClick={submitTest}
+                            disabled={isSubmitDisabled()}
+                            variant="default"
+                            className="min-w-[120px] h-8"
+                            style={{
+                              backgroundColor: themeStyles.buttonPrimary,
+                              color: '#ffffff'
+                            }}
+                          >
+                            {isSubmitting ? "Submitting..." : "Submit Test"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </div>
-          ) : (
-            // Task 1 without image
-            <Card className="rounded-3xl max-w-4xl mx-auto" style={{
-              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-              borderColor: themeStyles.border,
-              backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-              boxShadow: themeStyles.theme.name === 'dark' 
-                ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-                : themeStyles.theme.name === 'note'
-                ? themeStyles.theme.styles.cardStyle?.boxShadow
-                : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-              ...themeStyles.cardStyle,
-              minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
-            }}>
-              <CardContent className="p-4 flex flex-col flex-1">
-                {currentTaskData?.instructions && (
-                  <div className="mb-4">
-                    <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                              borderColor: themeStyles.border,
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      color: themeStyles.textPrimary
-                    }}>
-                      {currentTaskData.instructions}
-                    </div>
-                  </div>
-                )}
-                {/* Academic Task 1 View All Display */}
-                {currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task1Section === 'viewAll' && !task1Skipped ? (
-                  <div className="h-full overflow-y-auto text-base leading-relaxed whitespace-pre-wrap p-4" style={{ color: themeStyles.textPrimary }}>
-                    {task1IntroAnswer && (
-                      <div className="mb-6">
-                        <strong>Introduction:</strong>
-                        <div className="mt-2">{task1IntroAnswer}</div>
-                  </div>
-                    )}
-                    {task1Body1Answer && (
-                      <div className="mb-6">
-                        <strong>Body Paragraph 1:</strong>
-                        <div className="mt-2">{task1Body1Answer}</div>
-                </div>
-                    )}
-                    {task1Body2Answer && (
-                      <div className="mb-6">
-                        <strong>Body Paragraph 2:</strong>
-                        <div className="mt-2">{task1Body2Answer}</div>
-                      </div>
-                    )}
-                    {!task1IntroAnswer && !task1Body1Answer && !task1Body2Answer && (
-                      <div style={{ color: themeStyles.textSecondary }}>No content yet...</div>
-                    )}
-                  </div>
-                ) : (
-                <Textarea 
-                    value={getCurrentAnswer()}
-                    onChange={e => setCurrentAnswer(e.target.value)}
-                    onKeyDown={(e) => {
-                      // Tab navigation for Academic tasks
-                      if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-                        e.preventDefault();
-                        if (currentTask === 1) {
-                          if (task1Section === 'intro') setTask1Section('body1');
-                          else if (task1Section === 'body1') setTask1Section('body2');
-                          else if (task1Section === 'body2') setTask1Section('viewAll');
-                        } else if (currentTask === 2) {
-                          if (task2Section === 'intro') setTask2Section('body1');
-                          else if (task2Section === 'body1') setTask2Section('body2');
-                          else if (task2Section === 'body2') setTask2Section('conclusion');
-                          else if (task2Section === 'conclusion') setTask2Section('viewAll');
-                        }
-                      }
-                    }}
-                    placeholder={
-                      task1Skipped
-                        ? "Task 1 is skipped"
-                        : (test?.test_subtype === 'General' || selectedTrainingType === 'General')
-                          ? "Write your letter here..."
-                          : (currentTask === 1 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
-                            ? (task1Section === 'intro' ? "Write your introduction here..." :
-                               task1Section === 'body1' ? "Write your first body paragraph here..." :
-                               task1Section === 'body2' ? "Write your second body paragraph here..." :
-                               task1Section === 'viewAll' ? "Write your complete Task 1 essay here..." :
-                               "Write your description here...")
-                            : "Write your description here..."
-                    }
-                  className="min-h-[700px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                  spellCheck={spellCheckEnabled}
-                  disabled={task1Skipped}
-                  style={{
-                    backgroundColor: task1Skipped 
-                      ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                      : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                    borderColor: themeStyles.border,
-                    color: task1Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                    outline: 'none',
-                    boxShadow: 'none',
-                    cursor: task1Skipped ? 'not-allowed' : 'text',
-                    opacity: task1Skipped ? 0.6 : 1
-                  }} 
-                />
-                )}
-
-                {/* Bottom Controls */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
-                  {/* Word Count */}
-                    <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
-                    <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
-                    </div>
-                  
-                  <div className="flex items-center gap-3">
-                    {/* Skip Button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setTask1Skipped(!task1Skipped);
-                        // When skipping Task 1, switch to Task 2 but keep all written text
-                        if (!task1Skipped) {
-                          switchToTask(2);
-                        }
-                      }}
-                      className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
-                      style={{
-                        backgroundColor: task1Skipped 
-                          ? themeStyles.buttonPrimary 
-                          : 'transparent',
-                        color: task1Skipped ? '#ffffff' : themeStyles.textPrimary,
-                        border: 'none',
-                        boxShadow: 'none'
-                      }}
-                    >
-                      {task1Skipped ? 'Unskip' : 'Skip'}
-                    </Button>
-
-                    {/* Spell Check */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
-                      <Switch
-                        checked={spellCheckEnabled}
-                        onCheckedChange={setSpellCheckEnabled}
-                        style={{
-                          backgroundColor: spellCheckEnabled
-                            ? themeStyles.buttonPrimary
-                            : themeStyles.theme.name === 'dark'
-                              ? 'rgba(255,255,255,0.1)'
-                              : 'rgba(0,0,0,0.1)'
-                        }}
-                        className="data-[state=checked]:bg-primary"
-                      />
-                  </div>
-
-                    {/* Grammar Button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleGrammarFeedback(0)}
-                      disabled={isGrammarLoading || !getCurrentAnswer().trim() || task1Skipped}
-                      className="h-8 w-8 p-0 hover:bg-transparent"
-                      style={{
-                        color: themeStyles.textPrimary
-                      }}
-                    >
-                      {isGrammarLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4" />
-                      )}
-                    </Button>
-
-                    {/* Language Selector */}
-                    <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                      <SelectTrigger
-                        className="w-[90px] h-8 text-sm border-0 bg-transparent shadow-none p-0 focus:ring-0"
-                        style={{
-                          color: themeStyles.textPrimary,
-                          '--tw-ring-color': themeStyles.buttonPrimary
-                        } as React.CSSProperties}
-                      >
-                        <SelectValue placeholder="Language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FEEDBACK_LANGUAGES.map((lang) => (
-                          <SelectItem key={lang.value} value={lang.value}>
-                            {lang.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end items-center mt-4 gap-3">
-                  <div className="flex items-center gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Button 
-                      onClick={submitTest}
-                      disabled={isSubmitDisabled()}
-                      variant="default"
-                      className="min-w-[120px]"
-                      style={{
-                        backgroundColor: themeStyles.buttonPrimary,
-                        color: '#ffffff'
-                      }}
-                    >
-                      {isSubmitting ? "Submitting..." : "Submit Test"}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        ) : (
-          // Task 2 - Essay Writing
-          <Card className="rounded-3xl h-full max-w-4xl mx-auto" style={{
-            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-            borderColor: themeStyles.border,
-            backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-            boxShadow: themeStyles.theme.name === 'dark' 
-              ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-              : themeStyles.theme.name === 'note'
-              ? themeStyles.theme.styles.cardStyle?.boxShadow
-              : '0 8px 32px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(148, 163, 253, 0.06)',
-            ...themeStyles.cardStyle,
-            minHeight: `${themeStyles.theme.name === 'dark' ? 500 : themeStyles.theme.name === 'minimalist' ? 550 : themeStyles.theme.name === 'note' ? 580 : 600}px`
-          }}>
-            <CardContent className="p-4 flex flex-col h-full">
-              {currentTaskData?.instructions && (
-                <div className="mb-4">
-                  <div className="whitespace-pre-wrap leading-relaxed p-3 rounded-lg text-sm" style={{
-                    backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                            borderColor: themeStyles.border,
-                    borderWidth: '1px',
-                    borderStyle: 'solid',
-                    color: themeStyles.textPrimary
-                  }}>
-                    {currentTaskData.instructions}
-                  </div>
-                </div>
               )}
-              {/* Academic Task 2 View All Display */}
-              {currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic') && task2Section === 'viewAll' && !task2Skipped ? (
-                <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
-                  <Textarea
-                    value={getCurrentAnswer()}
-                    onChange={handleViewAllChange}
-                    placeholder="Write your complete Task 2 essay here..."
-                    className="min-h-[700px] w-full text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                    spellCheck={spellCheckEnabled}
-                    style={{
-                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                      borderColor: themeStyles.border,
-                      color: themeStyles.textPrimary,
-                      outline: 'none',
-                      boxShadow: 'none'
-                    }}
+
+              {/* Grammar Feedback Section */}
+              <div className="mt-6">
+                {((currentTask === 1 && task1GrammarFeedback) || (currentTask === 2 && task2GrammarFeedback)) && (
+                  <GrammarFeedbackDisplay
+                    feedback={currentTask === 1 ? task1GrammarFeedback : task2GrammarFeedback}
+                    improved={currentTask === 1 ? task1GrammarImproved : task2GrammarImproved}
                   />
-                </div>
-              ) : (
-              <Textarea 
-                  value={getCurrentAnswer()}
-                  onChange={e => setCurrentAnswer(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Tab navigation for Academic tasks
-                    if (e.key === 'Tab' && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic')) {
-                      e.preventDefault();
-                      if (task2Section === 'intro') setTask2Section('body1');
-                      else if (task2Section === 'body1') setTask2Section('body2');
-                      else if (task2Section === 'body2') setTask2Section('conclusion');
-                      else if (task2Section === 'conclusion') setTask2Section('viewAll');
-                    }
-                  }}
-                  placeholder={
-                    task2Skipped
-                      ? "Task 2 is skipped"
-                      : (currentTask === 2 && (test?.test_subtype === 'Academic' || selectedTrainingType === 'Academic'))
-                        ? (task2Section === 'intro' ? "Write your introduction here..." :
-                           task2Section === 'body1' ? "Write your first body paragraph here..." :
-                           task2Section === 'body2' ? "Write your second body paragraph here..." :
-                           task2Section === 'conclusion' ? "Write your conclusion here..." :
-                           task2Section === 'viewAll' ? "Write your complete Task 2 essay here..." :
-                           "Write your essay here...")
-                        : "Write your essay here..."
-                  }
-                className="min-h-[500px] text-base leading-relaxed resize-none rounded-2xl focus:outline-none focus:ring-0"
-                spellCheck={spellCheckEnabled}
-                disabled={task2Skipped}
-                style={{
-                  backgroundColor: task2Skipped 
-                    ? (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.02)' : themeStyles.theme.name === 'minimalist' ? '#f3f4f6' : 'rgba(255,255,255,0.3)')
-                    : (themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)'),
-                  borderColor: themeStyles.border,
-                  color: task2Skipped ? themeStyles.textSecondary : themeStyles.textPrimary,
-                  outline: 'none',
-                  boxShadow: 'none',
-                  cursor: task2Skipped ? 'not-allowed' : 'text',
-                  opacity: task2Skipped ? 0.6 : 1
-                }} 
-              />
-              )}
-
-              {/* Controls Row */}
-              <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t" style={{ borderColor: themeStyles.border }}>
-                {/* Word Count */}
-                <div className="text-sm font-medium" style={{ color: themeStyles.textSecondary }}>
-                  <span className={getTotalWordCount() < getMinWordCount() ? "text-red-500" : "text-green-600"}>{getTotalWordCount()}</span> / {getMinWordCount()}
-                </div>
-
-                {/* All Controls in One Row */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  {/* Skip Button */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setTask2Skipped(!task2Skipped);
-                      // When skipping Task 2, just mark as skipped but keep all written text
-                    }}
-                    className="h-10 sm:h-8 px-4 sm:px-3 text-sm sm:text-sm font-medium hover:bg-transparent min-w-[70px]"
-                    style={{
-                      backgroundColor: task2Skipped
-                        ? themeStyles.buttonPrimary
-                        : 'transparent',
-                      color: task2Skipped ? '#ffffff' : themeStyles.textPrimary,
-                      border: 'none',
-                      boxShadow: 'none'
-                    }}
-                  >
-                    {task2Skipped ? 'Unskip' : 'Skip'}
-                  </Button>
-
-                  {/* Spell Check */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium" style={{ color: themeStyles.textPrimary }}>Spell</span>
-                    <Switch
-                      checked={spellCheckEnabled}
-                      onCheckedChange={setSpellCheckEnabled}
-                      style={{
-                        backgroundColor: spellCheckEnabled
-                          ? themeStyles.buttonPrimary
-                          : themeStyles.theme.name === 'dark'
-                            ? 'rgba(255,255,255,0.1)'
-                            : 'rgba(0,0,0,0.1)'
-                      }}
-                      className="data-[state=checked]:bg-primary"
-                    />
-                  </div>
-
-                  {/* Grammar Button */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleGrammarFeedback(0)}
-                    disabled={isGrammarLoading || !getCurrentAnswer().trim() || task2Skipped}
-                    className="h-8 w-8 p-0 hover:bg-transparent"
-                    style={{
-                      color: themeStyles.textPrimary
-                    }}
-                  >
-                    {isGrammarLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
-                    )}
-                  </Button>
-
-                  {/* Language Selector */}
-                  <Select value={feedbackLanguage} onValueChange={setFeedbackLanguage}>
-                    <SelectTrigger
-                      className={`w-[90px] h-8 text-sm border-0 shadow-none p-0 focus:ring-0 rounded-lg ${
-                        themeStyles.theme.name === 'glassmorphism'
-                          ? 'bg-white/10'
-                          : themeStyles.theme.name === 'dark'
-                          ? 'bg-white/5'
-                          : themeStyles.theme.name === 'minimalist'
-                          ? 'bg-gray-50'
-                          : themeStyles.theme.name === 'note'
-                          ? 'bg-amber-50'
-                          : 'bg-white/5'
-                      }`}
-                      style={{
-                        color: themeStyles.textPrimary,
-                        '--tw-ring-color': themeStyles.buttonPrimary,
-                        borderColor: themeStyles.border
-                      } as React.CSSProperties}
-                    >
-                      <SelectValue placeholder="Language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FEEDBACK_LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.value} value={lang.value}>
-                          {lang.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* AI Model */}
-                  <Label htmlFor="ai-model-selector" className="text-sm font-medium whitespace-nowrap" style={{ color: themeStyles.textPrimary }}>
-                    AI Model:
-                  </Label>
-                  <Select value={selectedModel} onValueChange={setSelectedModel}>
-                    <SelectTrigger
-                      id="ai-model-selector"
-                      className="w-[180px] h-8 text-sm border transition-colors rounded-lg"
-                      style={{
-                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                        borderColor: themeStyles.border,
-                        color: themeStyles.textPrimary,
-                        backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : 'none'
-                      }}
-                    >
-                      <SelectValue placeholder="Select AI Model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                      <SelectItem value="kimi-k2-thinking">Kimi K2 Thinking</SelectItem>
-                      <SelectItem value="gpt-5.1">ChatGPT 5.1</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {/* Submit Test */}
-                  <div className="flex items-center gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-4 h-4" style={{ color: themeStyles.textSecondary }} />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p>You can submit with just one task completed. The other task will be marked as skipped.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Button
-                      onClick={submitTest}
-                      disabled={isSubmitDisabled()}
-                      variant="default"
-                      className="min-w-[120px] h-8"
-                      style={{
-                        backgroundColor: themeStyles.buttonPrimary,
-                        color: '#ffffff'
-                      }}
-                    >
-                      {isSubmitting ? "Submitting..." : "Submit Test"}
-                    </Button>
-                  </div>
-                </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Grammar Feedback Section */}
-        <div className="mt-6">
-          {((currentTask === 1 && task1GrammarFeedback) || (currentTask === 2 && task2GrammarFeedback)) && (
-            <GrammarFeedbackDisplay
-              feedback={currentTask === 1 ? task1GrammarFeedback : task2GrammarFeedback}
-              improved={currentTask === 1 ? task1GrammarImproved : task2GrammarImproved}
-            />
-          )}
-        </div>
+              {/* Exit Button - Fixed Bottom Left */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/ielts/writing')}
+                className="fixed bottom-6 left-6 z-50 rounded-xl"
+                style={{
+                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                  borderColor: themeStyles.border,
+                  color: themeStyles.textPrimary
+                }}
+              >
+                Exit
+              </Button>
 
-        {/* Exit Button - Fixed Bottom Left */}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => navigate('/ielts/writing')} 
-          className="fixed bottom-6 left-6 z-50 rounded-xl"
-          style={{
-            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.9)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-            borderColor: themeStyles.border,
-            color: themeStyles.textPrimary
-          }}
-        >
-          Exit
-        </Button>
-
-        {/* Catie AI Assistant - Floating Bottom Right */}
-        <div className="fixed bottom-6 right-3 sm:bottom-6 sm:right-6 z-50">
-          {/* Chat card */}
-          {showAIAssistant && (
-            <Card
-              className={`backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${
-                showAIAssistantVisible
-                  ? 'opacity-100 scale-100 translate-y-0'
-                  : 'opacity-0 scale-75 translate-y-8'
-              }`}
-              style={{
-                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                borderColor: themeStyles.border,
-                backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
-                ...themeStyles.cardStyle
-              }}
-            >
-              <CardHeader className="pb-1 sm:pb-2 rounded-t-3xl relative">
-                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={closeAIAssistant}
-                    className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                    style={{ color: themeStyles.textPrimary }}
+              {/* Catie AI Assistant - Floating Bottom Right */}
+              <div className="fixed bottom-6 right-3 sm:bottom-6 sm:right-6 z-50">
+                {/* Chat card */}
+                {showAIAssistant && (
+                  <Card
+                    className={`backdrop-blur-md rounded-3xl w-[260px] h-[360px] sm:w-96 sm:h-[500px] shadow-2xl flex flex-col transform-gpu origin-bottom-right transition-all duration-260 ease-in-out ${showAIAssistantVisible
+                      ? 'opacity-100 scale-100 translate-y-0'
+                      : 'opacity-0 scale-75 translate-y-8'
+                      }`}
+                    style={{
+                      backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.95)' : themeStyles.theme.name === 'dark' ? 'rgba(30, 41, 59, 0.95)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                      borderColor: themeStyles.border,
+                      backdropFilter: themeStyles.theme.name === 'glassmorphism' ? 'blur(12px)' : themeStyles.theme.name === 'dark' ? 'blur(8px)' : 'none',
+                      ...themeStyles.cardStyle
+                    }}
                   >
-                    ✕
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col px-2.5 py-2 sm:p-4 overflow-hidden">
-                <Conversation className="flex-1 min-h-0">
-                  <ConversationContent className="flex-1 min-h-0">
-                    {getCurrentChatMessages().length === 0 && !isChatLoading ? (
-                      <ConversationEmptyState
-                        icon={<Orb className="size-9 sm:size-12" style={{ color: themeStyles.textSecondary }} />}
-                        title="Start a conversation"
-                        description="Ask for help with your IELTS writing practice"
-                      />
-                    ) : (
-                      <>
-                        {/* Current task displayed at the top of chat */}
-                        <div 
-                          className="rounded-lg p-3 mb-4"
-                          style={{
-                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
-                            borderColor: themeStyles.border,
-                            borderWidth: '1px',
-                            borderStyle: 'solid'
-                          }}
+                    <CardHeader className="pb-1 sm:pb-2 rounded-t-3xl relative">
+                      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={closeAIAssistant}
+                          className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                          style={{ color: themeStyles.textPrimary }}
                         >
-                          <div className="text-[10px] sm:text-sm whitespace-pre-wrap" style={{ color: themeStyles.textSecondary }}>
-                            {currentTaskData?.title || (currentTask === 1 ? 'Letter Writing' : 'Essay Writing')}
-                          </div>
-                        </div>
-
-                        {getCurrentChatMessages().map((message) => (
-                          <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
-                            {message.type === 'bot' && (
+                          ✕
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col px-2.5 py-2 sm:p-4 overflow-hidden">
+                      <Conversation className="flex-1 min-h-0">
+                        <ConversationContent className="flex-1 min-h-0">
+                          {getCurrentChatMessages().length === 0 && !isChatLoading ? (
+                            <ConversationEmptyState
+                              icon={<Orb className="size-9 sm:size-12" style={{ color: themeStyles.textSecondary }} />}
+                              title="Start a conversation"
+                              description="Ask for help with your IELTS writing practice"
+                            />
+                          ) : (
+                            <>
+                              {/* Current task displayed at the top of chat */}
                               <div
+                                className="rounded-lg p-3 mb-4"
                                 style={{
-                                  borderRadius: '50%',
-                                  overflow: 'hidden',
-                                  width: '52px',
-                                  height: '52px',
-                                  flexShrink: 0
-                                }}
-                              >
-                                <img
-                                  src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
-                                  alt="Catie"
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              </div>
-                            )}
-                            <MessageContent>
-                              <div
-                                className="px-3 py-2 rounded-xl text-sm"
-                                style={{
-                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
-                                  borderColor: themeStyles.border,
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid',
-                                  color: themeStyles.textPrimary
-                                }}
-                              >
-                                <Response
-                                  dangerouslySetInnerHTML={{
-                                    __html: message.content
-                                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                      .replace(/^• (.*)$/gm, '<li>$1</li>')
-                                      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-                                      .replace(/\n/g, '<br>'),
-                                  }}
-                                />
-                              </div>
-                            </MessageContent>
-                            {message.type === 'user' && profile?.avatar_url && (
-                              <div
-                                style={{
-                                  borderRadius: '50%',
-                                  overflow: 'hidden',
-                                  width: '52px',
-                                  height: '52px',
-                                  flexShrink: 0
-                                }}
-                              >
-                                <img
-                                  src={profile.avatar_url}
-                                  alt="Your avatar"
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              </div>
-                            )}
-                          </Message>
-                        ))}
-                        {isChatLoading && (
-                          <Message from="assistant">
-                            <MessageContent>
-                              <div 
-                                className="px-3 py-2 rounded-xl text-sm"
-                                style={{
-                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                  backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.6)',
                                   borderColor: themeStyles.border,
                                   borderWidth: '1px',
                                   borderStyle: 'solid'
                                 }}
                               >
-                                <ShimmeringText text="Thinking..." />
+                                <div className="text-[10px] sm:text-sm whitespace-pre-wrap" style={{ color: themeStyles.textSecondary }}>
+                                  {currentTaskData?.title || (currentTask === 1 ? 'Letter Writing' : 'Essay Writing')}
+                                </div>
                               </div>
-                            </MessageContent>
-                            <div
-                              style={{
-                                borderRadius: '50%',
-                                overflow: 'hidden',
-                                width: '52px',
-                                height: '52px',
-                              }}
-                            >
-                              <img
-                                src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
-                                alt="Catie"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                            </div>
-                          </Message>
-                        )}
-                      </>
-                    )}
-                  </ConversationContent>
-                </Conversation>
 
-                <div className="flex-shrink-0 mt-2.5 sm:mt-4">
-                  <div className="flex gap-1.5 sm:gap-2">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) =>
-                        e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()
-                      }
-                      placeholder="Ask for writing help..."
-                      className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:ring-0 resize-none"
-                      style={{
-                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
-                        borderColor: themeStyles.border,
-                        borderWidth: '1px',
-                        borderStyle: 'solid',
-                        color: themeStyles.textPrimary
-                      }}
-                      disabled={isChatLoading}
-                    />
-                    <style dangerouslySetInnerHTML={{ __html: `
+                              {getCurrentChatMessages().map((message) => (
+                                <Message key={message.id} from={message.type === 'user' ? 'user' : 'assistant'}>
+                                  {message.type === 'bot' && (
+                                    <div
+                                      style={{
+                                        borderRadius: '50%',
+                                        overflow: 'hidden',
+                                        width: '52px',
+                                        height: '52px',
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      <img
+                                        src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                        alt="Catie"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      />
+                                    </div>
+                                  )}
+                                  <MessageContent>
+                                    <div
+                                      className="px-3 py-2 rounded-xl text-sm"
+                                      style={{
+                                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                        borderColor: themeStyles.border,
+                                        borderWidth: '1px',
+                                        borderStyle: 'solid',
+                                        color: themeStyles.textPrimary
+                                      }}
+                                    >
+                                      <Response
+                                        dangerouslySetInnerHTML={{
+                                          __html: message.content
+                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                            .replace(/^• (.*)$/gm, '<li>$1</li>')
+                                            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                                            .replace(/\n/g, '<br>'),
+                                        }}
+                                      />
+                                    </div>
+                                  </MessageContent>
+                                  {message.type === 'user' && profile?.avatar_url && (
+                                    <div
+                                      style={{
+                                        borderRadius: '50%',
+                                        overflow: 'hidden',
+                                        width: '52px',
+                                        height: '52px',
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      <img
+                                        src={profile.avatar_url}
+                                        alt="Your avatar"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      />
+                                    </div>
+                                  )}
+                                </Message>
+                              ))}
+                              {isChatLoading && (
+                                <Message from="assistant">
+                                  <MessageContent>
+                                    <div
+                                      className="px-3 py-2 rounded-xl text-sm"
+                                      style={{
+                                        backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.5)',
+                                        borderColor: themeStyles.border,
+                                        borderWidth: '1px',
+                                        borderStyle: 'solid'
+                                      }}
+                                    >
+                                      <ShimmeringText text="Thinking..." />
+                                    </div>
+                                  </MessageContent>
+                                  <div
+                                    style={{
+                                      borderRadius: '50%',
+                                      overflow: 'hidden',
+                                      width: '52px',
+                                      height: '52px',
+                                    }}
+                                  >
+                                    <img
+                                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                                      alt="Catie"
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                  </div>
+                                </Message>
+                              )}
+                            </>
+                          )}
+                        </ConversationContent>
+                      </Conversation>
+
+                      <div className="flex-shrink-0 mt-2.5 sm:mt-4">
+                        <div className="flex gap-1.5 sm:gap-2">
+                          <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) =>
+                              e.key === 'Enter' && !isChatLoading && newMessage.trim() && sendChatMessage()
+                            }
+                            placeholder="Ask for writing help..."
+                            className="flex-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:ring-0 resize-none"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : themeStyles.theme.colors.cardBackground,
+                              borderColor: themeStyles.border,
+                              borderWidth: '1px',
+                              borderStyle: 'solid',
+                              color: themeStyles.textPrimary
+                            }}
+                            disabled={isChatLoading}
+                          />
+                          <style dangerouslySetInnerHTML={{
+                            __html: `
                       input[placeholder="Ask for writing help..."]::placeholder {
                         color: ${themeStyles.textSecondary};
                       }
                     ` }} />
-                    <Button
-                      onClick={() => sendChatMessage()}
-                      disabled={isChatLoading || !newMessage.trim()}
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                      style={{ color: themeStyles.textPrimary }}
-                    >
-                      {isChatLoading ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: themeStyles.textPrimary }} />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </Button>
+                          <Button
+                            onClick={() => sendChatMessage()}
+                            disabled={isChatLoading || !newMessage.trim()}
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                            style={{ color: themeStyles.textPrimary }}
+                          >
+                            {isChatLoading ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2" style={{ borderColor: themeStyles.textPrimary }} />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {/* Show Catie dock icon only when chat is fully closed */}
+                {!showAIAssistant && (
+                  <div
+                    style={{
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      width: '64px',
+                      height: '64px',
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+                      transition: 'transform 0.22s ease-out, box-shadow 0.22s ease-out',
+                    }}
+                    onClick={() => {
+                      setShowAIAssistant(true);
+                      requestAnimationFrame(() => setShowAIAssistantVisible(true));
+                    }}
+                    onMouseEnter={(e) => {
+                      const el = e.currentTarget as HTMLDivElement;
+                      el.style.transform = 'scale(1.06) translateY(-2px)';
+                      el.style.boxShadow = '0 14px 30px rgba(0,0,0,0.24)';
+                    }}
+                    onMouseLeave={(e) => {
+                      const el = e.currentTarget as HTMLDivElement;
+                      el.style.transform = 'scale(1.0) translateY(0px)';
+                      el.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+                    }}
+                  >
+                    <img
+                      src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
+                      alt="Catie"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Loading Overlay */}
+              {isSubmitting && (
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                  <div className="bg-card p-8 rounded-3xl shadow-xl border border-border">
+                    <DotLottieLoadingAnimation
+                      message="Analyzing your writing with AI examiner..."
+                      subMessage="Please wait while we evaluate your IELTS writing"
+                      size={200}
+                    />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-          {/* Show Catie dock icon only when chat is fully closed */}
-          {!showAIAssistant && (
-            <div
-              style={{
-                borderRadius: '50%',
-                overflow: 'hidden',
-                width: '64px',
-                height: '64px',
-                cursor: 'pointer',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
-                transition: 'transform 0.22s ease-out, box-shadow 0.22s ease-out',
-              }}
-              onClick={() => {
-                setShowAIAssistant(true);
-                requestAnimationFrame(() => setShowAIAssistantVisible(true));
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = 'scale(1.06) translateY(-2px)';
-                el.style.boxShadow = '0 14px 30px rgba(0,0,0,0.24)';
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = 'scale(1.0) translateY(0px)';
-                el.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
-              }}
-            >
-              <img
-                src="https://raw.githubusercontent.com/AlfieAlfiegithu2/alfie-ai-coach/main/public/1000031289.png"
-                alt="Catie"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Loading Overlay */}
-        {isSubmitting && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="bg-card p-8 rounded-3xl shadow-xl border border-border">
-               <DotLottieLoadingAnimation 
-                message="Analyzing your writing with AI examiner..."
-                subMessage="Please wait while we evaluate your IELTS writing"
-                size={200}
-               />
-            </div>
-          </div>
-        )}
+              )}
             </div>
           </div>
         </StudentLayout>
       </div>
-      
+
       {/* Spell Check Styling */}
       {spellCheckEnabled && (
         <style>{`

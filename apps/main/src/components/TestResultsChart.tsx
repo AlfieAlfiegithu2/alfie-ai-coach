@@ -49,7 +49,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
 
       if (error) {
         // Check if it's a column error (400 Bad Request when column doesn't exist)
-        const isColumnError = 
+        const isColumnError =
           error.code === 'PGRST204' ||
           error.code === '42703' ||
           error.code === '42P01' ||
@@ -57,7 +57,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
           error.message?.toLowerCase().includes('column') ||
           error.message?.toLowerCase().includes('does not exist') ||
           error.message?.toLowerCase().includes('bad request');
-        
+
         // Silently ignore column errors and missing records - use defaults
         if (!isColumnError) {
           console.error('Error loading user preferences:', error);
@@ -68,7 +68,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
       setUserPreferences(data);
     } catch (error: any) {
       // Check if it's a column error
-      const isColumnError = 
+      const isColumnError =
         error?.code === 'PGRST204' ||
         error?.code === '42703' ||
         error?.code === '42P01' ||
@@ -76,7 +76,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
         error?.message?.toLowerCase().includes('column') ||
         error?.message?.toLowerCase().includes('does not exist') ||
         error?.message?.toLowerCase().includes('bad request');
-      
+
       if (!isColumnError) {
         console.error('Error loading user preferences:', error);
       }
@@ -91,7 +91,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     try {
       let query = supabase
         .from('test_results')
-        .select('*')
+        .select('id, score_percentage, test_type, created_at')
         .eq('user_id', user.id);
 
       if (dateRange !== 'full') {
@@ -134,10 +134,10 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     const basePercentage = 50;
     const targetPercentage = 85;
     const trend = (targetPercentage - basePercentage) / 7; // Overall trend
-    
+
     const mockResults: TestResult[] = [];
     const now = new Date();
-    
+
     // Generate random dates over the last 30 days (not sequential)
     const dates: Date[] = [];
     for (let i = 0; i < 8; i++) {
@@ -148,7 +148,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     }
     // Sort dates chronologically
     dates.sort((a, b) => a.getTime() - b.getTime());
-    
+
     // Generate scores with realistic variation
     const scores: number[] = [];
     for (let i = 0; i < 8; i++) {
@@ -156,17 +156,17 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
       // Add random variation: -5% to +5% around the trend
       const variation = (Math.random() * 10) - 5;
       let percentage = trendValue + variation;
-      
+
       // Sometimes use the same score as previous (30% chance after first test)
       if (i > 0 && Math.random() < 0.3) {
         percentage = scores[i - 1];
       }
-      
+
       // Ensure score stays within reasonable bounds
       percentage = Math.max(45, Math.min(90, percentage));
       scores.push(Math.round(percentage * 10) / 10);
     }
-    
+
     // Determine test type based on selected skill
     let testType = 'IELTS';
     if (selectedSkill !== 'overall') {
@@ -175,7 +175,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
       else if (selectedSkill === 'writing') testType = 'writing';
       else if (selectedSkill === 'speaking') testType = 'speaking';
     }
-    
+
     // Create mock results
     for (let i = 0; i < 8; i++) {
       mockResults.push({
@@ -186,7 +186,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
         test_data: null
       });
     }
-    
+
     setTestResults(mockResults);
     setLoading(false);
   };
@@ -221,7 +221,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
     type: result.test_type
   }));
 
-  const averageScore = testResults.length > 0 
+  const averageScore = testResults.length > 0
     ? convertToIELTSScore(testResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / testResults.length)
     : 0;
 
@@ -231,12 +231,12 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
 
   const deadlineDays = userPreferences?.target_deadline
     ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(userPreferences.target_deadline).getTime() - Date.now()) /
-            (1000 * 60 * 60 * 24)
-        )
+      0,
+      Math.ceil(
+        (new Date(userPreferences.target_deadline).getTime() - Date.now()) /
+        (1000 * 60 * 60 * 24)
       )
+    )
     : null;
 
   return (
@@ -244,15 +244,15 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
       <CardHeader className="pb-2 relative flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
-            {selectedSkill === 'overall' 
+            {selectedSkill === 'overall'
               ? t('testResults.overallResults', { defaultValue: 'Overall Test Results' })
               : ''}
           </CardTitle>
           {/* Period selector inside container - tiny */}
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger 
-              className={`w-auto min-w-[70px] h-7 text-xs border`} 
-              style={{ 
+            <SelectTrigger
+              className={`w-auto min-w-[70px] h-7 text-xs border`}
+              style={{
                 fontFamily: 'Poppins, sans-serif',
                 backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#ffffff' : 'rgba(255,255,255,0.6)',
                 borderColor: themeStyles.border,
@@ -261,7 +261,7 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
             >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent 
+            <SelectContent
               className={`backdrop-blur-xl border`}
               style={{
                 backgroundColor: themeStyles.cardBackground,
@@ -304,61 +304,61 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ left: -10, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.textSecondary + '40'} />
-                  <XAxis 
-                    dataKey="test" 
-                    stroke={themeStyles.textSecondary}
-                    fontSize={12}
+                <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.textSecondary + '40'} />
+                <XAxis
+                  dataKey="test"
+                  stroke={themeStyles.textSecondary}
+                  fontSize={12}
+                />
+                <YAxis
+                  stroke={themeStyles.textSecondary}
+                  fontSize={12}
+                  domain={[0, 9]}
+                  ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: themeStyles.cardBackground,
+                    border: `1px solid ${themeStyles.border}`,
+                    borderRadius: '8px',
+                    color: themeStyles.textPrimary
+                  }}
+                  formatter={(value: number, name: string) => [`${value}`, 'IELTS Band']}
+                  labelFormatter={(label) => `${label}`}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke={themeStyles.chartLine}
+                  strokeWidth={3}
+                  dot={{ fill: themeStyles.chartLine, strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: themeStyles.chartLine, strokeWidth: 2 }}
+                />
+                {/* Target Score Line */}
+                {userPreferences?.target_scores && selectedSkill !== 'overall' ? (
+                  <Line
+                    type="monotone"
+                    dataKey={() => (userPreferences.target_scores as any)?.[selectedSkill] || userPreferences.target_score}
+                    stroke={themeStyles.chartTarget}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={false}
                   />
-                  <YAxis 
-                    stroke={themeStyles.textSecondary}
-                    fontSize={12}
-                    domain={[0, 9]}
-                    ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
-                    tickFormatter={(value) => `${value}`}
+                ) : userPreferences?.target_score && (
+                  <Line
+                    type="monotone"
+                    dataKey={() => userPreferences.target_score}
+                    stroke={themeStyles.chartTarget}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={false}
                   />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: themeStyles.cardBackground,
-                      border: `1px solid ${themeStyles.border}`,
-                      borderRadius: '8px',
-                      color: themeStyles.textPrimary
-                    }}
-                    formatter={(value: number, name: string) => [`${value}`, 'IELTS Band']}
-                    labelFormatter={(label) => `${label}`}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke={themeStyles.chartLine} 
-                    strokeWidth={3}
-                    dot={{ fill: themeStyles.chartLine, strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: themeStyles.chartLine, strokeWidth: 2 }}
-                  />
-                  {/* Target Score Line */}
-                  {userPreferences?.target_scores && selectedSkill !== 'overall' ? (
-                    <Line 
-                      type="monotone"
-                      dataKey={() => (userPreferences.target_scores as any)?.[selectedSkill] || userPreferences.target_score}
-                      stroke={themeStyles.chartTarget} 
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      activeDot={false}
-                    />
-                  ) : userPreferences?.target_score && (
-                    <Line 
-                      type="monotone"
-                      dataKey={() => userPreferences.target_score}
-                      stroke={themeStyles.chartTarget} 
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      activeDot={false}
-                    />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
+                )}
+              </LineChart>
+            </ResponsiveContainer>
           )}
         </div>
 
@@ -373,21 +373,21 @@ const TestResultsChart = ({ selectedSkill, selectedTestType }: TestResultsChartP
                 {t('dashboard.daysLeft', { defaultValue: 'Days Left' })}
               </p>
             </div>
-              <div className="text-center">
-                <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
-                  {averageScore.toFixed(1)}
-                </p>
-                <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
-                  {t('dashboard.averageScore', { defaultValue: 'Average Score' })}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: improvement >= 0 ? themeStyles.textSecondary : themeStyles.chartTarget }}>
-                  {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}
-                </p>
-                <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
-                  {t('testResults.improvement', { defaultValue: 'Improvement' })}
-                </p>
+            <div className="text-center">
+              <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textPrimary }}>
+                {averageScore.toFixed(1)}
+              </p>
+              <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+                {t('dashboard.averageScore', { defaultValue: 'Average Score' })}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-normal" style={{ fontFamily: 'Poppins, sans-serif', color: improvement >= 0 ? themeStyles.textSecondary : themeStyles.chartTarget }}>
+                {improvement > 0 ? '+' : ''}{improvement.toFixed(1)}
+              </p>
+              <p className="text-[11px]" style={{ fontFamily: 'Poppins, sans-serif', color: themeStyles.textSecondary }}>
+                {t('testResults.improvement', { defaultValue: 'Improvement' })}
+              </p>
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { I18nextProvider } from 'react-i18next';
 import { HelmetProvider } from 'react-helmet-async';
+// @ts-ignore - Types might be missing for this package
 import { Analytics } from "@vercel/analytics/react";
 import i18n from './lib/i18n';
 import { Suspense, lazy, useEffect } from 'react';
@@ -38,47 +39,48 @@ const AdminIELTS = lazy(() => import("./pages/AdminIELTS"));
 const AdminPTE = lazy(() => import("./pages/AdminPTE"));
 const AdminTOEFL = lazy(() => import("./pages/AdminTOEFL"));
 const AdminGeneral = lazy(() => import("./pages/AdminGeneral"));
-import PersonalPage from "./pages/PersonalPage";
-import Dashboard from "./pages/Dashboard";
-import TestSelection from "./pages/TestSelection";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import CommunityPage from "./pages/CommunityPage";
-import SettingsPage from "./pages/SettingsPage";
-import PTEPortal from "./pages/PTEPortal";
-import TOEFLPortal from "./pages/TOEFLPortal";
-import GeneralPortal from "./pages/GeneralPortal";
-import EnhancedGeneralPortal from "./pages/EnhancedGeneralPortal";
-import IELTSPortal from "./pages/IELTSPortal";
-import IELTSSkillHub from "./pages/IELTSSkillHub";
-import IELTSSkillTests from "./pages/IELTSSkillTests";
-import AdminIELTSSkillManagement from "./pages/AdminIELTSSkillManagement";
-import IELTSTestModules from "./pages/IELTSTestModules";
-import QwenTTSTest from "./pages/QwenTTSTest";
-import AdminTestManagement from "./pages/AdminTestManagement";
-import AdminTestDetails from "./pages/AdminTestDetails";
-import AdminSectionManagement from "./pages/AdminSectionManagement";
-import AdminReadingManagement from "./pages/AdminReadingManagement";
-import AdminIELTSReadingDashboard from "./pages/AdminIELTSReadingDashboard";
-import AdminIELTSListening from "./pages/AdminIELTSListening";
-import AdminIELTSWriting from "./pages/AdminIELTSWriting";
-import AdminIELTSWritingTest from "./pages/AdminIELTSWritingTest";
-import AdminIELTSReadingTest from "./pages/AdminIELTSReadingTest";
-import AdminIELTSSpeaking from "./pages/AdminIELTSSpeaking";
-import IELTSWritingTest from "./pages/IELTSWritingTest";
-import IELTSWritingProResults from "./pages/IELTSWritingProResults";
-import IELTSWritingResults from "./pages/IELTSWritingResults";
-import ReadingResults from "./pages/ReadingResults";
-import ListeningResults from "./pages/ListeningResults";
-import IELTSSpeakingResults from "./pages/IELTSSpeakingResults";
-import IELTSSpeakingTest from "./pages/IELTSSpeakingTest";
-import EnhancedReadingTest from "./pages/EnhancedReadingTest";
-import Pricing from "./pages/Pricing";
-import AdminSkillsPractice from "./pages/AdminSkillsPractice";
-import AdminSkillManager from "./pages/AdminSkillManager";
-import SkillPractice from "./pages/SkillPractice";
-import AISpeakingCall from "./pages/AISpeakingCall";
-import AISpeakingTutor from "./pages/AISpeakingTutor";
+// Lazy load student pages to improve initial load performance
+const PersonalPage = lazy(() => import("./pages/PersonalPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const TestSelection = lazy(() => import("./pages/TestSelection"));
+const Auth = lazy(() => import("./pages/Auth"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const CommunityPage = lazy(() => import("./pages/CommunityPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const PTEPortal = lazy(() => import("./pages/PTEPortal"));
+const TOEFLPortal = lazy(() => import("./pages/TOEFLPortal"));
+const GeneralPortal = lazy(() => import("./pages/GeneralPortal"));
+const EnhancedGeneralPortal = lazy(() => import("./pages/EnhancedGeneralPortal"));
+const IELTSPortal = lazy(() => import("./pages/IELTSPortal"));
+const IELTSSkillHub = lazy(() => import("./pages/IELTSSkillHub"));
+const IELTSSkillTests = lazy(() => import("./pages/IELTSSkillTests"));
+const AdminIELTSSkillManagement = lazy(() => import("./pages/AdminIELTSSkillManagement"));
+const IELTSTestModules = lazy(() => import("./pages/IELTSTestModules"));
+const QwenTTSTest = lazy(() => import("./pages/QwenTTSTest"));
+const AdminTestManagement = lazy(() => import("./pages/AdminTestManagement"));
+const AdminTestDetails = lazy(() => import("./pages/AdminTestDetails"));
+const AdminSectionManagement = lazy(() => import("./pages/AdminSectionManagement"));
+const AdminReadingManagement = lazy(() => import("./pages/AdminReadingManagement"));
+const AdminIELTSReadingDashboard = lazy(() => import("./pages/AdminIELTSReadingDashboard"));
+const AdminIELTSListening = lazy(() => import("./pages/AdminIELTSListening"));
+const AdminIELTSWriting = lazy(() => import("./pages/AdminIELTSWriting"));
+const AdminIELTSWritingTest = lazy(() => import("./pages/AdminIELTSWritingTest"));
+const AdminIELTSReadingTest = lazy(() => import("./pages/AdminIELTSReadingTest"));
+const AdminIELTSSpeaking = lazy(() => import("./pages/AdminIELTSSpeaking"));
+const IELTSWritingTest = lazy(() => import("./pages/IELTSWritingTest"));
+const IELTSWritingProResults = lazy(() => import("./pages/IELTSWritingProResults"));
+const IELTSWritingResults = lazy(() => import("./pages/IELTSWritingResults"));
+const ReadingResults = lazy(() => import("./pages/ReadingResults"));
+const ListeningResults = lazy(() => import("./pages/ListeningResults"));
+const IELTSSpeakingResults = lazy(() => import("./pages/IELTSSpeakingResults"));
+const IELTSSpeakingTest = lazy(() => import("./pages/IELTSSpeakingTest"));
+const EnhancedReadingTest = lazy(() => import("./pages/EnhancedReadingTest"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const AdminSkillsPractice = lazy(() => import("./pages/AdminSkillsPractice"));
+const AdminSkillManager = lazy(() => import("./pages/AdminSkillManager"));
+const SkillPractice = lazy(() => import("./pages/SkillPractice"));
+const AISpeakingCall = lazy(() => import("./pages/AISpeakingCall"));
+const AISpeakingTutor = lazy(() => import("./pages/AISpeakingTutor"));
 
 // Admin / heavy tools (lazy)
 const AdminVocabularyTests = lazy(() => import("./pages/AdminVocabularyTests"));
@@ -96,36 +98,45 @@ const AdminSentenceScrambleTestDetail = lazy(() => import("./pages/AdminSentence
 const AdminListeningForDetailsTests = lazy(() => import("./pages/AdminListeningForDetailsTests"));
 const AdminListeningForDetailsTestDetail = lazy(() => import("./pages/AdminListeningForDetailsTestDetail"));
 
-// Student quizzes (kept as direct imports since they are route-split already)
-import VocabularyQuiz from "./pages/VocabularyQuiz";
-import GrammarQuiz from "./pages/GrammarQuiz";
-import ParaphraseQuiz from "./pages/ParaphraseQuiz";
-import SentenceScrambleQuiz from "./pages/SentenceScrambleQuiz";
-import ListeningQuiz from "./pages/ListeningQuiz";
-import VocabularyMap from "./pages/VocabularyMap";
-import VocabularyBook from "./pages/VocabularyBook";
-import VocabHome from "./pages/VocabHome";
-import VocabDeck from "./pages/VocabDeck";
-import VocabReview from "./pages/VocabReview";
-import VocabLevels from "./pages/VocabLevels";
-import VocabTest from "./pages/VocabTest";
-import Signup from "./pages/Signup";
-import AuthCallback from "./pages/AuthCallback";
-import VocabularyMapView from "./components/VocabularyMapView";
-import WritingHistory from "./pages/WritingHistory";
-import WritingResultsDetail from "./pages/WritingResultsDetail";
-import Pay from "./pages/Pay";
-import ResetPassword from "./pages/ResetPassword";
-import MyWordBook from "./pages/MyWordBook";
-import AdminAnalytics from "./pages/AdminAnalytics";
-import OnboardingAssessment from "./pages/OnboardingAssessment";
-import PlanPage from "./pages/Plan";
-import BlogListing from "./pages/BlogListing";
-import BlogDetail from "./pages/BlogDetail";
-import AdminBlogManagement from "./pages/AdminBlogManagement";
+// Student quizzes (lazy loaded for performance)
+const VocabularyQuiz = lazy(() => import("./pages/VocabularyQuiz"));
+const GrammarQuiz = lazy(() => import("./pages/GrammarQuiz"));
+const ParaphraseQuiz = lazy(() => import("./pages/ParaphraseQuiz"));
+const SentenceScrambleQuiz = lazy(() => import("./pages/SentenceScrambleQuiz"));
+const ListeningQuiz = lazy(() => import("./pages/ListeningQuiz"));
+const VocabularyMap = lazy(() => import("./pages/VocabularyMap"));
+const VocabularyBook = lazy(() => import("./pages/VocabularyBook"));
+const VocabHome = lazy(() => import("./pages/VocabHome"));
+const VocabDeck = lazy(() => import("./pages/VocabDeck"));
+const VocabReview = lazy(() => import("./pages/VocabReview"));
+const VocabLevels = lazy(() => import("./pages/VocabLevels"));
+const VocabTest = lazy(() => import("./pages/VocabTest"));
+const Signup = lazy(() => import("./pages/Signup"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const VocabularyMapView = lazy(() => import("./components/VocabularyMapView"));
+const WritingHistory = lazy(() => import("./pages/WritingHistory"));
+const WritingResultsDetail = lazy(() => import("./pages/WritingResultsDetail"));
+const Pay = lazy(() => import("./pages/Pay"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const MyWordBook = lazy(() => import("./pages/MyWordBook"));
+const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const OnboardingAssessment = lazy(() => import("./pages/OnboardingAssessment"));
+const PlanPage = lazy(() => import("./pages/Plan"));
+const BlogListing = lazy(() => import("./pages/BlogListing"));
+const BlogDetail = lazy(() => import("./pages/BlogDetail"));
+const AdminBlogManagement = lazy(() => import("./pages/AdminBlogManagement"));
 import { useAdminAuth } from './hooks/useAdminAuth';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false, // Disable refetch on window focus for mobile performance
+    },
+  },
+});
 
 // Protected Admin Route Component
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
@@ -173,8 +184,9 @@ const App = () => {
                     <ComingSoonModal />
                     <Suspense
                       fallback={
-                        <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
-                          Loading...
+                        <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+                          <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                          <p className="mt-4 text-sm text-muted-foreground animate-pulse">Loading...</p>
                         </div>
                       }
                     >

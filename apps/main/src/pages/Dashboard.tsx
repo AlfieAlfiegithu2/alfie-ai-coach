@@ -87,7 +87,7 @@ const Dashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  
+
   // Cache preferred_name in localStorage for instant display
   const getCachedNickname = (): string | null => {
     if (!user?.id) return null;
@@ -105,7 +105,7 @@ const Dashboard = () => {
     }
     return null;
   };
-  
+
   const cacheNickname = (nickname: string | null) => {
     if (!user?.id) return;
     try {
@@ -182,31 +182,31 @@ const Dashboard = () => {
   // Function to reload user preferences with retry logic
   const reloadUserPreferences = async (retryCount = 0) => {
     if (!user) return;
-    
+
     const maxRetries = 1; // Only retry once to prevent too many requests
     const retryDelay = 2000; // 2 second delay
-    
+
     try {
       const {
         data: preferences,
         error: prefError
       } = await supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle();
-      
+
       if (prefError) {
         // Check if it's a network error that we should retry
         const isNetworkError = prefError.message?.includes('ERR_CONNECTION_CLOSED') ||
-                              prefError.message?.includes('Failed to fetch') ||
-                              prefError.message?.includes('NetworkError');
-        
+          prefError.message?.includes('Failed to fetch') ||
+          prefError.message?.includes('NetworkError');
+
         // Check if it's a column error (400 Bad Request when column doesn't exist)
-        const isColumnError = 
+        const isColumnError =
           prefError.code === 'PGRST204' ||
           prefError.code === '42703' ||
           prefError.code === '42P01' ||
           prefError.message?.toLowerCase().includes('column') ||
           prefError.message?.toLowerCase().includes('does not exist') ||
           prefError.message?.toLowerCase().includes('bad request');
-        
+
         // Retry network errors once
         if (isNetworkError && retryCount < maxRetries) {
           if (import.meta.env.DEV) {
@@ -215,7 +215,7 @@ const Dashboard = () => {
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           return reloadUserPreferences(retryCount + 1);
         }
-        
+
         // Silently ignore column errors - use defaults
         if (!isColumnError && !isNetworkError && import.meta.env.DEV) {
           console.warn('Error fetching preferences:', prefError);
@@ -238,18 +238,18 @@ const Dashboard = () => {
     } catch (error: any) {
       // Check if it's a network error
       const isNetworkError = error?.message?.includes('ERR_CONNECTION_CLOSED') ||
-                            error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError');
-      
+        error?.message?.includes('Failed to fetch') ||
+        error?.message?.includes('NetworkError');
+
       // Check if it's a column error
-      const isColumnError = 
+      const isColumnError =
         error?.code === 'PGRST204' ||
         error?.code === '42703' ||
         error?.code === '42P01' ||
         error?.message?.toLowerCase().includes('column') ||
         error?.message?.toLowerCase().includes('does not exist') ||
         error?.message?.toLowerCase().includes('bad request');
-      
+
       // Retry network errors once
       if (isNetworkError && retryCount < maxRetries) {
         if (import.meta.env.DEV) {
@@ -258,7 +258,7 @@ const Dashboard = () => {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         return reloadUserPreferences(retryCount + 1);
       }
-      
+
       if (!isColumnError && !isNetworkError && import.meta.env.DEV) {
         console.error('Error reloading preferences:', error);
       }
@@ -269,9 +269,9 @@ const Dashboard = () => {
   // Check if settings setup is required (for new Google sign-in users)
   useEffect(() => {
     if (!user || authLoading || loading) return;
-    
+
     const setupRequired = searchParams.get('setup') === 'required';
-    
+
     // Only open settings modal if explicitly required via query parameter
     // Don't auto-open based on missing preferences - let users access it manually
     if (setupRequired) {
@@ -304,10 +304,11 @@ const Dashboard = () => {
         await reloadUserPreferences();
 
         // Fetch test results
+        // Fetch test results
         const {
           data: results,
           error: resultsError
-        } = await supabase.from('test_results').select('*').eq('user_id', user.id).order('created_at', {
+        } = await supabase.from('test_results').select('id, test_type, score_percentage, created_at, user_id').eq('user_id', user.id).order('created_at', {
           ascending: false
         }).limit(10);
         if (resultsError) {
@@ -318,7 +319,7 @@ const Dashboard = () => {
         const {
           data: readingResults,
           error: readingError
-        } = await supabase.from('reading_test_results').select('*').eq('user_id', user.id).order('created_at', {
+        } = await supabase.from('reading_test_results').select('id, comprehension_score, created_at, reading_time_seconds, user_id').eq('user_id', user.id).order('created_at', {
           ascending: false
         }).limit(10);
         if (readingError) {
@@ -328,40 +329,38 @@ const Dashboard = () => {
         // Fetch writing test results separately
         const {
           data: writingResults
-        } = await supabase.from('writing_test_results').select('*').eq('user_id', user.id).order('created_at', {
+        } = await supabase.from('writing_test_results').select('id, created_at, task_number, band_scores, user_id, test_result_id').eq('user_id', user.id).order('created_at', {
           ascending: false
         }).limit(10);
 
         // Combine results for display
-        const allResults = [...(results || [])];
+        const allResults = [...(results || [])] as TestResult[];
 
         // Add reading results as synthetic test results for dashboard display
         if (readingResults) {
           readingResults.forEach(result => {
             allResults.push({
               id: result.id,
-              user_id: user.id,
+              user_id: result.user_id,
               test_type: 'reading',
               score_percentage: Math.round(result.comprehension_score * 100),
               created_at: result.created_at,
               test_data: { readingResult: result },
               // Required fields for test_results table structure
               section_number: null,
-              total_questions: ((result.questions_data as any)?.questions?.length || (result.questions_data as any)?.length || 0),
-              correct_answers: Math.floor((result.comprehension_score || 0) * ((result.questions_data as any)?.questions?.length || (result.questions_data as any)?.length || 1)),
+              total_questions: 40, // Default to 40 for IELTS reading
+              correct_answers: Math.floor((result.comprehension_score || 0) * 40),
               time_taken: result.reading_time_seconds,
               completed_at: result.created_at,
               audio_retention_expires_at: null,
-              detailed_feedback: result.detailed_feedback,
+              detailed_feedback: null,
               question_analysis: null,
               performance_metrics: null,
-              skill_breakdown: null,
-              cambridge_book: null,
-              audio_urls: null
+              skill_breakdown: null
             });
           });
         }
-        
+
         // Add writing results as synthetic test results for dashboard display
         if (writingResults) {
           // Group writing results by test_result_id or date
@@ -420,16 +419,14 @@ const Dashboard = () => {
               detailed_feedback: null,
               question_analysis: null,
               performance_metrics: null,
-              skill_breakdown: null,
-              cambridge_book: null,
-              audio_urls: null
+              skill_breakdown: null
             });
           });
         }
 
         // Sort all results by date
         allResults.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        
+
         setTestResults(allResults as TestResult[]);
 
         // Calculate user stats from all test results
@@ -514,8 +511,8 @@ const Dashboard = () => {
   // Wait for auth to finish loading
   if (authLoading) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <LoadingAnimation />
-      </div>;
+      <LoadingAnimation />
+    </div>;
   }
 
   // Redirect to auth if not authenticated
@@ -526,30 +523,30 @@ const Dashboard = () => {
   // Show loading while dashboard data loads
   if (loading) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <LoadingAnimation />
-      </div>;
+      <LoadingAnimation />
+    </div>;
   }
 
   // Guest mode: allow viewing dashboard without login (removed - now requires auth)
   // If not logged in, we render a limited dashboard without user-specific data
 
-  return <div 
-            className="h-screen relative overflow-hidden"
-            style={{
-              backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
-            }}
-          >
-              {/* Background Image */}
-              <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
-                backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
-                  ? 'none'
-                  : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
-                backgroundColor: themeStyles.backgroundImageColor
-              }} />
-      
-      <div className="relative z-10 h-full w-full flex flex-col">
-      
-      <div 
+  return <div
+    className="h-screen relative overflow-hidden"
+    style={{
+      backgroundColor: themeStyles.theme.name === 'dark' ? themeStyles.theme.colors.background : 'transparent'
+    }}
+  >
+    {/* Background Image */}
+    <div className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-fixed" style={{
+      backgroundImage: themeStyles.theme.name === 'note' || themeStyles.theme.name === 'minimalist' || themeStyles.theme.name === 'dark'
+        ? 'none'
+        : `url('/lovable-uploads/5d9b151b-eb54-41c3-a578-e70139faa878.png')`,
+      backgroundColor: themeStyles.backgroundImageColor
+    }} />
+
+    <div className="relative z-10 h-full w-full flex flex-col">
+
+      <div
         className={`relative w-full h-full overflow-y-auto border backdrop-blur-xl`}
         style={{
           backgroundColor: themeStyles.backgroundOverlay,
@@ -558,24 +555,24 @@ const Dashboard = () => {
         }}
       >
         {/* Header */}
-        <header 
+        <header
           className="flex flex-col lg:flex-row sm:px-6 lg:px-12 lg:py-5 pt-4 pr-4 pb-4 pl-4 items-center justify-between border-b gap-4 lg:gap-0"
           style={{
-            borderColor: themeStyles.theme.name === 'glassmorphism' 
-              ? 'rgba(255, 255, 255, 0.2)' 
+            borderColor: themeStyles.theme.name === 'glassmorphism'
+              ? 'rgba(255, 255, 255, 0.2)'
               : themeStyles.border + '60'
           }}
         >
           {/* Left section - empty for now */}
           <div className="flex items-center gap-3 order-3 lg:order-1">
-            
+
           </div>
-          
+
           {/* Center section - Navigation */}
           <nav className="flex items-center gap-4 lg:gap-6 text-sm font-medium order-1 lg:order-2 flex-wrap justify-center">
-            <button 
-              onClick={() => navigate('/dashboard/my-word-book')} 
-              className="transition whitespace-nowrap" 
+            <button
+              onClick={() => navigate('/dashboard/my-word-book')}
+              className="transition whitespace-nowrap"
               style={{
                 fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
@@ -585,10 +582,10 @@ const Dashboard = () => {
             >
               {t('dashboard.myWordBook')}
             </button>
-            
-            <button 
-              onClick={() => navigate('/ielts-portal')} 
-              className="transition whitespace-nowrap" 
+
+            <button
+              onClick={() => navigate('/ielts-portal')}
+              className="transition whitespace-nowrap"
               style={{
                 fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
@@ -598,10 +595,10 @@ const Dashboard = () => {
             >
               {t('dashboard.tests')}
             </button>
-            
-            <button 
-              onClick={() => navigate('/hero')} 
-              className="transition whitespace-nowrap" 
+
+            <button
+              onClick={() => navigate('/hero')}
+              className="transition whitespace-nowrap"
               style={{
                 fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
@@ -611,10 +608,10 @@ const Dashboard = () => {
             >
               {t('dashboard.home')}
             </button>
-            
-            <button 
-              onClick={() => navigate('/community')} 
-              className="transition whitespace-nowrap" 
+
+            <button
+              onClick={() => navigate('/community')}
+              className="transition whitespace-nowrap"
               style={{
                 fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: themeStyles.textSecondary
@@ -625,11 +622,11 @@ const Dashboard = () => {
               {t('navigation.community')}
             </button>
           </nav>
-          
+
           {/* Right section - Controls */}
           <div className="flex items-center gap-2 lg:gap-3 order-2 lg:order-3 relative z-50">
             {/* Clickable User Avatar - Opens Settings */}
-            <SettingsModal 
+            <SettingsModal
               open={settingsModalOpen}
               onOpenChange={setSettingsModalOpen}
               onSettingsChange={() => {
@@ -641,7 +638,7 @@ const Dashboard = () => {
               }}>
               <button className="group w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-800/80 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden hover:border-blue-400/50 transition-all duration-200 hover:scale-105" title={t('dashboard.clickToOpenSettings')}>
                 {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" /> : <User className="w-4 h-4 text-white group-hover:text-blue-300 transition-colors" />}
-                
+
                 {/* Settings overlay on hover */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
                   <Settings className="w-3 h-3 text-white" />
@@ -658,7 +655,7 @@ const Dashboard = () => {
             {/* Left column */}
             <div className="flex flex-col gap-4 h-full">
               {/* Greeting */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0"               style={{
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl tracking-tight font-semibold flex-shrink-0" style={{
                 fontFamily: 'Comfortaa, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, cursive, sans-serif',
                 color: themeStyles.textPrimary
               }}>
@@ -686,25 +683,25 @@ const Dashboard = () => {
               <div className="grid grid-cols-4 gap-2 lg:gap-3 flex-shrink-0">
                 {skills.map(skill => {
                   const isSelected = selectedSkill === skill.id;
-                  return <button 
-                    key={skill.id} 
-                    onClick={() => setSelectedSkill(skill.id)} 
-                    className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border transition-all min-h-[60px] ${isSelected ? themeStyles.cardClassName + ' shadow-md' : `bg-white/40 border-[${themeStyles.border}] hover:bg-[${themeStyles.hoverBg}]`}`} 
+                  return <button
+                    key={skill.id}
+                    onClick={() => setSelectedSkill(skill.id)}
+                    className={`flex flex-col items-center justify-center gap-2 p-2 lg:p-3 rounded-xl border transition-all min-h-[60px] ${isSelected ? themeStyles.cardClassName + ' shadow-md' : `bg-white/40 border-[${themeStyles.border}] hover:bg-[${themeStyles.hoverBg}]`}`}
                     style={{
                       ...(isSelected ? themeStyles.cardStyle : {}),
                       borderColor: themeStyles.border,
                     }}
                   >
-                      <span 
-                        className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`} 
-                        style={{
-                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                          color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
-                        }}
-                      >
-                        {skill.fullLabel}
-                      </span>
-                    </button>;
+                    <span
+                      className={`text-xs lg:text-sm font-medium text-center leading-tight px-1`}
+                      style={{
+                        fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        color: isSelected ? themeStyles.textPrimary : themeStyles.textSecondary
+                      }}
+                    >
+                      {skill.fullLabel}
+                    </span>
+                  </button>;
                 })}
               </div>
 
@@ -716,7 +713,7 @@ const Dashboard = () => {
                   selectedTestType={selectedTestType}
                 />
               </div>
-              
+
               {/* Study Plan Todo List - Fixed top position */}
               <div className="flex-shrink-0 mt-4">
                 <StudyPlanTodoList />
@@ -741,106 +738,106 @@ const Dashboard = () => {
                     }).slice(0, 3);
                     const averageScore = skillResults.length > 0 ? Math.round(skillResults.reduce((acc, test) => acc + (test.score_percentage || 0), 0) / skillResults.length) : 0;
                     const isWritingOrSpeaking = skill.id === 'writing' || skill.id === 'speaking';
-                    return <div 
-                      key={skill.id} 
-                      className={`relative lg:p-6 ${themeStyles.cardClassName} rounded-xl pt-4 pr-4 pb-4 pl-4 min-h-[190px] flex flex-col transition-all hover:shadow-md`} 
+                    return <div
+                      key={skill.id}
+                      className={`relative lg:p-6 ${themeStyles.cardClassName} rounded-xl pt-4 pr-4 pb-4 pl-4 min-h-[190px] flex flex-col transition-all hover:shadow-md`}
                       style={themeStyles.cardStyle}
                     >
-                        <div className="relative flex items-center justify-center mb-3">
-                          <h3 className="text-sm lg:text-base tracking-tight font-normal text-center" style={{
-                            fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                            color: themeStyles.textPrimary
+                      <div className="relative flex items-center justify-center mb-3">
+                        <h3 className="text-sm lg:text-base tracking-tight font-normal text-center" style={{
+                          fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                          color: themeStyles.textPrimary
+                        }}>
+                          {skill.fullLabel}
+                        </h3>
+                        <History
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleViewResults(skill.id);
+                          }}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 cursor-pointer transition-colors"
+                          style={{ color: themeStyles.textSecondary }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.textPrimary}
+                          onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
+                          aria-label={t('dashboard.viewHistory')}
+                        />
+                      </div>
+
+                      {skillResults.length > 0 ? <div className="flex-1 flex flex-col justify-end">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                            borderColor: themeStyles.border
                           }}>
-                            {skill.fullLabel}
-                          </h3>
-                          <History
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleViewResults(skill.id);
-                            }}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 cursor-pointer transition-colors"
-                            style={{ color: themeStyles.textSecondary }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = themeStyles.textPrimary}
-                            onMouseLeave={(e) => e.currentTarget.style.color = themeStyles.textSecondary}
-                            aria-label={t('dashboard.viewHistory')}
-                          />
-                        </div>
-                        
-                        {skillResults.length > 0 ? <div className="flex-1 flex flex-col justify-end">
-                            <div className="grid grid-cols-3 gap-4">
-                              <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
-                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                                borderColor: themeStyles.border
-                              }}>
-                                <p className="text-xs font-normal mb-1" style={{
+                            <p className="text-xs font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
-                                  {t('dashboard.testsTaken')}
-                                </p>
-                                <p className="text-sm lg:text-base font-normal" style={{
+                              {t('dashboard.testsTaken')}
+                            </p>
+                            <p className="text-sm lg:text-base font-normal" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{skillResults.length}</p>
-                              </div>
-                              <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
-                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                                borderColor: themeStyles.border
-                              }}>
-                                <p className="text-xs font-normal mb-1" style={{
+                          </div>
+                          <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                            borderColor: themeStyles.border
+                          }}>
+                            <p className="text-xs font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
-                                  {t('dashboard.averageScore')}
-                                </p>
-                                <p className="text-sm lg:text-base font-normal" style={{
+                              {t('dashboard.averageScore')}
+                            </p>
+                            <p className="text-sm lg:text-base font-normal" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{convertToIELTSScore(averageScore)}</p>
-                              </div>
-                              <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
-                                backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
-                                borderColor: themeStyles.border
-                              }}>
-                                <p className="text-xs font-normal mb-1" style={{
+                          </div>
+                          <div className={`text-center ${isWritingOrSpeaking ? 'p-2 rounded-lg border' : ''}`} style={{
+                            backgroundColor: themeStyles.theme.name === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : themeStyles.theme.name === 'minimalist' ? '#f9fafb' : 'rgba(255,255,255,0.4)',
+                            borderColor: themeStyles.border
+                          }}>
+                            <p className="text-xs font-normal mb-1" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textSecondary
                             }}>
-                                  {t('dashboard.latestScore')}
-                                </p>
-                                <p className="text-sm lg:text-base font-normal" style={{
+                              {t('dashboard.latestScore')}
+                            </p>
+                            <p className="text-sm lg:text-base font-normal" style={{
                               fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                               color: themeStyles.textPrimary
                             }}>{convertToIELTSScore(skillResults[0]?.score_percentage || 0)}</p>
-                              </div>
-                            </div>
-                          </div> : <div className="flex-1 flex flex-col justify-center items-center">
-                            <button 
-                              onClick={() => navigate('/ielts-portal')} 
-                              className="text-sm font-medium px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 transition shadow-sm mx-auto" 
-                              style={{
-                                fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                backgroundColor: themeStyles.buttonPrimary,
-                                color: 'white'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
-                            >
-                              {t('dashboard.startFirstTest')} <ChevronRight className="w-4 h-4" />
-                            </button>
-                          </div>}
-                      </div>;
+                          </div>
+                        </div>
+                      </div> : <div className="flex-1 flex flex-col justify-center items-center">
+                        <button
+                          onClick={() => navigate('/ielts-portal')}
+                          className="text-sm font-medium px-3 lg:px-4 py-2 rounded-full flex items-center justify-center gap-2 transition shadow-sm mx-auto"
+                          style={{
+                            fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            backgroundColor: themeStyles.buttonPrimary,
+                            color: 'white'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimaryHover}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = themeStyles.buttonPrimary}
+                        >
+                          {t('dashboard.startFirstTest')} <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>}
+                    </div>;
                   })}
                 </div>
 
                 {/* Quick Actions */}
-                
+
               </div>
             </div>
           </div>
         </main>
       </div>
-      </div>
-    </div>;
+    </div>
+  </div>;
 };
 export default Dashboard;

@@ -10,8 +10,8 @@ export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
   // Check if local Supabase is available (default to false for safety)
   const useLocalSupabase = process.env.USE_LOCAL_SUPABASE === 'true' && !isProd;
-  const supabaseUrl = useLocalSupabase 
-    ? 'http://localhost:54321/functions/v1' 
+  const supabaseUrl = useLocalSupabase
+    ? 'http://localhost:54321/functions/v1'
     : 'https://cuumxmfzhwljylbdlflj.supabase.co/functions/v1';
   const earthwormTarget = isProd ? 'https://your-earthworm-app.vercel.app' : 'http://localhost:3000';
   const earthwormApiTarget = isProd ? 'https://your-earthworm-app.vercel.app/api' : 'http://localhost:3001/api';
@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     base: '/',
     server: {
       host: "0.0.0.0",
-      port: 5173,
+      port: 3003,
       strictPort: false,
       proxy: {
         // Earthworm proxy temporarily disabled - using dedicated component instead

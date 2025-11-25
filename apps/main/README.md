@@ -93,7 +93,7 @@ npm run dev
 ```
 
 5. **Open your browser**
-Navigate to `http://localhost:5173`
+Navigate to `http://localhost:3000`
 
 ## 📁 Project Structure
 

@@ -15,12 +15,16 @@ import {
   TrendingUp,
   Star,
   Sparkles,
+  Activity,
+  Mic,
+  AlertCircle,
 } from "lucide-react";
 import StudentLayout from "@/components/StudentLayout";
 import { supabase } from "@/integrations/supabase/client";
 import LottieLoadingAnimation from "@/components/animations/LottieLoadingAnimation";
 import SuggestionVisualizer, { type Span } from "@/components/SuggestionVisualizer";
 import { ElevenLabsVoiceOptimized } from "@/components/ElevenLabsVoiceOptimized";
+import { CustomAudioPlayer } from "@/components/CustomAudioPlayer";
 
 interface QuestionAnalysis {
   part: string;
@@ -380,60 +384,91 @@ const IELTSSpeakingResults = () => {
             <Volume2 className="w-3 h-3" />
             Your recorded answer
           </h4>
+
+          {/* Custom Audio Player */}
+          {analysis.audio_url ? (
+            <CustomAudioPlayer src={analysis.audio_url} />
+          ) : (
+            <div className="text-xs text-slate-500 italic bg-white p-3 rounded-lg border border-slate-200">
+              Audio recording not available
+            </div>
+          )}
+
+          {/* Transcription Display */}
           {analysis.transcription && analysis.transcription.trim() ? (
-            <div className="bg-white rounded-lg p-3 border border-slate-200">
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
-                "{analysis.transcription}"
-              </p>
+            <div className="mt-3">
+              <p className="text-xs text-slate-500 mb-1 font-medium">Transcript:</p>
+              <div className="bg-white rounded-lg p-3 border border-slate-200">
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                  "{analysis.transcription}"
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+            <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200 mt-3">
               <p className="text-xs sm:text-sm text-yellow-800 leading-relaxed italic">
-                <span className="font-medium">Inaudible:</span> No audio was recorded or the audio could not be understood. Please ensure your microphone is working and try recording again.
+                <span className="font-medium">Inaudible:</span> No audio was recorded or the audio could not be understood.
               </p>
             </div>
           )}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            {analysis.audio_url ? (
-              <Button
-                onClick={() => playAudio(analysis.audio_url, key)}
-                variant={isPlaying ? "default" : "outline"}
-                size="sm"
-                className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs"
-              >
-                {isPlaying ? (
-                  <>
-                    <Pause className="w-4 h-4" />
-                    Stop Audio
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" />
-                    Play Your Answer
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="text-xs text-slate-500 italic">
-                Audio recording not available
-              </div>
-            )}
-          </div>
         </div>
 
         {suggestion && suggestion.original_spans && suggestion.suggested_spans && (
-          <div className="bg-white rounded-xl p-3 mt-4 border border-slate-200/80">
-            <h4 className="font-medium mb-2 flex items-center gap-2 text-xs text-slate-900">
-              <TrendingUp className="w-3 h-3 text-blue-600" />
-              Improved version of your answer
+          <div className="bg-white rounded-xl p-4 mt-4 border border-slate-200/80 shadow-sm">
+            <h4 className="font-medium mb-3 flex items-center gap-2 text-sm text-slate-900">
+              <TrendingUp className="w-4 h-4 text-blue-600" />
+              Pronunciation Flow & Improvements
             </h4>
-            <SuggestionVisualizer
-              originalSpans={suggestion.original_spans}
-              suggestedSpans={suggestion.suggested_spans}
-              dimNeutral={false}
-              hideOriginal={false}
-            />
-            <div className="mt-3 flex justify-end">
+
+            {/* Pronunciation Flow Visualization */}
+            <div className="space-y-6">
+              {/* Original Flow */}
+              <div className="relative">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-100 rounded-full"></div>
+                <div className="pl-4 space-y-1">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">What you said</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestion.original_spans.map((span, i) => (
+                      <span
+                        key={i}
+                        className={`px-2 py-1 rounded-md text-sm transition-all duration-300 ${span.status === 'suggestion'
+                          ? 'bg-red-50 text-red-700 border border-red-100 font-medium'
+                          : 'bg-slate-50 text-slate-600 border border-slate-100'
+                          }`}
+                      >
+                        {span.text}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Improved Flow */}
+              <div className="relative">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-100 rounded-full"></div>
+                <div className="pl-4 space-y-1">
+                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    Better Flow
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestion.suggested_spans.map((span, i) => (
+                      <span
+                        key={i}
+                        className={`px-2 py-1 rounded-md text-sm transition-all duration-300 ${span.status === 'enhancement'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-100 font-semibold shadow-sm'
+                          : 'bg-slate-50 text-slate-600 border border-slate-100'
+                          }`}
+                      >
+                        {span.text}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
               <ElevenLabsVoiceOptimized
                 text={
                   suggestion.suggested_spans
@@ -449,10 +484,22 @@ const IELTSSpeakingResults = () => {
         )}
 
         <div>
-          <h4 className="font-medium text-xs sm:text-sm text-blue-900 mb-2 flex items-center gap-2">
-            <Sparkles className="w-3 h-3 text-blue-600" />
-            Feedback for your response
-          </h4>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="relative">
+              <img
+                src="/cat.png"
+                alt="Catie AI"
+                className="w-10 h-10 rounded-full border-2 border-blue-100 shadow-sm object-cover"
+              />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center border border-white shadow-sm">
+                <Sparkles className="w-2.5 h-2.5 text-white" />
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm text-slate-900">Catie's Feedback</h4>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">AI Speaking Coach</p>
+            </div>
+          </div>
           <div className="rounded-xl p-4 bg-white border border-slate-200/80">
             <p className="text-xs sm:text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
               {analysis.feedback
@@ -640,82 +687,151 @@ const IELTSSpeakingResults = () => {
             overallFeedback.intonation_recommendations?.length ||
             overallFeedback.phonetic_focus_areas?.length ||
             overallFeedback.word_stress_issues?.length) && (
-              <Card className="rounded-3xl border border-slate-200/80 bg-white">
-                <CardHeader className="pb-4">
+              <Card className="rounded-3xl border border-slate-200/80 bg-white overflow-hidden">
+                <CardHeader className="pb-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border-b border-slate-100">
                   <CardTitle className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-blue-50">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white shadow-sm border border-blue-100">
                       <Volume2 className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">Enhanced Pronunciation Analysis</h3>
-                      <p className="text-sm text-slate-600">Detailed feedback on speech patterns and sounds</p>
+                      <h3 className="text-lg font-semibold text-slate-900">Pronunciation Deep Dive</h3>
+                      <p className="text-sm text-slate-500 font-normal">AI-powered analysis of your speech patterns</p>
                     </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {overallFeedback.stress_patterns_to_improve?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                        Word Stress Patterns to Improve
-                      </h4>
-                      <div className="grid gap-2">
-                        {overallFeedback.stress_patterns_to_improve.map((pattern, index) => (
-                          <div key={index} className="text-xs text-slate-600 bg-blue-50 rounded-lg px-3 py-2 font-mono">
-                            {pattern}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <CardContent className="p-6 space-y-8">
 
-                  {overallFeedback.intonation_recommendations?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                        Intonation Recommendations
-                      </h4>
-                      <div className="grid gap-2">
-                        {overallFeedback.intonation_recommendations.map((rec, index) => (
-                          <div key={index} className="text-xs text-slate-600 bg-green-50 rounded-lg px-3 py-2">
-                            {rec}
-                          </div>
-                        ))}
+                  {/* Visual Breakdown */}
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <TrendingUp className="w-4 h-4 text-blue-500" />
+                        Intonation
                       </div>
+                      <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${Math.max(20, 100 - (overallFeedback.intonation_recommendations?.length || 0) * 15)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {overallFeedback.intonation_recommendations?.length
+                          ? `${overallFeedback.intonation_recommendations.length} areas to improve`
+                          : "Good variation detected"}
+                      </p>
                     </div>
-                  )}
 
-                  {overallFeedback.phonetic_focus_areas?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                        Phonetic Sounds to Focus On
-                      </h4>
-                      <div className="grid gap-2">
-                        {overallFeedback.phonetic_focus_areas.map((sound, index) => (
-                          <div key={index} className="text-xs text-slate-600 bg-orange-50 rounded-lg px-3 py-2 font-mono">
-                            {sound}
-                          </div>
-                        ))}
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <Activity className="w-4 h-4 text-purple-500" />
+                        Stress & Rhythm
                       </div>
+                      <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500 rounded-full"
+                          style={{ width: `${Math.max(20, 100 - ((overallFeedback.stress_patterns_to_improve?.length || 0) + (overallFeedback.word_stress_issues?.length || 0)) * 10)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {(overallFeedback.stress_patterns_to_improve?.length || 0) + (overallFeedback.word_stress_issues?.length || 0) > 0
+                          ? "Rhythm needs attention"
+                          : "Natural rhythm detected"}
+                      </p>
                     </div>
-                  )}
 
-                  {overallFeedback.word_stress_issues?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm text-slate-900 mb-2 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                        Word Stress Corrections
-                      </h4>
-                      <div className="grid gap-2">
-                        {overallFeedback.word_stress_issues.map((issue, index) => (
-                          <div key={index} className="text-xs text-slate-600 bg-purple-50 rounded-lg px-3 py-2">
-                            {issue}
-                          </div>
-                        ))}
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <Mic className="w-4 h-4 text-emerald-500" />
+                        Clarity
                       </div>
+                      <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{ width: `${Math.max(20, 100 - (overallFeedback.phonetic_focus_areas?.length || 0) * 10)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {overallFeedback.phonetic_focus_areas?.length
+                          ? `${overallFeedback.phonetic_focus_areas.length} sounds to practice`
+                          : "Clear pronunciation"}
+                      </p>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    {overallFeedback.stress_patterns_to_improve?.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-slate-900 flex items-center gap-2">
+                          <div className="p-1.5 rounded-md bg-blue-100 text-blue-600">
+                            <Activity className="w-3.5 h-3.5" />
+                          </div>
+                          Stress Patterns
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {overallFeedback.stress_patterns_to_improve.map((pattern, index) => (
+                            <div key={index} className="text-xs text-slate-700 bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-1.5 font-mono">
+                              {pattern}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {overallFeedback.intonation_recommendations?.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-slate-900 flex items-center gap-2">
+                          <div className="p-1.5 rounded-md bg-purple-100 text-purple-600">
+                            <TrendingUp className="w-3.5 h-3.5" />
+                          </div>
+                          Intonation Tips
+                        </h4>
+                        <div className="space-y-2">
+                          {overallFeedback.intonation_recommendations.map((rec, index) => (
+                            <div key={index} className="text-xs text-slate-600 bg-purple-50/50 border border-purple-100 rounded-lg px-3 py-2 flex items-start gap-2">
+                              <span className="mt-0.5 block w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />
+                              {rec}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {overallFeedback.phonetic_focus_areas?.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-slate-900 flex items-center gap-2">
+                          <div className="p-1.5 rounded-md bg-emerald-100 text-emerald-600">
+                            <Mic className="w-3.5 h-3.5" />
+                          </div>
+                          Target Sounds
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {overallFeedback.phonetic_focus_areas.map((sound, index) => (
+                            <div key={index} className="text-xs text-slate-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5 font-mono font-medium">
+                              /{sound}/
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {overallFeedback.word_stress_issues?.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-slate-900 flex items-center gap-2">
+                          <div className="p-1.5 rounded-md bg-orange-100 text-orange-600">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                          </div>
+                          Word Stress Fixes
+                        </h4>
+                        <div className="space-y-2">
+                          {overallFeedback.word_stress_issues.map((issue, index) => (
+                            <div key={index} className="text-xs text-slate-600 bg-orange-50/50 border border-orange-100 rounded-lg px-3 py-2">
+                              {issue}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}

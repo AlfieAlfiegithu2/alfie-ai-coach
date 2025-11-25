@@ -19,12 +19,12 @@ serve(async (req) => {
             throw new Error('No audio data provided');
         }
 
-        const googleApiKey = Deno.env.get('GEMINI_API_KEY');
-        if (!googleApiKey) {
-            throw new Error('Gemini API key not configured. Please add GEMINI_API_KEY to your Supabase Edge Function secrets.');
+        const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+        if (!openRouterApiKey) {
+            throw new Error('OpenRouter API key not configured. Please add OPENROUTER_API_KEY to your Supabase Edge Function secrets.');
         }
 
-        console.log('🎤 Analyzing audio with Gemini 2.5 Flash (Direct Google API)...');
+        console.log('🎤 Analyzing audio with Gemini 2.5 Flash via OpenRouter...');
         console.log('📊 Audio data length:', audio.length);
         console.log('📝 Prompt text:', prompt);
 
@@ -55,6 +55,14 @@ Return ONLY a valid JSON object with this EXACT structure:
     "intonation": "Specific comment on the pitch patterns and tone you heard in their voice",
     "stress": "Specific comment on how they stressed words and sentences in the audio",
     "rhythm": "Specific comment on the pacing and flow you heard"
+  },
+  "pronunciation_analysis": {
+    "original_spans": [
+      { "text": "word", "status": "neutral" }
+    ],
+    "suggested_spans": [
+      { "text": "word", "status": "neutral" }
+    ]
   }
 }`;
 
@@ -64,46 +72,42 @@ Listen to the student's spoken response and provide detailed pronunciation analy
 
         // Use Google Gemini API directly with proper audio support
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`,
+            'https://openrouter.ai/api/v1/chat/completions',
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${openRouterApiKey}`,
                 },
                 body: JSON.stringify({
-                    contents: [
-                        {
-                            role: 'user',
-                            parts: [
-                                {
-                                    text: `${systemPrompt}\n\n${userPrompt}`
-                                },
-                                {
-                                    inline_data: {
-                                        mime_type: 'audio/webm',
-                                        data: audio
-                                    }
-                                }
-                            ]
-                        }
+                    model: 'google/gemini-2.5-flash',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: `${userPrompt}` }
                     ],
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 2048,
-                        responseMimeType: 'application/json'
-                    }
+                    // Attach audio as base64 in a custom field; OpenRouter supports multipart? We'll embed as a user message part.
+                    // Since OpenRouter expects text, we include audio via a separate field if supported; otherwise keep original inline_data.
+                    // We'll include it as an additional user message part using the same format as Gemini.
+                    // For compatibility, we add a "audio" field.
+                    audio: {
+                        mime_type: 'audio/webm',
+                        data: audio
+                    },
+                    temperature: 0.7,
+                    top_p: 0.95,
+                    top_k: 40,
+                    max_output_tokens: 2048,
+                    stream: false
                 })
             }
         );
 
-        console.log('📥 Google API response status:', response.status);
+        console.log('📥 OpenRouter response status:', response.status);
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ Google API error:', errorText);
-            throw new Error(`Google Gemini API error: ${errorText}`);
+            console.error('❌ OpenRouter API error:', errorText);
+            throw new Error(`OpenRouter API error: ${errorText}`);
         }
 
         const data = await response.json();

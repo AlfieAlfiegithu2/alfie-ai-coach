@@ -8,7 +8,15 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square, Send, Sparkles, FileText, X, MessageSquare } from "lucide-react";
+import {
+  Mic, Play, Pause, Clock, ArrowRight, ArrowLeft, Upload, Volume2, Bot, ListTree, BookOpen, PauseIcon, PlayIcon, Eye, EyeOff, Plus, Square, Send, Sparkles, FileText, X,
+  Maximize2,
+  Minimize2,
+  TrendingUp,
+  MessageSquare
+} from "lucide-react";
+import { CustomAudioPlayer } from "@/components/CustomAudioPlayer";
+import { CircularScore, RadarMetrics } from "@/components/MetricVisualizations";
 import { cn } from "@/lib/utils";
 import StudentLayout from "@/components/StudentLayout";
 import InteractiveSpeakingAssistant from "@/components/InteractiveSpeakingAssistant";
@@ -2026,7 +2034,8 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                       style={{
                                         borderColor: themeStyles.border,
                                         color: themeStyles.buttonPrimary,
-                                        backgroundColor: 'transparent'
+                                        backgroundColor: isEvaluating ? (themeStyles.theme.name === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : 'transparent',
+                                        animation: isEvaluating ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
                                       }}
                                       onMouseEnter={(e) => {
                                         e.currentTarget.style.backgroundColor = themeStyles.hoverBg;
@@ -2040,7 +2049,9 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                                       ) : (
                                         <Sparkles className="w-5 h-5" />
                                       )}
-                                      <span className="font-medium">Evaluate AI</span>
+                                      <span className="font-medium">
+                                        {isEvaluating ? "Analyzing..." : "Evaluate AI"}
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -2099,51 +2110,147 @@ Please provide concise, practical speaking guidance (ideas, vocabulary, structur
                         </Button>
                       </div>
 
-                      {/* Transcription Verification */}
-                      <div className="mb-6 p-4 rounded-xl border-2"
-                        style={{
-                          backgroundColor: themeStyles.theme.name === 'dark'
-                            ? 'rgba(255,255,255,0.05)'
-                            : themeStyles.theme.name === 'glassmorphism'
-                              ? 'rgba(255,255,255,0.6)'
-                              : '#f8fafc',
-                          borderColor: themeStyles.border
-                        }}
-                      >
-                        <p className="text-xs font-bold uppercase mb-2 flex items-center gap-2" style={{ color: themeStyles.buttonPrimary }}>
-                          <Volume2 className="w-3 h-3" />
-                          What I Heard
-                        </p>
-                        <p className="text-sm italic leading-relaxed" style={{ color: themeStyles.textPrimary }}>
-                          "{evaluationResult.transcription}"
-                        </p>
+                      {/* Audio & Transcription */}
+                      <div className="mb-6 space-y-4">
+                        <div className="bg-slate-50 rounded-xl p-3 sm:p-4 space-y-3"
+                          style={{
+                            backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : '#f8fafc'
+                          }}>
+                          <h4 className="font-medium mb-2 flex items-center gap-2 text-xs" style={{ color: themeStyles.textPrimary }}>
+                            <Volume2 className="w-3 h-3" />
+                            Your recorded answer
+                          </h4>
+
+                          {/* Custom Audio Player */}
+                          {recordings[`part${currentPart}_q${currentQuestion}`] ? (
+                            <CustomAudioPlayer src={URL.createObjectURL(recordings[`part${currentPart}_q${currentQuestion}`])} />
+                          ) : (
+                            <div className="text-xs italic p-3 rounded-lg border"
+                              style={{ borderColor: themeStyles.border, color: themeStyles.textSecondary }}>
+                              Audio recording not available
+                            </div>
+                          )}
+
+                          {/* Transcription Display */}
+                          <div className="mt-3">
+                            <p className="text-xs mb-1 font-medium" style={{ color: themeStyles.textSecondary }}>Transcript:</p>
+                            <div className="rounded-lg p-3 border"
+                              style={{
+                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(0,0,0,0.2)' : '#ffffff',
+                                borderColor: themeStyles.border
+                              }}>
+                              <p className="text-xs sm:text-sm leading-relaxed italic" style={{ color: themeStyles.textPrimary }}>
+                                "{evaluationResult.transcription}"
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Pronunciation Flow Visualization */}
+                        {evaluationResult.pronunciation_analysis && (
+                          <div className="rounded-xl overflow-hidden border shadow-sm"
+                            style={{
+                              backgroundColor: themeStyles.theme.name === 'dark' ? '#1e293b' : '#ffffff',
+                              borderColor: themeStyles.border
+                            }}>
+                            <div className="p-4 border-b" style={{ borderColor: themeStyles.border }}>
+                              <h4 className="font-bold flex items-center gap-2 text-sm" style={{ color: themeStyles.textPrimary }}>
+                                <TrendingUp className="w-4 h-4" style={{ color: themeStyles.buttonPrimary }} />
+                                Pronunciation Breakdown
+                              </h4>
+                            </div>
+
+                            <div className="p-5 space-y-8">
+                              {/* Original Flow */}
+                              <div className="space-y-3">
+                                <p className="text-xs font-bold uppercase tracking-wider opacity-70" style={{ color: themeStyles.textSecondary }}>What you said</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {evaluationResult.pronunciation_analysis.original_spans?.map((span: any, i: number) => (
+                                    <span
+                                      key={i}
+                                      className={`px-3 py-1.5 rounded-lg text-base transition-all duration-300 ${span.status === 'suggestion'
+                                        ? 'font-bold ring-2 ring-offset-1'
+                                        : 'font-medium'
+                                        }`}
+                                      style={{
+                                        backgroundColor: span.status === 'suggestion'
+                                          ? '#fee2e2' // Light red
+                                          : (themeStyles.theme.name === 'dark' ? '#334155' : '#f1f5f9'),
+                                        color: span.status === 'suggestion'
+                                          ? '#ef4444' // Red
+                                          : (themeStyles.theme.name === 'dark' ? '#e2e8f0' : '#475569'),
+                                        borderColor: 'transparent'
+                                      }}
+                                    >
+                                      {span.text}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Improved Flow */}
+                              <div className="space-y-3">
+                                <p className="text-xs font-bold uppercase tracking-wider opacity-70 flex items-center gap-2" style={{ color: themeStyles.buttonPrimary }}>
+                                  <Sparkles className="w-3 h-3" />
+                                  Better Flow
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {evaluationResult.pronunciation_analysis.suggested_spans?.map((span: any, i: number) => (
+                                    <span
+                                      key={i}
+                                      className={`px-3 py-1.5 rounded-lg text-base transition-all duration-300 ${span.status === 'enhancement'
+                                        ? 'font-bold ring-2 ring-offset-1 shadow-md'
+                                        : 'font-medium'
+                                        }`}
+                                      style={{
+                                        backgroundColor: span.status === 'enhancement'
+                                          ? '#dbeafe' // Light blue
+                                          : (themeStyles.theme.name === 'dark' ? '#334155' : '#f1f5f9'),
+                                        color: span.status === 'enhancement'
+                                          ? '#2563eb' // Blue
+                                          : (themeStyles.theme.name === 'dark' ? '#e2e8f0' : '#475569')
+                                      }}
+                                    >
+                                      {span.text}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Metrics with Theme Colors */}
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        {Object.entries(evaluationResult.metrics || {}).map(([key, value]: [string, any]) => (
-                          <div key={key} className="space-y-2 p-3 rounded-lg"
-                            style={{
-                              backgroundColor: themeStyles.theme.name === 'dark'
-                                ? 'rgba(255,255,255,0.05)'
-                                : themeStyles.theme.name === 'glassmorphism'
-                                  ? 'rgba(255,255,255,0.5)'
-                                  : '#f8fafc'
-                            }}
-                          >
-                            <div className="flex justify-between text-sm font-semibold">
-                              <span className="capitalize" style={{ color: themeStyles.textPrimary }}>{key}</span>
-                              <span className="font-bold" style={{ color: themeStyles.buttonPrimary }}>{value}%</span>
-                            </div>
-                            <Progress
-                              value={value}
-                              className="h-2"
-                              style={{
-                                backgroundColor: themeStyles.theme.name === 'dark' ? 'rgba(255,255,255,0.1)' : '#e2e8f0'
-                              }}
+                      {/* Advanced Metrics Visualization */}
+                      <div className="mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                          {/* Overall Score Circle */}
+                          <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100 dark:bg-slate-900/50 dark:border-slate-800">
+                            <CircularScore
+                              score={Math.round(
+                                (Object.values(evaluationResult.metrics || {}) as number[]).reduce((a, b) => a + b, 0) /
+                                (Object.keys(evaluationResult.metrics || {}).length || 1)
+                              )}
+                              label="Overall"
+                              subLabel="Speaking Score"
+                              size={160}
+                              color={themeStyles.buttonPrimary}
                             />
                           </div>
-                        ))}
+
+                          {/* Radar Chart */}
+                          <div className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-2xl border border-slate-100 dark:bg-slate-900/50 dark:border-slate-800 h-[200px]">
+                            <RadarMetrics
+                              metrics={{
+                                pronunciation: evaluationResult.metrics?.pronunciation || 0,
+                                intonation: evaluationResult.metrics?.intonation || 0,
+                                stress: evaluationResult.metrics?.stress || 0,
+                                rhythm: evaluationResult.metrics?.rhythm || 0
+                              }}
+                              height={180}
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       <Separator className="my-6" style={{ backgroundColor: themeStyles.border }} />

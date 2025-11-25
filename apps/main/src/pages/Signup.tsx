@@ -24,7 +24,12 @@ const Signup = () => {
     }
     setSubmitting(true);
     const { error } = await signUp(email, password, fullName);
-    if (error) setError(error);
+    if (error) {
+      setError(error);
+    } else {
+      // Successful sign‑up – go to profile setup
+      navigate('/settings');
+    }
     setSubmitting(false);
   };
 
@@ -45,76 +50,72 @@ const Signup = () => {
   }
 
   return (
-    <div className="min-h-screen w-full font-sans">
-      <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
-        style={{ backgroundImage: "url('/lovable-uploads/38d81cb0-fd21-4737-b0f5-32bc5d0ae774.png')" }}
-      />
-      <div className="fixed inset-0 bg-background/50 backdrop-blur-sm -z-10" />
+    <div className="min-h-screen w-full font-sans bg-white">
+      <div className="fixed inset-0 bg-white -z-10" />
 
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-foreground/80 hover:text-foreground bg-card/80 backdrop-blur px-3 py-2 rounded-xl border border-border"
+          className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-gray-800 hover:text-black bg-white/80 backdrop-blur px-3 py-2 rounded-xl border border-gray-300"
           aria-label="Go back"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </button>
-        <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl bg-card/90 border border-border mx-auto">
-          <div className="p-6 md:p-8 bg-card">
-            <h3 className="text-2xl font-semibold text-foreground text-center mb-4">Create account</h3>
+        <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl bg-white border border-gray-200 mx-auto">
+          <div className="p-6 md:p-8 bg-white">
+            <h3 className="text-2xl font-semibold text-black text-center mb-4">Create account</h3>
 
             <form onSubmit={onSubmit} className="space-y-5">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-2">You can be creative here</label>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Your nickname</label>
                 <input
                   id="name"
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
                   placeholder="Your name"
                 />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-2">Email address</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
                 <input
                   id="email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  placeholder="okie@dokie.com"
+                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                  placeholder=""
                 />
-                <p className="mt-1 text-xs text-muted-foreground">We’ll send a verification email after you sign up.</p>
+                <p className="mt-1 text-xs text-gray-600">We'll send a verification email after you sign up.</p>
               </div>
 
               {/* OTP step removed for simpler UX */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-2">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                 <input
                   id="password"
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
                   placeholder="••••••••"
                 />
               </div>
               <div>
-                <label htmlFor="confirm" className="block text-sm font-medium text-muted-foreground mb-2">Confirm password</label>
+                <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
                 <input
                   id="confirm"
                   type="password"
                   required
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border bg-background text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full p-3 rounded-xl border border-gray-300 bg-white text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -122,12 +123,12 @@ const Signup = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-xl shadow-sm hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all"
+                className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all"
               >
                 {submitting ? 'Creating…' : 'Create account'}
               </button>
-              <div className="text-center text-sm text-muted-foreground">
-                Already have an account? <Link className="text-primary font-medium hover:underline" to="/auth">Sign in</Link>
+              <div className="text-center text-sm text-gray-600">
+                Already have an account? <Link className="text-blue-600 font-medium hover:underline" to="/auth">Sign in</Link>
               </div>
             </form>
           </div>

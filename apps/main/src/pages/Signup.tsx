@@ -27,8 +27,8 @@ const Signup = () => {
     if (error) {
       setError(error);
     } else {
-      // Successful sign‑up – go to profile setup
-      navigate('/settings');
+      // Successful sign‑up – redirect to dashboard
+      navigate('/dashboard');
     }
     setSubmitting(false);
   };

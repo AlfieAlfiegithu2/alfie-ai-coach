@@ -53,7 +53,7 @@ const Speaking = () => {
     setIsAnalyzing(true);
     try {
       const base64Audio = await convertBlobToBase64(audioBlob);
-      
+
       const { data, error } = await supabase.functions.invoke('speech-analysis', {
         body: {
           audio: base64Audio,
@@ -77,7 +77,7 @@ const Speaking = () => {
     } catch (error: any) {
       console.error('Analysis error:', error);
       toast({
-        title: "Analysis Failed", 
+        title: "Analysis Failed",
         description: error.message || "Could not analyze your speech. Please try again.",
         variant: "destructive",
       });
@@ -372,7 +372,7 @@ const Speaking = () => {
                   </p>
                 </div>
 
-                <AudioRecorder 
+                <AudioRecorder
                   onRecordingComplete={handleRecordingComplete}
                   disabled={isAnalyzing}
                 />

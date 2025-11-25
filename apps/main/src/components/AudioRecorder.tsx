@@ -10,7 +10,7 @@ interface AudioRecorderProps {
   autoFocus?: boolean;
 }
 
-export const AudioRecorder: React.FC<AudioRecorderProps> = ({ 
+export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   onRecordingComplete,
   disabled = false,
   autoFocus = false

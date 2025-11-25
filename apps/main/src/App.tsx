@@ -325,6 +325,8 @@ const App = () => {
                         <Route path="/settings" element={<SettingsPage />} />
                         {/* AI Speaking Tutor (voice calling) */}
                         <Route path="/ai-speaking" element={<AISpeakingCall />} />
+                        {/* Earthworm AI Speaking Tutor */}
+                        <Route path="/earthworm" element={<AISpeakingTutor />} />
                         {/* Skills Practice (Student) */}
                         <Route path="/skills/:slug" element={<SkillPractice />} />
                         <Route path="/skills/vocabulary-builder/map" element={<VocabularyMap />} />
